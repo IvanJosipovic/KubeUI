@@ -1,0 +1,17 @@
+﻿@inherits ControlBase<TItem>
+@typeparam TItem
+
+<FormGroup IsRow="false" IsCheck="true" onmouseover="@(() => { base.SetHelp.Invoke(Parent.GetProperty(Name).GetSummary()); })">
+    
+    <BlazorLabel For="@Name" Class="col-form-label-sm" IsCheck="true">
+        <input class="form-check-input" type="checkbox" id="@Name" value="@Value" onchange="@((e) => ValueChanged.Invoke((TItem)e.Value))" readonly="@ReadOnly" />
+
+        @Name.AddSpacesToSentence().TrimVersionNumbers()
+    </BlazorLabel>
+
+    <FieldValidationResult results="@Results" Field="@Name" />
+</FormGroup>
+
+@functions {
+
+}

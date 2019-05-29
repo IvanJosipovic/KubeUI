@@ -1,0 +1,58 @@
+﻿@inherits ControlBase<IDictionary<string, string>>
+ 
+<fieldset onmouseover="@(() => base.SetHelp.Invoke(Parent.GetProperty(Name).GetSummary()))">
+    <legend>
+        @Name.AddSpacesToSentence().TrimVersionNumbers()
+        <a href="javascript:;" onclick="@((e) => Add())" title="Add New"><i class="fa fa-plus"></i></a>
+    </legend>
+    <BlazorTable IsBordered="true" IsHovarable="true" IsSmall="true" IsStriped="true" IsResponsive="true">
+        <TableHead TableHeadType="TableHeadType.Light">
+            <tr>
+                <th scope="col">Key</th>
+                <th scope="col">Value</th>
+                <th scope="col">Actions</th>
+            </tr>
+        </TableHead>
+        <tbody>
+            @if (Value != null)
+            {
+                @foreach (KeyValuePair<string, string> obj in Value.OrderBy(x => x.Key))
+                {
+                    <tr>
+                        <td><input type="text" value="@obj.Key" onchange="@((e) => { Value.ChangeKey(obj.Key, (string)e.Value); ValueChanged.Invoke(Value); })" class="form-control form-control-sm" /></td>
+                        <td><input type="text" value="@obj.Value" onchange="@((e) => { Value[obj.Key] = (string)e.Value; ValueChanged.Invoke(Value); })" class="form-control form-control-sm" /></td>
+                        <td style="width:20px; text-align: center">
+                            <a href="javascript:;" onclick="@(() => Delete(obj.Key))" title="Delete"><i class='fa fa-trash' aria-hidden='true'></i></a>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </BlazorTable>
+</fieldset>
+
+@functions {
+    [Parameter] protected string Type { get; set; } = "text";
+
+    protected override void OnInit()
+    {
+        base.OnInit();
+    }
+
+    private void Add()
+    {
+        if (Value == null)
+        {
+            Value = new Dictionary<string, string>();
+        }
+
+        Value.Add("", "");
+        StateHasChanged();
+    }
+
+    private void Delete(string key)
+    {
+        Value.Remove(key);
+        StateHasChanged();
+    }
+}

@@ -1,0 +1,179 @@
+﻿@typeparam TItem
+
+<Shell Item="@Item" SetHelp="@SetHelp">
+    @foreach (var property in Item.GetType().GetProperties().Where(x => !x.PropertyType.FullName.StartsWith("KubeUI.Schema.")))
+    {
+        var attributes = TypeDescriptor.GetProperties(typeof(TItem))[property.Name].Attributes;
+
+        if (IsIgnore(attributes) || !ShouldShow(attributes) || IsDisplayInTree(attributes))
+        {
+            continue;
+        }
+
+        if (property.PropertyType == typeof(Dictionary<string, string>))
+        {
+            <Dictionary Value="@((IDictionary<string, string>)property.GetValue(Item))" ValueChanged="@((e) => OnChange(e, property))" Name="@property.Name" Parent="@Item.GetType()" results="@results" SetHelp="@SetHelp" />
+        }
+        else if (property.PropertyType.IsGenericType && property.PropertyType.GetGenericTypeDefinition() == typeof(System.Collections.ObjectModel.Collection<>))
+        {
+            <KubeUI.Components.UI.Collection Value="@(property.GetValue(Item))" ValueChanged="@((e) => OnChange(e, property))" Type="@property.PropertyType" Name="@property.Name" Parent="@Item.GetType()" results="@results" SetHelp="@SetHelp" />
+        }
+        else if (IsSelectList(attributes))
+        {
+            <SelectList Value="@(property.GetValue(Item))" ValueChanged="@((e) => OnChange(e, property))" Name="@property.Name" Parent="@Item.GetType()" results="@results" Options="@GetSelectListOptions(attributes)" SetHelp="@SetHelp" />
+        }
+        else if (property.PropertyType == typeof(string))
+        {
+            <TextBox Value="@(property.GetValue(Item))" ValueChanged="@((e) => OnChange(e, property))" Name="@property.Name" Parent="@Item.GetType()" results="@results" Readonly="@IsReadOnly(attributes)" SetHelp="@SetHelp" />
+        }
+        else if (property.PropertyType == typeof(bool) || property.PropertyType == typeof(bool?))
+        {
+            <CheckBox Value="@(property.GetValue(Item))" ValueChanged="@((e) => OnChange(e, property))" Name="@property.Name" Parent="@Item.GetType()" results="@results" Readonly="@IsReadOnly(attributes)" SetHelp="@SetHelp" />
+        }
+        else if (property.PropertyType == typeof(int) || property.PropertyType == typeof(int?) || property.PropertyType == typeof(long) || property.PropertyType == typeof(long?))
+        {
+            <TextBox Value="@(property.GetValue(Item))" ValueChanged="@((e) => OnChange(e, property))" Name="@property.Name" Parent="@Item.GetType()" results="@results" Readonly="@IsReadOnly(attributes)" SetHelp="@SetHelp" Type="number" />
+        }
+        else
+        {
+            <p>Missing Control Type @property.PropertyType</p>
+        }
+        <br />
+    }
+</Shell>
+
+@functions {
+    [Parameter] protected Action<object> SetHelp { get; set; }
+
+    [Parameter] protected TItem Item { get; set; }
+    [Parameter] protected Action<TItem> ItemChanged { get; set; }
+
+    [Inject] ILogger<DynamicControls<TItem>> Logger { get; set; }
+    [Inject] protected IState state { get; set; }
+    [Inject] protected IValidatorFactory validatorFactory { get; set; }
+
+    protected Guid Id { get; set; } = Guid.NewGuid();
+    protected IValidator validator { get; set; }
+    protected ValidationResult results { get; set; }
+
+    protected void Validate()
+    {
+        if (validator != null && Item != null)
+        {
+            results = validator.Validate(Item);
+        }
+    }
+
+    protected void Update()
+    {
+        Validate();
+
+        ItemChanged?.Invoke(Item);
+
+        state.RaisePropertyChanged();
+    }
+
+    protected override void OnInit()
+    {
+        if (Item == null)
+        {
+            Item = Activator.CreateInstance<TItem>();
+            Update();
+        }
+
+        validator = validatorFactory.GetValidator(typeof(TItem));
+
+        Validate();
+    }
+
+    protected bool ShouldShow(AttributeCollection attributes)
+    {
+        var attr = attributes.OfType<UILevelAttribute>().FirstOrDefault();
+
+        if (attr != null)
+        {
+            return (int)state.GetUILevel() >= (int)attr.UILevel;
+        }
+
+        return true;
+    }
+
+    protected bool IsReadOnly(AttributeCollection attributes)
+    {
+        return attributes.OfType<ReadOnlyAttribute>().Any();
+    }
+
+    protected bool IsIgnore(AttributeCollection attributes)
+    {
+        return attributes.OfType<IgnoreAttribute>().Any();
+    }
+
+    protected bool IsSelectList(AttributeCollection attributes)
+    {
+        return attributes.OfType<SelectListAttribute>().Any();
+    }
+
+    protected string[] GetSelectListOptions(AttributeCollection attributes)
+    {
+        return attributes.OfType<SelectListAttribute>().First().Options;
+    }
+
+    protected bool IsDisplayInTree(AttributeCollection attributes)
+    {
+        return attributes.OfType<DisplayInTreeAttribute>().Any();
+    }
+
+    protected void OnChange(Object e, PropertyInfo prop)
+    {
+        try
+        {
+            if (prop.PropertyType == typeof(string))
+            {
+                prop.SetValue(Item, e == null ? null : e.ToString());
+            }
+            else if (prop.PropertyType == typeof(bool))
+            {
+                prop.SetValue(Item, bool.TryParse(e.ToString(), out var tmpvalue) ? tmpvalue : default(bool));
+            }
+            else if (prop.PropertyType == typeof(bool?))
+            {
+                prop.SetValue(Item, bool.TryParse(e.ToString(), out var tmpvalue) ? tmpvalue : (bool?)null);
+            }
+            else if (prop.PropertyType == typeof(int))
+            {
+                prop.SetValue(Item, int.TryParse(e.ToString(), out var tmpvalue) ? tmpvalue : default(int));
+            }
+            else if (prop.PropertyType == typeof(int?))
+            {
+                prop.SetValue(Item, int.TryParse(e.ToString(), out var tmpvalue) ? tmpvalue : (int?)null);
+            }
+            else if (prop.PropertyType == typeof(long))
+            {
+                prop.SetValue(Item, long.TryParse(e.ToString(), out var tmpvalue) ? tmpvalue : default(long));
+            }
+            else if (prop.PropertyType == typeof(long?))
+            {
+                prop.SetValue(Item, long.TryParse(e.ToString(), out var tmpvalue) ? tmpvalue : (long?)null);
+            }
+            else if (prop.PropertyType == typeof(Dictionary<string, string>))
+            {
+                prop.SetValue(Item, (Dictionary<string, string>)e);
+            }
+            else if (prop.PropertyType == typeof(System.Collections.ObjectModel.Collection<string>))
+            {
+                prop.SetValue(Item, (System.Collections.ObjectModel.Collection<string>)e);
+            }
+            else
+            {
+                prop.SetValue(Item, e);
+            }
+
+            Update();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("Casting Error : {0} - {1} - {2}", e.GetType(), e, ex);
+        }
+    }
+}

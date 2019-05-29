@@ -1,0 +1,30 @@
+﻿
+@HelpString
+
+@functions {
+    [Inject] protected IState State { get; set; }
+
+    [Parameter] protected string HelpString { get; set; }
+
+    protected override void OnInit()
+    {
+        State.PropertyChanged += (o, e) =>
+        {
+            if (e.PropertyName == "help")
+            {
+                StateHasChanged();
+            }
+        };
+    }
+
+    public void Dispose()
+    {
+        State.PropertyChanged -= (xo, e) =>
+        {
+            if (e.PropertyName == "help")
+            {
+                StateHasChanged();
+            }
+        };
+    }
+}

@@ -1,0 +1,136 @@
+﻿@typeparam TItem
+
+@if (Item != null)
+{
+    <div class="row">
+        <div class="col-sm-3 col-md-3">
+            <Card Class="sticky-top sticky-offset">
+                <Card CardType="CardType.Header" HeadingSize="HeadingSize.H5">
+                    <a href="javascript:;" onclick="@((e) => RenderForm(Item))" onmouseover="@(() => SetHelp(Item.GetType().GetSummary()))">@Item.GetType().Name.AddSpacesToSentence().TrimVersionNumbers()</a>
+                    <div class="pull-right">
+                        <a href="javascript:;" onclick="@((e) => ShowCode(Item))" onmouseover="@(() => SetHelp("Show Code"))"><i class="fa fa-code"></i></a>
+                    </div>
+                </Card>
+                <Card CardType="CardType.Body">
+                    <DynamicTree Item="Item" RenderForm="@RenderForm" SetHelp="@SetHelp"></DynamicTree>
+                </Card>
+            </Card>
+        </div>
+
+        <div class="col-sm-6 col-md-6">
+            @Controls
+        </div>
+
+        <div class="col-sm-3 col-md-3">
+            <Card Class="sticky-top sticky-offset">
+                <Card CardType="CardType.Header" HeadingSize="HeadingSize.H5">
+                    Help
+                </Card>
+                <Card CardType="CardType.Body">
+                    <Help HelpString="@Help"></Help>
+                </Card>
+            </Card>        
+        </div>
+    </div>
+}
+
+<Modal bind-IsOpen="@ModalIsOpen" Size="Size.Large">
+    <ModalHeader OnClick="@OnClose">Code</ModalHeader>
+    <ModalBody><pre><code id="yamlViewer" class="yaml">@MDLBody</code></pre></ModalBody>
+</Modal>
+
+@functions{
+
+    [Parameter] TItem Item { get; set; }
+    [Parameter] Action<TItem> ItemChanged { get; set; }
+
+    [Inject] IState state { get; set; }
+    [Inject] private IAppInsights appInsights { get; set; }
+
+    private RenderFragment Controls { get; set; }
+
+    private string Help { get; set; } = "Hover over a control to see help here.";
+
+    private bool ModalIsOpen { get; set; }
+
+    private string MDLBody { get; set; }
+
+    protected override void OnInit()
+    {
+        RenderForm(Item);
+
+        state.PropertyChanged += (xo, e) =>
+        {
+            StateHasChanged();
+        };
+    }
+
+    public void Dispose()
+    {
+        state.PropertyChanged -= (xo, e) =>
+        {
+            StateHasChanged();
+        };
+    }
+
+    private void RenderForm(object obj)
+    {
+        //Logger.LogInformation($"RenderForm: {obj.GetType()}");
+
+        Controls = builder =>
+        {
+            builder.OpenComponent(0, typeof(KubeUI.Components.Dynamic.DynamicControls<>).MakeGenericType(obj.GetType()));
+            builder.AddAttribute(1, "Item", obj);
+            builder.AddAttribute(2, "SetHelp", new System.Action<object>((e) => SetHelp(e)));
+
+            //builder.AddAttribute(2, "ItemChanged", __value => obj = __value);
+            builder.CloseComponent();
+        };
+        StateHasChanged();
+    }
+
+    private void SetHelp(object obj)
+    {
+        Help = obj.ToString();
+
+        state.RaisePropertyChanged("help");
+    }
+
+    private void ShowCode(object obj)
+    {
+        appInsights.TrackEvent("ShowCode");
+
+        bool isJson = false;
+
+        if (isJson)
+        {
+            MDLBody = JsonConvert.SerializeObject(obj.GutObject(), JsonSettings);
+        }
+        else
+        {
+            var serializer = new SerializerBuilder()
+                .WithTypeInspector(x => new JsonPropertyTypeInspector(x))
+                //.JsonCompatible()
+                .Build();
+            MDLBody = serializer.Serialize(obj.GutObject());
+        }
+
+        ModalIsOpen = true;
+        StateHasChanged();
+    }
+
+    private void OnClose(UIMouseEventArgs args)
+    {
+        ModalIsOpen = false;
+        StateHasChanged();
+    }
+
+    static JsonSerializerSettings JsonSettings = new JsonSerializerSettings
+    {
+        Formatting = Formatting.Indented,
+        NullValueHandling = NullValueHandling.Ignore,
+        DefaultValueHandling = DefaultValueHandling.Ignore,
+        ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+        //ContractResolver = IgnoreEmptyEnumerablesResolver.Instance
+    };
+}

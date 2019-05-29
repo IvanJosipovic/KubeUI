@@ -1,0 +1,60 @@
+﻿
+@if (Errors.Any())
+{
+    @ChildContent
+
+    <div class="text-danger">
+        <ul>
+            @foreach (var error in Errors)
+            {
+                <li>@error</li>
+            }
+        </ul>    
+    </div>
+}
+
+@functions {
+    [Parameter] private ValidationResult Results { get; set; }
+
+    [Parameter] private string Field { get; set; }
+
+    [Parameter] private bool Enabled { get; set; } = true;
+
+    /// <summary>
+    /// Maximum number of errors to display
+    /// </summary>
+    [Parameter] private int ErrorCount { get; set; } = 3;
+
+    [Parameter] private RenderFragment ChildContent { get; set; }
+
+    private IEnumerable<string> Errors
+    {
+        get
+        {
+            List<string> errors = new List<string>();
+
+            if (Enabled)
+            {
+                try
+                {
+                    if (Results != null && !Results.IsValid)
+                    {
+                        foreach (var failure in Results.Errors
+                            .Where(x => x.PropertyName == Field)
+                            .Take(ErrorCount)
+                            )
+                        {
+                            errors.Add(failure.ErrorMessage);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    errors.Add($"Validator error: {e}");
+                }
+            }
+
+            return errors;
+        }
+    }
+}

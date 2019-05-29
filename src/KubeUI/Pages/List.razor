@@ -1,0 +1,79 @@
+﻿@page "/{TypeParam}"
+
+<h2>
+    @Type.Name.AddSpacesToSentence().TrimVersionNumbers() <a href="javascript:;" onclick="@(() => AddNew())" title="Add New @Type.Name.AddSpacesToSentence().TrimVersionNumbers()"><i class="fa fa-plus"></i></a>
+</h2>
+
+<br />
+
+
+<Row>
+    <div class="col-sm-12 col-lg-6 col-xl-6">
+        <BlazorTable IsBordered="true" IsHovarable="true" IsSmall="true" IsStriped="true" IsResponsive="true">
+            <TableHead TableHeadType="TableHeadType.Light">
+                <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Namespace</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </TableHead>
+            <tbody>
+                @for (int i = 0; i < (int)Collection.GetType().GetProperty("Count").GetValue(Collection); i++)
+                {
+                    object[] index = { i };
+                    var item = Collection.GetType().GetProperty("Item").GetValue(Collection, index);
+                    var meta = Type.GetProperty("Metadata").GetValue(item);
+
+                    var name = meta.GetType().GetProperty("Name").GetValue(meta);
+                    var nameSpace = meta.GetType().GetProperty("Namespace").GetValue(meta);
+                    <tr>
+                        <td>
+                            <a href="/@Type.Name.TrimVersionNumbers()/@i">@name</a>
+                        </td>
+                        <td>
+                            @nameSpace
+                        </td>
+                        <td style="width:20px; text-align: center">
+                            <a href="javascript:;" onclick="@(() => { state.DeleteItem(Type, (int)index[0]); })" title="Delete @Type.Name.TrimVersionNumbers()"><i class='fa fa-trash' aria-hidden='true'></i></a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </BlazorTable>
+    </div>
+</Row>
+
+
+@functions{
+    [Inject] IState state { get; set; }
+    [Inject] IUriHelper uriHelper { get; set; }
+    [Parameter] string TypeParam { get; set; }
+
+    private Type Type { get; set; }
+    private object Collection { get; set; }
+
+    protected override void OnInit()
+    {
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (TypeParam == "Ingress")
+        {
+            TypeParam = "Ingress2";
+        }
+
+        Type = AppDomain.CurrentDomain.GetAssemblies()
+        .SelectMany(t => t.GetTypes())
+        .Where(t => t.IsClass && t.Namespace == "KubeUI.Schema" && t.Name == TypeParam).FirstOrDefault();
+
+        Collection = state.GetCollection(Type);
+    }
+
+    private void AddNew()
+    {
+        var id = state.AddItem(Type);
+
+        uriHelper.NavigateTo($"/{Type.Name}/" + id);
+    }
+}

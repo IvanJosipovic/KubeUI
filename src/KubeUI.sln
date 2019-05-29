@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28531.58
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeUI", "KubeUI\KubeUI.csproj", "{4536DDB2-BF3A-413D-B75A-F024CEBA8D65}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeUI.Core", "KubeUI.Core\KubeUI.Core.csproj", "{5D4CBE0D-6E05-4001-B3D5-90591BF10804}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeUI.Tests", "KubeUI.Tests\KubeUI.Tests.csproj", "{03594165-D6F1-4811-9BF2-22B0D4B03042}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4536DDB2-BF3A-413D-B75A-F024CEBA8D65}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4536DDB2-BF3A-413D-B75A-F024CEBA8D65}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4536DDB2-BF3A-413D-B75A-F024CEBA8D65}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4536DDB2-BF3A-413D-B75A-F024CEBA8D65}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5D4CBE0D-6E05-4001-B3D5-90591BF10804}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D4CBE0D-6E05-4001-B3D5-90591BF10804}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D4CBE0D-6E05-4001-B3D5-90591BF10804}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D4CBE0D-6E05-4001-B3D5-90591BF10804}.Release|Any CPU.Build.0 = Release|Any CPU
+		{03594165-D6F1-4811-9BF2-22B0D4B03042}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{03594165-D6F1-4811-9BF2-22B0D4B03042}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{03594165-D6F1-4811-9BF2-22B0D4B03042}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{03594165-D6F1-4811-9BF2-22B0D4B03042}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {02FA0B85-6C2A-40B2-BC0B-72141BB628AF}
+	EndGlobalSection
+EndGlobal

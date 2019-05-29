@@ -1,0 +1,23 @@
+﻿@inherits ControlBase<TItem>
+@typeparam TItem
+
+<FormGroup IsRow="true" onmouseover="@(() => { base.SetHelp.Invoke(Parent.GetProperty(Name).GetSummary()); })">
+    <BlazorLabel For="@Name" SM="3" Class="col-form-label-sm">@Name.AddSpacesToSentence().TrimVersionNumbers()</BlazorLabel>
+    <BlazorCol SM="9">
+        <select class="form-control form-control-sm" id="@Name" value="@Value" onchange="@((e) => ValueChanged.Invoke((TItem)e.Value))" readonly="@ReadOnly">
+            @if (!Options.Any(x => string.IsNullOrEmpty(x)))
+            {
+                <option value="">-- Select @Name.AddSpacesToSentence().TrimVersionNumbers() --</option>
+            }
+            @foreach (var option in Options)
+            {
+                <option value="@option">@option.AddSpacesToSentence().TrimVersionNumbers()</option>
+            }
+        </select>
+    </BlazorCol>
+    <FieldValidationResult results="@Results" Field="@Name" />
+</FormGroup>
+
+@functions {
+    [Parameter] protected string[] Options { get; set; }
+}

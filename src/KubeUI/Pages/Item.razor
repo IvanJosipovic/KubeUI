@@ -1,0 +1,38 @@
+﻿@page "/{TypeParam}/{Id:int}"
+
+@if (obj != null)
+{
+    <DynamicUI Item="@obj" ItemChanged="@((e) => { obj = e; })"/>
+}
+
+@functions{
+    [Parameter] private int Id { get; set; }
+
+    [Inject] IState state { get; set; }
+    [Inject] IUriHelper uriHelper { get; set; }
+    [Parameter] string TypeParam { get;set; }
+
+    private Type Type { get; set; }
+
+    protected object obj { get; set; }
+
+    protected override void OnInit()
+    {
+        if (TypeParam == "Ingress")
+        {
+            TypeParam = "Ingress2";
+        }
+
+        Type = AppDomain.CurrentDomain.GetAssemblies()
+        .SelectMany(t => t.GetTypes())
+        .Where(t => t.IsClass && t.Namespace == "KubeUI.Schema" && t.Name == TypeParam).First();
+
+        obj = state.GetItem(Type, Id);
+
+        if (obj == null)
+        {
+            uriHelper.NavigateTo($"/{Type.Name}");
+            return;
+        }
+    }
+}
