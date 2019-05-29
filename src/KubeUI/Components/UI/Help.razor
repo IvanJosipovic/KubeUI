@@ -1,8 +1,10 @@
-﻿
-@HelpString
+﻿@using System.Text.RegularExpressions
+
+@((MarkupString)CreateHyperlinks(HelpString))
 
 @functions {
     [Inject] protected IState State { get; set; }
+    [Inject] protected ILogger<Help> Logger { get;set; }
 
     [Parameter] protected string HelpString { get; set; }
 
@@ -26,5 +28,23 @@
                 StateHasChanged();
             }
         };
+    }
+
+    /// <summary>
+    /// Replaces urls with hyperlinks
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
+    private string CreateHyperlinks(string input)
+    {
+        string output = input;
+        var matches = Regex.Matches(output, @"((https?):\/\/)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&\/\/=]*)");
+
+        foreach (Match match in matches)
+        {
+            output = output.Replace(match.Value, $"<a href=\"{match.Value}\" target=\"_blank\">{match.Value}</a>");
+        }
+
+        return output;
     }
 }
