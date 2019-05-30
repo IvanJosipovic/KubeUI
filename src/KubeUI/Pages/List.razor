@@ -65,7 +65,8 @@
 
         Type = AppDomain.CurrentDomain.GetAssemblies()
         .SelectMany(t => t.GetTypes())
-        .Where(t => t.IsClass && t.Namespace == "KubeUI.Schema" && t.Name == TypeParam).FirstOrDefault();
+        .Where(t => t.IsClass && t.Namespace == "KubeUI.Schema" && t.Name == TypeParam)
+        .FirstOrDefault();
 
         Collection = state.GetCollection(Type);
     }

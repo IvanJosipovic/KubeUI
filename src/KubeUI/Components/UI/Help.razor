@@ -37,14 +37,13 @@
     /// <returns></returns>
     private string CreateHyperlinks(string input)
     {
-        string output = input;
-        var matches = Regex.Matches(output, @"((https?):\/\/)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&\/\/=]*)");
+        var matches = Regex.Matches(input, @"((https?):\/\/)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&\/\/=]*)");
 
         foreach (Match match in matches)
         {
-            output = output.Replace(match.Value, $"<a href=\"{match.Value}\" target=\"_blank\">{match.Value}</a>");
+            input = input.Replace(match.Value, $"<a href=\"{match.Value}\" target=\"_blank\">{match.Value}</a>");
         }
 
-        return output;
+        return input;
     }
 }
