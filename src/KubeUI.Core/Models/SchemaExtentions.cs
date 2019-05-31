@@ -504,10 +504,6 @@ namespace KubeUI.SchemaExtentions
 
     public partial class DaemonSetUpdateStrategy
     {
-        /// <summary>Rolling update config params. Present only if type = "RollingUpdate".</summary>
-        [Newtonsoft.Json.JsonProperty("rollingUpdate", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public RollingUpdateDaemonSet RollingUpdate { get; set; }
-
         /// <summary>Type of daemon set update. Can be "RollingUpdate" or "OnDelete". Default is RollingUpdate.</summary>
         [SelectList(Options = new string[] { "RollingUpdate", "OnDelete" })]
         public string Type { get; set; }
