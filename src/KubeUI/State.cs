@@ -252,10 +252,17 @@ namespace KubeUI
             var collection = GetCollection(type);
             var collType = collection.GetType();
 
-            object[] index = { Id };
-            var item = collType.GetProperty("Item").GetValue(collection, index);
+            var count = (int)collType.GetProperty("Count").GetValue(collection);
 
-            return item;
+            if (Id < count)
+            {
+                object[] index = { Id };
+                var item = collType.GetProperty("Item").GetValue(collection, index);
+
+                return item;
+            }
+
+            return null;
         }
 
         public UILevel GetUILevel()
@@ -413,7 +420,7 @@ namespace KubeUI
         public void SetUILevel(UILevel uILevel)
         {
             UILevel = uILevel;
-            RaisePropertyChanged(nameof(UILevel));
+            RaisePropertyChanged("BuildTree");
         }
     }
 }
