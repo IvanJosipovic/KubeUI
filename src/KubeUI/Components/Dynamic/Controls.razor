@@ -5,7 +5,7 @@
     {
         var attributes = TypeDescriptor.GetProperties(typeof(TItem))[property.Name].Attributes;
 
-        if (IsIgnore(attributes) || !ShouldShow(attributes) || IsDisplayInTree(attributes))
+        if (Common.IsIgnore(attributes) || !Common.ShouldShow(attributes, state.GetUILevel()) || Common.IsDisplayInTree(attributes))
         {
             continue;
         }
@@ -18,21 +18,21 @@
         {
             <KubeUI.Components.UI.Collection Value="@(property.GetValue(Item))" ValueChanged="@((e) => OnChange(e, property))" Type="@property.PropertyType" Name="@property.Name" Parent="@Item.GetType()" results="@results" SetHelp="@SetHelp" />
         }
-        else if (IsSelectList(attributes))
+        else if (Common.IsSelectList(attributes))
         {
-            <SelectList Value="@(property.GetValue(Item))" ValueChanged="@((e) => OnChange(e, property))" Name="@property.Name" Parent="@Item.GetType()" results="@results" Options="@GetSelectListOptions(attributes)" SetHelp="@SetHelp" />
+            <SelectList Value="@(property.GetValue(Item))" ValueChanged="@((e) => OnChange(e, property))" Name="@property.Name" Parent="@Item.GetType()" results="@results" Options="@Common.GetSelectListOptions(attributes)" SetHelp="@SetHelp" />
         }
         else if (property.PropertyType == typeof(string))
         {
-            <TextBox Value="@(property.GetValue(Item))" ValueChanged="@((e) => OnChange(e, property))" Name="@property.Name" Parent="@Item.GetType()" results="@results" Readonly="@IsReadOnly(attributes)" SetHelp="@SetHelp" />
+            <TextBox Value="@(property.GetValue(Item))" ValueChanged="@((e) => OnChange(e, property))" Name="@property.Name" Parent="@Item.GetType()" results="@results" Readonly="@Common.IsReadOnly(attributes)" SetHelp="@SetHelp" />
         }
         else if (property.PropertyType == typeof(bool) || property.PropertyType == typeof(bool?))
         {
-            <CheckBox Value="@(property.GetValue(Item))" ValueChanged="@((e) => OnChange(e, property))" Name="@property.Name" Parent="@Item.GetType()" results="@results" Readonly="@IsReadOnly(attributes)" SetHelp="@SetHelp" />
+            <CheckBox Value="@(property.GetValue(Item))" ValueChanged="@((e) => OnChange(e, property))" Name="@property.Name" Parent="@Item.GetType()" results="@results" Readonly="@Common.IsReadOnly(attributes)" SetHelp="@SetHelp" />
         }
         else if (property.PropertyType == typeof(int) || property.PropertyType == typeof(int?) || property.PropertyType == typeof(long) || property.PropertyType == typeof(long?))
         {
-            <TextBox Value="@(property.GetValue(Item))" ValueChanged="@((e) => OnChange(e, property))" Name="@property.Name" Parent="@Item.GetType()" results="@results" Readonly="@IsReadOnly(attributes)" SetHelp="@SetHelp" Type="number" />
+            <TextBox Value="@(property.GetValue(Item))" ValueChanged="@((e) => OnChange(e, property))" Name="@property.Name" Parent="@Item.GetType()" results="@results" Readonly="@Common.IsReadOnly(attributes)" SetHelp="@SetHelp" Type="number" />
         }
         else
         {
@@ -48,7 +48,7 @@
     [Parameter] protected TItem Item { get; set; }
     [Parameter] protected Action<TItem> ItemChanged { get; set; }
 
-    [Inject] ILogger<DynamicControls<TItem>> Logger { get; set; }
+    [Inject] ILogger<Controls<TItem>> Logger { get; set; }
     [Inject] protected IState state { get; set; }
     [Inject] protected IValidatorFactory validatorFactory { get; set; }
 
@@ -84,43 +84,6 @@
         validator = validatorFactory.GetValidator(typeof(TItem));
 
         Validate();
-    }
-
-    protected bool ShouldShow(AttributeCollection attributes)
-    {
-        var attr = attributes.OfType<UILevelAttribute>().FirstOrDefault();
-
-        if (attr != null)
-        {
-            return (int)state.GetUILevel() >= (int)attr.UILevel;
-        }
-
-        return true;
-    }
-
-    protected bool IsReadOnly(AttributeCollection attributes)
-    {
-        return attributes.OfType<ReadOnlyAttribute>().Any();
-    }
-
-    protected bool IsIgnore(AttributeCollection attributes)
-    {
-        return attributes.OfType<IgnoreAttribute>().Any();
-    }
-
-    protected bool IsSelectList(AttributeCollection attributes)
-    {
-        return attributes.OfType<SelectListAttribute>().Any();
-    }
-
-    protected string[] GetSelectListOptions(AttributeCollection attributes)
-    {
-        return attributes.OfType<SelectListAttribute>().First().Options;
-    }
-
-    protected bool IsDisplayInTree(AttributeCollection attributes)
-    {
-        return attributes.OfType<DisplayInTreeAttribute>().Any();
     }
 
     protected void OnChange(Object e, PropertyInfo prop)

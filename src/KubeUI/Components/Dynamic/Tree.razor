@@ -4,15 +4,15 @@
 {
     <ul style="padding-left:20px">
         @foreach (var property in Item.GetType()
-            .GetProperties()
-            .Where(x => 
-            x.PropertyType.FullName.StartsWith("KubeUI.Schema.") || 
-            x.PropertyType.FullName.StartsWith("System.Collections."))
-            )
+           .GetProperties()
+           .Where(x =>
+           x.PropertyType.FullName.StartsWith("KubeUI.Schema.") ||
+           x.PropertyType.FullName.StartsWith("System.Collections."))
+           )
         {
             var attributes = TypeDescriptor.GetProperties(Item.GetType())[property.Name].Attributes;
 
-            if (IsIgnore(attributes) || !ShouldShow(attributes))
+            if (Common.IsIgnore(attributes) || !Common.ShouldShow(attributes, State.GetUILevel()))
             {
                 continue;
             }
@@ -24,7 +24,7 @@
                 property.SetValue(Item, item);
             }
 
-            if (IsDisplayInTree(attributes))
+            if (Common.IsDisplayInTree(attributes))
             {
                 var genType = property.PropertyType.GetTypeInfo().GenericTypeArguments[0];
 
@@ -39,16 +39,25 @@
 
                             object myObject = property.PropertyType.GetProperty("Item").GetValue(item, index);
 
-                            var propertyValue = genType.GetProperty(GetDisplayInTreeName(attributes))?.GetValue(myObject);
+                            string displayPropertyName = Common.GetDisplayInTreeName(attributes);
 
-                            if (propertyValue == null)
+                            string propertyValue = null;
+
+                            if (displayPropertyName != null)
+                            {
+                                var childProperty = genType.GetProperty(displayPropertyName);
+
+                                propertyValue = childProperty?.GetValue(myObject)?.ToString();
+                            }
+
+                            if (string.IsNullOrEmpty(propertyValue))
                             {
                                 propertyValue = $"Item {index[0]}";
                             }
                             <li>
                                 <a href="javascript:;" onclick="@(() => RenderForm.Invoke(myObject) )" onmouseover="@(() => SetHelp.Invoke(property.GetSummary()))">@propertyValue.ToString().AddSpacesToSentence().TrimVersionNumbers()</a>
                                 <a href="javascript:;" onclick="@(() => Delete(item, (int)index[0]))" title="Delete"><i class="fa fa-trash"></i></a>
-                                <DynamicTree Item="@myObject" RenderForm="@RenderForm" SetHelp="@SetHelp"></DynamicTree>
+                                <Tree Item="@myObject" RenderForm="@RenderForm" SetHelp="@SetHelp"></Tree>
                             </li>
                         }
                     </ul>
@@ -57,10 +66,7 @@
             else if (!property.PropertyType.FullName.StartsWith("System.Collections."))
             {
                 <li>
-                    @if (!property.PropertyType.GetProperties().Where(x => !x.PropertyType.FullName.StartsWith("KubeUI.Schema.") &&
-                    !IsDisplayInTree(attributes) && !IsIgnore(attributes)
-                    ).Any()
-                    )
+                    @if (Common.ShouldHideLink(property.PropertyType))
                     {
                         <span onmouseover="@(() => SetHelp.Invoke(property.GetSummary()))">@property.Name.AddSpacesToSentence().TrimVersionNumbers()</span>
                     }
@@ -68,7 +74,7 @@
                     {
                         <a href="javascript:;" onclick="@(() => RenderForm.Invoke(item) )" onmouseover="@(() => SetHelp.Invoke(property.GetSummary()))">@property.Name.AddSpacesToSentence().TrimVersionNumbers()</a>
                     }
-                    <DynamicTree Item="item" RenderForm="@RenderForm" SetHelp="@SetHelp"></DynamicTree>
+                    <Tree Item="item" RenderForm="@RenderForm" SetHelp="@SetHelp"></Tree>
                 </li>
             }
         }
@@ -81,7 +87,7 @@
     [Parameter] Action<object> RenderForm { get; set; }
     [Parameter] protected Action<object> SetHelp { get; set; }
 
-    [Inject] protected IState state { get; set; }
+    [Inject] protected IState State { get; set; }
 
     protected override void OnInit()
     {
@@ -107,39 +113,5 @@
         obj.GetType().GetMethod("RemoveAt").Invoke(obj, data);
 
         StateHasChanged();
-    }
-
-    private bool ShouldShow(AttributeCollection attributes)
-    {
-        var attr = attributes.OfType<UILevelAttribute>().FirstOrDefault();
-
-        if (attr != null)
-        {
-            return (int)state.GetUILevel() >= (int)attr.UILevel;
-        }
-
-        return true;
-    }
-
-    private bool IsIgnore(AttributeCollection attributes)
-    {
-        return attributes.OfType<IgnoreAttribute>().Any();
-    }
-
-    private bool IsDisplayInTree(AttributeCollection attributes)
-    {
-        return attributes.OfType<DisplayInTreeAttribute>().Any();
-    }
-
-    private string GetDisplayInTreeName(AttributeCollection attributes)
-    {
-        var result = attributes.OfType<DisplayInTreeAttribute>().FirstOrDefault();
-
-        if (result == null)
-        {
-            throw new Exception("GetDisplayInTreeName Attribute is missing");
-        }
-
-        return result.DisplayName;
     }
 }

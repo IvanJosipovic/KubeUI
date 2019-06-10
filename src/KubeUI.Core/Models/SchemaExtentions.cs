@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+
 #pragma warning disable 1591
 
 namespace KubeUI.SchemaExtentions
@@ -67,12 +68,35 @@ namespace KubeUI.SchemaExtentions
         [UILevel(UILevel = UILevel.Advanced)]
         public bool? Tty;
 
+        [UILevel(UILevel = UILevel.Advanced)]
         public Collection<VolumeDevice> VolumeDevices;
 
         public Collection<VolumeMount> VolumeMounts;
 
         [UILevel(UILevel = UILevel.Advanced)]
         public string WorkingDir;
+    }
+
+    public partial class ContainerPort
+    {
+        /// <summary>Number of port to expose on the pod's IP address. This must be a valid port number, 0 &lt; x &lt; 65536.</summary>
+        public int ContainerPort1 { get; set; }
+
+        /// <summary>What host IP to bind the external port to.</summary>
+        [UILevel(UILevel = UILevel.Advanced)]
+        public string HostIP { get; set; }
+
+        /// <summary>Number of port to expose on the host. If specified, this must be a valid port number, 0 &lt; x &lt; 65536. If HostNetwork is specified, this must match ContainerPort. Most containers do not need this.</summary>
+        [UILevel(UILevel = UILevel.Advanced)]
+        public int? HostPort { get; set; }
+
+        /// <summary>If specified, this must be an IANA_SVC_NAME and unique within the pod. Each named port in a pod must have a unique name. Name for the port that can be referred to by services.</summary>
+        public string Name { get; set; }
+
+        /// <summary>Protocol for port. Must be UDP, TCP, or SCTP. Defaults to "TCP".</summary>
+        [SelectList(Options = new string[] { "TCP", "UDP", "SCTP" })]
+        [UILevel(UILevel = UILevel.Advanced)]
+        public string Protocol { get; set; }
     }
 
     public partial class Deployment
@@ -253,6 +277,39 @@ namespace KubeUI.SchemaExtentions
         public Collection<Schema.Volume> Volumes;
     }
 
+    public partial class NodeAffinity
+    {
+        /// <summary>The scheduler will prefer to schedule pods to nodes that satisfy the affinity expressions specified by this field, but it may choose a node that violates one or more of the expressions. The node that is most preferred is the one with the greatest sum of weights, i.e. for each node that meets all of the scheduling requirements (resource request, requiredDuringScheduling affinity expressions, etc.), compute a sum by iterating through the elements of this field and adding "weight" to the sum if the node matches the corresponding matchExpressions; the node(s) with the highest sum are the most preferred.</summary>
+        [DisplayInTree(DisplayName = "Weight")]
+        public System.Collections.ObjectModel.Collection<PreferredSchedulingTerm> PreferredDuringSchedulingIgnoredDuringExecution { get; set; }
+
+        /// <summary>If the affinity requirements specified by this field are not met at scheduling time, the pod will not be scheduled onto the node. If the affinity requirements specified by this field cease to be met at some point during pod execution (e.g. due to an update), the system may or may not try to eventually evict the pod from its node.</summary>
+        public NodeSelector RequiredDuringSchedulingIgnoredDuringExecution { get; set; }
+
+
+    }
+    public partial class NodeSelector
+    {
+        /// <summary>Required. A list of node selector terms. The terms are ORed.</summary>
+        [DisplayInTree()]
+        public System.Collections.ObjectModel.Collection<NodeSelectorTerm> NodeSelectorTerms { get; set; } = new System.Collections.ObjectModel.Collection<NodeSelectorTerm>();
+
+
+    }
+
+    public partial class NodeSelectorRequirement
+    {
+        /// <summary>The label key that the selector applies to.</summary>
+        public string Key { get; set; }
+
+        /// <summary>Represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.</summary>
+        [SelectList(Options = new string[] { "In", "NotIn", "Exists", "DoesNotExist", "Gt", "Lt" })]
+        public string Operator { get; set; }
+
+        /// <summary>An array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. If the operator is Gt or Lt, the values array must have a single element, which will be interpreted as an integer. This array is replaced during a strategic merge patch.</summary>
+        public System.Collections.ObjectModel.Collection<string> Values { get; set; }
+    }
+
     [UILevel(UILevel = UILevel.Advanced)]
     public partial class RollingUpdateDeployment
     {
@@ -270,7 +327,6 @@ namespace KubeUI.SchemaExtentions
         public string Kind;
 
         /// <summary>Used to facilitate programmatic handling of secret data.</summary>
-        [Newtonsoft.Json.JsonProperty("type", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string Type;
     }
 
@@ -336,6 +392,30 @@ namespace KubeUI.SchemaExtentions
         /// <summary>type determines how the Service is exposed. Defaults to ClusterIP. Valid options are ExternalName, ClusterIP, NodePort, and LoadBalancer. "ExternalName" maps to the specified externalName. "ClusterIP" allocates a cluster-internal IP address for load-balancing to endpoints. Endpoints are determined by the selector or if that is not specified, by manual construction of an Endpoints object. If clusterIP is "None", no virtual IP is allocated and the endpoints are published as a set of endpoints rather than a stable IP. "NodePort" builds on ClusterIP and allocates a port on every node which routes to the clusterIP. "LoadBalancer" builds on NodePort and creates an external load-balancer (if supported in the current cloud) which routes to the clusterIP. More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types</summary>
         [SelectList(Options = new string[] { "ClusterIP", "NodePort", "LoadBalancer", "ExternalName" })]
         public string Type;
+    }
+
+    /// <summary>ServicePort contains information on service's port.</summary>
+    public partial class ServicePort
+    {
+        /// <summary>The name of this port within the service. This must be a DNS_LABEL. All ports within a ServiceSpec must have unique names. This maps to the 'Name' field in EndpointPort objects. Optional if only one ServicePort is defined on this service.</summary>
+        public string Name { get; set; }
+
+        /// <summary>The port on each node on which this service is exposed when type=NodePort or LoadBalancer. Usually assigned by the system. If specified, it will be allocated to the service if unused or else creation of the service will fail. Default is to auto-allocate a port if the ServiceType of this Service requires one. More info: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport</summary>
+        [UILevel(UILevel = UILevel.Advanced)]
+        public int? NodePort { get; set; }
+
+        /// <summary>The port that will be exposed by this service.</summary>
+        public int Port { get; set; }
+
+        /// <summary>The IP protocol for this port. Supports "TCP", "UDP", and "SCTP". Default is TCP.</summary>
+        [SelectList(Options = new string[] { "TCP", "UDP", "SCTP" })]
+        [UILevel(UILevel = UILevel.Advanced)]
+        public string Protocol { get; set; }
+
+        /// <summary>Number or name of the port to access on the pods targeted by the service. Number must be in the range 1 to 65535. Name must be an IANA_SVC_NAME. If this is a string, it will be looked up as a named port in the target Pod's container ports. If this is not specified, the value of the 'port' field is used (an identity map). This field is ignored for services with clusterIP=None, and should be omitted or set equal to the 'port' field. More info: https://kubernetes.io/docs/concepts/services-networking/service/#defining-a-service</summary>
+        public string TargetPort { get; set; }
+
+
     }
 
     public partial class StatefulSet
@@ -520,6 +600,52 @@ namespace KubeUI.SchemaExtentions
         [Ignore]
         public DaemonSetStatus Status { get; set; }
     }
-}
 
+    public partial class VolumeMount
+    {
+        /// <summary>Path within the container at which the volume should be mounted.  Must not contain ':'.</summary>
+        public string MountPath { get; set; }
+
+        /// <summary>mountPropagation determines how mounts are propagated from the host to container and the other way around. When not set, MountPropagationNone is used. This field is beta in 1.10.</summary>
+        [UILevel(UILevel = UILevel.Advanced)]
+        public string MountPropagation { get; set; }
+
+        /// <summary>This must match the Name of a Volume.</summary>
+        public string Name { get; set; }
+
+        /// <summary>Mounted read-only if true, read-write otherwise (false or unspecified). Defaults to false.</summary>
+        [UILevel(UILevel = UILevel.Advanced)]
+        public bool? ReadOnly { get; set; }
+
+        /// <summary>Path within the volume from which the container's volume should be mounted. Defaults to "" (volume's root).</summary>
+        [UILevel(UILevel = UILevel.Advanced)]
+        public string SubPath { get; set; }
+
+        /// <summary>Expanded path within the volume from which the container's volume should be mounted. Behaves similarly to SubPath but environment variable references $(VAR_NAME) are expanded using the container's environment. Defaults to "" (volume's root). SubPathExpr and SubPath are mutually exclusive. This field is alpha in 1.14.</summary>
+        [UILevel(UILevel = UILevel.Expert)]
+        public string SubPathExpr { get; set; }
+    }
+
+    public partial class Toleration
+    {
+        /// <summary>Effect indicates the taint effect to match. Empty means match all taint effects. When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.</summary>
+        [SelectList(Options = new string[] { "NoSchedule", "PreferNoSchedule", "NoExecute" })]
+        public string Effect { get; set; }
+
+        /// <summary>Key is the taint key that the toleration applies to. Empty means match all taint keys. If the key is empty, operator must be Exists; this combination means to match all values and all keys.</summary>
+        public string Key { get; set; }
+
+        /// <summary>Operator represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal. Exists is equivalent to wildcard for value, so that a pod can tolerate all taints of a particular category.</summary>
+        [SelectList(Options = new string[] { "Equal", "Exists" })]
+        public string Operator { get; set; }
+
+        /// <summary>TolerationSeconds represents the period of time the toleration (which must be of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default, it is not set, which means tolerate the taint forever (do not evict). Zero and negative values will be treated as 0 (evict immediately) by the system.</summary>
+        public long? TolerationSeconds { get; set; }
+
+        /// <summary>Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.</summary>
+        public string Value { get; set; }
+
+
+    }
+}
 #pragma warning restore 1591

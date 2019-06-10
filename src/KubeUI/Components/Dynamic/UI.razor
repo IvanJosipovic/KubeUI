@@ -11,8 +11,8 @@
                         <a href="javascript:;" onclick="@((e) => ShowCode(Item))" onmouseover="@(() => SetHelp("Show Code"))"><i class="fa fa-code"></i></a>
                     </div>
                 </Card>
-                <Card CardType="CardType.Body">
-                    <DynamicTree Item="Item" RenderForm="@RenderForm" SetHelp="@SetHelp"></DynamicTree>
+                <Card CardType="CardType.Body" style="padding-left:0">
+                    <Tree Item="@Item" RenderForm="@RenderForm" SetHelp="@SetHelp" />
                 </Card>
             </Card>
         </div>
@@ -36,7 +36,11 @@
 
 <Modal bind-IsOpen="@ModalIsOpen" Size="Size.Large">
     <ModalHeader OnClick="@OnClose">Code</ModalHeader>
-    <ModalBody><pre><code id="yamlViewer" class="yaml">@MDLBody</code></pre></ModalBody>
+    <ModalBody>
+        <pre>
+            <code id="yamlViewer" class="yaml">@MDLBody</code>
+        </pre>
+    </ModalBody>
 </Modal>
 
 @functions{
@@ -79,7 +83,7 @@
 
         Controls = builder =>
         {
-            builder.OpenComponent(0, typeof(KubeUI.Components.Dynamic.DynamicControls<>).MakeGenericType(obj.GetType()));
+            builder.OpenComponent(0, typeof(KubeUI.Components.Dynamic.Controls<>).MakeGenericType(obj.GetType()));
             builder.AddAttribute(1, "Item", obj);
             builder.AddAttribute(2, "SetHelp", new System.Action<object>((e) => SetHelp(e)));
 

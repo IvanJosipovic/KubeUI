@@ -17,6 +17,12 @@
                 {
                     @foreach (var property in GenericType.GetProperties())
                     {
+                        var attributes = TypeDescriptor.GetProperties(GenericType)[property.Name].Attributes;
+
+                        if (Common.IsIgnore(attributes) || !Common.ShouldShow(attributes, State.GetUILevel()))
+                        {
+                            continue;
+                        }
                         <th scope="col">@property.Name.AddSpacesToSentence().TrimVersionNumbers()</th>
                     }
                 }
@@ -42,8 +48,43 @@
                         {
                             foreach (var property in GenericType.GetProperties())
                             {
+                                var attributes = TypeDescriptor.GetProperties(GenericType)[property.Name].Attributes;
+
+                                if (Common.IsIgnore(attributes) || !Common.ShouldShow(attributes, State.GetUILevel()))
+                                {
+                                    continue;
+                                }
                                 <td>
-                                    <input type="text" value="@property.GetValue(item)" onchange="@((e) => OnChange(item, e.Value, property))" class="form-control form-control-sm" onmouseover="@(() => base.SetHelp.Invoke(property.GetSummary()))" />
+                                    @if (Common.IsSelectList(attributes))
+                                    {
+                                        var options = Common.GetSelectListOptions(attributes);
+                                        <select class="form-control form-control-sm" value="@property.GetValue(item)" onchange="@((e) => OnChange(item, e.Value, property))" onmouseover="@(() => base.SetHelp.Invoke(property.GetSummary()))">
+                                            @if (!options.Any(x => string.IsNullOrEmpty(x)))
+                                            {
+                                                <option value="">-- Select @property.Name.AddSpacesToSentence().TrimVersionNumbers() --</option>
+                                            }
+                                            @foreach (var option in options)
+                                            {
+                                                <option value="@option">@option.AddSpacesToSentence().TrimVersionNumbers()</option>
+                                            }
+                                        </select>
+                                    }
+                                    else if (property.PropertyType == typeof(string))
+                                    {
+                                        <input type="text" value="@property.GetValue(item)" onchange="@((e) => OnChange(item, e.Value, property))" class="form-control form-control-sm" onmouseover="@(() => base.SetHelp.Invoke(property.GetSummary()))" />
+                                    }
+                                    else if (property.PropertyType == typeof(bool) || property.PropertyType == typeof(bool?))
+                                    {
+                                        <input type="checkbox" value="@((bool?)property.GetValue(item))" onchange="@((e) => OnChange(item, e.Value, property))" class="form-control form-control-sm" onmouseover="@(() => base.SetHelp.Invoke(property.GetSummary()))" />
+                                    }
+                                    else if (property.PropertyType == typeof(int) || property.PropertyType == typeof(int?) || property.PropertyType == typeof(long) || property.PropertyType == typeof(long?))
+                                    {
+                                        <input type="number" value="@property.GetValue(item)" onchange="@((e) => OnChange(item, e.Value, property))" class="form-control form-control-sm" onmouseover="@(() => base.SetHelp.Invoke(property.GetSummary()))" />
+                                    }
+                                    else
+                                    {
+                                        <p>Missing Control Type @property.PropertyType</p>
+                                    }
                                 </td>
                             }
                         }
@@ -59,9 +100,11 @@
 
 @functions {
 
-    [Parameter] private Type Type { get; set; }
+    [Parameter] Type Type { get; set; }
 
     [Inject] ILogger<Collection<TItem>> Logger { get; set; }
+
+    [Inject] IState State { get; set; }
 
     private Type GenericType { get; set; }
 
@@ -163,5 +206,4 @@
             Logger.LogError("Casting Error : {0} - {1} - {2}", value.GetType(), value, ex);
         }
     }
-
 }

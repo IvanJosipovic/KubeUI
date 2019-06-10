@@ -4,6 +4,41 @@
         <name>KubeUI.Core</name>
     </assembly>
     <members>
+        <member name="T:KubeUI.Core.DisplayInTreeAttribute">
+            <summary>
+            Display this collection in the tree
+            </summary>
+        </member>
+        <member name="P:KubeUI.Core.DisplayInTreeAttribute.DisplayName">
+            <summary>
+            The Name of the property to display in the tree
+            </summary>
+        </member>
+        <member name="T:KubeUI.Core.IgnoreAttribute">
+            <summary>
+            This object will not be visible in the UI
+            </summary>
+        </member>
+        <member name="T:KubeUI.Core.SelectListAttribute">
+            <summary>
+            Display this control as a select list
+            </summary>
+        </member>
+        <member name="P:KubeUI.Core.SelectListAttribute.Options">
+            <summary>
+            Select list options
+            </summary>
+        </member>
+        <member name="T:KubeUI.Core.UILevelAttribute">
+            <summary>
+            The control will only be visible on this UILevel or above
+            </summary>
+        </member>
+        <member name="P:KubeUI.Core.UILevelAttribute.UILevel">
+            <summary>
+            Which UILevel this control should be displayed in
+            </summary>
+        </member>
         <member name="T:KubeUI.Core.DocumenationExtensions">
             <summary>
             Utility class to provide documentation for various types where available with the assembly
@@ -2375,8 +2410,41 @@
         <member name="P:KubeUI.Schema.StatusDetails.Uid">
             <summary>UID of the resource. (when there is a single resource which can be described). More info: http://kubernetes.io/docs/user-guide/identifiers#uids</summary>
         </member>
+        <member name="P:KubeUI.SchemaExtentions.ContainerPort.ContainerPort1">
+            <summary>Number of port to expose on the pod's IP address. This must be a valid port number, 0 &lt; x &lt; 65536.</summary>
+        </member>
+        <member name="P:KubeUI.SchemaExtentions.ContainerPort.HostIP">
+            <summary>What host IP to bind the external port to.</summary>
+        </member>
+        <member name="P:KubeUI.SchemaExtentions.ContainerPort.HostPort">
+            <summary>Number of port to expose on the host. If specified, this must be a valid port number, 0 &lt; x &lt; 65536. If HostNetwork is specified, this must match ContainerPort. Most containers do not need this.</summary>
+        </member>
+        <member name="P:KubeUI.SchemaExtentions.ContainerPort.Name">
+            <summary>If specified, this must be an IANA_SVC_NAME and unique within the pod. Each named port in a pod must have a unique name. Name for the port that can be referred to by services.</summary>
+        </member>
+        <member name="P:KubeUI.SchemaExtentions.ContainerPort.Protocol">
+            <summary>Protocol for port. Must be UDP, TCP, or SCTP. Defaults to "TCP".</summary>
+        </member>
         <member name="F:KubeUI.SchemaExtentions.PersistentVolumeClaimSpec.AccessModes">
             <summary>AccessModes contains the desired access modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1</summary>
+        </member>
+        <member name="P:KubeUI.SchemaExtentions.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution">
+            <summary>The scheduler will prefer to schedule pods to nodes that satisfy the affinity expressions specified by this field, but it may choose a node that violates one or more of the expressions. The node that is most preferred is the one with the greatest sum of weights, i.e. for each node that meets all of the scheduling requirements (resource request, requiredDuringScheduling affinity expressions, etc.), compute a sum by iterating through the elements of this field and adding "weight" to the sum if the node matches the corresponding matchExpressions; the node(s) with the highest sum are the most preferred.</summary>
+        </member>
+        <member name="P:KubeUI.SchemaExtentions.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution">
+            <summary>If the affinity requirements specified by this field are not met at scheduling time, the pod will not be scheduled onto the node. If the affinity requirements specified by this field cease to be met at some point during pod execution (e.g. due to an update), the system may or may not try to eventually evict the pod from its node.</summary>
+        </member>
+        <member name="P:KubeUI.SchemaExtentions.NodeSelector.NodeSelectorTerms">
+            <summary>Required. A list of node selector terms. The terms are ORed.</summary>
+        </member>
+        <member name="P:KubeUI.SchemaExtentions.NodeSelectorRequirement.Key">
+            <summary>The label key that the selector applies to.</summary>
+        </member>
+        <member name="P:KubeUI.SchemaExtentions.NodeSelectorRequirement.Operator">
+            <summary>Represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.</summary>
+        </member>
+        <member name="P:KubeUI.SchemaExtentions.NodeSelectorRequirement.Values">
+            <summary>An array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. If the operator is Gt or Lt, the values array must have a single element, which will be interpreted as an integer. This array is replaced during a strategic merge patch.</summary>
         </member>
         <member name="F:KubeUI.SchemaExtentions.Secret.Type">
             <summary>Used to facilitate programmatic handling of secret data.</summary>
@@ -2414,11 +2482,82 @@
         <member name="F:KubeUI.SchemaExtentions.ServiceSpec.Type">
             <summary>type determines how the Service is exposed. Defaults to ClusterIP. Valid options are ExternalName, ClusterIP, NodePort, and LoadBalancer. "ExternalName" maps to the specified externalName. "ClusterIP" allocates a cluster-internal IP address for load-balancing to endpoints. Endpoints are determined by the selector or if that is not specified, by manual construction of an Endpoints object. If clusterIP is "None", no virtual IP is allocated and the endpoints are published as a set of endpoints rather than a stable IP. "NodePort" builds on ClusterIP and allocates a port on every node which routes to the clusterIP. "LoadBalancer" builds on NodePort and creates an external load-balancer (if supported in the current cloud) which routes to the clusterIP. More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types</summary>
         </member>
+        <member name="T:KubeUI.SchemaExtentions.ServicePort">
+            <summary>ServicePort contains information on service's port.</summary>
+        </member>
+        <member name="P:KubeUI.SchemaExtentions.ServicePort.Name">
+            <summary>The name of this port within the service. This must be a DNS_LABEL. All ports within a ServiceSpec must have unique names. This maps to the 'Name' field in EndpointPort objects. Optional if only one ServicePort is defined on this service.</summary>
+        </member>
+        <member name="P:KubeUI.SchemaExtentions.ServicePort.NodePort">
+            <summary>The port on each node on which this service is exposed when type=NodePort or LoadBalancer. Usually assigned by the system. If specified, it will be allocated to the service if unused or else creation of the service will fail. Default is to auto-allocate a port if the ServiceType of this Service requires one. More info: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport</summary>
+        </member>
+        <member name="P:KubeUI.SchemaExtentions.ServicePort.Port">
+            <summary>The port that will be exposed by this service.</summary>
+        </member>
+        <member name="P:KubeUI.SchemaExtentions.ServicePort.Protocol">
+            <summary>The IP protocol for this port. Supports "TCP", "UDP", and "SCTP". Default is TCP.</summary>
+        </member>
+        <member name="P:KubeUI.SchemaExtentions.ServicePort.TargetPort">
+            <summary>Number or name of the port to access on the pods targeted by the service. Number must be in the range 1 to 65535. Name must be an IANA_SVC_NAME. If this is a string, it will be looked up as a named port in the target Pod's container ports. If this is not specified, the value of the 'port' field is used (an identity map). This field is ignored for services with clusterIP=None, and should be omitted or set equal to the 'port' field. More info: https://kubernetes.io/docs/concepts/services-networking/service/#defining-a-service</summary>
+        </member>
         <member name="F:KubeUI.SchemaExtentions.StatefulSetSpec.VolumeClaimTemplates">
             <summary>volumeClaimTemplates is a list of claims that pods are allowed to reference. The StatefulSet controller is responsible for mapping network identities to claims in a way that maintains the identity of a pod. Every claim in this list must have at least one matching (by name) volumeMount in one container in the template. A claim in this list takes precedence over any volumes in the template, with the same name.</summary>
         </member>
         <member name="P:KubeUI.SchemaExtentions.DaemonSetUpdateStrategy.Type">
             <summary>Type of daemon set update. Can be "RollingUpdate" or "OnDelete". Default is RollingUpdate.</summary>
+        </member>
+        <member name="P:KubeUI.SchemaExtentions.VolumeMount.MountPath">
+            <summary>Path within the container at which the volume should be mounted.  Must not contain ':'.</summary>
+        </member>
+        <member name="P:KubeUI.SchemaExtentions.VolumeMount.MountPropagation">
+            <summary>mountPropagation determines how mounts are propagated from the host to container and the other way around. When not set, MountPropagationNone is used. This field is beta in 1.10.</summary>
+        </member>
+        <member name="P:KubeUI.SchemaExtentions.VolumeMount.Name">
+            <summary>This must match the Name of a Volume.</summary>
+        </member>
+        <member name="P:KubeUI.SchemaExtentions.VolumeMount.ReadOnly">
+            <summary>Mounted read-only if true, read-write otherwise (false or unspecified). Defaults to false.</summary>
+        </member>
+        <member name="P:KubeUI.SchemaExtentions.VolumeMount.SubPath">
+            <summary>Path within the volume from which the container's volume should be mounted. Defaults to "" (volume's root).</summary>
+        </member>
+        <member name="P:KubeUI.SchemaExtentions.VolumeMount.SubPathExpr">
+            <summary>Expanded path within the volume from which the container's volume should be mounted. Behaves similarly to SubPath but environment variable references $(VAR_NAME) are expanded using the container's environment. Defaults to "" (volume's root). SubPathExpr and SubPath are mutually exclusive. This field is alpha in 1.14.</summary>
+        </member>
+        <member name="P:KubeUI.SchemaExtentions.Toleration.Effect">
+            <summary>Effect indicates the taint effect to match. Empty means match all taint effects. When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.</summary>
+        </member>
+        <member name="P:KubeUI.SchemaExtentions.Toleration.Key">
+            <summary>Key is the taint key that the toleration applies to. Empty means match all taint keys. If the key is empty, operator must be Exists; this combination means to match all values and all keys.</summary>
+        </member>
+        <member name="P:KubeUI.SchemaExtentions.Toleration.Operator">
+            <summary>Operator represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal. Exists is equivalent to wildcard for value, so that a pod can tolerate all taints of a particular category.</summary>
+        </member>
+        <member name="P:KubeUI.SchemaExtentions.Toleration.TolerationSeconds">
+            <summary>TolerationSeconds represents the period of time the toleration (which must be of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default, it is not set, which means tolerate the taint forever (do not evict). Zero and negative values will be treated as 0 (evict immediately) by the system.</summary>
+        </member>
+        <member name="P:KubeUI.SchemaExtentions.Toleration.Value">
+            <summary>Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.</summary>
+        </member>
+        <member name="T:KubeUI.UILevel">
+            <summary>
+            Controls which level of options will be displayed.
+            </summary>
+        </member>
+        <member name="F:KubeUI.UILevel.Basic">
+            <summary>
+            Basic Options
+            </summary>
+        </member>
+        <member name="F:KubeUI.UILevel.Advanced">
+            <summary>
+            Advanced Options
+            </summary>
+        </member>
+        <member name="F:KubeUI.UILevel.Expert">
+            <summary>
+            Expert Options
+            </summary>
         </member>
     </members>
 </doc>
