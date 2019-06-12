@@ -1,15 +1,15 @@
 ﻿{
   "runtime": "NetCore22",
   "defaultVariables": null,
-  "swaggerGenerator": {
-    "fromSwagger": {
+  "documentGenerator": {
+    "fromDocument": {
       "json": "",
       "url": "https://raw.githubusercontent.com/kubernetes/kubernetes/release-1.14/api/openapi-spec/swagger.json",
       "output": null
     }
   },
   "codeGenerators": {
-    "swaggerToCSharpClient": {
+    "openApiToCSharpClient": {
       "clientBaseClass": null,
       "configurationClass": null,
       "generateClientClasses": false,
@@ -55,6 +55,7 @@
       "requiredPropertiesMustBeDefined": false,
       "dateType": "System.DateTimeOffset",
       "jsonConverters": null,
+      "anyType": "object",
       "dateTimeType": "System.DateTimeOffset",
       "timeType": "System.TimeSpan",
       "timeSpanType": "System.TimeSpan",
@@ -536,8 +537,10 @@
       "generateImmutableArrayProperties": false,
       "generateImmutableDictionaryProperties": false,
       "jsonSerializerSettingsTransformationMethod": null,
+      "inlineNamedArrays": false,
       "inlineNamedDictionaries": false,
       "inlineNamedTuples": true,
+      "inlineNamedAny": false,
       "generateDtoTypes": true,
       "templateDirectory": null,
       "typeNameGeneratorType": null,

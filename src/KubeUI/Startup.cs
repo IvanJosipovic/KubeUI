@@ -3,7 +3,6 @@ using Blazor.FileReader;
 using BlazorFileSaver;
 using Cloudcrate.AspNetCore.Blazor.Browser.Storage;
 using FluentValidation;
-using KubeUI.Schema;
 using KubeUI.Validators;
 using Microsoft.AspNetCore.Components.Builder;
 using Microsoft.Extensions.DependencyInjection;
