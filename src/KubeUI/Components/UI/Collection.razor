@@ -2,9 +2,9 @@
 @typeparam TItem
 
 <fieldset>
-    <legend onmouseover="@(() => { base.SetHelp.Invoke(Parent.GetProperty(Name).GetSummary()); })">
+    <legend @onmouseover="@(() => { base.SetHelp.InvokeAsync(Parent.GetProperty(Name).GetSummary()); })">
         @Name.AddSpacesToSentence().TrimVersionNumbers()
-        <a href="javascript:;" onclick="@((e) => Add())" title="Add New @GenericType.Name.AddSpacesToSentence().TrimVersionNumbers()"><i class="fa fa-plus"></i></a>
+        <a href="javascript:;" @onclick="@((e) => Add())" title="Add New @GenericType.Name.AddSpacesToSentence().TrimVersionNumbers()"><i class="fa fa-plus"></i></a>
     </legend>
     <BlazorTable IsBordered="true" IsHovarable="true" IsSmall="true" IsStriped="true" IsResponsive="true">
         <TableHead TableHeadType="TableHeadType.Light">
@@ -41,7 +41,7 @@
                         @if (GenericType == typeof(string))
                         {
                             <td>
-                                <input type="text" value="@((string)item)" onchange="@((e) => { Type.GetProperty("Item").SetValue(Value, e.Value, index); OnChange(e); })" class="form-control form-control-sm" />
+                                <input type="text" value="@((string)item)" @onchange="@((e) => { Type.GetProperty("Item").SetValue(Value, e.Value, index); OnChange(e); })" class="form-control form-control-sm" />
                             </td>
                         }
                         else
@@ -58,7 +58,7 @@
                                     @if (Common.IsSelectList(attributes))
                                     {
                                         var options = Common.GetSelectListOptions(attributes);
-                                        <select class="form-control form-control-sm" value="@property.GetValue(item)" onchange="@((e) => OnChange(item, e.Value, property))" onmouseover="@(() => base.SetHelp.Invoke(property.GetSummary()))">
+                                        <select class="form-control form-control-sm" value="@property.GetValue(item)" @onchange="@((e) => OnChange(item, e.Value, property))" @onmouseover="@(() => base.SetHelp.InvokeAsync(property.GetSummary()))">
                                             @if (!options.Any(x => string.IsNullOrEmpty(x)))
                                             {
                                                 <option value="">-- Select @property.Name.AddSpacesToSentence().TrimVersionNumbers() --</option>
@@ -71,15 +71,15 @@
                                     }
                                     else if (property.PropertyType == typeof(string))
                                     {
-                                        <input type="text" value="@property.GetValue(item)" onchange="@((e) => OnChange(item, e.Value, property))" class="form-control form-control-sm" onmouseover="@(() => base.SetHelp.Invoke(property.GetSummary()))" />
+                                        <input type="text" value="@property.GetValue(item)" @onchange="@((e) => OnChange(item, e.Value, property))" class="form-control form-control-sm" @onmouseover="@(() => base.SetHelp.InvokeAsync(property.GetSummary()))" />
                                     }
                                     else if (property.PropertyType == typeof(bool) || property.PropertyType == typeof(bool?))
                                     {
-                                        <input type="checkbox" value="@((bool?)property.GetValue(item))" onchange="@((e) => OnChange(item, e.Value, property))" class="form-control form-control-sm" onmouseover="@(() => base.SetHelp.Invoke(property.GetSummary()))" />
+                                        <input type="checkbox" value="@((bool?)property.GetValue(item))" @onchange="@((e) => OnChange(item, e.Value, property))" class="form-control form-control-sm" @onmouseover="@(() => base.SetHelp.InvokeAsync(property.GetSummary()))" />
                                     }
                                     else if (property.PropertyType == typeof(int) || property.PropertyType == typeof(int?) || property.PropertyType == typeof(long) || property.PropertyType == typeof(long?))
                                     {
-                                        <input type="number" value="@property.GetValue(item)" onchange="@((e) => OnChange(item, e.Value, property))" class="form-control form-control-sm" onmouseover="@(() => base.SetHelp.Invoke(property.GetSummary()))" />
+                                        <input type="number" value="@property.GetValue(item)" @onchange="@((e) => OnChange(item, e.Value, property))" class="form-control form-control-sm" @onmouseover="@(() => base.SetHelp.InvokeAsync(property.GetSummary()))" />
                                     }
                                     else
                                     {
@@ -89,7 +89,7 @@
                             }
                         }
                         <td style="width:20px; text-align: center">
-                            <a href="javascript:;" onclick="@(() => { Delete((int)index[0]); })" title="Delete"><i class='fa fa-trash' aria-hidden='true'></i></a>
+                            <a href="javascript:;" @onclick="@(() => { Delete((int)index[0]); })" title="Delete"><i class='fa fa-trash' aria-hidden='true'></i></a>
                         </td>
                     </tr>
                 }
@@ -98,7 +98,7 @@
     </BlazorTable>
 </fieldset>
 
-@functions {
+@code {
 
     [Parameter] Type Type { get; set; }
 
@@ -110,7 +110,7 @@
 
     private void OnChange(UIChangeEventArgs e)
     {
-        ValueChanged.Invoke(Value);
+        ValueChanged.InvokeAsync(Value);
 
         StateHasChanged();
     }
@@ -197,7 +197,9 @@
                 throw new Exception("Type not supported!");
             }
 
-            ValueChanged?.Invoke(Value);
+            if (ValueChanged.HasDelegate) {
+                ValueChanged.InvokeAsync(Value);
+            }
 
             StateHasChanged();
         }

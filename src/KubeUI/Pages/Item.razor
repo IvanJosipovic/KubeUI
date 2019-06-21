@@ -2,10 +2,10 @@
 
 @if (obj != null)
 {
-    <UI Item="@obj" ItemChanged="@((e) => { obj = e; })"/>
+    <UI Item="@obj" />
 }
 
-@functions{
+@code{
     [Parameter] private int Id { get; set; }
 
     [Inject] IState state { get; set; }

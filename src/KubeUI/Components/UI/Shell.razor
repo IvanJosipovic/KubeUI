@@ -1,7 +1,7 @@
 ﻿@typeparam TItem
 
 <Card>
-    <Card CardType="CardType.Header" onmouseover="@(() => { SetHelp.Invoke(Item.GetType().GetSummary()); })" HeadingSize="HeadingSize.H5">
+    <Card CardType="CardType.Header" @onmouseover="@(() => { SetHelp.InvokeAsync(Item.GetType().GetSummary()); })" HeadingSize="HeadingSize.H5">
         @Item.GetType().Name.AddSpacesToSentence().TrimVersionNumbers()
     </Card>
     <Card CardType="CardType.Body">
@@ -10,8 +10,8 @@
 </Card>
 <br />
 
-@functions {
-    [Parameter] protected Action<object> SetHelp { get; set; }
+@code {
+    [Parameter] protected EventCallback<object> SetHelp { get; set; }
 
     [Parameter] protected TItem Item { get; set; }
     [Parameter] protected RenderFragment ChildContent { get; set; }

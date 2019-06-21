@@ -17,13 +17,11 @@ namespace KubeUI
 {
     public class State : INotifyPropertyChanged, IState
     {
-        private static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings
+        public static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings
         {
             Formatting = Formatting.Indented,
             NullValueHandling = NullValueHandling.Ignore,
             DefaultValueHandling = DefaultValueHandling.Ignore,
-            ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-            TypeNameHandling = TypeNameHandling.All,
             Error = (object _, Newtonsoft.Json.Serialization.ErrorEventArgs args) => args.ErrorContext.Handled = true
         };
 
@@ -242,9 +240,7 @@ namespace KubeUI
         {
             var collection = GetCollection(type);
             var collType = collection.GetType();
-            var count = (int)collType.GetProperty("Count").GetValue(collection);
-
-            return count;
+            return (int)collType.GetProperty("Count").GetValue(collection);
         }
 
         public object GetItem(Type type, int Id)
@@ -256,10 +252,7 @@ namespace KubeUI
 
             if (Id < count)
             {
-                object[] index = { Id };
-                var item = collType.GetProperty("Item").GetValue(collection, index);
-
-                return item;
+                return collType.GetProperty("Item").GetValue(collection, new object[] { Id });
             }
 
             return null;
@@ -272,15 +265,6 @@ namespace KubeUI
 
         public void ImportObject(string data)
         {
-            var serializer = new SerializerBuilder()
-                .WithTypeInspector(x => new JsonPropertyTypeInspector(x))
-                .JsonCompatible()
-                .Build();
-
-            var deserializer = new DeserializerBuilder()
-                .WithTypeInspector(x => new JsonPropertyTypeInspector(x))
-                .Build();
-
             if ((data.StartsWith("{") && data.EndsWith("}")) || (data.StartsWith("[") && data.EndsWith("]")))
             {
                 // data is Json
@@ -289,6 +273,16 @@ namespace KubeUI
             else
             {
                 // data is  Yaml, need to convert to Json
+
+                var serializer = new SerializerBuilder()
+                    .WithTypeInspector(x => new JsonPropertyTypeInspector(x))
+                    .JsonCompatible()
+                    .Build();
+
+                var deserializer = new DeserializerBuilder()
+                    .WithTypeInspector(x => new JsonPropertyTypeInspector(x))
+                    .Build();
+
                 using (TextReader textReader = new StringReader(data))
                 {
                     IParser parser = new Parser(textReader);
@@ -296,15 +290,17 @@ namespace KubeUI
 
                     while (parser.Accept<DocumentStart>())
                     {
+                        string json = string.Empty;
                         try
                         {
                             var yamlObject = deserializer.Deserialize(parser);
-                            var json = serializer.Serialize(yamlObject);
+                            if (yamlObject == null) { continue; }
+                            json = serializer.Serialize(yamlObject);
                             Add(json);
                         }
                         catch (Exception ex)
                         {
-                            Logger.LogError($"Error Loading: {0} \n {1}", ex, data);
+                            Logger.LogError("Error Loading: {0} \n {1} \n {2}", ex, data, json);
                         }
                     }
                 }
@@ -390,13 +386,13 @@ namespace KubeUI
 
         public void LoadState()
         {
-            var json = Storage["Data"];
-            if (!String.IsNullOrEmpty(json))
+            var yaml = Storage["Data"];
+            if (!string.IsNullOrEmpty(yaml))
             {
-                Logger.LogInformation("LogState - Found existing state.");
+                Logger.LogInformation("LoadState - Found existing state.");
                 try
                 {
-                    Data = JsonConvert.DeserializeObject<Dictionary<Type, Collection<object>>>(json, JsonSettings);
+                    ImportObject(yaml);
                 }
                 catch (Exception ex)
                 {
@@ -414,7 +410,26 @@ namespace KubeUI
 
         public void SaveState()
         {
-            Storage["Data"] = JsonConvert.SerializeObject(Data, JsonSettings);
+            string output = string.Empty;
+
+            foreach (var coll in Data)
+            {
+                foreach (var item in coll.Value)
+                {
+                    output += Serialize(item);
+                    output += "---" + Environment.NewLine;
+                }
+            }
+
+            Storage["Data"] = output;
+
+            string Serialize(object obj)
+            {
+                var serializer = new SerializerBuilder()
+                    .WithTypeInspector(x => new JsonPropertyTypeInspector(x))
+                    .Build();
+                return serializer.Serialize(obj);
+            }
         }
 
         public void SetUILevel(UILevel uILevel)

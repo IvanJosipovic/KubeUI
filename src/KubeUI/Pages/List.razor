@@ -1,7 +1,7 @@
 ﻿@page "/{TypeParam}"
 
 <h2>
-    @Type.Name.AddSpacesToSentence().TrimVersionNumbers() <a href="javascript:;" onclick="@(() => AddNew())" title="Add New @Type.Name.AddSpacesToSentence().TrimVersionNumbers()"><i class="fa fa-plus"></i></a>
+    @Type.Name.AddSpacesToSentence().TrimVersionNumbers() <a href="javascript:;" @onclick="@(() => AddNew())" title="Add New @Type.Name.AddSpacesToSentence().TrimVersionNumbers()"><i class="fa fa-plus"></i></a>
 </h2>
 
 <br />
@@ -34,7 +34,7 @@
                             @nameSpace
                         </td>
                         <td style="width:20px; text-align: center">
-                            <a href="javascript:;" onclick="@(() => { state.DeleteItem(Type, (int)index[0]); })" title="Delete @Type.Name.TrimVersionNumbers()"><i class='fa fa-trash' aria-hidden='true'></i></a>
+                            <a href="javascript:;" @onclick="@(() => { state.DeleteItem(Type, (int)index[0]); })" title="Delete @Type.Name.TrimVersionNumbers()"><i class='fa fa-trash' aria-hidden='true'></i></a>
                         </td>
                     </tr>
                 }
@@ -44,7 +44,7 @@
 </Row>
 
 
-@functions{
+@code{
     [Inject] IState state { get; set; }
     [Inject] IUriHelper uriHelper { get; set; }
     [Parameter] string TypeParam { get; set; }

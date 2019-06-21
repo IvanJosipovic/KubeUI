@@ -29,7 +29,7 @@
                 var genType = property.PropertyType.GetTypeInfo().GenericTypeArguments[0];
 
                 <li>
-                    <span onmouseover="@(() => SetHelp.Invoke(property.GetSummary()))">@property.Name.AddSpacesToSentence().TrimVersionNumbers() </span> <a href="javascript:;" onclick="@((e) => AddNew(item))" title="Add New @property.Name.AddSpacesToSentence().TrimVersionNumbers()"><i class="fa fa-plus"></i></a>
+                    <span @onmouseover="@(() => SetHelp.InvokeAsync(property.GetSummary()))">@property.Name.AddSpacesToSentence().TrimVersionNumbers() </span> <a href="javascript:;" @onclick="@((e) => AddNew(item))" title="Add New @property.Name.AddSpacesToSentence().TrimVersionNumbers()"><i class="fa fa-plus"></i></a>
 
                     <ul style="padding-left:20px">
                         @{int n = (int)property.PropertyType.GetProperty("Count").GetValue(item);}
@@ -55,8 +55,8 @@
                                 propertyValue = $"Item {index[0]}";
                             }
                             <li>
-                                <a href="javascript:;" onclick="@(() => RenderForm.Invoke(myObject) )" onmouseover="@(() => SetHelp.Invoke(property.GetSummary()))">@propertyValue.ToString().AddSpacesToSentence().TrimVersionNumbers()</a>
-                                <a href="javascript:;" onclick="@(() => Delete(item, (int)index[0]))" title="Delete"><i class="fa fa-trash"></i></a>
+                                <a href="javascript:;" @onclick="@(() => RenderForm.InvokeAsync(myObject) )" @onmouseover="@(() => SetHelp.InvokeAsync(property.GetSummary()))">@propertyValue.ToString().AddSpacesToSentence().TrimVersionNumbers()</a>
+                                <a href="javascript:;" @onclick="@(() => Delete(item, (int)index[0]))" title="Delete"><i class="fa fa-trash"></i></a>
                                 <Tree Item="@myObject" RenderForm="@RenderForm" SetHelp="@SetHelp"></Tree>
                             </li>
                         }
@@ -68,11 +68,11 @@
                 <li>
                     @if (Common.ShouldHideLink(property.PropertyType))
                     {
-                        <span onmouseover="@(() => SetHelp.Invoke(property.GetSummary()))">@property.Name.AddSpacesToSentence().TrimVersionNumbers()</span>
+                        <span @onmouseover="@(() => SetHelp.InvokeAsync(property.GetSummary()))">@property.Name.AddSpacesToSentence().TrimVersionNumbers()</span>
                     }
                     else
                     {
-                        <a href="javascript:;" onclick="@(() => RenderForm.Invoke(item) )" onmouseover="@(() => SetHelp.Invoke(property.GetSummary()))">@property.Name.AddSpacesToSentence().TrimVersionNumbers()</a>
+                        <a href="javascript:;" @onclick="@(() => RenderForm.InvokeAsync(item) )" @onmouseover="@(() => SetHelp.InvokeAsync(property.GetSummary()))">@property.Name.AddSpacesToSentence().TrimVersionNumbers()</a>
                     }
                     <Tree Item="item" RenderForm="@RenderForm" SetHelp="@SetHelp"></Tree>
                 </li>
@@ -81,11 +81,11 @@
     </ul>
 }
 
-@functions{
+@code{
     [Parameter] TItem Item { get; set; }
-    [Parameter] Action<TItem> ItemChanged { get; set; }
-    [Parameter] Action<object> RenderForm { get; set; }
-    [Parameter] protected Action<object> SetHelp { get; set; }
+    [Parameter] EventCallback<TItem> ItemChanged { get; set; }
+    [Parameter] EventCallback<object> RenderForm { get; set; }
+    [Parameter] protected EventCallback<object> SetHelp { get; set; }
 
     [Inject] protected IState State { get; set; }
 

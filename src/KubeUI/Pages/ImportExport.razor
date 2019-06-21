@@ -13,7 +13,7 @@
                             <label class="custom-file-label" for="customFile">Choose file(s)</label>
                         </div>
                         <span>&nbsp;&nbsp;&nbsp;</span>
-                        <BlazorButton onclick="@ReadFile">Read file(s)</BlazorButton>
+                        <BlazorButton @onclick="@ReadFiles">Read file(s)</BlazorButton>
                     </div>
                 </Card>
             </Card>
@@ -25,11 +25,11 @@
                 </Card>
                 <Card CardType="CardType.Body">
                     <div class="input-group">
-                        <BlazorButton onclick="@Export">Export</BlazorButton>
+                        <BlazorButton @onclick="@Export">Export</BlazorButton>
                         <span>&nbsp;&nbsp;&nbsp;</span>
                         <FormGroup IsRow="false" IsCheck="true">
                             <BlazorLabel For="@nameof(isJson)" Class="col-form-label" IsCheck="true" title="Select to export as Json, otherwise Yaml will be used.">
-                                <input class="form-check-input" type="checkbox" id="@nameof(isJson)" bind="@isJson" />
+                                <input class="form-check-input" type="checkbox" id="@nameof(isJson)" @bind="@isJson" />
                                 Json
                             </BlazorLabel>
                         </FormGroup>
@@ -39,7 +39,7 @@
         </div>
     </Row>
 
-@functions {
+@code {
     ElementRef inputTypeFileElement;
 
     [Inject] private IFileReaderService fileReaderService { get; set; }
@@ -49,7 +49,7 @@
 
     bool isJson = false;
 
-    public async void ReadFile(UIMouseEventArgs args)
+    public async void ReadFiles(UIMouseEventArgs args)
     {
         appInsights.TrackEvent("ReadFile");
 
@@ -91,19 +91,18 @@
                 void AddToZip(object obj, string name)
                 {
                     string data;
-                    obj = obj.GutObject();
+                    var newObj = obj.GutObject();
 
                     if (isJson)
                     {
-                        data = JsonConvert.SerializeObject(obj, JsonSettings);
+                        data = JsonConvert.SerializeObject(newObj, State.JsonSettings);
                     }
                     else
                     {
                         var serializer = new SerializerBuilder()
                             .WithTypeInspector(x => new JsonPropertyTypeInspector(x))
-                            //.JsonCompatible()
                             .Build();
-                        data = serializer.Serialize(obj);
+                        data = serializer.Serialize(newObj);
                     }
 
                     if (string.IsNullOrEmpty(name))
@@ -111,7 +110,7 @@
                         name = "Item " + count;
                     }
 
-                    var entry = new ZipEntry(name + $"-{obj.GetType().Name.TrimEnd('1').TrimEnd('2').TrimEnd('3')}.{(isJson ? "json" : "yaml")}");
+                    var entry = new ZipEntry(name + $"-{newObj.GetType().Name.TrimVersionNumbers()}.{(isJson ? "json" : "yaml")}");
 
                     zipSream.PutNextEntry(entry);
 
@@ -126,63 +125,4 @@
             blazorFileSaver.SaveAsBase64($"KubeUI-Export-{DateTime.Now.Ticks}.zip", Convert.ToBase64String(ms.ToArray()), "application/zip");
         }
     }
-
-    //public class ShouldSerializeContractResolver : DefaultContractResolver
-    //{
-    //    public static readonly ShouldSerializeContractResolver Instance = new ShouldSerializeContractResolver();
-
-    //    protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
-    //    {
-    //        JsonProperty property = base.CreateProperty(member, memberSerialization);
-
-    //        if (property.PropertyType.GetInterface(nameof(IEnumerable)) != null)
-    //        {
-    //            property.ShouldSerialize = instance => (instance?.GetType().GetProperty(property.PropertyName).GetValue(instance) as IEnumerable<object>)?.Count() > 0;
-    //        }
-    //        return property;
-    //    }
-    //}
-
-    //public class IgnoreEmptyEnumerablesResolver : DefaultContractResolver
-    //{
-    //    public static readonly IgnoreEmptyEnumerablesResolver Instance = new IgnoreEmptyEnumerablesResolver();
-
-    //    protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
-    //    {
-    //        JsonProperty property = base.CreateProperty(member, memberSerialization);
-
-    //        if (property.DeclaringType is IEnumerable)
-    //        {
-    //            property.ShouldSerialize = instance =>
-    //            {
-    //                var enumer = instance
-    //                    .GetType()
-    //                    .GetProperty(property.PropertyName)
-    //                    .GetValue(instance, null) as IEnumerable;
-
-    //                if (enumer != null)
-    //                {
-    //                    // check to see if there is at least one item in the Enumerable
-    //                    return enumer.GetEnumerator().MoveNext();
-    //                }
-    //                else
-    //                {
-    //                    // if the enumerable is null, we defer the decision to NullValueHandling
-    //                    return true;
-    //                }
-    //            };
-    //        }
-
-    //        return property;
-    //    }
-    //}
-
-    static JsonSerializerSettings JsonSettings = new JsonSerializerSettings
-    {
-        Formatting = Formatting.Indented,
-        NullValueHandling = NullValueHandling.Ignore,
-        DefaultValueHandling = DefaultValueHandling.Ignore,
-        ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-        //ContractResolver = IgnoreEmptyEnumerablesResolver.Instance
-    };
 }

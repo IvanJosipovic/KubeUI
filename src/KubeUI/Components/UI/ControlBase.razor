@@ -1,14 +1,14 @@
 ﻿@typeparam TItem
 
-@functions {
+@code {
     [Parameter] protected TItem Value { get; set; }
-    [Parameter] protected Action<TItem> ValueChanged { get; set; }
+    [Parameter] protected EventCallback<object> ValueChanged { get; set; }
 
     [Parameter] protected Type Parent { get; set; }
     [Parameter] protected string Name { get; set; }
     [Parameter] protected ValidationResult Results { get; set; }
     [Parameter] protected bool ReadOnly { get; set; }
-    [Parameter] protected Action<object> SetHelp { get; set; }
+    [Parameter] protected EventCallback<object> SetHelp { get; set; }
 
 
     protected Guid Id { get; set; } = Guid.NewGuid();

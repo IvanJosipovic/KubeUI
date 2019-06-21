@@ -2,10 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <RestoreAdditionalProjectSources>
-      https://dotnet.myget.org/F/aspnetcore-dev/api/v3/index.json;
-      https://dotnet.myget.org/F/blazor-dev/api/v3/index.json;
-    </RestoreAdditionalProjectSources>
+
     <LangVersion>7.3</LangVersion>
     <RazorLangVersion>3.0</RazorLangVersion>
     <BlazorLinkOnBuild Condition="'$(Configuration)'=='Debug'">false</BlazorLinkOnBuild>
@@ -18,16 +15,15 @@
     <PackageReference Include="FluentValidation" Version="8.4.0" />
     <PackageReference Include="SharpZipLib" Version="1.1.0" />
     
-    <PackageReference Include="BlazorStrap" Version="1.0.0-preview5-07" />
-    <PackageReference Include="BlazorFileSaver" Version="0.9.1" />
+    <PackageReference Include="BlazorStrap" Version="1.0.0-preview6-10" />
+    <PackageReference Include="BlazorFileSaver" Version="3.0.0-preview6.19307.2-1" />
     <PackageReference Include="Blazor.Extensions.Logging" Version="0.1.11" />
-    <PackageReference Include="Cloudcrate.AspNetCore.Blazor.Browser.Storage" Version="3.0.0-preview5-19227-02" />
-    <PackageReference Include="Tewr.Blazor.FileReader" Version="0.11.19128" />
-    <PackageReference Include="Tewr.Blazor.FileReader.Wasm" Version="0.11.19128" />
+    <PackageReference Include="Cloudcrate.AspNetCore.Blazor.Browser.Storage" Version="3.0.0-preview6.19307.4" />
+    <PackageReference Include="Tewr.Blazor.FileReader" Version="0.12.19168" />
 
-    <PackageReference Include="Microsoft.AspNetCore.Blazor" Version="3.0.0-preview5-19227-01" />
-    <PackageReference Include="Microsoft.AspNetCore.Blazor.Build" Version="3.0.0-preview5-19227-01" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.AspNetCore.Blazor.DevServer" Version="3.0.0-preview5-19227-01" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Blazor" Version="3.0.0-preview6.19307.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Blazor.Build" Version="3.0.0-preview6.19307.2" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Blazor.DevServer" Version="3.0.0-preview6.19307.2" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
@@ -37,5 +33,5 @@
   <ItemGroup>
     <WCFMetadata Include="Connected Services" />
   </ItemGroup>
-
+  
 </Project>

@@ -1,17 +1,16 @@
-﻿@inject IState state
-@using KubeUI.Core
+﻿@using KubeUI.Core
 
 <div class="top-row pl-3 navbar navbar-dark">
     <a class="navbar-brand" href="">
         <img src="/favicon-32x32.png" width="32" height="32" class="d-inline-block" alt="">
         KubeUI
     </a>
-    <button class="navbar-toggler" onclick=@ToggleNavMenu>
+    <button class="navbar-toggler" @onclick=@ToggleNavMenu>
         <span class="navbar-toggler-icon"></span>
     </button>
 </div>
 
-<div class=@(collapseNavMenu ? "collapse" : null) onclick=@ToggleNavMenu>
+<div class=@(collapseNavMenu ? "collapse" : null) @onclick=@ToggleNavMenu>
     <ul class="nav flex-column">
         <li class="nav-item px-1">
             <NavLink class="nav-link" href="" Match=NavLinkMatch.All>
@@ -34,8 +33,9 @@
     </ul>
 </div>
 
-@functions {
+@code {
     [Inject] ILogger<NavMenu> Logger { get; set; }
+    [Inject] IState state { get; set; }
 
     bool collapseNavMenu = true;
 
