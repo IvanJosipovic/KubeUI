@@ -27,15 +27,15 @@
                     Help
                 </Card>
                 <Card CardType="CardType.Body">
-                    <Help HelpString="@Help"></Help>
+                    <Help HelpString="@Help" />
                 </Card>
             </Card>        
         </div>
     </div>
 }
 
-<Modal @bind-IsOpen="@ModalIsOpen" Size="Size.Large">
-    <ModalHeader @OnClick="@((e) => CloseModal())">Code</ModalHeader>
+<Modal IsOpen="@ModalIsOpen" Size="Size.Large">
+    <ModalHeader @onclick="@((e) => CloseModal())">Code</ModalHeader>
     <ModalBody>
         <pre><code id="yamlViewer" class="yaml">@MDLBody</code></pre>
     </ModalBody>
@@ -91,8 +91,6 @@
     private void SetHelp(object obj)
     {
         Help = obj.ToString();
-
-        state.RaisePropertyChanged("help");
     }
 
     private void ShowCode(object obj)

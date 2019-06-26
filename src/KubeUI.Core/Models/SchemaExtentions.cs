@@ -3,7 +3,6 @@ using KubeUI.Schema;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
 
 #pragma warning disable 1591
 

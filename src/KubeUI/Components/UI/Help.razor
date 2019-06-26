@@ -8,28 +8,6 @@
 
     [Parameter] protected string HelpString { get; set; }
 
-    protected override void OnInit()
-    {
-        State.PropertyChanged += (o, e) =>
-        {
-            if (e.PropertyName == "help")
-            {
-                StateHasChanged();
-            }
-        };
-    }
-
-    public void Dispose()
-    {
-        State.PropertyChanged -= (xo, e) =>
-        {
-            if (e.PropertyName == "help")
-            {
-                StateHasChanged();
-            }
-        };
-    }
-
     /// <summary>
     /// Replaces urls with hyperlinks
     /// </summary>
