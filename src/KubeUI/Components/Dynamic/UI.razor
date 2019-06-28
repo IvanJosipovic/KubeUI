@@ -34,7 +34,7 @@
     </div>
 }
 
-<Modal IsOpen="@ModalIsOpen" Size="Size.Large">
+<Modal @bind-IsOpen="@ModalIsOpen" Size="Size.Large">
     <ModalHeader @onclick="@((e) => CloseModal())">Code</ModalHeader>
     <ModalBody>
         <pre><code id="yamlViewer" class="yaml">@MDLBody</code></pre>
