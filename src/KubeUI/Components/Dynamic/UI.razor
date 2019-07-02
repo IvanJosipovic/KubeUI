@@ -2,8 +2,8 @@
 
 @if (Item != null)
 {
-    <div class="row">
-        <div class="col-sm-3 col-md-3">
+    <Row>
+        <BlazorCol SM="3" MD="3">
             <Card Class="sticky-top sticky-offset">
                 <Card CardType="CardType.Header" HeadingSize="HeadingSize.H5">
                     <a href="javascript:;" @onclick="@(() => RenderForm(Item))" @onmouseover="@(() => SetHelp(Item.GetType().GetSummary()))">@Item.GetType().Name.AddSpacesToSentence().TrimVersionNumbers()</a>
@@ -15,13 +15,13 @@
                     <Tree Item="@Item" RenderForm="@RenderForm" SetHelp="@SetHelp" />
                 </Card>
             </Card>
-        </div>
+        </BlazorCol>
 
-        <div class="col-sm-6 col-md-6">
+        <BlazorCol SM="6" MD="6">
             @Controls
-        </div>
-
-        <div class="col-sm-3 col-md-3">
+        </BlazorCol>
+        
+        <BlazorCol SM="3" MD="3">
             <Card Class="sticky-top sticky-offset">
                 <Card CardType="CardType.Header" HeadingSize="HeadingSize.H5">
                     Help
@@ -29,13 +29,13 @@
                 <Card CardType="CardType.Body">
                     <Help HelpString="@Help" />
                 </Card>
-            </Card>        
-        </div>
-    </div>
+            </Card>
+        </BlazorCol>
+    </Row>
 }
 
 <Modal @bind-IsOpen="@ModalIsOpen" Size="Size.Large">
-    <ModalHeader @onclick="@((e) => CloseModal())">Code</ModalHeader>
+    <ModalHeader @onclick="@(() => CloseModal())">Code</ModalHeader>
     <ModalBody>
         <pre><code id="yamlViewer" class="yaml">@MDLBody</code></pre>
     </ModalBody>

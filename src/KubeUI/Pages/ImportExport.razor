@@ -1,43 +1,43 @@
 ﻿@page "/ImportExport"
 
-    <Row>
-        <div class="col-sm-12 col-lg-6 col-xl-4">
-            <Card>
-                <Card CardType="CardType.Header" HeadingSize="HeadingSize.H5">
-                    Import
-                </Card>
-                <Card CardType="CardType.Body">
-                    <div class="input-group">
-                        <div class="custom-file col-sm-6 col-md-6">
-                            <input type="file" class="custom-file-input" id="customFile" ref="inputTypeFileElement" multiple accept=".json,.yaml,.yml" />
-                            <label class="custom-file-label" for="customFile">Choose file(s)</label>
-                        </div>
-                        <span>&nbsp;&nbsp;&nbsp;</span>
-                        <BlazorButton @onclick="@ReadFiles">Read file(s)</BlazorButton>
-                    </div>
-                </Card>
+<Row>
+    <BlazorCol SM="12" LG="6" XL="4">
+        <Card>
+            <Card CardType="CardType.Header" HeadingSize="HeadingSize.H5">
+                Import
             </Card>
-        </div>
-        <div class="col-sm-12 col-lg-6 col-xl-4">
-            <Card>
-                <Card CardType="CardType.Header" HeadingSize="HeadingSize.H5">
-                    Export
-                </Card>
-                <Card CardType="CardType.Body">
-                    <div class="input-group">
-                        <BlazorButton @onclick="@Export">Export</BlazorButton>
-                        <span>&nbsp;&nbsp;&nbsp;</span>
-                        <FormGroup IsRow="false" IsCheck="true">
-                            <BlazorLabel For="@nameof(isJson)" Class="col-form-label" IsCheck="true" title="Select to export as Json, otherwise Yaml will be used.">
-                                <input class="form-check-input" type="checkbox" id="@nameof(isJson)" @bind="@isJson" />
-                                Json
-                            </BlazorLabel>
-                        </FormGroup>
+            <Card CardType="CardType.Body">
+                <div class="input-group">
+                    <div class="custom-file col-sm-6 col-md-6">
+                        <input type="file" class="custom-file-input" id="customFile" ref="inputTypeFileElement" multiple accept=".json,.yaml,.yml" />
+                        <label class="custom-file-label" for="customFile">Choose file(s)</label>
                     </div>
-                </Card>
+                    <span>&nbsp;&nbsp;&nbsp;</span>
+                    <BlazorButton @onclick="@ReadFiles">Read file(s)</BlazorButton>
+                </div>
             </Card>
-        </div>
-    </Row>
+        </Card>
+    </BlazorCol>
+    <BlazorCol SM="12" LG="6" XL="4">
+        <Card>
+            <Card CardType="CardType.Header" HeadingSize="HeadingSize.H5">
+                Export
+            </Card>
+            <Card CardType="CardType.Body">
+                <div class="input-group">
+                    <BlazorButton @onclick="@Export">Export</BlazorButton>
+                    <span>&nbsp;&nbsp;&nbsp;</span>
+                    <FormGroup IsRow="false" IsCheck="true">
+                        <BlazorLabel For="@nameof(isJson)" Class="col-form-label" IsCheck="true" title="Select to export as Json, otherwise Yaml will be used.">
+                            <input class="form-check-input" type="checkbox" id="@nameof(isJson)" @bind="@isJson" />
+                            Json
+                        </BlazorLabel>
+                    </FormGroup>
+                </div>
+            </Card>
+        </Card>
+    </BlazorCol>
+</Row>
 
 @code {
     ElementRef inputTypeFileElement;
