@@ -234,6 +234,15 @@ namespace KubeUI.SchemaExtentions
         public string VolumeMode;
     }
 
+    public partial class PodAffinity
+    {
+        [DisplayInTree(DisplayName = "Weight")]
+        public System.Collections.ObjectModel.Collection<WeightedPodAffinityTerm> PreferredDuringSchedulingIgnoredDuringExecution { get; set; }
+
+        [DisplayInTree(DisplayName = "TopologyKey")]
+        public System.Collections.ObjectModel.Collection<PodAffinityTerm> RequiredDuringSchedulingIgnoredDuringExecution { get; set; }
+    }
+
     public partial class PodSpec
     {
         [UILevel(UILevel = UILevel.Advanced)]
