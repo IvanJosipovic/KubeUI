@@ -23,7 +23,7 @@
                         {
                             continue;
                         }
-                        <th scope="col">@property.Name.AddSpacesToSentence().TrimVersionNumbers()</th>
+                        <th scope="col" @onmouseover="@(() => base.SetHelp.InvokeAsync(property.GetSummary()))">@property.Name.AddSpacesToSentence().TrimVersionNumbers()</th>
                     }
                 }
                 <th scope="col">Actions</th>
