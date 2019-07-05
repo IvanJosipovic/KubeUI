@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-
     <LangVersion>7.3</LangVersion>
     <RazorLangVersion>3.0</RazorLangVersion>
     <BlazorLinkOnBuild Condition="'$(Configuration)'=='Debug'">false</BlazorLinkOnBuild>
@@ -14,16 +13,16 @@
   <ItemGroup>
     <PackageReference Include="FluentValidation" Version="8.4.0" />
     <PackageReference Include="SharpZipLib" Version="1.1.0" />
-    
-    <PackageReference Include="BlazorStrap" Version="1.0.0-preview6-13" />
+
+    <PackageReference Include="BlazorStrap" Version="1.0.0-preview6-15" />
     <PackageReference Include="BlazorFileSaver" Version="3.0.0-preview6.19307.2-1" />
-    <PackageReference Include="Blazor.Extensions.Logging" Version="0.1.11" />
+    <PackageReference Include="Blazor.Extensions.Logging" Version="0.1.13" />
     <PackageReference Include="Cloudcrate.AspNetCore.Blazor.Browser.Storage" Version="3.0.0-preview6.19307.4" />
     <PackageReference Include="Tewr.Blazor.FileReader" Version="0.12.19168" />
 
-    <PackageReference Include="Microsoft.AspNetCore.Blazor" Version="3.0.0-preview6.19307.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Blazor.Build" Version="3.0.0-preview6.19307.2" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.AspNetCore.Blazor.DevServer" Version="3.0.0-preview6.19307.2" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Blazor" Version="3.0.0-preview7.19353.9" />
+    <PackageReference Include="Microsoft.AspNetCore.Blazor.Build" Version="3.0.0-preview7.19353.9" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Blazor.DevServer" Version="3.0.0-preview7.19353.9" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
@@ -33,5 +32,5 @@
   <ItemGroup>
     <WCFMetadata Include="Connected Services" />
   </ItemGroup>
-  
+
 </Project>
