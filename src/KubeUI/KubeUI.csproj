@@ -14,7 +14,7 @@
     <PackageReference Include="FluentValidation" Version="8.4.0" />
     <PackageReference Include="SharpZipLib" Version="1.1.0" />
 
-    <PackageReference Include="BlazorStrap" Version="1.0.0-preview6-15" />
+    <PackageReference Include="BlazorStrap" Version="1.0.0-preview6-16" />
     <PackageReference Include="BlazorFileSaver" Version="3.0.0-preview6.19307.2-1" />
     <PackageReference Include="Blazor.Extensions.Logging" Version="0.1.13" />
     <PackageReference Include="Cloudcrate.AspNetCore.Blazor.Browser.Storage" Version="3.0.0-preview6.19307.4" />
