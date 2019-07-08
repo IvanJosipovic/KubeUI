@@ -9,11 +9,11 @@
             <Card CardType="CardType.Body">
                 <div class="input-group">
                     <div class="custom-file col-sm-6 col-md-6">
-                        <input type="file" class="custom-file-input" id="customFile" @ref="@inputTypeFileElement" multiple accept=".json,.yaml,.yml" />
-                        <label class="custom-file-label" for="customFile">Choose file(s)</label>
+                        <input type="file" class="custom-file-input" id="inputFiles" @ref="@inputTypeFileElement" multiple accept=".json,.yaml,.yml" />
+                        <label class="custom-file-label" for="inputFiles">Choose file(s)</label>
                     </div>
                     <span>&nbsp;&nbsp;&nbsp;</span>
-                    <BlazorButton @onclick="@ReadFiles">Read file(s)</BlazorButton>
+                    <BlazorButton @onclick="@ReadFiles" id="readFiles" >Read file(s)</BlazorButton>
                 </div>
             </Card>
         </Card>
