@@ -1,4 +1,3 @@
-using Blazor.Extensions.Logging;
 using Blazor.FileReader;
 using BlazorFileSaver;
 using Cloudcrate.AspNetCore.Blazor.Browser.Storage;
@@ -15,7 +14,6 @@ namespace KubeUI
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddLogging(builder => builder
-                    .AddBrowserConsole()
 #if DEBUG
                     .SetMinimumLevel(LogLevel.Trace)
 #else

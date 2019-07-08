@@ -12,20 +12,23 @@
 
   <ItemGroup>
     <PackageReference Include="FluentValidation" Version="8.4.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.0.0-preview8.19357.6" />
     <PackageReference Include="SharpZipLib" Version="1.1.0" />
 
-    <PackageReference Include="BlazorStrap" Version="1.0.0-preview6-16" />
+    <!--<PackageReference Include="BlazorStrap" Version="1.0.0-preview6-18" />-->
     <PackageReference Include="BlazorFileSaver" Version="3.0.0-preview6.19307.2-1" />
-    <PackageReference Include="Blazor.Extensions.Logging" Version="0.1.13" />
+    <!--<PackageReference Include="Blazor.Extensions.Logging" Version="0.1.13" />-->
     <PackageReference Include="Cloudcrate.AspNetCore.Blazor.Browser.Storage" Version="3.0.0-preview6.19307.4" />
-    <PackageReference Include="Tewr.Blazor.FileReader" Version="0.12.19168" />
-
+    <PackageReference Include="Tewr.Blazor.FileReader" Version="0.12.19186" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.0.0-preview7.19352.13" />
+    
     <PackageReference Include="Microsoft.AspNetCore.Blazor" Version="3.0.0-preview7.19353.9" />
     <PackageReference Include="Microsoft.AspNetCore.Blazor.Build" Version="3.0.0-preview7.19353.9" PrivateAssets="all" />
     <PackageReference Include="Microsoft.AspNetCore.Blazor.DevServer" Version="3.0.0-preview7.19353.9" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\BlazorStrap\BlazorStrap.csproj" />
     <ProjectReference Include="..\KubeUI.Core\KubeUI.Core.csproj" />
   </ItemGroup>
 

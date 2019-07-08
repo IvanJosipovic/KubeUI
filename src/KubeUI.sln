@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeUI.Core", "KubeUI.Core\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeUI.Tests", "KubeUI.Tests\KubeUI.Tests.csproj", "{03594165-D6F1-4811-9BF2-22B0D4B03042}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorStrap", "BlazorStrap\BlazorStrap.csproj", "{4D5E1ABF-AD27-45DC-99CD-374B618C59C1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{03594165-D6F1-4811-9BF2-22B0D4B03042}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{03594165-D6F1-4811-9BF2-22B0D4B03042}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{03594165-D6F1-4811-9BF2-22B0D4B03042}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D5E1ABF-AD27-45DC-99CD-374B618C59C1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D5E1ABF-AD27-45DC-99CD-374B618C59C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D5E1ABF-AD27-45DC-99CD-374B618C59C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D5E1ABF-AD27-45DC-99CD-374B618C59C1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
