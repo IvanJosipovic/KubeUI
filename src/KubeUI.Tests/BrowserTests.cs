@@ -38,14 +38,17 @@ namespace KubeUI.Tests
 
             void Page_Console(object sender, ConsoleEventArgs e)
             {
-                if (e.Message.Type == ConsoleType.Error)
+                if (e.Message.Type == ConsoleType.Error
+                    || e.Message.Text.StartsWith("WASM: [Error]"))// https://github.com/aspnet/AspNetCore/blob/master/src/Components/Blazor/Blazor/src/Services/WebAssemblyConsoleLogger.cs
                 {
                     hasError = true;
                 }
             }
 
             await page.GoToAsync(BaseAddress);
-            await page.WaitForTimeoutAsync(10000);
+
+            (await page.WaitForSelectorAsync(".content > h2:nth-child(1)")).InnerText().ShouldBe("Welcome to KubeUI!");
+
             hasError.ShouldBeFalse();
         }
 
@@ -59,17 +62,30 @@ namespace KubeUI.Tests
 
             void Page_Console(object sender, ConsoleEventArgs e)
             {
-                if (e.Message.Type == ConsoleType.Error)
+                if (e.Message.Type == ConsoleType.Error
+                    || e.Message.Text.StartsWith("WASM: [Error]"))// https://github.com/aspnet/AspNetCore/blob/master/src/Components/Blazor/Blazor/src/Services/WebAssemblyConsoleLogger.cs
                 {
                     hasError = true;
                 }
             }
 
             await page.GoToAsync(BaseAddress + "/Deployment");
+
             await page.WaitForSelectorAsync(".main h2 #AddNew");
 
             await page.ClickAsync(".main h2 #AddNew");
-            await page.WaitForTimeoutAsync(5000);
+
+            await page.WaitForXPathAsync("//ul/li/a[text()='Metadata']");
+
+            var ele = await page.XPathAsync("//ul/li/a[text()='Metadata']");
+
+            await ele[0].ClickAsync();
+
+            await page.WaitForSelectorAsync("#Name");
+
+            (await page.QuerySelectorAsync("div.col-sm-3:nth-child(3) > div:nth-child(1) > div:nth-child(2)")).TextContent().Trim().ShouldBe("Standard object metadata.");
+
+            (await (await page.QuerySelectorAsync("#Name")).EvaluateFunctionAsync<string>("node => node.value")).ShouldBe("Deployment 0");
 
             hasError.ShouldBeFalse();
         }
@@ -84,7 +100,8 @@ namespace KubeUI.Tests
 
             void Page_Console(object sender, ConsoleEventArgs e)
             {
-                if (e.Message.Type == ConsoleType.Error)
+                if (e.Message.Type == ConsoleType.Error 
+                    || e.Message.Text.StartsWith("WASM: [Error]"))// https://github.com/aspnet/AspNetCore/blob/master/src/Components/Blazor/Blazor/src/Services/WebAssemblyConsoleLogger.cs
                 {
                     hasError = true;
                 }

@@ -1,7 +1,10 @@
 ﻿@page "/{TypeParam}"
 
 <h2>
-    @Type.Name.AddSpacesToSentence().TrimVersionNumbers() <a href="javascript:;" @onclick="@(() => AddNew())" id="AddNew" title="Add New @Type.Name.AddSpacesToSentence().TrimVersionNumbers()"><i class="fa fa-plus"></i></a>
+    @if (Type != null)
+    {
+        @Type.Name.AddSpacesToSentence().TrimVersionNumbers() <a href="javascript:;" @onclick="@(() => AddNew())" id="AddNew" title="Add New @Type.Name.AddSpacesToSentence().TrimVersionNumbers()"><i class="fa fa-plus"></i></a>
+    }
 </h2>
 
 <br />
@@ -17,25 +20,28 @@
                 </tr>
             </TableHead>
             <tbody>
-                @for (int i = 0; i < (int)Collection.GetType().GetProperty("Count").GetValue(Collection); i++)
+                @if (Collection != null)
                 {
-                    object[] index = { i };
-                    var item = Collection.GetType().GetProperty("Item").GetValue(Collection, index);
-                    var meta = Type.GetProperty("Metadata").GetValue(item);
+                    @for (int i = 0; i < (int)Collection.GetType().GetProperty("Count").GetValue(Collection); i++)
+                    {
+                        object[] index = { i };
+                        var item = Collection.GetType().GetProperty("Item").GetValue(Collection, index);
+                        var meta = Type.GetProperty("Metadata").GetValue(item);
 
-                    var name = meta.GetType().GetProperty("Name").GetValue(meta);
-                    var nameSpace = meta.GetType().GetProperty("Namespace").GetValue(meta);
-                    <tr>
-                        <td>
-                            <a href="/@Type.Name.TrimVersionNumbers()/@i">@name</a>
-                        </td>
-                        <td>
-                            @nameSpace
-                        </td>
-                        <td style="width:20px; text-align: center">
-                            <a href="javascript:;" @onclick="@(() => { state.DeleteItem(Type, (int)index[0]); })" title="Delete @Type.Name.TrimVersionNumbers()"><i class='fa fa-trash' aria-hidden='true'></i></a>
-                        </td>
-                    </tr>
+                        var name = meta.GetType().GetProperty("Name").GetValue(meta);
+                        var nameSpace = meta.GetType().GetProperty("Namespace").GetValue(meta);
+                        <tr>
+                            <td>
+                                <a href="/@Type.Name.TrimVersionNumbers()/@i">@name</a>
+                            </td>
+                            <td>
+                                @nameSpace
+                            </td>
+                            <td style="width:20px; text-align: center">
+                                <a href="javascript:;" @onclick="@(() => { state.DeleteItem(Type, (int)index[0]); })" title="Delete @Type.Name.TrimVersionNumbers()"><i class='fa fa-trash' aria-hidden='true'></i></a>
+                            </td>
+                        </tr>
+                    }
                 }
             </tbody>
         </BlazorTable>
@@ -44,6 +50,7 @@
 
 
 @code{
+    [Inject] ILogger<List> Logger { get; set; }
     [Inject] IState state { get; set; }
     [Inject] IUriHelper uriHelper { get; set; }
     [Parameter] string TypeParam { get; set; }
@@ -67,7 +74,15 @@
         .Where(t => t.IsClass && t.Namespace == "KubeUI.Schema" && t.Name == TypeParam)
         .FirstOrDefault();
 
-        Collection = state.GetCollection(Type);
+        if (Type == null)
+        {
+            Logger.LogInformation("Couldn't find Type {0}", TypeParam);
+            uriHelper.NavigateTo("");
+        }
+        else
+        {
+            Collection = state.GetCollection(Type);
+        }
     }
 
     private void AddNew()

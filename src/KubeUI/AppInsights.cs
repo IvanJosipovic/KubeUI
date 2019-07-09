@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Routing;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 
@@ -18,7 +19,7 @@ namespace KubeUI
             UriHelper.OnLocationChanged += UriHelper_OnLocationChanged;
         }
 
-        private void UriHelper_OnLocationChanged(object sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+        private void UriHelper_OnLocationChanged(object sender, LocationChangedEventArgs e)
         {
             JSRuntime.InvokeAsync<object>("trackPageView");
         }
