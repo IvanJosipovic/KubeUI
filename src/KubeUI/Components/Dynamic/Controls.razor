@@ -42,13 +42,13 @@
     }
 </Shell>
 
-@functions {
-    [Parameter] protected Action<object> SetHelp { get; set; }
+@code {
+    [Parameter] protected EventCallback<object> SetHelp { get; set; }
 
     [Parameter] protected TItem Item { get; set; }
-    [Parameter] protected Action<TItem> ItemChanged { get; set; }
+    [Parameter] protected EventCallback<TItem> ItemChanged { get; set; }
 
-    [Inject] ILogger<Controls<TItem>> Logger { get; set; }
+    [Inject] protected ILogger<Controls<TItem>> Logger { get; set; }
     [Inject] protected IState state { get; set; }
     [Inject] protected IValidatorFactory validatorFactory { get; set; }
 
@@ -68,8 +68,9 @@
     {
         Validate();
 
-        ItemChanged?.Invoke(Item);
-
+        if (ItemChanged.HasDelegate) {
+            ItemChanged.InvokeAsync(Item);
+        }
         state.RaisePropertyChanged();
     }
 
@@ -132,7 +133,6 @@
             }
 
             Update();
-            StateHasChanged();
         }
         catch (Exception ex)
         {

@@ -76,8 +76,8 @@ namespace KubeUI.Components
                 var attritbutes = TypeDescriptor.GetProperties(property.PropertyType)[property.Name]?.Attributes;
 
                 return !property.PropertyType.FullName.StartsWith("KubeUI.Schema.")
-                && !Common.IsDisplayInTree(attritbutes)
-                && !Common.IsIgnore(attritbutes);
+                && !IsDisplayInTree(attritbutes)
+                && !IsIgnore(attritbutes);
             };
         }
     }

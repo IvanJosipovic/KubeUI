@@ -19,6 +19,11 @@
             This object will not be visible in the UI
             </summary>
         </member>
+        <member name="T:KubeUI.Core.RequiredAttribute">
+            <summary>
+            This object will required in the UI
+            </summary>
+        </member>
         <member name="T:KubeUI.Core.SelectListAttribute">
             <summary>
             Display this control as a select list
@@ -720,7 +725,7 @@
             <summary>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</summary>
         </member>
         <member name="P:KubeUI.Schema.ConfigMapKeySelector.Optional">
-            <summary>Specify whether the ConfigMap or it's key must be defined</summary>
+            <summary>Specify whether the ConfigMap or its key must be defined</summary>
         </member>
         <member name="T:KubeUI.Schema.ConfigMapProjection">
             <summary>Adapts a ConfigMap into a projected volume.
@@ -734,7 +739,7 @@
             <summary>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</summary>
         </member>
         <member name="P:KubeUI.Schema.ConfigMapProjection.Optional">
-            <summary>Specify whether the ConfigMap or it's keys must be defined</summary>
+            <summary>Specify whether the ConfigMap or its keys must be defined</summary>
         </member>
         <member name="T:KubeUI.Schema.ConfigMapVolumeSource">
             <summary>Adapts a ConfigMap into a volume.
@@ -751,7 +756,7 @@
             <summary>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</summary>
         </member>
         <member name="P:KubeUI.Schema.ConfigMapVolumeSource.Optional">
-            <summary>Specify whether the ConfigMap or it's keys must be defined</summary>
+            <summary>Specify whether the ConfigMap or its keys must be defined</summary>
         </member>
         <member name="T:KubeUI.Schema.Container">
             <summary>A single application container that you want to run within a pod.</summary>
@@ -1397,6 +1402,9 @@
         <member name="P:KubeUI.Schema.PodSecurityContext.Sysctls">
             <summary>Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported sysctls (by the container runtime) might fail to launch.</summary>
         </member>
+        <member name="P:KubeUI.Schema.PodSecurityContext.WindowsOptions">
+            <summary>Windows security options.</summary>
+        </member>
         <member name="T:KubeUI.Schema.PodSpec">
             <summary>PodSpec is a description of a pod.</summary>
         </member>
@@ -1448,6 +1456,9 @@
         <member name="P:KubeUI.Schema.PodSpec.NodeSelector">
             <summary>NodeSelector is a selector which must be true for the pod to fit on a node. Selector which must match a node's labels for the pod to be scheduled on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/</summary>
         </member>
+        <member name="P:KubeUI.Schema.PodSpec.PreemptionPolicy">
+            <summary>PreemptionPolicy is the Policy for preempting pods with lower priority. One of Never, PreemptLowerPriority. Defaults to PreemptLowerPriority if unset. This field is alpha-level and is only honored by servers that enable the NonPreemptingPriority feature.</summary>
+        </member>
         <member name="P:KubeUI.Schema.PodSpec.Priority">
             <summary>The priority value. Various system components use this field to find the priority of the pod. When Priority Admission Controller is enabled, it prevents users from setting this field. The admission controller populates this field from PriorityClassName. The higher the value, the higher the priority.</summary>
         </member>
@@ -1461,7 +1472,7 @@
             <summary>Restart policy for all containers within the pod. One of Always, OnFailure, Never. Default to Always. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#restart-policy</summary>
         </member>
         <member name="P:KubeUI.Schema.PodSpec.RuntimeClassName">
-            <summary>RuntimeClassName refers to a RuntimeClass object in the node.k8s.io group, which should be used to run this pod.  If no RuntimeClass resource matches the named class, the pod will not be run. If unset or empty, the "legacy" RuntimeClass will be used, which is an implicit class with an empty definition that uses the default runtime handler. More info: https://git.k8s.io/enhancements/keps/sig-node/runtime-class.md This is an alpha feature and may change in the future.</summary>
+            <summary>RuntimeClassName refers to a RuntimeClass object in the node.k8s.io group, which should be used to run this pod.  If no RuntimeClass resource matches the named class, the pod will not be run. If unset or empty, the "legacy" RuntimeClass will be used, which is an implicit class with an empty definition that uses the default runtime handler. More info: https://git.k8s.io/enhancements/keps/sig-node/runtime-class.md This is a beta feature as of Kubernetes v1.14.</summary>
         </member>
         <member name="P:KubeUI.Schema.PodSpec.SchedulerName">
             <summary>If specified, the pod will be dispatched by specified scheduler. If not specified, the pod will be dispatched by default scheduler.</summary>
@@ -1715,7 +1726,7 @@
             <summary>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</summary>
         </member>
         <member name="P:KubeUI.Schema.SecretKeySelector.Optional">
-            <summary>Specify whether the Secret or it's key must be defined</summary>
+            <summary>Specify whether the Secret or its key must be defined</summary>
         </member>
         <member name="T:KubeUI.Schema.SecretProjection">
             <summary>Adapts a secret into a projected volume.
@@ -1743,7 +1754,7 @@
             <summary>If unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</summary>
         </member>
         <member name="P:KubeUI.Schema.SecretVolumeSource.Optional">
-            <summary>Specify whether the Secret or it's keys must be defined</summary>
+            <summary>Specify whether the Secret or its keys must be defined</summary>
         </member>
         <member name="P:KubeUI.Schema.SecretVolumeSource.SecretName">
             <summary>Name of the secret in the pod's namespace to use. More info: https://kubernetes.io/docs/concepts/storage/volumes#secret</summary>
@@ -1777,6 +1788,9 @@
         </member>
         <member name="P:KubeUI.Schema.SecurityContext.SeLinuxOptions">
             <summary>The SELinux context to be applied to the container. If unspecified, the container runtime will allocate a random SELinux context for each container.  May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.</summary>
+        </member>
+        <member name="P:KubeUI.Schema.SecurityContext.WindowsOptions">
+            <summary>Windows security options.</summary>
         </member>
         <member name="T:KubeUI.Schema.Service">
             <summary>Service is a named abstraction of software service (for example, mysql) consisting of local port (for example 3306) that the proxy listens on, and the selector that determines which pods will answer requests sent through the proxy.</summary>
@@ -2064,7 +2078,7 @@
             <summary>Path within the volume from which the container's volume should be mounted. Defaults to "" (volume's root).</summary>
         </member>
         <member name="P:KubeUI.Schema.VolumeMount.SubPathExpr">
-            <summary>Expanded path within the volume from which the container's volume should be mounted. Behaves similarly to SubPath but environment variable references $(VAR_NAME) are expanded using the container's environment. Defaults to "" (volume's root). SubPathExpr and SubPath are mutually exclusive. This field is alpha in 1.14.</summary>
+            <summary>Expanded path within the volume from which the container's volume should be mounted. Behaves similarly to SubPath but environment variable references $(VAR_NAME) are expanded using the container's environment. Defaults to "" (volume's root). SubPathExpr and SubPath are mutually exclusive. This field is beta in 1.15.</summary>
         </member>
         <member name="T:KubeUI.Schema.VolumeProjection">
             <summary>Projection that may be projected along with other supported volume types</summary>
@@ -2104,6 +2118,24 @@
         </member>
         <member name="P:KubeUI.Schema.WeightedPodAffinityTerm.Weight">
             <summary>weight associated with matching the corresponding podAffinityTerm, in the range 1-100.</summary>
+        </member>
+        <member name="T:KubeUI.Schema.WindowsSecurityContextOptions">
+            <summary>WindowsSecurityContextOptions contain Windows-specific options and credentials.</summary>
+        </member>
+        <member name="P:KubeUI.Schema.WindowsSecurityContextOptions.GmsaCredentialSpec">
+            <summary>GMSACredentialSpec is where the GMSA admission webhook (https://github.com/kubernetes-sigs/windows-gmsa) inlines the contents of the GMSA credential spec named by the GMSACredentialSpecName field. This field is alpha-level and is only honored by servers that enable the WindowsGMSA feature flag.</summary>
+        </member>
+        <member name="P:KubeUI.Schema.WindowsSecurityContextOptions.GmsaCredentialSpecName">
+            <summary>GMSACredentialSpecName is the name of the GMSA credential spec to use. This field is alpha-level and is only honored by servers that enable the WindowsGMSA feature flag.</summary>
+        </member>
+        <member name="T:KubeUI.Schema.RuntimeClassStrategyOptions">
+            <summary>RuntimeClassStrategyOptions define the strategy that will dictate the allowable RuntimeClasses for a pod.</summary>
+        </member>
+        <member name="P:KubeUI.Schema.RuntimeClassStrategyOptions.AllowedRuntimeClassNames">
+            <summary>allowedRuntimeClassNames is a whitelist of RuntimeClass names that may be specified on a pod. A value of "*" means that any RuntimeClass name is allowed, and must be the only item in the list. An empty list requires the RuntimeClassName field to be unset.</summary>
+        </member>
+        <member name="P:KubeUI.Schema.RuntimeClassStrategyOptions.DefaultRuntimeClassName">
+            <summary>defaultRuntimeClassName is the default RuntimeClassName to set on the pod. The default MUST be allowed by the allowedRuntimeClassNames list. A value of nil does not mutate the Pod.</summary>
         </member>
         <member name="T:KubeUI.Schema.HTTPIngressPath2">
             <summary>HTTPIngressPath associates a path regex with a backend. Incoming urls matching the path are forwarded to the backend.</summary>
@@ -2185,6 +2217,15 @@
         <member name="P:KubeUI.Schema.IngressTLS2.SecretName">
             <summary>SecretName is the name of the secret used to terminate SSL traffic on 443. Field is left optional to allow SSL routing based on SNI hostname alone. If the SNI host in a listener conflicts with the "Host" header field used by an IngressRule, the SNI host is used for termination and value of the Host header is used for routing.</summary>
         </member>
+        <member name="T:KubeUI.Schema.RuntimeClassStrategyOptions2">
+            <summary>RuntimeClassStrategyOptions define the strategy that will dictate the allowable RuntimeClasses for a pod.</summary>
+        </member>
+        <member name="P:KubeUI.Schema.RuntimeClassStrategyOptions2.AllowedRuntimeClassNames">
+            <summary>allowedRuntimeClassNames is a whitelist of RuntimeClass names that may be specified on a pod. A value of "*" means that any RuntimeClass name is allowed, and must be the only item in the list. An empty list requires the RuntimeClassName field to be unset.</summary>
+        </member>
+        <member name="P:KubeUI.Schema.RuntimeClassStrategyOptions2.DefaultRuntimeClassName">
+            <summary>defaultRuntimeClassName is the default RuntimeClassName to set on the pod. The default MUST be allowed by the allowedRuntimeClassNames list. A value of nil does not mutate the Pod.</summary>
+        </member>
         <member name="T:KubeUI.Schema.CustomResourceSubresourceStatus">
             <summary>CustomResourceSubresourceStatus defines how to serve the status subresource for CustomResources. Status is represented by the `.status` JSON path inside of a CustomResource. When set, * exposes a /status subresource for the custom resource * PUT requests to the /status subresource take a custom resource object, and ignore changes to anything except the status stanza * PUT/POST/PATCH requests to the custom resource ignore changes to the status stanza</summary>
         </member>
@@ -2244,6 +2285,11 @@
         </member>
         <member name="P:KubeUI.Schema.ListMeta.Continue">
             <summary>continue may be set if the user set a limit on the number of items returned, and indicates that the server has more data available. The value is opaque and may be used to issue another request to the endpoint that served this list to retrieve the next set of available objects. Continuing a consistent list may not be possible if the server configuration has changed or more than a few minutes have passed. The resourceVersion field returned when using this continue value will be identical to the value in the first response, unless you have received this token from an error message.</summary>
+        </member>
+        <member name="P:KubeUI.Schema.ListMeta.RemainingItemCount">
+            <summary>remainingItemCount is the number of subsequent items in the list which are not included in this list response. If the list request contained label or field selectors, then the number of remaining items is unknown and the field will be left unset and omitted during serialization. If the list is complete (either because it is not chunking or because this is the last chunk), then there are no more remaining items and this field will be left unset and omitted during serialization. Servers older than v1.15 do not set this field. The intended use of the remainingItemCount is *estimating* the size of a collection. Clients should not rely on the remainingItemCount to be set or to be exact.
+            
+            This field is alpha and can be changed or removed without notice.</summary>
         </member>
         <member name="P:KubeUI.Schema.ListMeta.ResourceVersion">
             <summary>String that identifies the server's internal version of this object that can be used by clients to determine when objects have changed. Value must be treated as opaque by clients and passed unmodified back to the server. Populated by the system. Read-only. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#concurrency-control-and-consistency</summary>
@@ -2430,9 +2476,6 @@
         </member>
         <member name="P:KubeUI.Schema.StatusDetails.Uid">
             <summary>UID of the resource. (when there is a single resource which can be described). More info: http://kubernetes.io/docs/user-guide/identifiers#uids</summary>
-        </member>
-        <member name="P:KubeUI.SchemaExtentions.PodSpec.NodeSelector">
-            <summary>NodeSelector is a selector which must be true for the pod to fit on a node. Selector which must match a node's labels for the pod to be scheduled on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/</summary>
         </member>
         <member name="T:KubeUI.UILevel">
             <summary>

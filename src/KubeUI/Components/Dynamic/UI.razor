@@ -2,49 +2,48 @@
 
 @if (Item != null)
 {
-    <div class="row">
-        <div class="col-sm-3 col-md-3">
+    <Row>
+        <BlazorCol SM="3" MD="3">
             <Card Class="sticky-top sticky-offset">
                 <Card CardType="CardType.Header" HeadingSize="HeadingSize.H5">
-                    <a href="javascript:;" onclick="@((e) => RenderForm(Item))" onmouseover="@(() => SetHelp(Item.GetType().GetSummary()))">@Item.GetType().Name.AddSpacesToSentence().TrimVersionNumbers()</a>
+                    <a href="javascript:;" @onclick="@(() => RenderForm(Item))" @onmouseover="@(() => SetHelp(Item.GetType().GetSummary()))">@Item.GetType().Name.AddSpacesToSentence().TrimVersionNumbers()</a>
                     <div class="pull-right">
-                        <a href="javascript:;" onclick="@((e) => ShowCode(Item))" onmouseover="@(() => SetHelp("Show Code"))"><i class="fa fa-code"></i></a>
+                        <a href="javascript:;" @onclick="@(() => ShowCode(Item))" @onmouseover="@(() => SetHelp("Show Code"))"><i class="fa fa-code"></i></a>
                     </div>
                 </Card>
                 <Card CardType="CardType.Body" style="padding-left:0">
                     <Tree Item="@Item" RenderForm="@RenderForm" SetHelp="@SetHelp" />
                 </Card>
             </Card>
-        </div>
+        </BlazorCol>
 
-        <div class="col-sm-6 col-md-6">
+        <BlazorCol SM="6" MD="6">
             @Controls
-        </div>
-
-        <div class="col-sm-3 col-md-3">
+        </BlazorCol>
+        
+        <BlazorCol SM="3" MD="3">
             <Card Class="sticky-top sticky-offset">
                 <Card CardType="CardType.Header" HeadingSize="HeadingSize.H5">
                     Help
                 </Card>
                 <Card CardType="CardType.Body">
-                    <Help HelpString="@Help"></Help>
+                    <Help HelpString="@Help" />
                 </Card>
-            </Card>        
-        </div>
-    </div>
+            </Card>
+        </BlazorCol>
+    </Row>
 }
 
-<Modal bind-IsOpen="@ModalIsOpen" Size="Size.Large">
-    <ModalHeader OnClick="@OnClose">Code</ModalHeader>
+<Modal @bind-IsOpen="@ModalIsOpen" Size="Size.Large">
+    <ModalHeader @onclick="@(() => CloseModal())">Code</ModalHeader>
     <ModalBody>
         <pre><code id="yamlViewer" class="yaml">@MDLBody</code></pre>
     </ModalBody>
 </Modal>
 
-@functions{
-
+@code{
     [Parameter] TItem Item { get; set; }
-    [Parameter] Action<TItem> ItemChanged { get; set; }
+    [Parameter] EventCallback<TItem> ItemChanged { get; set; }
 
     [Inject] IState state { get; set; }
     [Inject] private IAppInsights appInsights { get; set; }
@@ -77,14 +76,12 @@
 
     private void RenderForm(object obj)
     {
-        //Logger.LogInformation($"RenderForm: {obj.GetType()}");
-
         Controls = builder =>
         {
             builder.OpenComponent(0, typeof(KubeUI.Components.Dynamic.Controls<>).MakeGenericType(obj.GetType()));
             builder.AddAttribute(1, "Item", obj);
-            builder.AddAttribute(2, "SetHelp", new System.Action<object>((e) => SetHelp(e)));
-
+            builder.AddAttribute(2, "SetHelp", EventCallback.Factory.Create<object>(this, (e) => SetHelp(e)));
+            //builder.AddAttribute(3, "ItemChanged", EventCallback.Factory.Create(this, (e) => obj = e ));
             //builder.AddAttribute(2, "ItemChanged", __value => obj = __value);
             builder.CloseComponent();
         };
@@ -94,8 +91,6 @@
     private void SetHelp(object obj)
     {
         Help = obj.ToString();
-
-        state.RaisePropertyChanged("help");
     }
 
     private void ShowCode(object obj)
@@ -106,14 +101,14 @@
 
         if (isJson)
         {
-            MDLBody = JsonConvert.SerializeObject(obj.GutObject(), JsonSettings);
+            MDLBody = JsonConvert.SerializeObject(obj.GutObject(), State.JsonSettings);
         }
         else
         {
             var serializer = new SerializerBuilder()
                 .WithTypeInspector(x => new JsonPropertyTypeInspector(x))
-                //.JsonCompatible()
                 .Build();
+
             MDLBody = serializer.Serialize(obj.GutObject());
         }
 
@@ -121,18 +116,9 @@
         StateHasChanged();
     }
 
-    private void OnClose(UIMouseEventArgs args)
+    private void CloseModal()
     {
         ModalIsOpen = false;
         StateHasChanged();
     }
-
-    static JsonSerializerSettings JsonSettings = new JsonSerializerSettings
-    {
-        Formatting = Formatting.Indented,
-        NullValueHandling = NullValueHandling.Ignore,
-        DefaultValueHandling = DefaultValueHandling.Ignore,
-        ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-        //ContractResolver = IgnoreEmptyEnumerablesResolver.Instance
-    };
 }

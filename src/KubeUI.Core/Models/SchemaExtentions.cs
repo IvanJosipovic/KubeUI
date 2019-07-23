@@ -3,7 +3,6 @@ using KubeUI.Schema;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
 
 #pragma warning disable 1591
 
@@ -233,6 +232,15 @@ namespace KubeUI.SchemaExtentions
 
         [UILevel(UILevel = UILevel.Advanced)]
         public string VolumeMode;
+    }
+
+    public partial class PodAffinity
+    {
+        [DisplayInTree(DisplayName = "Weight")]
+        public System.Collections.ObjectModel.Collection<WeightedPodAffinityTerm> PreferredDuringSchedulingIgnoredDuringExecution { get; set; }
+
+        [DisplayInTree(DisplayName = "TopologyKey")]
+        public System.Collections.ObjectModel.Collection<PodAffinityTerm> RequiredDuringSchedulingIgnoredDuringExecution { get; set; }
     }
 
     public partial class PodSpec

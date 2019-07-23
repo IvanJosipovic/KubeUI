@@ -4,7 +4,7 @@
   "documentGenerator": {
     "fromDocument": {
       "json": "",
-      "url": "https://raw.githubusercontent.com/kubernetes/kubernetes/release-1.14/api/openapi-spec/swagger.json",
+      "url": "https://raw.githubusercontent.com/kubernetes/kubernetes/release-1.15/api/openapi-spec/swagger.json",
       "output": null
     }
   },
@@ -44,9 +44,9 @@
       "generateJsonMethods": false,
       "enforceFlagEnums": false,
       "parameterArrayType": "System.Collections.Generic.IEnumerable",
-      "parameterDictionaryType": "System.Collections.Generic.IDictionary",
+      "parameterDictionaryType": "System.Collections.Generic.Dictionary",
       "responseArrayType": "System.Collections.Generic.ICollection",
-      "responseDictionaryType": "System.Collections.Generic.IDictionary",
+      "responseDictionaryType": "System.Collections.Generic.Dictionary",
       "wrapResponses": false,
       "wrapResponseMethods": [],
       "generateResponseClasses": true,
@@ -280,6 +280,7 @@
         "MetricStatus2",
         "MetricTarget",
         "MetricValueStatus",
+        "MutatingWebhook",
         "MutatingWebhookConfiguration",
         "MutatingWebhookConfigurationList",
         "Namespace",
@@ -503,6 +504,7 @@
         "TopologySelectorTerm",
         "UserInfo",
         "UserInfo2",
+        "ValidatingWebhook",
         "ValidatingWebhookConfiguration",
         "ValidatingWebhookConfigurationList",
         "VolumeAttachment",

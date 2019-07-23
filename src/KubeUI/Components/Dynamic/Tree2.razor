@@ -1,0 +1,245 @@
+﻿@typeparam TItem
+
+@if (Trees.Any())
+{
+    <ul style="padding-left:20px" class="list-unstyled">
+        @foreach (TreeItem item in Trees)
+        {
+            <li>
+                @if (item.Children.Any())
+                {
+                    @if (item.Minimized)
+                    {
+                        <a href="javascript:;" @onclick="@(() => ToogleMinimize(item))"><i class="fa fa-caret-right"></i></a>
+                    }
+                    else
+                    {
+                        <a href="javascript:;" @onclick="@(() => ToogleMinimize(item))"><i class="fa fa-caret-down"></i></a>
+                    }
+                }
+
+                @if (item.IsCollection)
+                {
+                    <span @onmouseover="@(() => SetHelp.InvokeAsync(item.Summary))">@item.Name </span> <a href="javascript:;" @onclick="@((e) => AddNew(item.Object))" title="Add New @item.Name"><i class="fa fa-plus"></i></a>
+                }
+                else
+                {
+                    @if (item.HideLink)
+                    {
+                        <span @onmouseover="@(() => SetHelp.InvokeAsync(item.Summary))">@item.Name</span>
+                    }
+                    else
+                    {
+                        <a href="javascript:;" @onclick="@(() => RenderForm.InvokeAsync(item.Object) )" @onmouseover="@(() => SetHelp.InvokeAsync(item.Summary))">@item.Name</a>
+
+                        @if (item.IsCollectionItem)
+                        {
+                            <a href="javascript:;" @onclick="@(() => Delete(item.Parent, item.Object))" title="Delete"><i class="fa fa-trash"></i></a>
+                        }
+                    }
+                }
+
+                @if (item.Children.Any() && !item.Minimized)
+                {
+                    <ul style="padding-left:20px" class="list-unstyled">
+                        @foreach (var childItem in item.Children)
+                        {
+                            <Tree2 item="@childItem.Object" RenderForm="@RenderForm" SetHelp="@SetHelp" />
+                        }
+                    </ul>
+                }
+            </li>
+        }
+    </ul>
+}
+
+@code{
+    [Parameter] protected TItem Item { get; set; }
+    [Parameter] protected EventCallback<TItem> ItemChanged { get; set; }
+
+    [Parameter] protected EventCallback<object> RenderForm { get; set; }
+    [Parameter] protected EventCallback<object> SetHelp { get; set; }
+
+    [Inject] protected ILogger<Tree2<TItem>> Logger { get; set; }
+    [Inject] protected IState State { get; set; }
+
+    private List<TreeItem> Trees { get; set; } = new List<TreeItem>();
+
+    protected override void OnInit()
+    {
+        Trees = BuildTree(Item, State.GetUILevel());
+
+        State.PropertyChanged += (o, e) =>
+        {
+            if (e.PropertyName == "BuildTree")
+            {
+                Trees = BuildTree(Item, State.GetUILevel());
+                StateHasChanged();
+            }
+        };
+    }
+
+    protected void ToogleMinimize(TreeItem item)
+    {
+        item.Minimized = item.Minimized;
+
+        StateHasChanged();
+    }
+
+    private void AddNew(object obj)
+    {
+        var genType = obj.GetType().GetTypeInfo().GenericTypeArguments[0];
+
+        var newObj = Activator.CreateInstance(genType);
+
+        object[] data = { newObj };
+
+        obj.GetType().GetMethod("Add").Invoke(obj, data);
+    }
+
+    private void Delete(object collection, object item)
+    {
+        object[] data = { item };
+
+        collection.GetType().GetMethod("Remove").Invoke(collection, data);
+    }
+
+    public List<TreeItem> BuildTree(object obj, KubeUI.UILevel uILevel)
+    {
+        Logger.LogDebug("BuildTree {0}", obj.GetType());
+
+        List<TreeItem> Tree = new List<TreeItem>();
+
+        foreach (var property in obj.GetType()
+            .GetProperties()
+            .Where(x =>
+            x.PropertyType.FullName.StartsWith("KubeUI.Schema.") ||
+            x.PropertyType.FullName.StartsWith("System.Collections."))
+            )
+        {
+            var attributes = TypeDescriptor.GetProperties(obj.GetType())[property.Name].Attributes;
+
+            if (Common.IsIgnore(attributes) || !Common.ShouldShow(attributes, uILevel))
+            {
+                Logger.LogDebug("BuildTree {0} Ignoring", property.PropertyType);
+                continue;
+            }
+
+            var item = property.GetValue(obj);
+            if (item == null)
+            {
+                item = Activator.CreateInstance(property.PropertyType);
+                property.SetValue(obj, item);
+            }
+
+            if (Common.IsDisplayInTree(attributes))
+            {
+                var tree = new TreeItem()
+                {
+                    Attributes = attributes,
+                    Name = property.Name.AddSpacesToSentence().TrimVersionNumbers(),
+                    Children = GetCollectionItems(item, attributes, uILevel),
+                    Object = item,
+                    Summary = property.GetSummary(),
+                    IsCollection = true,
+                    HideLink = Common.ShouldHideLink(property.PropertyType)
+                };
+
+                Tree.Add(tree);
+            }
+            else if (!property.PropertyType.FullName.StartsWith("System.Collections."))
+            {
+                Tree.Add(new TreeItem()
+                {
+                    Attributes = attributes,
+                    Name = property.Name.AddSpacesToSentence().TrimVersionNumbers(),
+                    Children = BuildTree(item, uILevel),
+                    Object = item,
+                    Summary = property.GetSummary(),
+                    HideLink = Common.ShouldHideLink(property.PropertyType)
+                });
+            }
+        }
+
+        return Tree;
+    }
+
+    public List<TreeItem> GetCollectionItems(object collection, AttributeCollection attributes , KubeUI.UILevel uILevel)
+    {
+        var tree = new List<TreeItem>();
+        var type = collection.GetType();
+        var genType = type.GetTypeInfo().GenericTypeArguments[0];
+
+        int n = (int)type.GetProperty("Count").GetValue(collection);
+
+        for (int i = 0; i < n; i++)
+        {
+            object[] index = { i };
+
+            object myObject = type.GetProperty("Item").GetValue(collection, index);
+
+            string displayPropertyName = Common.GetDisplayInTreeName(attributes);
+
+            string propertyValue = null;
+
+            if (displayPropertyName != null)
+            {
+                var property = genType.GetProperty(displayPropertyName);
+
+                propertyValue = property?.GetValue(myObject)?.ToString();
+            }
+
+            if (string.IsNullOrEmpty(propertyValue))
+            {
+                propertyValue = $"Item {index[0]}";
+            }
+
+            tree.Add(new TreeItem()
+            {
+                Name = propertyValue,
+                Children = BuildTree(myObject, uILevel),
+                Object = myObject,
+                Summary = genType.GetSummary(),
+                IsCollectionItem = true,
+                Parent = collection
+            });
+        }
+
+        return tree;
+    }
+
+    public void Dispose()
+    {
+        State.PropertyChanged -= (xo, e) =>
+        {
+            if (e.PropertyName == "BuildTree")
+            {
+                Trees = BuildTree(Item, State.GetUILevel());
+                StateHasChanged();
+            }
+        };
+    }
+
+    public class TreeItem
+    {
+        public AttributeCollection Attributes { get; set; }
+    
+        public string Name { get; set; }
+
+        public object Parent { get; set; }
+
+        public object Object { get; set; }
+
+        public string Summary { get; set; }
+
+        public bool IsCollection { get; set; }
+
+        public bool IsCollectionItem { get; set; }
+
+        public bool HideLink { get; set; }
+
+        public bool Minimized { get; set; }
+
+        public List<TreeItem> Children { get; set; } = new List<TreeItem>();
+    }
+}
