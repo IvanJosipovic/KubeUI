@@ -17,7 +17,6 @@
 
     <PackageReference Include="BlazorStrap" Version="1.0.0-preview6-21" />
     <PackageReference Include="BlazorFileSaver" Version="3.0.0-preview6.19307.2-1" />
-    <PackageReference Include="Cloudcrate.AspNetCore.Blazor.Browser.Storage" Version="3.0.0-preview6.19307.4" />
     <PackageReference Include="Tewr.Blazor.FileReader" Version="0.12.19186" />
     
     <PackageReference Include="Microsoft.AspNetCore.Blazor" Version="3.0.0-preview7.19365.7" />

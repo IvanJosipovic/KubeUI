@@ -22,6 +22,13 @@
         window.trackEvent = (name) => {
             return appInsights.trackEvent(name);
         };
+
+        window.loadData = (key) => {
+            return localStorage.getItem(key);
+        };
+        window.saveData = (key, data) => {
+            return localStorage.setItem(key, data);
+        };
     </script>
     <script type="text/javascript">
         var appInsights = window.appInsights || function (a) {

@@ -1,6 +1,5 @@
 using Blazor.FileReader;
 using BlazorFileSaver;
-using Cloudcrate.AspNetCore.Blazor.Browser.Storage;
 using FluentValidation;
 using KubeUI.Validators;
 using Microsoft.AspNetCore.Components.Builder;
@@ -37,8 +36,6 @@ namespace KubeUI
             AssemblyScanner.FindValidatorsInAssemblies(config.AssembliesToRegister).ForEach(pair => {
                 services.Add(ServiceDescriptor.Transient(pair.InterfaceType, pair.ValidatorType));
             });
-
-            services.AddStorage();
 
             services.AddSingleton<IAppInsights, AppInsights>();
         }

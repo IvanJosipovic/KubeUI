@@ -1,14 +1,15 @@
-﻿using Cloudcrate.AspNetCore.Blazor.Browser.Storage;
-using FluentValidation;
+﻿using FluentValidation;
 using KubeUI.Core;
 using KubeUI.Schema;
 using Microsoft.Extensions.Logging;
+using Microsoft.JSInterop;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.Threading.Tasks;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
@@ -27,7 +28,7 @@ namespace KubeUI
 
         private readonly ILogger<State> Logger;
 
-        private readonly LocalStorage Storage;
+        private readonly IJSRuntime JSRuntime;
 
         private readonly IValidatorFactory ValidatorFactory;
 
@@ -36,11 +37,11 @@ namespace KubeUI
             Logger = logger;
         }
 
-        public State(ILogger<State> logger, IValidatorFactory validatorFactory, LocalStorage localStorage)
+        public State(ILogger<State> logger, IValidatorFactory validatorFactory, IJSRuntime JSRuntime)
         {
             this.Logger = logger;
             this.ValidatorFactory = validatorFactory;
-            this.Storage = localStorage;
+            this.JSRuntime = JSRuntime;
 
             LoadState();
 
@@ -82,6 +83,8 @@ namespace KubeUI
             object[] data = { item };
 
             collType.GetMethod("Add").Invoke(collection, data);
+
+            RaisePropertyChanged();
 
             return count;
         }
@@ -384,15 +387,18 @@ namespace KubeUI
             return true;
         }
 
-        public void LoadState()
+        public async Task LoadState()
         {
-            var yaml = Storage["Data"];
+            var yaml = await JSRuntime.InvokeAsync<string>("loadData", new[] { "Data" });
+
             if (!string.IsNullOrEmpty(yaml))
             {
                 Logger.LogInformation("LoadState - Found existing state.");
                 try
                 {
                     ImportObject(yaml);
+
+                    RaisePropertyChanged();
                 }
                 catch (Exception ex)
                 {
@@ -421,7 +427,7 @@ namespace KubeUI
                 }
             }
 
-            Storage["Data"] = output;
+            JSRuntime.InvokeAsync<object>("saveData", new[] { "Data", output });
 
             string Serialize(object obj)
             {
