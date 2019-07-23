@@ -124,6 +124,7 @@ namespace KubeUI.Tests
             await page.WaitForSelectorAsync(".main h2 #AddNew");
 
             (await page.QuerySelectorAsync(".table > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(1) > a:nth-child(1)")).TextContent().Trim().ShouldBe("postgres");
+
             (await page.QuerySelectorAsync(".table > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(2)")).TextContent().Trim().ShouldBe("bot");
 
             hasError.ShouldBeFalse();
