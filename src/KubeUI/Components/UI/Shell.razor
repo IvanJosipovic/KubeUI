@@ -1,13 +1,13 @@
 ﻿@typeparam TItem
 
-<Card>
-    <Card CardType="CardType.Header" @onmouseover="@(() => { SetHelp.InvokeAsync(Item.GetType().GetSummary()); })" HeadingSize="HeadingSize.H5">
+<BSCard>
+    <BSCard CardType="CardType.Header" @onmouseover="@(() => { SetHelp.InvokeAsync(Item.GetType().GetSummary()); })" HeadingSize="HeadingSize.H5">
         @Item.GetType().Name.AddSpacesToSentence().TrimVersionNumbers()
-    </Card>
-    <Card CardType="CardType.Body">
+    </BSCard>
+    <BSCard CardType="CardType.Body">
         @ChildContent
-    </Card>
-</Card>
+    </BSCard>
+</BSCard>
 <br />
 
 @code {

@@ -1,43 +1,43 @@
 ﻿@page "/ImportExport"
 
-<Row>
-    <BlazorCol SM="12" LG="6" XL="4">
-        <Card>
-            <Card CardType="CardType.Header" HeadingSize="HeadingSize.H5">
+<BSRow>
+    <BSCol SM="12" LG="6" XL="4">
+        <BSCard>
+            <BSCard CardType="CardType.Header" HeadingSize="HeadingSize.H5">
                 Import
-            </Card>
-            <Card CardType="CardType.Body">
+            </BSCard>
+            <BSCard CardType="CardType.Body">
                 <div class="input-group">
                     <div class="custom-file col-sm-6 col-md-6">
                         <input type="file" class="custom-file-input" id="inputFiles" @ref="@inputTypeFileElement" multiple accept=".json,.yaml,.yml" />
                         <label class="custom-file-label" for="inputFiles">Choose file(s)</label>
                     </div>
                     <span>&nbsp;&nbsp;&nbsp;</span>
-                    <BlazorButton @onclick="@ReadFiles" id="readFiles" >Read file(s)</BlazorButton>
+                    <BSButton @onclick="@ReadFiles" id="readFiles" >Read file(s)</BSButton>
                 </div>
-            </Card>
-        </Card>
-    </BlazorCol>
-    <BlazorCol SM="12" LG="6" XL="4">
-        <Card>
-            <Card CardType="CardType.Header" HeadingSize="HeadingSize.H5">
+            </BSCard>
+        </BSCard>
+    </BSCol>
+    <BSCol SM="12" LG="6" XL="4">
+        <BSCard>
+            <BSCard CardType="CardType.Header" HeadingSize="HeadingSize.H5">
                 Export
-            </Card>
-            <Card CardType="CardType.Body">
+            </BSCard>
+            <BSCard CardType="CardType.Body">
                 <div class="input-group">
-                    <BlazorButton @onclick="@Export">Export</BlazorButton>
+                    <BSButton @onclick="@Export">Export</BSButton>
                     <span>&nbsp;&nbsp;&nbsp;</span>
-                    <FormGroup IsRow="false" IsCheck="true">
-                        <BlazorLabel For="@nameof(isJson)" Class="col-form-label" IsCheck="true" title="Select to export as Json, otherwise Yaml will be used.">
+                    <BSFormGroup IsRow="false" IsCheck="true">
+                        <BSLabel For="@nameof(isJson)" Class="col-form-label" IsCheck="true" title="Select to export as Json, otherwise Yaml will be used.">
                             <input class="form-check-input" type="checkbox" id="@nameof(isJson)" @bind="@isJson" />
                             Json
-                        </BlazorLabel>
-                    </FormGroup>
+                        </BSLabel>
+                    </BSFormGroup>
                 </div>
-            </Card>
-        </Card>
-    </BlazorCol>
-</Row>
+            </BSCard>
+        </BSCard>
+    </BSCol>
+</BSRow>
 
 @code {
     ElementRef inputTypeFileElement;

@@ -1,13 +1,13 @@
 ﻿@inherits ControlBase<TItem>
 @typeparam TItem
 
-<FormGroup IsRow="true" @onmouseover="@(() => { base.SetHelp.InvokeAsync(Parent.GetProperty(Name).GetSummary()); })">
-    <BlazorLabel For="@Name" SM="3" Class="col-form-label-sm">@Name.AddSpacesToSentence().TrimVersionNumbers()</BlazorLabel>
-    <BlazorCol SM="9">
+<BSFormGroup IsRow="true" @onmouseover="@(() => { base.SetHelp.InvokeAsync(Parent.GetProperty(Name).GetSummary()); })">
+    <BSLabel For="@Name" SM="3" Class="col-form-label-sm">@Name.AddSpacesToSentence().TrimVersionNumbers()</BSLabel>
+    <BSCol SM="9">
         <input class="form-control form-control-sm" type="@Type" id="@Name" value="@Value" @onchange="@((e) => ValueChanged.InvokeAsync((TItem)e.Value))" readonly="@ReadOnly" />
         <FieldValidationResult results="@Results" Field="@Name" />
-    </BlazorCol>
-</FormGroup>
+    </BSCol>
+</BSFormGroup>
 
 @code {
     [Parameter] protected string Type { get; set; } = "text";

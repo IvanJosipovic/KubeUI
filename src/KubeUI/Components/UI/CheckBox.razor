@@ -1,16 +1,16 @@
 ﻿@inherits ControlBase<TItem>
 @typeparam TItem
 
-<FormGroup IsRow="false" IsCheck="true" @onmouseover="@(() => { base.SetHelp.InvokeAsync(Parent.GetProperty(Name).GetSummary()); })">
+<BSFormGroup IsRow="false" IsCheck="true" @onmouseover="@(() => { base.SetHelp.InvokeAsync(Parent.GetProperty(Name).GetSummary()); })">
     
-    <BlazorLabel For="@Name" Class="col-form-label-sm" IsCheck="true">
+    <BSLabel For="@Name" Class="col-form-label-sm" IsCheck="true">
         <input class="form-check-input" type="checkbox" id="@Name" value="@Value" @onchange="@((e) => ValueChanged.InvokeAsync((TItem)e.Value))" readonly="@ReadOnly" />
 
         @Name.AddSpacesToSentence().TrimVersionNumbers()
-    </BlazorLabel>
+    </BSLabel>
 
     <FieldValidationResult results="@Results" Field="@Name" />
-</FormGroup>
+</BSFormGroup>
 
 @code {
 

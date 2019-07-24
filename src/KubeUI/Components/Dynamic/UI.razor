@@ -2,44 +2,44 @@
 
 @if (Item != null)
 {
-    <Row>
-        <BlazorCol SM="3" MD="3">
-            <Card Class="sticky-top sticky-offset">
-                <Card CardType="CardType.Header" HeadingSize="HeadingSize.H5">
+    <BSRow>
+        <BSCol SM="3" MD="3">
+            <BSCard Class="sticky-top sticky-offset">
+                <BSCard CardType="CardType.Header" HeadingSize="HeadingSize.H5">
                     <a href="javascript:;" @onclick="@(() => RenderForm(Item))" @onmouseover="@(() => SetHelp(Item.GetType().GetSummary()))">@Item.GetType().Name.AddSpacesToSentence().TrimVersionNumbers()</a>
                     <div class="pull-right">
                         <a href="javascript:;" @onclick="@(() => ShowCode(Item))" @onmouseover="@(() => SetHelp("Show Code"))"><i class="fa fa-code"></i></a>
                     </div>
-                </Card>
-                <Card CardType="CardType.Body" style="padding-left:0">
+                </BSCard>
+                <BSCard CardType="CardType.Body" style="padding-left:0">
                     <Tree Item="@Item" RenderForm="@RenderForm" SetHelp="@SetHelp" />
-                </Card>
-            </Card>
-        </BlazorCol>
+                </BSCard>
+            </BSCard>
+        </BSCol>
 
-        <BlazorCol SM="6" MD="6">
+        <BSCol SM="6" MD="6">
             @Controls
-        </BlazorCol>
+        </BSCol>
         
-        <BlazorCol SM="3" MD="3">
-            <Card Class="sticky-top sticky-offset">
-                <Card CardType="CardType.Header" HeadingSize="HeadingSize.H5">
+        <BSCol SM="3" MD="3">
+            <BSCard Class="sticky-top sticky-offset">
+                <BSCard CardType="CardType.Header" HeadingSize="HeadingSize.H5">
                     Help
-                </Card>
-                <Card CardType="CardType.Body">
+                </BSCard>
+                <BSCard CardType="CardType.Body">
                     <Help HelpString="@Help" />
-                </Card>
-            </Card>
-        </BlazorCol>
-    </Row>
+                </BSCard>
+            </BSCard>
+        </BSCol>
+    </BSRow>
 }
 
-<Modal @bind-IsOpen="@ModalIsOpen" Size="Size.Large">
-    <ModalHeader @onclick="@(() => CloseModal())">Code</ModalHeader>
-    <ModalBody>
+<BSModal @bind-IsOpen="@ModalIsOpen" Size="Size.Large">
+    <BSModalHeader @onclick="@(() => CloseModal())">Code</BSModalHeader>
+    <BSModalBody>
         <pre><code id="yamlViewer" class="yaml">@MDLBody</code></pre>
-    </ModalBody>
-</Modal>
+    </BSModalBody>
+</BSModal>
 
 @code{
     [Parameter] TItem Item { get; set; }

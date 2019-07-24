@@ -9,16 +9,16 @@
 
 <br />
 
-<Row>
-    <BlazorCol SM="12" LG="6" XL="6">
-        <BlazorTable IsBordered="true" IsHovarable="true" IsSmall="true" IsStriped="true" IsResponsive="true">
-            <TableHead TableHeadType="TableHeadType.Light">
+<BSRow>
+    <BSCol SM="12" LG="6" XL="6">
+        <BSTable IsBordered="true" IsHovarable="true" IsSmall="true" IsStriped="true" IsResponsive="true">
+            <BSTableHead TableHeadType="TableHeadType.Light">
                 <tr>
                     <th scope="col">Name</th>
                     <th scope="col">Namespace</th>
                     <th scope="col">Actions</th>
                 </tr>
-            </TableHead>
+            </BSTableHead>
             <tbody>
                 @if (Collection != null)
                 {
@@ -44,9 +44,9 @@
                     }
                 }
             </tbody>
-        </BlazorTable>
-    </BlazorCol>
-</Row>
+        </BSTable>
+    </BSCol>
+</BSRow>
 
 
 @code{

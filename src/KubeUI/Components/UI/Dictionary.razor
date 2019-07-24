@@ -5,14 +5,14 @@
         @Name.AddSpacesToSentence().TrimVersionNumbers()
         <a href="javascript:;" @onclick="@((e) => Add())" title="Add New"><i class="fa fa-plus"></i></a>
     </legend>
-    <BlazorTable IsBordered="true" IsHovarable="true" IsSmall="true" IsStriped="true" IsResponsive="true">
-        <TableHead TableHeadType="TableHeadType.Light">
+    <BSTable IsBordered="true" IsHovarable="true" IsSmall="true" IsStriped="true" IsResponsive="true">
+        <BSTableHead TableHeadType="TableHeadType.Light">
             <tr>
                 <th scope="col">Key</th>
                 <th scope="col">Value</th>
                 <th scope="col">Actions</th>
             </tr>
-        </TableHead>
+        </BSTableHead>
         <tbody>
             @if (Value != null)
             {
@@ -28,7 +28,7 @@
                 }
             }
         </tbody>
-    </BlazorTable>
+    </BSTable>
 </fieldset>
 
 @code {

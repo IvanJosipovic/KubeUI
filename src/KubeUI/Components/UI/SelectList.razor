@@ -1,9 +1,9 @@
 ﻿@inherits ControlBase<TItem>
 @typeparam TItem
 
-<FormGroup IsRow="true" @onmouseover="@(() => { base.SetHelp.InvokeAsync(Parent.GetProperty(Name).GetSummary()); })">
-    <BlazorLabel For="@Name" SM="3" Class="col-form-label-sm">@Name.AddSpacesToSentence().TrimVersionNumbers()</BlazorLabel>
-    <BlazorCol SM="9">
+<BSFormGroup IsRow="true" @onmouseover="@(() => { base.SetHelp.InvokeAsync(Parent.GetProperty(Name).GetSummary()); })">
+    <BSLabel For="@Name" SM="3" Class="col-form-label-sm">@Name.AddSpacesToSentence().TrimVersionNumbers()</BSLabel>
+    <BSCol SM="9">
         <select class="form-control form-control-sm" id="@Name" value="@Value" @onchange="@((e) => ValueChanged.InvokeAsync((TItem)e.Value))" readonly="@ReadOnly">
             @if (!Options.Any(x => string.IsNullOrEmpty(x)))
             {
@@ -14,9 +14,9 @@
                 <option value="@option">@option.AddSpacesToSentence().TrimVersionNumbers()</option>
             }
         </select>
-    </BlazorCol>
+    </BSCol>
     <FieldValidationResult results="@Results" Field="@Name" />
-</FormGroup>
+</BSFormGroup>
 
 @code {
     [Parameter] protected string[] Options { get; set; }
