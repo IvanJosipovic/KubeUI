@@ -32,16 +32,19 @@ namespace KubeUI
 
         private readonly IValidatorFactory ValidatorFactory;
 
+        private readonly IAppInsights appInsights;
+
         public State(ILogger<State> logger)
         {
             Logger = logger;
         }
 
-        public State(ILogger<State> logger, IValidatorFactory validatorFactory, IJSRuntime JSRuntime)
+        public State(ILogger<State> logger, IValidatorFactory validatorFactory, IJSRuntime JSRuntime, IAppInsights appInsights)
         {
             this.Logger = logger;
             this.ValidatorFactory = validatorFactory;
             this.JSRuntime = JSRuntime;
+            this.appInsights = appInsights;
 
             LoadState();
 
@@ -75,6 +78,8 @@ namespace KubeUI
 
         public int AddItem(Type type)
         {
+            appInsights?.TrackEvent($"Add {type.Name}");
+
             var collection = GetCollection(type);
             var collType = collection.GetType();
             var count = (int)collType.GetProperty("Count").GetValue(collection);
