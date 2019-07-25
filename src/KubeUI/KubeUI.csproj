@@ -17,7 +17,7 @@
 
     <PackageReference Include="BlazorStrap" Version="1.0.0-preview7-01" />
     <PackageReference Include="BlazorFileSaver" Version="3.0.0-preview6.19307.2-1" />
-    <PackageReference Include="Tewr.Blazor.FileReader" Version="0.12.19186" />
+    <PackageReference Include="Tewr.Blazor.FileReader" Version="0.13.19206" />
     
     <PackageReference Include="Microsoft.AspNetCore.Blazor" Version="3.0.0-preview7.19365.7" />
     <PackageReference Include="Microsoft.AspNetCore.Blazor.Build" Version="3.0.0-preview7.19365.7" PrivateAssets="all" />
