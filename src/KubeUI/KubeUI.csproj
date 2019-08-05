@@ -15,7 +15,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.0.0-preview7.19362.4" />
     <PackageReference Include="SharpZipLib" Version="1.1.0" />
 
-    <PackageReference Include="BlazorStrap" Version="1.0.0-preview7-01" />
+    <PackageReference Include="BlazorStrap" Version="1.0.0-preview7-02" />
     <PackageReference Include="BlazorFileSaver" Version="3.0.0-preview7.19365.7-1" />
     <PackageReference Include="Tewr.Blazor.FileReader" Version="0.13.19207" />
     
