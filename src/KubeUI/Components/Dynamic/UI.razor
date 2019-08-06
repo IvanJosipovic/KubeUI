@@ -101,7 +101,7 @@
 
         if (isJson)
         {
-            MDLBody = JsonConvert.SerializeObject(obj.GutObject(), State.JsonSettings);
+            MDLBody = JsonConvert.SerializeObject(obj.Clone().GutObject(), State.JsonSettings);
         }
         else
         {
@@ -109,7 +109,7 @@
                 .WithTypeInspector(x => new JsonPropertyTypeInspector(x))
                 .Build();
 
-            MDLBody = serializer.Serialize(obj.GutObject());
+            MDLBody = serializer.Serialize(obj.Clone().GutObject());
         }
 
         ModalIsOpen = true;

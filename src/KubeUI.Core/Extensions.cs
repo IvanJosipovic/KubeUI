@@ -344,13 +344,16 @@ namespace KubeUI.Core
     {
         public static T Clone<T>(this T source)
         {
-            return JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(source), new JsonSerializerSettings
+            var settings = new JsonSerializerSettings
             {
-                NullValueHandling = NullValueHandling.Include,
+                NullValueHandling = NullValueHandling.Ignore,
                 DefaultValueHandling = DefaultValueHandling.Ignore,
                 ReferenceLoopHandling = ReferenceLoopHandling.Serialize,
+                TypeNameHandling = TypeNameHandling.All,
                 Error = (object _, Newtonsoft.Json.Serialization.ErrorEventArgs args) => args.ErrorContext.Handled = true
-            });
+            };
+
+            return JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(source, settings), settings);
         }
     }
 }
