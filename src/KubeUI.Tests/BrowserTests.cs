@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using PuppeteerSharp;
 using PuppeteerSharp.Contrib.Extensions;
@@ -10,13 +11,24 @@ namespace KubeUI.Tests
 {
     public class BrowserTests : IAsyncLifetime
     {
-        private static string BaseAddress = "https://kubeui-ci.netlify.com";
+        private string BaseAddress;
 
         private Browser Browser { get; set; }
 
         public async Task InitializeAsync()
         {
+            string filename = "BrowserTestsAddress.config";
+            if (File.Exists(filename))
+            {
+                BaseAddress = File.ReadAllText(filename);
+            }
+            else
+            {
+                throw new System.Exception($"Missing {filename}");
+            }
+
             await new BrowserFetcher().DownloadAsync(BrowserFetcher.DefaultRevision);
+
             Browser = await Puppeteer.LaunchAsync(new LaunchOptions
             {
                 Headless = true
