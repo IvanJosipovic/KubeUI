@@ -34,8 +34,8 @@
     </BSRow>
 }
 
-<BSModal @bind-IsOpen="@ModalIsOpen" Size="Size.Large">
-    <BSModalHeader @onclick="@(() => CloseModal())">Code</BSModalHeader>
+<BSModal @ref="BSModal" Size="Size.Large">
+    <BSModalHeader OnClick="@(() => CloseModal())">Code</BSModalHeader>
     <BSModalBody>
         <pre><code id="yamlViewer" class="yaml">@MDLBody</code></pre>
     </BSModalBody>
@@ -52,9 +52,9 @@
 
     private string Help { get; set; } = "Hover over a control to see help here.";
 
-    private bool ModalIsOpen { get; set; }
-
     private string MDLBody { get; set; }
+
+    private BSModal BSModal;
 
     protected override void OnInit()
     {
@@ -101,7 +101,7 @@
 
         if (isJson)
         {
-            MDLBody = JsonConvert.SerializeObject(obj.GutObject(), State.JsonSettings);
+            MDLBody = JsonConvert.SerializeObject(obj.Clone().GutObject(), State.JsonSettings);
         }
         else
         {
@@ -109,16 +109,14 @@
                 .WithTypeInspector(x => new JsonPropertyTypeInspector(x))
                 .Build();
 
-            MDLBody = serializer.Serialize(obj.GutObject());
+            MDLBody = serializer.Serialize(obj.Clone().GutObject());
         }
 
-        ModalIsOpen = true;
-        StateHasChanged();
+        BSModal.Toggle();
     }
 
     private void CloseModal()
     {
-        ModalIsOpen = false;
-        StateHasChanged();
+        BSModal.Toggle();
     }
 }
