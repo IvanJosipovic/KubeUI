@@ -29,4 +29,10 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="BrowserTestsAddress.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
