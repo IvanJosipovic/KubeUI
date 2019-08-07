@@ -52,10 +52,8 @@ jobs:
       targetType: 'inline'
       script: |
         $output = (netlify deploy --json -d $(Build.ArtifactStagingDirectory)/KubeUI/dist/) | Out-String;
-    
         $url = $(ConvertFrom-Json $output).deploy_url;
-        $url;
-    
+        Write-Host $url;
         Set-Content -Path "src/KubeUI.Tests/BrowserTestsAddress.config" -Value $url;
       pwsh: true
 
