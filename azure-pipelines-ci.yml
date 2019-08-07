@@ -50,6 +50,8 @@ jobs:
     inputs:
       targetType: 'inline'
       script: |
+        $env:NETLIFY_AUTH_TOKEN = "$(NETLIFY_AUTH_TOKEN)";
+        $env:NETLIFY_SITE_ID = "$(NETLIFY_SITE_ID)";
         $output = (netlify deploy --json -d $(Build.ArtifactStagingDirectory)/KubeUI/dist/) | Out-String;
         $url = $(ConvertFrom-Json $output).deploy_url;
         Write-Host $url;
