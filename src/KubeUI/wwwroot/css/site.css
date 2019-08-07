@@ -25,6 +25,7 @@ app {
 
 .sidebar {
     background-color: #2f2f2f;
+    width: 240px !important;
 }
 
     .sidebar .top-row {
