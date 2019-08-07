@@ -44,7 +44,6 @@ jobs:
       targetType: 'inline'
       script: |
         npm install netlify-cli -g
-      pwsh: true
 
   - task: PowerShell@2
     displayName: 'Deploy to Netlify-CI'
@@ -55,7 +54,6 @@ jobs:
         $url = $(ConvertFrom-Json $output).deploy_url;
         Write-Host $url;
         Set-Content -Path "src/KubeUI.Tests/BrowserTestsAddress.config" -Value $url;
-      pwsh: true
 
   - task: DotNetCoreCLI@2
     displayName: 'dotnet test'
