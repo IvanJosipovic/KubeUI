@@ -27,12 +27,9 @@ namespace KubeUI.Core
                 {
                     var descriptor = new PropertyDescriptor(p);
                     var member = p.GetCustomAttribute<JsonPropertyAttribute>();
-                    if (member != null)
+                    if (member?.PropertyName != null)
                     {
-                        if (member.PropertyName != null)
-                        {
-                            descriptor.Name = member.PropertyName;
-                        }
+                        descriptor.Name = member.PropertyName;
                     }
 
                     return (IPropertyDescriptor)descriptor;
