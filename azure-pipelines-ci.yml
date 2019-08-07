@@ -6,67 +6,62 @@ trigger:
 pr:
 - master
 
-pool:
-  name: Hosted Windows 2019 with VS2019
-
-#Your build pipeline references a secret variable named ‘NETLIFY_AUTH_TOKEN’. Create or edit the build pipeline for this YAML file, define the variable on the Variables tab, and then select the option to make it secret. See https://go.microsoft.com/fwlink/?linkid=865972
+#Your build pipeline references a secret variable named ï¿½NETLIFY_AUTH_TOKENï¿½. Create or edit the build pipeline for this YAML file, define the variable on the Variables tab, and then select the option to make it secret. See https://go.microsoft.com/fwlink/?linkid=865972
 
 variables:
   NETLIFY_SITE_ID: 'f3844224-cd13-4870-833e-3a10814d8861'
 
+jobs:
+- job: build
+  timeoutInMinutes: 10
+  pool:
+    vmImage: 'windows-latest'
+  steps:
+  - task: DotNetCoreInstaller@0
+    displayName: 'Use .NET Core sdk'
+    inputs:
+      version: '3.0.100-preview7-012821'
 
-steps:
-- task: DotNetCoreInstaller@0
-  displayName: 'Use .NET Core sdk'
-  inputs:
-    version: '3.0.100-preview7-012821'
+  - task: DotNetCoreCLI@2
+    displayName: 'dotnet build'
+    inputs:
+      arguments: ' -c Release'
+      workingDirectory: src/KubeUI
 
+  - task: DotNetCoreCLI@2
+    displayName: 'dotnet publish'
+    inputs:
+      command: publish
+      publishWebProjects: false
+      arguments: ' -c Release -o $(Build.ArtifactStagingDirectory)'
+      zipAfterPublish: false
+      modifyOutputPath: false
+      workingDirectory: src/KubeUI
 
-- task: DotNetCoreCLI@2
-  displayName: 'dotnet build'
-  inputs:
-    arguments: ' -c Release'
-    workingDirectory: src/KubeUI
+  - powershell: |  
+      npm install netlify-cli -g
 
+    displayName: 'Install Netlify-CLI'
 
-- task: DotNetCoreCLI@2
-  displayName: 'dotnet publish'
-  inputs:
-    command: publish
-    publishWebProjects: false
-    arguments: ' -c Release -o $(Build.ArtifactStagingDirectory)'
-    zipAfterPublish: false
-    modifyOutputPath: false
-    workingDirectory: src/KubeUI
+  - powershell: | 
+      $output = (netlify deploy --json -d $(Build.ArtifactStagingDirectory)/KubeUI/dist/) | Out-String;
+  
+      $url = $(ConvertFrom-Json $output).deploy_url;
+      $url;
+  
+      Set-Content -Path "src/KubeUI.Tests/BrowserTestsAddress.config" -Value $url;
 
+    displayName: 'Deploy to Netlify-CI'
 
-- powershell: |  
-   npm install netlify-cli -g
+  - task: DotNetCoreCLI@2
+    displayName: 'dotnet test'
+    inputs:
+      command: test
+      arguments: ' -c Release'
+      workingDirectory: src/KubeUI.Tests
 
-  displayName: 'Install Netlify-CLI'
-
-
-- powershell: | 
-   $output = (netlify deploy --json -d $(Build.ArtifactStagingDirectory)/KubeUI/dist/) | Out-String;
-   
-   $url = $(ConvertFrom-Json $output).deploy_url;
-   $url;
-   
-   Set-Content -Path "src/KubeUI.Tests/BrowserTestsAddress.config" -Value $url;
-
-  displayName: 'Deploy to Netlify-CI'
-
-
-- task: DotNetCoreCLI@2
-  displayName: 'dotnet test'
-  inputs:
-    command: test
-    arguments: ' -c Release'
-    workingDirectory: src/KubeUI.Tests
-
-
-- task: PublishBuildArtifacts@1
-  displayName: 'Publish Artifact: binaries'
-  inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)/KubeUI/dist/'
-    ArtifactName: binaries
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifact: binaries'
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)/KubeUI/dist/'
+      ArtifactName: binaries
