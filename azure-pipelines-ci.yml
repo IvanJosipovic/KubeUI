@@ -38,20 +38,26 @@ jobs:
       modifyOutputPath: false
       workingDirectory: src/KubeUI
 
-  - powershell: |  
-      npm install netlify-cli -g
-
+  - task: PowerShell@2
     displayName: 'Install Netlify-CLI'
+    inputs:
+      targetType: 'inline'
+      script: |
+        npm install netlify-cli -g
+      pwsh: true
 
-  - powershell: | 
-      $output = (netlify deploy --json -d $(Build.ArtifactStagingDirectory)/KubeUI/dist/) | Out-String;
-  
-      $url = $(ConvertFrom-Json $output).deploy_url;
-      $url;
-  
-      Set-Content -Path "src/KubeUI.Tests/BrowserTestsAddress.config" -Value $url;
-
+  - task: PowerShell@2
     displayName: 'Deploy to Netlify-CI'
+    inputs:
+      targetType: 'inline'
+      script: |
+        $output = (netlify deploy --json -d $(Build.ArtifactStagingDirectory)/KubeUI/dist/) | Out-String;
+    
+        $url = $(ConvertFrom-Json $output).deploy_url;
+        $url;
+    
+        Set-Content -Path "src/KubeUI.Tests/BrowserTestsAddress.config" -Value $url;
+      pwsh: true
 
   - task: DotNetCoreCLI@2
     displayName: 'dotnet test'
