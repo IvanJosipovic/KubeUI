@@ -20,7 +20,8 @@
 
                 @if (item.IsCollection)
                 {
-                    <span @onmouseover="@(() => SetHelp.InvokeAsync(item.Summary))">@item.Name </span> <a href="javascript:;" @onclick="@((e) => AddNew(item.Object))" title="Add New @item.Name"><i class="fa fa-plus"></i></a>
+                    <span @onmouseover="@(() => SetHelp.InvokeAsync(item.Summary))">@item.Name</span>
+                    <a href="javascript:;" @onclick="@((e) => AddNew(item.Object))" title="Add New @item.Name"><i class="fa fa-plus"></i></a>
                 }
                 else
                 {
@@ -106,6 +107,11 @@
 
     public List<TreeItem> BuildTree(object obj, KubeUI.UILevel uILevel)
     {
+        if (obj.GetType().FullName.StartsWith("System.Collections."))
+        {
+            return new List<TreeItem>();
+        }
+
         Logger.LogDebug("BuildTree {0}", obj.GetType());
 
         List<TreeItem> Tree = new List<TreeItem>();
@@ -117,47 +123,54 @@
             x.PropertyType.FullName.StartsWith("System.Collections."))
             )
         {
-            var attributes = TypeDescriptor.GetProperties(obj.GetType())[property.Name].Attributes;
-
-            if (Common.IsIgnore(attributes) || !Common.ShouldShow(attributes, uILevel))
+            try
             {
-                Logger.LogDebug("BuildTree {0} Ignoring", property.PropertyType);
-                continue;
-            }
+                Logger.LogDebug("BuildTree {0}", property.PropertyType);
 
-            var item = property.GetValue(obj);
-            if (item == null)
-            {
-                item = Activator.CreateInstance(property.PropertyType);
-                property.SetValue(obj, item);
-            }
+                var attributes = TypeDescriptor.GetProperties(obj.GetType())[property.Name].Attributes;
 
-            if (Common.IsDisplayInTree(attributes))
-            {
-                var tree = new TreeItem()
+                if (Common.IsIgnore(attributes) || !Common.ShouldShow(attributes, uILevel))
                 {
-                    Attributes = attributes,
-                    Name = property.Name.AddSpacesToSentence().TrimVersionNumbers(),
-                    Children = GetCollectionItems(item, attributes, uILevel),
-                    Object = item,
-                    Summary = property.GetSummary(),
-                    IsCollection = true,
-                    HideLink = Common.ShouldHideLink(property.PropertyType)
-                };
+                    Logger.LogDebug("BuildTree {0} Ignorning", property.PropertyType);
+                    continue;
+                }
 
-                Tree.Add(tree);
-            }
-            else if (!property.PropertyType.FullName.StartsWith("System.Collections."))
-            {
-                Tree.Add(new TreeItem()
+                var item = property.GetValue(obj);
+                if (item == null)
                 {
-                    Attributes = attributes,
-                    Name = property.Name.AddSpacesToSentence().TrimVersionNumbers(),
-                    Children = BuildTree(item, uILevel),
-                    Object = item,
-                    Summary = property.GetSummary(),
-                    HideLink = Common.ShouldHideLink(property.PropertyType)
-                });
+                    item = Activator.CreateInstance(property.PropertyType);
+                    property.SetValue(obj, item);
+                }
+
+                if (Common.IsDisplayInTree(attributes))
+                {
+                    Tree.Add(new TreeItem()
+                    {
+                        Attributes = attributes,
+                        Name = property.Name.AddSpacesToSentence().TrimVersionNumbers(),
+                        Children = GetCollectionItems(item, attributes, uILevel),
+                        Object = item,
+                        Summary = property.GetSummary(),
+                        IsCollection = true,
+                        HideLink = Common.ShouldHideLink(property.PropertyType)
+                    });
+                }
+                else if (!property.PropertyType.FullName.StartsWith("System.Collections."))
+                {
+                    Tree.Add(new TreeItem()
+                    {
+                        Attributes = attributes,
+                        Name = property.Name.AddSpacesToSentence().TrimVersionNumbers(),
+                        Children = BuildTree(item, uILevel),
+                        Object = item,
+                        Summary = property.GetSummary(),
+                        HideLink = Common.ShouldHideLink(property.PropertyType)
+                    });
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e, "BuildTree Failed: " + e.Message);
             }
         }
 
@@ -223,7 +236,7 @@
     public class TreeItem
     {
         public AttributeCollection Attributes { get; set; }
-    
+
         public string Name { get; set; }
 
         public object Parent { get; set; }
