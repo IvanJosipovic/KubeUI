@@ -12,7 +12,7 @@
                     </div>
                 </BSCard>
                 <BSCard CardType="CardType.Body">                  
-                    <Tree3 Nodes="Trees" @bind-ExpandedNodes="ExpandedNodes" @bind-SelectedNode="SelectedNode" MouseOverNodeChanged="@((TreeItem t) => SetHelp(t.Summary))" />
+                    <Tree Nodes="Trees" @bind-SelectedNode="SelectedNode" MouseOverNodeChanged="@((TreeItem t) => SetHelp(t.Summary))" />
                 </BSCard>
             </BSCard>
         </BSCol>
@@ -47,17 +47,17 @@
 
     [Inject] ILogger<UI<TItem>> Logger { get; set; }
     [Inject] IState state { get; set; }
-    [Inject] private IAppInsights appInsights { get; set; }
+    [Inject] IAppInsights appInsights { get; set; }
 
-    private RenderFragment Controls { get; set; }
+    private RenderFragment Controls;
 
-    private string Help { get; set; } = "Hover over a control to see help here.";
+    private string Help = "Hover over a control to see help here.";
 
-    private string MDLBody { get; set; }
+    private string MDLBody;
 
     private BSModal BSModal;
 
-    private List<TreeItem> Trees { get; set; } = new List<TreeItem>();
+    private List<TreeItem> Trees = new List<TreeItem>();
 
     public List<TreeItem> BuildTree(object obj, KubeUI.UILevel uILevel)
     {
@@ -175,8 +175,6 @@
         return tree;
     }
 
-    IList<TreeItem> ExpandedNodes { get; set; } = new List<TreeItem>();
-
     private TreeItem _SelectedNode;
 
     public TreeItem SelectedNode
@@ -196,7 +194,11 @@
 
         state.PropertyChanged += (xo, e) =>
         {
-            StateHasChanged();
+            if (e.PropertyName == "BuildTree")
+            {
+                Trees = BuildTree(Item, state.GetUILevel());
+                StateHasChanged();
+            }
         };
     }
 

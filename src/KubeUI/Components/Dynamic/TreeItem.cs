@@ -24,7 +24,7 @@ namespace KubeUI.Components.Dynamic
 
         public bool HideLink { get; set; }
 
-        public bool Minimized { get; set; }
+        public bool Minimized { get; set; } = true;
 
         public List<TreeItem> Children { get; set; } = new List<TreeItem>();
     }
