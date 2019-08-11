@@ -1,96 +1,94 @@
-﻿@typeparam TItem
+﻿<div class="uic-tree @(Visible ? "" : "uic-tree--hidden")">
 
-@if (Item != null)
-{
-    <ul style="padding-left:20px">
-        @foreach (var property in Item.GetType()
-           .GetProperties()
-           .Where(x =>
-           x.PropertyType.FullName.StartsWith("KubeUI.Schema.") ||
-           x.PropertyType.FullName.StartsWith("System.Collections."))
-           )
-        {
-            var attributes = TypeDescriptor.GetProperties(Item.GetType())[property.Name].Attributes;
-
-            if (Common.IsIgnore(attributes) || !Common.ShouldShow(attributes, State.GetUILevel()))
-            {
-                continue;
-            }
-
-            var item = property.GetValue(Item);
-            if (item == null)
-            {
-                item = Activator.CreateInstance(property.PropertyType);
-                property.SetValue(Item, item);
-            }
-
-            if (Common.IsDisplayInTree(attributes))
-            {
-                var genType = property.PropertyType.GetTypeInfo().GenericTypeArguments[0];
-
-                <li>
-                    <span @onmouseover="@(() => SetHelp.InvokeAsync(property.GetSummary()))">@property.Name.AddSpacesToSentence().TrimVersionNumbers() </span> <a href="javascript:;" @onclick="@((e) => AddNew(item))" title="Add New @property.Name.AddSpacesToSentence().TrimVersionNumbers()"><i class="fa fa-plus"></i></a>
-
-                    <ul style="padding-left:20px">
-                        @{int n = (int)property.PropertyType.GetProperty("Count").GetValue(item);}
-                        @for (int i = 0; i < n; i++)
-                        {
-                            object[] index = { i };
-
-                            object myObject = property.PropertyType.GetProperty("Item").GetValue(item, index);
-
-                            string displayPropertyName = Common.GetDisplayInTreeName(attributes);
-
-                            string propertyValue = null;
-
-                            if (displayPropertyName != null)
-                            {
-                                var childProperty = genType.GetProperty(displayPropertyName);
-
-                                propertyValue = childProperty?.GetValue(myObject)?.ToString();
-                            }
-
-                            if (string.IsNullOrEmpty(propertyValue))
-                            {
-                                propertyValue = $"Item {index[0]}";
-                            }
-                            <li>
-                                <a href="javascript:;" @onclick="@(() => RenderForm.InvokeAsync(myObject) )" @onmouseover="@(() => SetHelp.InvokeAsync(property.GetSummary()))">@propertyValue.ToString().AddSpacesToSentence().TrimVersionNumbers()</a>
-                                <a href="javascript:;" @onclick="@(() => Delete(item, (int)index[0]))" title="Delete"><i class="fa fa-trash"></i></a>
-                                <Tree Item="@myObject" RenderForm="@RenderForm" SetHelp="@SetHelp"></Tree>
-                            </li>
-                        }
-                    </ul>
-                </li>
-            }
-            else if (!property.PropertyType.FullName.StartsWith("System.Collections."))
-            {
-                <li>
-                    @if (Common.ShouldHideLink(property.PropertyType))
-                    {
-                        <span @onmouseover="@(() => SetHelp.InvokeAsync(property.GetSummary()))">@property.Name.AddSpacesToSentence().TrimVersionNumbers()</span>
-                    }
-                    else
-                    {
-                        <a href="javascript:;" @onclick="@(() => RenderForm.InvokeAsync(item) )" @onmouseover="@(() => SetHelp.InvokeAsync(property.GetSummary()))">@property.Name.AddSpacesToSentence().TrimVersionNumbers()</a>
-                    }
-                    <Tree Item="item" RenderForm="@RenderForm" SetHelp="@SetHelp"></Tree>
-                </li>
-            }
-        }
-    </ul>
-}
-
-@code{
-    [Parameter] TItem Item { get; set; }
-    [Parameter] EventCallback<TItem> ItemChanged { get; set; }
-    [Parameter] EventCallback<object> RenderForm { get; set; }
-    [Parameter] protected EventCallback<object> SetHelp { get; set; }
-
-    [Inject] protected IState State { get; set; }
-
-    protected override void OnInit()
+    @foreach (var node in Nodes ?? Enumerable.Empty<TreeItem>())
     {
+        var nodeSelected = node.Equals(SelectedNode);
+
+        <div>
+            @if (node.Children.Any())
+            {
+                <span class="uic-tree__icon" @onclick="@(() => OnToggleNode(node, !node.Minimized))">
+                    <i class="@(node.Minimized ? Style.CollapseNodeIconClass : Style.ExpandNodeIconClass)"></i>
+                </span>
+            }
+
+            <div class="uic-tree__title">
+                <span class="@(nodeSelected ? Style.NodeTitleSelectedClass : @Style.NodeTitleClass)" @onclick="@(() => OnClickNode(node))" @onmouseover="@(() => OnMouseOverNode(node))">
+                    @node.Name
+
+                    @if (node.IsCollectionItem)
+                    {
+                        <a href="javascript:;" @onclick="@(() => Delete(node.Parent, node.Object))" title="Delete"><i class="fa fa-trash"></i></a>
+                    }
+
+                    @if (node.IsCollection)
+                    {
+                        <a href="javascript:;" @onclick="@(() => AddNew(node.Object))" title="Add New @node.Name"><i class="fa fa-plus"></i></a>
+                    }
+                </span>
+            </div>
+
+            @if (node.Children.Any())
+            {
+                <Tree Nodes="node.Children"
+
+                    SelectedNode="SelectedNode"
+                    SelectedNodeChanged="SelectedNodeChanged"
+
+                    MouseOverNode="MouseOverNode"
+                    MouseOverNodeChanged="MouseOverNodeChanged"
+
+                    Visible="node.Minimized" 
+                />
+            }
+
+        </div>
+    }
+
+</div>
+
+@code {
+    [Inject] IState state { get; set; }
+
+    [Parameter] IEnumerable<TreeItem> Nodes { get; set; }
+
+    [Parameter] TreeItem SelectedNode { get; set; }
+    [Parameter] EventCallback<TreeItem> SelectedNodeChanged { get; set; }
+
+    [Parameter] TreeItem MouseOverNode { get; set; }
+    [Parameter] EventCallback<TreeItem> MouseOverNodeChanged { get; set; }
+
+    [Parameter] TreeStyle Style { get; set; } = TreeStyle.Bootstrap;
+
+    [Parameter] bool Visible { get; set; } = true;
+
+    private void OnToggleNode(TreeItem node, bool expand)
+    {
+        if (node.Minimized && !expand)
+        {
+            node.Minimized = false;
+        }
+        else if (!node.Minimized && expand)
+        {
+            node.Minimized = true;
+        }
+
+        StateHasChanged();
+    }
+
+    private void OnClickNode(TreeItem node)
+    {
+        if (!node.IsCollection || node.HideLink)
+        {
+            SelectedNode = node;
+            SelectedNodeChanged.InvokeAsync(node);
+        }
+    }
+
+    private void OnMouseOverNode(TreeItem node)
+    {
+        MouseOverNode = node;
+        MouseOverNodeChanged.InvokeAsync(node);
     }
 
     private void AddNew(object obj)
@@ -103,15 +101,31 @@
 
         obj.GetType().GetMethod("Add").Invoke(obj, data);
 
-        StateHasChanged();
+        state.RaisePropertyChanged("BuildTree");
     }
 
-    private void Delete(object obj, int id)
+    private void Delete(object collection, object item)
     {
-        object[] data = { id };
+        object[] data = { item };
 
-        obj.GetType().GetMethod("RemoveAt").Invoke(obj, data);
+        collection.GetType().GetMethod("Remove").Invoke(collection, data);
 
-        StateHasChanged();
+        state.RaisePropertyChanged("BuildTree");
+    }
+
+    public class TreeStyle
+    {
+        public static readonly TreeStyle Bootstrap = new TreeStyle
+        {
+            ExpandNodeIconClass = "fa fa-angle-right curosr-pointer",
+            CollapseNodeIconClass = "fa fa-angle-down curosr-pointer",
+            NodeTitleClass = "text-primary curosr-pointer",
+            NodeTitleSelectedClass = "text-primary font-weight-bold font-italic curosr-pointer"
+        };
+
+        public string ExpandNodeIconClass { get; set; }
+        public string CollapseNodeIconClass { get; set; }
+        public string NodeTitleClass { get; set; }
+        public string NodeTitleSelectedClass { get; set; }
     }
 }

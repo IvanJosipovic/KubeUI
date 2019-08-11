@@ -87,9 +87,9 @@ namespace KubeUI.Tests
 
             await page.ClickAsync(".main h2 #AddNew");
 
-            await page.WaitForXPathAsync("//ul/li/a[text()='Metadata']");
+            await page.WaitForXPathAsync("//div[contains(@class,'uic-tree')]/div/div/span[text()='Metadata']");
 
-            var ele = await page.XPathAsync("//ul/li/a[text()='Metadata']");
+            var ele = await page.XPathAsync("//div[contains(@class,'uic-tree')]/div/div/span[text()='Metadata']");
 
             await ele[0].ClickAsync();
 

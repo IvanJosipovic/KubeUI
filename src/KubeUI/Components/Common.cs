@@ -12,11 +12,14 @@ namespace KubeUI.Components
     {
         public static bool ShouldShow(AttributeCollection attributes, KubeUI.UILevel uiLevel)
         {
-            var attr = attributes.OfType<UILevelAttribute>().FirstOrDefault();
-
-            if (attr != null)
+            if (attributes != null)
             {
-                return (int)uiLevel >= (int)attr.UILevel;
+                var attr = attributes.OfType<UILevelAttribute>().FirstOrDefault();
+
+                if (attr != null)
+                {
+                    return (int)uiLevel >= (int)attr.UILevel;
+                }
             }
 
             return true;

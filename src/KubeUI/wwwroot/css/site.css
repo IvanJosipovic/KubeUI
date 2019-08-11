@@ -188,3 +188,23 @@ app {
 .sticky-offset {
     top: 73.6px;
 }
+
+.uic-tree .uic-tree {
+    margin-left: 0.8rem;
+}
+
+.uic-tree--hidden {
+    display: none;
+}
+
+.uic-tree__icon {
+    float: left;
+}
+
+.uic-tree__title {
+    margin-left: 0.8rem;
+}
+
+.uic-tree .curosr-pointer {
+    cursor: pointer;
+}

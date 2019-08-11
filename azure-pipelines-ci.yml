@@ -1,10 +1,13 @@
 trigger:
+  batch: false
   branches:
     include:
     - '*'
 
 pr:
-- master
+  branches:
+    include:
+    - '*'
 
 #Your build pipeline references a secret variable named �NETLIFY_AUTH_TOKEN�. Create or edit the build pipeline for this YAML file, define the variable on the Variables tab, and then select the option to make it secret. See https://go.microsoft.com/fwlink/?linkid=865972
 
