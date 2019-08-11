@@ -31,7 +31,7 @@ namespace KubeUI.Tests
 
             Browser = await Puppeteer.LaunchAsync(new LaunchOptions
             {
-                Headless = false
+                Headless = true
             });
         }
 
