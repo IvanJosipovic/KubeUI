@@ -12,7 +12,7 @@
                     </div>
                 </BSCard>
                 <BSCard CardType="CardType.Body">                  
-                    <Tree3 Nodes="Trees" @bind-ExpandedNodes="ExpandedNodes" @bind-SelectedNode="SelectedNode" MouseOverChanged="@((TreeItem t) => SetHelp(t.Summary))" />
+                    <Tree3 Nodes="Trees" @bind-ExpandedNodes="ExpandedNodes" @bind-SelectedNode="SelectedNode" MouseOverNodeChanged="@((TreeItem t) => SetHelp(t.Summary))" />
                 </BSCard>
             </BSCard>
         </BSCol>
@@ -66,7 +66,7 @@
             return new List<TreeItem>();
         }
 
-        Logger.LogDebug("BuildTree {0}", obj.GetType());
+        //Logger.LogDebug("BuildTree {0}", obj.GetType());
 
         List<TreeItem> Tree = new List<TreeItem>();
 
@@ -79,13 +79,13 @@
         {
             try
             {
-                Logger.LogDebug("BuildTree {0}", property.PropertyType);
+                //Logger.LogDebug("BuildTree {0}", property.PropertyType);
 
                 var attributes = TypeDescriptor.GetProperties(obj.GetType())[property.Name].Attributes;
 
                 if (Common.IsIgnore(attributes) || !Common.ShouldShow(attributes, uILevel))
                 {
-                    Logger.LogDebug("BuildTree {0} Ignorning", property.PropertyType);
+                    //Logger.LogDebug("BuildTree {0} Ignorning", property.PropertyType);
                     continue;
                 }
 
@@ -186,7 +186,7 @@
             _SelectedNode = value;
             RenderForm(_SelectedNode.Object);
         }
-    } 
+    }
 
     protected override void OnInit()
     {
