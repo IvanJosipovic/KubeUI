@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -8,7 +7,7 @@ namespace KubeUI
 {
     public static class TypeDescriptorProviderGenerator
     {
-        public static IServiceCollection AddTypeDescriptorProviders(this IServiceCollection services, string nameSpace, string metadataNameSpace)
+        public static void AddTypeDescriptorProviders(string nameSpace, string metadataNameSpace)
         {
             IEnumerable<Type> metadataTypes = AppDomain.CurrentDomain.GetAssemblies()
                        .SelectMany(t => t.GetTypes())
@@ -23,8 +22,6 @@ namespace KubeUI
 
                 TypeDescriptor.AddProvider(new AssociatedMetadataTypeTypeDescriptionProvider(type, metadataType), type);
             }
-
-            return services;
         }
     }
 }

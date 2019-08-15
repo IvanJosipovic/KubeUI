@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace KubeUI.Components.Dynamic
 {
@@ -28,5 +25,4 @@ namespace KubeUI.Components.Dynamic
 
         public List<TreeItem> Children { get; set; } = new List<TreeItem>();
     }
-
 }

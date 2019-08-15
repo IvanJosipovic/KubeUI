@@ -5,8 +5,9 @@ using KubeUI.Schema;
 using System.Runtime.CompilerServices;
 using System;
 using KubeUI.Core;
+using System.Threading.Tasks;
 
-namespace KubeUI
+namespace KubeUI.Services
 {
     public interface IState
     {
@@ -28,5 +29,6 @@ namespace KubeUI
 
         event PropertyChangedEventHandler PropertyChanged;
         void RaisePropertyChanged([CallerMemberName] string propertyName = null);
+        Task LoadState();
     }
 }
