@@ -6,11 +6,11 @@
 }
 
 @code{
-    [Parameter] private int Id { get; set; }
+    [Parameter] public int Id { get; set; }
+    [Parameter] public string TypeParam { get;set; }
 
     [Inject] IState state { get; set; }
     [Inject] IUriHelper uriHelper { get; set; }
-    [Parameter] public string TypeParam { get;set; }
 
     private Type Type { get; set; }
 
