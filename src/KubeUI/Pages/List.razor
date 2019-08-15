@@ -50,15 +50,16 @@
 
 
 @code{
+    [Parameter] public string TypeParam { get; set; }
+
     [Inject] ILogger<List> Logger { get; set; }
     [Inject] IState state { get; set; }
     [Inject] IUriHelper uriHelper { get; set; }
-    [Parameter] string TypeParam { get; set; }
 
     private Type Type { get; set; }
     private object Collection { get; set; }
 
-    protected override void OnInit()
+    protected override void OnInitialized()
     {
     }
 

@@ -6,7 +6,7 @@
     [Inject] protected IState State { get; set; }
     [Inject] protected ILogger<Help> Logger { get;set; }
 
-    [Parameter] protected string HelpString { get; set; }
+    [Parameter] public string HelpString { get; set; }
 
     /// <summary>
     /// Replaces urls with hyperlinks

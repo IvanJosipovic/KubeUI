@@ -62,6 +62,9 @@ namespace KubeUI.Tests
             (await page.WaitForSelectorAsync(".content > h2:nth-child(1)")).InnerText().ShouldBe("Welcome to KubeUI!");
 
             hasError.ShouldBeFalse();
+
+            var perf = await page.EvaluateExpressionAsync<long>("window.performance.timing.domContentLoadedEventEnd - window.performance.timing.navigationStart");
+            System.Console.WriteLine($"Load Time: {perf}ms");
         }
 
         [Fact]
@@ -100,6 +103,9 @@ namespace KubeUI.Tests
             (await (await page.QuerySelectorAsync("#Name")).EvaluateFunctionAsync<string>("node => node.value")).ShouldBe("Deployment 0");
 
             hasError.ShouldBeFalse();
+
+            var perf = await page.EvaluateExpressionAsync<long>("window.performance.timing.domContentLoadedEventEnd - window.performance.timing.navigationStart");
+            System.Console.WriteLine($"Load Time: {perf}ms");
         }
 
         [Fact]
@@ -140,6 +146,9 @@ namespace KubeUI.Tests
             (await page.QuerySelectorAsync(".table > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(2)")).TextContent().Trim().ShouldBe("bot");
 
             hasError.ShouldBeFalse();
+
+            var perf = await page.EvaluateExpressionAsync<long>("window.performance.timing.domContentLoadedEventEnd - window.performance.timing.navigationStart");
+            System.Console.WriteLine($"Load Time: {perf}ms");
         }
     }
 }
