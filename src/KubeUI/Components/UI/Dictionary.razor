@@ -34,11 +34,6 @@
 @code {
     [Parameter] public string Type { get; set; } = "text";
 
-    protected override void OnInitialized()
-    {
-        base.OnInitialized();
-    }
-
     private void Add()
     {
         if (Value == null)

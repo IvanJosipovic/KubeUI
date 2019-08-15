@@ -46,8 +46,6 @@ namespace KubeUI
             this.JSRuntime = JSRuntime;
             this.appInsights = appInsights;
 
-            LoadState();
-
             // Preload default objects
             GetCollection(typeof(ConfigMap));
             GetCollection(typeof(CronJob));

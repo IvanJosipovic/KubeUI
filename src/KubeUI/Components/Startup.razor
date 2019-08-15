@@ -1,0 +1,20 @@
+﻿
+@if (ready)
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter] public RenderFragment ChildContent { get; set; }
+
+    [Inject] protected IState State { get; set; }
+    [Inject] protected IAppInsights AppInsights { get; set; }
+
+    private bool ready;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await State.LoadState();
+        ready = true;
+    }
+}
