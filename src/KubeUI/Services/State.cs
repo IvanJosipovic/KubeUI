@@ -26,6 +26,15 @@ namespace KubeUI.Services
             Error = (object _, Newtonsoft.Json.Serialization.ErrorEventArgs args) => args.ErrorContext.Handled = true
         };
 
+        public static readonly JsonSerializerSettings JsonSettingsWithType = new JsonSerializerSettings
+        {
+            NullValueHandling = NullValueHandling.Ignore,
+            DefaultValueHandling = DefaultValueHandling.Ignore,
+            ReferenceLoopHandling = ReferenceLoopHandling.Serialize,
+            TypeNameHandling = TypeNameHandling.All,
+            Error = (object _, Newtonsoft.Json.Serialization.ErrorEventArgs args) => args.ErrorContext.Handled = true
+        };
+
         private readonly ILogger<State> Logger;
 
         private readonly IJSRuntime JSRuntime;
@@ -392,14 +401,14 @@ namespace KubeUI.Services
 
         public async Task LoadState()
         {
-            var yaml = await JSRuntime.InvokeAsync<string>("loadData", new[] { "Data" });
+            var data = await JSRuntime.InvokeAsync<string>("loadData", new[] { "Data" });
 
-            if (!string.IsNullOrEmpty(yaml))
+            if (!string.IsNullOrEmpty(data))
             {
                 Logger.LogInformation("LoadState - Found existing state.");
                 try
                 {
-                    ImportObject(yaml);
+                    Data = JsonConvert.DeserializeObject<Dictionary<Type, Collection<object>>>(data, JsonSettingsWithType);
 
                     RaisePropertyChanged();
                 }
@@ -419,26 +428,9 @@ namespace KubeUI.Services
 
         public void SaveState()
         {
-            string output = string.Empty;
-
-            foreach (var coll in Data)
-            {
-                foreach (var item in coll.Value)
-                {
-                    output += Serialize(item);
-                    output += "---" + Environment.NewLine;
-                }
-            }
+            string output = JsonConvert.SerializeObject(Data, JsonSettingsWithType);
 
             JSRuntime.InvokeAsync<object>("saveData", new[] { "Data", output });
-
-            string Serialize(object obj)
-            {
-                var serializer = new SerializerBuilder()
-                    .WithTypeInspector(x => new JsonPropertyTypeInspector(x))
-                    .Build();
-                return serializer.Serialize(obj);
-            }
         }
 
         public void SetUILevel(UILevel uILevel)
