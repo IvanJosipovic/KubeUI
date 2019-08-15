@@ -208,7 +208,8 @@ namespace KubeUI.Core
 
         public static string TrimVersionNumbers(this string text)
         {
-            return text.TrimEnd('1').TrimEnd('2').TrimEnd('3').TrimEnd('4').TrimEnd('5');
+            var digits = new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
+            return text.TrimEnd(digits);
         }
     }
 

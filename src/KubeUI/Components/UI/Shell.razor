@@ -11,9 +11,9 @@
 <br />
 
 @code {
-    [Parameter] protected EventCallback<object> SetHelp { get; set; }
+    [Parameter] public EventCallback<object> SetHelp { get; set; }
 
-    [Parameter] protected TItem Item { get; set; }
-    [Parameter] protected RenderFragment ChildContent { get; set; }
+    [Parameter] public TItem Item { get; set; }
+    [Parameter] public RenderFragment ChildContent { get; set; }
     protected Guid Id { get; set; } = Guid.NewGuid();
 }

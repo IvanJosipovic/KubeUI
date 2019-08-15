@@ -50,17 +50,17 @@
 @code {
     [Inject] IState state { get; set; }
 
-    [Parameter] IEnumerable<TreeItem> Nodes { get; set; }
+    [Parameter] public IEnumerable<TreeItem> Nodes { get; set; }
 
-    [Parameter] TreeItem SelectedNode { get; set; }
-    [Parameter] EventCallback<TreeItem> SelectedNodeChanged { get; set; }
+    [Parameter] public TreeItem SelectedNode { get; set; }
+    [Parameter] public EventCallback<TreeItem> SelectedNodeChanged { get; set; }
 
-    [Parameter] TreeItem MouseOverNode { get; set; }
-    [Parameter] EventCallback<TreeItem> MouseOverNodeChanged { get; set; }
+    [Parameter] public TreeItem MouseOverNode { get; set; }
+    [Parameter] public EventCallback<TreeItem> MouseOverNodeChanged { get; set; }
 
-    [Parameter] TreeStyle Style { get; set; } = TreeStyle.Bootstrap;
-
-    [Parameter] bool Visible { get; set; } = true;
+    [Parameter] public TreeStyle Style { get; set; } = TreeStyle.Bootstrap;
+ 
+    [Parameter] public bool Visible { get; set; } = true;
 
     private void OnToggleNode(TreeItem node, bool expand)
     {

@@ -1,13 +1,13 @@
 ﻿<BSButtonGroup Size="Size.Small" title="Set the UI complexity level. Toggle to see more complex configuration options.">
-    <BSButton Color="@(State.GetUILevel() == KubeUI.UILevel.Basic ? Color.Secondary : Color.Active)" Size="Size.Small" @onclick="@((e) => State.SetUILevel(KubeUI.UILevel.Basic))">Basic</BSButton>
-    <BSButton Color="@(State.GetUILevel() == KubeUI.UILevel.Advanced ? Color.Secondary : Color.Active)" Size="Size.Small" @onclick="@((e) => State.SetUILevel(KubeUI.UILevel.Advanced))">Advanced</BSButton>
-    <BSButton Color="@(State.GetUILevel() == KubeUI.UILevel.Expert ? Color.Secondary : Color.Active)" Size="Size.Small" @onclick="@((e) => State.SetUILevel(KubeUI.UILevel.Expert))">Expert</BSButton>
+    <BSButton Color="@(State.GetUILevel() == KubeUI.UILevel.Basic ? Color.Secondary : Color.Active)" Size="Size.Small" OnClick="@((e) => State.SetUILevel(KubeUI.UILevel.Basic))">Basic</BSButton>
+    <BSButton Color="@(State.GetUILevel() == KubeUI.UILevel.Advanced ? Color.Secondary : Color.Active)" Size="Size.Small" OnClick="@((e) => State.SetUILevel(KubeUI.UILevel.Advanced))">Advanced</BSButton>
+    <BSButton Color="@(State.GetUILevel() == KubeUI.UILevel.Expert ? Color.Secondary : Color.Active)" Size="Size.Small" OnClick="@((e) => State.SetUILevel(KubeUI.UILevel.Expert))">Expert</BSButton>
 </BSButtonGroup>
 
 @code {
     [Inject] protected IState State { get; set; }
 
-    protected override void OnInit()
+    protected override void OnInitialized()
     {
         State.PropertyChanged += (o, e) =>
         {

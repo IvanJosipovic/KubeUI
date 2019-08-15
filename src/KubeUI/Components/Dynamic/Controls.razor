@@ -43,10 +43,10 @@
 </Shell>
 
 @code {
-    [Parameter] protected EventCallback<object> SetHelp { get; set; }
+    [Parameter] public EventCallback<object> SetHelp { get; set; }
 
-    [Parameter] protected TItem Item { get; set; }
-    [Parameter] protected EventCallback<TItem> ItemChanged { get; set; }
+    [Parameter] public TItem Item { get; set; }
+    [Parameter] public EventCallback<TItem> ItemChanged { get; set; }
 
     [Inject] protected ILogger<Controls<TItem>> Logger { get; set; }
     [Inject] protected IState state { get; set; }
@@ -74,7 +74,7 @@
         state.RaisePropertyChanged();
     }
 
-    protected override void OnInit()
+    protected override void OnInitialized()
     {
         if (Item == null)
         {

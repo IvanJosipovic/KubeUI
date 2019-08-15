@@ -9,7 +9,7 @@
             <BSCard CardType="CardType.Body">
                 <div class="input-group">
                     <div class="custom-file col-sm-6 col-md-6">
-                        <input type="file" class="custom-file-input" id="inputFiles" @ref="@inputTypeFileElement" multiple accept=".json,.yaml,.yml" />
+                        <input type="file" class="custom-file-input" id="inputFiles" @ref="@inputTypeFileElement" @ref:suppressField multiple accept=".json,.yaml,.yml" />
                         <label class="custom-file-label" for="inputFiles">Choose file(s)</label>
                     </div>
                     <span>&nbsp;&nbsp;&nbsp;</span>
@@ -40,7 +40,7 @@
 </BSRow>
 
 @code {
-    ElementRef inputTypeFileElement;
+    ElementReference inputTypeFileElement;
 
     [Inject] private IFileReaderService fileReaderService { get; set; }
     [Inject] private IBlazorFileSaver blazorFileSaver { get; set; }
@@ -63,10 +63,11 @@
                 }
             }
         }
+
         state.RaisePropertyChanged();
     }
 
-    public void Export(UIMouseEventArgs args)
+    public async Task Export(UIMouseEventArgs args)
     {
         appInsights.TrackEvent("Export");
 
@@ -122,7 +123,7 @@
                 }
             }
 
-            blazorFileSaver.SaveAsBase64($"KubeUI-Export-{DateTime.Now.Ticks}.zip", Convert.ToBase64String(ms.ToArray()), "application/zip");
+            await blazorFileSaver.SaveAsBase64($"KubeUI-Export-{DateTime.Now.Ticks}.zip", Convert.ToBase64String(ms.ToArray()), "application/zip");
         }
     }
 }

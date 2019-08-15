@@ -34,7 +34,7 @@
     </BSRow>
 }
 
-<BSModal @ref="BSModal" Size="Size.Large">
+<BSModal @ref="BSModal" @ref:suppressField Size="Size.Large">
     <BSModalHeader OnClick="@(() => CloseModal())">Code</BSModalHeader>
     <BSModalBody>
         <pre><code id="yamlViewer" class="yaml">@MDLBody</code></pre>
@@ -42,8 +42,8 @@
 </BSModal>
 
 @code{
-    [Parameter] TItem Item { get; set; }
-    [Parameter] EventCallback<TItem> ItemChanged { get; set; }
+    [Parameter] public TItem Item { get; set; }
+    [Parameter] public EventCallback<TItem> ItemChanged { get; set; }
 
     [Inject] ILogger<UI<TItem>> Logger { get; set; }
     [Inject] IState state { get; set; }
@@ -186,7 +186,7 @@
         }
     }
 
-    protected override void OnInit()
+    protected override void OnInitialized()
     {
         Trees = BuildTree(Item, state.GetUILevel());
 

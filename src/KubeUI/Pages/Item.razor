@@ -10,13 +10,13 @@
 
     [Inject] IState state { get; set; }
     [Inject] IUriHelper uriHelper { get; set; }
-    [Parameter] string TypeParam { get;set; }
+    [Parameter] public string TypeParam { get;set; }
 
     private Type Type { get; set; }
 
     protected object obj { get; set; }
 
-    protected override void OnInit()
+    protected override void OnInitialized()
     {
         if (TypeParam == "Ingress")
         {

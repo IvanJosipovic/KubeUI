@@ -44,7 +44,7 @@
         collapseNavMenu = !collapseNavMenu;
     }
 
-    protected override void OnInit()
+    protected override void OnInitialized()
     {
         state.PropertyChanged += (o, e) =>
         {
