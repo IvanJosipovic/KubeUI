@@ -7,7 +7,7 @@ using System;
 using KubeUI.Core;
 using System.Threading.Tasks;
 
-namespace KubeUI
+namespace KubeUI.Services
 {
     public interface IState
     {

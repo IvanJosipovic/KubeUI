@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using KubeUI.Schema;
+using KubeUI.Services;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Linq;

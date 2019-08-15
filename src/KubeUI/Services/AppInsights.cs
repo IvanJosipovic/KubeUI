@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Components.Routing;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 
-namespace KubeUI
+namespace KubeUI.Services
 {
     public class AppInsights : IAppInsights
     {

@@ -14,7 +14,7 @@ using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 
-namespace KubeUI
+namespace KubeUI.Services
 {
     public class State : INotifyPropertyChanged, IState
     {

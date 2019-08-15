@@ -2,6 +2,7 @@ using Blazor.FileReader;
 using BlazorFileSaver;
 using FluentValidation;
 using KubeUI.Validators;
+using KubeUI.Services;
 using Microsoft.AspNetCore.Components.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -20,7 +21,7 @@ namespace KubeUI
 #endif
             );
 
-            services.AddTypeDescriptorProviders(typeof(Schema.Deployment).Namespace, typeof(SchemaExtentions.Deployment).Namespace);
+            TypeDescriptorProviderGenerator.AddTypeDescriptorProviders(typeof(Schema.Deployment).Namespace, typeof(SchemaExtentions.Deployment).Namespace);
 
             services.AddFileReaderService();
 
