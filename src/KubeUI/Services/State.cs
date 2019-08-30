@@ -376,12 +376,11 @@ namespace KubeUI.Services
         public bool IsValid<T>(T item)
         {
             var validator = ValidatorFactory.GetValidator(typeof(T));
-            //Console.WriteLine($"IsValid {typeof(T)}");
+
             if (validator != null)
             {
                 return validator.Validate(item).IsValid;
             }
-            //Console.WriteLine($"IsValid validator not found {typeof(T)}");
 
             return true;
         }
@@ -389,12 +388,11 @@ namespace KubeUI.Services
         public bool IsValid(object item, Type type)
         {
             var validator = ValidatorFactory.GetValidator(type);
-            //Console.WriteLine($"IsValid {type}");
+
             if (validator != null)
             {
                 return validator.Validate(item).IsValid;
             }
-            //Console.WriteLine($"IsValid validator not found {type}");
 
             return true;
         }
