@@ -38,7 +38,7 @@
                                 @nameSpace
                             </td>
                             <td style="width:20px; text-align: center">
-                                <a href="javascript:;" @onclick="@(() => { state.DeleteItem(Type, (int)index[0]); })" title="Delete @Type.Name.TrimVersionNumbers()"><i class='fa fa-trash' aria-hidden='true'></i></a>
+                                <a href="javascript:;" @onclick="@(() => { State.DeleteItem(Type, (int)index[0]); })" title="Delete @Type.Name.TrimVersionNumbers()"><i class='fa fa-trash' aria-hidden='true'></i></a>
                             </td>
                         </tr>
                     }
@@ -53,8 +53,8 @@
     [Parameter] public string TypeParam { get; set; }
 
     [Inject] ILogger<List> Logger { get; set; }
-    [Inject] IState state { get; set; }
-    [Inject] IUriHelper uriHelper { get; set; }
+    [Inject] IState State { get; set; }
+    [Inject] NavigationManager NavigationManager { get; set; }
 
     private Type Type { get; set; }
     private object Collection { get; set; }
@@ -74,18 +74,18 @@
         if (Type == null)
         {
             Logger.LogInformation("Couldn't find Type {0}", TypeParam);
-            uriHelper.NavigateTo("");
+            NavigationManager.NavigateTo("");
         }
         else
         {
-            Collection = state.GetCollection(Type);
+            Collection = State.GetCollection(Type);
         }
     }
 
     private void AddNew()
     {
-        var id = state.AddItem(Type);
+        var id = State.AddItem(Type);
 
-        uriHelper.NavigateTo($"/{Type.Name}/" + id);
+        NavigationManager.NavigateTo($"/{Type.Name}/" + id);
     }
 }

@@ -8,18 +8,18 @@ namespace KubeUI.Services
     public class AppInsights : IAppInsights
     {
         private ILogger<AppInsights> Logger;
-        private IUriHelper UriHelper;
+        private NavigationManager NavigationManager;
         private IJSRuntime JSRuntime;
 
-        public AppInsights(ILogger<AppInsights> logger, IJSRuntime jsRuntime, IUriHelper uriHelper)
+        public AppInsights(ILogger<AppInsights> logger, IJSRuntime jsRuntime, NavigationManager navigationManager)
         {
             Logger = logger;
             JSRuntime = jsRuntime;
-            UriHelper = uriHelper;
-            UriHelper.OnLocationChanged += UriHelper_OnLocationChanged;
+            NavigationManager = navigationManager;
+            NavigationManager.LocationChanged += NavigationManager_LocationChanged;
         }
 
-        private void UriHelper_OnLocationChanged(object sender, LocationChangedEventArgs e)
+        private void NavigationManager_LocationChanged(object sender, LocationChangedEventArgs e)
         {
             JSRuntime.InvokeAsync<object>("trackPageView");
         }
