@@ -9,8 +9,8 @@
     [Parameter] public int Id { get; set; }
     [Parameter] public string TypeParam { get;set; }
 
-    [Inject] IState state { get; set; }
-    [Inject] IUriHelper uriHelper { get; set; }
+    [Inject] IState State { get; set; }
+    [Inject] NavigationManager NavigationManager { get; set; }
 
     private Type Type { get; set; }
 
@@ -27,11 +27,11 @@
         .SelectMany(t => t.GetTypes())
         .Where(t => t.IsClass && t.Namespace == "KubeUI.Schema" && t.Name == TypeParam).First();
 
-        obj = state.GetItem(Type, Id);
+        obj = State.GetItem(Type, Id);
 
         if (obj == null)
         {
-            uriHelper.NavigateTo($"/{Type.Name}");
+            NavigationManager.NavigateTo($"/{Type.Name}");
             return;
         }
     }

@@ -4,24 +4,24 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>7.3</LangVersion>
     <RazorLangVersion>3.0</RazorLangVersion>
-    <BlazorLinkOnBuild Condition="'$(Configuration)'=='Debug'">false</BlazorLinkOnBuild>
+    <BlazorLinkOnBuild Condition="'$(Configuration)'=='Debug'">true</BlazorLinkOnBuild>
     <BlazorLinkOnBuild Condition="'$(Configuration)'!='Debug'">true</BlazorLinkOnBuild>
     <ApplicationInsightsResourceId>/subscriptions/610de101-7d90-48c6-88fb-e2f72dc99a3e/resourcegroups/PayAsYouGo/providers/microsoft.insights/components/KubeUI</ApplicationInsightsResourceId>
     <ApplicationInsightsAnnotationResourceId>/subscriptions/610de101-7d90-48c6-88fb-e2f72dc99a3e/resourcegroups/PayAsYouGo/providers/microsoft.insights/components/KubeUI</ApplicationInsightsAnnotationResourceId>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BlazorFileSaver" Version="3.0.0-preview8.19405.7-1" />
+    <PackageReference Include="BlazorFileSaver" Version="3.0.0-preview9.19424.4-1" />
     <PackageReference Include="FluentValidation" Version="8.4.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.0.0-preview8.19405.4" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.0.0-preview9.19423.4" />
     <PackageReference Include="SharpZipLib" Version="1.2.0" />
 
-    <PackageReference Include="BlazorStrap" Version="1.0.0-preview8-03" />
-    <PackageReference Include="Tewr.Blazor.FileReader" Version="0.14.19242" />
+    <PackageReference Include="BlazorStrap" Version="1.0.0-preview9-01" />
+    <PackageReference Include="Tewr.Blazor.FileReader" Version="0.15.0.19248" />
     
-    <PackageReference Include="Microsoft.AspNetCore.Blazor" Version="3.0.0-preview8.19405.7" />
-    <PackageReference Include="Microsoft.AspNetCore.Blazor.Build" Version="3.0.0-preview8.19405.7" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.AspNetCore.Blazor.DevServer" Version="3.0.0-preview8.19405.7" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Blazor" Version="3.0.0-preview9.19424.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Blazor.Build" Version="3.0.0-preview9.19424.4" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Blazor.DevServer" Version="3.0.0-preview9.19424.4" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

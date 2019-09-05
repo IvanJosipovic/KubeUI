@@ -9,7 +9,7 @@
             <BSCard CardType="CardType.Body">
                 <div class="input-group">
                     <div class="custom-file col-sm-6 col-md-6">
-                        <input type="file" class="custom-file-input" id="inputFiles" @ref="@inputTypeFileElement" @ref:suppressField multiple accept=".json,.yaml,.yml" />
+                        <input type="file" class="custom-file-input" id="inputFiles" @ref="@inputTypeFileElement" multiple accept=".json,.yaml,.yml" />
                         <label class="custom-file-label" for="inputFiles">Choose file(s)</label>
                     </div>
                     <span>&nbsp;&nbsp;&nbsp;</span>
@@ -49,7 +49,7 @@
 
     bool isJson = false;
 
-    public async void ReadFiles(UIMouseEventArgs args)
+    public async void ReadFiles(MouseEventArgs args)
     {
         appInsights.TrackEvent("ReadFile");
 
@@ -67,7 +67,7 @@
         state.RaisePropertyChanged();
     }
 
-    public async Task Export(UIMouseEventArgs args)
+    public async Task Export(MouseEventArgs args)
     {
         appInsights.TrackEvent("Export");
 
