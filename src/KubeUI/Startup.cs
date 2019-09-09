@@ -38,7 +38,7 @@ namespace KubeUI
                 services.Add(ServiceDescriptor.Transient(pair.InterfaceType, pair.ValidatorType));
             });
 
-            services.AddSingleton<IAppInsights, AppInsights>();
+            services.AddScoped<IAppInsights, AppInsights>();
         }
 
         public void Configure(IComponentsApplicationBuilder app)

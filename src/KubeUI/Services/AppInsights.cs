@@ -7,13 +7,11 @@ namespace KubeUI.Services
 {
     public class AppInsights : IAppInsights
     {
-        private ILogger<AppInsights> Logger;
         private NavigationManager NavigationManager;
         private IJSRuntime JSRuntime;
 
-        public AppInsights(ILogger<AppInsights> logger, IJSRuntime jsRuntime, NavigationManager navigationManager)
+        public AppInsights(IJSRuntime jsRuntime, NavigationManager navigationManager)
         {
-            Logger = logger;
             JSRuntime = jsRuntime;
             NavigationManager = navigationManager;
             NavigationManager.LocationChanged += NavigationManager_LocationChanged;
@@ -21,12 +19,12 @@ namespace KubeUI.Services
 
         private void NavigationManager_LocationChanged(object sender, LocationChangedEventArgs e)
         {
-            JSRuntime.InvokeAsync<object>("trackPageView");
+            JSRuntime.InvokeVoidAsync("trackPageView");
         }
 
         public void TrackEvent(string name)
         {
-            JSRuntime.InvokeAsync<object>("trackEvent", name);
+            JSRuntime.InvokeVoidAsync("trackEvent", name);
         }
     }
 }
