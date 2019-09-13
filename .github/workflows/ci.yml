@@ -23,7 +23,7 @@ jobs:
 
     - name: Deploy to Netlify
       id: netlify
-      uses: ivanjosipovic/actions/cli@dev
+      uses: ivanjosipovic/actions/cli@master
       with:
         args: deploy --json -d src/KubeUI/bin/Release/netstandard2.0/publish/KubeUI/dist/
       env:
