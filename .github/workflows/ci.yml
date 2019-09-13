@@ -1,0 +1,20 @@
+name: CI
+
+on: [push,pull_request]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@master
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@master
+      with:
+        dotnet-version: 3.0.100-preview9-014004
+    
+    - name: Build with dotnet
+      working-directory: src/KubeUI
+      run: dotnet build --configuration Release
