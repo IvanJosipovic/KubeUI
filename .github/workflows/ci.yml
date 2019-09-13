@@ -26,7 +26,9 @@ jobs:
       uses: ivanjosipovic/actions/cli@dev
       with:
         args: deploy --json -d /home/runner/work/KubeUI/KubeUI/src/KubeUI/bin/Release/netstandard2.0/publish/KubeUI/dist/
-      secrets : ["NETLIFY_AUTH_TOKEN_CI", "NETLIFY_SITE_ID_CI"]
+      secrets:
+        NETLIFY_AUTH_TOKEN: NETLIFY_AUTH_TOKEN_CI:
+        NETLIFY_SITE_ID: NETLIFY_SITE_ID_CI
 
     - name: Set Test Address
       run: |       
