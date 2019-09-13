@@ -19,21 +19,21 @@ jobs:
       working-directory: src/KubeUI
       run: dotnet build --configuration Release
       
-    - name: Build
+    - name: Publish
       working-directory: src/KubeUI
       run: dotnet publish --configuration Release
 
-    - name: "Docker Build"
+    - name: Deploy to Netlify CI
       run: |
         npm install netlify-cli -g;
-        $env:NETLIFY_AUTH_TOKEN = "${(NETLIFY_AUTH_TOKEN}";
-        $env:NETLIFY_SITE_ID = "${NETLIFY_SITE_ID}";
+        $env:NETLIFY_AUTH_TOKEN = "${NETLIFY_AUTH_TOKEN_CI}";
+        $env:NETLIFY_SITE_ID = "${NETLIFY_SITE_ID_CI}";
         $output = (netlify deploy --json -d src/KubeUI/bin/Release/netstandard2.0/publish/KubeUI/dist/) | Out-String;
         $url = $(ConvertFrom-Json $output).deploy_url;
         Write-Host $url;
         Set-Content -Path "src/KubeUI.Tests/BrowserTestsAddress.config" -Value $url;
       shell: pwsh
 
-    - name: Build
+    - name: Test
       working-directory: src/KubeUI.Tests
       run: dotnet test --configuration Release
