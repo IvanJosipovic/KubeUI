@@ -32,7 +32,7 @@ jobs:
         
     - name: Set Test Address
       run: |
-        $url = $(ConvertFrom-Json ${{ steps.netlify.outputs.output }}).deploy_url;
+        $url = $(ConvertFrom-Json '${{ steps.netlify.outputs.output }}').deploy_url;
         Write-Output $url;
         Set-Content -Path "src/KubeUI.Tests/BrowserTestsAddress.config" -Value $url;
       shell: pwsh
