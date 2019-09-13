@@ -44,7 +44,8 @@
     <app>
         <div class="loader">Loading...</div>
     </app>
-
+    <!-- temporary WORKAROUND for Safari https://github.com/mono/mono/issues/15588#issuecomment-529056521 -->
+    <script>var Module;</script>
     <script src="_framework/blazor.webassembly.js"></script>
 </body>
 </html>
