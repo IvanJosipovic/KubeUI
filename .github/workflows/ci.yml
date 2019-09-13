@@ -15,6 +15,25 @@ jobs:
       with:
         dotnet-version: 3.0.100-preview9-014004
     
-    - name: Build with dotnet
+    - name: Build
       working-directory: src/KubeUI
       run: dotnet build --configuration Release
+      
+    - name: Build
+      working-directory: src/KubeUI
+      run: dotnet publish --configuration Release
+
+    - name: "Docker Build"
+      run: |
+        npm install netlify-cli -g;
+        $env:NETLIFY_AUTH_TOKEN = "${(NETLIFY_AUTH_TOKEN}";
+        $env:NETLIFY_SITE_ID = "${NETLIFY_SITE_ID}";
+        $output = (netlify deploy --json -d src/KubeUI/bin/Release/netstandard2.0/publish/KubeUI/dist/) | Out-String;
+        $url = $(ConvertFrom-Json $output).deploy_url;
+        Write-Host $url;
+        Set-Content -Path "src/KubeUI.Tests/BrowserTestsAddress.config" -Value $url;
+      shell: pwsh
+
+    - name: Build
+      working-directory: src/KubeUI.Tests
+      run: dotnet test --configuration Release
