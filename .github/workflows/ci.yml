@@ -32,7 +32,7 @@ jobs:
         
     - name: Set Test Address
       run: |       
-        Set-Content -Path "/home/runner/work/KubeUI/KubeUI/src/KubeUI.Tests/BrowserTestsAddress.config" -Value "${{ steps.netflix.outputs.output }}";
+        Set-Content -Path "/home/runner/work/KubeUI/KubeUI/src/KubeUI.Tests/BrowserTestsAddress.config" -Value "${{ steps.netlify.outputs.output }}";
       shell: pwsh
 
     - name: Test
