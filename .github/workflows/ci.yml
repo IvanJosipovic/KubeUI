@@ -33,7 +33,7 @@ jobs:
       run: |
         $env:NETLIFY_AUTH_TOKEN = "${NETLIFY_AUTH_TOKEN_CI}";
         $env:NETLIFY_SITE_ID = "${NETLIFY_SITE_ID_CI}";
-        $output = (/home/runner/.npm-global/bin/netlify deploy --json -d src/KubeUI/bin/Release/netstandard2.0/publish/KubeUI/dist/) | Out-String;
+        $output = (.npm-global/bin/netlify deploy --json -d src/KubeUI/bin/Release/netstandard2.0/publish/KubeUI/dist/) | Out-String;
         $url = $(ConvertFrom-Json $output).deploy_url;
         Write-Host $url;
         Set-Content -Path "src/KubeUI.Tests/BrowserTestsAddress.config" -Value $url;
