@@ -23,10 +23,14 @@ jobs:
       working-directory: src/KubeUI
       run: dotnet publish --configuration Release
 
-    - name: Deploy to Netlify CI
+    - name: Install Netlify CLI
       run: |
         $env:NPM_CONFIG_PREFIX = "~/.npm-global";
         npm install netlify-cli -g;
+      shell: pwsh
+
+    - name: Deploy to Netlify CI
+      run: |
         $env:NETLIFY_AUTH_TOKEN = "${NETLIFY_AUTH_TOKEN_CI}";
         $env:NETLIFY_SITE_ID = "${NETLIFY_SITE_ID_CI}";
         $output = (netlify deploy --json -d src/KubeUI/bin/Release/netstandard2.0/publish/KubeUI/dist/) | Out-String;
