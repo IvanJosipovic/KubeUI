@@ -32,7 +32,9 @@ jobs:
         
     - name: Set Test Address
       run: |
-        Get-Location
+        (Get-Location).Path
+        (Get-Location).Path
+        (Get-Location).Path
         Set-Content -Path "KubeUI/KubeUI/src/KubeUI.Tests/BrowserTestsAddress.config" -Value "${{ steps.netlify.outputs.output }}";
       shell: pwsh
 
