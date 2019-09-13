@@ -30,13 +30,15 @@ jobs:
       shell: pwsh
 
     - name: Deploy to Netlify CI
-      run: |
-        [Environment]::SetEnvironmentVariable("Path", $env:Path + ":/home/runner/.npm-global/bin", "Process");
+      run: |       
+        cd /home/runner/.npm-global/bin/
+        
+        ls
         
         $env:NETLIFY_AUTH_TOKEN = "${NETLIFY_AUTH_TOKEN_CI}";
         $env:NETLIFY_SITE_ID = "${NETLIFY_SITE_ID_CI}";
         
-        $output = (netlify deploy --json -d src/KubeUI/bin/Release/netstandard2.0/publish/KubeUI/dist/) | Out-String;
+        $output = (netlify deploy --json -d /home/runner/src/KubeUI/bin/Release/netstandard2.0/publish/KubeUI/dist/) | Out-String;
         
         $url = $(ConvertFrom-Json $output).deploy_url;
         Write-Host $url;
