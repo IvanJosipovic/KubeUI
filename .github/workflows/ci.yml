@@ -33,6 +33,7 @@ jobs:
       run: |
         $env:NETLIFY_AUTH_TOKEN = "${NETLIFY_AUTH_TOKEN_CI}";
         $env:NETLIFY_SITE_ID = "${NETLIFY_SITE_ID_CI}";
+        $env:Path += ":/home/runner/.npm-global";
         $output = (netlify deploy --json -d src/KubeUI/bin/Release/netstandard2.0/publish/KubeUI/dist/) | Out-String;
         $url = $(ConvertFrom-Json $output).deploy_url;
         Write-Host $url;
