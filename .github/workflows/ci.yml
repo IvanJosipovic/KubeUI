@@ -13,12 +13,8 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@master
       with:
-        dotnet-version: 3.0.100-preview9-014004
-    
-    - name: Build
-      working-directory: src/KubeUI
-      run: dotnet build --configuration Release
-      
+        dotnet-version: 3.0.100-preview9-014004  
+
     - name: Publish
       working-directory: src/KubeUI
       run: dotnet publish --configuration Release
@@ -32,9 +28,7 @@ jobs:
     - name: Deploy to Netlify CI
       run: |       
         cd /home/runner/.npm-global/bin/
-        
-        ls
-        
+      
         $env:NETLIFY_AUTH_TOKEN = "${NETLIFY_AUTH_TOKEN_CI}";
         $env:NETLIFY_SITE_ID = "${NETLIFY_SITE_ID_CI}";
         
