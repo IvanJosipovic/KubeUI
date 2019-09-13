@@ -21,25 +21,15 @@ jobs:
       working-directory: src/KubeUI
       run: dotnet publish --configuration Release
 
-    - name: Install Netlify CLI
-      run: |
-        $env:NPM_CONFIG_PREFIX = "~/.npm-global";
-        npm install netlify-cli -g;
-      shell: pwsh
+    - name: Deploy to Netlify
+      id: netlify
+      uses: ivanjosipovic/actions/cli@dev
+      args: deploy --json -d /home/runner/work/KubeUI/KubeUI/src/KubeUI/bin/Release/netstandard2.0/publish/KubeUI/dist/
+      secrets : ["NETLIFY_AUTH_TOKEN_CI", "NETLIFY_SITE_ID_CI"]
 
-    - name: Deploy to Netlify CI
+    - name: Set Test Address
       run: |       
-        cd /home/runner/.npm-global/bin/
-      
-        $env:NETLIFY_AUTH_TOKEN = "${NETLIFY_AUTH_TOKEN_CI}";
-        $env:NETLIFY_SITE_ID = "${NETLIFY_SITE_ID_CI}";
-        $publishDir = "/home/runner/work/KubeUI/KubeUI/src/KubeUI/bin/Release/netstandard2.0/publish/KubeUI/dist/";
-        
-        $output = (.\netlify deploy --json -d $publishDir) | Out-String;
-        
-        $url = $(ConvertFrom-Json $output).deploy_url;
-        Write-Host $url;
-        Set-Content -Path "/home/runner/work/KubeUI/KubeUI/src/KubeUI.Tests/BrowserTestsAddress.config" -Value $url;
+        Set-Content -Path "/home/runner/work/KubeUI/KubeUI/src/KubeUI.Tests/BrowserTestsAddress.config" -Value ${{ steps.netflix.outputs.output }}";
       shell: pwsh
 
     - name: Test
