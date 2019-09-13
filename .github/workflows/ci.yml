@@ -32,10 +32,8 @@ jobs:
         
     - name: Set Test Address
       run: |
-        (Get-Location).Path
-        (Get-Location).Path
-        (Get-Location).Path
-        Set-Content -Path "src/KubeUI.Tests/BrowserTestsAddress.config" -Value "${{ steps.netlify.outputs.output }}";
+        $url = $(ConvertFrom-Json ${{ steps.netlify.outputs.output }}).deploy_url;
+        Set-Content -Path "src/KubeUI.Tests/BrowserTestsAddress.config" -Value $url;
       shell: pwsh
 
     - name: Test
