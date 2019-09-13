@@ -1,0 +1,42 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    
+    timeout-minutes: 10
+    
+    steps:
+    - uses: actions/checkout@master
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@master
+      with:
+        dotnet-version: 3.0.100-preview9-014004  
+
+    - name: Publish
+      working-directory: src/KubeUI
+      run: dotnet publish --configuration Release
+
+    - name: Deploy to Netlify
+      id: netlify
+      uses: ivanjosipovic/actions/cli@dev
+      with:
+        args: deploy --json -d src/KubeUI/bin/Release/netstandard2.0/publish/KubeUI/dist/
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN_CI }}
+        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID_CI }}
+        
+    - name: Set Test Address
+      run: |
+        $url = $(ConvertFrom-Json '${{ steps.netlify.outputs.output }}').deploy_url;
+        Write-Output $url;
+        Set-Content -Path "src/KubeUI.Tests/BrowserTestsAddress.config" -Value $url;
+      shell: pwsh
+
+    - name: Test
+      working-directory: src/KubeUI.Tests
+      run: dotnet test --configuration Release
