@@ -15,7 +15,7 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@master
       with:
-        dotnet-version: 3.0.100-preview9-014004  
+        dotnet-version: 3.0.100-rc1-014190 
 
     - name: Publish
       working-directory: src/KubeUI
@@ -23,7 +23,7 @@ jobs:
 
     - name: Deploy to Netlify
       id: netlify
-      uses: ivanjosipovic/actions/cli@dev
+      uses: ivanjosipovic/actions/cli@master
       with:
         args: deploy --json -d src/KubeUI/bin/Release/netstandard2.0/publish/KubeUI/dist/
       env:
