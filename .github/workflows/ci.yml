@@ -42,7 +42,7 @@ jobs:
       run: dotnet test --configuration Release
 
     - name: Deploy to Production
-      if: github.event_name == 'push' && github.head_ref = 'refs/heads/master'
+      if: github.head_ref = 'refs/heads/master'
       uses: ivanjosipovic/actions/cli@master
       with:
         args: deploy --json -d src/KubeUI/bin/Release/netstandard2.0/publish/KubeUI/dist/
@@ -50,7 +50,8 @@ jobs:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
         NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
 
-  - name: Purge CDN
+    - name: Purge CDN
+      if: github.head_ref = 'refs/heads/master'
       run: |
         $Params = @{
           Method = 'Post'
