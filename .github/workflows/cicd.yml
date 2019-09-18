@@ -55,7 +55,7 @@ jobs:
       run: |
         $Params = @{
           Method = 'Post'
-          URI = 'https://api.cloudflare.com/client/v4/zones//${{ secrets.CLOUDFLARE_SITE_ID }}purge_cache'
+          URI = 'https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_SITE_ID }}/purge_cache'
           Headers = @{
             'X-Auth-Email'= 'admin@kubeui.com';
             'X-Auth-Key'= '${{ secrets.CLOUDFLARE_AUTH_TOKEN }}'
