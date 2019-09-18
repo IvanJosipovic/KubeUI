@@ -42,7 +42,7 @@ jobs:
       run: dotnet test --configuration Release
 
     - name: Deploy to Production
-      if: github.head_ref = 'refs/heads/master'
+      if: github.head_ref == 'refs/heads/master'
       uses: ivanjosipovic/actions/cli@master
       with:
         args: deploy --json -d src/KubeUI/bin/Release/netstandard2.0/publish/KubeUI/dist/
