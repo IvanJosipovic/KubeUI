@@ -21,7 +21,7 @@ jobs:
       working-directory: src/KubeUI
       run: dotnet publish --configuration Release
 
-    - name: Deploy to Netlify
+    - name: Deploy to Test
       id: netlify
       uses: ivanjosipovic/actions/cli@master
       with:
@@ -37,6 +37,30 @@ jobs:
         Set-Content -Path "src/KubeUI.Tests/BrowserTestsAddress.config" -Value $url;
       shell: pwsh
 
-    - name: Test
+    - name: Run Tests
       working-directory: src/KubeUI.Tests
       run: dotnet test --configuration Release
+
+    - name: Deploy to Production
+      if: github.event_name == 'push' && github.head_ref = 'refs/heads/master'
+      uses: ivanjosipovic/actions/cli@master
+      with:
+        args: deploy --json -d src/KubeUI/bin/Release/netstandard2.0/publish/KubeUI/dist/
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
+  - name: Purge CDN
+      run: |
+        $Params = @{
+          Method = 'Post'
+          URI = 'https://api.cloudflare.com/client/v4/zones//${{ secrets.CLOUDFLARE_SITE_ID }}purge_cache'
+          Headers = @{
+            'X-Auth-Email'= 'admin@kubeui.com';
+            'X-Auth-Key'= '${{ secrets.CLOUDFLARE_AUTH_TOKEN }}'
+          }
+          Body = '{"purge_everything":true}'
+          ContentType = 'application/json'
+        }
+        Invoke-RestMethod @Params
+      shell: pwsh        
