@@ -17,7 +17,7 @@
     <PackageReference Include="SharpZipLib" Version="1.2.0" />
 
     <PackageReference Include="BlazorStrap" Version="1.0.0-RC1-03" />
-    <PackageReference Include="Tewr.Blazor.FileReader" Version="0.16.0.19261" />
+    <PackageReference Include="Tewr.Blazor.FileReader" Version="0.16.0.19262" />
     
     <PackageReference Include="Microsoft.AspNetCore.Blazor" Version="3.0.0-preview9.19457.4" />
     <PackageReference Include="Microsoft.AspNetCore.Blazor.Build" Version="3.0.0-preview9.19457.4" PrivateAssets="all" />
