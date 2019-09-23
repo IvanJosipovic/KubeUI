@@ -15,7 +15,7 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@master
       with:
-        dotnet-version: 3.0.100-rc1-014190 
+        dotnet-version: 3.0.100
 
     - name: Publish
       working-directory: src/KubeUI
