@@ -12,7 +12,7 @@
 
   <ItemGroup>
     <PackageReference Include="BlazorFileSaver" Version="3.0.0-rc1.19457.4-1" />
-    <PackageReference Include="FluentValidation" Version="8.4.0" />
+    <PackageReference Include="FluentValidation" Version="8.5.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.0.0" />
     <PackageReference Include="SharpZipLib" Version="1.2.0" />
 
