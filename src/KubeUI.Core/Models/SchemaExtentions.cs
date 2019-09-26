@@ -151,11 +151,6 @@ namespace KubeUI.SchemaExtentions
         public Collection<IngressTLS2> Tls;
     }
 
-    [Ignore]
-    public partial class Initializers
-    {
-    }
-
     public partial class LabelSelector
     {
         [DisplayInTree(DisplayName = "Key")]
@@ -190,9 +185,6 @@ namespace KubeUI.SchemaExtentions
 
         [Ignore]
         public long? Generation;
-
-        [Ignore]
-        public Initializers Initializers { get; set; }
 
         [Ignore]
         public Collection<ManagedFieldsEntry> ManagedFields;
