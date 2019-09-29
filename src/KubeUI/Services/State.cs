@@ -301,9 +301,10 @@ namespace KubeUI.Services
                 using (TextReader textReader = new StringReader(data))
                 {
                     IParser parser = new Parser(textReader);
-                    parser.Expect<StreamStart>();
+                    
+                    parser.Consume<StreamStart>();
 
-                    while (parser.Accept<DocumentStart>())
+                    while (parser.Accept<DocumentStart>(out var _))
                     {
                         string json = string.Empty;
                         try
