@@ -45,7 +45,7 @@ jobs:
       if: github.ref == 'refs/heads/master'
       uses: ivanjosipovic/actions/cli@master
       with:
-        args: deploy --json -d src/KubeUI/bin/Release/netstandard2.0/publish/KubeUI/dist/
+        args: deploy --prod --json -d src/KubeUI/bin/Release/netstandard2.0/publish/KubeUI/dist/
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
         NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
