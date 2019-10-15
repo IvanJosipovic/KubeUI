@@ -407,9 +407,13 @@ namespace KubeUI.Services
                 Logger.LogInformation("LoadState - Found existing state.");
                 try
                 {
-                    Data = JsonConvert.DeserializeObject<Dictionary<Type, Collection<object>>>(data, JsonSettingsWithType);
+                    var output = JsonConvert.DeserializeObject<Dictionary<Type, Collection<object>>>(data, JsonSettingsWithType);
 
-                    RaisePropertyChanged();
+                    if (output != null)
+                    {
+                        Data = output;
+                        RaisePropertyChanged();
+                    }
                 }
                 catch (Exception ex)
                 {
