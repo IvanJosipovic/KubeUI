@@ -7,7 +7,7 @@
 <br />
 
 <BSRow>
-    <BSCol SM="12" LG="6" XL="6">
+    <BSCol SM="12" LG="12" XL="12">
         <BSTable IsBordered="true" IsHovarable="true" IsSmall="true" IsStriped="true" IsResponsive="true">
             <BSTableHead TableHeadType="TableHeadType.Light">
                 <tr>
@@ -24,11 +24,21 @@
                 {
                 <tr>
                     <td>@item.Metadata.Name</td>
-                    <td></td>
-                    <td></td>
-                    <td>@string.Format("{0:N0}d", (@DateTime.UtcNow - @item.Metadata.CreationTimestamp).Value.TotalDays)</td>
-                    <td></td>
-                    <td>@string.Join(",", item.Spec.Selector.MatchLabels.Select(x => x.Key + ":" + x.Value))</td>
+                    <td>                  
+                        @foreach (var label in item.Metadata.Labels.OrEmptyIfNull())
+                        {
+                            <BSBadge>@label.Key:@label.Value</BSBadge>
+                        }
+                    </td>
+                    <td>@item.Status.AvailableReplicas/@item.Status.Replicas</td>
+                    <td>@string.Format("{0:N0}d", (DateTime.UtcNow - item.Metadata.CreationTimestamp).Value.TotalDays)</td>
+                    <td>@item.Spec.Template.Spec.Containers.OrEmptyIfNull().Select(x => x.Name).Aggregate((a, b) => a + ", " + b)</td>
+                    <td>
+                        @foreach (var selector in item.Spec.Selector.MatchLabels.OrEmptyIfNull())
+                        {
+                            <BSBadge>@selector.Key:@selector.Value</BSBadge>
+                        }
+                    </td>
                 </tr>
                 }
             </tbody>
