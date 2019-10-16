@@ -13,13 +13,13 @@
   <ItemGroup>
     <PackageReference Include="BlazorFileSaver" Version="3.0.0" />
     <PackageReference Include="FluentValidation" Version="8.5.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.0-preview1.19506.1" />
     <PackageReference Include="SharpZipLib" Version="1.2.0" />
-    <PackageReference Include="BlazorStrap" Version="1.0.105" />
+    <PackageReference Include="BlazorStrap" Version="1.1.0-preview1-01" />
     <PackageReference Include="Tewr.Blazor.FileReader" Version="1.1.0.19274" />    
-    <PackageReference Include="Microsoft.AspNetCore.Blazor" Version="3.0.0-preview9.19465.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Blazor.Build" Version="3.0.0-preview9.19465.2" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.AspNetCore.Blazor.DevServer" Version="3.0.0-preview9.19465.2" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Blazor" Version="3.1.0-preview1.19508.20" />
+    <PackageReference Include="Microsoft.AspNetCore.Blazor.Build" Version="3.1.0-preview1.19508.20" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Blazor.DevServer" Version="3.1.0-preview1.19508.20" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
