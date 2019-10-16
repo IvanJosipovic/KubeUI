@@ -18,14 +18,14 @@ jobs:
         dotnet-version: 3.1.100-preview1-014459
 
     - name: Publish
-      working-directory: src/KubeUI
+      working-directory: src/KubeUI2
       run: dotnet publish --configuration Release
 
     - name: Deploy to Test
       id: netlify
       uses: ivanjosipovic/actions/cli@master
       with:
-        args: deploy --json -d src/KubeUI/bin/Release/netstandard2.0/publish/KubeUI/dist/
+        args: deploy --json -d src/KubeUI2/bin/Release/netstandard2.0/publish/KubeUI/dist/
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN_CI }}
         NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID_CI }}
@@ -34,34 +34,5 @@ jobs:
       run: |
         $url = $(ConvertFrom-Json '${{ steps.netlify.outputs.output }}').deploy_url;
         Write-Output $url;
-        Set-Content -Path "src/KubeUI.Tests/BrowserTestsAddress.config" -Value $url;
       shell: pwsh
 
-    - name: Run Tests
-      working-directory: src/KubeUI.Tests
-      run: dotnet test --configuration Release
-  
-    - name: Deploy to Production
-      if: github.ref == 'refs/heads/master'
-      uses: ivanjosipovic/actions/cli@master
-      with:
-        args: deploy --prod --json -d src/KubeUI/bin/Release/netstandard2.0/publish/KubeUI/dist/
-      env:
-        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-
-    - name: Purge CDN
-      if: github.ref == 'refs/heads/master'
-      run: |
-        $Params = @{
-          Method = 'Post'
-          URI = 'https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_SITE_ID }}/purge_cache'
-          Headers = @{
-            'X-Auth-Email'= 'admin@kubeui.com';
-            'X-Auth-Key'= '${{ secrets.CLOUDFLARE_AUTH_TOKEN }}'
-          }
-          Body = '{"purge_everything":true}'
-          ContentType = 'application/json'
-        }
-        Invoke-RestMethod @Params
-      shell: pwsh        
