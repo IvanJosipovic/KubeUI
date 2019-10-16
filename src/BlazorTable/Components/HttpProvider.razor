@@ -1,0 +1,119 @@
+﻿@typeparam TableItem
+@implements IDataProvider<TableItem>
+
+<CascadingValue Value="(IDataProvider<TableItem>)this" Name="DataProvider">
+    @ChildContent
+</CascadingValue>
+
+@code {
+    [Inject] private HttpClient Http { get; set; }
+
+    [Parameter] public string Endpoint { get; set; }
+
+    [Parameter] public string QueryParams { get; set; }
+
+    [Parameter] public long PageSize { get; set; } = 30;
+
+    [Parameter] public RenderFragment ChildContent { get; set; }
+
+    public long PageNumber { get; set; } = 0;
+
+    public long TotalCount { get; set; }
+
+    public event Action OnChange;
+
+    private ResultObject<TableItem> Results { get; set; }
+
+    public IEnumerable<TableItem> GetData()
+    {
+        if (Results != null)
+        {
+            return Results.Items;
+        }
+
+        return null;
+    }
+
+    public IColumn<TableItem> SortColumn { get; set; }
+
+    public bool SortDescending { get; set; }
+
+    public async Task SortBy(IColumn<TableItem> column)
+    {
+        if (column.Sortable)
+        {
+            if (SortColumn != column)
+            {
+                SortColumn = column;
+                SortDescending = false;
+            }
+            else
+            {
+                SortDescending = !SortDescending;
+            }
+
+            await Update();
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await Update();
+    }
+
+    public async Task Update()
+    {
+        //Results = null;
+        //OnChange?.Invoke();
+
+        if (QueryParams != null && !QueryParams.StartsWith("&"))
+        {
+            QueryParams = "&" + QueryParams;
+        }
+
+        Results = await Http.GetJsonAsync<ResultObject<TableItem>>(Endpoint + $"?PageNumber={PageNumber}&PageSize={PageSize}&SortColumn={SortColumn?.GetPropertyName()}&SortDescending={SortDescending}" + QueryParams);
+        TotalCount = Results.TotalCount;
+
+        OnChange?.Invoke();
+    }
+
+    public async Task FirstPage()
+    {
+        PageNumber = 0;
+        await Update();
+    }
+
+    public async Task NextPage()
+    {
+        if (PageNumber < TotalCount / PageSize)
+        {
+            PageNumber = PageNumber + 1;
+            await Update();
+        }
+    }
+
+    public async Task PreviousPage()
+    {
+        if (PageNumber >= 1)
+        {
+            PageNumber = PageNumber - 1;
+            await Update();
+        }
+    }
+
+    public async Task LastPage()
+    {
+        PageNumber = TotalCount / PageSize;
+        await Update();
+    }
+
+    private bool _IsEditMode;
+    
+    public bool IsEditMode { get { return _IsEditMode; } }
+
+    public void ToggleEditMode()
+    {
+        _IsEditMode = !_IsEditMode;
+        StateHasChanged();
+    }
+}
