@@ -46,6 +46,8 @@ namespace KubeUI2.Services
 
         private UILevel UILevel { get; set; }
 
+        public string Namespace { get; set; } = "default";
+
         public void DeleteItem(Type type, int Id)
         {
             var collection = GetCollection(type);
@@ -99,5 +101,7 @@ namespace KubeUI2.Services
         {
             UILevel = uILevel;
         }
+
+        
     }
 }

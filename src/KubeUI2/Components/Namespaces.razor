@@ -1,27 +1,24 @@
 ﻿
 <BSCol SM="2">
-    <select class="form-control form-control-sm" id="Namespace">
-        @if (!Options.Any(x => string.IsNullOrEmpty(x)))
-        {
-            <option value="">-- Select Namespace --</option>
-        }
-
+    <select class="form-control form-control-sm" id="Namespace" @bind="state.Namespace">
         @foreach (var option in Options)
         {
-            <option value="@option">@option</option>
-        }
-        
+            <option value="@option" selected="@(option == state.Namespace)">@option</option>
+        }        
     </select>
 </BSCol>
 
 @code {
     [Parameter] public List<string> Options { get; set; } = new List<string>();
 
+    [Inject] protected IState state { get; set; }
+
     [Inject] protected IKubernetes client { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         Options = (await client.ListNamespaceAsync())?.Items.Select(x => x.Metadata.Name).ToList();
+        
         StateHasChanged();
     }
 }

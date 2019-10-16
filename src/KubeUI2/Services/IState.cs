@@ -14,5 +14,7 @@ namespace KubeUI2.Services
 
         void SetUILevel(UILevel uILevel);
         UILevel GetUILevel();
+
+        string Namespace { get; set; }
     }
 }
