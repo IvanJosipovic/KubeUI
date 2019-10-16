@@ -20,14 +20,11 @@
                 <i class="fa fa-download fa-lg"></i>&nbsp;Connect
             </NavLink>
         </li>
-        @foreach (var item in state.Data.OrderBy(x => x.Key.Name))
-        {
-            <li class="nav-item px-1">
-                <NavLink class="nav-link" href="@item.Key.Name">
-                    <img src="/png/resources/unlabeled/svc-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>@item.Key.Name<span>&nbsp;</span><span class="badge badge-light">@item.Value.Count</span>
-                </NavLink>
-            </li>
-        }
+        <li class="nav-item px-1">
+            <NavLink class="nav-link" href="Deployments">
+                <img src="/png/resources/unlabeled/deploy-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Deployments
+            </NavLink>
+        </li>
     </ul>
 </div>
 
