@@ -7,43 +7,21 @@
 <br />
 
 <BSRow>
-    <BSCol SM="12" LG="12" XL="12">
-        <BSTable IsBordered="true" IsHovarable="true" IsSmall="true" IsStriped="true" IsResponsive="true">
-            <BSTableHead TableHeadType="TableHeadType.Light">
-                <tr>
-                    <th scope="col">Name</th>
-                    <th scope="col">Labels</th>
-                    <th scope="col">Status</th>
-                    <th scope="col">Age</th>
-                    <th scope="col">Containers</th>
-                    <th scope="col">Selector</th>
-                </tr>
-            </BSTableHead>
-            <tbody>
-                @foreach (V1Deployment item in Items)
-                {
-                <tr>
-                    <td>@item.Metadata.Name</td>
-                    <td>                  
-                        @foreach (var label in item.Metadata.Labels.OrEmptyIfNull())
-                        {
-                            <BSBadge>@label.Key:@label.Value</BSBadge>
-                        }
-                    </td>
-                    <td>@item.Status.AvailableReplicas/@item.Status.Replicas</td>
-                    <td>@string.Format("{0:N0}d", (DateTime.UtcNow - item.Metadata.CreationTimestamp).Value.TotalDays)</td>
-                    <td>@item.Spec.Template.Spec.Containers.OrEmptyIfNull().Select(x => x.Name).Aggregate((a, b) => a + ", " + b)</td>
-                    <td>
-                        @foreach (var selector in item.Spec.Selector.MatchLabels.OrEmptyIfNull())
-                        {
-                            <BSBadge>@selector.Key:@selector.Value</BSBadge>
-                        }
-                    </td>
-                </tr>
-                }
-            </tbody>
-        </BSTable>
-    </BSCol>
+    <MemoryProvider PageSize="40" TableItem="V1Deployment" Items="Items">
+        <Table TableItem="V1Deployment">
+            <Column Title="ApiVersion" TableItem="V1Deployment" Property="@(x => x.ApiVersion)" Sortable="true">
+                <Template>
+                    @context.Metadata.Name
+                </Template>
+            </Column>
+            <Column Title="Kind" TableItem="V1Deployment" Property="@(x => x.Kind)" Sortable="true">
+                <Template>
+                    @context.Kind
+                </Template>
+            </Column>
+        </Table>
+        <Pager TableItem="V1Deployment" />
+    </MemoryProvider>
 </BSRow>
 
 @code {

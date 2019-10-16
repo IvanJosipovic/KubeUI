@@ -1,94 +1,29 @@
-﻿@using BlazorTable.Classes
-
-@typeparam TableItem
-@implements DataProviderBase<TableItem>
+﻿@typeparam TableItem
+@inherits DataProviderBase<TableItem>
 
 <CascadingValue Value="(IDataProvider<TableItem>)this" Name="DataProvider">
     @ChildContent
 </CascadingValue>
 
 @code {
-    [Parameter] public long PageSize { get; set; } = 30;
+    [Parameter] public override long PageSize { get; set; } = 30;
 
     [Parameter] public RenderFragment ChildContent { get; set; }
 
-    public long PageNumber { get; set; } = 0;
-
-    public long TotalCount { get; set; }
-
-    public event Action OnChange;
-
-    private ResultObject<TableItem> Results { get; set; }
-
-    public IEnumerable<TableItem> GetData()
-    {
-        if (Results != null)
-        {
-            return Results.Items;
-        }
-
-        return null;
-    }
-
-    public IColumn<TableItem> SortColumn { get; set; }
-
-    public bool SortDescending { get; set; }
-
-    public async Task SortBy(IColumn<TableItem> column)
-    {
-        if (column.Sortable)
-        {
-            if (SortColumn != column)
-            {
-                SortColumn = column;
-                SortDescending = false;
-            }
-            else
-            {
-                SortDescending = !SortDescending;
-            }
-
-            await Update();
-        }
-    }
+    [Parameter] public IEnumerable<TableItem> Items { get; set; }
 
     protected override async Task OnParametersSetAsync()
     {
         await Update();
     }
 
-    public async Task Update()
+    public override IEnumerable<TableItem> GetData()
     {
-    }
-
-    public async Task FirstPage()
-    {
-        PageNumber = 0;
-        await Update();
-    }
-
-    public async Task NextPage()
-    {
-        if (PageNumber < TotalCount / PageSize)
+        if (Items != null)
         {
-            PageNumber = PageNumber + 1;
-            await Update();
+            return Items;
         }
-    }
 
-    public async Task PreviousPage()
-    {
-        if (PageNumber >= 1)
-        {
-            PageNumber = PageNumber - 1;
-            await Update();
-        }
+        return Enumerable.Empty<TableItem>();
     }
-
-    public async Task LastPage()
-    {
-        PageNumber = TotalCount / PageSize;
-        await Update();
-    }
-
 }

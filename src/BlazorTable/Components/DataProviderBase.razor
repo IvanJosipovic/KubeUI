@@ -1,0 +1,83 @@
+﻿@typeparam TableItem
+@implements IDataProvider<TableItem>
+
+@code {
+    public IColumn<TableItem> SortColumn { get; set; }
+
+    public bool SortDescending { get; set; }
+
+    public virtual long PageSize { get; set; } = 30;
+
+    public long PageNumber { get; set; } = 0;
+
+    public long TotalCount { get; set; }
+
+    public bool IsEditMode { get; set; }
+
+    public event Action OnChange;
+
+    public virtual IEnumerable<TableItem> GetData()
+    {
+        return Enumerable.Empty<TableItem>();
+    }
+
+    public Task Update()
+    {
+        OnChange.Invoke();
+        return Task.CompletedTask;
+    }
+
+    public async Task FirstPage()
+    {
+        PageNumber = 0;
+        await Update();
+    }
+
+    public async Task NextPage()
+    {
+        if (PageNumber < TotalCount / PageSize)
+        {
+            PageNumber = PageNumber + 1;
+            await Update();
+        }
+    }
+
+    public async Task PreviousPage()
+    {
+        if (PageNumber >= 1)
+        {
+            PageNumber = PageNumber - 1;
+            await Update();
+        }
+    }
+
+    public async Task LastPage()
+    {
+        PageNumber = TotalCount / PageSize;
+        await Update();
+    }
+
+    public async Task SortBy(IColumn<TableItem> column)
+    {
+        if (column.Sortable)
+        {
+            if (SortColumn != column)
+            {
+                SortColumn = column;
+                SortDescending = false;
+            }
+            else
+            {
+                SortDescending = !SortDescending;
+            }
+
+            await Update();
+        }
+    }
+
+    public void ToggleEditMode()
+    {
+        IsEditMode = !IsEditMode;
+        StateHasChanged();
+    }
+}
