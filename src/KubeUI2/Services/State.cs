@@ -35,16 +35,6 @@ namespace KubeUI2.Services
             this.JSRuntime = JSRuntime;
             this.appInsights = appInsights;
 
-            // Preload default objects
-            //GetCollection(typeof(ConfigMap));
-            //GetCollection(typeof(CronJob));
-            //GetCollection(typeof(DaemonSet));
-            //GetCollection(typeof(Deployment));
-            //GetCollection(typeof(Ingress2));
-            //GetCollection(typeof(PersistentVolumeClaim));
-            //GetCollection(typeof(Secret));
-            //GetCollection(typeof(Service));
-            //GetCollection(typeof(StatefulSet));
         }
 
         public Dictionary<Type, Collection<object>> Data { get; set; } = new Dictionary<Type, Collection<object>>();
@@ -60,50 +50,6 @@ namespace KubeUI2.Services
                 _namespace = value;
                 RaisePropertyChanged(State.NamespaceNotification);
             }
-        }
-
-        public void DeleteItem(Type type, int Id)
-        {
-            var collection = GetCollection(type);
-            var collType = collection.GetType();
-            object[] data = { Id };
-
-            collType.GetMethod("RemoveAt").Invoke(collection, data);
-        }
-
-        public object GetCollection(Type type)
-        {
-            if (Data.TryGetValue(type, out Collection<object> items))
-            {
-                return items;
-            }
-
-            var coll = new Collection<object>();
-
-            Data.Add(type, coll);
-            return coll;
-        }
-
-        public int GetCount(Type type)
-        {
-            var collection = GetCollection(type);
-            var collType = collection.GetType();
-            return (int)collType.GetProperty("Count").GetValue(collection);
-        }
-
-        public object GetItem(Type type, int Id)
-        {
-            var collection = GetCollection(type);
-            var collType = collection.GetType();
-
-            var count = (int)collType.GetProperty("Count").GetValue(collection);
-
-            if (Id < count)
-            {
-                return collType.GetProperty("Item").GetValue(collection, new object[] { Id });
-            }
-
-            return null;
         }
 
         public UILevel GetUILevel()

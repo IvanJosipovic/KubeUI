@@ -1,5 +1,5 @@
 ﻿<div class="top-row pl-3 navbar navbar-dark">
-    <a class="navbar-brand" href="">
+    <a class="navbar-brand" href="@state.Namespace">
         <img src="/favicon-32x32.png" width="32" height="32" class="d-inline-block" alt="">
         KubeUI
     </a>
@@ -11,17 +11,17 @@
 <div class=@(collapseNavMenu ? "collapse" : null) @onclick=@ToggleNavMenu>
     <ul class="nav flex-column">
         <li class="nav-item px-1">
-            <NavLink class="nav-link" href="" Match=NavLinkMatch.All>
+            <NavLink class="nav-link" href="@state.Namespace" Match=NavLinkMatch.All>
                 <i class="fa fa-home fa-lg"></i>&nbsp;Home
             </NavLink>
         </li>
         <li class="nav-item px-1">
-            <NavLink class="nav-link" href="Connect">
+            <NavLink class="nav-link" href="@($"/{state.Namespace}/Connect")">
                 <i class="fa fa-download fa-lg"></i>&nbsp;Connect
             </NavLink>
         </li>
         <li class="nav-item px-1">
-            <NavLink class="nav-link" href="Deployments">
+            <NavLink class="nav-link" href="@($"/{state.Namespace}/Deployments")">
                 <img src="/png/resources/unlabeled/deploy-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Deployments
             </NavLink>
         </li>
@@ -39,8 +39,24 @@
         collapseNavMenu = !collapseNavMenu;
     }
 
+    PropertyChangedEventHandler handler;
+
     protected override void OnInitialized()
     {
+        handler = (xo, e) =>
+        {
+            if (e.PropertyName == State.UILevelNotification || e.PropertyName == State.NamespaceNotification)
+            {
+                StateHasChanged();
+            }
+        };
+
+        state.PropertyChanged += handler;
+    }
+
+    public void Dispose()
+    {
+        state.PropertyChanged -= handler;
     }
 
     //private string GetIconCode(Type type)

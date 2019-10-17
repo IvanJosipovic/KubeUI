@@ -1,4 +1,6 @@
 ﻿@page "/Deployments"
+@page "/{Namespace}/Deployments"
+@inherits Base
 
 <h2>
     Deployments
@@ -11,7 +13,7 @@
         <Table TableItem="V1Deployment">
             <Column Title="Name" TableItem="V1Deployment" Property="@(x => x.Metadata.Name)" Sortable="true">
                 <Template>
-                    @context.Metadata.Name
+                    <a href="/@Namespace/Deployment/@context.Metadata.Name">@context.Metadata.Name</a>
                 </Template>
             </Column>
             <Column Title="Labels" TableItem="V1Deployment">

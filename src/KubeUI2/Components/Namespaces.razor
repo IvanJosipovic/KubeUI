@@ -1,6 +1,6 @@
 ﻿
 <BSCol SM="2">
-    <select class="form-control form-control-sm" id="Namespace" @bind="state.Namespace">
+    <select class="form-control form-control-sm" id="Namespace" @onchange="OnChange">
         @foreach (var option in Options)
         {
             <option value="@option" selected="@(option == state.Namespace)">@option</option>
@@ -9,16 +9,24 @@
 </BSCol>
 
 @code {
-    [Parameter] public List<string> Options { get; set; } = new List<string>();
-
     [Inject] protected IState state { get; set; }
 
     [Inject] protected IKubernetes client { get; set; }
 
+    [Inject] protected NavigationManager navigationManager { get; set; }
+
+    private List<string> Options { get; set; } = new List<string>();
+
     protected override async Task OnInitializedAsync()
     {
         Options = (await client.ListNamespaceAsync())?.Items.Select(x => x.Metadata.Name).ToList();
-        
+
         StateHasChanged();
+    }
+
+    private void OnChange(ChangeEventArgs args)
+    {
+        navigationManager.NavigateTo(args.Value.ToString());
+        state.RaisePropertyChanged(State.NamespaceNotification);
     }
 }

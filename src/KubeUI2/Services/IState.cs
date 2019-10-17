@@ -15,6 +15,6 @@ namespace KubeUI2.Services
 
         void SetUILevel(UILevel uILevel);
         UILevel GetUILevel();
-
+        void RaisePropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string propertyName = null);
     }
 }

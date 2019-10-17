@@ -1,0 +1,67 @@
+﻿@page "/{Namespace}/Deployment/{DeploymentName}"
+@inherits Base
+
+<h2>
+    <a href="/@Namespace/Deployments">Deployments</a> / @Item?.Metadata.Name
+</h2>
+
+<br />
+@if (Item != null)
+{
+    <BSRow>
+        <BSTabGroup>
+            <BSTabList>
+                <BSTab>
+                    <BSTabLabel>Yaml</BSTabLabel>
+                    <BSTabContent><pre><code id="yamlViewer" class="language-yaml">@k8s.Yaml.SaveToString(Item)</code></pre></BSTabContent>
+                </BSTab>
+
+                <BSTab>
+                    <BSTabLabel>Overview</BSTabLabel>
+                    <BSTabContent></BSTabContent>
+                </BSTab>
+
+            </BSTabList>
+            <BSTabSelectedContent />
+        </BSTabGroup>
+    </BSRow>
+}
+
+@code {
+    [Parameter] public string DeploymentName { get; set; }
+
+    [Inject] protected IState state { get; set; }
+
+    [Inject] protected IKubernetes client { get; set; }
+
+    private V1Deployment Item { get; set; }
+
+    PropertyChangedEventHandler handler;
+
+    protected override async Task OnInitializedAsync()
+    {
+        handler = async (xo, e) =>
+        {
+            if (e.PropertyName == State.UILevelNotification || e.PropertyName == State.NamespaceNotification)
+            {
+                await Update();
+            }
+        };
+
+        state.PropertyChanged += handler;
+
+        await Update();
+    }
+
+    public void Dispose()
+    {
+        state.PropertyChanged -= handler;
+    }
+
+    private async Task Update()
+    {
+        Item = await client.ReadNamespacedDeploymentAsync(DeploymentName, Namespace);
+
+        StateHasChanged();
+    }
+}
