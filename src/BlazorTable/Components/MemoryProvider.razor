@@ -21,7 +21,21 @@
     {
         if (Items != null)
         {
-            return Items;
+            if (SortColumn != null)
+            {
+                if (SortDescending)
+                {
+                    return Items.AsQueryable().OrderByDescending(SortColumn.Property).ToList();
+                }
+                else
+                {
+                    return Items.AsQueryable().OrderBy(SortColumn.Property).ToList();
+                }
+            }
+            else
+            {
+                return Items;
+            }
         }
 
         return Enumerable.Empty<TableItem>();

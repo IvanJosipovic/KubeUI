@@ -23,7 +23,8 @@
 
     public Task Update()
     {
-        OnChange.Invoke();
+        OnChange?.Invoke();
+        
         return Task.CompletedTask;
     }
 
