@@ -18,7 +18,15 @@
                 <Template>
                     @foreach (var label in context.Metadata.Labels.OrEmptyIfNull())
                     {
-                        <BSBadge>@label.Key:@label.Value</BSBadge>
+                        <BSBadge>@label.Key : @label.Value</BSBadge>
+                    }
+                </Template>
+            </Column>
+            <Column Title="Selector" TableItem="V1Deployment">
+                <Template>
+                    @foreach (var selector in context.Spec.Selector.MatchLabels.OrEmptyIfNull())
+                    {
+                        <BSBadge>@selector.Key : @selector.Value</BSBadge>
                     }
                 </Template>
             </Column>
@@ -32,17 +40,9 @@
                     @string.Format("{0:N0}d", (DateTime.UtcNow - context.Metadata.CreationTimestamp).Value.TotalDays)
                 </Template>
             </Column>
-            <Column Title="Containers" TableItem="V1Deployment">
+            <Column Title="Images" TableItem="V1Deployment">
                 <Template>
-                    @context.Spec.Template.Spec.Containers.OrEmptyIfNull().Select(x => x.Name).Aggregate((a, b) => a + ", " + b)
-                </Template>
-            </Column>
-            <Column Title="Selector" TableItem="V1Deployment">
-                <Template>
-                    @foreach (var selector in context.Spec.Selector.MatchLabels.OrEmptyIfNull())
-                    {
-                        <BSBadge>@selector.Key:@selector.Value</BSBadge>
-                    }
+                    @context.Spec.Template.Spec.Containers.OrEmptyIfNull().Select(x => x.Image).Aggregate((a, b) => a + ", " + b)
                 </Template>
             </Column>
         </Table>
@@ -57,8 +57,34 @@
 
     [Inject] protected IKubernetes client { get; set; }
 
+    PropertyChangedEventHandler handler;
+
     protected override async Task OnInitializedAsync()
     {
+        handler = async (xo, e) =>
+        {
+            if (e.PropertyName == State.UILevelNotification || e.PropertyName == State.NamespaceNotification)
+            {
+                await Update();
+            }
+        };
+
+        state.PropertyChanged += handler;
+
+        await Update();
+    }
+
+    public void Dispose()
+    {
+        state.PropertyChanged -= handler;
+    }
+
+    private async Task Update()
+    {
+        Items = null;
+
+        StateHasChanged();
+
         Items = (await client.ListNamespacedDeploymentAsync(state.Namespace))?.Items;
 
         StateHasChanged();

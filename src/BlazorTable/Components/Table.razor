@@ -27,21 +27,31 @@
             <tbody>
                 @if (Data != null)
                 {
-                    foreach (TableItem item in Data)
+                    if (Data.Any())
+                    {
+                        foreach (TableItem item in Data)
+                        {
+                            <tr>
+                                @foreach (IColumn<TableItem> column in Columns)
+                                {
+                                    <td>
+                                        @if (DataProvider.IsEditMode && column.EditorTemplate != null)
+                                        {
+                                            @column.EditorTemplate(item)
+                                        }
+                                        else
+                                        {
+                                            @column.Template(item)
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    }
+                    else
                     {
                         <tr>
-                            @foreach (IColumn<TableItem> column in Columns)
-                            {
-                                <td>
-                                    @if (DataProvider.IsEditMode && column.EditorTemplate != null)
-                                    {
-                                        @column.EditorTemplate(item)
-                                    } else
-                                    {
-                                        @column.Template(item)
-                                    }                                    
-                                </td>
-                            }
+                            <td colspan="@Columns.Count" style="text-align:center"><h1>No items...</h1></td>
                         </tr>
                     }
                 }

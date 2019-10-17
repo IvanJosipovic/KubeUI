@@ -19,25 +19,18 @@
 
     public override IEnumerable<TableItem> GetData()
     {
-        if (Items != null)
+        if (Items != null && SortColumn != null)
         {
-            if (SortColumn != null)
+            if (SortDescending)
             {
-                if (SortDescending)
-                {
-                    return Items.AsQueryable().OrderByDescending(SortColumn.Property).ToList();
-                }
-                else
-                {
-                    return Items.AsQueryable().OrderBy(SortColumn.Property).ToList();
-                }
+                return Items.AsQueryable().OrderByDescending(SortColumn.Property).ToList();
             }
             else
             {
-                return Items;
+                return Items.AsQueryable().OrderBy(SortColumn.Property).ToList();
             }
         }
 
-        return Enumerable.Empty<TableItem>();
+        return Items;
     }
 }

@@ -11,13 +11,18 @@ using System.Threading.Tasks;
 
 namespace KubeUI2.Services
 {
-    public class State : IState
+    public class State : INotifyPropertyChanged, IState
     {
+        public static string UILevelNotification = nameof(UILevelNotification);
+        public static string NamespaceNotification = nameof(NamespaceNotification);
+
         private readonly ILogger<State> Logger;
 
         private readonly IJSRuntime JSRuntime;
 
         private readonly IAppInsights appInsights;
+
+        public event PropertyChangedEventHandler PropertyChanged;
 
         public State(ILogger<State> logger)
         {
@@ -46,7 +51,16 @@ namespace KubeUI2.Services
 
         private UILevel UILevel { get; set; }
 
-        public string Namespace { get; set; } = "default";
+        private string _namespace = "default";
+
+        public string Namespace
+        {
+            get { return _namespace; }
+            set { 
+                _namespace = value;
+                RaisePropertyChanged(State.NamespaceNotification);
+            }
+        }
 
         public void DeleteItem(Type type, int Id)
         {
@@ -100,8 +114,12 @@ namespace KubeUI2.Services
         public void SetUILevel(UILevel uILevel)
         {
             UILevel = uILevel;
+            RaisePropertyChanged(State.UILevelNotification);
         }
 
-        
+        public virtual void RaisePropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
     }
 }
