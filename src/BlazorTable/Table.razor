@@ -77,7 +77,7 @@
             <BSPopover Target="@($"Filter-{column.Title}")" IsOpen="@column.FilterOpen" Placement="Placement.Bottom">
                 <BSPopoverHeader>Filter</BSPopoverHeader>
                 <BSPopoverBody>
-                    @column.GetPropertyMemberInfo()
+                    @column.GetPropertyMemberInfo().MemberType
                 </BSPopoverBody>
             </BSPopover>
         }

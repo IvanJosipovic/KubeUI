@@ -6,15 +6,15 @@
 @code {
     [CascadingParameter(Name = "Table")] private ITable<TableItem> Table { get; set; }
 
-    private string title;
+    private string _title;
 
     /// <summary>
     /// Title
     /// </summary>
-    [Parameter] public string Title 
-    { 
-        get { return title == null ? GetPropertyMemberInfo().Name : title;  } 
-        set { title = value; } 
+    [Parameter] public string Title
+    {
+        get { return _title == null ? GetPropertyMemberInfo()?.Name : _title;  }
+        set { _title = value; }
     }
 
     /// <summary>
@@ -79,12 +79,12 @@
 
     protected override void OnParametersSet()
     {
-        if (Sortable && Property == null)
+        if (Sortable && Property == null || Filterable && Property == null)
         {
             throw new Exception($"Column {Title} Property paramter is null");
         }
 
-        if (title == null && Property == null)
+        if (Title == null && Property == null)
         {
             throw new Exception($"A Column has both Title and Property paramters null");
         }
