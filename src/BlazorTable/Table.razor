@@ -12,24 +12,21 @@
             <tr>
                 @foreach (IColumn<TableItem> column in Columns)
                 {
-                <th>
-                    <span @onclick="@(() => DataProvider.SortBy(column))" style="@(column.Sortable ? "cursor: pointer;" : "") @(!string.IsNullOrEmpty(column.Width) ? $"width:{column.Width};" : "")">@column.Title</span>
+                    <th>
+                        <span @onclick="@(() => DataProvider.SortBy(column))" style="@(column.Sortable ? "cursor: pointer;" : "") @(!string.IsNullOrEmpty(column.Width) ? $"width:{column.Width};" : "")">@column.Title</span>
 
-                    @if (DataProvider.SortColumn == column)
-                    {
-                        <i class="fa fa-sort-@(DataProvider.SortDescending ? "desc" : "asc")"></i>
-                    }
+                        @if (DataProvider.SortColumn == column)
+                        {
+                            <i class="fa fa-sort-@(DataProvider.SortDescending ? "desc" : "asc")"></i>
+                        }
 
-                    @if (column.Filterable)
-                    {
-                        <a href="javascript:;" id="@($"Filter-{column.Title}")" @onclick="@((x) => column.ToggleFilter())"><i class="fa fa-filter"></i></a>
-
-                        <BSPopover Target="@($"Filter-{column.Title}")" IsOpen="@column.FilterOpen" Placement="Placement.Bottom">
-                            <BSPopoverHeader>Yes</BSPopoverHeader>
-                            <BSPopoverBody>Yes</BSPopoverBody>
-                        </BSPopover>
-                    }
-                </th>
+                        @if (column.Filterable)
+                        {
+                            <div class="float-right">
+                                <a href="javascript:;" id="@($"Filter-{column.Title}")" @onclick="@((x) => column.ToggleFilter())"><i class="fa fa-filter"></i></a>
+                            </div>                            
+                        }
+                    </th>
                 }
             </tr>
         </BSTableHead>
@@ -72,11 +69,17 @@
             }
         </tbody>
     </BSTable>
-    <div class="table-responsive">
-        <table class="table table-striped table-bordered table-hover table-sm">
 
-        </table>
-    </div>
+    @foreach (IColumn<TableItem> column in Columns)
+    {
+        @if (column.Filterable)
+        {
+            <BSPopover Target="@($"Filter-{column.Title}")" IsOpen="@column.FilterOpen" Placement="Placement.Bottom">
+                <BSPopoverHeader>Filter</BSPopoverHeader>
+                <BSPopoverBody>Yes</BSPopoverBody>
+            </BSPopover>
+        }
+    }
 }
 
 @code {

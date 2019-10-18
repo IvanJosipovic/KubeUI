@@ -91,4 +91,11 @@
 
         StateHasChanged();
     }
+
+    bool IsOpen1 { get; set; }
+    void onclick1(MouseEventArgs e)
+    {
+        IsOpen1 = !IsOpen1;
+        StateHasChanged();
+    }
 }
