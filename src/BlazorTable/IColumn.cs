@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components;
 using System;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace BlazorTable
 {
@@ -18,9 +19,9 @@ namespace BlazorTable
 
         bool FilterOpen { get; set; }
 
-        string GetPropertyName();
-
         void ToggleFilter();
+
+        MemberInfo GetPropertyMemberInfo();
 
         Expression<Func<TableItem, object>> Property { get; set; }
 

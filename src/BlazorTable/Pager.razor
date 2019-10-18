@@ -1,29 +1,29 @@
 ﻿@typeparam TableItem
 
-@if (DataProvider.GetData() != null && TotalPages >= 1)
+@if (Table.TotalCount >= 1 && TotalPages >= 1)
 {
     <div class="d-flex justify-content-end">
-        <span class="align-middle">Page: @(DataProvider.PageNumber + 1) of @(TotalPages + 1)</span>
+        <span class="align-middle">Page: @(Table.PageNumber + 1) of @(TotalPages + 1)</span>
         &nbsp;
         <ul class="pagination">
-            <li class="page-item" @onclick="@(() => DataProvider.FirstPage())" title="First"><a class="page-link" href="javascript:;"><i class="fa fa-angle-double-left"></i></a></li>
-            <li class="page-item" @onclick="@(() => DataProvider.PreviousPage())" title="Previous"><a class="page-link" href="javascript:;"><i class="fa fa-angle-left"></i></a></li>
+            <li class="page-item" @onclick="@(() => Table.FirstPage())" title="First"><a class="page-link" href="javascript:;"><i class="fa fa-angle-double-left"></i></a></li>
+            <li class="page-item" @onclick="@(() => Table.PreviousPage())" title="Previous"><a class="page-link" href="javascript:;"><i class="fa fa-angle-left"></i></a></li>
             <li class="page-item disabled">
                 <a class="page-link" href="#" tabindex="-1" aria-disabled="true">&nbsp;</a>
             </li>
-            <li class="page-item" @onclick="@(() => DataProvider.NextPage())" title="Next"><a class="page-link" href="javascript:;"><i class="fa fa-angle-right"></i></a></li>
-            <li class="page-item" @onclick="@(() => DataProvider.LastPage())" title="Last"><a class="page-link" href="javascript:;"><i class="fa fa-angle-double-right"></i></a></li>
+            <li class="page-item" @onclick="@(() => Table.NextPage())" title="Next"><a class="page-link" href="javascript:;"><i class="fa fa-angle-right"></i></a></li>
+            <li class="page-item" @onclick="@(() => Table.LastPage())" title="Last"><a class="page-link" href="javascript:;"><i class="fa fa-angle-double-right"></i></a></li>
         </ul>
     </div>
 }
 
 @code {
-    [CascadingParameter(Name = "DataProvider")] public IDataProvider<TableItem> DataProvider { get; set; }
+    [CascadingParameter(Name = "Table")] public ITable<TableItem> Table { get; set; }
 
     private long TotalPages { get; set; }
 
     protected override void OnParametersSet()
     {
-        TotalPages = DataProvider.TotalCount / DataProvider.PageSize;
+        TotalPages = Table.TotalCount / Table.PageSize;
     }
 }

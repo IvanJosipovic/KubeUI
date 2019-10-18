@@ -1,6 +1,7 @@
 ﻿@typeparam TableItem
 @implements IColumn<TableItem>
 @using System.Linq.Expressions
+@using System.Reflection
 
 @code {
     [CascadingParameter(Name = "Table")] private ITable<TableItem> Table { get; set; }
@@ -48,7 +49,7 @@
     /// </summary>
     [Parameter] public Expression<Func<TableItem, object>> Property { get; set; }
 
-    public string GetPropertyName()
+    public MemberInfo GetPropertyMemberInfo()
     {
         if (Property == null)
         {
@@ -62,7 +63,7 @@
             body = ubody.Operand as MemberExpression;
         }
 
-        return body.Member.Name;
+        return body.Member;
     }
 
     public void Dispose()

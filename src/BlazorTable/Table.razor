@@ -13,35 +13,35 @@
                 @foreach (IColumn<TableItem> column in Columns)
                 {
                     <th>
-                        <span @onclick="@(() => DataProvider.SortBy(column))" style="@(column.Sortable ? "cursor: pointer;" : "") @(!string.IsNullOrEmpty(column.Width) ? $"width:{column.Width};" : "")">@column.Title</span>
+                        <span @onclick="@(() => SortBy(column))" style="@(column.Sortable ? "cursor: pointer;" : "") @(!string.IsNullOrEmpty(column.Width) ? $"width:{column.Width};" : "")">@column.Title</span>
 
-                        @if (DataProvider.SortColumn == column)
+                        @if (SortColumn == column)
                         {
-                            <i class="fa fa-sort-@(DataProvider.SortDescending ? "desc" : "asc")"></i>
+                            <i class="fa fa-sort-@(SortDescending ? "desc" : "asc")"></i>
                         }
 
                         @if (column.Filterable)
                         {
                             <div class="float-right">
                                 <a href="javascript:;" id="@($"Filter-{column.Title}")" @onclick="@((x) => column.ToggleFilter())"><i class="fa fa-filter"></i></a>
-                            </div>                            
+                            </div>
                         }
                     </th>
                 }
             </tr>
         </BSTableHead>
         <tbody>
-            @if (Data != null)
+            @if (Items != null)
             {
-                if (Data.Any())
+                if (Items.Any())
                 {
-                    foreach (TableItem item in Data)
+                    foreach (TableItem item in Items)
                     {
                         <tr>
                             @foreach (IColumn<TableItem> column in Columns)
                             {
                                 <td>
-                                    @if (DataProvider.IsEditMode && column.EditorTemplate != null)
+                                    @if (IsEditMode && column.EditorTemplate != null)
                                     {
                                         @column.EditorTemplate(item)
                                     }
@@ -77,9 +77,7 @@
             <BSPopover Target="@($"Filter-{column.Title}")" IsOpen="@column.FilterOpen" Placement="Placement.Bottom">
                 <BSPopoverHeader>Filter</BSPopoverHeader>
                 <BSPopoverBody>
-                    
-                    @column.Property.Type
-
+                    @column.GetPropertyMemberInfo()
                 </BSPopoverBody>
             </BSPopover>
         }
@@ -87,22 +85,54 @@
 }
 
 @code {
-    [CascadingParameter(Name = "DataProvider")] public IDataProvider<TableItem> DataProvider { get; set; }
+    [Parameter] public long PageSize { get; set; } = 30;
 
     [Parameter] public RenderFragment ChildContent { get; set; }
 
-    private IEnumerable<TableItem> Data;
+    [Parameter] public IEnumerable<TableItem> Items { get; set; }
 
     private List<IColumn<TableItem>> Columns { get; set; } = new List<IColumn<TableItem>>();
 
-    protected override void OnInitialized()
+    public IColumn<TableItem> SortColumn { get; set; }
+
+    public bool SortDescending { get; private set; }
+
+    public long PageNumber { get; private set; } = 0;
+
+    public long TotalCount { get { return Items == null ? 0 : Items.Count(); } }
+
+    public bool IsEditMode { get; private set; }
+
+    protected override void OnParametersSet()
     {
-        DataProvider.OnChange += Update;
+        Update();
     }
 
-    private void Update()
+    protected override void OnInitialized()
     {
-        Data = DataProvider.GetData();
+        Update();
+    }
+
+    private IEnumerable<TableItem> GetData()
+    {
+        if (Items != null && SortColumn != null)
+        {
+            if (SortDescending)
+            {
+                return Items.AsQueryable().OrderByDescending(SortColumn.Property).ToList();
+            }
+            else
+            {
+                return Items.AsQueryable().OrderBy(SortColumn.Property).ToList();
+            }
+        }
+
+        return Items;
+    }
+
+    public void Update()
+    {
+        Items = GetData();
         StateHasChanged();
     }
 
@@ -115,6 +145,60 @@
     public void RemoveColumn(IColumn<TableItem> column)
     {
         Columns.Remove(column);
+        StateHasChanged();
+    }
+
+    public void FirstPage()
+    {
+        PageNumber = 0;
+        Update();
+    }
+
+    public void NextPage()
+    {
+        if (PageNumber < TotalCount / PageSize)
+        {
+            PageNumber = PageNumber + 1;
+            Update();
+        }
+    }
+
+    public void PreviousPage()
+    {
+        if (PageNumber >= 1)
+        {
+            PageNumber = PageNumber - 1;
+            Update();
+        }
+    }
+
+    public void LastPage()
+    {
+        PageNumber = TotalCount / PageSize;
+        Update();
+    }
+
+    public void SortBy(IColumn<TableItem> column)
+    {
+        if (column.Sortable)
+        {
+            if (SortColumn != column)
+            {
+                SortColumn = column;
+                SortDescending = false;
+            }
+            else
+            {
+                SortDescending = !SortDescending;
+            }
+
+            Update();
+        }
+    }
+
+    public void ToggleEditMode()
+    {
+        IsEditMode = !IsEditMode;
         StateHasChanged();
     }
 }

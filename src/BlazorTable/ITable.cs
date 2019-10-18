@@ -1,13 +1,36 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Threading.Tasks;
 
 namespace BlazorTable
 {
-    interface ITable<T>
+    public interface ITable<TableItem>
     {
-        void AddColumn(IColumn<T> column);
+        void Update();
+
+        void SortBy(IColumn<TableItem> column);
         
-        void RemoveColumn(IColumn<T> column);
+        IColumn<TableItem> SortColumn { get; }
+
+        bool SortDescending { get; }
+
+        long PageSize { get; }
+
+        long PageNumber { get; }
+
+        long TotalCount { get; }
+
+        void FirstPage();
+        void NextPage();
+        void PreviousPage();
+        void LastPage();
+
+        bool IsEditMode { get; }
+
+        void ToggleEditMode();
+
+        void AddColumn(IColumn<TableItem> column);
+
+        void RemoveColumn(IColumn<TableItem> column);
     }
 }
