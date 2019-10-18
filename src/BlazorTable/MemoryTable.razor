@@ -1,9 +1,11 @@
 ﻿@typeparam TableItem
 @inherits DataProviderBase<TableItem>
 
-<CascadingValue Value="(IDataProvider<TableItem>)this" Name="DataProvider">
-    @ChildContent
-</CascadingValue>
+    <CascadingValue Value="(IDataProvider<TableItem>)this" Name="DataProvider">
+        <Table TableItem="TableItem">
+            @ChildContent
+        </Table>
+    </CascadingValue>
 
 @code {
     [Parameter] public override long PageSize { get; set; } = 30;
