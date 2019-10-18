@@ -1,0 +1,113 @@
+﻿@typeparam TableItem
+@implements ITable<TableItem>
+
+<CascadingValue Value="(ITable<TableItem>)this" Name="Table">
+    @ChildContent
+</CascadingValue>
+
+@if (Columns.Any())
+{
+    <BSTable IsBordered="true" IsHovarable="true" IsSmall="true" IsResponsive="true" IsStriped="true">
+        <BSTableHead Class="thead-light text-dark">
+            <tr>
+                @foreach (IColumn<TableItem> column in Columns)
+                {
+                <th>
+                    <span @onclick="@(() => DataProvider.SortBy(column))" style="@(column.Sortable ? "cursor: pointer;" : "") @(!string.IsNullOrEmpty(column.Width) ? $"width:{column.Width};" : "")">@column.Title</span>
+
+                    @if (DataProvider.SortColumn == column)
+                    {
+                        <i class="fa fa-sort-@(DataProvider.SortDescending ? "desc" : "asc")"></i>
+                    }
+
+                    @if (column.Filterable)
+                    {
+                        <a href="javascript:;" id="@($"Filter-{column.Title}")" @onclick="@((x) => column.ToggleFilter())"><i class="fa fa-filter"></i></a>
+
+                        <BSPopover Target="@($"Filter-{column.Title}")" IsOpen="@column.FilterOpen" Placement="Placement.Bottom">
+                            <BSPopoverHeader>Yes</BSPopoverHeader>
+                            <BSPopoverBody>Yes</BSPopoverBody>
+                        </BSPopover>
+                    }
+                </th>
+                }
+            </tr>
+        </BSTableHead>
+        <tbody>
+            @if (Data != null)
+            {
+                if (Data.Any())
+                {
+                    foreach (TableItem item in Data)
+                    {
+                        <tr>
+                            @foreach (IColumn<TableItem> column in Columns)
+                            {
+                                <td>
+                                    @if (DataProvider.IsEditMode && column.EditorTemplate != null)
+                                    {
+                                        @column.EditorTemplate(item)
+                                    }
+                                    else
+                                    {
+                                        @column.Template(item)
+                                    }
+                                </td>
+                            }
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="@Columns.Count" style="text-align:center"><h1>No items...</h1></td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="@Columns.Count" style="text-align:center"><h1>Loading...</h1></td>
+                </tr>
+            }
+        </tbody>
+    </BSTable>
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered table-hover table-sm">
+
+        </table>
+    </div>
+}
+
+@code {
+    [CascadingParameter(Name = "DataProvider")] public IDataProvider<TableItem> DataProvider { get; set; }
+
+    [Parameter] public RenderFragment ChildContent { get; set; }
+
+    private IEnumerable<TableItem> Data;
+
+    private List<IColumn<TableItem>> Columns { get; set; } = new List<IColumn<TableItem>>();
+
+    protected override void OnInitialized()
+    {
+        DataProvider.OnChange += Update;
+    }
+
+    private void Update()
+    {
+        Data = DataProvider.GetData();
+        StateHasChanged();
+    }
+
+    public void AddColumn(IColumn<TableItem> column)
+    {
+        Columns.Add(column);
+        StateHasChanged();
+    }
+
+    public void RemoveColumn(IColumn<TableItem> column)
+    {
+        Columns.Remove(column);
+        StateHasChanged();
+    }
+}

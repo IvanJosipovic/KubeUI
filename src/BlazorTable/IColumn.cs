@@ -14,7 +14,13 @@ namespace BlazorTable
 
         bool Sortable { get; set; }
 
+        bool Filterable { get; set; }
+
+        bool FilterOpen { get; set; }
+
         string GetPropertyName();
+
+        void ToggleFilter();
 
         Expression<Func<TableItem, object>> Property { get; set; }
 

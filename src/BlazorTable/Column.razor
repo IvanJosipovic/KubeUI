@@ -26,6 +26,13 @@
     [Parameter] public bool Sortable { get; set; }
 
     /// <summary>
+    /// Column can be filtered
+    /// </summary>
+    [Parameter] public bool Filterable { get; set; }
+
+    public bool FilterOpen { get; set; }
+
+    /// <summary>
     /// Normal Item Template
     /// </summary>
     [Parameter] public RenderFragment<TableItem> Template { get; set; }
@@ -74,5 +81,10 @@
         {
             throw new Exception($"Column {Title} Property paramter is null");
         }
+    }
+
+    public void ToggleFilter()
+    {
+        FilterOpen = !FilterOpen;
     }
 }

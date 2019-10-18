@@ -11,7 +11,7 @@
 <BSRow>
     <MemoryProvider PageSize="40" TableItem="V1Deployment" Items="Items">
         <Table TableItem="V1Deployment">
-            <Column Title="Name" TableItem="V1Deployment" Property="@(x => x.Metadata.Name)" Sortable="true">
+            <Column Title="Name" TableItem="V1Deployment" Property="@(x => x.Metadata.Name)" Sortable="true" Filterable="true">
                 <Template>
                     <a href="/@Namespace/Deployment/@context.Metadata.Name">@context.Metadata.Name</a>
                 </Template>

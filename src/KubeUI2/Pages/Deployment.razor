@@ -8,23 +8,20 @@
 <br />
 @if (Item != null)
 {
-    <BSRow>
-        <BSTabGroup>
-            <BSTabList>
-                <BSTab>
-                    <BSTabLabel>Yaml</BSTabLabel>
-                    <BSTabContent><pre><code id="yamlViewer" class="language-yaml">@k8s.Yaml.SaveToString(Item)</code></pre></BSTabContent>
-                </BSTab>
+    <BSTabGroup>
+        <BSTabList>
+            <BSTab>
+                <BSTabLabel>Yaml</BSTabLabel>
+                <BSTabContent><pre><code id="yamlViewer" class="language-yaml">@k8s.Yaml.SaveToString(Item)</code></pre></BSTabContent>
+            </BSTab>
 
-                <BSTab>
-                    <BSTabLabel>Overview</BSTabLabel>
-                    <BSTabContent></BSTabContent>
-                </BSTab>
-
-            </BSTabList>
-            <BSTabSelectedContent />
-        </BSTabGroup>
-    </BSRow>
+            <BSTab>
+                <BSTabLabel>Overview</BSTabLabel>
+                <BSTabContent></BSTabContent>
+            </BSTab>
+        </BSTabList>
+        <BSTabSelectedContent />
+    </BSTabGroup>
 }
 
 @code {
