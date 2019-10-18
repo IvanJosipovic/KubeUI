@@ -76,7 +76,11 @@
         {
             <BSPopover Target="@($"Filter-{column.Title}")" IsOpen="@column.FilterOpen" Placement="Placement.Bottom">
                 <BSPopoverHeader>Filter</BSPopoverHeader>
-                <BSPopoverBody>Yes</BSPopoverBody>
+                <BSPopoverBody>
+                    
+                    @column.Property.Type
+
+                </BSPopoverBody>
             </BSPopover>
         }
     }
