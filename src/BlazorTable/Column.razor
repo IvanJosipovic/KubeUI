@@ -6,20 +6,21 @@
 @code {
     [CascadingParameter(Name = "Table")] private ITable<TableItem> Table { get; set; }
 
+    private string title;
+
     /// <summary>
     /// Title
     /// </summary>
-    [Parameter] public string Title { get; set; } = String.Empty;
+    [Parameter] public string Title 
+    { 
+        get { return title == null ? GetPropertyMemberInfo().Name : title;  } 
+        set { title = value; } 
+    }
 
     /// <summary>
     /// Width auto|value|initial|inherit
     /// </summary>
     [Parameter] public string Width { get; set; }
-
-    /// <summary>
-    /// When true Edit Model is enabled
-    /// </summary>
-    [Parameter] public bool Editable { get; set; }
 
     /// <summary>
     /// Column can be sorted
@@ -31,7 +32,7 @@
     /// </summary>
     [Parameter] public bool Filterable { get; set; }
 
-    public bool FilterOpen { get; set; }
+    public bool FilterOpen { get; private set; }
 
     /// <summary>
     /// Normal Item Template
@@ -63,7 +64,7 @@
             body = ubody.Operand as MemberExpression;
         }
 
-        return body.Member;
+        return body?.Member;
     }
 
     public void Dispose()
@@ -81,6 +82,11 @@
         if (Sortable && Property == null)
         {
             throw new Exception($"Column {Title} Property paramter is null");
+        }
+
+        if (title == null && Property == null)
+        {
+            throw new Exception($"A Column has both Title and Property paramters null");
         }
     }
 

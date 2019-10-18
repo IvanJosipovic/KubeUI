@@ -8,6 +8,8 @@ namespace BlazorTable
     {
         void Update();
 
+        List<IColumn<TableItem>> Columns { get; }
+
         void SortBy(IColumn<TableItem> column);
         
         IColumn<TableItem> SortColumn { get; }
@@ -20,12 +22,15 @@ namespace BlazorTable
 
         long TotalCount { get; }
 
-        void FirstPage();
-        void NextPage();
-        void PreviousPage();
-        void LastPage();
-
         bool IsEditMode { get; }
+
+        void FirstPage();
+
+        void NextPage();
+
+        void PreviousPage();
+
+        void LastPage();
 
         void ToggleEditMode();
 

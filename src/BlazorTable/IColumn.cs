@@ -11,13 +11,11 @@ namespace BlazorTable
 
         string Width { get; set; }
 
-        bool Editable { get; set; }
-
         bool Sortable { get; set; }
 
         bool Filterable { get; set; }
 
-        bool FilterOpen { get; set; }
+        bool FilterOpen { get; }
 
         void ToggleFilter();
 

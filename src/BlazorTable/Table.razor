@@ -91,7 +91,7 @@
 
     [Parameter] public IEnumerable<TableItem> Items { get; set; }
 
-    private List<IColumn<TableItem>> Columns { get; set; } = new List<IColumn<TableItem>>();
+    public List<IColumn<TableItem>> Columns { get; } = new List<IColumn<TableItem>>();
 
     public IColumn<TableItem> SortColumn { get; set; }
 
