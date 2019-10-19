@@ -1,0 +1,34 @@
+﻿@typeparam TableItem
+@using System.Linq.Expressions
+@using System.Reflection
+
+@if (MemberType == typeof(System.String))
+{
+    <BSBasicInput InputType="InputType.Select" Value="string.Empty" Size="Size.ExtraSmall">
+        @foreach (StringFilters suit in (StringFilters[])Enum.GetValues(typeof(StringFilters)))
+        {
+            <option value="@suit">@suit.GetDescription()</option>
+        }
+    </BSBasicInput>
+}
+
+<br />
+
+<BSButtonGroup >
+    <BSButton ButtonType="ButtonType.Button" Color="Color.Secondary" Size="Size.ExtraSmall">Cancel</BSButton>
+    <BSButton ButtonType="ButtonType.Button" Color="Color.Primary" Size="Size.ExtraSmall">Accept</BSButton>
+</BSButtonGroup>
+    
+
+@code {
+    [CascadingParameter(Name = "Table")] private ITable<TableItem> Table { get; set; }
+
+    [Parameter] public IColumn<TableItem> Column { get; set; }
+
+    private Type MemberType;
+
+    protected override void OnInitialized()
+    {
+        MemberType = Column.GetMemberUnderlyingType(Column.GetPropertyMemberInfo());
+    }
+}

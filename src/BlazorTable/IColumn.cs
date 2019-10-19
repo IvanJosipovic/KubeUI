@@ -21,7 +21,11 @@ namespace BlazorTable
 
         MemberInfo GetPropertyMemberInfo();
 
+        Type GetMemberUnderlyingType(MemberInfo member);
+
         Expression<Func<TableItem, object>> Property { get; set; }
+
+        Expression<Func<TableItem, bool>> Filter { get; set; }
 
         RenderFragment<TableItem> EditorTemplate { get; set; }
 

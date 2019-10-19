@@ -1,9 +1,4 @@
 ﻿@typeparam TableItem
-@implements ITable<TableItem>
-
-<CascadingValue Value="(ITable<TableItem>)this" Name="Table">
-    @ChildContent
-</CascadingValue>
 
 @if (Columns.Any())
 {
@@ -31,11 +26,11 @@
             </tr>
         </BSTableHead>
         <tbody>
-            @if (Items != null)
+            @if (TempItems != null)
             {
-                if (Items.Any())
+                if (TempItems.Any())
                 {
-                    foreach (TableItem item in Items)
+                    foreach (TableItem item in TempItems)
                     {
                         <tr>
                             @foreach (IColumn<TableItem> column in Columns)
@@ -56,16 +51,12 @@
                 }
                 else
                 {
-                    <tr>
-                        <td colspan="@Columns.Count" style="text-align:center"><h1>No items...</h1></td>
-                    </tr>
+                    <tr><td colspan="@Columns.Count" style="text-align:center"><h1>No items...</h1></td></tr>
                 }
             }
             else
             {
-                <tr>
-                    <td colspan="@Columns.Count" style="text-align:center"><h1>Loading...</h1></td>
-                </tr>
+                <tr><td colspan="@Columns.Count" style="text-align:center"><h1>Loading...</h1></td></tr>
             }
         </tbody>
     </BSTable>
@@ -74,131 +65,16 @@
     {
         @if (column.Filterable)
         {
-            <BSPopover Target="@($"Filter-{column.Title}")" IsOpen="@column.FilterOpen" Placement="Placement.Bottom">
+            <BSPopover Target="@($"Filter-{column.Title}")" IsOpen="@column.FilterOpen" Placement="Placement.Bottom" DismissOnNextClick="false">
                 <BSPopoverHeader>Filter</BSPopoverHeader>
                 <BSPopoverBody>
-                    @column.GetPropertyMemberInfo().MemberType
+                    <Filter TableItem="TableItem" Column="column"></Filter>
                 </BSPopoverBody>
             </BSPopover>
         }
     }
 }
 
-@code {
-    [Parameter] public long PageSize { get; set; } = 30;
-
-    [Parameter] public RenderFragment ChildContent { get; set; }
-
-    [Parameter] public IEnumerable<TableItem> Items { get; set; }
-
-    public List<IColumn<TableItem>> Columns { get; } = new List<IColumn<TableItem>>();
-
-    public IColumn<TableItem> SortColumn { get; set; }
-
-    public bool SortDescending { get; private set; }
-
-    public long PageNumber { get; private set; } = 0;
-
-    public long TotalCount { get { return Items == null ? 0 : Items.Count(); } }
-
-    public bool IsEditMode { get; private set; }
-
-    protected override void OnParametersSet()
-    {
-        Update();
-    }
-
-    protected override void OnInitialized()
-    {
-        Update();
-    }
-
-    private IEnumerable<TableItem> GetData()
-    {
-        if (Items != null && SortColumn != null)
-        {
-            if (SortDescending)
-            {
-                return Items.AsQueryable().OrderByDescending(SortColumn.Property).ToList();
-            }
-            else
-            {
-                return Items.AsQueryable().OrderBy(SortColumn.Property).ToList();
-            }
-        }
-
-        return Items;
-    }
-
-    public void Update()
-    {
-        Items = GetData();
-        StateHasChanged();
-    }
-
-    public void AddColumn(IColumn<TableItem> column)
-    {
-        Columns.Add(column);
-        StateHasChanged();
-    }
-
-    public void RemoveColumn(IColumn<TableItem> column)
-    {
-        Columns.Remove(column);
-        StateHasChanged();
-    }
-
-    public void FirstPage()
-    {
-        PageNumber = 0;
-        Update();
-    }
-
-    public void NextPage()
-    {
-        if (PageNumber < TotalCount / PageSize)
-        {
-            PageNumber = PageNumber + 1;
-            Update();
-        }
-    }
-
-    public void PreviousPage()
-    {
-        if (PageNumber >= 1)
-        {
-            PageNumber = PageNumber - 1;
-            Update();
-        }
-    }
-
-    public void LastPage()
-    {
-        PageNumber = TotalCount / PageSize;
-        Update();
-    }
-
-    public void SortBy(IColumn<TableItem> column)
-    {
-        if (column.Sortable)
-        {
-            if (SortColumn != column)
-            {
-                SortColumn = column;
-                SortDescending = false;
-            }
-            else
-            {
-                SortDescending = !SortDescending;
-            }
-
-            Update();
-        }
-    }
-
-    public void ToggleEditMode()
-    {
-        IsEditMode = !IsEditMode;
-        StateHasChanged();
-    }
-}
+<CascadingValue Value="(ITable<TableItem>)this" Name="Table">
+    @ChildContent
+</CascadingValue>

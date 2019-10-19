@@ -31,12 +31,12 @@
                 }
             </Template>
         </Column>
-        <Column Title="Status" TableItem="V1Deployment" Property="@(x => x.Status.AvailableReplicas)" Sortable="true">
+        <Column Title="Status" TableItem="V1Deployment" Property="@(x => x.Status.AvailableReplicas)" Sortable="true" Filterable="true">
             <Template>
                 @context.Status.AvailableReplicas/@context.Status.Replicas
             </Template>
         </Column>
-        <Column Title="Age" TableItem="V1Deployment" Property="@(x => x.Metadata.CreationTimestamp)" Sortable="true">
+        <Column Title="Age" TableItem="V1Deployment" Property="@(x => x.Metadata.CreationTimestamp)" Sortable="true" Filterable="true">
             <Template>
                 @string.Format("{0:N0}d", (DateTime.UtcNow - context.Metadata.CreationTimestamp).Value.TotalDays)
             </Template>
@@ -46,7 +46,7 @@
                 @context.Spec.Template.Spec.Containers.OrEmptyIfNull().Select(x => x.Image).Aggregate((a, b) => a + ", " + b)
             </Template>
         </Column>
-        <Pager TableItem="V1Deployment" />
+        <Pager TableItem="V1Deployment" AlwaysShow="true" />
     </Table>
 </BSRow>
 

@@ -16,11 +16,11 @@ namespace BlazorTable
 
         bool SortDescending { get; }
 
-        long PageSize { get; }
+        int PageSize { get; }
 
-        long PageNumber { get; }
+        int PageNumber { get; }
 
-        long TotalCount { get; }
+        int TotalCount { get; }
 
         bool IsEditMode { get; }
 
