@@ -1,0 +1,123 @@
+﻿using Microsoft.AspNetCore.Components;
+using System;
+using System.Linq.Expressions;
+using System.Reflection;
+
+namespace BlazorTable
+{
+    public partial class Column<TableItem> : IColumn<TableItem>
+    {
+        [CascadingParameter(Name = "Table")] private ITable<TableItem> Table { get; set; }
+
+        private string _title;
+
+        /// <summary>
+        /// Title
+        /// </summary>
+        [Parameter]
+        public string Title
+        {
+            get { return _title == null ? GetPropertyMemberInfo()?.Name : _title; }
+            set { _title = value; }
+        }
+
+        /// <summary>
+        /// Width auto|value|initial|inherit
+        /// </summary>
+        [Parameter] public string Width { get; set; }
+
+        /// <summary>
+        /// Column can be sorted
+        /// </summary>
+        [Parameter] public bool Sortable { get; set; }
+
+        /// <summary>
+        /// Column can be filtered
+        /// </summary>
+        [Parameter] public bool Filterable { get; set; }
+
+        /// <summary>
+        /// Contains Filter expression
+        /// </summary>
+        public Expression<Func<TableItem, bool>> Filter { get; set; }
+
+        public bool FilterOpen { get; private set; }
+
+        /// <summary>
+        /// Normal Item Template
+        /// </summary>
+        [Parameter] public RenderFragment<TableItem> Template { get; set; }
+
+        /// <summary>
+        /// Edit Mode Item Template
+        /// </summary>
+        [Parameter] public RenderFragment<TableItem> EditorTemplate { get; set; }
+
+        /// <summary>
+        /// Select Which Property To Sort On,
+        /// Required when Sort = true
+        /// </summary>
+        [Parameter] public Expression<Func<TableItem, object>> Property { get; set; }
+
+        public MemberInfo GetPropertyMemberInfo()
+        {
+            if (Property == null)
+            {
+                return null;
+            }
+
+            MemberExpression body = Property.Body as MemberExpression;
+
+            if (body == null)
+            {
+                UnaryExpression ubody = (UnaryExpression)Property.Body;
+                body = ubody.Operand as MemberExpression;
+            }
+
+            return body?.Member;
+        }
+
+        public Type GetMemberUnderlyingType(MemberInfo member)
+        {
+            switch (member.MemberType)
+            {
+                case MemberTypes.Field:
+                    return ((FieldInfo)member).FieldType;
+                case MemberTypes.Property:
+                    return ((PropertyInfo)member).PropertyType;
+                case MemberTypes.Event:
+                    return ((EventInfo)member).EventHandlerType;
+                default:
+                    throw new ArgumentException("MemberInfo must be if type FieldInfo, PropertyInfo or EventInfo", "member");
+            }
+        }
+
+        public void Dispose()
+        {
+            this.Table.RemoveColumn(this);
+        }
+
+        protected override void OnInitialized()
+        {
+            this.Table.AddColumn(this);
+        }
+
+        protected override void OnParametersSet()
+        {
+            if (Sortable && Property == null || Filterable && Property == null)
+            {
+                throw new Exception($"Column {Title} Property paramter is null");
+            }
+
+            if (Title == null && Property == null)
+            {
+                throw new Exception("A Column has both Title and Property paramters null");
+            }
+        }
+
+        public void ToggleFilter()
+        {
+            FilterOpen = !FilterOpen;
+        }
+    }
+}

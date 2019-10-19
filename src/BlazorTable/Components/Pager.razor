@@ -1,4 +1,5 @@
-﻿@typeparam TableItem
+﻿@namespace BlazorTable
+@typeparam TableItem
 
 @if (AlwaysShow || (Table.TotalCount >= 1 && TotalPages >= 1))
 {
@@ -15,17 +16,4 @@
             <li class="page-item" @onclick="@(() => Table.LastPage())" title="Last"><a class="page-link" href="javascript:;"><i class="fa fa-angle-double-right"></i></a></li>
         </ul>
     </div>
-}
-
-@code {
-    [CascadingParameter(Name = "Table")] public ITable<TableItem> Table { get; set; }
-
-    [Parameter] public bool AlwaysShow { get; set; }
-
-    private long TotalPages { get; set; }
-
-    protected override void OnParametersSet()
-    {
-        TotalPages = Table.TotalCount / Table.PageSize;
-    }
 }

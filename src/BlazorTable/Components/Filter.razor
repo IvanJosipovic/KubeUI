@@ -1,4 +1,5 @@
-﻿@typeparam TableItem
+﻿@namespace BlazorTable
+@typeparam TableItem
 @using System.Linq.Expressions
 @using System.Reflection
 
@@ -14,11 +15,11 @@
 
 <br />
 
-<BSButtonGroup >
+<BSButtonGroup>
     <BSButton ButtonType="ButtonType.Button" Color="Color.Secondary" Size="Size.ExtraSmall">Cancel</BSButton>
     <BSButton ButtonType="ButtonType.Button" Color="Color.Primary" Size="Size.ExtraSmall">Accept</BSButton>
 </BSButtonGroup>
-    
+
 
 @code {
     [CascadingParameter(Name = "Table")] private ITable<TableItem> Table { get; set; }
