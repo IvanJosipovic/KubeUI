@@ -9,12 +9,10 @@
             <option value="@suit">@suit.GetDescription()</option>
         }
     </select>
-    <input type="text" @bind-value="filterText" required></input>
+    <input type="text" class="form-control form-control-sm" @bind-value="filterText" required></input>
 }
-
-<br />
-
-<BSButtonGroup>
+<div class="row justify-content-md-center">
     <BSButton OnClick="@((x) => Column.ToggleFilter())" Color="Color.Secondary" Size="Size.ExtraSmall">Cancel</BSButton>
+    &nbsp;
     <BSButton OnClick="@((x) => ApplyFilter())" Color="Color.Primary" Size="Size.ExtraSmall">Accept</BSButton>
-</BSButtonGroup>
+</div>

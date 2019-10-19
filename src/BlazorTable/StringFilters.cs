@@ -22,16 +22,10 @@ namespace BlazorTable
         [Description("Is not equal to")]
         Is_not_equal_to,
 
-        [Description("Is null")]
-        Is_null,
+        [Description("Is null or empty")]
+        Is_null_or_empty,
 
-        [Description("Is not null")]
-        Is_not_null,
-
-        [Description("Is empty")]
-        Is_empty,
-
-        [Description("Is not empty")]
-        Is_not_empty,
+        [Description("Is not null or empty")]
+        Is_not_null_or_empty
     }
 }

@@ -18,7 +18,7 @@ namespace BlazorTable
         [Parameter]
         public string Title
         {
-            get { return _title ?? GetPropertyMemberInfo()?.Name; }
+            get { return _title ?? Property.GetPropertyMemberInfo()?.Name; }
             set { _title = value; }
         }
 
@@ -68,37 +68,6 @@ namespace BlazorTable
         /// </summary>
         [Parameter]
         public Expression<Func<TableItem, object>> Property { get; set; }
-
-        public MemberInfo GetPropertyMemberInfo()
-        {
-            if (Property == null)
-            {
-                return null;
-            }
-
-            if (!(Property.Body is MemberExpression body))
-            {
-                UnaryExpression ubody = (UnaryExpression)Property.Body;
-                body = ubody.Operand as MemberExpression;
-            }
-
-            return body?.Member;
-        }
-
-        public Type GetMemberUnderlyingType(MemberInfo member)
-        {
-            switch (member.MemberType)
-            {
-                case MemberTypes.Field:
-                    return ((FieldInfo)member).FieldType;
-                case MemberTypes.Property:
-                    return ((PropertyInfo)member).PropertyType;
-                case MemberTypes.Event:
-                    return ((EventInfo)member).EventHandlerType;
-                default:
-                    throw new ArgumentException("MemberInfo must be if type FieldInfo, PropertyInfo or EventInfo", nameof(member));
-            }
-        }
 
         public void Dispose()
         {

@@ -23,7 +23,7 @@ namespace BlazorTable
 
         protected override void OnInitialized()
         {
-            MemberType = Column.GetMemberUnderlyingType(Column.GetPropertyMemberInfo());
+            MemberType = Column.Property.GetPropertyMemberInfo().GetMemberUnderlyingType();
         }
 
         private void ApplyFilter()
@@ -41,52 +41,38 @@ namespace BlazorTable
             }
 
             Column.ToggleFilter();
-
+            
             switch (stringFilters)
             {
                 case StringFilters.Contains:
-                    Column.Filter = AddFilterToStringProperty(Column.Property, filterText, nameof(string.Contains));
+                    Column.Filter = Utillities.CallMethod(Column.Property, filterText, nameof(string.Contains));
                     break;
                 case StringFilters.Does_not_contain:
-                    Column.Filter = AddFilterToStringProperty(Column.Property, filterText, nameof(string.Contains));
+                    Column.Filter = Utillities.Not(Utillities.CallMethod(Column.Property, filterText, nameof(string.Contains)));
                     break;
                 case StringFilters.Starts_with:
-                    Column.Filter = AddFilterToStringProperty(Column.Property, filterText, nameof(string.StartsWith));
+                    Column.Filter = Utillities.CallMethod(Column.Property, filterText, nameof(string.StartsWith));
                     break;
                 case StringFilters.Ends_with:
-                    Column.Filter = AddFilterToStringProperty(Column.Property, filterText, nameof(string.EndsWith));
+                    Column.Filter = Utillities.CallMethod(Column.Property, filterText, nameof(string.EndsWith));
                     break;
                 case StringFilters.Is_equal_to:
-                    Column.Filter = AddFilterToStringProperty(Column.Property, filterText, nameof(string.Equals));
+                    Column.Filter = Utillities.CallMethod(Column.Property, filterText, nameof(string.Equals));
                     break;
                 case StringFilters.Is_not_equal_to:
+                    Column.Filter = Utillities.Not(Utillities.CallMethod(Column.Property, filterText, nameof(string.Equals)));
                     break;
-                case StringFilters.Is_null:
+                case StringFilters.Is_null_or_empty:
+                    Column.Filter = Utillities.CallMethod(Column.Property, filterText, nameof(string.IsNullOrEmpty));
                     break;
-                case StringFilters.Is_not_null:
-                    break;
-                case StringFilters.Is_empty:
-                    Column.Filter = AddFilterToStringProperty(Column.Property, filterText, nameof(string.IsNullOrEmpty));
-                    break;
-                case StringFilters.Is_not_empty:
+                case StringFilters.Is_not_null_or_empty:
+                    Column.Filter = Utillities.Not(Utillities.CallMethod(Column.Property, filterText, nameof(string.IsNullOrEmpty)));
                     break;
                 default:
-                    break;
+                    throw new ArgumentException(stringFilters + " is not defined!");
             }
 
             Table.Update();
-        }
-
-        public static Expression<Func<T, bool>> AddFilterToStringProperty<T>(
-        Expression<Func<T, object>> expression, string filter, string Method)
-        {
-            return Expression.Lambda<Func<T, bool>>(
-                Expression.Call(
-                    expression.Body,
-                    Method,
-                    null,
-                    Expression.Constant(filter)),
-                expression.Parameters);
         }
     }
 }
