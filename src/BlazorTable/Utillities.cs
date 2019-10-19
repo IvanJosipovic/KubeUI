@@ -37,48 +37,20 @@ namespace BlazorTable
             return null; // could also return string.Empty
         }
 
-        public static Expression<Func<T, bool>> CallMethod<T>(Expression<Func<T, object>> expression, string value, string method)
+        public static Expression<Func<T, bool>> CallMethodType<T>(Expression<Func<T, object>> expression, Type type, string method, Type parameter, object value)
         {
-            MethodInfo equalsMethod = typeof(string).GetMethod(method, new[] { typeof(string) });
-
-            return Expression.Lambda<Func<T, bool>>(
-                Expression.Call(
-                    expression.Body,
-                    equalsMethod,
-                    Expression.Constant(value)),
-                expression.Parameters);
+            return CallMethodType(expression, type, method, new[] { parameter }, new[] { value });
         }
 
-        public static Expression<Func<T, bool>> CallMethod2<T>(Expression<Func<T, object>> expression, string value, string method)
+        public static Expression<Func<T, bool>> CallMethodType<T>(Expression<Func<T, object>> expression, Type type, string method, Type[] parameters, object[] values)
         {
+            MethodInfo methodInfo = type.GetMethod(method, parameters);
+            
             return Expression.Lambda<Func<T, bool>>(
                 Expression.Call(
                     expression.Body,
-                    method,
-                    null,
-                    Expression.Constant(value)),
-                expression.Parameters);
-        }
-
-        public static Expression<Func<T, bool>> CallMethod3<T>(Expression<Func<T, object>> expression, string value, string method, Type[] methodParams = null)
-        {
-            //MethodInfo methodInfo;
-
-            //if (methodParams != null)
-            //{
-            //    methodInfo = expression.GetPropertyMemberInfo().GetMemberUnderlyingType().GetMethod(method, methodParams);
-            //}
-            //else
-            //{
-            //    methodInfo = expression.GetPropertyMemberInfo().GetMemberUnderlyingType().GetMethod(method);
-            //}
-
-            return Expression.Lambda<Func<T, bool>>(
-                Expression.Call(
-                    expression.Body,
-                    method,
-                    null,
-                    Expression.Constant(value)),
+                    methodInfo,
+                    values.Select(x => Expression.Constant(x))),
                 expression.Parameters);
         }
 

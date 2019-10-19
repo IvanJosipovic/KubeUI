@@ -45,28 +45,28 @@ namespace BlazorTable
             switch (stringFilters)
             {
                 case StringFilters.Contains:
-                    Column.Filter = Utillities.CallMethod(Column.Property, filterText, nameof(string.Contains));
+                    Column.Filter = Utillities.CallMethodType(Column.Property, typeof(string), nameof(string.Contains), typeof(string), filterText);
                     break;
                 case StringFilters.Does_not_contain:
-                    Column.Filter = Utillities.Not(Utillities.CallMethod(Column.Property, filterText, nameof(string.Contains)));
+                    Column.Filter = Utillities.Not(Utillities.CallMethodType(Column.Property, typeof(string), nameof(string.Contains), typeof(string), filterText));
                     break;
                 case StringFilters.Starts_with:
-                    Column.Filter = Utillities.CallMethod(Column.Property, filterText, nameof(string.StartsWith));
+                    Column.Filter = Utillities.CallMethodType(Column.Property, typeof(string), nameof(string.StartsWith), typeof(string), filterText);
                     break;
                 case StringFilters.Ends_with:
-                    Column.Filter = Utillities.CallMethod(Column.Property, filterText, nameof(string.EndsWith));
+                    Column.Filter = Utillities.CallMethodType(Column.Property, typeof(string), nameof(string.EndsWith), typeof(string), filterText);
                     break;
                 case StringFilters.Is_equal_to:
-                    Column.Filter = Utillities.CallMethod(Column.Property, filterText, nameof(string.Equals));
+                    Column.Filter = Utillities.CallMethodType(Column.Property, typeof(string), nameof(string.Equals), typeof(string), filterText);
                     break;
                 case StringFilters.Is_not_equal_to:
-                    Column.Filter = Utillities.Not(Utillities.CallMethod(Column.Property, filterText, nameof(string.Equals)));
+                    Column.Filter = Utillities.Not(Utillities.CallMethodType(Column.Property, typeof(string), nameof(string.Equals), typeof(string), filterText));
                     break;
                 case StringFilters.Is_null_or_empty:
-                    Column.Filter = Utillities.CallMethod(Column.Property, filterText, nameof(string.IsNullOrEmpty));
+                    Column.Filter = Utillities.CallMethodType(Column.Property, typeof(string), nameof(string.IsNullOrEmpty), typeof(string), filterText);
                     break;
                 case StringFilters.Is_not_null_or_empty:
-                    Column.Filter = Utillities.Not(Utillities.CallMethod(Column.Property, filterText, nameof(string.IsNullOrEmpty)));
+                    Column.Filter = Utillities.Not(Utillities.CallMethodType(Column.Property, typeof(string), nameof(string.IsNullOrEmpty), typeof(string), filterText));
                     break;
                 default:
                     throw new ArgumentException(stringFilters + " is not defined!");
