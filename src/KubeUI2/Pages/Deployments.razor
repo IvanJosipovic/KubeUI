@@ -46,7 +46,7 @@
                 @context.Spec.Template.Spec.Containers.OrEmptyIfNull().Select(x => x.Image).Aggregate((a, b) => a + ", " + b)
             </Template>
         </Column>
-        <Pager TableItem="V1Deployment" AlwaysShow="true" />
+        <Pager TableItem="V1Deployment" />
     </Table>
 </BSRow>
 

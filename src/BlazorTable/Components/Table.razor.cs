@@ -20,7 +20,7 @@ namespace BlazorTable
 
         public bool SortDescending { get; private set; }
 
-        public int PageNumber { get; private set; } = 0;
+        public int PageNumber { get; private set; }
 
         public int TotalCount { get; private set; }
 
@@ -58,8 +58,10 @@ namespace BlazorTable
 
                 foreach (var item in Columns)
                 {
-
-                    //query = query.Where(item.Property, "");
+                    if (item.Filter != null)
+                    {
+                        query = query.Where(item.Filter);
+                    }
                 }
 
                 return query.Skip(PageNumber * PageSize).Take(PageSize).ToList();
@@ -96,7 +98,7 @@ namespace BlazorTable
         {
             if (PageNumber < TotalCount / PageSize)
             {
-                PageNumber = PageNumber + 1;
+                PageNumber++;
                 Update();
             }
         }
@@ -105,7 +107,7 @@ namespace BlazorTable
         {
             if (PageNumber >= 1)
             {
-                PageNumber = PageNumber - 1;
+                PageNumber--;
                 Update();
             }
         }
@@ -137,6 +139,11 @@ namespace BlazorTable
         public void ToggleEditMode()
         {
             IsEditMode = !IsEditMode;
+            StateHasChanged();
+        }
+
+        public void Refresh()
+        {
             StateHasChanged();
         }
     }

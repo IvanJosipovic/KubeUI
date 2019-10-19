@@ -37,5 +37,6 @@ namespace BlazorTable
         void AddColumn(IColumn<TableItem> column);
 
         void RemoveColumn(IColumn<TableItem> column);
+        void Refresh();
     }
 }

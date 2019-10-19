@@ -66,12 +66,14 @@
     {
         @if (column.Filterable)
         {
-            <BSPopover Target="@($"Filter-{column.Title}")" IsOpen="@column.FilterOpen" Placement="Placement.Bottom" DismissOnNextClick="false">
-                <BSPopoverHeader>Filter</BSPopoverHeader>
-                <BSPopoverBody>
-                    <Filter TableItem="TableItem" Column="column"></Filter>
-                </BSPopoverBody>
-            </BSPopover>
+            <CascadingValue Value="(ITable<TableItem>)this" Name="Table">
+                <BSPopover Target="@($"Filter-{column.Title}")" IsOpen="@column.FilterOpen" Placement="Placement.Bottom" DismissOnNextClick="false">
+                    <BSPopoverHeader>Filter</BSPopoverHeader>
+                    <BSPopoverBody>
+                        <Filter TableItem="TableItem" Column="column"></Filter>
+                    </BSPopoverBody>
+                </BSPopover>
+            </CascadingValue>
         }
     }
 }

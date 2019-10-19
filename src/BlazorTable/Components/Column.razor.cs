@@ -7,7 +7,8 @@ namespace BlazorTable
 {
     public partial class Column<TableItem> : IColumn<TableItem>
     {
-        [CascadingParameter(Name = "Table")] private ITable<TableItem> Table { get; set; }
+        [CascadingParameter(Name = "Table")]
+        private ITable<TableItem> Table { get; set; }
 
         private string _title;
 
@@ -17,47 +18,56 @@ namespace BlazorTable
         [Parameter]
         public string Title
         {
-            get { return _title == null ? GetPropertyMemberInfo()?.Name : _title; }
+            get { return _title ?? GetPropertyMemberInfo()?.Name; }
             set { _title = value; }
         }
 
         /// <summary>
         /// Width auto|value|initial|inherit
         /// </summary>
-        [Parameter] public string Width { get; set; }
+        [Parameter]
+        public string Width { get; set; }
 
         /// <summary>
         /// Column can be sorted
         /// </summary>
-        [Parameter] public bool Sortable { get; set; }
+        [Parameter]
+        public bool Sortable { get; set; }
 
         /// <summary>
         /// Column can be filtered
         /// </summary>
-        [Parameter] public bool Filterable { get; set; }
+        [Parameter]
+        public bool Filterable { get; set; }
 
         /// <summary>
         /// Contains Filter expression
         /// </summary>
         public Expression<Func<TableItem, bool>> Filter { get; set; }
 
+        /// <summary>
+        /// Filter Panel is open
+        /// </summary>
         public bool FilterOpen { get; private set; }
 
         /// <summary>
         /// Normal Item Template
         /// </summary>
-        [Parameter] public RenderFragment<TableItem> Template { get; set; }
+        [Parameter]
+        public RenderFragment<TableItem> Template { get; set; }
 
         /// <summary>
         /// Edit Mode Item Template
         /// </summary>
-        [Parameter] public RenderFragment<TableItem> EditorTemplate { get; set; }
+        [Parameter]
+        public RenderFragment<TableItem> EditorTemplate { get; set; }
 
         /// <summary>
         /// Select Which Property To Sort On,
         /// Required when Sort = true
         /// </summary>
-        [Parameter] public Expression<Func<TableItem, object>> Property { get; set; }
+        [Parameter]
+        public Expression<Func<TableItem, object>> Property { get; set; }
 
         public MemberInfo GetPropertyMemberInfo()
         {
@@ -66,9 +76,7 @@ namespace BlazorTable
                 return null;
             }
 
-            MemberExpression body = Property.Body as MemberExpression;
-
-            if (body == null)
+            if (!(Property.Body is MemberExpression body))
             {
                 UnaryExpression ubody = (UnaryExpression)Property.Body;
                 body = ubody.Operand as MemberExpression;
@@ -88,7 +96,7 @@ namespace BlazorTable
                 case MemberTypes.Event:
                     return ((EventInfo)member).EventHandlerType;
                 default:
-                    throw new ArgumentException("MemberInfo must be if type FieldInfo, PropertyInfo or EventInfo", "member");
+                    throw new ArgumentException("MemberInfo must be if type FieldInfo, PropertyInfo or EventInfo", nameof(member));
             }
         }
 
@@ -99,25 +107,26 @@ namespace BlazorTable
 
         protected override void OnInitialized()
         {
-            this.Table.AddColumn(this);
+            Table.AddColumn(this);
         }
 
         protected override void OnParametersSet()
         {
-            if (Sortable && Property == null || Filterable && Property == null)
+            if ((Sortable && Property == null) || (Filterable && Property == null))
             {
-                throw new Exception($"Column {Title} Property paramter is null");
+                throw new ArgumentNullException($"Column {Title} Property parameter is null");
             }
 
             if (Title == null && Property == null)
             {
-                throw new Exception("A Column has both Title and Property paramters null");
+                throw new ArgumentNullException("A Column has both Title and Property parameters null");
             }
         }
 
         public void ToggleFilter()
         {
             FilterOpen = !FilterOpen;
+            Table.Refresh();
         }
     }
 }
