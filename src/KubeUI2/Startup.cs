@@ -23,8 +23,6 @@ namespace KubeUI2
 
             services.AddScoped<IAppInsights, AppInsights>();
 
-
-
             services.AddTransient<WebAssemblyHttpMessageHandler>();
 
             var config = new KubernetesClientConfiguration { Host = "http://127.0.0.1:5000" };

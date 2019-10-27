@@ -12,14 +12,14 @@
 
   <ItemGroup>
     <PackageReference Include="BlazorStrap" Version="1.1.0-preview1-02" />
-    <PackageReference Include="BlazorTable" Version="0.0.1-alpha" />
+    <PackageReference Include="BlazorTable" Version="0.0.6-alpha" />
     <PackageReference Include="Microsoft.AspNetCore.Blazor" Version="3.1.0-preview1.19508.20" />
     <PackageReference Include="Microsoft.AspNetCore.Blazor.Build" Version="3.1.0-preview1.19508.20" PrivateAssets="all" />
     <PackageReference Include="Microsoft.AspNetCore.Blazor.HttpClient" Version="3.1.0-preview1.19508.20" />
     <PackageReference Include="Microsoft.AspNetCore.Blazor.DevServer" Version="3.1.0-preview1.19508.20" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="3.1.0-preview1.19506.1" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.0-preview1.19506.1" />    
-    <PackageReference Include="KubernetesClient" Version="1.6.1" />
+    <PackageReference Include="KubernetesClient" Version="1.6.3" />
   </ItemGroup>
 
   <ItemGroup>
