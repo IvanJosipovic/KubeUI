@@ -3,7 +3,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System;
 
-namespace KubeUI2.Services
+namespace KubeUI.Services
 {
     public interface IState
     {

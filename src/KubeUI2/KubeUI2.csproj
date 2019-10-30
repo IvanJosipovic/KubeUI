@@ -11,8 +11,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="KubernetesClient.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="KubernetesClient.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="BlazorStrap" Version="1.1.0-preview1-02" />
     <PackageReference Include="BlazorTable" Version="0.0.7-preview1" />
+    <PackageReference Include="FluentValidation" Version="8.5.0" />
     <PackageReference Include="Microsoft.AspNetCore.Blazor" Version="3.1.0-preview1.19508.20" />
     <PackageReference Include="Microsoft.AspNetCore.Blazor.Build" Version="3.1.0-preview1.19508.20" PrivateAssets="all" />
     <PackageReference Include="Microsoft.AspNetCore.Blazor.HttpClient" Version="3.1.0-preview1.19508.20" />

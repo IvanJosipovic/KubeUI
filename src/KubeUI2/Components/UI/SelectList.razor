@@ -1,0 +1,23 @@
+﻿@inherits ControlBase<TItem>
+@typeparam TItem
+
+<BSFormGroup IsRow="true" @onmouseover="@(() => { base.SetHelp.InvokeAsync(Parent.GetProperty(Name).GetSummary()); })">
+    <BSLabel For="@Name" SM="3" Class="col-form-label-sm">@Name.AddSpacesToSentence().TrimVersionNumbers()</BSLabel>
+    <BSCol SM="9">
+        <select class="form-control form-control-sm" id="@Name" value="@Value" @onchange="@((e) => ValueChanged.InvokeAsync((TItem)e.Value))" readonly="@ReadOnly">
+            @if (!Options.Any(x => string.IsNullOrEmpty(x)))
+            {
+                <option value="">-- Select @Name.AddSpacesToSentence().TrimVersionNumbers() --</option>
+            }
+            @foreach (var option in Options)
+            {
+                <option value="@option">@option.AddSpacesToSentence().TrimVersionNumbers()</option>
+            }
+        </select>
+    </BSCol>
+    <FieldValidationResult results="@Results" Field="@Name" />
+</BSFormGroup>
+
+@code {
+    [Parameter] public string[] Options { get; set; }
+}

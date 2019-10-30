@@ -1,9 +1,12 @@
 using k8s;
-using KubeUI2.Services;
+using KubeUI.Services;
+using KubeUI2;
 using Microsoft.AspNetCore.Blazor.Http;
 using Microsoft.AspNetCore.Components.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using FluentValidation;
+using KubeUI.Validators;
 
 namespace KubeUI2
 {
@@ -32,6 +35,9 @@ namespace KubeUI2
             services.AddHttpClient("K8s")
                 .ConfigurePrimaryHttpMessageHandler<WebAssemblyHttpMessageHandler>()
                 .AddTypedClient<IKubernetes>((httpClient, serviceProvider) => new Kubernetes(serviceProvider.GetRequiredService<KubernetesClientConfiguration>(), httpClient));
+
+            var cfg = new FluentValidationMvcConfiguration();
+            cfg.RegisterValidatorsFromAssemblyContaining<Startup>();
         }
 
         public void Configure(IComponentsApplicationBuilder app)

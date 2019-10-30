@@ -1,4 +1,4 @@
-﻿namespace KubeUI2.Services
+﻿namespace KubeUI.Services
 {
     public interface IAppInsights
     {

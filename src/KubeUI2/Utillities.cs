@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace KubeUI2
+namespace KubeUI
 {
     public static class Utillities
     {

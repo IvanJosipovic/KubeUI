@@ -1,0 +1,131 @@
+﻿<div class="uic-tree @(Visible ? "" : "uic-tree--hidden")">
+
+    @foreach (var node in Nodes ?? Enumerable.Empty<TreeItem>())
+    {
+        var nodeSelected = node.Equals(SelectedNode);
+
+        <div>
+            @if (node.Children.Any())
+            {
+                <span class="uic-tree__icon" @onclick="@(() => OnToggleNode(node, !node.Minimized))">
+                    <i class="@(node.Minimized ? Style.CollapseNodeIconClass : Style.ExpandNodeIconClass)"></i>
+                </span>
+            }
+
+            <div class="uic-tree__title">
+                <span class="@(nodeSelected ? Style.NodeTitleSelectedClass : @Style.NodeTitleClass)" @onclick="@(() => OnClickNode(node))" @onmouseover="@(() => OnMouseOverNode(node))">
+                    @node.Name
+
+                    @if (node.IsCollectionItem)
+                    {
+                        <a href="javascript:;" @onclick="@(() => Delete(node.Parent, node.Object))" title="Delete"><i class="fa fa-trash"></i></a>
+                    }
+
+                    @if (node.IsCollection)
+                    {
+                        <a href="javascript:;" @onclick="@(() => AddNew(node.Object))" title="Add New @node.Name"><i class="fa fa-plus"></i></a>
+                    }
+                </span>
+            </div>
+
+            @if (node.Children.Any())
+            {
+                <Tree Nodes="node.Children"
+
+                    SelectedNode="SelectedNode"
+                    SelectedNodeChanged="SelectedNodeChanged"
+
+                    MouseOverNode="MouseOverNode"
+                    MouseOverNodeChanged="MouseOverNodeChanged"
+
+                    Visible="node.Minimized" 
+                />
+            }
+
+        </div>
+    }
+
+</div>
+
+@code {
+    [Inject] IState state { get; set; }
+
+    [Parameter] public IEnumerable<TreeItem> Nodes { get; set; }
+
+    [Parameter] public TreeItem SelectedNode { get; set; }
+    [Parameter] public EventCallback<TreeItem> SelectedNodeChanged { get; set; }
+
+    [Parameter] public TreeItem MouseOverNode { get; set; }
+    [Parameter] public EventCallback<TreeItem> MouseOverNodeChanged { get; set; }
+
+    [Parameter] public TreeStyle Style { get; set; } = TreeStyle.Bootstrap;
+ 
+    [Parameter] public bool Visible { get; set; } = true;
+
+    private void OnToggleNode(TreeItem node, bool expand)
+    {
+        if (node.Minimized && !expand)
+        {
+            node.Minimized = false;
+        }
+        else if (!node.Minimized && expand)
+        {
+            node.Minimized = true;
+        }
+
+        StateHasChanged();
+    }
+
+    private void OnClickNode(TreeItem node)
+    {
+        if (!node.IsCollection || node.HideLink)
+        {
+            SelectedNode = node;
+            SelectedNodeChanged.InvokeAsync(node);
+        }
+    }
+
+    private void OnMouseOverNode(TreeItem node)
+    {
+        MouseOverNode = node;
+        MouseOverNodeChanged.InvokeAsync(node);
+    }
+
+    private void AddNew(object obj)
+    {
+        var genType = obj.GetType().GetTypeInfo().GenericTypeArguments[0];
+
+        var newObj = Activator.CreateInstance(genType);
+
+        object[] data = { newObj };
+
+        obj.GetType().GetMethod("Add").Invoke(obj, data);
+
+        state.RaisePropertyChanged("BuildTree");
+    }
+
+    private void Delete(object collection, object item)
+    {
+        object[] data = { item };
+
+        collection.GetType().GetMethod("Remove").Invoke(collection, data);
+
+        state.RaisePropertyChanged("BuildTree");
+    }
+
+    public class TreeStyle
+    {
+        public static readonly TreeStyle Bootstrap = new TreeStyle
+        {
+            ExpandNodeIconClass = "fa fa-angle-right curosr-pointer",
+            CollapseNodeIconClass = "fa fa-angle-down curosr-pointer",
+            NodeTitleClass = "text-primary curosr-pointer",
+            NodeTitleSelectedClass = "text-primary font-weight-bold font-italic curosr-pointer"
+        };
+
+        public string ExpandNodeIconClass { get; set; }
+        public string CollapseNodeIconClass { get; set; }
+        public string NodeTitleClass { get; set; }
+        public string NodeTitleSelectedClass { get; set; }
+    }
+}

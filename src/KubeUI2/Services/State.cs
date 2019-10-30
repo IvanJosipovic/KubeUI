@@ -1,4 +1,4 @@
-﻿using KubeUI2;
+﻿using KubeUI;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 using Newtonsoft.Json;
@@ -9,7 +9,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace KubeUI2.Services
+namespace KubeUI.Services
 {
     public class State : INotifyPropertyChanged, IState
     {

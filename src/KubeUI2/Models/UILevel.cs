@@ -1,4 +1,4 @@
-﻿namespace KubeUI2
+﻿namespace KubeUI
 {
     /// <summary>
     /// Controls which level of options will be displayed.

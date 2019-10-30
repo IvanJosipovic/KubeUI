@@ -1,0 +1,17 @@
+﻿@inherits ControlBase<TItem>
+@typeparam TItem
+
+<BSFormGroup IsRow="false" IsCheck="true" @onmouseover="@(() => { base.SetHelp.InvokeAsync(Parent.GetProperty(Name).GetSummary()); })">
+    
+    <BSLabel For="@Name" Class="col-form-label-sm" IsCheck="true">
+        <input class="form-check-input" type="checkbox" id="@Name" value="@Value" @onchange="@((e) => ValueChanged.InvokeAsync((TItem)e.Value))" readonly="@ReadOnly" />
+
+        @Name.AddSpacesToSentence().TrimVersionNumbers()
+    </BSLabel>
+
+    <FieldValidationResult results="@Results" Field="@Name" />
+</BSFormGroup>
+
+@code {
+
+}

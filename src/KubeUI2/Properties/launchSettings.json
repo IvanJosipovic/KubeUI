@@ -16,7 +16,7 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
-    "KubeUI2": {
+    "KubeUI": {
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
