@@ -1,8 +1,4 @@
-﻿@page "/{Namespace}/Pod/{Name}"
-@inherits Base
-@implements IDisposable
-
-<h2>
+﻿<h2>
     <a href="/@Namespace/Pods">Pods</a> / @Item?.Metadata.Name
 </h2>
 
@@ -20,46 +16,15 @@
                 <BSTabLabel>Overview</BSTabLabel>
                 <BSTabContent><KubeUI2.Components.Dynamic.UI Item="@Item" /></BSTabContent>
             </BSTab>
+
+            <BSTab>
+                <BSTabLabel>Logs</BSTabLabel>
+                <BSTabContent>
+                    <BSButton OnClick="@(async () => await GetLogs())">Fetch Logs</BSButton>
+                    <textarea class="form-control" type="text" Rows="20" spellcheck="false">@Logs</textarea>
+                </BSTabContent>
+            </BSTab>
         </BSTabList>
         <BSTabSelectedContent />
     </BSTabGroup>
-}
-
-@code {
-    [Parameter] public string Name { get; set; }
-
-    [Inject] protected IState state { get; set; }
-
-    [Inject] protected IKubernetes client { get; set; }
-
-    private V1Pod Item { get; set; }
-
-    PropertyChangedEventHandler handler;
-
-    protected override async Task OnInitializedAsync()
-    {
-        handler = async (xo, e) =>
-        {
-            if (e.PropertyName == State.UILevelNotification || e.PropertyName == State.NamespaceNotification)
-            {
-                await Update();
-            }
-        };
-
-        state.PropertyChanged += handler;
-
-        await Update();
-    }
-
-    public void Dispose()
-    {
-        state.PropertyChanged -= handler;
-    }
-
-    private async Task Update()
-    {
-        Item = await client.ReadNamespacedPodAsync(Name, Namespace);
-
-        StateHasChanged();
-    }
 }
