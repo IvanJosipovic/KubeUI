@@ -1,28 +1,28 @@
-﻿@page "/{Namespace}/Deployment/{Name}"
+﻿@page "/{Namespace}/Pod/{Name}"
 @inherits Base
 @implements IDisposable
 
 <h2>
-    <a href="/@Namespace/Deployments">Deployments</a> / @Item?.Metadata.Name
+    <a href="/@Namespace/Pods">Pods</a> / @Item?.Metadata.Name
 </h2>
 
 <br />
 @if (Item != null)
 {
-<BSTabGroup>
-    <BSTabList>
-        <BSTab>
-            <BSTabLabel>Yaml</BSTabLabel>
-            <BSTabContent><pre><code id="yamlViewer" class="language-yaml">@k8s.Yaml.SaveToString(Item)</code></pre></BSTabContent>
-        </BSTab>
+    <BSTabGroup>
+        <BSTabList>
+            <BSTab>
+                <BSTabLabel>Yaml</BSTabLabel>
+                <BSTabContent><pre><code id="yamlViewer" class="language-yaml">@k8s.Yaml.SaveToString(Item)</code></pre></BSTabContent>
+            </BSTab>
 
-        <BSTab>
-            <BSTabLabel>Overview</BSTabLabel>
-            <BSTabContent><KubeUI2.Components.Dynamic.UI Item="@Item" /></BSTabContent>
-        </BSTab>
-    </BSTabList>
-    <BSTabSelectedContent />
-</BSTabGroup>
+            <BSTab>
+                <BSTabLabel>Overview</BSTabLabel>
+                <BSTabContent><KubeUI2.Components.Dynamic.UI Item="@Item" /></BSTabContent>
+            </BSTab>
+        </BSTabList>
+        <BSTabSelectedContent />
+    </BSTabGroup>
 }
 
 @code {
@@ -32,7 +32,7 @@
 
     [Inject] protected IKubernetes client { get; set; }
 
-    private V1Deployment Item { get; set; }
+    private V1Pod Item { get; set; }
 
     PropertyChangedEventHandler handler;
 
@@ -58,7 +58,7 @@
 
     private async Task Update()
     {
-        Item = await client.ReadNamespacedDeploymentAsync(Name, Namespace);
+        Item = await client.ReadNamespacedPodAsync(Name, Namespace);
 
         StateHasChanged();
     }

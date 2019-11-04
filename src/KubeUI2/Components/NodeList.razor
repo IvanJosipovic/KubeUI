@@ -32,8 +32,6 @@
 </BSRow>
 
 @code {
-    [Parameter] public string Namespace { get; set; }
-
     [Inject] protected IState state { get; set; }
 
     [Inject] protected IKubernetes client { get; set; }

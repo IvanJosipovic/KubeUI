@@ -79,7 +79,7 @@
 
         StateHasChanged();
 
-        if (state.Namespace.Equals(State.AllNameSpace))
+        if (state.Namespace == null || state.Namespace.Equals(State.AllNameSpace))
         {
             Items = (await client.ListDeploymentForAllNamespacesAsync())?.Items;
         }
