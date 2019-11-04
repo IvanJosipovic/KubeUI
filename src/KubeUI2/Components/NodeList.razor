@@ -1,0 +1,75 @@
+﻿@implements IDisposable
+
+<BSRow>
+    <Table PageSize="40" TableItem="V1Node" Items="Items">
+        <Column TableItem="V1Node" Title="Name" Field="@(x => x.Metadata.Name)" Sortable="true" Filterable="true">
+            <Template>
+                <a href="/Node/@context.Metadata.Name">@context.Metadata.Name</a>
+            </Template>
+        </Column>
+        <Column TableItem="V1Node" Title="Labels">
+            <Template>
+                @foreach (var label in context.Metadata.Labels.OrEmptyIfNull())
+                {
+                    <BSBadge>@label.Key : @label.Value</BSBadge>
+                }
+            </Template>
+        </Column>
+        <Column Title="Status" TableItem="V1Node" Field="@(x => x.Status.Allocatable)" Sortable="true" Filterable="true">
+            <Template>
+                @(context.Status.Allocatable["cpu"]) Cores / @(context.Status.Capacity["cpu"]) Cores
+                <br />
+                @(((decimal)context.Status.Allocatable["memory"] / 1024 / 1024 / 1024).ToString("#.##Gb")) / @(((decimal)context.Status.Capacity["memory"] / 1024 / 1024 / 1024).ToString("#.##Gb"))
+            </Template>
+        </Column>
+        <Column Title="Age" TableItem="V1Node" Field="@(x => x.Metadata.CreationTimestamp)" Sortable="true" Filterable="true">
+            <Template>
+                @string.Format("{0:N0}d", (DateTime.UtcNow - context.Metadata.CreationTimestamp).Value.TotalDays)
+            </Template>
+        </Column>
+        <Pager TableItem="V1Node" />
+    </Table>
+</BSRow>
+
+@code {
+    [Parameter] public string Namespace { get; set; }
+
+    [Inject] protected IState state { get; set; }
+
+    [Inject] protected IKubernetes client { get; set; }
+
+    private IList<V1Node> Items { get; set; } = new List<V1Node>();
+
+    PropertyChangedEventHandler handler;
+
+    protected override async Task OnInitializedAsync()
+    {
+        handler = async (xo, e) =>
+        {
+            if (e.PropertyName == State.UILevelNotification || e.PropertyName == State.NamespaceNotification)
+            {
+                await Update();
+            }
+        };
+
+        state.PropertyChanged += handler;
+
+        await Update();
+    }
+
+    public void Dispose()
+    {
+        state.PropertyChanged -= handler;
+    }
+
+    private async Task Update()
+    {
+        Items = null;
+
+        StateHasChanged();
+
+        Items = (await client.ListNodeAsync())?.Items;
+
+        StateHasChanged();
+    }
+}

@@ -11,13 +11,18 @@
 <div class=@(collapseNavMenu ? "collapse" : null) @onclick=@ToggleNavMenu>
     <ul class="nav flex-column">
         <li class="nav-item px-1">
-            <NavLink class="nav-link" href="@state.Namespace" Match=NavLinkMatch.All>
+            <NavLink class="nav-link" href="" Match=NavLinkMatch.All>
                 <i class="fa fa-home fa-lg"></i>&nbsp;Home
             </NavLink>
         </li>
         <li class="nav-item px-1">
-            <NavLink class="nav-link" href="@($"/{state.Namespace}/Connect")">
+            <NavLink class="nav-link" href="@("/Connect")">
                 <i class="fa fa-download fa-lg"></i>&nbsp;Connect
+            </NavLink>
+        </li>
+        <li class="nav-item px-1">
+            <NavLink class="nav-link" href="@("/Nodes")">
+                <img src="/png/infrastructure_components/unlabeled/node-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Nodes
             </NavLink>
         </li>
         <li class="nav-item px-1">

@@ -1,6 +1,7 @@
 ﻿
 <BSCol SM="2">
-    <select class="form-control form-control-sm" id="Namespace" @onchange="OnChange">
+    <select class="form-control form-control-sm" id="Namespace" @onchange="OnChange" title="Select Namespace">
+        <option value="@State.AllNameSpace" selected="@(state.Namespace.Equals(State.AllNameSpace))">All</option>
         @foreach (var option in Options)
         {
             <option value="@option" selected="@(option == state.Namespace)">@option</option>
@@ -26,7 +27,6 @@
 
     private void OnChange(ChangeEventArgs args)
     {
-        navigationManager.NavigateTo(args.Value.ToString());
-        state.RaisePropertyChanged(State.NamespaceNotification);
+        state.Namespace = args.Value.ToString();
     }
 }

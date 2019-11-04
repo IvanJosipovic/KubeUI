@@ -1,0 +1,93 @@
+﻿@implements IDisposable
+
+<BSRow>
+    <Table PageSize="40" TableItem="V1Deployment" Items="Items">
+        <Column TableItem="V1Deployment" Title="Name" Field="@(x => x.Metadata.Name)" Sortable="true" Filterable="true">
+            <Template>
+                <a href="/@context.Metadata.NamespaceProperty/Deployment/@context.Metadata.Name">@context.Metadata.Name</a>
+            </Template>
+        </Column>
+        <Column TableItem="V1Deployment" Title="Labels">
+            <Template>
+                @foreach (var label in context.Metadata.Labels.OrEmptyIfNull())
+                {
+                    <BSBadge>@label.Key : @label.Value</BSBadge>
+                }
+            </Template>
+        </Column>
+        <Column Title="Selector" TableItem="V1Deployment">
+            <Template>
+                @foreach (var selector in context.Spec.Selector.MatchLabels.OrEmptyIfNull())
+                {
+                    <BSBadge>@selector.Key : @selector.Value</BSBadge>
+                }
+            </Template>
+        </Column>
+        <Column Title="Status" TableItem="V1Deployment" Field="@(x => x.Status.AvailableReplicas)" Sortable="true" Filterable="true">
+            <Template>
+                @context.Status.AvailableReplicas/@context.Status.Replicas
+            </Template>
+        </Column>
+        <Column Title="Age" TableItem="V1Deployment" Field="@(x => x.Metadata.CreationTimestamp)" Sortable="true" Filterable="true">
+            <Template>
+                @string.Format("{0:N0}d", (DateTime.UtcNow - context.Metadata.CreationTimestamp).Value.TotalDays)
+            </Template>
+        </Column>
+        <Column Title="Images" TableItem="V1Deployment">
+            <Template>
+                @context.Spec.Template.Spec.Containers.OrEmptyIfNull().Select(x => x.Image).Aggregate((a, b) => a + ", " + b)
+            </Template>
+        </Column>
+        <Pager TableItem="V1Deployment" />
+    </Table>
+</BSRow>
+
+@code {
+    [Parameter] public string Namespace { get; set; }
+
+    [Inject] protected IState state { get; set; }
+
+    [Inject] protected IKubernetes client { get; set; }
+
+    private IList<V1Deployment> Items { get; set; } = new List<V1Deployment>();
+
+    PropertyChangedEventHandler handler;
+
+    protected override async Task OnInitializedAsync()
+    {
+        handler = async (xo, e) =>
+        {
+            if (e.PropertyName == State.UILevelNotification || e.PropertyName == State.NamespaceNotification)
+            {
+                await Update();
+            }
+        };
+
+        state.PropertyChanged += handler;
+
+        await Update();
+    }
+
+    public void Dispose()
+    {
+        state.PropertyChanged -= handler;
+    }
+
+    private async Task Update()
+    {
+        Items = null;
+
+        StateHasChanged();
+
+        if (state.Namespace.Equals(State.AllNameSpace))
+        {
+            Items = (await client.ListDeploymentForAllNamespacesAsync())?.Items;
+        }
+        else
+        {
+            Items = (await client.ListNamespacedDeploymentAsync(state.Namespace))?.Items;
+        }
+
+        StateHasChanged();
+    }
+}

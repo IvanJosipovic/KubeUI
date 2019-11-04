@@ -1,10 +1,10 @@
 ﻿<Router AppAssembly="@typeof(Program).Assembly">
     <Found Context="routeData">
 
-        @if(routeData.RouteValues["Namespace"] != null && routeData.RouteValues["Namespace"].ToString() != state.Namespace)
+        @*@if(routeData.RouteValues["Namespace"] != null && routeData.RouteValues["Namespace"].ToString() != state.Namespace)
         {
             state.Namespace = routeData.RouteValues["Namespace"].ToString();
-        }
+        }*@
 
         <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
     </Found>

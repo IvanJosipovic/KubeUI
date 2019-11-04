@@ -1,13 +1,9 @@
-﻿using KubeUI;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.IO;
-using System.Threading.Tasks;
 
 namespace KubeUI.Services
 {
@@ -15,6 +11,7 @@ namespace KubeUI.Services
     {
         public static string UILevelNotification = nameof(UILevelNotification);
         public static string NamespaceNotification = nameof(NamespaceNotification);
+        public static string AllNameSpace = "ALL";
 
         private readonly ILogger<State> Logger;
 
@@ -41,7 +38,7 @@ namespace KubeUI.Services
 
         private UILevel UILevel { get; set; }
 
-        private string _namespace = "default";
+        private string _namespace = AllNameSpace;
 
         public string Namespace
         {

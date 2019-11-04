@@ -60,10 +60,11 @@ namespace KubeUI
         /// <returns></returns>
         public static string GetSummary(this MemberInfo memberInfo)
         {
-            var element = memberInfo.GetDocumentation();
-            var summaryElm = element?.SelectSingleNode("summary");
-            if (summaryElm == null) return "";
-            return summaryElm.InnerText.Trim();
+            return "N/A";
+            //var element = memberInfo.GetDocumentation();
+            //var summaryElm = element?.SelectSingleNode("summary");
+            //if (summaryElm == null) return "";
+            //return summaryElm.InnerText.Trim();
         }
 
         /// <summary>
@@ -84,10 +85,11 @@ namespace KubeUI
         /// <returns></returns>
         public static string GetSummary(this Type type)
         {
-            var element = type.GetDocumentation();
-            var summaryElm = element?.SelectSingleNode("summary");
-            if (summaryElm == null) return "";
-            return summaryElm.InnerText.Trim();
+            return "N/A";
+            //var element = type.GetDocumentation();
+            //var summaryElm = element?.SelectSingleNode("summary");
+            //if (summaryElm == null) return "";
+            //return summaryElm.InnerText.Trim();
         }
 
         /// <summary>
