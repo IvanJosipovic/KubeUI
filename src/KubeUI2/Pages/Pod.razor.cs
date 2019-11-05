@@ -4,7 +4,6 @@ using KubeUI.Services;
 using Microsoft.AspNetCore.Components;
 using System;
 using System.ComponentModel;
-using System.IO;
 using System.Threading.Tasks;
 
 namespace KubeUI2.Pages
@@ -16,51 +15,37 @@ namespace KubeUI2.Pages
 
         [Parameter] public string Name { get; set; }
 
-        [Inject] protected IState state { get; set; }
+        [Inject] protected IState State { get; set; }
 
-        [Inject] protected IKubernetes client { get; set; }
+        [Inject] protected IKubernetes Client { get; set; }
 
         private V1Pod Item { get; set; }
 
-        private string Logs { get; set; }
-
-        PropertyChangedEventHandler handler;
+        private PropertyChangedEventHandler handler;
 
         protected override async Task OnInitializedAsync()
         {
             handler = async (xo, e) =>
             {
-                if (e.PropertyName == State.UILevelNotification || e.PropertyName == State.NamespaceNotification)
+                if (e.PropertyName == KubeUI.Services.State.UILevelNotification || e.PropertyName == KubeUI.Services.State.NamespaceNotification)
                 {
                     await Update();
                 }
             };
 
-            state.PropertyChanged += handler;
+            State.PropertyChanged += handler;
 
             await Update();
         }
 
         public void Dispose()
         {
-            state.PropertyChanged -= handler;
+            State.PropertyChanged -= handler;
         }
 
         private async Task Update()
         {
-            Item = await client.ReadNamespacedPodAsync(Name, Namespace);
-
-            StateHasChanged();
-        }
-
-        private async Task GetLogs()
-        {
-            var stream = await client.ReadNamespacedPodLogAsync(Name, Namespace);
-
-            using (var reader = new StreamReader(stream))
-            {
-                Logs = reader.ReadToEnd();
-            }
+            Item = await Client.ReadNamespacedPodAsync(Name, Namespace);
 
             StateHasChanged();
         }

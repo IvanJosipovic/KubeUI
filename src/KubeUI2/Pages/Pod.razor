@@ -7,7 +7,7 @@
 {
     <BSTabGroup>
         <BSTabList>
-            <BSTab>
+            <BSTab InitialSelection="true">
                 <BSTabLabel>Yaml</BSTabLabel>
                 <BSTabContent><pre><code id="yamlViewer" class="language-yaml">@k8s.Yaml.SaveToString(Item)</code></pre></BSTabContent>
             </BSTab>
@@ -20,8 +20,7 @@
             <BSTab>
                 <BSTabLabel>Logs</BSTabLabel>
                 <BSTabContent>
-                    <BSButton OnClick="@(async () => await GetLogs())">Fetch Logs</BSButton>
-                    <textarea class="form-control" type="text" Rows="20" spellcheck="false">@Logs</textarea>
+                    <PodLogs Name="@Name" Namespace="@Namespace" />
                 </BSTabContent>
             </BSTab>
         </BSTabList>
