@@ -1,6 +1,4 @@
-﻿@implements IDisposable
-
-<Table PageSize="20" TableItem="V1Pod" Items="Items">
+﻿<Table PageSize="20" TableItem="V1Pod" Items="Items">
     <Column TableItem="V1Pod" Title="Name" Field="@(x => x.Metadata.Name)" Sortable="true" Filterable="true" Width="35%">
         <Template>
             <a href="/@context.Metadata.NamespaceProperty/Pod/@context.Metadata.Name">@context.Metadata.Name</a>
@@ -33,53 +31,3 @@
     </Column>
     <Pager TableItem="V1Pod" ShowPageNumber="true" ShowTotalCount="true" />
 </Table>
-
-@code {
-    [Parameter] public string Namespace { get; set; }
-
-    [Inject] protected IState state { get; set; }
-
-    [Inject] protected IKubernetes client { get; set; }
-
-    private IList<V1Pod> Items { get; set; } = new List<V1Pod>();
-
-    PropertyChangedEventHandler handler;
-
-    protected override async Task OnInitializedAsync()
-    {
-        handler = async (xo, e) =>
-        {
-            if (e.PropertyName == State.UILevelNotification || e.PropertyName == State.NamespaceNotification)
-            {
-                await Update();
-            }
-        };
-
-        state.PropertyChanged += handler;
-
-        await Update();
-    }
-
-    public void Dispose()
-    {
-        state.PropertyChanged -= handler;
-    }
-
-    private async Task Update()
-    {
-        Items = null;
-
-        StateHasChanged();
-
-        if (state.Namespace == null || state.Namespace.Equals(State.AllNameSpace))
-        {
-            Items = (await client.ListPodForAllNamespacesAsync())?.Items;
-        }
-        else
-        {
-            Items = (await client.ListNamespacedPodAsync(state.Namespace))?.Items;
-        }
-
-        StateHasChanged();
-    }
-}

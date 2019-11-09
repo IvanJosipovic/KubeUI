@@ -20,28 +20,25 @@
             <BSTab>
                 <BSTabLabel>Logs</BSTabLabel>
                 <BSTabContent>
-
-                    @if (Item.Spec.Containers.Count > 1)
-                    {
-                        <BSTabGroup>
-                            <BSTabList>
-                                @foreach (var cont in Item.Spec.Containers)
-                                {
-                                    <BSTab>
-                                        <BSTabLabel>@cont.Name</BSTabLabel>
-                                        <BSTabContent>
-                                            <PodLogs Name="@Name" Namespace="@Namespace" Container="@cont.Name"/>
-                                        </BSTabContent>
-                                    </BSTab>
-                                }
-                            </BSTabList>
-                            <BSTabSelectedContent />
-                        </BSTabGroup>
-                    }
-                    else
-                    {
-                        <PodLogs Name="@Name" Namespace="@Namespace" />
-                    }
+                    <select class="form-control form-control-sm" @onchange="@((e) => LogLineCount = int.Parse(e.Value.ToString()))" title="Line Count" style="width: 100px">
+                        <option value="50" selected="@(50 == LogLineCount)">50</option>
+                        <option value="100" selected="@(100 == LogLineCount)">100</option>
+                        <option value="200" selected="@(200 == LogLineCount)">200</option>
+                    </select>
+                    <BSTabGroup>
+                        <BSTabList>
+                            @foreach (var cont in Item.Spec.Containers)
+                            {
+                                <BSTab>
+                                    <BSTabLabel>@cont.Name</BSTabLabel>
+                                    <BSTabContent>
+                                        <PodLogs Name="@Name" Namespace="@Namespace" Container="@cont.Name" Lines="@LogLineCount" />
+                                    </BSTabContent>
+                                </BSTab>
+                            }
+                        </BSTabList>
+                        <BSTabSelectedContent />
+                    </BSTabGroup>
 
                 </BSTabContent>
             </BSTab>

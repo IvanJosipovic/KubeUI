@@ -1,32 +1,7 @@
-﻿
-<BSCol SM="2">
-    <select class="form-control form-control-sm" id="Namespace" @onchange="OnChange" title="Select Namespace">
-        <option value="@State.AllNameSpace" selected="@(state.Namespace.Equals(State.AllNameSpace))">All</option>
-        @foreach (var option in Options)
-        {
-            <option value="@option" selected="@(option == state.Namespace)">@option</option>
-        }        
-    </select>
-</BSCol>
-
-@code {
-    [Inject] protected IState state { get; set; }
-
-    [Inject] protected IKubernetes client { get; set; }
-
-    [Inject] protected NavigationManager navigationManager { get; set; }
-
-    private List<string> Options { get; set; } = new List<string>();
-
-    protected override async Task OnInitializedAsync()
+﻿<select class="form-control form-control-sm" id="Namespace" @onchange="OnChange" title="Select Namespace" style="width: 200px">
+    <option value="@State.AllNameSpace" selected="@(state.Namespace.Equals(State.AllNameSpace))">All</option>
+    @foreach (var option in Options)
     {
-        Options = (await client.ListNamespaceAsync())?.Items.Select(x => x.Metadata.Name).ToList();
-
-        StateHasChanged();
-    }
-
-    private void OnChange(ChangeEventArgs args)
-    {
-        state.Namespace = args.Value.ToString();
-    }
-}
+        <option value="@option" selected="@(option == state.Namespace)">@option</option>
+    }        
+</select>

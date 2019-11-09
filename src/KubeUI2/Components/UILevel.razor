@@ -3,7 +3,3 @@
     <BSButton Color="@(State.GetUILevel() == KubeUI.UILevel.Advanced ? Color.Secondary : Color.Active)" Size="Size.Small" OnClick="@(() => State.SetUILevel(KubeUI.UILevel.Advanced))">Advanced</BSButton>
     <BSButton Color="@(State.GetUILevel() == KubeUI.UILevel.Expert ? Color.Secondary : Color.Active)" Size="Size.Small" OnClick="@(() => State.SetUILevel(KubeUI.UILevel.Expert))">Expert</BSButton>
 </BSButtonGroup>
-
-@code {
-    [Inject] protected IState State { get; set; }
-}

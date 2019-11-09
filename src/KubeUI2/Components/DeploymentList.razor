@@ -1,6 +1,4 @@
-﻿@implements IDisposable
-
-<Table PageSize="20" TableItem="V1Deployment" Items="Items">
+﻿<Table PageSize="20" TableItem="V1Deployment" Items="Items">
     <Column TableItem="V1Deployment" Title="Name" Field="@(x => x.Metadata.Name)" Sortable="true" Filterable="true" Width="30%">
         <Template>
             <a href="/@context.Metadata.NamespaceProperty/Deployment/@context.Metadata.Name">@context.Metadata.Name</a>
@@ -43,53 +41,3 @@
     </Column>
     <Pager TableItem="V1Deployment" ShowPageNumber="true" ShowTotalCount="true" />
 </Table>
-
-@code {
-    [Parameter] public string Namespace { get; set; }
-
-    [Inject] protected IState state { get; set; }
-
-    [Inject] protected IKubernetes client { get; set; }
-
-    private IList<V1Deployment> Items { get; set; } = new List<V1Deployment>();
-
-    PropertyChangedEventHandler handler;
-
-    protected override async Task OnInitializedAsync()
-    {
-        handler = async (xo, e) =>
-        {
-            if (e.PropertyName == State.UILevelNotification || e.PropertyName == State.NamespaceNotification)
-            {
-                await Update();
-            }
-        };
-
-        state.PropertyChanged += handler;
-
-        await Update();
-    }
-
-    public void Dispose()
-    {
-        state.PropertyChanged -= handler;
-    }
-
-    private async Task Update()
-    {
-        Items = null;
-
-        StateHasChanged();
-
-        if (state.Namespace == null || state.Namespace.Equals(State.AllNameSpace))
-        {
-            Items = (await client.ListDeploymentForAllNamespacesAsync())?.Items;
-        }
-        else
-        {
-            Items = (await client.ListNamespacedDeploymentAsync(state.Namespace))?.Items;
-        }
-
-        StateHasChanged();
-    }
-}

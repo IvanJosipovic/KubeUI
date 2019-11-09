@@ -2,6 +2,7 @@
 using k8s.Models;
 using KubeUI.Services;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Logging;
 using System;
 using System.ComponentModel;
 using System.Threading.Tasks;
@@ -15,6 +16,8 @@ namespace KubeUI2.Pages
 
         [Parameter] public string Name { get; set; }
 
+        [Inject] protected ILogger<Pod> Logger { get; set; }
+
         [Inject] protected IState State { get; set; }
 
         [Inject] protected IKubernetes Client { get; set; }
@@ -22,6 +25,8 @@ namespace KubeUI2.Pages
         private V1Pod Item { get; set; }
 
         private PropertyChangedEventHandler handler;
+
+        private int LogLineCount = 50;
 
         protected override async Task OnInitializedAsync()
         {
