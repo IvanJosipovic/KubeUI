@@ -13,6 +13,8 @@ namespace KubeUI2.Components
 
         [Parameter] public string Name { get; set; }
 
+        [Parameter] public string Container { get; set; }
+
         [Inject] protected IKubernetes Client { get; set; }
 
         private string Logs { get; set; }
@@ -21,7 +23,7 @@ namespace KubeUI2.Components
 
         protected override void OnInitialized()
         {
-            timer = new Timer(async _ => await Update(), null, 0, 5000);
+            timer = new Timer(async _ => await Update(), null, 0, 60000);
         }
 
         public void Dispose()
@@ -31,7 +33,7 @@ namespace KubeUI2.Components
 
         private async Task Update()
         {
-            var stream = await Client.ReadNamespacedPodLogAsync(Name, Namespace);
+            var stream = await Client.ReadNamespacedPodLogAsync(Name, Namespace, container: Container);
             using (var reader = new StreamReader(stream))
             {
                 Logs = reader.ReadToEnd();

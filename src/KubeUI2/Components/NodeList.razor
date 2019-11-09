@@ -1,35 +1,51 @@
 ﻿@implements IDisposable
 
-<BSRow>
-    <Table PageSize="40" TableItem="V1Node" Items="Items">
-        <Column TableItem="V1Node" Title="Name" Field="@(x => x.Metadata.Name)" Sortable="true" Filterable="true">
-            <Template>
-                <a href="/Node/@context.Metadata.Name">@context.Metadata.Name</a>
-            </Template>
-        </Column>
-        <Column TableItem="V1Node" Title="Labels">
-            <Template>
-                @foreach (var label in context.Metadata.Labels.OrEmptyIfNull())
-                {
-                    <BSBadge>@label.Key : @label.Value</BSBadge>
-                }
-            </Template>
-        </Column>
-        <Column Title="Status" TableItem="V1Node" Field="@(x => x.Status.Allocatable)" Sortable="true" Filterable="true">
-            <Template>
-                @(context.Status.Allocatable["cpu"]) Cores / @(context.Status.Capacity["cpu"]) Cores
-                <br />
-                @(((decimal)context.Status.Allocatable["memory"] / 1024 / 1024 / 1024).ToString("#.##Gb")) / @(((decimal)context.Status.Capacity["memory"] / 1024 / 1024 / 1024).ToString("#.##Gb"))
-            </Template>
-        </Column>
-        <Column Title="Age" TableItem="V1Node" Field="@(x => x.Metadata.CreationTimestamp)" Sortable="true" Filterable="true">
-            <Template>
-                @string.Format("{0:N0}d", (DateTime.UtcNow - context.Metadata.CreationTimestamp).Value.TotalDays)
-            </Template>
-        </Column>
-        <Pager TableItem="V1Node" />
-    </Table>
-</BSRow>
+<Table PageSize="20" TableItem="V1Node" Items="Items">
+    <Column TableItem="V1Node" Title="Name" Field="@(x => x.Metadata.Name)" Sortable="true" Filterable="true" Width="20%">
+        <Template>
+            <a href="/Node/@context.Metadata.Name">@context.Metadata.Name</a>
+        </Template>
+    </Column>
+    <Column TableItem="V1Node" Title="Labels" Width="10%">
+        <Template>
+            @foreach (var label in context.Metadata.Labels.OrEmptyIfNull().Take(5))
+            {
+                <BSBadge>@label.Key : @label.Value</BSBadge>
+            }
+        </Template>
+    </Column>
+    <Column TableItem="V1Node" Title="Ready" Width="5%">
+        <Template>
+            @context.Status.Conditions.Where(x => x.Type.Equals("Ready")).First().Status
+        </Template>
+    </Column>
+    <Column TableItem="V1Node" Title="CPU requests (cores)" Width="15%">
+        <Template>
+            @(context.Status.Capacity["cpu"])
+        </Template>
+    </Column>
+    <Column TableItem="V1Node" Title="CPU limits (cores)" Width="15%">
+        <Template>
+            @(context.Status.Allocatable["cpu"])
+        </Template>
+    </Column>
+    <Column TableItem="V1Node" Title="Memory requests (Gb)" Width="15%">
+        <Template>
+            @(((decimal)context.Status.Capacity["memory"] / 1024 / 1024 / 1024).ToString("#.## Gb"))
+        </Template>
+    </Column>
+    <Column TableItem="V1Node" Title="Memory limits (Gb)" Width="15%">
+        <Template>
+            @(((decimal)context.Status.Allocatable["memory"] / 1024 / 1024 / 1024).ToString("#.## Gb"))
+        </Template>
+    </Column>
+    <Column TableItem="V1Node" Title="Age" Field="@(x => x.Metadata.CreationTimestamp)" Sortable="true" Filterable="true" Width="5%">
+        <Template>
+            @string.Format("{0:N0}d", (DateTime.UtcNow - context.Metadata.CreationTimestamp).Value.TotalDays)
+        </Template>
+    </Column>
+    <Pager TableItem="V1Node" ShowPageNumber="true" ShowTotalCount="true" />
+</Table>
 
 @code {
     [Inject] protected IState state { get; set; }

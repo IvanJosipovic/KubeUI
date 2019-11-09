@@ -20,7 +20,29 @@
             <BSTab>
                 <BSTabLabel>Logs</BSTabLabel>
                 <BSTabContent>
-                    <PodLogs Name="@Name" Namespace="@Namespace" />
+
+                    @if (Item.Spec.Containers.Count > 1)
+                    {
+                        <BSTabGroup>
+                            <BSTabList>
+                                @foreach (var cont in Item.Spec.Containers)
+                                {
+                                    <BSTab>
+                                        <BSTabLabel>@cont.Name</BSTabLabel>
+                                        <BSTabContent>
+                                            <PodLogs Name="@Name" Namespace="@Namespace" Container="@cont.Name"/>
+                                        </BSTabContent>
+                                    </BSTab>
+                                }
+                            </BSTabList>
+                            <BSTabSelectedContent />
+                        </BSTabGroup>
+                    }
+                    else
+                    {
+                        <PodLogs Name="@Name" Namespace="@Namespace" />
+                    }
+
                 </BSTabContent>
             </BSTab>
         </BSTabList>
