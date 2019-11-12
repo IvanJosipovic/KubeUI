@@ -15,7 +15,7 @@
     <PackageReference Include="FluentValidation" Version="8.5.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.0-preview1.19506.1" />
     <PackageReference Include="SharpZipLib" Version="1.2.0" />
-    <PackageReference Include="BlazorStrap" Version="1.1.0-preview1-02" />
+    <PackageReference Include="BlazorStrap" Version="1.1.0-preview1-03" />
     <PackageReference Include="Tewr.Blazor.FileReader" Version="1.1.0.19274" />    
     <PackageReference Include="Microsoft.AspNetCore.Blazor" Version="3.1.0-preview1.19508.20" />
     <PackageReference Include="Microsoft.AspNetCore.Blazor.Build" Version="3.1.0-preview1.19508.20" PrivateAssets="all" />
