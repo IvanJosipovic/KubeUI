@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BlazorStrap" Version="1.1.0-preview1-02" />
+    <PackageReference Include="BlazorStrap" Version="1.1.0-preview1-03" />
     <PackageReference Include="BlazorTable" Version="0.0.8-preview2" />
     <PackageReference Include="FluentValidation" Version="8.5.1" />
     <PackageReference Include="Microsoft.AspNetCore.Blazor" Version="3.1.0-preview2.19528.8" />
@@ -20,7 +20,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Blazor.DevServer" Version="3.1.0-preview2.19528.8" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="3.1.0-preview2.19525.4" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.0-preview2.19525.4" />    
-    <PackageReference Include="KubernetesClient" Version="1.6.3" />
+    <PackageReference Include="KubernetesClient" Version="1.6.4" />
   </ItemGroup>
 
   <ItemGroup>

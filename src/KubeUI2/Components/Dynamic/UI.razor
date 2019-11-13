@@ -31,13 +31,6 @@
     </BSRow>
 }
 
-<BSModal @ref="BSModal" Size="Size.Large">
-    <BSModalHeader OnClick="@(() => CloseModal())">Code</BSModalHeader>
-    <BSModalBody>
-        <pre><code id="yamlViewer" class="yaml">@MDLBody</code></pre>
-    </BSModalBody>
-</BSModal>
-
 @code{
     [Parameter] public TItem Item { get; set; }
     [Parameter] public EventCallback<TItem> ItemChanged { get; set; }
@@ -49,8 +42,6 @@
     private RenderFragment Controls;
 
     private string Help = "Hover over a control to see help here.";
-
-    private string MDLBody;
 
     private BSModal BSModal;
 

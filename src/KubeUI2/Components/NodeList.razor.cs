@@ -12,10 +12,10 @@ namespace KubeUI2.Components
     public partial class NodeList : IDisposable
     {
         [Inject]
-        protected IState state { get; set; }
+        protected IState State { get; set; }
 
         [Inject]
-        protected IKubernetes client { get; set; }
+        protected IKubernetes Client { get; set; }
 
         private IList<V1Node> Items { get; set; } = new List<V1Node>();
 
@@ -25,20 +25,20 @@ namespace KubeUI2.Components
         {
             handler = async (xo, e) =>
             {
-                if (e.PropertyName == State.UILevelNotification || e.PropertyName == State.NamespaceNotification)
+                if (e.PropertyName == KubeUI.Services.State.UILevelNotification || e.PropertyName == KubeUI.Services.State.NamespaceNotification)
                 {
                     await Update();
                 }
             };
 
-            state.PropertyChanged += handler;
+            State.PropertyChanged += handler;
 
             await Update();
         }
 
         public void Dispose()
         {
-            state.PropertyChanged -= handler;
+            State.PropertyChanged -= handler;
         }
 
         private async Task Update()
@@ -47,7 +47,7 @@ namespace KubeUI2.Components
 
             StateHasChanged();
 
-            Items = (await client.ListNodeAsync())?.Items;
+            Items = (await Client.ListNodeAsync())?.Items;
 
             StateHasChanged();
         }

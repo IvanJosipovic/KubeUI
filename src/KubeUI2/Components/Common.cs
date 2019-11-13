@@ -72,7 +72,7 @@ namespace KubeUI.Components
 
         public static bool ShouldHideLink(Type type)
         {
-            return !type.GetProperties().Where(Show).Any();
+            return !type.GetProperties().Any(Show);
 
             bool Show(PropertyInfo property)
             {
