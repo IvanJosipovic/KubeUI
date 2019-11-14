@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading.Tasks;
 
-namespace KubeUI2.Components
+namespace KubeUI2
 {
     public partial class CustomResourceDefinitionList : IDisposable
     {
@@ -17,7 +17,7 @@ namespace KubeUI2.Components
         [Inject]
         protected IKubernetes Client { get; set; }
 
-        private IList<V1CustomResourceDefinition> Items { get; set; } = new List<V1CustomResourceDefinition>();
+        private IList<V1CustomResourceDefinition> Items = new List<V1CustomResourceDefinition>();
 
         private PropertyChangedEventHandler handler;
 
@@ -55,6 +55,7 @@ namespace KubeUI2.Components
         public async Task Delete(V1CustomResourceDefinition crd)
         {
             await Client.DeleteCustomResourceDefinitionAsync(crd.Metadata.Name);
+
             await Update();
         }
     }

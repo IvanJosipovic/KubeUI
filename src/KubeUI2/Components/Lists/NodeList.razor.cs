@@ -2,36 +2,24 @@
 using k8s.Models;
 using KubeUI.Services;
 using Microsoft.AspNetCore.Components;
-using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading.Tasks;
 
-namespace KubeUI2.Pages
+namespace KubeUI2
 {
-    [Route("/{Namespace}/Pod/{Name}")]
-    public partial class Pod : IDisposable
+    public partial class NodeList : IDisposable
     {
-        [Parameter]
-        public string Namespace { get; set; }
-
-        [Parameter]
-        public string Name { get; set; }
-
-        [Inject]
-        protected ILogger<Pod> Logger { get; set; }
-
         [Inject]
         protected IState State { get; set; }
 
         [Inject]
         protected IKubernetes Client { get; set; }
 
-        private V1Pod Item { get; set; }
+        private IList<V1Node> Items = new List<V1Node>();
 
         private PropertyChangedEventHandler handler;
-
-        private int LogLineCount = 50;
 
         protected override async Task OnInitializedAsync()
         {
@@ -55,7 +43,11 @@ namespace KubeUI2.Pages
 
         private async Task Update()
         {
-            Item = await Client.ReadNamespacedPodAsync(Name, Namespace);
+            Items = null;
+
+            StateHasChanged();
+
+            Items = (await Client.ListNodeAsync())?.Items;
 
             StateHasChanged();
         }

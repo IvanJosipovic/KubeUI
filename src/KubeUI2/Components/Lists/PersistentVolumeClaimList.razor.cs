@@ -7,17 +7,20 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading.Tasks;
 
-namespace KubeUI2.Components
+namespace KubeUI2
 {
-    public partial class NodeList : IDisposable
+    public partial class PersistentVolumeClaimList : IDisposable
     {
+        [Parameter]
+        public string Namespace { get; set; }
+
         [Inject]
         protected IState State { get; set; }
 
         [Inject]
         protected IKubernetes Client { get; set; }
 
-        private IList<V1Node> Items { get; set; } = new List<V1Node>();
+        private IList<V1PersistentVolumeClaim> Items = new List<V1PersistentVolumeClaim>();
 
         private PropertyChangedEventHandler handler;
 
@@ -47,9 +50,23 @@ namespace KubeUI2.Components
 
             StateHasChanged();
 
-            Items = (await Client.ListNodeAsync())?.Items;
+            if (Namespace == null || Namespace.Equals(KubeUI.Services.State.AllNameSpace))
+            {
+                Items = (await Client.ListPersistentVolumeClaimForAllNamespacesAsync())?.Items;
+            }
+            else
+            {
+                Items = (await Client.ListNamespacedPersistentVolumeClaimAsync(Namespace))?.Items;
+            }
 
             StateHasChanged();
+        }
+
+        public async Task Delete(V1PersistentVolumeClaim item)
+        {
+            await Client.DeleteNamespacedPersistentVolumeClaimAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
+
+            await Update();
         }
     }
 }

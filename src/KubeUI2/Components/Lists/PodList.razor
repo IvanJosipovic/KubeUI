@@ -1,4 +1,6 @@
-﻿<Table PageSize="20" TableItem="V1Pod" Items="Items">
+﻿@namespace KubeUI2
+
+<Table PageSize="20" TableItem="V1Pod" Items="Items">
     <Column TableItem="V1Pod" Title="Name" Field="@(x => x.Metadata.Name)" Sortable="true" Filterable="true" Width="35%">
         <Template>
             <a href="/@context.Metadata.NamespaceProperty/Pod/@context.Metadata.Name">@context.Metadata.Name</a>
@@ -20,7 +22,7 @@
         </Template>
     </Column>
     <Column TableItem="V1Pod" Title="Node" Field="@(x => x.Spec.NodeName)" Sortable="true" Filterable="true" Width="30%">
-        <Template>           
+        <Template>
             <a href="/Node/@context.Spec.NodeName">@context.Spec.NodeName</a>
         </Template>
     </Column>

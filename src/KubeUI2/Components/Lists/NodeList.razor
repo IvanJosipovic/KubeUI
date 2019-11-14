@@ -1,4 +1,6 @@
-﻿<Table PageSize="20" TableItem="V1Node" Items="Items">
+﻿@namespace KubeUI2
+
+<Table PageSize="20" TableItem="V1Node" Items="Items">
     <Column TableItem="V1Node" Title="Name" Field="@(x => x.Metadata.Name)" Sortable="true" Filterable="true" Width="20%">
         <Template>
             <a href="/Node/@context.Metadata.Name">@context.Metadata.Name</a>

@@ -5,22 +5,24 @@ using Microsoft.AspNetCore.Components;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
-namespace KubeUI2.Components
+namespace KubeUI2
 {
-    public partial class DeploymentList : IDisposable
+    public partial class PodList : IDisposable
     {
         [Parameter]
         public string Namespace { get; set; }
 
         [Inject]
-        protected IState state { get; set; }
+        protected IState State { get; set; }
 
         [Inject]
-        protected IKubernetes client { get; set; }
+        protected IKubernetes Client { get; set; }
 
-        private IList<V1Deployment> Items { get; set; } = new List<V1Deployment>();
+        private IList<V1Pod> Items = new List<V1Pod>();
 
         private PropertyChangedEventHandler handler;
 
@@ -28,20 +30,20 @@ namespace KubeUI2.Components
         {
             handler = async (xo, e) =>
             {
-                if (e.PropertyName == State.UILevelNotification || e.PropertyName == State.NamespaceNotification)
+                if (e.PropertyName == KubeUI.Services.State.UILevelNotification || e.PropertyName == KubeUI.Services.State.NamespaceNotification)
                 {
                     await Update();
                 }
             };
 
-            state.PropertyChanged += handler;
+            State.PropertyChanged += handler;
 
             await Update();
         }
 
         public void Dispose()
         {
-            state.PropertyChanged -= handler;
+            State.PropertyChanged -= handler;
         }
 
         private async Task Update()
@@ -50,13 +52,13 @@ namespace KubeUI2.Components
 
             StateHasChanged();
 
-            if (state.Namespace == null || state.Namespace.Equals(State.AllNameSpace))
+            if (Namespace == null || Namespace.Equals(KubeUI.Services.State.AllNameSpace))
             {
-                Items = (await client.ListDeploymentForAllNamespacesAsync())?.Items;
+                Items = (await Client.ListPodForAllNamespacesAsync())?.Items;
             }
             else
             {
-                Items = (await client.ListNamespacedDeploymentAsync(state.Namespace))?.Items;
+                Items = (await Client.ListNamespacedPodAsync(Namespace))?.Items;
             }
 
             StateHasChanged();

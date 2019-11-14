@@ -1,4 +1,5 @@
-﻿<Table PageSize="20" TableItem="V1CustomResourceDefinition" Items="Items">
+﻿@namespace KubeUI2
+<Table PageSize="20" TableItem="V1CustomResourceDefinition" Items="Items">
     <Column TableItem="V1CustomResourceDefinition" Title="Name" Field="@(x => x.Metadata.Name)" Sortable="true" Filterable="true">
         <Template>
             <a href="/@context.Metadata.NamespaceProperty/Pod/@context.Metadata.Name">@context.Metadata.Name</a>
