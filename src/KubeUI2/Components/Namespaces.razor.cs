@@ -22,7 +22,7 @@ namespace KubeUI2.Components
 
         protected override async Task OnInitializedAsync()
         {
-            Options = (await client.ListNamespaceAsync())?.Items.Select(x => x.Metadata.Name).ToList();
+            Options = (await client.ListNamespaceAsync())?.Items.Select(x => x.Metadata?.Name).ToList();
 
             StateHasChanged();
         }
