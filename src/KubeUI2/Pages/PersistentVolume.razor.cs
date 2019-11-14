@@ -9,17 +9,14 @@ using System.Threading.Tasks;
 
 namespace KubeUI2.Pages
 {
-    [Route("/{Namespace}/Pod/{Name}")]
-    public partial class Pod : IDisposable
+    [Route("/PersistentVolume/{Name}")]
+    public partial class PersistentVolume : IDisposable
     {
-        [Parameter]
-        public string Namespace { get; set; }
-
         [Parameter]
         public string Name { get; set; }
 
         [Inject]
-        protected ILogger<Pod> Logger { get; set; }
+        protected ILogger<PersistentVolume> Logger { get; set; }
 
         [Inject]
         protected IState State { get; set; }
@@ -27,11 +24,9 @@ namespace KubeUI2.Pages
         [Inject]
         protected IKubernetes Client { get; set; }
 
-        private V1Pod Item;
+        private V1PersistentVolume Item;
 
         private PropertyChangedEventHandler handler;
-
-        private int LogLineCount = 50;
 
         protected override async Task OnInitializedAsync()
         {
@@ -55,7 +50,7 @@ namespace KubeUI2.Pages
 
         private async Task Update()
         {
-            Item = await Client.ReadNamespacedPodAsync(Name, Namespace);
+            Item = await Client.ReadPersistentVolumeAsync(Name);
 
             StateHasChanged();
         }

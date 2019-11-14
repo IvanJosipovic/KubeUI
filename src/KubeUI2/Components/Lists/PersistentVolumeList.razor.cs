@@ -2,36 +2,24 @@
 using k8s.Models;
 using KubeUI.Services;
 using Microsoft.AspNetCore.Components;
-using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading.Tasks;
 
-namespace KubeUI2.Pages
+namespace KubeUI2
 {
-    [Route("/{Namespace}/Pod/{Name}")]
-    public partial class Pod : IDisposable
+    public partial class PersistentVolumeList : IDisposable
     {
-        [Parameter]
-        public string Namespace { get; set; }
-
-        [Parameter]
-        public string Name { get; set; }
-
-        [Inject]
-        protected ILogger<Pod> Logger { get; set; }
-
         [Inject]
         protected IState State { get; set; }
 
         [Inject]
         protected IKubernetes Client { get; set; }
 
-        private V1Pod Item;
+        private IList<V1PersistentVolume> Items = new List<V1PersistentVolume>();
 
         private PropertyChangedEventHandler handler;
-
-        private int LogLineCount = 50;
 
         protected override async Task OnInitializedAsync()
         {
@@ -55,9 +43,20 @@ namespace KubeUI2.Pages
 
         private async Task Update()
         {
-            Item = await Client.ReadNamespacedPodAsync(Name, Namespace);
+            Items = null;
 
             StateHasChanged();
+
+            Items = (await Client.ListPersistentVolumeAsync())?.Items;
+
+            StateHasChanged();
+        }
+
+        public async Task Delete(V1PersistentVolume item)
+        {
+            await Client.DeletePersistentVolumeAsync(item.Metadata.Name);
+
+            await Update();
         }
     }
 }

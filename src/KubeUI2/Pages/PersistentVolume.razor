@@ -1,0 +1,28 @@
+﻿<h2>
+    <a href="/PersistentVolumes">Persistent Volumes</a> / @Name
+</h2>
+
+<br />
+@if (Item != null)
+{
+    <BSTabGroup>
+        <BSTabList>
+            <BSTab>
+                <BSTabLabel>Stats</BSTabLabel>
+                <BSTabContent>
+
+                </BSTabContent>
+            </BSTab>
+            <BSTab InitialSelection="true">
+                <BSTabLabel>Yaml</BSTabLabel>
+                <BSTabContent><pre><code id="yamlViewer" class="language-yaml">@k8s.Yaml.SaveToString(Item)</code></pre></BSTabContent>
+            </BSTab>
+
+            <BSTab>
+                <BSTabLabel>Overview</BSTabLabel>
+                <BSTabContent><KubeUI2.Components.Dynamic.UI Item="@Item" /></BSTabContent>
+            </BSTab>
+        </BSTabList>
+        <BSTabSelectedContent />
+    </BSTabGroup>
+}
