@@ -7,6 +7,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using FluentValidation;
 using KubeUI.Validators;
+using System.Net.Http;
+using System.Reflection;
+using System;
 
 namespace KubeUI2
 {
@@ -26,14 +29,16 @@ namespace KubeUI2
 
             services.AddScoped<IAppInsights, AppInsights>();
 
-            services.AddTransient<WebAssemblyHttpMessageHandler>();
-
             var config = new KubernetesClientConfiguration { Host = "http://127.0.0.1:5000" };
             services.AddSingleton(config);
 
             // Setup the http client
             services.AddHttpClient("K8s")
-                .ConfigurePrimaryHttpMessageHandler<WebAssemblyHttpMessageHandler>()
+                .ConfigurePrimaryHttpMessageHandler( x=> 
+                {
+                    var wasmHttpMessageHandlerType = Assembly.Load("WebAssembly.Net.Http").GetType("WebAssembly.Net.Http.HttpClient.WasmHttpMessageHandler");
+                    return (HttpMessageHandler)Activator.CreateInstance(wasmHttpMessageHandlerType);
+                })
                 .AddTypedClient<IKubernetes>((httpClient, serviceProvider) => new Kubernetes(serviceProvider.GetRequiredService<KubernetesClientConfiguration>(), httpClient));
 
             var cfg = new FluentValidationMvcConfiguration();
