@@ -1,0 +1,35 @@
+﻿@namespace KubeUI2.Components.Types
+
+<Table PageSize="20" TableItem="V1Pod" Items="Items">
+    <Column TableItem="V1Pod" Title="Name" Field="@(x => x.Metadata.Name)" Sortable="true" Filterable="true" Width="35%">
+        <Template>
+            <a href="/@context.Metadata.NamespaceProperty/Pod/@context.Metadata.Name">@context.Metadata.Name</a>
+        </Template>
+    </Column>
+    <Column TableItem="V1Pod" Title="Ready" Field="@(x => x.Status.ContainerStatuses.FirstOrDefault().Ready)" Sortable="true" Filterable="true" Width="10%">
+        <Template>
+            @context.Status.ContainerStatuses.OrEmptyIfNull().FirstOrDefault()?.Ready
+        </Template>
+    </Column>
+    <Column TableItem="V1Pod" Title="Phase" Field="@(x => x.Status.Phase)" Sortable="true" Filterable="true" Width="10%">
+        <Template>
+            @context.Status.Phase
+        </Template>
+    </Column>
+    <Column TableItem="V1Pod" Title="Restarts" Field="@(x => x.Status.ContainerStatuses.OrEmptyIfNull().FirstOrDefault().RestartCount)" Sortable="true" Filterable="true" Width="10%">
+        <Template>
+            @context.Status.ContainerStatuses.OrEmptyIfNull().FirstOrDefault()?.RestartCount
+        </Template>
+    </Column>
+    <Column TableItem="V1Pod" Title="Node" Field="@(x => x.Spec.NodeName)" Sortable="true" Filterable="true" Width="30%">
+        <Template>
+            <a href="/Node/@context.Spec.NodeName">@context.Spec.NodeName</a>
+        </Template>
+    </Column>
+    <Column TableItem="V1Pod" Title="Age" Field="@(x => x.Metadata.CreationTimestamp)" Sortable="true" Filterable="true" Width="5%">
+        <Template>
+            @string.Format("{0:N0}d", (DateTime.UtcNow - context.Metadata.CreationTimestamp).Value.TotalDays)
+        </Template>
+    </Column>
+    <Pager TableItem="V1Pod" ShowPageNumber="true" ShowTotalCount="true" />
+</Table>
