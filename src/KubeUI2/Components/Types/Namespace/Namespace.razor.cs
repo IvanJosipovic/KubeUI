@@ -3,21 +3,21 @@ using k8s.Models;
 using KubeUI.Services;
 using Microsoft.AspNetCore.Components;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading.Tasks;
 
 namespace KubeUI2.Components.Types
 {
-    public partial class NodeList
+    [Route("/Namespace/{Name}")]
+    public partial class Namespace
     {
-        [Inject]
-        protected IState State { get; set; }
+        [Parameter] public string Name { get; set; }
 
-        [Inject]
-        protected IKubernetes Client { get; set; }
+        [Inject] protected IState State { get; set; }
 
-        private IList<V1Node> Items;
+        [Inject] protected IKubernetes Client { get; set; }
+
+        private V1Namespace Item;
 
         protected override async Task OnInitializedAsync()
         {
@@ -26,7 +26,9 @@ namespace KubeUI2.Components.Types
 
         private async Task Update()
         {
-            Items = (await Client.ListNodeAsync())?.Items;
+            Item = await Client.ReadNamespaceAsync(Name);
+
+            StateHasChanged();
         }
     }
 }

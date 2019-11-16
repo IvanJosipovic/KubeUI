@@ -17,7 +17,7 @@ namespace KubeUI2.Components.Types
         [Inject]
         protected IKubernetes Client { get; set; }
 
-        private IList<V1PersistentVolume> Items = new List<V1PersistentVolume>();
+        private IList<V1PersistentVolume> Items;
 
         protected override async Task OnInitializedAsync()
         {
@@ -26,13 +26,7 @@ namespace KubeUI2.Components.Types
 
         private async Task Update()
         {
-            Items = null;
-
-            StateHasChanged();
-
             Items = (await Client.ListPersistentVolumeAsync())?.Items;
-
-            StateHasChanged();
         }
 
         public async Task Delete(V1PersistentVolume item)

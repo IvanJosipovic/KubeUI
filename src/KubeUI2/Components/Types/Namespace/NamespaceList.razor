@@ -3,7 +3,7 @@
 <Table PageSize="20" TableItem="V1Namespace" Items="Items">
     <Column TableItem="V1Namespace" Title="Name" Field="@(x => x.Metadata.Name)" Sortable="true" Filterable="true" Width="20%">
         <Template>
-            @context.Metadata.Name
+            <a href="/Namespace/@context.Metadata.Name">@context.Metadata.Name</a>
         </Template>
     </Column>
     <Column TableItem="V1Namespace" Title="Labels" Width="30%">

@@ -2,22 +2,23 @@
 using k8s.Models;
 using KubeUI.Services;
 using Microsoft.AspNetCore.Components;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Threading.Tasks;
 
 namespace KubeUI2.Components.Types
 {
-    public partial class CustomResourceDefinitionList
+    [Route("/CustomResourceDefinition/{Name}")]
+    public partial class CustomResourceDefinition
     {
+        [Parameter]
+        public string Name { get; set; }
+
         [Inject]
         protected IState State { get; set; }
 
         [Inject]
         protected IKubernetes Client { get; set; }
 
-        private IList<V1CustomResourceDefinition> Items;
+        private V1CustomResourceDefinition Item;
 
         protected override async Task OnInitializedAsync()
         {
@@ -26,14 +27,9 @@ namespace KubeUI2.Components.Types
 
         private async Task Update()
         {
-            Items = (await Client.ListCustomResourceDefinitionAsync())?.Items;
-        }
+            Item = await Client.ReadCustomResourceDefinitionAsync(Name);
 
-        public async Task Delete(V1CustomResourceDefinition crd)
-        {
-            await Client.DeleteCustomResourceDefinitionAsync(crd.Metadata.Name);
-
-            await Update();
+            StateHasChanged();
         }
     }
 }

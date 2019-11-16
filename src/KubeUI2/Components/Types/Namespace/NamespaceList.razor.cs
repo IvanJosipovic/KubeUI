@@ -16,7 +16,7 @@ namespace KubeUI2.Components.Types
         [Inject]
         protected IKubernetes Client { get; set; }
 
-        private IList<V1Namespace> Items = new List<V1Namespace>();
+        private IList<V1Namespace> Items;
 
         protected override async Task OnInitializedAsync()
         {
@@ -25,13 +25,7 @@ namespace KubeUI2.Components.Types
 
         private async Task Update()
         {
-            Items = null;
-
-            StateHasChanged();
-
             Items = (await Client.ListNamespaceAsync())?.Items;
-
-            StateHasChanged();
         }
 
         private async Task Delete(V1Namespace item)

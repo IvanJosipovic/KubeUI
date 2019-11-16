@@ -20,7 +20,7 @@ namespace KubeUI2.Components.Types
         [Inject]
         protected IKubernetes Client { get; set; }
 
-        private IList<V1Deployment> Items = new List<V1Deployment>();
+        private IList<V1Deployment> Items;
 
         protected override async Task OnInitializedAsync()
         {
@@ -29,10 +29,6 @@ namespace KubeUI2.Components.Types
 
         private async Task Update()
         {
-            Items = null;
-
-            StateHasChanged();
-
             if (State.Namespace == null || State.Namespace.Equals(KubeUI.Services.State.AllNameSpace))
             {
                 Items = (await Client.ListDeploymentForAllNamespacesAsync())?.Items;
@@ -41,8 +37,6 @@ namespace KubeUI2.Components.Types
             {
                 Items = (await Client.ListNamespacedDeploymentAsync(State.Namespace))?.Items;
             }
-
-            StateHasChanged();
         }
     }
 }

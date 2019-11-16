@@ -20,7 +20,7 @@ namespace KubeUI2.Components.Types
         [Inject]
         protected IKubernetes Client { get; set; }
 
-        private IList<V1PersistentVolumeClaim> Items = new List<V1PersistentVolumeClaim>();
+        private IList<V1PersistentVolumeClaim> Items;
 
         protected override async Task OnInitializedAsync()
         {
@@ -29,10 +29,6 @@ namespace KubeUI2.Components.Types
 
         private async Task Update()
         {
-            Items = null;
-
-            StateHasChanged();
-
             if (Namespace == null || Namespace.Equals(KubeUI.Services.State.AllNameSpace))
             {
                 Items = (await Client.ListPersistentVolumeClaimForAllNamespacesAsync())?.Items;
@@ -41,8 +37,6 @@ namespace KubeUI2.Components.Types
             {
                 Items = (await Client.ListNamespacedPersistentVolumeClaimAsync(Namespace))?.Items;
             }
-
-            StateHasChanged();
         }
 
         public async Task Delete(V1PersistentVolumeClaim item)

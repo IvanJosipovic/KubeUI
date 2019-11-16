@@ -22,7 +22,7 @@ namespace KubeUI2.Components.Types
         [Inject]
         protected IKubernetes Client { get; set; }
 
-        private IList<V1Pod> Items = new List<V1Pod>();
+        private IList<V1Pod> Items;
 
         protected override async Task OnInitializedAsync()
         {
@@ -31,10 +31,6 @@ namespace KubeUI2.Components.Types
 
         private async Task Update()
         {
-            Items = null;
-
-            StateHasChanged();
-
             if (Namespace == null || Namespace.Equals(KubeUI.Services.State.AllNameSpace))
             {
                 Items = (await Client.ListPodForAllNamespacesAsync())?.Items;
@@ -43,8 +39,6 @@ namespace KubeUI2.Components.Types
             {
                 Items = (await Client.ListNamespacedPodAsync(Namespace))?.Items;
             }
-
-            StateHasChanged();
         }
     }
 }
