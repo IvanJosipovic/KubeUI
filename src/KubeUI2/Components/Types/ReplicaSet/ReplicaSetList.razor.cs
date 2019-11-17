@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace KubeUI2.Components.Types
 {
-    public partial class DeploymentList
+    public partial class ReplicaSetList
     {
         [Parameter]
         public string Namespace { get; set; }
@@ -19,32 +19,29 @@ namespace KubeUI2.Components.Types
         public string OwnerUid { get; set; }
 
         [Inject]
-        protected ILogger<DeploymentList> Logger { get; set; }
-
-        [Inject]
-        protected IState State { get; set; }
+        protected ILogger<ReplicaSetList> Logger { get; set; }
 
         [Inject]
         protected IKubernetes Client { get; set; }
 
-        private IList<V1Deployment> Items;
+        private IList<V1ReplicaSet> Items;
 
-        protected override async Task OnInitializedAsync()
+        protected override async Task OnParametersSetAsync()
         {
             await Update();
         }
 
         private async Task Update()
         {
-            IList<V1Deployment> items;
+            IList<V1ReplicaSet> items;
 
-            if (State.Namespace?.Equals(KubeUI.Services.State.AllNameSpace) != false)
+            if (Namespace?.Equals(KubeUI.Services.State.AllNameSpace) != false)
             {
-                items = (await Client.ListDeploymentForAllNamespacesAsync())?.Items;
+                items = (await Client.ListReplicaSetForAllNamespacesAsync())?.Items;
             }
             else
             {
-                items = (await Client.ListNamespacedDeploymentAsync(State.Namespace))?.Items;
+                items = (await Client.ListNamespacedReplicaSetAsync(Namespace))?.Items;
             }
 
             if (!string.IsNullOrEmpty(OwnerUid))
@@ -55,34 +52,34 @@ namespace KubeUI2.Components.Types
             Items = items;
         }
 
-        public async Task Delete(V1Deployment item)
+        public async Task Delete(V1ReplicaSet item)
         {
             await Client.DeleteNamespacedDeploymentAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
 
             await Update();
         }
 
-        private async Task ScaleUp(V1Deployment item)
+        private async Task ScaleUp(V1ReplicaSet item)
         {
             var patch = new JsonPatchDocument<V1Deployment>();
             patch.Replace(e => e.Spec.Replicas, item.Spec.Replicas.GetValueOrDefault() + 1);
 
-            await Client.PatchNamespacedDeploymentScaleAsync(new V1Patch(patch), item.Metadata.Name, item.Metadata.NamespaceProperty);
+            await Client.PatchNamespacedReplicaSetScaleAsync(new V1Patch(patch), item.Metadata.Name, item.Metadata.NamespaceProperty);
 
             await Update();
         }
 
-        private async Task ScaleDown(V1Deployment item)
+        private async Task ScaleDown(V1ReplicaSet item)
         {
             if (!item.Spec.Replicas.HasValue || item.Spec.Replicas.Value == 0)
             {
                 return;
             }
 
-            var patch = new JsonPatchDocument<V1Deployment>();
+            var patch = new JsonPatchDocument<V1ReplicaSet>();
             patch.Replace(e => e.Spec.Replicas, item.Spec.Replicas.Value - 1);
 
-            await Client.PatchNamespacedDeploymentScaleAsync(new V1Patch(patch), item.Metadata.Name, item.Metadata.NamespaceProperty);
+            await Client.PatchNamespacedReplicaSetScaleAsync(new V1Patch(patch), item.Metadata.Name, item.Metadata.NamespaceProperty);
             
             await Update();
         }

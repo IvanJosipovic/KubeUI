@@ -1,6 +1,6 @@
 ﻿@namespace KubeUI2.Components.Types
 <h2>
-    <a href="/@Namespace/Deployments">Deployments</a> / @Item?.Metadata.Name
+    <a href="/@Namespace/ReplicaSets">Replica Set</a> / @Item?.Metadata.Name
 </h2>
 
 <br />
@@ -8,13 +8,12 @@
 {
     <BSTabGroup>
         <BSTabList>
-
             <BSTab>
                 <BSTabLabel>Overview</BSTabLabel>
                 <BSTabContent>
                     <br />
-                    <h4>Replica Sets</h4>
-                    <ReplicaSetList Namespace="@Item.Metadata.NamespaceProperty" OwnerUid="@Item.Metadata.Uid" />
+                    <h4>Pods</h4>
+                    <PodList Namespace="@Item.Metadata.NamespaceProperty" />
                 </BSTabContent>
             </BSTab>
 

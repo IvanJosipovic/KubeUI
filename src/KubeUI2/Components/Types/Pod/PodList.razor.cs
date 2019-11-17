@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,8 +17,8 @@ namespace KubeUI2.Components.Types
         [Parameter]
         public string Namespace { get; set; }
 
-        [Inject]
-        protected IState State { get; set; }
+        [Parameter]
+        public string OwnerUid { get; set; }
 
         [Inject]
         protected IKubernetes Client { get; set; }
@@ -31,14 +32,23 @@ namespace KubeUI2.Components.Types
 
         private async Task Update()
         {
-            if (Namespace == null || Namespace.Equals(KubeUI.Services.State.AllNameSpace))
+            IList<V1Pod> items;
+
+            if (Namespace?.Equals(KubeUI.Services.State.AllNameSpace) != false)
             {
-                Items = (await Client.ListPodForAllNamespacesAsync())?.Items;
+                items = (await Client.ListPodForAllNamespacesAsync())?.Items;
             }
             else
             {
-                Items = (await Client.ListNamespacedPodAsync(Namespace))?.Items;
+                items = (await Client.ListNamespacedPodAsync(Namespace))?.Items;
             }
+
+            if (!string.IsNullOrEmpty(OwnerUid))
+            {
+                items = items.Where(x => x.Metadata.OwnerReferences.Any(y => y.Uid.Equals(OwnerUid))).ToList();
+            }
+
+            Items = items;
         }
 
         public async Task Delete(V1Pod item)
