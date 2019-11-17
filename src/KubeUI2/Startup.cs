@@ -34,7 +34,7 @@ namespace KubeUI2
 
             // Setup the http client
             services.AddHttpClient("K8s")
-                .ConfigurePrimaryHttpMessageHandler( x=> 
+                .ConfigurePrimaryHttpMessageHandler( _ =>
                 {
                     var wasmHttpMessageHandlerType = Assembly.Load("WebAssembly.Net.Http").GetType("WebAssembly.Net.Http.HttpClient.WasmHttpMessageHandler");
                     return (HttpMessageHandler)Activator.CreateInstance(wasmHttpMessageHandlerType);
