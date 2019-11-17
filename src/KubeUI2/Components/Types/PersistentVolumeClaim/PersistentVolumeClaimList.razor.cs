@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Components;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace KubeUI2.Components.Types
@@ -13,6 +14,9 @@ namespace KubeUI2.Components.Types
     {
         [Parameter]
         public string Namespace { get; set; }
+
+        [Parameter]
+        public string[] Names { get; set; }
 
         [Inject]
         protected IState State { get; set; }
@@ -29,14 +33,23 @@ namespace KubeUI2.Components.Types
 
         private async Task Update()
         {
+            IList<V1PersistentVolumeClaim> items;
+
             if (Namespace == null || Namespace.Equals(KubeUI.Services.State.AllNameSpace))
             {
-                Items = (await Client.ListPersistentVolumeClaimForAllNamespacesAsync())?.Items;
+                items = (await Client.ListPersistentVolumeClaimForAllNamespacesAsync())?.Items;
             }
             else
             {
-                Items = (await Client.ListNamespacedPersistentVolumeClaimAsync(Namespace))?.Items;
+                items = (await Client.ListNamespacedPersistentVolumeClaimAsync(Namespace))?.Items;
             }
+
+            if (Names != null)
+            {
+                items = items.Where(x => Names.Contains(x.Metadata.Name)).ToList();
+            }
+
+            Items = items;
         }
 
         public async Task Delete(V1PersistentVolumeClaim item)

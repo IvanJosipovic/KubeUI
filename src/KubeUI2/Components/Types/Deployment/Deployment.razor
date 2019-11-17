@@ -15,6 +15,10 @@
                     <br />
                     <h4>Replica Sets</h4>
                     <ReplicaSetList Namespace="@Item.Metadata.NamespaceProperty" OwnerUid="@Item.Metadata.Uid" />
+
+                    <br />
+                    <h4>Persistent Volume Claims</h4>
+                    <PersistentVolumeClaimList Namespace="@Item.Metadata.NamespaceProperty" Names="@(Item.Spec.Template.Spec.Volumes.Select(y => y.PersistentVolumeClaim.ClaimName).ToArray())" />
                 </BSTabContent>
             </BSTab>
 
