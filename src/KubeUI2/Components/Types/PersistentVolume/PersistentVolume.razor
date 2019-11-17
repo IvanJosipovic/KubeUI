@@ -11,7 +11,9 @@
             <BSTab>
                 <BSTabLabel>Stats</BSTabLabel>
                 <BSTabContent>
-
+                    <br />
+                    <h4>Persistent Volume Claims</h4>
+                    <PersistentVolumeClaimList Namespace="@Item.Metadata.NamespaceProperty" Filter="@(x => x.Metadata.Name.Equals(Item.Spec.ClaimRef.Name))" />
                 </BSTabContent>
             </BSTab>
 

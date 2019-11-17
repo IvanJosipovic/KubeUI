@@ -11,6 +11,11 @@
             @context.Spec.Resources.Requests["storage"]
         </Template>
     </Column>
+        <Column TableItem="V1PersistentVolumeClaim" Title="Phase" Field="@(x => x.Status.Phase)" Sortable="true" Filterable="true">
+        <Template>
+            @context.Status.Phase
+        </Template>
+    </Column>
     <Column TableItem="V1PersistentVolumeClaim" Title="Age" Field="@(x => x.Metadata.CreationTimestamp)" Sortable="true" Filterable="true">
         <Template>
             @string.Format("{0:N0}d", (DateTime.UtcNow - context.Metadata.CreationTimestamp).Value.TotalDays)

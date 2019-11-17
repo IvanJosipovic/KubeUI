@@ -14,11 +14,11 @@
                 <BSTabContent>
                     <br />
                     <h4>Replica Sets</h4>
-                    <ReplicaSetList Namespace="@Item.Metadata.NamespaceProperty" OwnerUid="@Item.Metadata.Uid" />
+                    <ReplicaSetList Namespace="@Item.Metadata.NamespaceProperty" Filter="@(x => x.Metadata.OwnerReferences.Any(y => y.Uid.Equals(Item.Metadata.Uid)))" />
 
                     <br />
                     <h4>Persistent Volume Claims</h4>
-                    <PersistentVolumeClaimList Namespace="@Item.Metadata.NamespaceProperty" Names="@(Item.Spec.Template.Spec.Volumes.Where(y => y.PersistentVolumeClaim != null).Select(y => y.PersistentVolumeClaim.ClaimName).ToArray())" />
+                    <PersistentVolumeClaimList Namespace="@Item.Metadata.NamespaceProperty" Filter="@(x => Item.Spec.Template.Spec.Volumes.Where(y => y.PersistentVolumeClaim != null).Select(y => y.PersistentVolumeClaim.ClaimName).Contains(x.Metadata.Name))" />
                 </BSTabContent>
             </BSTab>
 

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace KubeUI2.Components.Types
@@ -16,7 +17,7 @@ namespace KubeUI2.Components.Types
         public string Namespace { get; set; }
 
         [Parameter]
-        public string[] Names { get; set; }
+        public Expression<Func<V1PersistentVolumeClaim, bool>> Filter { get; set; }
 
         [Inject]
         protected IState State { get; set; }
@@ -44,9 +45,9 @@ namespace KubeUI2.Components.Types
                 items = (await Client.ListNamespacedPersistentVolumeClaimAsync(Namespace))?.Items;
             }
 
-            if (Names != null)
+            if (Filter != null)
             {
-                items = items.Where(x => Names.Contains(x.Metadata.Name)).ToList();
+                items = items.AsQueryable().Where(Filter).ToList();
             }
 
             Items = items;

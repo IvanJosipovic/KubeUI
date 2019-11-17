@@ -13,7 +13,7 @@
                 <BSTabContent>
                     <br />
                     <h4>Persistent Volumes</h4>
-                    <PersistentVolumeList OwnerUid="@Item.Metadata.Uid" />
+                    <PersistentVolumeList Filter="@(x => x.Spec.ClaimRef.Uid.Equals(Item.Metadata.Uid))" />
                 </BSTabContent>
             </BSTab>
 

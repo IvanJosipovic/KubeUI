@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace KubeUI2.Components.Types
@@ -13,7 +14,7 @@ namespace KubeUI2.Components.Types
     public partial class PersistentVolumeList
     {
         [Parameter]
-        public string OwnerUid { get; set; }
+        public Expression<Func<V1PersistentVolume, bool>> Filter { get; set; }
 
         [Inject]
         protected IKubernetes Client { get; set; }
@@ -31,9 +32,9 @@ namespace KubeUI2.Components.Types
 
             items = (await Client.ListPersistentVolumeAsync())?.Items;
 
-            if (!string.IsNullOrEmpty(OwnerUid))
+            if (Filter != null)
             {
-                items = items.Where(x => x.Spec.ClaimRef.Uid.Equals(OwnerUid)).ToList();
+                items = items.AsQueryable().Where(Filter).ToList();
             }
 
             Items = items;

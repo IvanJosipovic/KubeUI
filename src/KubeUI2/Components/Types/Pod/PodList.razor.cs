@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,7 +19,7 @@ namespace KubeUI2.Components.Types
         public string Namespace { get; set; }
 
         [Parameter]
-        public string OwnerUid { get; set; }
+        public Expression<Func<V1Pod, bool>> Filter { get; set; }
 
         [Inject]
         protected IKubernetes Client { get; set; }
@@ -34,7 +35,7 @@ namespace KubeUI2.Components.Types
         {
             IList<V1Pod> items;
 
-            if (Namespace?.Equals(KubeUI.Services.State.AllNameSpace) != false)
+            if (Namespace?.Equals(State.AllNameSpace) != false)
             {
                 items = (await Client.ListPodForAllNamespacesAsync())?.Items;
             }
@@ -43,9 +44,9 @@ namespace KubeUI2.Components.Types
                 items = (await Client.ListNamespacedPodAsync(Namespace))?.Items;
             }
 
-            if (!string.IsNullOrEmpty(OwnerUid))
+            if (Filter != null)
             {
-                items = items.Where(x => x.Metadata.OwnerReferences.Any(y => y.Uid.Equals(OwnerUid))).ToList();
+                items = items.AsQueryable().Where(Filter).ToList();
             }
 
             Items = items;

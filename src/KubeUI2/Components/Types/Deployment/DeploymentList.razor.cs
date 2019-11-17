@@ -4,8 +4,10 @@ using KubeUI.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace KubeUI2.Components.Types
@@ -16,7 +18,7 @@ namespace KubeUI2.Components.Types
         public string Namespace { get; set; }
 
         [Parameter]
-        public string OwnerUid { get; set; }
+        public Expression<Func<V1Deployment, bool>> Filter { get; set; }
 
         [Inject]
         protected ILogger<DeploymentList> Logger { get; set; }
@@ -47,9 +49,9 @@ namespace KubeUI2.Components.Types
                 items = (await Client.ListNamespacedDeploymentAsync(State.Namespace))?.Items;
             }
 
-            if (!string.IsNullOrEmpty(OwnerUid))
+            if (Filter != null)
             {
-                items = items.Where(x => x.Metadata.OwnerReferences.Any(y => y.Uid.Equals(OwnerUid))).ToList();
+                items = items.AsQueryable().Where(Filter).ToList();
             }
 
             Items = items;
