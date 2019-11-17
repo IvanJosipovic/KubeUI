@@ -5,14 +5,15 @@ using Microsoft.AspNetCore.Components;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace KubeUI2.Components.Types
 {
     public partial class PersistentVolumeList
     {
-        [Inject]
-        protected IState State { get; set; }
+        [Parameter]
+        public string OwnerUid { get; set; }
 
         [Inject]
         protected IKubernetes Client { get; set; }
@@ -26,7 +27,16 @@ namespace KubeUI2.Components.Types
 
         private async Task Update()
         {
-            Items = (await Client.ListPersistentVolumeAsync())?.Items;
+            IList<V1PersistentVolume> items;
+
+            items = (await Client.ListPersistentVolumeAsync())?.Items;
+
+            if (!string.IsNullOrEmpty(OwnerUid))
+            {
+                items = items.Where(x => x.Spec.ClaimRef.Uid.Equals(OwnerUid)).ToList();
+            }
+
+            Items = items;
         }
 
         public async Task Delete(V1PersistentVolume item)
