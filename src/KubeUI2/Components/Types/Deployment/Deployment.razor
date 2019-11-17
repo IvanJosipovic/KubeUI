@@ -18,7 +18,7 @@
 
                     <br />
                     <h4>Persistent Volume Claims</h4>
-                    <PersistentVolumeClaimList Namespace="@Item.Metadata.NamespaceProperty" Names="@(Item.Spec.Template.Spec.Volumes.Select(y => y.PersistentVolumeClaim.ClaimName).ToArray())" />
+                    <PersistentVolumeClaimList Namespace="@Item.Metadata.NamespaceProperty" Names="@(Item.Spec.Template.Spec.Volumes.Where(y => y.PersistentVolumeClaim != null).Select(y => y.PersistentVolumeClaim.ClaimName).ToArray())" />
                 </BSTabContent>
             </BSTab>
 

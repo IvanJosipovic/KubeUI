@@ -8,13 +8,25 @@
 {
     <BSTabGroup>
         <BSTabList>
-            <BSTab InitialSelection="true">
+            <BSTab>
+                <BSTabLabel>Overview</BSTabLabel>
+                <BSTabContent>
+                    <br />
+                    <h4>Connect</h4>
+                    kubectl exec -it @Item.Metadata.Name -n @Item.Metadata.NamespaceProperty /bin/bash
+
+                    <br />
+                    <h4>Persistent Volume Claims</h4>
+                    <PersistentVolumeClaimList Namespace="@Item.Metadata.NamespaceProperty" Names="@(Item.Spec.Volumes.Where(y => y.PersistentVolumeClaim != null).Select(y => y.PersistentVolumeClaim.ClaimName).ToArray())" />
+                </BSTabContent>
+            </BSTab>
+            <BSTab>
                 <BSTabLabel>Yaml</BSTabLabel>
                 <BSTabContent><pre><code id="yamlViewer" class="language-yaml">@k8s.Yaml.SaveToString(Item)</code></pre></BSTabContent>
             </BSTab>
 
             <BSTab>
-                <BSTabLabel>Overview</BSTabLabel>
+                <BSTabLabel>UI</BSTabLabel>
                 <BSTabContent><KubeUI2.Components.Dynamic.UI Item="@Item" /></BSTabContent>
             </BSTab>
 

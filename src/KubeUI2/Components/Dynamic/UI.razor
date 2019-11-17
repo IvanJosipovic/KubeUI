@@ -43,7 +43,7 @@
 
     private string Help = "Hover over a control to see help here.";
 
-    private BSModal BSModal;
+    //private BSModal BSModal;
 
     private List<TreeItem> Trees = new List<TreeItem>();
 
@@ -103,15 +103,15 @@
                 } else
                 {
                     Tree.Add(new TreeItem()
-                {
-                    Attributes = attributes,
-                    Name = property.Name.AddSpacesToSentence().TrimVersionNumbers(),
-                    Children = GetCollectionItems(item, attributes, uILevel),
-                    Object = item,
-                    Summary = property.GetSummary(),
-                    IsCollection = true,
-                    HideLink = Common.ShouldHideLink(property.PropertyType)
-                });
+                    {
+                        Attributes = attributes,
+                        Name = property.Name.AddSpacesToSentence().TrimVersionNumbers(),
+                        Children = GetCollectionItems(item, attributes, uILevel),
+                        Object = item,
+                        Summary = property.GetSummary(),
+                        IsCollection = true,
+                        HideLink = Common.ShouldHideLink(property.PropertyType)
+                    });
                 }
             }
             catch (Exception e)
@@ -223,6 +223,5 @@
 
     private void CloseModal()
     {
-        BSModal.Toggle();
     }
 }
