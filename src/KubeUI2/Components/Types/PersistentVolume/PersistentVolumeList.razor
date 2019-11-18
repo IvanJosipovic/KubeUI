@@ -6,6 +6,11 @@
             <a href="/PersistentVolume/@context.Metadata.Name">@context.Metadata.Name</a>
         </Template>
     </Column>
+    <Column TableItem="V1PersistentVolume" Title="Requests" Width="10%">
+        <Template>
+            @context.Spec.Capacity["storage"]
+        </Template>
+    </Column>
     <Column TableItem="V1PersistentVolume" Title="Status" Field="@(x => x.Status.Phase)" Sortable="true" Filterable="true" Width="10%">
         <Template>
             @context.Status.Phase
