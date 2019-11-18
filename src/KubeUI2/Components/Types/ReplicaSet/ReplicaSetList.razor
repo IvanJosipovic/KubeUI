@@ -1,28 +1,12 @@
 ﻿@namespace KubeUI2.Components.Types
 
 <Table PageSize="20" TableItem="V1ReplicaSet" Items="Items">
-    <Column TableItem="V1ReplicaSet" Title="Name" Field="@(x => x.Metadata.Name)" Sortable="true" Filterable="true" Width="30%">
+    <Column TableItem="V1ReplicaSet" Title="Name" Field="@(x => x.Metadata.Name)" Sortable="true" Filterable="true" Width="20%">
         <Template>
             <a href="/@context.Metadata.NamespaceProperty/ReplicaSet/@context.Metadata.Name">@context.Metadata.Name</a>
         </Template>
     </Column>
-    <Column TableItem="V1ReplicaSet" Title="Labels" Width="15%">
-        <Template>
-            @foreach (var label in context.Metadata.Labels.OrEmptyIfNull().Take(2))
-            {
-                <BSBadge>@label.Key : @label.Value</BSBadge>
-            }
-        </Template>
-    </Column>
-    <Column Title="Selector" TableItem="V1ReplicaSet" Width="15%">
-        <Template>
-            @foreach (var selector in context.Spec.Selector.MatchLabels.OrEmptyIfNull().Take(2))
-            {
-                <BSBadge>@selector.Key : @selector.Value</BSBadge>
-            }
-        </Template>
-    </Column>
-        <Column Title="Images" TableItem="V1ReplicaSet" Width="30%">
+    <Column Title="Images" TableItem="V1ReplicaSet" Width="30%">
         <Template>
             @foreach (var item in context.Spec.Template.Spec.Containers)
             {
@@ -31,6 +15,23 @@
             }
         </Template>
     </Column>
+    <Column TableItem="V1ReplicaSet" Title="Labels" Width="15%">
+        <Template>
+            @foreach (var label in context.Metadata.Labels.OrEmptyIfNull().Take(2))
+            {
+                <BSBadge Color="Color.Secondary">@label.Key : @label.Value</BSBadge>
+            }
+        </Template>
+    </Column>
+    <Column Title="Selector" TableItem="V1ReplicaSet" Width="15%">
+        <Template>
+            @foreach (var selector in context.Spec.Selector.MatchLabels.OrEmptyIfNull().Take(2))
+            {
+                <BSBadge Color="Color.Secondary">@selector.Key : @selector.Value</BSBadge>
+            }
+        </Template>
+    </Column>
+
     <Column Title="Status" TableItem="V1ReplicaSet" Field="@(x => x.Status.AvailableReplicas)" Sortable="true" Filterable="true" Width="7%">
         <Template>
             @context.Status.AvailableReplicas.GetValueOrDefault()/@context.Status.Replicas

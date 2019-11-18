@@ -6,14 +6,14 @@
             <a href="/Node/@context.Metadata.Name">@context.Metadata.Name</a>
         </Template>
     </Column>
-    <Column TableItem="V1Node" Title="Labels" Width="10%">
+    @*<Column TableItem="V1Node" Title="Labels" Width="10%">
         <Template>
             @foreach (var label in context.Metadata.Labels.OrEmptyIfNull().Take(5))
             {
-                <BSBadge>@label.Key : @label.Value</BSBadge>
+                <BSBadge Color="Color.Secondary">@label.Key : @label.Value</BSBadge>
             }
         </Template>
-    </Column>
+    </Column>*@
     <Column TableItem="V1Node" Title="CPU requests (cores)" Width="15%">
         <Template>
             @(context.Status.Capacity["cpu"])
@@ -34,7 +34,7 @@
             @(((decimal)context.Status.Allocatable["memory"] / 1024 / 1024 / 1024).ToString("#.## Gb"))
         </Template>
     </Column>
-    <Column TableItem="V1Node" Title="Ready" Width="5%">
+    <Column TableItem="V1Node" Title="Ready" Width="10%">
         <Template>
             @context.Status.Conditions.Where(x => x.Type.Equals("Ready")).First().Status
         </Template>

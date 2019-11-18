@@ -6,14 +6,9 @@
             <a href="/@context.Metadata.NamespaceProperty/Pod/@context.Metadata.Name">@context.Metadata.Name</a>
         </Template>
     </Column>
-    <Column TableItem="V1Pod" Title="Ready" Field="@(x => x.Status.ContainerStatuses.FirstOrDefault().Ready)" Sortable="true" Filterable="true" Width="10%">
+        <Column TableItem="V1Pod" Title="Node" Field="@(x => x.Spec.NodeName)" Sortable="true" Filterable="true" Width="30%">
         <Template>
-            @context.Status.ContainerStatuses.OrEmptyIfNull().FirstOrDefault()?.Ready
-        </Template>
-    </Column>
-    <Column TableItem="V1Pod" Title="Phase" Field="@(x => x.Status.Phase)" Sortable="true" Filterable="true" Width="10%">
-        <Template>
-            @context.Status.Phase
+            <a href="/Node/@context.Spec.NodeName">@context.Spec.NodeName</a>
         </Template>
     </Column>
     <Column TableItem="V1Pod" Title="Restarts" Field="@(x => x.Status.ContainerStatuses.OrEmptyIfNull().FirstOrDefault().RestartCount)" Sortable="true" Filterable="true" Width="10%">
@@ -21,9 +16,9 @@
             @context.Status.ContainerStatuses.OrEmptyIfNull().FirstOrDefault()?.RestartCount
         </Template>
     </Column>
-    <Column TableItem="V1Pod" Title="Node" Field="@(x => x.Spec.NodeName)" Sortable="true" Filterable="true" Width="30%">
+    <Column TableItem="V1Pod" Title="Status" Field="@(x => x.Status.Phase)" Sortable="true" Filterable="true" Width="10%">
         <Template>
-            <a href="/Node/@context.Spec.NodeName">@context.Spec.NodeName</a>
+            @context.Status.Phase
         </Template>
     </Column>
     <Column TableItem="V1Pod" Title="Age" Field="@(x => x.Metadata.CreationTimestamp)" Sortable="true" Filterable="true" Width="7%">

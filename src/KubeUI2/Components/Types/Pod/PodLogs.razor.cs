@@ -5,7 +5,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace KubeUI2.Components
+namespace KubeUI2.Components.Types
 {
     public partial class PodLogs : IDisposable
     {
@@ -24,7 +24,7 @@ namespace KubeUI2.Components
         [Inject]
         protected IKubernetes Client { get; set; }
 
-        private string Logs { get; set; }
+        private string Logs;
 
         private Timer timer;
 

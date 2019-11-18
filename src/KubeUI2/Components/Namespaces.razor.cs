@@ -13,7 +13,7 @@ namespace KubeUI2.Components
         protected IState state { get; set; }
 
         [Inject]
-        protected IKubernetes client { get; set; }
+        protected IKubernetes Client { get; set; }
 
         [Inject]
         protected NavigationManager navigationManager { get; set; }
@@ -22,7 +22,7 @@ namespace KubeUI2.Components
 
         protected override async Task OnInitializedAsync()
         {
-            Options = (await client.ListNamespaceAsync())?.Items.Select(x => x.Metadata?.Name).ToList();
+            Options = (await Client.ListNamespaceAsync())?.Items.Select(x => x.Metadata?.Name).ToList();
 
             StateHasChanged();
         }
@@ -30,6 +30,7 @@ namespace KubeUI2.Components
         private void OnChange(ChangeEventArgs args)
         {
             state.Namespace = args.Value.ToString();
+            navigationManager.NavigateTo("/");
         }
     }
 }

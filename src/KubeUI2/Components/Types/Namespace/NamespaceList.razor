@@ -10,7 +10,7 @@
         <Template>
             @foreach (var label in context.Metadata.Labels.OrEmptyIfNull())
             {
-                <BSBadge>@label.Key : @label.Value</BSBadge>
+                <BSBadge Color="Color.Secondary">@label.Key : @label.Value</BSBadge>
             }
         </Template>
     </Column>
