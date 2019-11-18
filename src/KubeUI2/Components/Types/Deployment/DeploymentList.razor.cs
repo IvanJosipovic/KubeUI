@@ -57,7 +57,7 @@ namespace KubeUI2.Components.Types
             Items = items;
         }
 
-        public async Task Delete(V1Deployment item)
+        private async Task Delete(V1Deployment item)
         {
             await Client.DeleteNamespacedDeploymentAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
 

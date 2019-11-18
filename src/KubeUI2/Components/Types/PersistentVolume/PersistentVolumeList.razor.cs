@@ -40,7 +40,7 @@ namespace KubeUI2.Components.Types
             Items = items;
         }
 
-        public async Task Delete(V1PersistentVolume item)
+        private async Task Delete(V1PersistentVolume item)
         {
             await Client.DeletePersistentVolumeAsync(item.Metadata.Name);
 

@@ -6,7 +6,7 @@
             <a href="/Namespace/@context.Metadata.Name">@context.Metadata.Name</a>
         </Template>
     </Column>
-    <Column TableItem="V1Namespace" Title="Labels" Width="30%">
+    <Column TableItem="V1Namespace" Title="Labels" Width="57%">
         <Template>
             @foreach (var label in context.Metadata.Labels.OrEmptyIfNull())
             {
@@ -24,7 +24,7 @@
             @string.Format("{0:N0}d", (DateTime.UtcNow - context.Metadata.CreationTimestamp).Value.TotalDays)
         </Template>
     </Column>
-    <Column TableItem="V1Namespace" Title="Actions" Align="Align.Center" Width="10%">
+    <Column TableItem="V1Namespace" Title="Actions" Align="Align.Center" Width="5%">
         <Template>
             <BSButtonGroup DropdownDirection="DropdownDirection.Left">
                 <BSDropdown>

@@ -52,7 +52,7 @@ namespace KubeUI2.Components.Types
             Items = items;
         }
 
-        public async Task Delete(V1Pod item)
+        private async Task Delete(V1Pod item)
         {
             await Client.DeleteNamespacedPodAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
 

@@ -39,5 +39,12 @@ namespace KubeUI2.Components.Types
 
             Items = items;
         }
+
+        private async Task Delete(V1Node item)
+        {
+            await Client.DeleteNodeAsync(item.Metadata.Name);
+
+            await Update();
+        }
     }
 }

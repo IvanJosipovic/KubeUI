@@ -29,7 +29,7 @@ namespace KubeUI2.Components.Types
             Items = (await Client.ListCustomResourceDefinitionAsync())?.Items;
         }
 
-        public async Task Delete(V1CustomResourceDefinition crd)
+        private async Task Delete(V1CustomResourceDefinition crd)
         {
             await Client.DeleteCustomResourceDefinitionAsync(crd.Metadata.Name);
 
