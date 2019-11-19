@@ -21,6 +21,9 @@ namespace KubeUI2.Components.Types
         [Parameter]
         public int Lines { get; set; }
 
+        [Parameter]
+        public bool Previous { get; set; }
+
         [Inject]
         protected IKubernetes Client { get; set; }
 
@@ -28,9 +31,9 @@ namespace KubeUI2.Components.Types
 
         private Timer timer;
 
-        protected override void OnInitialized()
+        protected override void OnParametersSet()
         {
-            timer = new Timer(async _ => await Update(), null, 0, 10000);
+            SetTimer();
         }
 
         public void Dispose()
@@ -38,9 +41,18 @@ namespace KubeUI2.Components.Types
             timer.Dispose();
         }
 
+        public void SetTimer()
+        {
+            if (timer != null)
+            {
+                timer.Dispose();
+            }
+            timer = new Timer(async _ => await Update(), null, 0, 10000);
+        }
+
         private async Task Update()
         {
-            var stream = await Client.ReadNamespacedPodLogAsync(Name, Namespace, container: Container, tailLines: Lines);
+            var stream = await Client.ReadNamespacedPodLogAsync(Name, Namespace, container: Container, tailLines: Lines, previous: Previous);
 
             using (var reader = new StreamReader(stream))
             {

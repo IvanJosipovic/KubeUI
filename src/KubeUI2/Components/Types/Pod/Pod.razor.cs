@@ -33,6 +33,8 @@ namespace KubeUI2.Components.Types
 
         private int LogLineCount = 50;
 
+        private bool PreviousLog = false;
+
         protected override async Task OnInitializedAsync()
         {
             handler = async (xo, e) =>

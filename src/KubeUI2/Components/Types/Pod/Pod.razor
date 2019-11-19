@@ -37,11 +37,22 @@
             <BSTab>
                 <BSTabLabel>Logs</BSTabLabel>
                 <BSTabContent>
-                    <select class="form-control form-control-sm" @onchange="@((e) => LogLineCount = int.Parse(e.Value.ToString()))" title="Line Count" style="width: 100px">
-                        <option value="50" selected="@(50 == LogLineCount)">50</option>
-                        <option value="100" selected="@(100 == LogLineCount)">100</option>
-                        <option value="200" selected="@(200 == LogLineCount)">200</option>
-                    </select>
+                    <br />
+                    <div class="form-check form-check-inline">
+                        Lines:
+                        <select class="form-check-input form-control" @onchange="@((e) => { LogLineCount = int.Parse(e.Value.ToString()); StateHasChanged(); })" title="Line Count" style="width: 100px">
+                            <option value="50" selected="@(50 == LogLineCount)">50</option>
+                            <option value="100" selected="@(100 == LogLineCount)">100</option>
+                            <option value="200" selected="@(200 == LogLineCount)">200</option>
+                        </select>
+
+                        <input class="form-check-input" type="checkbox" id="previousLogs" @onchange="@((e) => { PreviousLog = bool.Parse(e.Value.ToString()); StateHasChanged(); })" />
+                        <label class="form-check-label" for="previousLogs">
+                            Previous
+                        </label>
+                    </div>
+                    <br />
+                    <br />
                     <BSTabGroup>
                         <BSTabList>
                             @foreach (var cont in Item.Spec.Containers)
@@ -49,7 +60,7 @@
                                 <BSTab>
                                     <BSTabLabel>@cont.Name</BSTabLabel>
                                     <BSTabContent>
-                                        <PodLogs Name="@Name" Namespace="@Namespace" Container="@cont.Name" Lines="@LogLineCount" />
+                                        <PodLogs Name="@Name" Namespace="@Namespace" Container="@cont.Name" Lines="@LogLineCount" Previous="@PreviousLog" />
                                     </BSTabContent>
                                 </BSTab>
                             }
