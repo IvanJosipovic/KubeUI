@@ -1,2 +1,44 @@
 ﻿@page "/Connect"
-<h1>Hello, world!</h1>
+<h1>Connect</h1>
+
+<br />
+<ul>
+    <li>
+        Kubectl Proxy + API Server change
+        <ul>
+            <li>
+                Kubectl Proxy -p 8888
+            </li>
+            <li>
+                Add the following line to the <a href="https://kubernetes.io/docs/reference/command-line-tools-reference/kube-apiserver/">Kube API Server</a> configuration: <br />
+                --cors-allowed-origins=https://KubeUI.com
+            </li>
+        </ul>
+    </li>
+
+    <br />
+    
+    <li>
+        Kubectl Proxy + CORSProxy
+        <ul>
+            <li>
+                Kubectl Proxy -p 8888
+            </li>
+            <li>
+                Run CorsProxy <br />
+                <a href="https://github.com/IvanJosipovic/CORSProxy">CorsProxy</a>
+            </li>
+        </ul>
+    </li>
+
+    <br />
+
+    <li>
+        KubeUI Standalone
+        <ul>
+            <li>
+                TBD
+            </li>
+        </ul>
+    </li>
+</ul>
