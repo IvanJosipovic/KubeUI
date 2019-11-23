@@ -20,7 +20,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Blazor.DevServer" Version="3.1.0-preview3.19555.2" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="3.1.0-preview3.19553.2" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.0-preview3.19553.2" />    
-    <PackageReference Include="KubernetesClient" Version="1.6.4" />
+    <PackageReference Include="KubernetesClient" Version="1.6.5" />
   </ItemGroup>
 
   <ItemGroup>
