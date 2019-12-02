@@ -1,6 +1,6 @@
 ﻿@namespace KubeUI2.Components.Types
 <h2>
-    <a href="/@Namespace/ReplicaSets">Replica Set</a> / @Item?.Metadata.Name
+    <a href="/@State.Namespace/ReplicaSets">Replica Set</a> / @Item?.Metadata.Name
 </h2>
 
 <br />
@@ -16,7 +16,8 @@
                     <h4>Deployment</h4>
                     <DeploymentList Namespace="@Item.Metadata.NamespaceProperty" Filter="@(x => Item.Metadata.OwnerReferences.Any(y => y.Uid.Equals(x.Metadata.Uid)))" />
                     <h4>Pods</h4>
-                    <PodList Namespace="@Item.Metadata.NamespaceProperty" Filter="@(x => x.Metadata.OwnerReferences.Any(y => y.Uid.Equals(Item.Metadata.Uid)))" />
+
+                    <PodList Namespace="@Item.Metadata.NamespaceProperty" Filter="@(x => x.Metadata.OwnerReferences.OrEmptyIfNull().Any(y => y.Uid.Equals(Item.Metadata.Uid)))" />
                     <br />
                     <h4>Persistent Volume Claims</h4>
                     <PersistentVolumeClaimList Namespace="@Item.Metadata.NamespaceProperty" Filter="@(x => Item.Spec.Template.Spec.Volumes.Where(y => y.PersistentVolumeClaim != null).Select(y => y.PersistentVolumeClaim.ClaimName).Contains(x.Metadata.Name))" />

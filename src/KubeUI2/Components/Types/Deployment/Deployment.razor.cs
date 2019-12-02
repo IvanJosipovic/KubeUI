@@ -19,10 +19,10 @@ namespace KubeUI2.Components.Types
         public string Name { get; set; }
 
         [Inject]
-        protected IState state { get; set; }
+        protected IState State { get; set; }
 
         [Inject]
-        protected IKubernetes client { get; set; }
+        protected IKubernetes Client { get; set; }
 
         private V1Deployment Item;
 
@@ -32,25 +32,25 @@ namespace KubeUI2.Components.Types
         {
             handler = async (xo, e) =>
             {
-                if (e.PropertyName == State.UILevelNotification || e.PropertyName == State.NamespaceNotification)
+                if (e.PropertyName == KubeUI.Services.State.UILevelNotification || e.PropertyName == KubeUI.Services.State.NamespaceNotification)
                 {
                     await Update();
                 }
             };
 
-            state.PropertyChanged += handler;
+            State.PropertyChanged += handler;
 
             await Update();
         }
 
         public void Dispose()
         {
-            state.PropertyChanged -= handler;
+            State.PropertyChanged -= handler;
         }
 
         private async Task Update()
         {
-            Item = await client.ReadNamespacedDeploymentAsync(Name, Namespace);
+            Item = await Client.ReadNamespacedDeploymentAsync(Name, Namespace);
 
             StateHasChanged();
         }

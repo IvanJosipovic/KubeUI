@@ -16,10 +16,10 @@ namespace KubeUI2.Components.Types
         public string Name { get; set; }
 
         [Inject]
-        protected IState state { get; set; }
+        protected IState State { get; set; }
 
         [Inject]
-        protected IKubernetes client { get; set; }
+        protected IKubernetes Client { get; set; }
 
         private V1ReplicaSet Item;
 
@@ -31,7 +31,7 @@ namespace KubeUI2.Components.Types
 
         private async Task Update()
         {
-            Item = await client.ReadNamespacedReplicaSetAsync(Name, Namespace);
+            Item = await Client.ReadNamespacedReplicaSetAsync(Name, Namespace);
 
             StateHasChanged();
         }
