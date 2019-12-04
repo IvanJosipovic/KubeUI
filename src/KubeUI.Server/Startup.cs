@@ -39,7 +39,7 @@ namespace KubeUI.Server
 #endif
             );
 
-            services.AddSingleton<IState, State>();
+            services.AddScoped<IState, State>();
 
             services.AddScoped<IAppInsights, AppInsights>();
 

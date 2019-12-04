@@ -15,7 +15,6 @@ namespace KubeUI.Services
 
         private readonly ILogger<State> Logger;
 
-        private readonly IJSRuntime JSRuntime;
 
         private readonly IAppInsights appInsights;
 
@@ -26,12 +25,10 @@ namespace KubeUI.Services
             Logger = logger;
         }
 
-        public State(ILogger<State> logger, IJSRuntime JSRuntime, IAppInsights appInsights)
+        public State(ILogger<State> logger, IAppInsights appInsights)
         {
             this.Logger = logger;
-            this.JSRuntime = JSRuntime;
             this.appInsights = appInsights;
-
         }
 
         public Dictionary<Type, Collection<object>> Data { get; set; } = new Dictionary<Type, Collection<object>>();
