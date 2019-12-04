@@ -1,0 +1,75 @@
+﻿@namespace KubeUI.Core.Components.Types
+<h2>
+    <a href="/@State.Namespace/Pods">Pods</a> / @Name
+</h2>
+
+<br />
+@if (Item != null)
+{
+    <BSTabGroup>
+        <BSTabList>
+            <BSTab>
+                <BSTabLabel>Overview</BSTabLabel>
+                <BSTabContent>
+                    <br />
+                    <h4>Connect</h4>
+                    kubectl exec -it @Item.Metadata.Name -n @Item.Metadata.NamespaceProperty /bin/bash
+                    <br />
+                    <br />
+                    <h4>Replica Sets</h4>
+                    <ReplicaSetList Namespace="@Item.Metadata.NamespaceProperty" Filter="@(x => Item.Metadata.OwnerReferences.Any(y => y.Uid.Equals(x.Metadata.Uid)))" />
+
+                    <br />
+                    <h4>Persistent Volume Claims</h4>
+                    <PersistentVolumeClaimList Namespace="@Item.Metadata.NamespaceProperty" Filter="@(x => Item.Spec.Volumes.Where(y => y.PersistentVolumeClaim != null).Select(y => y.PersistentVolumeClaim.ClaimName).Contains(x.Metadata.Name))" />
+                </BSTabContent>
+            </BSTab>
+            <BSTab>
+                <BSTabLabel>Yaml</BSTabLabel>
+                <BSTabContent><pre><code id="yamlViewer" class="language-yaml">@k8s.Yaml.SaveToString(Item)</code></pre></BSTabContent>
+            </BSTab>
+
+            <BSTab>
+                <BSTabLabel>UI</BSTabLabel>
+                <BSTabContent><KubeUI.Core.Components.Dynamic.UI Item="@Item" /></BSTabContent>
+            </BSTab>
+
+            <BSTab>
+                <BSTabLabel>Logs</BSTabLabel>
+                <BSTabContent>
+                    <br />
+                    <div class="form-check form-check-inline">
+                        Lines:
+                        <select class="form-check-input form-control" @onchange="@((e) => { LogLineCount = int.Parse(e.Value.ToString()); StateHasChanged(); })" title="Line Count" style="width: 100px">
+                            <option value="50" selected="@(50 == LogLineCount)">50</option>
+                            <option value="100" selected="@(100 == LogLineCount)">100</option>
+                            <option value="200" selected="@(200 == LogLineCount)">200</option>
+                        </select>
+
+                        <input class="form-check-input" type="checkbox" id="previousLogs" @onchange="@((e) => { PreviousLog = bool.Parse(e.Value.ToString()); StateHasChanged(); })" />
+                        <label class="form-check-label" for="previousLogs">
+                            Previous
+                        </label>
+                    </div>
+                    <br />
+                    <br />
+                    <BSTabGroup>
+                        <BSTabList>
+                            @foreach (var cont in Item.Spec.Containers)
+                            {
+                                <BSTab>
+                                    <BSTabLabel>@cont.Name</BSTabLabel>
+                                    <BSTabContent>
+                                        <PodLogs Name="@Name" Namespace="@Namespace" Container="@cont.Name" Lines="@LogLineCount" Previous="@PreviousLog" />
+                                    </BSTabContent>
+                                </BSTab>
+                            }
+                        </BSTabList>
+                        <BSTabSelectedContent />
+                    </BSTabGroup>
+                </BSTabContent>
+            </BSTab>
+        </BSTabList>
+        <BSTabSelectedContent />
+    </BSTabGroup>
+}

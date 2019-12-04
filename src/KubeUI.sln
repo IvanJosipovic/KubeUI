@@ -8,11 +8,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		..\README.md = ..\README.md
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeUI2", "KubeUI2\KubeUI2.csproj", "{6482A6DC-29A8-47E0-8B64-C67761F87C71}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeUI.Client", "KubeUI2\KubeUI.Client.csproj", "{6482A6DC-29A8-47E0-8B64-C67761F87C71}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeUI.Server", "KubeUI.Server\KubeUI.Server.csproj", "{5C058E7D-B0E5-4185-9648-0024BD2DAFDD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KubeUI.Core", "KubeUI.Core\KubeUI.Core.csproj", "{DED0CC25-76BF-4C49-8FC0-E1FAD99632AB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeUI.Core", "KubeUI.Core\KubeUI.Core.csproj", "{DED0CC25-76BF-4C49-8FC0-E1FAD99632AB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

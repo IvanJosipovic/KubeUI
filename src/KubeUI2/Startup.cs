@@ -1,17 +1,14 @@
 using k8s;
 using KubeUI.Services;
-using KubeUI2;
-using Microsoft.AspNetCore.Blazor.Http;
 using Microsoft.AspNetCore.Components.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using FluentValidation;
 using KubeUI.Validators;
 using System.Net.Http;
 using System.Reflection;
 using System;
 
-namespace KubeUI2
+namespace KubeUI
 {
     public class Startup
     {
@@ -47,7 +44,7 @@ namespace KubeUI2
 
         public void Configure(IComponentsApplicationBuilder app)
         {
-            app.AddComponent<App>("app");
+            app.AddComponent<Core.App>("app");
         }
     }
 }

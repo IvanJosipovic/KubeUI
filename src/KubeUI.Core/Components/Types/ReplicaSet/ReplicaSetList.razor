@@ -1,0 +1,60 @@
+﻿@namespace KubeUI.Core.Components.Types
+
+<Table PageSize="20" TableItem="V1ReplicaSet" Items="Items">
+    <Column TableItem="V1ReplicaSet" Title="Name" Field="@(x => x.Metadata.Name)" Sortable="true" Filterable="true" Width="20%">
+        <Template>
+            <a href="/@context.Metadata.NamespaceProperty/ReplicaSet/@context.Metadata.Name">@context.Metadata.Name</a>
+        </Template>
+    </Column>
+    <Column Title="Images" TableItem="V1ReplicaSet" Width="30%">
+        <Template>
+            @foreach (var item in context.Spec.Template.Spec.Containers)
+            {
+                @item.Image
+                <br />
+            }
+        </Template>
+    </Column>
+    <Column TableItem="V1ReplicaSet" Title="Labels" Width="15%">
+        <Template>
+            @foreach (var label in context.Metadata.Labels.OrEmptyIfNull().Take(2))
+            {
+                <BSBadge Color="Color.Secondary">@label.Key : @label.Value</BSBadge>
+            }
+        </Template>
+    </Column>
+    <Column Title="Selector" TableItem="V1ReplicaSet" Width="15%">
+        <Template>
+            @foreach (var selector in context.Spec.Selector.MatchLabels.OrEmptyIfNull().Take(2))
+            {
+                <BSBadge Color="Color.Secondary">@selector.Key : @selector.Value</BSBadge>
+            }
+        </Template>
+    </Column>
+
+    <Column Title="Status" TableItem="V1ReplicaSet" Field="@(x => x.Status.AvailableReplicas)" Sortable="true" Filterable="true" Width="7%">
+        <Template>
+            @context.Status.AvailableReplicas.GetValueOrDefault()/@context.Status.Replicas
+        </Template>
+    </Column>
+    <Column Title="Age" TableItem="V1ReplicaSet" Field="@(x => x.Metadata.CreationTimestamp)" Sortable="true" Filterable="true" Width="7%">
+        <Template>
+            @string.Format("{0:N0}d", (DateTime.UtcNow - context.Metadata.CreationTimestamp).Value.TotalDays)
+        </Template>
+    </Column>
+    <Column TableItem="V1ReplicaSet" Title="Actions" Align="Align.Center" Width="5%">
+        <Template>
+            <BSButtonGroup DropdownDirection="DropdownDirection.Left">
+                <BSDropdown>
+                    <BSDropdownToggle Color="Color.Secondary" Size="Size.Small">⚙️</BSDropdownToggle>
+                    <BSDropdownMenu>
+                        <BSDropdownItem Href="javascript:void(0);" OnClick="@(async () => await Delete(context))">Delete</BSDropdownItem>
+                        <BSDropdownItem Href="javascript:void(0);" OnClick="@(async () => await ScaleUp(context))">Scale Up</BSDropdownItem>
+                        <BSDropdownItem Href="javascript:void(0);" OnClick="@(async () => await ScaleDown(context))">Scale Down</BSDropdownItem>
+                    </BSDropdownMenu>
+                </BSDropdown>
+            </BSButtonGroup>
+        </Template>
+    </Column>
+    <Pager TableItem="V1ReplicaSet" ShowPageNumber="true" ShowTotalCount="true" />
+</Table>

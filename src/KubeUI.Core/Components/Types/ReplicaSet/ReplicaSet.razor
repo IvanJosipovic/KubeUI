@@ -1,0 +1,40 @@
+﻿@namespace KubeUI.Core.Components.Types
+<h2>
+    <a href="/@State.Namespace/ReplicaSets">Replica Set</a> / @Item?.Metadata.Name
+</h2>
+
+<br />
+@if (Item != null)
+{
+    <BSTabGroup>
+        <BSTabList>
+            <BSTab>
+                <BSTabLabel>Overview</BSTabLabel>
+                <BSTabContent>
+                    <br />
+
+                    <h4>Deployment</h4>
+                    <DeploymentList Namespace="@Item.Metadata.NamespaceProperty" Filter="@(x => Item.Metadata.OwnerReferences.Any(y => y.Uid.Equals(x.Metadata.Uid)))" />
+                    <h4>Pods</h4>
+
+                    <PodList Namespace="@Item.Metadata.NamespaceProperty" Filter="@(x => x.Metadata.OwnerReferences.OrEmptyIfNull().Any(y => y.Uid.Equals(Item.Metadata.Uid)))" />
+                    <br />
+                    <h4>Persistent Volume Claims</h4>
+                    <PersistentVolumeClaimList Namespace="@Item.Metadata.NamespaceProperty" Filter="@(x => Item.Spec.Template.Spec.Volumes.Where(y => y.PersistentVolumeClaim != null).Select(y => y.PersistentVolumeClaim.ClaimName).Contains(x.Metadata.Name))" />
+                </BSTabContent>
+            </BSTab>
+
+            <BSTab>
+                <BSTabLabel>Yaml</BSTabLabel>
+                <BSTabContent><pre><code id="yamlViewer" class="language-yaml">@k8s.Yaml.SaveToString(Item)</code></pre></BSTabContent>
+            </BSTab>
+
+            <BSTab>
+                <BSTabLabel>UI</BSTabLabel>
+                <BSTabContent><KubeUI.Core.Components.Dynamic.UI Item="@Item" /></BSTabContent>
+            </BSTab>
+
+        </BSTabList>
+        <BSTabSelectedContent />
+    </BSTabGroup>
+}
