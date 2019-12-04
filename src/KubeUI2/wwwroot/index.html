@@ -44,8 +44,12 @@
     <app>
         <div class="loader">Loading...</div>
     </app>
-    <!-- temporary WORKAROUND for Safari https://github.com/mono/mono/issues/15588#issuecomment-529056521 -->
-    <script>var Module;</script>
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+    <script src="_content/BlazorTable/BlazorTable.min.js"></script>
     <script src="_framework/blazor.webassembly.js"></script>
 </body>
 </html>
