@@ -15,7 +15,7 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 3.1.100-preview3-014645
+        dotnet-version: 3.1.100
 
     - name: Publish
       working-directory: src/KubeUI2
@@ -30,9 +30,8 @@ jobs:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN_CI }}
         NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID_CI }}
         
-    - name: Set Test Address
+    - name: Get Test Address
       run: |
         $url = $(ConvertFrom-Json '${{ steps.netlify.outputs.output }}').deploy_url;
         Write-Output $url;
       shell: pwsh
-
