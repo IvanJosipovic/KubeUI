@@ -5,6 +5,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="wwwroot\index.html" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="WebWindow.Blazor" Version="0.1.0-20191120.6" />
   </ItemGroup>
 

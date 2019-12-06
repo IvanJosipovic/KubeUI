@@ -20,4 +20,10 @@
     <Folder Include="wwwroot\lib\twitter-bootstrap\js\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Update="libman.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
