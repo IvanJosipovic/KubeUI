@@ -18,7 +18,7 @@ jobs:
         dotnet-version: 3.1.100
 
     - name: Publish
-      working-directory: src/KubeUI.Client
+      working-directory: src/KubeUI.Blazor
       run: dotnet publish --configuration Release
 
     - name: Deploy to Test
