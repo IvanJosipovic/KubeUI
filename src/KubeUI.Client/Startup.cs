@@ -26,7 +26,7 @@ namespace KubeUI
 
             services.AddScoped<IAppInsights, AppInsights>();
 
-            var config = new KubernetesClientConfiguration { Host = "http://127.0.0.1:5000" };
+            var config = new KubernetesClientConfiguration { Host = "http://127.0.0.1:8888" };
             services.AddSingleton(config);
 
             // Setup the http client

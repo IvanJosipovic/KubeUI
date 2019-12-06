@@ -9,7 +9,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="manifest" href="/site.webmanifest">
+    <link rel="manifest" href="/manifest.json">
     <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
     <meta name="msapplication-TileColor" content="#da532c">
     <meta name="theme-color" content="#ffffff">
@@ -27,7 +27,7 @@
             return appInsights.trackPageView();
         };
         window.trackEvent = (name) => {
-            return appInsights.trackEvent({name: name});
+            return appInsights.trackEvent({ name: name });
         };
         window.loadData = (key) => {
             return localStorage.getItem(key);
@@ -36,9 +36,9 @@
             return localStorage.setItem(key, data);
         };
     </script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" />
-    <link href="css/site.css" rel="stylesheet" />
+    <link href="_content/KubeUI.Core/lib/twitter-bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="_content/KubeUI.Core/lib/font-awesome/css/font-awesome.min.css" rel="stylesheet" />
+    <link href="_content/KubeUI.Core/css/site.css" rel="stylesheet" />
 </head>
 <body>
     <app>
