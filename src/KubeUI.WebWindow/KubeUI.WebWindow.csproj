@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WebWindow.Blazor" Version="0.1.0-20191120.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\KubeUI.Core\KubeUI.Core.csproj" />
+  </ItemGroup>
+
+</Project>
