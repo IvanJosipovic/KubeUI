@@ -25,7 +25,7 @@ jobs:
       id: netlify
       uses: ivanjosipovic/actions/cli@master
       with:
-        args: deploy --json -d src/KubeUI.Client/bin/Release/netstandard2.1/publish/KubeUI.Client/dist/
+        args: deploy --json -d src/KubeUI.Blazor/bin/Release/netstandard2.1/publish/KubeUI.Blazor/dist/
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN_CI }}
         NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID_CI }}

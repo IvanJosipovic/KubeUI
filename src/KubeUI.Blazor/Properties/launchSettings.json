@@ -16,7 +16,7 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
-    "KubeUI": {
+    "KubeUI.Blazor": {
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
