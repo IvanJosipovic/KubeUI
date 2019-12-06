@@ -4,7 +4,7 @@
     <TargetFramework>netstandard2.1</TargetFramework>
     <LangVersion>latest</LangVersion>
     <RazorLangVersion>3.0</RazorLangVersion>
-    <BlazorLinkOnBuild>true</BlazorLinkOnBuild>
+    <BlazorLinkOnBuild Condition="'$(Configuration)'=='Debug'">false</BlazorLinkOnBuild>
     <ApplicationInsightsResourceId>/subscriptions/610de101-7d90-48c6-88fb-e2f72dc99a3e/resourcegroups/PayAsYouGo/providers/microsoft.insights/components/KubeUI</ApplicationInsightsResourceId>
     <ApplicationInsightsAnnotationResourceId>/subscriptions/610de101-7d90-48c6-88fb-e2f72dc99a3e/resourcegroups/PayAsYouGo/providers/microsoft.insights/components/KubeUI</ApplicationInsightsAnnotationResourceId>
   </PropertyGroup>
