@@ -7,10 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="BlazorFileSaver" Version="3.1.0" />
     <PackageReference Include="BlazorStrap" Version="1.1.0-preview1-03" />
-    <PackageReference Include="BlazorTable" Version="1.0.1" />
-    <PackageReference Include="FluentValidation" Version="8.5.1" />
-    <PackageReference Include="KubernetesClient" Version="1.6.5" />
+    <PackageReference Include="BlazorTable" Version="1.0.2" />
+    <PackageReference Include="FluentValidation" Version="8.6.0" />
+    <PackageReference Include="KubernetesClient" Version="1.6.6" />
     <PackageReference Include="Microsoft.AspNetCore.Components" Version="3.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="3.1.0" />
   </ItemGroup>
