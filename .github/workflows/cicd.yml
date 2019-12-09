@@ -34,8 +34,8 @@ jobs:
       shell: pwsh
 
   build2:
-	timeout-minutes: 10
-	runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
