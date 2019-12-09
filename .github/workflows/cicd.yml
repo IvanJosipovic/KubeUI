@@ -4,6 +4,7 @@ on: [push]
 
 jobs:
   build:
+    name: Build Blazor
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -34,6 +35,7 @@ jobs:
       shell: pwsh
 
   build2:
+    name: Build WebWindow
     timeout-minutes: 10
     runs-on: ${{ matrix.os }}
     strategy:
@@ -55,6 +57,7 @@ jobs:
         dotnet-version: 3.1.100
 
     - name: Publish
+      working-directory: src/KubeUI.WebWindow
       run: dotnet publish -r ${{matrix.RUNTIME}} -c Release -p:PublishSingleFile=false
 
     - uses: actions/upload-artifact@v1
