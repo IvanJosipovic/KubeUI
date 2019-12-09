@@ -4,11 +4,8 @@ on: [push]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-    
     timeout-minutes: 10
-    
     steps:
     - uses: actions/checkout@v1
 
@@ -35,3 +32,32 @@ jobs:
         $url = $(ConvertFrom-Json '${{ steps.netlify.outputs.output }}').deploy_url;
         Write-Output $url;
       shell: pwsh
+
+  build2:
+	timeout-minutes: 10
+	runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        include:
+        - os: windows-latest
+          RUNTIME: win-x64
+        - os: ubuntu-latest
+          RUNTIME: linux-x64
+        - os: macos-latest
+          RUNTIME: osx-x64
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.100
+
+    - name: Publish
+      run: dotnet publish -r ${{matrix.RUNTIME}} -c Release -p:PublishSingleFile=false
+
+    - uses: actions/upload-artifact@v1
+      with:
+        name: KubeUI-${{matrix.RUNTIME}}
+        path: src/KubeUI.WebWindow/bin/Release/netcoreapp3.1/${{matrix.RUNTIME}}/publish

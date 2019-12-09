@@ -14,7 +14,7 @@ namespace KubeUI.WebWindow
         {
             services.AddLogging(builder => builder
 #if DEBUG
-                    .SetMinimumLevel(LogLevel.Trace)
+                    .SetMinimumLevel(LogLevel.Information)
 #else
                     .SetMinimumLevel(LogLevel.Warning)
 #endif
