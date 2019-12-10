@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   build:
-    name: Build Blazor
+    name: Build Wasm
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -16,14 +16,14 @@ jobs:
         dotnet-version: 3.1.100
 
     - name: Publish
-      working-directory: src/KubeUI.Blazor
+      working-directory: src/KubeUI.Wasm
       run: dotnet publish --configuration Release --nologo
 
     - name: Deploy to Test
       id: netlify
       uses: ivanjosipovic/actions/cli@master
       with:
-        args: deploy --json -d src/KubeUI.Blazor/bin/Release/netstandard2.1/publish/KubeUI.Blazor/dist/
+        args: deploy --json -d src/KubeUI.Wasm/bin/Release/netstandard2.1/publish/KubeUI.Wasm/dist/
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN_CI }}
         NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID_CI }}
