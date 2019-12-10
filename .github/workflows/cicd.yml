@@ -17,7 +17,7 @@ jobs:
 
     - name: Publish
       working-directory: src/KubeUI.Blazor
-      run: dotnet publish --configuration Release
+      run: dotnet publish --configuration Release --nologo
 
     - name: Deploy to Test
       id: netlify
