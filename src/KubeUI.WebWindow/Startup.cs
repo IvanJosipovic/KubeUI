@@ -25,6 +25,9 @@ namespace KubeUI.WebWindow
             services.AddScoped<IAppInsights, AppInsights>();
 
             var config = new KubernetesClientConfiguration { Host = "http://127.0.0.1:8888" };
+
+            //var config = KubernetesClientConfiguration.BuildConfigFromConfigFile();
+
             services.AddSingleton(config);
 
             // Setup the http client
