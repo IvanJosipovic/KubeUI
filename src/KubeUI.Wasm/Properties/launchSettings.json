@@ -11,12 +11,11 @@
     "IIS Express": {
       "commandName": "IISExpress",
       "launchBrowser": true,
-      "launchUrl": "Deployments",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
-    "KubeUI.Blazor": {
+    "KubeUI.Wasm": {
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {

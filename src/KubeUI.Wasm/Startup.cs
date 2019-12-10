@@ -8,7 +8,7 @@ using System.Net.Http;
 using System.Reflection;
 using System;
 
-namespace KubeUI.Blazor
+namespace KubeUI.Wasm
 {
     public class Startup
     {

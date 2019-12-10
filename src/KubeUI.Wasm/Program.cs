@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Blazor.Hosting;
 
-namespace KubeUI.Blazor
+namespace KubeUI.Wasm
 {
     public class Program
     {

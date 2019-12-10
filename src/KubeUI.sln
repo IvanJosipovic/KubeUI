@@ -9,7 +9,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		..\README.md = ..\README.md
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeUI.Blazor", "KubeUI.Blazor\KubeUI.Blazor.csproj", "{6482A6DC-29A8-47E0-8B64-C67761F87C71}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeUI.Wasm", "KubeUI.Wasm\KubeUI.Wasm.csproj", "{6482A6DC-29A8-47E0-8B64-C67761F87C71}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeUI.Core", "KubeUI.Core\KubeUI.Core.csproj", "{DED0CC25-76BF-4C49-8FC0-E1FAD99632AB}"
 EndProject
