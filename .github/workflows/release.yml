@@ -25,7 +25,6 @@ jobs:
       shell: pwsh
       
     - name: Deploy to Production
-      if: github.ref == 'refs/heads/master'
       uses: ivanjosipovic/actions/cli@master
       with:
         args: deploy --prod --json -d src/KubeUI.Wasm/bin/Release/netstandard2.1/publish/KubeUI.Wasm/dist/
@@ -34,7 +33,6 @@ jobs:
         NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
 
     - name: Purge CDN
-      if: github.ref == 'refs/heads/master'
       run: |
         $Params = @{
           Method = 'Post'
