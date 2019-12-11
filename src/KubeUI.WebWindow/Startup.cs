@@ -24,15 +24,14 @@ namespace KubeUI.WebWindow
 
             services.AddScoped<IAppInsights, AppInsights>();
 
-            var config = new KubernetesClientConfiguration { Host = "http://127.0.0.1:8888" };
+            //var config = new KubernetesClientConfiguration { Host = "http://127.0.0.1:8888" };
 
-            //var config = KubernetesClientConfiguration.BuildConfigFromConfigFile();
+            var config = KubernetesClientConfiguration.BuildConfigFromConfigFile();
 
             services.AddSingleton(config);
 
-            // Setup the http client
-            services.AddHttpClient("K8s")
-                .AddTypedClient<IKubernetes>((httpClient, serviceProvider) => new Kubernetes(serviceProvider.GetRequiredService<KubernetesClientConfiguration>(), httpClient));
+            // Setup the IKubernetes client
+            services.AddSingleton<IKubernetes>((serviceProvider) => new Kubernetes(serviceProvider.GetRequiredService<KubernetesClientConfiguration>()));
 
             var cfg = new FluentValidationMvcConfiguration();
             cfg.RegisterValidatorsFromAssemblyContaining<Startup>();
