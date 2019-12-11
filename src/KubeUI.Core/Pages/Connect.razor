@@ -1,0 +1,72 @@
+﻿@page "/Connect"
+@using System.Reflection
+
+<h1>Connect</h1>
+
+<br />
+<BSRow>
+    <BSCol SM="6" MD="6" LG="6">
+        <BSCard>
+            <BSCard CardType="CardType.Header"><h4>Browser</h4></BSCard>
+            <BSCard CardType="CardType.Body">
+                <BSCard CardType="CardType.Text">
+                    <strong>Please Note: </strong>As this version of KubeUI operates in the browser, it's limited by <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS">CORS</a>.
+                    <br />
+                    <br />
+                    There are three options to get around CORS:
+                    <ol>
+                        <li>
+                            Download KubeUI Desktop
+                        </li>
+
+                        <br />
+
+                        <li>
+                            Kubectl Proxy + API Server change
+                            <ul>
+                                <li>
+                                    Kubectl Proxy -p 8888
+                                </li>
+                                <li>
+                                    Add the following line to the <a href="https://kubernetes.io/docs/reference/command-line-tools-reference/kube-apiserver/">Kube API Server</a> configuration: <br />
+                                    --cors-allowed-origins=https://KubeUI.com
+                                </li>
+                            </ul>
+                        </li>
+
+                        <br />
+
+                        <li>
+                            Kubectl Proxy + CORSProxy
+                            <ul>
+                                <li>
+                                    Kubectl Proxy -p 8888
+                                </li>
+                                <li>
+                                    Run CorsProxy <br />
+                                    <a href="https://github.com/IvanJosipovic/CORSProxy">CorsProxy</a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ol>
+                </BSCard>
+            </BSCard>
+        </BSCard>
+    </BSCol>
+    <BSCol SM="6" MD="6" LG="6">
+        <BSCard>
+            <BSCard CardType="CardType.Header"><h4>Desktop</h4></BSCard>
+            <BSCard CardType="CardType.Body">
+                <BSCard CardType="CardType.Title">A Desktop version of KubeUI with no restrictions.</BSCard>
+                <BSCard CardType="CardType.Text"><strong>Please Note: </strong>Windows users will need to install <a href="https://www.microsoftedgeinsider.com/en-us/">Edge Beta</a> or be on Windows 10 build 2004.</BSCard>
+                <BSButton ButtonType="ButtonType.Link" Href="@($"https://github.com/IvanJosipovic/KubeUI/releases/download/v{version}/KubeUI-win-x64.zip")">Get Win x64</BSButton>
+                <BSButton ButtonType="ButtonType.Link" Href="@($"https://github.com/IvanJosipovic/KubeUI/releases/download/v{version}/KubeUI-linux-x64.zip")">Get Linux x64</BSButton>
+                <BSButton ButtonType="ButtonType.Link" Href="@($"https://github.com/IvanJosipovic/KubeUI/releases/download/v{version}/KubeUI-osx-x64.zip")">Get Mac x64</BSButton>
+            </BSCard>
+        </BSCard>
+    </BSCol>
+</BSRow>
+
+@code{
+    string version = Assembly.GetEntryAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion.ToString();
+}

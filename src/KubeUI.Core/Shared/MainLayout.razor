@@ -1,0 +1,21 @@
+@inherits LayoutComponentBase
+
+<div class="sidebar">
+    <NavMenu />
+</div>
+
+<div class="main">
+    <div class="top-row px-4 fixed-top">
+        <KubeUI.Core.Components.UILevel />
+        <KubeUI.Core.Components.Namespaces />
+        <div class="ml-md-auto row">
+            <NavLink class="" href="https://github.com/IvanJosipovic/KubeUI/issues" target="_blank"><i class="fa fa-github"></i> Issues</NavLink>
+            <div>&nbsp;</div>
+            <NavLink class="" href="about"><i class="fa fa-question"></i> About</NavLink>
+        </div>
+    </div>
+
+    <div class="content px-4">
+        @Body
+    </div>
+</div>

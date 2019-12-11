@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using KubeUI;
+using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -8,7 +9,7 @@ using System.Reflection;
 using System.Text;
 using System.Xml;
 
-namespace KubeUI.Core
+namespace KubeUI
 {
     /// <summary>
     /// Utility class to provide documentation for various types where available with the assembly
@@ -59,10 +60,11 @@ namespace KubeUI.Core
         /// <returns></returns>
         public static string GetSummary(this MemberInfo memberInfo)
         {
-            var element = memberInfo.GetDocumentation();
-            var summaryElm = element?.SelectSingleNode("summary");
-            if (summaryElm == null) return "";
-            return summaryElm.InnerText.Trim();
+            return "N/A";
+            //var element = memberInfo.GetDocumentation();
+            //var summaryElm = element?.SelectSingleNode("summary");
+            //if (summaryElm == null) return "";
+            //return summaryElm.InnerText.Trim();
         }
 
         /// <summary>
@@ -83,10 +85,11 @@ namespace KubeUI.Core
         /// <returns></returns>
         public static string GetSummary(this Type type)
         {
-            var element = type.GetDocumentation();
-            var summaryElm = element?.SelectSingleNode("summary");
-            if (summaryElm == null) return "";
-            return summaryElm.InnerText.Trim();
+            return "N/A";
+            //var element = type.GetDocumentation();
+            //var summaryElm = element?.SelectSingleNode("summary");
+            //if (summaryElm == null) return "";
+            //return summaryElm.InnerText.Trim();
         }
 
         /// <summary>
@@ -166,7 +169,10 @@ namespace KubeUI.Core
             {
                 using (MemoryStream ms = new MemoryStream())
                 {
-                    assembly.GetManifestResourceStream($"{assemblyName}.{assemblyName}.xml").CopyTo(ms);
+                    
+                    var xml = $"KubeUI.{assemblyName}.xml";
+                    Console.WriteLine(xml);
+                    typeof(Utillities).Assembly.GetManifestResourceStream(xml).CopyTo(ms);
                     ms.Seek(0, SeekOrigin.Begin);
 
                     var xmlDocument = new XmlDocument();

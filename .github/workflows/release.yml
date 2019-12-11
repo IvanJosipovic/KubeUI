@@ -1,0 +1,147 @@
+on:
+  push:
+    # Sequence of patterns matched against refs/tags
+    tags:
+    - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+
+name: Release
+
+jobs:
+  build:
+    name: Build Wasm
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.100
+
+    - name: Publish
+      working-directory: src/KubeUI.Wasm
+      run: dotnet publish --configuration Release -p:Version=${GITHUB_REF##*/v} --nologo
+
+    - name: Deploy to Production
+      if: github.ref == 'refs/heads/master'
+      uses: ivanjosipovic/actions/cli@master
+      with:
+        args: deploy --prod --json -d src/KubeUI.Wasm/bin/Release/netstandard2.1/publish/KubeUI.Wasm/dist/
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
+    - name: Purge CDN
+      if: github.ref == 'refs/heads/master'
+      run: |
+        $Params = @{
+          Method = 'Post'
+          URI = 'https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_SITE_ID }}/purge_cache'
+          Headers = @{
+            'X-Auth-Email'= 'admin@kubeui.com';
+            'X-Auth-Key'= '${{ secrets.CLOUDFLARE_AUTH_TOKEN }}'
+          }
+          Body = '{"purge_everything":true}'
+          ContentType = 'application/json'
+        }
+        Invoke-RestMethod @Params
+      shell: pwsh    
+
+  build2:
+    name: Build WebWindow
+    timeout-minutes: 10
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        include:
+        - os: windows-latest
+          RUNTIME: win-x64
+        - os: ubuntu-latest
+          RUNTIME: linux-x64
+        - os: macos-latest
+          RUNTIME: osx-x64
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.100
+
+    - name: Publish
+      working-directory: src/KubeUI.WebWindow
+      run: dotnet publish -r ${{matrix.RUNTIME}} -c Release -p:SelfContained=true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:Version=${GITHUB_REF##*/v} --nologo
+
+    - uses: actions/upload-artifact@v1
+      with:
+        name: KubeUI-${{matrix.RUNTIME}}
+        path: src/KubeUI.WebWindow/bin/Release/netcoreapp3.1/${{matrix.RUNTIME}}/publish
+
+  release:
+    name: Upload Release Asset
+    needs: build2
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: true
+
+      - name: Download artifact win-x64
+        uses: actions/download-artifact@v1
+        with:
+          name: KubeUI-win-x64
+          
+      - name: Download artifact linux-x64
+        uses: actions/download-artifact@v1
+        with:
+          name: KubeUI-linux-x64
+          
+      - name: Download artifact osx-x64
+        uses: actions/download-artifact@v1
+        with:
+          name: KubeUI-osx-x64
+
+      - name: Zip Files
+        run: |
+          zip -r KubeUI-win-x64.zip KubeUI-win-x64/
+          zip -r KubeUI-linux-x64.zip KubeUI-linux-x64/
+          zip -r KubeUI-osx-x64.zip KubeUI-osx-x64/
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./KubeUI-win-x64.zip
+          asset_name: KubeUI-win-x64.zip
+          asset_content_type: application/zip
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./KubeUI-linux-x64.zip
+          asset_name: KubeUI-linux-x64.zip
+          asset_content_type: application/zip
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./KubeUI-osx-x64.zip
+          asset_name: KubeUI-osx-x64.zip
+          asset_content_type: application/zip

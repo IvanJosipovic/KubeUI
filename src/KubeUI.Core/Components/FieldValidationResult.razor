@@ -1,0 +1,13 @@
+﻿@if (Errors.Any())
+{
+    @ChildContent
+
+    <div class="text-danger">
+        <ul>
+            @foreach (var error in Errors)
+            {
+                <li>@error</li>
+            }
+        </ul>    
+    </div>
+}

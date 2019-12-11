@@ -1,67 +1,69 @@
 name: CI/CD
 
-on: [push]
+on: 
+  push:
+    branches: 
+      - '*'
 
 jobs:
   build:
-
+    name: Build Wasm
     runs-on: ubuntu-latest
-    
     timeout-minutes: 10
-    
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v1
 
     - name: Setup .NET Core
-      uses: actions/setup-dotnet@master
+      uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 3.1.100-preview1-014459   
+        dotnet-version: 3.1.100
 
     - name: Publish
-      working-directory: src/KubeUI
-      run: dotnet publish --configuration Release
+      working-directory: src/KubeUI.Wasm
+      run: dotnet publish --configuration Release --nologo
 
     - name: Deploy to Test
       id: netlify
       uses: ivanjosipovic/actions/cli@master
       with:
-        args: deploy --json -d src/KubeUI/bin/Release/netstandard2.0/publish/KubeUI/dist/
+        args: deploy --json -d src/KubeUI.Wasm/bin/Release/netstandard2.1/publish/KubeUI.Wasm/dist/
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN_CI }}
         NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID_CI }}
         
-    - name: Set Test Address
+    - name: Get Test Address
       run: |
         $url = $(ConvertFrom-Json '${{ steps.netlify.outputs.output }}').deploy_url;
         Write-Output $url;
-        Set-Content -Path "src/KubeUI.Tests/BrowserTestsAddress.config" -Value $url;
       shell: pwsh
 
-    - name: Run Tests
-      working-directory: src/KubeUI.Tests
-      run: dotnet test --configuration Release
-  
-    - name: Deploy to Production
-      if: github.ref == 'refs/heads/master'
-      uses: ivanjosipovic/actions/cli@master
-      with:
-        args: deploy --prod --json -d src/KubeUI/bin/Release/netstandard2.0/publish/KubeUI/dist/
-      env:
-        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+  build2:
+    name: Build WebWindow
+    timeout-minutes: 10
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        include:
+        - os: windows-latest
+          RUNTIME: win-x64
+        - os: ubuntu-latest
+          RUNTIME: linux-x64
+        - os: macos-latest
+          RUNTIME: osx-x64
+    steps:
+    - uses: actions/checkout@v1
 
-    - name: Purge CDN
-      if: github.ref == 'refs/heads/master'
-      run: |
-        $Params = @{
-          Method = 'Post'
-          URI = 'https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_SITE_ID }}/purge_cache'
-          Headers = @{
-            'X-Auth-Email'= 'admin@kubeui.com';
-            'X-Auth-Key'= '${{ secrets.CLOUDFLARE_AUTH_TOKEN }}'
-          }
-          Body = '{"purge_everything":true}'
-          ContentType = 'application/json'
-        }
-        Invoke-RestMethod @Params
-      shell: pwsh        
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.100
+
+    - name: Publish
+      working-directory: src/KubeUI.WebWindow
+      run: dotnet publish -r ${{matrix.RUNTIME}} -c Release -p:SelfContained=true -p:PublishSingleFile=true -p:PublishTrimmed=true --nologo
+
+    - uses: actions/upload-artifact@v1
+      with:
+        name: KubeUI-${{matrix.RUNTIME}}
+        path: src/KubeUI.WebWindow/bin/Release/netcoreapp3.1/${{matrix.RUNTIME}}/publish

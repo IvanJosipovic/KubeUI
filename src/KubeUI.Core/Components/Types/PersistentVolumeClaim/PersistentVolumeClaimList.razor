@@ -1,0 +1,37 @@
+﻿@namespace KubeUI.Core.Components.Types
+
+<Table PageSize="20" TableItem="V1PersistentVolumeClaim" Items="Items">
+    <Column TableItem="V1PersistentVolumeClaim" Title="Name" Field="@(x => x.Metadata.Name)" Sortable="true" Filterable="true">
+        <Template>
+            <a href="/@context.Metadata.NamespaceProperty/PersistentVolumeClaim/@context.Metadata.Name">@context.Metadata.Name</a>
+        </Template>
+    </Column>
+    <Column TableItem="V1PersistentVolumeClaim" Title="Requests" Width="10%">
+        <Template>
+            @context.Spec.Resources.Requests["storage"]
+        </Template>
+    </Column>
+        <Column TableItem="V1PersistentVolumeClaim" Title="Status" Field="@(x => x.Status.Phase)" Sortable="true" Filterable="true" Width="10%">
+        <Template>
+            @context.Status.Phase
+        </Template>
+    </Column>
+    <Column TableItem="V1PersistentVolumeClaim" Title="Age" Field="@(x => x.Metadata.CreationTimestamp)" Sortable="true" Filterable="true" Width="7%">
+        <Template>
+            @string.Format("{0:N0}d", (DateTime.UtcNow - context.Metadata.CreationTimestamp).Value.TotalDays)
+        </Template>
+    </Column>
+    <Column TableItem="V1PersistentVolumeClaim" Title="Actions" Align="Align.Center" Width="5%">
+        <Template>
+            <BSButtonGroup DropdownDirection="DropdownDirection.Left">
+                <BSDropdown>
+                    <BSDropdownToggle Color="Color.Secondary" Size="Size.Small">⚙️</BSDropdownToggle>
+                    <BSDropdownMenu>
+                        <BSDropdownItem Href="javascript:void(0);" OnClick="@(async () => await Delete(context))">Delete</BSDropdownItem>
+                    </BSDropdownMenu>
+                </BSDropdown>
+            </BSButtonGroup>
+        </Template>
+    </Column>
+    <Pager TableItem="V1PersistentVolumeClaim" ShowPageNumber="true" ShowTotalCount="true" />
+</Table>

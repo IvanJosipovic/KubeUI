@@ -1,0 +1,45 @@
+﻿@namespace KubeUI.Core.Components.Types
+<h2>
+    <a href="/Nodes">Nodes</a> / @Item?.Metadata.Name
+</h2>
+
+<br />
+@if (Item != null)
+{
+    <BSTabGroup>
+        <BSTabList>
+            <BSTab InitialSelection="true">
+                <BSTabLabel>Overview</BSTabLabel>
+                <BSTabContent>
+                    <br />
+                    <table width="100%">
+                        <tbody>
+                            <tr>
+                                <td align="right">Allocatable CPU:</td>
+                                <td align="left">@Item.Status.Allocatable["cpu"]</td>
+                                <td align="right">Created:</td>
+                                <td align="left">@Item.Metadata.CreationTimestamp</td>
+                            </tr>
+                            <tr>
+                                <td align="right">Allocatable Memory:</td>
+                                <td align="left">@Item.Status.Allocatable["memory"]</td>
+                                <td align="right">Kernel Version:</td>
+                                <td align="left">@Item.Status.NodeInfo.KernelVersion</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </BSTabContent>
+            </BSTab>
+            <BSTab>
+                <BSTabLabel>Yaml</BSTabLabel>
+                <BSTabContent><pre><code id="yamlViewer" class="language-yaml">@k8s.Yaml.SaveToString(Item)</code></pre></BSTabContent>
+            </BSTab>
+
+            <BSTab>
+                <BSTabLabel>UI</BSTabLabel>
+                <BSTabContent><KubeUI.Core.Components.Dynamic.UI Item="@Item" /></BSTabContent>
+            </BSTab>
+        </BSTabList>
+        <BSTabSelectedContent />
+    </BSTabGroup>
+}
