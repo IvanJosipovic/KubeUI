@@ -1,5 +1,4 @@
 ﻿@page "/Connect"
-@using System.Reflection
 
 <h1>Connect</h1>
 
@@ -66,7 +65,3 @@
         </BSCard>
     </BSCol>
 </BSRow>
-
-@code{
-    string version = Assembly.GetEntryAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion.ToString();
-}
