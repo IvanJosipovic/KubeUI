@@ -18,12 +18,12 @@
 
                     @if (node.IsCollectionItem)
                     {
-                        <a href="javascript:;" @onclick="@(() => Delete(node.Parent, node.Object))" title="Delete"><i class="fa fa-trash"></i></a>
+                        <a href="javascript:;" @onclick="@(() => Delete(node.Parent, node.Object))" title="Delete"><i class="fas fa-trash"></i></a>
                     }
 
                     @if (node.IsCollection)
                     {
-                        <a href="javascript:;" @onclick="@(() => AddNew(node.Object))" title="Add New @node.Name"><i class="fa fa-plus"></i></a>
+                        <a href="javascript:;" @onclick="@(() => AddNew(node.Object))" title="Add New @node.Name"><i class="fas fa-plus"></i></a>
                     }
                 </span>
             </div>
@@ -117,8 +117,8 @@
     {
         public static readonly TreeStyle Bootstrap = new TreeStyle
         {
-            ExpandNodeIconClass = "fa fa-angle-right curosr-pointer",
-            CollapseNodeIconClass = "fa fa-angle-down curosr-pointer",
+            ExpandNodeIconClass = "fas fa-angle-right curosr-pointer",
+            CollapseNodeIconClass = "fas fa-angle-down curosr-pointer",
             NodeTitleClass = "text-primary curosr-pointer",
             NodeTitleSelectedClass = "text-primary font-weight-bold font-italic curosr-pointer"
         };
