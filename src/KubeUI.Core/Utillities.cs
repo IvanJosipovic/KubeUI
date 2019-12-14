@@ -13,6 +13,7 @@ namespace KubeUI
 
             return assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
         }
+
         public static IEnumerable<T> OrEmptyIfNull<T>(this IEnumerable<T> source)
         {
             return source ?? Enumerable.Empty<T>();
