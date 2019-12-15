@@ -1,5 +1,4 @@
 ﻿using FluentValidation;
-using KubeUI.Schema;
 using KubeUI.Services;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -7,7 +6,7 @@ using System.Linq;
 
 namespace KubeUI.Validators
 {
-    public class ObjectMetaValidator : AbstractValidator<ObjectMeta>
+    public class ObjectMetaValidator : AbstractValidator<k8s.Models.V1Pod>
     {
         public ObjectMetaValidator(IServiceProvider service)
         {

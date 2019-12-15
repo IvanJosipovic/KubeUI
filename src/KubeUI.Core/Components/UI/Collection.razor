@@ -4,7 +4,7 @@
 <fieldset>
     <legend @onmouseover="@(() => { base.SetHelp.InvokeAsync(Parent.GetProperty(Name).GetSummary()); })">
         @Name.AddSpacesToSentence().TrimVersionNumbers()
-        <a href="javascript:;" @onclick="@((e) => Add())" title="Add New @GenericType.Name.AddSpacesToSentence().TrimVersionNumbers()"><i class="fa fa-plus"></i></a>
+        <a href="javascript:;" @onclick="@((e) => Add())" title="Add New @GenericType.Name.AddSpacesToSentence().TrimVersionNumbers()"><i class="fas fa-plus"></i></a>
     </legend>
     <BSTable IsBordered="true" IsHovarable="true" IsSmall="true" IsStriped="true" IsResponsive="true">
         <BSTableHead TableHeadType="TableHeadType.Light">
@@ -89,7 +89,7 @@
                             }
                         }
                         <td style="width:20px; text-align: center">
-                            <a href="javascript:;" @onclick="@(() => { Delete((int)index[0]); })" title="Delete"><i class='fa fa-trash' aria-hidden='true'></i></a>
+                            <a href="javascript:;" @onclick="@(() => { Delete((int)index[0]); })" title="Delete"><i class='fas fa-trash' aria-hidden='true'></i></a>
                         </td>
                     </tr>
                 }

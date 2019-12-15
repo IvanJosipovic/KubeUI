@@ -3,7 +3,6 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <RazorLangVersion>3.0</RazorLangVersion>
-    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,7 +14,7 @@
 
   <ItemGroup>
     <PackageReference Include="BlazorFileSaver" Version="3.1.0" />
-    <PackageReference Include="BlazorStrap" Version="1.1.0-preview1-03" />
+    <PackageReference Include="BlazorStrap" Version="1.1.101" />
     <PackageReference Include="BlazorTable" Version="1.0.3" />
     <PackageReference Include="FluentValidation" Version="8.6.0" />
     <PackageReference Include="KubernetesClient" Version="1.6.6" />
