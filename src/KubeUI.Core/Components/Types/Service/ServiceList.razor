@@ -22,11 +22,7 @@
             }
         </Template>
     </Column>
-    <Column Title="Type" TableItem="V1Service" Field="@(x => x.Spec.Type)" Sortable="true" Filterable="true" Width="7%">
-        <Template>
-            @context.Spec.Type
-        </Template>
-    </Column>
+    <Column Title="Type" TableItem="V1Service" Field="@(x => x.Spec.Type)" Sortable="true" Filterable="true" Width="7%" />
     <Column Title="Age" TableItem="V1Service" Field="@(x => x.Metadata.CreationTimestamp)" Sortable="true" Filterable="true" Width="7%">
         <Template>
             @string.Format("{0:N0}d", (DateTime.UtcNow - context.Metadata.CreationTimestamp).Value.TotalDays)
