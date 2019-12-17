@@ -31,9 +31,9 @@ namespace KubeUI.Core.Components.Types
 
         private PropertyChangedEventHandler handler;
 
-        private int LogLineCount = 50;
+        private int LogLineCount { get; set; } = 50;
 
-        private bool PreviousLog = false;
+        private bool PreviousLog { get; set; } = false;
 
         protected override async Task OnInitializedAsync()
         {
