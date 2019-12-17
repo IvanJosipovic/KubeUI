@@ -21,7 +21,7 @@ namespace KubeUI.Core.Components.Types
         public Expression<Func<V1Secret, bool>> Filter { get; set; }
 
         [Inject]
-        protected ILogger<ServiceList> Logger { get; set; }
+        protected ILogger<SecretList> Logger { get; set; }
 
         [Inject]
         protected IState State { get; set; }
