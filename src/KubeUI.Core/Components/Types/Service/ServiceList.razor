@@ -22,11 +22,7 @@
             }
         </Template>
     </Column>
-    <Column Title="Type" TableItem="V1Service" Field="@(x => x.Spec.Type)" Sortable="true" Filterable="true" Width="7%">
-        <Template>
-            @context.Spec.Type
-        </Template>
-    </Column>
+    <Column Title="Type" TableItem="V1Service" Field="@(x => x.Spec.Type)" Sortable="true" Filterable="true" Width="7%" />
     <Column Title="Age" TableItem="V1Service" Field="@(x => x.Metadata.CreationTimestamp)" Sortable="true" Filterable="true" Width="7%">
         <Template>
             @string.Format("{0:N0}d", (DateTime.UtcNow - context.Metadata.CreationTimestamp).Value.TotalDays)
@@ -38,7 +34,7 @@
                 <BSDropdown>
                     <BSDropdownToggle Color="Color.Secondary" Size="Size.Small">⚙️</BSDropdownToggle>
                     <BSDropdownMenu>
-                        <BSDropdownItem Href="javascript:void(0);" OnClick="@(async () => await Delete(context))">Delete</BSDropdownItem>
+                        <BSDropdownItem Href="javascript:void(0);" OnClick="@(async () => await Delete(context))"><i class="fas fa-trash"></i>&nbsp;&nbsp;Delete</BSDropdownItem>
                     </BSDropdownMenu>
                 </BSDropdown>
             </BSButtonGroup>

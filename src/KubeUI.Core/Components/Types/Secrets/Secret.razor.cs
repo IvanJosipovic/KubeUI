@@ -2,15 +2,15 @@
 using k8s.Models;
 using KubeUI.Services;
 using Microsoft.AspNetCore.Components;
-using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading.Tasks;
 
 namespace KubeUI.Core.Components.Types
 {
-    [Route("/{Namespace}/Pod/{Name}")]
-    public partial class Pod : IDisposable
+    [Route("/{Namespace}/Secret/{Name}")]
+    public partial class Secret : IDisposable
     {
         [Parameter]
         public string Namespace { get; set; }
@@ -19,21 +19,14 @@ namespace KubeUI.Core.Components.Types
         public string Name { get; set; }
 
         [Inject]
-        protected ILogger<Pod> Logger { get; set; }
-
-        [Inject]
         protected IState State { get; set; }
 
         [Inject]
         protected IKubernetes Client { get; set; }
 
-        private V1Pod Item;
+        private V1Secret Item;
 
-        private PropertyChangedEventHandler handler;
-
-        private int LogLineCount { get; set; } = 50;
-
-        private bool PreviousLog { get; set; } = false;
+        PropertyChangedEventHandler handler;
 
         protected override async Task OnInitializedAsync()
         {
@@ -57,7 +50,7 @@ namespace KubeUI.Core.Components.Types
 
         private async Task Update()
         {
-            Item = await Client.ReadNamespacedPodAsync(Name, Namespace);
+            Item = await Client.ReadNamespacedSecretAsync(Name, Namespace);
 
             StateHasChanged();
         }

@@ -20,7 +20,7 @@ jobs:
 
     - name: Publish
       working-directory: src/KubeUI.Wasm
-      run: dotnet publish --configuration Release --nologo
+      run: dotnet publish -c Release
 
     - name: Deploy to Test
       id: netlify
@@ -61,7 +61,7 @@ jobs:
 
     - name: Publish
       working-directory: src/KubeUI.WebWindow
-      run: dotnet publish -r ${{matrix.RUNTIME}} -c Release -p:SelfContained=true -p:PublishSingleFile=true -p:PublishTrimmed=true --nologo
+      run: dotnet publish -r ${{matrix.RUNTIME}} -c Release -p:SelfContained=true -p:PublishSingleFile=true -p:PublishTrimmed=true
 
     - uses: actions/upload-artifact@v1
       with:

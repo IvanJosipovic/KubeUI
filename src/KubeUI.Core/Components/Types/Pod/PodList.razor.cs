@@ -26,9 +26,18 @@ namespace KubeUI.Core.Components.Types
 
         private IList<V1Pod> Items;
 
+        private Timer timer;
+
+
         protected override async Task OnInitializedAsync()
         {
             await Update();
+
+            if (timer != null)
+            {
+                timer.Dispose();
+            }
+            timer = new Timer(async _ => await Update(), null, 0, 5000);
         }
 
         private async Task Update()

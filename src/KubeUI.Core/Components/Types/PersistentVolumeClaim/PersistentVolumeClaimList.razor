@@ -11,11 +11,7 @@
             @context.Spec.Resources.Requests["storage"]
         </Template>
     </Column>
-        <Column TableItem="V1PersistentVolumeClaim" Title="Status" Field="@(x => x.Status.Phase)" Sortable="true" Filterable="true" Width="10%">
-        <Template>
-            @context.Status.Phase
-        </Template>
-    </Column>
+    <Column TableItem="V1PersistentVolumeClaim" Title="Status" Field="@(x => x.Status.Phase)" Sortable="true" Filterable="true" Width="10%" />
     <Column TableItem="V1PersistentVolumeClaim" Title="Age" Field="@(x => x.Metadata.CreationTimestamp)" Sortable="true" Filterable="true" Width="7%">
         <Template>
             @string.Format("{0:N0}d", (DateTime.UtcNow - context.Metadata.CreationTimestamp).Value.TotalDays)
@@ -27,7 +23,7 @@
                 <BSDropdown>
                     <BSDropdownToggle Color="Color.Secondary" Size="Size.Small">⚙️</BSDropdownToggle>
                     <BSDropdownMenu>
-                        <BSDropdownItem Href="javascript:void(0);" OnClick="@(async () => await Delete(context))">Delete</BSDropdownItem>
+                        <BSDropdownItem Href="javascript:void(0);" OnClick="@(async () => await Delete(context))"><i class="fas fa-trash"></i>&nbsp;&nbsp;Delete</BSDropdownItem>
                     </BSDropdownMenu>
                 </BSDropdown>
             </BSButtonGroup>

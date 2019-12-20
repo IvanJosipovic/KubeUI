@@ -11,11 +11,14 @@ namespace KubeUI.Core.Components.Types
     [Route("/Namespace/{Name}")]
     public partial class Namespace
     {
-        [Parameter] public string Name { get; set; }
+        [Parameter]
+        public string Name { get; set; }
 
-        [Inject] protected IState State { get; set; }
+        [Inject]
+        protected IState State { get; set; }
 
-        [Inject] protected IKubernetes Client { get; set; }
+        [Inject]
+        protected IKubernetes Client { get; set; }
 
         private V1Namespace Item;
 
