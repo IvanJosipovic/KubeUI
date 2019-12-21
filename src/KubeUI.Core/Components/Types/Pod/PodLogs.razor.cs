@@ -38,15 +38,12 @@ namespace KubeUI.Core.Components.Types
 
         public void Dispose()
         {
-            timer.Dispose();
+            timer?.Dispose();
         }
 
         public void SetTimer()
         {
-            if (timer != null)
-            {
-                timer.Dispose();
-            }
+            timer?.Dispose();
             timer = new Timer(async _ => await Update(), null, 0, 10000);
         }
 

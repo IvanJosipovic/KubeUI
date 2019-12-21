@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace KubeUI.Core.Components.Types
 {
-    public partial class PodList
+    public partial class PodList : IDisposable
     {
         [Parameter]
         public string Namespace { get; set; }
@@ -28,15 +28,12 @@ namespace KubeUI.Core.Components.Types
 
         private Timer timer;
 
-
         protected override async Task OnInitializedAsync()
         {
             await Update();
 
-            if (timer != null)
-            {
-                timer.Dispose();
-            }
+            timer?.Dispose();
+
             timer = new Timer(async _ => await Update(), null, 0, 5000);
         }
 
@@ -66,6 +63,11 @@ namespace KubeUI.Core.Components.Types
             await Client.DeleteNamespacedPodAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
 
             await Update();
+        }
+
+        public void Dispose()
+        {
+            timer?.Dispose();
         }
     }
 }
