@@ -1,6 +1,5 @@
 ﻿using KubeUI.Services;
 using Microsoft.AspNetCore.Components;
-using Microsoft.Extensions.Logging;
 using System;
 using System.ComponentModel;
 
@@ -13,12 +12,12 @@ namespace KubeUI.Core.Shared
 
         private bool collapseNavMenu = true;
 
+        private PropertyChangedEventHandler handler;
+
         private void ToggleNavMenu()
         {
             collapseNavMenu = !collapseNavMenu;
         }
-
-        private PropertyChangedEventHandler handler;
 
         protected override void OnInitialized()
         {
