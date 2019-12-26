@@ -2,13 +2,12 @@
 using k8s.Models;
 using KubeUI.Services;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Logging;
+using Microsoft.Rest;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace KubeUI.Core.Components.Types
@@ -22,52 +21,63 @@ namespace KubeUI.Core.Components.Types
         public Expression<Func<V1Pod, bool>> Filter { get; set; }
 
         [Inject]
+        protected ILogger<PodList> Logger { get; set; }
+
+        [Inject]
         protected IKubernetes Client { get; set; }
 
-        private IList<V1Pod> Items;
+        private readonly List<V1Pod> Items  = new List<V1Pod>();
 
-        private Timer timer;
+        private Watcher<V1Pod> watcher;
 
-        protected override async Task OnInitializedAsync()
+        protected override void OnParametersSet()
         {
-            await Update();
-
-            timer?.Dispose();
-
-            timer = new Timer(async _ => await Update(), null, 0, 5000);
-        }
-
-        private async Task Update()
-        {
-            IList<V1Pod> items;
+            Task<HttpOperationResponse<V1PodList>> task;
 
             if (Namespace?.Equals(State.AllNameSpace) != false)
             {
-                items = (await Client.ListPodForAllNamespacesAsync())?.Items;
+                task = Client.ListPodForAllNamespacesWithHttpMessagesAsync(watch: true);
             }
             else
             {
-                items = (await Client.ListNamespacedPodAsync(Namespace))?.Items;
+                task = Client.ListNamespacedPodWithHttpMessagesAsync(Namespace, watch: true);
             }
 
-            if (Filter != null)
+            watcher = task.Watch<V1Pod, V1PodList>((type, item) =>
             {
-                items = items.AsQueryable().Where(Filter).ToList();
-            }
+                Logger.LogInformation("Type: {0}", type);
 
-            Items = items;
+                switch (type)
+                {
+                    case WatchEventType.Added:
+                        if (!Items.Any(x => x.Metadata.Uid == item.Metadata.Uid))
+                            Items.Add(item);
+                        else
+                            Items[Items.FindIndex(x => x.Metadata.Uid == item.Metadata.Uid)] = item;
+                        break;
+                    case WatchEventType.Modified:
+                        Items[Items.FindIndex(x => x.Metadata.Uid == item.Metadata.Uid)] = item;
+                        break;
+                    case WatchEventType.Deleted:
+                        Items.RemoveAt(Items.FindIndex(x => x.Metadata.Uid == item.Metadata.Uid));
+                        break;
+                    case WatchEventType.Error:
+                        break;
+                    default:
+                        break;
+                }
+                StateHasChanged();
+            });
         }
 
         private async Task Delete(V1Pod item)
         {
             await Client.DeleteNamespacedPodAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
-
-            await Update();
         }
 
         public void Dispose()
         {
-            timer?.Dispose();
+            watcher?.Dispose();
         }
     }
 }

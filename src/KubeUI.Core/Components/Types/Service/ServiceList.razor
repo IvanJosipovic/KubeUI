@@ -1,6 +1,6 @@
 ﻿@namespace KubeUI.Core.Components.Types
 
-<Table PageSize="20" TableItem="V1Service" Items="Items">
+<Table PageSize="20" TableItem="V1Service" Items="(Filter == null ? Items : Items.AsQueryable().Where(Filter).ToList())">
     <Column TableItem="V1Service" Title="Name" Field="@(x => x.Metadata.Name)" Sortable="true" Filterable="true" Width="20%">
         <Template>
             <a href="/@context.Metadata.NamespaceProperty/Service/@context.Metadata.Name">@context.Metadata.Name</a>
@@ -25,7 +25,7 @@
     <Column Title="Type" TableItem="V1Service" Field="@(x => x.Spec.Type)" Sortable="true" Filterable="true" Width="7%" />
     <Column Title="Age" TableItem="V1Service" Field="@(x => x.Metadata.CreationTimestamp)" Sortable="true" Filterable="true" Width="7%">
         <Template>
-            @string.Format("{0:N0}d", (DateTime.UtcNow - context.Metadata.CreationTimestamp).Value.TotalDays)
+            @context.Metadata.CreationTimestamp.Value.ToPrettyDate()
         </Template>
     </Column>
     <Column TableItem="V1Service" Title="Actions" Align="Align.Center" Width="5%">

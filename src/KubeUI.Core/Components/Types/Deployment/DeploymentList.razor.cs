@@ -4,6 +4,7 @@ using KubeUI.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.Extensions.Logging;
+using Microsoft.Rest;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,44 +25,55 @@ namespace KubeUI.Core.Components.Types
         protected ILogger<DeploymentList> Logger { get; set; }
 
         [Inject]
-        protected IState State { get; set; }
-
-        [Inject]
         protected IKubernetes Client { get; set; }
 
-        private IList<V1Deployment> Items;
+        private List<V1Deployment> Items = new List<V1Deployment>();
 
-        protected override async Task OnInitializedAsync()
+        private Watcher<V1Deployment> watcher;
+
+        protected override void OnParametersSet()
         {
-            await Update();
-        }
+            Task<HttpOperationResponse<V1DeploymentList>> task;
 
-        private async Task Update()
-        {
-            IList<V1Deployment> items;
-
-            if (State.Namespace?.Equals(KubeUI.Services.State.AllNameSpace) != false)
+            if (Namespace?.Equals(State.AllNameSpace) != false)
             {
-                items = (await Client.ListDeploymentForAllNamespacesAsync())?.Items;
+                task = Client.ListDeploymentForAllNamespacesWithHttpMessagesAsync(watch: true);
             }
             else
             {
-                items = (await Client.ListNamespacedDeploymentAsync(State.Namespace))?.Items;
+                task = Client.ListNamespacedDeploymentWithHttpMessagesAsync(Namespace, watch: true);
             }
 
-            if (Filter != null)
+            watcher = task.Watch<V1Deployment, V1DeploymentList>((type, item) =>
             {
-                items = items.AsQueryable().Where(Filter).ToList();
-            }
+                Logger.LogInformation("Type: {0}", type);
 
-            Items = items;
+                switch (type)
+                {
+                    case WatchEventType.Added:
+                        if (!Items.Any(x => x.Metadata.Uid == item.Metadata.Uid))
+                            Items.Add(item);
+                        else
+                            Items[Items.FindIndex(x => x.Metadata.Uid == item.Metadata.Uid)] = item;
+                        break;
+                    case WatchEventType.Modified:
+                        Items[Items.FindIndex(x => x.Metadata.Uid == item.Metadata.Uid)] = item;
+                        break;
+                    case WatchEventType.Deleted:
+                        Items.RemoveAt(Items.FindIndex(x => x.Metadata.Uid == item.Metadata.Uid));
+                        break;
+                    case WatchEventType.Error:
+                        break;
+                    default:
+                        break;
+                }
+                StateHasChanged();
+            });
         }
 
         private async Task Delete(V1Deployment item)
         {
             await Client.DeleteNamespacedDeploymentAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
-
-            await Update();
         }
 
         private async Task ScaleUp(V1Deployment item)
@@ -70,8 +82,6 @@ namespace KubeUI.Core.Components.Types
             patch.Replace(e => e.Spec.Replicas, item.Spec.Replicas.GetValueOrDefault() + 1);
 
             await Client.PatchNamespacedDeploymentScaleAsync(new V1Patch(patch), item.Metadata.Name, item.Metadata.NamespaceProperty);
-
-            await Update();
         }
 
         private async Task ScaleDown(V1Deployment item)
@@ -85,8 +95,6 @@ namespace KubeUI.Core.Components.Types
             patch.Replace(e => e.Spec.Replicas, item.Spec.Replicas.Value - 1);
 
             await Client.PatchNamespacedDeploymentScaleAsync(new V1Patch(patch), item.Metadata.Name, item.Metadata.NamespaceProperty);
-            
-            await Update();
         }
     }
 }

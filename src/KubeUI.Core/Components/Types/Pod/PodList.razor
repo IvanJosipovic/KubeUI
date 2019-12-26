@@ -1,6 +1,6 @@
 ﻿@namespace KubeUI.Core.Components.Types
 
-<Table PageSize="20" TableItem="V1Pod" Items="Items">
+<Table PageSize="20" TableItem="V1Pod" Items="@(Filter == null ? Items : Items.AsQueryable().Where(Filter).ToList())">
     <Column TableItem="V1Pod" Title="Name" Field="@(x => x.Metadata.Name)" Sortable="true" Filterable="true" Width="35%">
         <Template>
             <a href="/@context.Metadata.NamespaceProperty/Pod/@context.Metadata.Name">@context.Metadata.Name</a>
@@ -19,7 +19,7 @@
     <Column TableItem="V1Pod" Title="Status" Field="@(x => x.Status.Phase)" Sortable="true" Filterable="true" Width="10%" />
     <Column TableItem="V1Pod" Title="Age" Field="@(x => x.Metadata.CreationTimestamp)" Sortable="true" Filterable="true" Width="7%">
         <Template>
-            @string.Format("{0:N0}d", (DateTime.UtcNow - context.Metadata.CreationTimestamp).Value.TotalDays)
+            @context.Metadata.CreationTimestamp.Value.ToPrettyDate()
         </Template>
     </Column>
     <Column TableItem="V1Pod" Title="Actions" Align="Align.Center" Width="5%">

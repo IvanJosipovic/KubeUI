@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using Microsoft.Rest;
 
 namespace KubeUI.Core.Components.Types
 {
@@ -24,44 +25,53 @@ namespace KubeUI.Core.Components.Types
         protected ILogger<IngressList> Logger { get; set; }
 
         [Inject]
-        protected IState State { get; set; }
-
-        [Inject]
         protected IKubernetes Client { get; set; }
 
-        private IList<Extensionsv1beta1Ingress> Items;
+        private readonly List<Extensionsv1beta1Ingress> Items = new List<Extensionsv1beta1Ingress>();
 
-        protected override async Task OnInitializedAsync()
+        private Watcher<Extensionsv1beta1Ingress> watcher;
+
+        protected override void OnParametersSet()
         {
-            await Update();
-        }
+            Task<HttpOperationResponse<Extensionsv1beta1IngressList>> task;
 
-        private async Task Update()
-        {
-            IList<Extensionsv1beta1Ingress> items;
-
-            if (State.Namespace?.Equals(KubeUI.Services.State.AllNameSpace) != false)
+            if (Namespace?.Equals(State.AllNameSpace) != false)
             {
-                items = (await Client.ListIngressForAllNamespacesAsync())?.Items;
+                task = Client.ListIngressForAllNamespacesWithHttpMessagesAsync(watch: true);
             }
             else
             {
-                items = (await Client.ListNamespacedIngressAsync(State.Namespace))?.Items;
+                task = Client.ListNamespacedIngressWithHttpMessagesAsync(Namespace, watch: true);
             }
 
-            if (Filter != null)
+            watcher = task.Watch<Extensionsv1beta1Ingress, Extensionsv1beta1IngressList>((type, item) =>
             {
-                items = items.AsQueryable().Where(Filter).ToList();
-            }
-
-            Items = items;
+                switch (type)
+                {
+                    case WatchEventType.Added:
+                        if (!Items.Any(x => x.Metadata.Uid == item.Metadata.Uid))
+                            Items.Add(item);
+                        else
+                            Items[Items.FindIndex(x => x.Metadata.Uid == item.Metadata.Uid)] = item;
+                        break;
+                    case WatchEventType.Modified:
+                        Items[Items.FindIndex(x => x.Metadata.Uid == item.Metadata.Uid)] = item;
+                        break;
+                    case WatchEventType.Deleted:
+                        Items.RemoveAt(Items.FindIndex(x => x.Metadata.Uid == item.Metadata.Uid));
+                        break;
+                    case WatchEventType.Error:
+                        break;
+                    default:
+                        break;
+                }
+                StateHasChanged();
+            });
         }
 
         private async Task Delete(Extensionsv1beta1Ingress item)
         {
-            await Client.DeleteNamespacedServiceAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
-
-            await Update();
+            await Client.DeleteNamespacedIngressAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
         }
     }
 }

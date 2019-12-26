@@ -17,7 +17,7 @@
     <Column Title="Status" TableItem="V1Namespace" Field="@(x => x.Status.Phase)" Sortable="true" Filterable="true" Width="10%" />
     <Column Title="Age" TableItem="V1Namespace" Field="@(x => x.Metadata.CreationTimestamp)" Sortable="true" Filterable="true" Width="7%">
         <Template>
-            @string.Format("{0:N0}d", (DateTime.UtcNow - context.Metadata.CreationTimestamp).Value.TotalDays)
+            @context.Metadata.CreationTimestamp.Value.ToPrettyDate()
         </Template>
     </Column>
     <Column TableItem="V1Namespace" Title="Actions" Align="Align.Center" Width="5%">

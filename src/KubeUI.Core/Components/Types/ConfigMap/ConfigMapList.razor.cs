@@ -3,6 +3,7 @@ using k8s.Models;
 using KubeUI.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
+using Microsoft.Rest;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,44 +24,55 @@ namespace KubeUI.Core.Components.Types
         protected ILogger<ConfigMapList> Logger { get; set; }
 
         [Inject]
-        protected IState State { get; set; }
-
-        [Inject]
         protected IKubernetes Client { get; set; }
 
-        private IList<V1ConfigMap> Items;
+        private readonly List<V1ConfigMap> Items = new List<V1ConfigMap>();
 
-        protected override async Task OnInitializedAsync()
+        private Watcher<V1ConfigMap> watcher;
+
+        protected override void OnParametersSet()
         {
-            await Update();
-        }
+            Task<HttpOperationResponse<V1ConfigMapList>> task;
 
-        private async Task Update()
-        {
-            IList<V1ConfigMap> items;
-
-            if (State.Namespace?.Equals(KubeUI.Services.State.AllNameSpace) != false)
+            if (Namespace?.Equals(State.AllNameSpace) != false)
             {
-                items = (await Client.ListConfigMapForAllNamespacesAsync())?.Items;
+                task = Client.ListConfigMapForAllNamespacesWithHttpMessagesAsync(watch: true);
             }
             else
             {
-                items = (await Client.ListNamespacedConfigMapAsync(State.Namespace))?.Items;
+                task = Client.ListNamespacedConfigMapWithHttpMessagesAsync(Namespace, watch: true);
             }
 
-            if (Filter != null)
+            watcher = task.Watch<V1ConfigMap, V1ConfigMapList>((type, item) =>
             {
-                items = items.AsQueryable().Where(Filter).ToList();
-            }
+                Logger.LogInformation("Type: {0}", type);
 
-            Items = items;
+                switch (type)
+                {
+                    case WatchEventType.Added:
+                        if (!Items.Any(x => x.Metadata.Uid == item.Metadata.Uid))
+                            Items.Add(item);
+                        else
+                            Items[Items.FindIndex(x => x.Metadata.Uid == item.Metadata.Uid)] = item;
+                        break;
+                    case WatchEventType.Modified:
+                        Items[Items.FindIndex(x => x.Metadata.Uid == item.Metadata.Uid)] = item;
+                        break;
+                    case WatchEventType.Deleted:
+                        Items.RemoveAt(Items.FindIndex(x => x.Metadata.Uid == item.Metadata.Uid));
+                        break;
+                    case WatchEventType.Error:
+                        break;
+                    default:
+                        break;
+                }
+                StateHasChanged();
+            });
         }
 
         private async Task Delete(V1ConfigMap item)
         {
             await Client.DeleteNamespacedConfigMapAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
-
-            await Update();
         }
     }
 }

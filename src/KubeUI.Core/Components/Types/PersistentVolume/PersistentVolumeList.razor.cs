@@ -8,6 +8,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using Microsoft.Rest;
 
 namespace KubeUI.Core.Components.Types
 {
@@ -19,32 +20,40 @@ namespace KubeUI.Core.Components.Types
         [Inject]
         protected IKubernetes Client { get; set; }
 
-        private IList<V1PersistentVolume> Items;
+        private readonly List<V1PersistentVolume> Items = new List<V1PersistentVolume>();
 
-        protected override async Task OnInitializedAsync()
+        private Watcher<V1PersistentVolume> watcher;
+
+        protected override void OnParametersSet()
         {
-            await Update();
-        }
-
-        private async Task Update()
-        {
-            IList<V1PersistentVolume> items;
-
-            items = (await Client.ListPersistentVolumeAsync())?.Items;
-
-            if (Filter != null)
+            watcher = Client.ListPersistentVolumeWithHttpMessagesAsync(watch: true).Watch<V1PersistentVolume, V1PersistentVolumeList>((type, item) =>
             {
-                items = items.AsQueryable().Where(Filter).ToList();
-            }
-
-            Items = items;
+                switch (type)
+                {
+                    case WatchEventType.Added:
+                        if (!Items.Any(x => x.Metadata.Uid == item.Metadata.Uid))
+                            Items.Add(item);
+                        else
+                            Items[Items.FindIndex(x => x.Metadata.Uid == item.Metadata.Uid)] = item;
+                        break;
+                    case WatchEventType.Modified:
+                        Items[Items.FindIndex(x => x.Metadata.Uid == item.Metadata.Uid)] = item;
+                        break;
+                    case WatchEventType.Deleted:
+                        Items.RemoveAt(Items.FindIndex(x => x.Metadata.Uid == item.Metadata.Uid));
+                        break;
+                    case WatchEventType.Error:
+                        break;
+                    default:
+                        break;
+                }
+                StateHasChanged();
+            });
         }
 
         private async Task Delete(V1PersistentVolume item)
         {
             await Client.DeletePersistentVolumeAsync(item.Metadata.Name);
-
-            await Update();
         }
     }
 }
