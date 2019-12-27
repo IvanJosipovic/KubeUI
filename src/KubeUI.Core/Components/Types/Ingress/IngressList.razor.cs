@@ -13,7 +13,7 @@ using Microsoft.Rest;
 
 namespace KubeUI.Core.Components.Types
 {
-    public partial class IngressList
+    public partial class IngressList : IDisposable
     {
         [Parameter]
         public string Namespace { get; set; }
@@ -72,6 +72,11 @@ namespace KubeUI.Core.Components.Types
         private async Task Delete(Extensionsv1beta1Ingress item)
         {
             await Client.DeleteNamespacedIngressAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
+        }
+
+        public void Dispose()
+        {
+            watcher?.Dispose();
         }
     }
 }

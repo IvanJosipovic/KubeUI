@@ -2,13 +2,14 @@
 using k8s.Models;
 using KubeUI.Services;
 using Microsoft.AspNetCore.Components;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace KubeUI.Core.Components.Types
 {
-    public partial class CustomResourceDefinitionList
+    public partial class CustomResourceDefinitionList : IDisposable
     {
         [Inject]
         protected IState State { get; set; }
@@ -50,6 +51,11 @@ namespace KubeUI.Core.Components.Types
         private async Task Delete(V1CustomResourceDefinition crd)
         {
             await Client.DeleteCustomResourceDefinitionAsync(crd.Metadata.Name);
+        }
+
+        public void Dispose()
+        {
+            watcher?.Dispose();
         }
     }
 }

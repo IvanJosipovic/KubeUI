@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace KubeUI.Core.Components.Types
 {
-    public partial class NodeList
+    public partial class NodeList : IDisposable
     {
         [Parameter]
         public Expression<Func<V1Node, bool>> Filter { get; set; }
@@ -25,9 +25,10 @@ namespace KubeUI.Core.Components.Types
 
         private Watcher<V1Node> watcher;
 
-        protected override void OnParametersSet()
+        protected override async Task OnParametersSetAsync()
         {
-            watcher = Client.ListNodeWithHttpMessagesAsync(watch: true).Watch<V1Node, V1NodeList>((type, item) =>
+            Client.ListNodeWithHttpMessagesAsync(watch: true)
+                .Watch<V1Node, V1NodeList>((type, item) =>
             {
                 switch (type)
                 {
@@ -55,6 +56,11 @@ namespace KubeUI.Core.Components.Types
         private async Task Delete(V1Node item)
         {
             await Client.DeleteNodeAsync(item.Metadata.Name);
+        }
+
+        public void Dispose()
+        {
+            watcher?.Dispose();
         }
     }
 }

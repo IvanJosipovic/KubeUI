@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace KubeUI.Core.Components.Types
 {
-    public partial class DeploymentList
+    public partial class DeploymentList : IDisposable
     {
         [Parameter]
         public string Namespace { get; set; }
@@ -95,6 +95,11 @@ namespace KubeUI.Core.Components.Types
             patch.Replace(e => e.Spec.Replicas, item.Spec.Replicas.Value - 1);
 
             await Client.PatchNamespacedDeploymentScaleAsync(new V1Patch(patch), item.Metadata.Name, item.Metadata.NamespaceProperty);
+        }
+
+        public void Dispose()
+        {
+            watcher?.Dispose();
         }
     }
 }

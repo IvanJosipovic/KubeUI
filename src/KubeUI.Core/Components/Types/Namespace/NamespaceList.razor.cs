@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace KubeUI.Core.Components.Types
 {
-    public partial class NamespaceList
+    public partial class NamespaceList : IDisposable
     {
         [Inject]
         protected IState State { get; set; }
@@ -51,6 +51,11 @@ namespace KubeUI.Core.Components.Types
         private async Task Delete(V1Namespace item)
         {
             await Client.DeleteNamespaceAsync(item.Metadata.Name);
+        }
+
+        public void Dispose()
+        {
+            watcher?.Dispose();
         }
     }
 }

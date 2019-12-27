@@ -12,7 +12,7 @@ using Microsoft.Rest;
 
 namespace KubeUI.Core.Components.Types
 {
-    public partial class PersistentVolumeList
+    public partial class PersistentVolumeList : IDisposable
     {
         [Parameter]
         public Expression<Func<V1PersistentVolume, bool>> Filter { get; set; }
@@ -54,6 +54,11 @@ namespace KubeUI.Core.Components.Types
         private async Task Delete(V1PersistentVolume item)
         {
             await Client.DeletePersistentVolumeAsync(item.Metadata.Name);
+        }
+
+        public void Dispose()
+        {
+            watcher?.Dispose();
         }
     }
 }

@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace KubeUI.Core.Components.Types
 {
-    public partial class SecretList
+    public partial class SecretList : IDisposable
     {
         [Parameter]
         public string Namespace { get; set; }
@@ -73,6 +73,11 @@ namespace KubeUI.Core.Components.Types
         private async Task Delete(V1Secret item)
         {
             await Client.DeleteNamespacedSecretAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
+        }
+
+        public void Dispose()
+        {
+            watcher?.Dispose();
         }
     }
 }

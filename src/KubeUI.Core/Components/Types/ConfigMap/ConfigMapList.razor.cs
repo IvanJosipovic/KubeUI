@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace KubeUI.Core.Components.Types
 {
-    public partial class ConfigMapList
+    public partial class ConfigMapList : IDisposable
     {
         [Parameter]
         public string Namespace { get; set; }
@@ -73,6 +73,11 @@ namespace KubeUI.Core.Components.Types
         private async Task Delete(V1ConfigMap item)
         {
             await Client.DeleteNamespacedConfigMapAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
+        }
+
+        public void Dispose()
+        {
+            watcher?.Dispose();
         }
     }
 }

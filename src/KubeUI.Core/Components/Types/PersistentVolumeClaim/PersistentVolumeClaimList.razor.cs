@@ -12,7 +12,7 @@ using Microsoft.Rest;
 
 namespace KubeUI.Core.Components.Types
 {
-    public partial class PersistentVolumeClaimList
+    public partial class PersistentVolumeClaimList : IDisposable
     {
         [Parameter]
         public string Namespace { get; set; }
@@ -68,6 +68,11 @@ namespace KubeUI.Core.Components.Types
         private async Task Delete(V1PersistentVolumeClaim item)
         {
             await Client.DeleteNamespacedPersistentVolumeClaimAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
+        }
+
+        public void Dispose()
+        {
+            watcher?.Dispose();
         }
     }
 }
