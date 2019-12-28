@@ -25,11 +25,12 @@ namespace KubeUI.Core.Components.Types
 
         private Watcher<V1Node> watcher;
 
-        protected override async Task OnParametersSetAsync()
+        protected override void OnParametersSet()
         {
-            Client.ListNodeWithHttpMessagesAsync(watch: true)
+            watcher = Client.ListNodeWithHttpMessagesAsync(watch: true)
                 .Watch<V1Node, V1NodeList>((type, item) =>
             {
+                Console.WriteLine(type.ToString());
                 switch (type)
                 {
                     case WatchEventType.Added:
