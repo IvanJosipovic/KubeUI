@@ -2,6 +2,7 @@
 using k8s.Models;
 using KubeUI.Services;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +13,7 @@ namespace KubeUI.Core.Components.Types
     public partial class NamespaceList : IDisposable
     {
         [Inject]
-        protected IState State { get; set; }
+        protected ILogger<NamespaceList> Logger { get; set; }
 
         [Inject]
         protected IKubernetes Client { get; set; }
@@ -23,7 +24,8 @@ namespace KubeUI.Core.Components.Types
 
         protected override void OnParametersSet()
         {
-            watcher = Client.ListNamespaceWithHttpMessagesAsync(watch: true).Watch<V1Namespace, V1NamespaceList>((type, item) =>
+            watcher = Client.ListNamespaceWithHttpMessagesAsync(watch: true)
+                .Watch<V1Namespace, V1NamespaceList>((type, item) =>
             {
                 switch (type)
                 {
