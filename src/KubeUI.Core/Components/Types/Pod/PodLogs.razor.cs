@@ -1,5 +1,6 @@
 ﻿using k8s;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
 using System.Threading;
@@ -23,6 +24,9 @@ namespace KubeUI.Core.Components.Types
 
         [Parameter]
         public bool Previous { get; set; }
+
+        [Inject]
+        protected ILogger<PodLogs> Logger { get; set; }
 
         [Inject]
         protected IKubernetes Client { get; set; }
@@ -49,14 +53,21 @@ namespace KubeUI.Core.Components.Types
 
         private async Task Update()
         {
-            var stream = await Client.ReadNamespacedPodLogAsync(Name, Namespace, container: Container, tailLines: Lines, previous: Previous);
-
-            using (var reader = new StreamReader(stream))
+            try
             {
-                Logs = reader.ReadToEnd();
-            }
+                var stream = await Client.ReadNamespacedPodLogAsync(Name, Namespace, container: Container, tailLines: Lines, previous: Previous);
 
-            StateHasChanged();
+                using (var reader = new StreamReader(stream))
+                {
+                    Logs = reader.ReadToEnd();
+                }
+
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Error getting logs");
+            }
         }
     }
 }
