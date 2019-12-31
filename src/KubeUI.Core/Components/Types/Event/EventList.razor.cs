@@ -46,8 +46,6 @@ namespace KubeUI.Core.Components.Types
 
             watcher = task.Watch<V1Event, V1EventList>((type, item) =>
             {
-                Logger.LogInformation("Type: {0}", type);
-
                 switch (type)
                 {
                     case WatchEventType.Added:

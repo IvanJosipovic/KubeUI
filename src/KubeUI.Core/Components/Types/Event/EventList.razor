@@ -6,25 +6,18 @@
             <a href="/@context.Metadata.NamespaceProperty/Event/@context.Metadata.Name">@context.Metadata.Name</a>
         </Template>
     </Column>
-    <Column TableItem="V1Event" Title="Labels" Width="15%">
+    <Column TableItem="V1Event" Title="Message" Field="@(x => x.Message)" Sortable="true" Filterable="true" Width="15%">
+    </Column>
+    <Column TableItem="V1Event" Title="Type" Field="@(x => x.Type)" Sortable="true" Filterable="true" Width="15%">
+    </Column>
+    <Column Title="First Seen" TableItem="V1Event" Field="@(x => x.FirstTimestamp)" Sortable="true" Filterable="true" Width="7%">
         <Template>
-            @foreach (var label in context.Metadata.Labels.OrEmptyIfNull().Take(2))
-            {
-                <BSBadge Color="Color.Secondary">@label.Key : @label.Value</BSBadge>
-            }
+            @context.FirstTimestamp.Value.ToPrettyDate()
         </Template>
     </Column>
-    <Column TableItem="V1Event" Title="Labels" Width="15%">
+    <Column Title="Last Seen" TableItem="V1Event" Field="@(x => x.LastTimestamp)" Sortable="true" Filterable="true" Width="7%">
         <Template>
-            @foreach (var label in context.Metadata.Labels.OrEmptyIfNull().Take(2))
-            {
-                <BSBadge Color="Color.Secondary">@label.Key : @label.Value</BSBadge>
-            }
-        </Template>
-    </Column>
-    <Column Title="Age" TableItem="V1Event" Field="@(x => x.Metadata.CreationTimestamp)" Sortable="true" Filterable="true" Width="7%">
-        <Template>
-            @context.Metadata.CreationTimestamp.Value.ToPrettyDate()
+            @context.LastTimestamp.Value.ToPrettyDate()
         </Template>
     </Column>
     <Pager TableItem="V1Event" ShowPageNumber="true" ShowTotalCount="true" />
