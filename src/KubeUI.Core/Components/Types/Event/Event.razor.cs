@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 
 namespace KubeUI.Core.Components.Types
 {
-    [Route("/{Namespace}/ReplicaSet/{Name}")]
-    public partial class ReplicaSet
+    [Route("/{Namespace}/Event/{Name}")]
+    public partial class Event
+
     {
         [Parameter]
         public string Namespace { get; set; }
@@ -18,17 +19,16 @@ namespace KubeUI.Core.Components.Types
         [Inject]
         protected IKubernetes Client { get; set; }
 
-        private V1ReplicaSet Item;
+        private V1Event Item;
 
         protected override async Task OnParametersSetAsync()
         {
             await Update();
         }
 
-
         private async Task Update()
         {
-            Item = await Client.ReadNamespacedReplicaSetAsync(Name, Namespace);
+            Item = await Client.ReadNamespacedEventAsync(Name, Namespace);
 
             StateHasChanged();
         }

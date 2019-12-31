@@ -23,7 +23,7 @@ namespace KubeUI.Core.Components.Types
 
         private V1StatefulSet Item;
 
-        protected override async Task OnInitializedAsync()
+        protected override async Task OnParametersSetAsync()
         {
             await Update();
         }
