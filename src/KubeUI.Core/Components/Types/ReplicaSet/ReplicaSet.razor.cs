@@ -16,14 +16,11 @@ namespace KubeUI.Core.Components.Types
         public string Name { get; set; }
 
         [Inject]
-        protected IState State { get; set; }
-
-        [Inject]
         protected IKubernetes Client { get; set; }
 
         private V1ReplicaSet Item;
 
-        protected override async Task OnInitializedAsync()
+        protected override async Task OnParametersSetAsync()
         {
             await Update();
         }

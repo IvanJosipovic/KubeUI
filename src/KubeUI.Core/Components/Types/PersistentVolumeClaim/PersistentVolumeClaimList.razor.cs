@@ -8,10 +8,11 @@ using System.ComponentModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using Microsoft.Rest;
 
 namespace KubeUI.Core.Components.Types
 {
-    public partial class PersistentVolumeClaimList
+    public partial class PersistentVolumeClaimList : IDisposable
     {
         [Parameter]
         public string Namespace { get; set; }
@@ -20,44 +21,58 @@ namespace KubeUI.Core.Components.Types
         public Expression<Func<V1PersistentVolumeClaim, bool>> Filter { get; set; }
 
         [Inject]
-        protected IState State { get; set; }
-
-        [Inject]
         protected IKubernetes Client { get; set; }
 
-        private IList<V1PersistentVolumeClaim> Items;
+        private readonly List<V1PersistentVolumeClaim> Items = new List<V1PersistentVolumeClaim>();
 
-        protected override async Task OnInitializedAsync()
+        private Watcher<V1PersistentVolumeClaim> watcher;
+
+        protected override void OnParametersSet()
         {
-            await Update();
-        }
+            Task<HttpOperationResponse<V1PersistentVolumeClaimList>> task;
 
-        private async Task Update()
-        {
-            IList<V1PersistentVolumeClaim> items;
-
-            if (Namespace == null || Namespace.Equals(KubeUI.Services.State.AllNameSpace))
+            if (Namespace?.Equals(State.AllNameSpace) != false)
             {
-                items = (await Client.ListPersistentVolumeClaimForAllNamespacesAsync())?.Items;
+                task = Client.ListPersistentVolumeClaimForAllNamespacesWithHttpMessagesAsync(watch: true);
             }
             else
             {
-                items = (await Client.ListNamespacedPersistentVolumeClaimAsync(Namespace))?.Items;
+                task = Client.ListNamespacedPersistentVolumeClaimWithHttpMessagesAsync(Namespace, watch: true);
             }
 
-            if (Filter != null)
+            watcher = task.Watch<V1PersistentVolumeClaim, V1PersistentVolumeClaimList>((type, item) =>
             {
-                items = items.AsQueryable().Where(Filter).ToList();
-            }
-
-            Items = items;
+                switch (type)
+                {
+                    case WatchEventType.Added:
+                        if (!Items.Any(x => x.Metadata.Uid == item.Metadata.Uid))
+                            Items.Add(item);
+                        else
+                            Items[Items.FindIndex(x => x.Metadata.Uid == item.Metadata.Uid)] = item;
+                        break;
+                    case WatchEventType.Modified:
+                        Items[Items.FindIndex(x => x.Metadata.Uid == item.Metadata.Uid)] = item;
+                        break;
+                    case WatchEventType.Deleted:
+                        Items.RemoveAt(Items.FindIndex(x => x.Metadata.Uid == item.Metadata.Uid));
+                        break;
+                    case WatchEventType.Error:
+                        break;
+                    default:
+                        break;
+                }
+                StateHasChanged();
+            });
         }
 
         private async Task Delete(V1PersistentVolumeClaim item)
         {
             await Client.DeleteNamespacedPersistentVolumeClaimAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
+        }
 
-            await Update();
+        public void Dispose()
+        {
+            watcher?.Dispose();
         }
     }
 }

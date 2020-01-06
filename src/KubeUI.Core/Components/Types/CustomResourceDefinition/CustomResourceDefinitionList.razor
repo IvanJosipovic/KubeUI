@@ -9,7 +9,7 @@
     <Column TableItem="V1CustomResourceDefinition" Title="Group" Field="@(x => x.Spec.Group)" Sortable="true" Filterable="true" />
     <Column TableItem="V1CustomResourceDefinition" Title="Age" Field="@(x => x.Metadata.CreationTimestamp)" Sortable="true" Filterable="true" Width="7%">
         <Template>
-            @string.Format("{0:N0}d", (DateTime.UtcNow - context.Metadata.CreationTimestamp).Value.TotalDays)
+            @context.Metadata.CreationTimestamp.Value.ToPrettyDate()
         </Template>
     </Column>
     <Column TableItem="V1CustomResourceDefinition" Title="Actions" Align="Align.Center" Width="5%">

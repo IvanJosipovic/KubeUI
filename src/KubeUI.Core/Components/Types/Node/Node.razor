@@ -1,6 +1,6 @@
 ﻿@namespace KubeUI.Core.Components.Types
 <h2>
-    <a href="/Nodes">Nodes</a> / @Item?.Metadata.Name
+    <img src="_content/KubeUI.Core/png/infrastructure_components/unlabeled/node-128.png" width="32"> <a href="/Nodes">Nodes</a> / @Item?.Metadata.Name
 </h2>
 
 <br />
@@ -8,7 +8,7 @@
 {
     <BSTabGroup>
         <BSTabList>
-            <BSTab InitialSelection="true">
+            <BSTab>
                 <BSTabLabel>Overview</BSTabLabel>
                 <BSTabContent>
                     <br />
@@ -32,7 +32,7 @@
             </BSTab>
             <BSTab>
                 <BSTabLabel>Yaml</BSTabLabel>
-                <BSTabContent><pre><code id="yamlViewer" class="language-yaml">@k8s.Yaml.SaveToString(Item)</code></pre></BSTabContent>
+                <BSTabContent><YamlViewer Yaml="@k8s.Yaml.SaveToString(Item)" /></BSTabContent>
             </BSTab>
 
             <BSTab>

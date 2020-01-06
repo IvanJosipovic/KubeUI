@@ -1,0 +1,24 @@
+﻿@namespace KubeUI.Core.Components.Types
+
+<Table PageSize="20" TableItem="V1Event" Items="(Filter == null ? Items : Items.AsQueryable().Where(Filter).ToList())">
+    <Column TableItem="V1Event" Title="Name" Field="@(x => x.Metadata.Name)" Sortable="true" Filterable="true" Width="20%">
+        <Template>
+            <a href="/@context.Metadata.NamespaceProperty/Event/@context.Metadata.Name">@context.Metadata.Name</a>
+        </Template>
+    </Column>
+    <Column TableItem="V1Event" Title="Message" Field="@(x => x.Message)" Sortable="true" Filterable="true" Width="15%">
+    </Column>
+    <Column TableItem="V1Event" Title="Type" Field="@(x => x.Type)" Sortable="true" Filterable="true" Width="15%">
+    </Column>
+    <Column Title="First Seen" TableItem="V1Event" Field="@(x => x.FirstTimestamp)" Sortable="true" Filterable="true" Width="7%">
+        <Template>
+            @context.FirstTimestamp.Value.ToPrettyDate()
+        </Template>
+    </Column>
+    <Column Title="Last Seen" TableItem="V1Event" Field="@(x => x.LastTimestamp)" Sortable="true" Filterable="true" Width="7%">
+        <Template>
+            @context.LastTimestamp.Value.ToPrettyDate()
+        </Template>
+    </Column>
+    <Pager TableItem="V1Event" ShowPageNumber="true" ShowTotalCount="true" />
+</Table>

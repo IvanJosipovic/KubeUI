@@ -20,9 +20,10 @@
                 <i class="fas fa-link"></i>&nbsp;Connect
             </NavLink>
         </li>
+
         <li class="nav-item px-1">
-            <NavLink class="nav-link" href="@("/Nodes")">
-                <img src="_content/KubeUI.Core/png/infrastructure_components/unlabeled/node-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Nodes
+            <NavLink class="nav-link disabled">
+                <strong>Cluster</strong>
             </NavLink>
         </li>
         <li class="nav-item px-1">
@@ -31,43 +32,19 @@
             </NavLink>
         </li>
         <li class="nav-item px-1">
-            <NavLink class="nav-link" href="@("/PersistentVolumeClaims")">
-                <img src="_content/KubeUI.Core/png/resources/unlabeled/pvc-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>PVCs
+            <NavLink class="nav-link" href="@("/Nodes")">
+                <img src="_content/KubeUI.Core/png/infrastructure_components/unlabeled/node-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Nodes
             </NavLink>
         </li>
         <li class="nav-item px-1">
             <NavLink class="nav-link" href="@("/PersistentVolumes")">
-                <img src="_content/KubeUI.Core/png/resources/unlabeled/pv-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>PVs
+                <img src="_content/KubeUI.Core/png/resources/unlabeled/pv-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Persistent Volumes
             </NavLink>
         </li>
+
         <li class="nav-item px-1">
-            <NavLink class="nav-link" href="@("/CustomResourceDefinitions")">
-                <img src="_content/KubeUI.Core/png/resources/unlabeled/crd-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>CRDs
-            </NavLink>
-        </li>
-        <li class="nav-item px-1">
-            <NavLink class="nav-link" href="@("/Ingresses")">
-                <img src="_content/KubeUI.Core/png/resources/unlabeled/ing-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Ingresses
-            </NavLink>
-        </li>
-        <li class="nav-item px-1">
-            <NavLink class="nav-link" href="@("/Services")">
-                <img src="_content/KubeUI.Core/png/resources/unlabeled/svc-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Services
-            </NavLink>
-        </li>
-        <li class="nav-item px-1">
-            <NavLink class="nav-link" href="@($"/{State.Namespace}/Deployments")">
-                <img src="_content/KubeUI.Core/png/resources/unlabeled/deploy-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Deployments
-            </NavLink>
-        </li>
-        <li class="nav-item px-1">
-            <NavLink class="nav-link" href="@($"/{State.Namespace}/ReplicaSets")">
-                <img src="_content/KubeUI.Core/png/resources/unlabeled/rs-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Replica Sets
-            </NavLink>
-        </li>
-        <li class="nav-item px-1">
-            <NavLink class="nav-link" href="@($"/{State.Namespace}/Pods")">
-                <img src="_content/KubeUI.Core/png/resources/unlabeled/pod-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Pods
+            <NavLink class="nav-link disabled">
+                <strong>Config and Storage</strong>
             </NavLink>
         </li>
         <li class="nav-item px-1">
@@ -78,6 +55,69 @@
         <li class="nav-item px-1">
             <NavLink class="nav-link" href="@($"/{State.Namespace}/Secrets")">
                 <img src="_content/KubeUI.Core/png/resources/unlabeled/sc-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Secrets
+            </NavLink>
+        </li>
+        <li class="nav-item px-1">
+            <NavLink class="nav-link" href="@($"/{State.Namespace}/PersistentVolumeClaims")">
+                <img src="_content/KubeUI.Core/png/resources/unlabeled/pvc-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Persistent Volume Claims
+            </NavLink>
+        </li>
+
+        <li class="nav-item px-1">
+            <NavLink class="nav-link disabled">
+                <strong>Metadata</strong>
+            </NavLink>
+        </li>
+        <li class="nav-item px-1">
+            <NavLink class="nav-link" href="@("/CustomResourceDefinitions")">
+                <img src="_content/KubeUI.Core/png/resources/unlabeled/crd-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>CRDs
+            </NavLink>
+        </li>
+
+        <li class="nav-item px-1">
+            <NavLink class="nav-link disabled">
+                <strong>Service</strong>
+            </NavLink>
+        </li>
+        <li class="nav-item px-1">
+            <NavLink class="nav-link" href="@($"/{State.Namespace}/Ingresses")">
+                <img src="_content/KubeUI.Core/png/resources/unlabeled/ing-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Ingresses
+            </NavLink>
+        </li>
+        <li class="nav-item px-1">
+            <NavLink class="nav-link" href="@($"/{State.Namespace}/Services")">
+                <img src="_content/KubeUI.Core/png/resources/unlabeled/svc-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Services
+            </NavLink>
+        </li>
+
+        <li class="nav-item px-1">
+            <NavLink class="nav-link disabled">
+                <strong>Workloads</strong>
+            </NavLink>
+        </li>
+        <li class="nav-item px-1">
+            <NavLink class="nav-link" href="@($"/{State.Namespace}/Deployments")">
+                <img src="_content/KubeUI.Core/png/resources/unlabeled/deploy-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Deployments
+            </NavLink>
+        </li>
+        <li class="nav-item px-1">
+            <NavLink class="nav-link" href="@($"/{State.Namespace}/Pods")">
+                <img src="_content/KubeUI.Core/png/resources/unlabeled/pod-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Pods
+            </NavLink>
+        </li>
+        <li class="nav-item px-1">
+            <NavLink class="nav-link" href="@($"/{State.Namespace}/ReplicaSets")">
+                <img src="_content/KubeUI.Core/png/resources/unlabeled/rs-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Replica Sets
+            </NavLink>
+        </li>
+        <li class="nav-item px-1">
+            <NavLink class="nav-link" href="@($"/{State.Namespace}/StatefulSets")">
+                <img src="_content/KubeUI.Core/png/resources/unlabeled/sts-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Stateful Sets
+            </NavLink>
+        </li>
+        <li class="nav-item px-1">
+            <NavLink class="nav-link" href="@($"/{State.Namespace}/Events")">
+                <img src="_content/KubeUI.Core/png/resources/unlabeled/sts-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Events
             </NavLink>
         </li>
     </ul>

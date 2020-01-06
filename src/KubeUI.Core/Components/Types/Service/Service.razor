@@ -1,7 +1,7 @@
 ﻿@namespace KubeUI.Core.Components.Types
-<h2>
-    <a href="/@State.Namespace/Services">Services</a> / @Item?.Metadata.Name
-</h2>
+    <h2>
+        <img src="_content/KubeUI.Core/png/resources/unlabeled/svc-128.png" width="32"> <a href="/@Item?.Metadata.NamespaceProperty/Services">Services</a> / @Item?.Metadata.Name
+    </h2>
 
 <br />
 @if (Item != null)
@@ -18,7 +18,7 @@
 
             <BSTab>
                 <BSTabLabel>Yaml</BSTabLabel>
-                <BSTabContent><pre><code id="yamlViewer" class="language-yaml">@k8s.Yaml.SaveToString(Item)</code></pre></BSTabContent>
+                <BSTabContent><YamlViewer Yaml="@k8s.Yaml.SaveToString(Item)" /></BSTabContent>
             </BSTab>
 
             <BSTab>

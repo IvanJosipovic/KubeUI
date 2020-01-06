@@ -1,6 +1,6 @@
 ﻿@namespace KubeUI.Core.Components.Types
 <h2>
-    <a href="/@State.Namespace/ConfigMaps">Config Maps</a> / @Item?.Metadata.Name
+    <img src="_content/KubeUI.Core/png/resources/unlabeled/cm-128.png" width="32"> <a href="/@Item?.Metadata.NamespaceProperty/ConfigMaps">Config Maps</a> / @Item?.Metadata.Name
 </h2>
 
 <br />
@@ -18,7 +18,7 @@
 
             <BSTab>
                 <BSTabLabel>Yaml</BSTabLabel>
-                <BSTabContent><pre><code id="yamlViewer" class="language-yaml">@k8s.Yaml.SaveToString(Item)</code></pre></BSTabContent>
+                <BSTabContent><YamlViewer Yaml="@k8s.Yaml.SaveToString(Item)" /></BSTabContent>
             </BSTab>
 
             <BSTab>

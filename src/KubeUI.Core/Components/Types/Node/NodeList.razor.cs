@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace KubeUI.Core.Components.Types
 {
-    public partial class NodeList
+    public partial class NodeList : IDisposable
     {
         [Parameter]
         public Expression<Func<V1Node, bool>> Filter { get; set; }
@@ -21,30 +21,47 @@ namespace KubeUI.Core.Components.Types
         [Inject]
         protected IKubernetes Client { get; set; }
 
-        private IList<V1Node> Items;
+        private readonly List<V1Node> Items = new List<V1Node>();
 
-        protected override async Task OnInitializedAsync()
+        private Watcher<V1Node> watcher;
+
+        protected override void OnParametersSet()
         {
-            await Update();
-        }
-
-        private async Task Update()
-        {
-            IList<V1Node> items = (await Client.ListNodeAsync())?.Items;
-
-            if (Filter != null)
+            watcher = Client.ListNodeWithHttpMessagesAsync(watch: true)
+                .Watch<V1Node, V1NodeList>((type, item) =>
             {
-                items = items.AsQueryable().Where(Filter).ToList();
-            }
-
-            Items = items;
+                Console.WriteLine(type.ToString());
+                switch (type)
+                {
+                    case WatchEventType.Added:
+                        if (!Items.Any(x => x.Metadata.Uid == item.Metadata.Uid))
+                            Items.Add(item);
+                        else
+                            Items[Items.FindIndex(x => x.Metadata.Uid == item.Metadata.Uid)] = item;
+                        break;
+                    case WatchEventType.Modified:
+                        Items[Items.FindIndex(x => x.Metadata.Uid == item.Metadata.Uid)] = item;
+                        break;
+                    case WatchEventType.Deleted:
+                        Items.RemoveAt(Items.FindIndex(x => x.Metadata.Uid == item.Metadata.Uid));
+                        break;
+                    case WatchEventType.Error:
+                        break;
+                    default:
+                        break;
+                }
+                StateHasChanged();
+            });
         }
 
         private async Task Delete(V1Node item)
         {
             await Client.DeleteNodeAsync(item.Metadata.Name);
+        }
 
-            await Update();
+        public void Dispose()
+        {
+            watcher?.Dispose();
         }
     }
 }

@@ -22,37 +22,21 @@ namespace KubeUI.Core.Components.Types
         protected ILogger<Pod> Logger { get; set; }
 
         [Inject]
-        protected IState State { get; set; }
-
-        [Inject]
         protected IKubernetes Client { get; set; }
 
         private V1Pod Item;
-
-        private PropertyChangedEventHandler handler;
 
         private int LogLineCount { get; set; } = 50;
 
         private bool PreviousLog { get; set; } = false;
 
-        protected override async Task OnInitializedAsync()
+        protected override async Task OnParametersSetAsync()
         {
-            handler = async (xo, e) =>
-            {
-                if (e.PropertyName == KubeUI.Services.State.UILevelNotification || e.PropertyName == KubeUI.Services.State.NamespaceNotification)
-                {
-                    await Update();
-                }
-            };
-
-            State.PropertyChanged += handler;
-
             await Update();
         }
 
         public void Dispose()
         {
-            State.PropertyChanged -= handler;
         }
 
         private async Task Update()
