@@ -3,13 +3,14 @@ using k8s.Models;
 using KubeUI.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Rest;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace KubeUI.Core.Components
 {
-    public partial class Namespaces
+    public partial class Namespaces : IDisposable
     {
         [Inject]
         protected IState state { get; set; }
@@ -24,7 +25,7 @@ namespace KubeUI.Core.Components
 
         private Watcher<V1Namespace> watcher;
 
-        protected override async Task OnInitializedAsync()
+        protected override void OnInitialized()
         {
             watcher = Client.ListNamespaceWithHttpMessagesAsync(watch: true).Watch<V1Namespace, V1NamespaceList>((type, item) =>
             {
@@ -55,6 +56,11 @@ namespace KubeUI.Core.Components
         {
             state.Namespace = args.Value.ToString();
             navigationManager.NavigateTo("/");
+        }
+
+        public void Dispose()
+        {
+            watcher?.Dispose();
         }
     }
 }
