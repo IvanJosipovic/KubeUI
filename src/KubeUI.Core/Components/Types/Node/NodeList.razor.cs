@@ -16,9 +16,6 @@ namespace KubeUI.Core.Components.Types
         public Expression<Func<V1Node, bool>> Filter { get; set; }
 
         [Inject]
-        protected IState State { get; set; }
-
-        [Inject]
         protected IKubernetes Client { get; set; }
 
         private readonly List<V1Node> Items = new List<V1Node>();

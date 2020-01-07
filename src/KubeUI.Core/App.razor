@@ -1,11 +1,5 @@
 ﻿<Router AppAssembly="@typeof(KubeUI.Core.App).Assembly">
     <Found Context="routeData">
-
-        @*@if(routeData.RouteValues["Namespace"] != null && routeData.RouteValues["Namespace"].ToString() != state.Namespace)
-        {
-            state.Namespace = routeData.RouteValues["Namespace"].ToString();
-        }*@
-
         <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
     </Found>
     <NotFound>
@@ -14,7 +8,3 @@
         </LayoutView>
     </NotFound>
 </Router>
-
-@code {
-    [Inject] protected IState state { get; set; }
-}
