@@ -1,6 +1,6 @@
 ﻿<select class="form-control form-control-sm" id="Namespace" @onchange="OnChange" title="Select Namespace" style="width: 200px">
     <option value="@State.AllNameSpace" selected="@(state.Namespace.Equals(State.AllNameSpace))">All</option>
-    @foreach (var option in Items.Select(x => x.Metadata.Name))
+    @foreach (var option in Items.Select(x => x.Metadata.Name).OrderBy(x => x))
     {
         <option value="@option" selected="@(option == state.Namespace)">@option</option>
     }        
