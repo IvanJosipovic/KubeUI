@@ -2,15 +2,12 @@
 using k8s.Models;
 using KubeUI.Services;
 using Microsoft.AspNetCore.Components;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Threading.Tasks;
 
 namespace KubeUI.Core.Components.Types
 {
-    [Route("/{Namespace}/Secret/{Name}")]
-    public partial class Secret : IDisposable
+    [Route("/{Namespace}/DaemonSet/{Name}")]
+    public partial class DaemonSet
     {
         [Parameter]
         public string Namespace { get; set; }
@@ -21,20 +18,16 @@ namespace KubeUI.Core.Components.Types
         [Inject]
         protected IKubernetes Client { get; set; }
 
-        private V1Secret Item;
+        private V1DaemonSet Item;
 
         protected override async Task OnParametersSetAsync()
         {
             await Update();
         }
 
-        public void Dispose()
-        {
-        }
-
         private async Task Update()
         {
-            Item = await Client.ReadNamespacedSecretAsync(Name, Namespace);
+            Item = await Client.ReadNamespacedDaemonSetAsync(Name, Namespace);
 
             StateHasChanged();
         }

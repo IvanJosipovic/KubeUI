@@ -1,6 +1,6 @@
 ﻿@namespace KubeUI.Core.Components.Types
 <h2>
-    <img src="_content/KubeUI.Core/png/resources/unlabeled/sts-128.png" width="32"> <a href="/@Namespace/StatefulSets">Stateful Sets</a> / @Item?.Metadata.Name
+    <img src="_content/KubeUI.Core/png/resources/unlabeled/ds-128.png" width="32"> <a href="/@Namespace/DaemonSets">Daemon Sets</a> / @Item?.Metadata.Name
 </h2>
 
 <br />
@@ -13,10 +13,7 @@
                 <BSTabContent>
                     <br />
 
-                    <h4>Deployment</h4>
-                    <DeploymentList Namespace="@Item.Metadata.NamespaceProperty" Filter="@(x => Item.Metadata.OwnerReferences.Any(y => y.Uid.Equals(x.Metadata.Uid)))" />
                     <h4>Pods</h4>
-
                     <PodList Namespace="@Item.Metadata.NamespaceProperty" Filter="@(x => x.Metadata.OwnerReferences.OrEmptyIfNull().Any(y => y.Uid.Equals(Item.Metadata.Uid)))" />
                     <br />
                     <h4>Persistent Volume Claims</h4>

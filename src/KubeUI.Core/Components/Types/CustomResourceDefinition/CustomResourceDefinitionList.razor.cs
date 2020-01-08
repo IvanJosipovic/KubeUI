@@ -12,9 +12,6 @@ namespace KubeUI.Core.Components.Types
     public partial class CustomResourceDefinitionList : IDisposable
     {
         [Inject]
-        protected IState State { get; set; }
-
-        [Inject]
         protected IKubernetes Client { get; set; }
 
         private List<V1CustomResourceDefinition> Items = new List<V1CustomResourceDefinition>();
