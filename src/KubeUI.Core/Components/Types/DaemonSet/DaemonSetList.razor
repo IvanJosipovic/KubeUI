@@ -1,0 +1,58 @@
+﻿@namespace KubeUI.Core.Components.Types
+
+<Table PageSize="20" TableItem="V1DaemonSet" Items="(Filter == null ? Items : Items.AsQueryable().Where(Filter).ToList())">
+    <Column TableItem="V1DaemonSet" Title="Name" Field="@(x => x.Metadata.Name)" Sortable="true" Filterable="true" Width="20%">
+        <Template>
+            <a href="/@context.Metadata.NamespaceProperty/DaemonSet/@context.Metadata.Name">@context.Metadata.Name</a>
+        </Template>
+    </Column>
+    <Column Title="Images" TableItem="V1DaemonSet" Width="30%">
+        <Template>
+            @foreach (var item in context.Spec.Template.Spec.Containers)
+            {
+                @item.Image
+                <br />
+            }
+        </Template>
+    </Column>
+    <Column TableItem="V1DaemonSet" Title="Labels" Width="15%">
+        <Template>
+            @foreach (var label in context.Metadata.Labels.OrEmptyIfNull().Take(2))
+            {
+                <BSBadge Color="Color.Secondary">@label.Key : @label.Value</BSBadge>
+            }
+        </Template>
+    </Column>
+    <Column Title="Selector" TableItem="V1DaemonSet" Width="15%">
+        <Template>
+            @foreach (var selector in context.Spec.Selector.MatchLabels.OrEmptyIfNull().Take(2))
+            {
+                <BSBadge Color="Color.Secondary">@selector.Key : @selector.Value</BSBadge>
+            }
+        </Template>
+    </Column>
+
+    <Column Title="Status" TableItem="V1DaemonSet" Field="@(x => x.Status.CurrentNumberScheduled)" Sortable="true" Filterable="true" Width="7%">
+        <Template>
+            @context.Status.CurrentNumberScheduled/@context.Status.DesiredNumberScheduled
+        </Template>
+    </Column>
+    <Column Title="Age" TableItem="V1DaemonSet" Field="@(x => x.Metadata.CreationTimestamp)" Sortable="true" Filterable="true" Width="7%">
+        <Template>
+            @context.Metadata.CreationTimestamp.Value.ToPrettyDate()
+        </Template>
+    </Column>
+    <Column TableItem="V1DaemonSet" Title="Actions" Align="Align.Center" Width="5%">
+        <Template>
+            <BSButtonGroup DropdownDirection="DropdownDirection.Left">
+                <BSDropdown>
+                    <BSDropdownToggle Color="Color.Secondary" Size="Size.Small">⚙️</BSDropdownToggle>
+                    <BSDropdownMenu>
+                        <BSDropdownItem Href="javascript:void(0);" OnClick="@(async () => await Delete(context))"><i class="fas fa-trash"></i>&nbsp;&nbsp;Delete</BSDropdownItem>
+                    </BSDropdownMenu>
+                </BSDropdown>
+            </BSButtonGroup>
+        </Template>
+    </Column>
+    <Pager TableItem="V1DaemonSet" ShowPageNumber="true" ShowTotalCount="true" />
+</Table>

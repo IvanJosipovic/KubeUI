@@ -1,0 +1,37 @@
+﻿@namespace KubeUI.Core.Components.Types
+<h2>
+    <img src="_content/KubeUI.Core/png/resources/unlabeled/ds-128.png" width="32"> <a href="/@Namespace/DaemonSets">Daemon Sets</a> / @Item?.Metadata.Name
+</h2>
+
+<br />
+@if (Item != null)
+{
+    <BSTabGroup>
+        <BSTabList>
+            <BSTab>
+                <BSTabLabel>Overview</BSTabLabel>
+                <BSTabContent>
+                    <br />
+
+                    <h4>Pods</h4>
+                    <PodList Namespace="@Item.Metadata.NamespaceProperty" Filter="@(x => x.Metadata.OwnerReferences.OrEmptyIfNull().Any(y => y.Uid.Equals(Item.Metadata.Uid)))" />
+                    <br />
+                    <h4>Persistent Volume Claims</h4>
+                    <PersistentVolumeClaimList Namespace="@Item.Metadata.NamespaceProperty" Filter="@(x => Item.Spec.Template.Spec.Volumes.Where(y => y.PersistentVolumeClaim != null).Select(y => y.PersistentVolumeClaim.ClaimName).Contains(x.Metadata.Name))" />
+                </BSTabContent>
+            </BSTab>
+
+            <BSTab>
+                <BSTabLabel>Yaml</BSTabLabel>
+                <BSTabContent><YamlViewer Yaml="@k8s.Yaml.SaveToString(Item)" /></BSTabContent>
+            </BSTab>
+
+            <BSTab>
+                <BSTabLabel>UI</BSTabLabel>
+                <BSTabContent><KubeUI.Core.Components.Dynamic.UI Item="@Item" /></BSTabContent>
+            </BSTab>
+
+        </BSTabList>
+        <BSTabSelectedContent />
+    </BSTabGroup>
+}
