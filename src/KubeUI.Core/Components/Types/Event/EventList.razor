@@ -15,10 +15,10 @@
             @context.FirstTimestamp.Value.ToPrettyDate()
         </Template>
     </Column>
-    <Column Title="Last Seen" TableItem="V1Event" Field="@(x => x.LastTimestamp)" Sortable="true" Filterable="true" Width="7%">
+    <Column Title="Last Seen" TableItem="V1Event" Field="@(x => x.LastTimestamp)" Sortable="true" Filterable="true" Width="7%" >
         <Template>
             @context.LastTimestamp.Value.ToPrettyDate()
         </Template>
     </Column>
-    <Pager TableItem="V1Event" ShowPageNumber="true" ShowTotalCount="true" />
+    <Pager ShowPageNumber="true" ShowTotalCount="true" />
 </Table>
