@@ -1,0 +1,22 @@
+﻿@namespace KubeUI.Core.Components.Types
+
+<Table PageSize="20" TableItem="object" Items="Items">
+    <Column TableItem="object" Title="Name">
+        <Template>
+            <a href="/CustomResourceDefinition/@((context as JToken)["metadata"]["namespace"].Value<string>())">@((context as JToken)["metadata"]["name"].Value<string>())</a>
+        </Template>
+    </Column>
+    <Column TableItem="object" Title="Actions" Align="Align.Center" Width="5%">
+        <Template>
+            <BSButtonGroup DropdownDirection="DropdownDirection.Left">
+                <BSDropdown>
+                    <BSDropdownToggle Color="Color.Secondary" Size="Size.Small">⚙️</BSDropdownToggle>
+                    <BSDropdownMenu>
+                        <BSDropdownItem Href="javascript:void(0);" OnClick="@(async () => await Delete(context))"><i class="fas fa-trash"></i>&nbsp;&nbsp;Delete</BSDropdownItem>
+                    </BSDropdownMenu>
+                </BSDropdown>
+            </BSButtonGroup>
+        </Template>
+    </Column>
+    <Pager ShowPageNumber="true" ShowTotalCount="true" />
+</Table>
