@@ -6,6 +6,7 @@ using Microsoft.Rest;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -28,9 +29,9 @@ namespace KubeUI.Core.Components.Types
         [Parameter]
         public string Plural { get; set; }
 
-        private List<object> Items = new List<object>();
+        private List<JObject> Items = new List<JObject>();
 
-        private Watcher<object> watcher;
+        private Watcher<JObject> watcher;
 
         protected override void OnParametersSet()
         {
@@ -45,24 +46,16 @@ namespace KubeUI.Core.Components.Types
                 task = Client.ListNamespacedCustomObjectWithHttpMessagesAsync(Group, Version, Namespace, Plural, watch: true);
             }
 
-            watcher = task.Watch<object, object>((type, item) =>
+            watcher = task.Watch<JObject, object> ((type, item) =>
             {
-                var item2 = item as JToken;
-
-                //var test2 = item2.metadata.uid;
-                
-                //var test = item as JObject;
-                //var meta = test["metadata"];
-                //var id = meta["uid"].Value<string>();
-
-
                 switch (type)
                 {
+
                     case WatchEventType.Added:
-                        if (!Items.Any(x => (x as JToken)["metadata"]["uid"].Value<string>() == item2["metadata"]["uid"].Value<string>()))
+                        if (!Items.Any(x => (x as JObject)["metadata"]["uid"].Value<string>() == (item as JObject)["metadata"]["uid"].Value<string>()))
                             Items.Add(item);
                         else
-                            Items[Items.FindIndex(x => (x as JToken)["metadata"]["uid"].Value<string>() == item2["metadata"]["uid"].Value<string>())] = item;
+                            Items[Items.FindIndex(x => (x as JObject)["metadata"]["uid"].Value<string>() == (item as JObject)["metadata"]["uid"].Value<string>())] = item;
                         break;
                         //case WatchEventType.Modified:
                         //    Items[Items.FindIndex(x => x.Metadata.Uid == item.Metadata.Uid)] = item;

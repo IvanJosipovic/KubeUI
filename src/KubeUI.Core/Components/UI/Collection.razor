@@ -32,7 +32,9 @@
         <tbody>
             @if (Value != null)
             {
-                @for (int i = 0; i < (int)Type.GetProperty("Count").GetValue(Value); i++)
+                var count = (int)Type.GetProperty("Count").GetValue(Value);
+
+                @for (int i = 0; i < count; i++)
                 {
                     object[] index = { i };
                     var item = Type.GetProperty("Item").GetValue(Value, index);

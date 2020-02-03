@@ -1,12 +1,12 @@
 ﻿@namespace KubeUI.Core.Components.Types
 
-<Table PageSize="20" TableItem="object" Items="Items">
-    <Column TableItem="object" Title="Name">
+<Table PageSize="20" TableItem="JObject" Items="Items">
+    <Column TableItem="JObject" Title="Name" Field="@(x => x.Property("metadata").Value.Value<JObject>().Property("namespace").Value)" Sortable="true" DefaultSortColumn="true">
         <Template>
-            <a href="/CustomResourceDefinition/@((context as JToken)["metadata"]["namespace"].Value<string>())">@((context as JToken)["metadata"]["name"].Value<string>())</a>
+            <a href="/CustomObject/@(context["metadata"]["namespace"].Value<string>())/@Group/@Version/@Plural/@(context["metadata"]["name"].Value<string>())">@(context["metadata"]["name"].Value<string>())</a>
         </Template>
     </Column>
-    <Column TableItem="object" Title="Actions" Align="Align.Center" Width="5%">
+    <Column TableItem="JObject" Title="Actions" Align="Align.Center" Width="5%">
         <Template>
             <BSButtonGroup DropdownDirection="DropdownDirection.Left">
                 <BSDropdown>
