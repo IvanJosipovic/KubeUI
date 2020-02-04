@@ -1,22 +1,31 @@
 ﻿@namespace KubeUI.Core.Components.Types
 
-<Table PageSize="20" TableItem="JObject" Items="Items">
-    <Column TableItem="JObject" Title="Name" Field="@(x => x.Property("metadata").Value.Value<JObject>().Property("namespace").Value)" Sortable="true" DefaultSortColumn="true">
-        <Template>
-            <a href="/CustomObject/@(context["metadata"]["namespace"].Value<string>())/@Group/@Version/@Plural/@(context["metadata"]["name"].Value<string>())">@(context["metadata"]["name"].Value<string>())</a>
-        </Template>
-    </Column>
-    <Column TableItem="JObject" Title="Actions" Align="Align.Center" Width="5%">
-        <Template>
-            <BSButtonGroup DropdownDirection="DropdownDirection.Left">
-                <BSDropdown>
-                    <BSDropdownToggle Color="Color.Secondary" Size="Size.Small">⚙️</BSDropdownToggle>
-                    <BSDropdownMenu>
-                        <BSDropdownItem Href="javascript:void(0);" OnClick="@(async () => await Delete(context))"><i class="fas fa-trash"></i>&nbsp;&nbsp;Delete</BSDropdownItem>
-                    </BSDropdownMenu>
-                </BSDropdown>
-            </BSButtonGroup>
-        </Template>
-    </Column>
-    <Pager ShowPageNumber="true" ShowTotalCount="true" />
-</Table>
+    <Table PageSize="20" TableItem="JObject" Items="Items">
+        <Column TableItem="JObject" Title="Name" Field="@(x => x.Property("metadata").Value.Value<JObject>().Property("namespace").Value)" Sortable="true" DefaultSortColumn="true">
+            <Template>
+                <a href="/CustomObject/@(context["metadata"]["namespace"].Value<string>())/@Group/@Version/@Plural/@(context["metadata"]["name"].Value<string>())">@(context["metadata"]["name"].Value<string>())</a>
+            </Template>
+        </Column>
+        @if (Group == "helm.fluxcd.io" && Plural == "helmreleases")
+        {
+            <Column TableItem="JObject" Title="Status">
+                <Template>
+                    @(context["status"]["releaseStatus"].Value<string>())
+
+                </Template>
+            </Column>
+        }
+        <Column TableItem="JObject" Title="Actions" Align="Align.Center" Width="5%">
+            <Template>
+                <BSButtonGroup DropdownDirection="DropdownDirection.Left">
+                    <BSDropdown>
+                        <BSDropdownToggle Color="Color.Secondary" Size="Size.Small">⚙️</BSDropdownToggle>
+                        <BSDropdownMenu>
+                            <BSDropdownItem Href="javascript:void(0);" OnClick="@(async () => await Delete(context))"><i class="fas fa-trash"></i>&nbsp;&nbsp;Delete</BSDropdownItem>
+                        </BSDropdownMenu>
+                    </BSDropdown>
+                </BSButtonGroup>
+            </Template>
+        </Column>
+        <Pager ShowPageNumber="true" ShowTotalCount="true" />
+    </Table>

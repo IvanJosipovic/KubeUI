@@ -50,12 +50,11 @@ namespace KubeUI.Core.Components.Types
             {
                 switch (type)
                 {
-
                     case WatchEventType.Added:
-                        if (!Items.Any(x => (x as JObject)["metadata"]["uid"].Value<string>() == (item as JObject)["metadata"]["uid"].Value<string>()))
+                        if (!Items.Any(x => x["metadata"]["uid"].Value<string>() == item["metadata"]["uid"].Value<string>()))
                             Items.Add(item);
                         else
-                            Items[Items.FindIndex(x => (x as JObject)["metadata"]["uid"].Value<string>() == (item as JObject)["metadata"]["uid"].Value<string>())] = item;
+                            Items[Items.FindIndex(x => x["metadata"]["uid"].Value<string>() == item["metadata"]["uid"].Value<string>())] = item;
                         break;
                         //case WatchEventType.Modified:
                         //    Items[Items.FindIndex(x => x.Metadata.Uid == item.Metadata.Uid)] = item;
