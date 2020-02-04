@@ -29,7 +29,7 @@ There are three options to get around CORS:
 ### Desktop
 **Please Note:** Windows users will need to install the new [Edge (Chromium)](https://www.microsoft.com/en-us/edge") or be on Windows 10 build 2004 or higher.
 
-Download the correct version for your 
+Go to [Releases](https://github.com/IvanJosipovic/KubeUI/releases) and download the version for your OS.
 
 ## How to build?
 
