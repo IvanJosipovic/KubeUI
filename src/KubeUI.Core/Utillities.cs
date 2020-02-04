@@ -9,7 +9,7 @@ namespace KubeUI
     {
         public static string GetVersion()
         {
-            var assembly = Type.GetType("KubeUI.Wasm.Startup, KubeUI.Wasm")?.Assembly ?? Type.GetType("KubeUI.WebWindow.Startup, KubeUI.WebWindow")?.Assembly;
+            var assembly = Type.GetType("KubeUI.Wasm.Program, KubeUI.Wasm")?.Assembly ?? Type.GetType("KubeUI.WebWindow.Program, KubeUI.WebWindow")?.Assembly;
 
             return assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
         }
