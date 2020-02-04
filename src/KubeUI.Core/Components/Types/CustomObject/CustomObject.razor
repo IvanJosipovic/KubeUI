@@ -1,0 +1,24 @@
+﻿@namespace KubeUI.Core.Components.Types
+<h2>
+    <img src="_content/KubeUI.Core/png/resources/unlabeled/crd-128.png" width="32"> <a href="/CustomObjects">Custom Object</a>
+</h2>
+
+<br />
+@if (Item != null)
+{
+    <BSTabGroup>
+        <BSTabList>
+            <BSTab InitialSelection="true">
+                <BSTabLabel>Yaml</BSTabLabel>
+                <BSTabContent><YamlViewer Yaml="@Item.ToString()" /></BSTabContent>
+            </BSTab>
+
+            <BSTab>
+                <BSTabLabel>UI</BSTabLabel>
+                <BSTabContent><KubeUI.Core.Components.Dynamic.UI Item="@Item" /></BSTabContent>
+            </BSTab>
+
+        </BSTabList>
+        <BSTabSelectedContent />
+    </BSTabGroup>
+}

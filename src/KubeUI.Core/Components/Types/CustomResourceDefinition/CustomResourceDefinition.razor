@@ -6,18 +6,5 @@
 <br />
 @if (Item != null)
 {
-    <BSTabGroup>
-        <BSTabList>
-            <BSTab InitialSelection="true">
-                <BSTabLabel>Yaml</BSTabLabel>
-                <BSTabContent><YamlViewer Yaml="@k8s.Yaml.SaveToString(Item)" /></BSTabContent>
-            </BSTab>
-
-            <BSTab>
-                <BSTabLabel>Overview</BSTabLabel>
-                <BSTabContent><KubeUI.Core.Components.Dynamic.UI Item="@Item" /></BSTabContent>
-            </BSTab>
-        </BSTabList>
-        <BSTabSelectedContent />
-    </BSTabGroup>
+    <CustomObjectList Namespace="@Item.Metadata.NamespaceProperty" Group="@Item.Spec.Group" Version="@Item.Spec.Versions.First().Name" Plural="@Item.Spec.Names.Plural" />
 }
