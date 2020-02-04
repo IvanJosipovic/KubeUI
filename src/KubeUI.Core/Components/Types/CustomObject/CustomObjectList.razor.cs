@@ -56,24 +56,31 @@ namespace KubeUI.Core.Components.Types
                         else
                             Items[Items.FindIndex(x => x["metadata"]["uid"].Value<string>() == item["metadata"]["uid"].Value<string>())] = item;
                         break;
-                        //case WatchEventType.Modified:
-                        //    Items[Items.FindIndex(x => x.Metadata.Uid == item.Metadata.Uid)] = item;
-                        //    break;
-                        //case WatchEventType.Deleted:
-                        //    Items.RemoveAt(Items.FindIndex(x => x.Metadata.Uid == item.Metadata.Uid));
-                        //    break;
-                        //case WatchEventType.Error:
-                        //    break;
-                        //default:
-                        //    break;
+                    case WatchEventType.Modified:
+                        Items[Items.FindIndex(x => x["metadata"]["uid"].Value<string>() == item["metadata"]["uid"].Value<string>())] = item;
+                        break;
+                    case WatchEventType.Deleted:
+                        Items.RemoveAt(Items.FindIndex(x => x["metadata"]["uid"].Value<string>() == item["metadata"]["uid"].Value<string>()));
+                        break;
+                    case WatchEventType.Error:
+                        break;
+                    default:
+                        break;
                 }
                 StateHasChanged();
             });
         }
 
-        private async Task Delete(object crd)
+        private async Task Delete(JObject crd)
         {
-            //await Client.DeleteClusterCustomObjectAsync(crd.Metadata.Name);
+            if (Namespace?.Equals(State.AllNameSpace) != false)
+            {
+                await Client.DeleteClusterCustomObjectAsync(new V1DeleteOptions(), Group, Version, Plural, crd["metadata"]["name"].Value<string>());
+            }
+            else
+            {
+                await Client.DeleteNamespacedCustomObjectAsync(new V1DeleteOptions(), Group, Version, Namespace, Plural, crd["metadata"]["name"].Value<string>());
+            }
         }
 
         public void Dispose()
