@@ -2,9 +2,9 @@ using k8s;
 using KubeUI.Core;
 using KubeUI.Services;
 using KubeUI.Validators;
-using Microsoft.AspNetCore.Components.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using WebWindows.Blazor;
 
 namespace KubeUI.WebWindow
 {
@@ -37,7 +37,7 @@ namespace KubeUI.WebWindow
             cfg.RegisterValidatorsFromAssemblyContaining<Startup>();
         }
 
-        public void Configure(IComponentsApplicationBuilder app)
+        public void Configure(DesktopApplicationBuilder app)
         {
             app.AddComponent<App>("app");
         }
