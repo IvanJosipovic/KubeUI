@@ -1,0 +1,8 @@
+﻿<select class="form-control form-control-sm" @onchange="OnChange" title="Select Context" style="width: 200px">
+    @if(State.GetK8SConfiguration() != null) {
+        foreach (var option in State.GetK8SConfiguration()?.Contexts.Select(x => x.Name).OrderBy(x => x))
+        {
+            <option value="@option" selected="@(option == State.Context)">@option</option>
+        }
+    }
+</select>

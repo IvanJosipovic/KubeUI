@@ -19,7 +19,8 @@ namespace KubeUI.Core.Components.Types
         protected ILogger<PersistentVolume> Logger { get; set; }
 
         [Inject]
-        protected IKubernetes Client { get; set; }
+        protected IState State { get; set; }
+
 
         private V1PersistentVolume Item;
 
@@ -34,7 +35,7 @@ namespace KubeUI.Core.Components.Types
 
         private async Task Update()
         {
-            Item = await Client.ReadPersistentVolumeAsync(Name);
+            Item = await State.Client.ReadPersistentVolumeAsync(Name);
 
             StateHasChanged();
         }

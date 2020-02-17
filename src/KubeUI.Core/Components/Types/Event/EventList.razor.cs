@@ -25,7 +25,8 @@ namespace KubeUI.Core.Components.Types
         protected ILogger<EventList> Logger { get; set; }
 
         [Inject]
-        protected IKubernetes Client { get; set; }
+        protected IState State { get; set; }
+
 
         private readonly List<V1Event> Items = new List<V1Event>();
 
@@ -35,13 +36,13 @@ namespace KubeUI.Core.Components.Types
         {
             Task<HttpOperationResponse<V1EventList>> task;
 
-            if (Namespace?.Equals(State.AllNameSpace) != false)
+            if (Namespace == null)
             {
-                task = Client.ListEventForAllNamespacesWithHttpMessagesAsync(watch: true);
+                task = State.Client.ListEventForAllNamespacesWithHttpMessagesAsync(watch: true);
             }
             else
             {
-                task = Client.ListNamespacedEventWithHttpMessagesAsync(Namespace, watch: true);
+                task = State.Client.ListNamespacedEventWithHttpMessagesAsync(Namespace, watch: true);
             }
 
             watcher = task.Watch<V1Event, V1EventList>((type, item) =>

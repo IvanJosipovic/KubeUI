@@ -25,7 +25,8 @@ namespace KubeUI.Core.Components.Types
         protected ILogger<IngressList> Logger { get; set; }
 
         [Inject]
-        protected IKubernetes Client { get; set; }
+        protected IState State { get; set; }
+
 
         private readonly List<Extensionsv1beta1Ingress> Items = new List<Extensionsv1beta1Ingress>();
 
@@ -35,13 +36,13 @@ namespace KubeUI.Core.Components.Types
         {
             Task<HttpOperationResponse<Extensionsv1beta1IngressList>> task;
 
-            if (Namespace?.Equals(State.AllNameSpace) != false)
+            if (Namespace == null)
             {
-                task = Client.ListIngressForAllNamespacesWithHttpMessagesAsync(watch: true);
+                task = State.Client.ListIngressForAllNamespacesWithHttpMessagesAsync(watch: true);
             }
             else
             {
-                task = Client.ListNamespacedIngressWithHttpMessagesAsync(Namespace, watch: true);
+                task = State.Client.ListNamespacedIngressWithHttpMessagesAsync(Namespace, watch: true);
             }
 
             watcher = task.Watch<Extensionsv1beta1Ingress, Extensionsv1beta1IngressList>((type, item) =>
@@ -71,7 +72,7 @@ namespace KubeUI.Core.Components.Types
 
         private async Task Delete(Extensionsv1beta1Ingress item)
         {
-            await Client.DeleteNamespacedIngressAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
+            await State.Client.DeleteNamespacedIngressAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
         }
 
         public void Dispose()

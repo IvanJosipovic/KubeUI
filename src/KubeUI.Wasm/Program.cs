@@ -13,6 +13,7 @@ namespace KubeUI.Wasm
         public static async Task Main(string[] args)
         {
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
+            
             builder.RootComponents.Add<App>("app");
 
             builder.Services.AddLogging(builder => builder
@@ -26,12 +27,6 @@ namespace KubeUI.Wasm
             builder.Services.AddSingleton<IState, State>();
 
             builder.Services.AddScoped<IAppInsights, AppInsights>();
-
-            var config = new KubernetesClientConfiguration { Host = "http://127.0.0.1:8888" };
-            builder.Services.AddSingleton(config);
-
-            // Setup the http client
-            builder.Services.AddSingleton<IKubernetes>((serviceProvider) => new Kubernetes(serviceProvider.GetRequiredService<KubernetesClientConfiguration>()));
 
             await builder.Build().RunAsync();
         }

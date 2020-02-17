@@ -19,7 +19,7 @@ namespace KubeUI.Core.Components.Types
         public string Name { get; set; }
 
         [Inject]
-        protected IKubernetes Client { get; set; }
+        protected IState State { get; set; }
 
         private V1ConfigMap Item;
 
@@ -34,7 +34,7 @@ namespace KubeUI.Core.Components.Types
 
         private async Task Update()
         {
-            Item = await Client.ReadNamespacedConfigMapAsync(Name, Namespace);
+            Item = await State.Client.ReadNamespacedConfigMapAsync(Name, Namespace);
 
             StateHasChanged();
         }

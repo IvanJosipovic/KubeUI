@@ -25,7 +25,8 @@ namespace KubeUI.Core.Components.Types
         protected ILogger<DeploymentList> Logger { get; set; }
 
         [Inject]
-        protected IKubernetes Client { get; set; }
+        protected IState State { get; set; }
+
 
         private List<V1Deployment> Items = new List<V1Deployment>();
 
@@ -35,13 +36,13 @@ namespace KubeUI.Core.Components.Types
         {
             Task<HttpOperationResponse<V1DeploymentList>> task;
 
-            if (Namespace?.Equals(State.AllNameSpace) != false)
+            if (Namespace == null)
             {
-                task = Client.ListDeploymentForAllNamespacesWithHttpMessagesAsync(watch: true);
+                task = State.Client.ListDeploymentForAllNamespacesWithHttpMessagesAsync(watch: true);
             }
             else
             {
-                task = Client.ListNamespacedDeploymentWithHttpMessagesAsync(Namespace, watch: true);
+                task = State.Client.ListNamespacedDeploymentWithHttpMessagesAsync(Namespace, watch: true);
             }
 
             watcher = task.Watch<V1Deployment, V1DeploymentList>((type, item) =>
@@ -71,7 +72,7 @@ namespace KubeUI.Core.Components.Types
 
         private async Task Delete(V1Deployment item)
         {
-            await Client.DeleteNamespacedDeploymentAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
+            await State.Client.DeleteNamespacedDeploymentAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
         }
 
         private async Task ScaleUp(V1Deployment item)
@@ -79,7 +80,7 @@ namespace KubeUI.Core.Components.Types
             var patch = new JsonPatchDocument<V1Deployment>();
             patch.Replace(e => e.Spec.Replicas, item.Spec.Replicas.GetValueOrDefault() + 1);
 
-            await Client.PatchNamespacedDeploymentScaleAsync(new V1Patch(patch), item.Metadata.Name, item.Metadata.NamespaceProperty);
+            await State.Client.PatchNamespacedDeploymentScaleAsync(new V1Patch(patch), item.Metadata.Name, item.Metadata.NamespaceProperty);
         }
 
         private async Task ScaleDown(V1Deployment item)
@@ -92,7 +93,7 @@ namespace KubeUI.Core.Components.Types
             var patch = new JsonPatchDocument<V1Deployment>();
             patch.Replace(e => e.Spec.Replicas, item.Spec.Replicas.Value - 1);
 
-            await Client.PatchNamespacedDeploymentScaleAsync(new V1Patch(patch), item.Metadata.Name, item.Metadata.NamespaceProperty);
+            await State.Client.PatchNamespacedDeploymentScaleAsync(new V1Patch(patch), item.Metadata.Name, item.Metadata.NamespaceProperty);
         }
 
         public void Dispose()

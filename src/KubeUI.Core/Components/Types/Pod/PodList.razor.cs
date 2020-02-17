@@ -24,7 +24,7 @@ namespace KubeUI.Core.Components.Types
         protected ILogger<PodList> Logger { get; set; }
 
         [Inject]
-        protected IKubernetes Client { get; set; }
+        protected IState State { get; set; }
 
         private readonly List<V1Pod> Items  = new List<V1Pod>();
 
@@ -34,13 +34,13 @@ namespace KubeUI.Core.Components.Types
         {
             Task<HttpOperationResponse<V1PodList>> task;
 
-            if (Namespace?.Equals(State.AllNameSpace) != false)
+            if (Namespace == null)
             {
-                task = Client.ListPodForAllNamespacesWithHttpMessagesAsync(watch: true);
+                task = State.Client.ListPodForAllNamespacesWithHttpMessagesAsync(watch: true);
             }
             else
             {
-                task = Client.ListNamespacedPodWithHttpMessagesAsync(Namespace, watch: true);
+                task = State.Client.ListNamespacedPodWithHttpMessagesAsync(Namespace, watch: true);
             }
 
             watcher = task.Watch<V1Pod, V1PodList>((type, item) =>
@@ -70,7 +70,7 @@ namespace KubeUI.Core.Components.Types
 
         private async Task Delete(V1Pod item)
         {
-            await Client.DeleteNamespacedPodAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
+            await State.Client.DeleteNamespacedPodAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
         }
 
         public void Dispose()

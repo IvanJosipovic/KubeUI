@@ -12,7 +12,8 @@ namespace KubeUI.Core.Components.Types
     public partial class CustomResourceDefinitionList : IDisposable
     {
         [Inject]
-        protected IKubernetes Client { get; set; }
+        protected IState State { get; set; }
+
 
         private List<V1CustomResourceDefinition> Items = new List<V1CustomResourceDefinition>();
 
@@ -20,7 +21,7 @@ namespace KubeUI.Core.Components.Types
 
         protected override void OnParametersSet()
         {
-            watcher = Client.ListCustomResourceDefinitionWithHttpMessagesAsync(watch: true).Watch<V1CustomResourceDefinition, V1CustomResourceDefinitionList>((type, item) =>
+            watcher = State.Client.ListCustomResourceDefinitionWithHttpMessagesAsync(watch: true).Watch<V1CustomResourceDefinition, V1CustomResourceDefinitionList>((type, item) =>
             {
                 switch (type)
                 {
@@ -47,7 +48,7 @@ namespace KubeUI.Core.Components.Types
 
         private async Task Delete(V1CustomResourceDefinition crd)
         {
-            await Client.DeleteCustomResourceDefinitionAsync(crd.Metadata.Name);
+            await State.Client.DeleteCustomResourceDefinitionAsync(crd.Metadata.Name);
         }
 
         public void Dispose()
