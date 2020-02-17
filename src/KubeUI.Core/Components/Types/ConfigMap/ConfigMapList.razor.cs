@@ -24,7 +24,7 @@ namespace KubeUI.Core.Components.Types
         protected ILogger<ConfigMapList> Logger { get; set; }
 
         [Inject]
-        protected IKubernetes Client { get; set; }
+        protected IState State { get; set; }
 
         private readonly List<V1ConfigMap> Items = new List<V1ConfigMap>();
 
@@ -34,13 +34,13 @@ namespace KubeUI.Core.Components.Types
         {
             Task<HttpOperationResponse<V1ConfigMapList>> task;
 
-            if (Namespace?.Equals(State.AllNameSpace) != false)
+            if (Namespace == null)
             {
-                task = Client.ListConfigMapForAllNamespacesWithHttpMessagesAsync(watch: true);
+                task = State.Client.ListConfigMapForAllNamespacesWithHttpMessagesAsync(watch: true);
             }
             else
             {
-                task = Client.ListNamespacedConfigMapWithHttpMessagesAsync(Namespace, watch: true);
+                task = State.Client.ListNamespacedConfigMapWithHttpMessagesAsync(Namespace, watch: true);
             }
 
             watcher = task.Watch<V1ConfigMap, V1ConfigMapList>((type, item) =>
@@ -70,7 +70,7 @@ namespace KubeUI.Core.Components.Types
 
         private async Task Delete(V1ConfigMap item)
         {
-            await Client.DeleteNamespacedConfigMapAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
+            await State.Client.DeleteNamespacedConfigMapAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
         }
 
         public void Dispose()

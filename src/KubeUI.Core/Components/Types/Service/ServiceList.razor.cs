@@ -24,7 +24,7 @@ namespace KubeUI.Core.Components.Types
         protected ILogger<ServiceList> Logger { get; set; }
 
         [Inject]
-        protected IKubernetes Client { get; set; }
+        protected IState State { get; set; }
 
         private readonly List<V1Service> Items = new List<V1Service>();
 
@@ -34,13 +34,13 @@ namespace KubeUI.Core.Components.Types
         {
             Task<HttpOperationResponse<V1ServiceList>> task;
 
-            if (Namespace?.Equals(State.AllNameSpace) != false)
+            if (Namespace == null)
             {
-                task = Client.ListServiceForAllNamespacesWithHttpMessagesAsync(watch: true);
+                task = State.Client.ListServiceForAllNamespacesWithHttpMessagesAsync(watch: true);
             }
             else
             {
-                task = Client.ListNamespacedServiceWithHttpMessagesAsync(Namespace, watch: true);
+                task = State.Client.ListNamespacedServiceWithHttpMessagesAsync(Namespace, watch: true);
             }
 
             watcher = task.Watch<V1Service, V1ServiceList>((type, item) =>
@@ -70,7 +70,7 @@ namespace KubeUI.Core.Components.Types
 
         private async Task Delete(V1Service item)
         {
-            await Client.DeleteNamespacedServiceAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
+            await State.Client.DeleteNamespacedServiceAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
         }
 
         public void Dispose()

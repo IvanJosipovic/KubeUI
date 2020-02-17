@@ -21,7 +21,8 @@ namespace KubeUI.Core.Components.Types
         public Expression<Func<V1PersistentVolumeClaim, bool>> Filter { get; set; }
 
         [Inject]
-        protected IKubernetes Client { get; set; }
+        protected IState State { get; set; }
+
 
         private readonly List<V1PersistentVolumeClaim> Items = new List<V1PersistentVolumeClaim>();
 
@@ -31,13 +32,13 @@ namespace KubeUI.Core.Components.Types
         {
             Task<HttpOperationResponse<V1PersistentVolumeClaimList>> task;
 
-            if (Namespace?.Equals(State.AllNameSpace) != false)
+            if (Namespace == null)
             {
-                task = Client.ListPersistentVolumeClaimForAllNamespacesWithHttpMessagesAsync(watch: true);
+                task = State.Client.ListPersistentVolumeClaimForAllNamespacesWithHttpMessagesAsync(watch: true);
             }
             else
             {
-                task = Client.ListNamespacedPersistentVolumeClaimWithHttpMessagesAsync(Namespace, watch: true);
+                task = State.Client.ListNamespacedPersistentVolumeClaimWithHttpMessagesAsync(Namespace, watch: true);
             }
 
             watcher = task.Watch<V1PersistentVolumeClaim, V1PersistentVolumeClaimList>((type, item) =>
@@ -67,7 +68,7 @@ namespace KubeUI.Core.Components.Types
 
         private async Task Delete(V1PersistentVolumeClaim item)
         {
-            await Client.DeleteNamespacedPersistentVolumeClaimAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
+            await State.Client.DeleteNamespacedPersistentVolumeClaimAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
         }
 
         public void Dispose()

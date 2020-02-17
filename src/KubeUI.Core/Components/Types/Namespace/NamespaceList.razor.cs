@@ -16,7 +16,8 @@ namespace KubeUI.Core.Components.Types
         protected ILogger<NamespaceList> Logger { get; set; }
 
         [Inject]
-        protected IKubernetes Client { get; set; }
+        protected IState State { get; set; }
+
 
         private readonly List<V1Namespace> Items = new List<V1Namespace>();
 
@@ -24,7 +25,7 @@ namespace KubeUI.Core.Components.Types
 
         protected override void OnParametersSet()
         {
-            watcher = Client.ListNamespaceWithHttpMessagesAsync(watch: true)
+            watcher = State.Client.ListNamespaceWithHttpMessagesAsync(watch: true)
                 .Watch<V1Namespace, V1NamespaceList>((type, item) =>
             {
                 switch (type)
@@ -52,7 +53,7 @@ namespace KubeUI.Core.Components.Types
 
         private async Task Delete(V1Namespace item)
         {
-            await Client.DeleteNamespaceAsync(item.Metadata.Name);
+            await State.Client.DeleteNamespaceAsync(item.Metadata.Name);
         }
 
         public void Dispose()

@@ -16,7 +16,7 @@ namespace KubeUI.Core.Components.Types
         public Expression<Func<V1Node, bool>> Filter { get; set; }
 
         [Inject]
-        protected IKubernetes Client { get; set; }
+        protected IState State { get; set; }
 
         private readonly List<V1Node> Items = new List<V1Node>();
 
@@ -24,7 +24,7 @@ namespace KubeUI.Core.Components.Types
 
         protected override void OnParametersSet()
         {
-            watcher = Client.ListNodeWithHttpMessagesAsync(watch: true)
+            watcher = State.Client.ListNodeWithHttpMessagesAsync(watch: true)
                 .Watch<V1Node, V1NodeList>((type, item) =>
             {
                 Console.WriteLine(type.ToString());
@@ -53,7 +53,7 @@ namespace KubeUI.Core.Components.Types
 
         private async Task Delete(V1Node item)
         {
-            await Client.DeleteNodeAsync(item.Metadata.Name);
+            await State.Client.DeleteNodeAsync(item.Metadata.Name);
         }
 
         public void Dispose()

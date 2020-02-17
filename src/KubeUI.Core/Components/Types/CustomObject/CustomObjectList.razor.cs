@@ -15,7 +15,8 @@ namespace KubeUI.Core.Components.Types
     public partial class CustomObjectList : IDisposable
     {
         [Inject]
-        protected IKubernetes Client { get; set; }
+        protected IState State { get; set; }
+
 
         [Parameter]
         public string Namespace { get; set; }
@@ -37,13 +38,13 @@ namespace KubeUI.Core.Components.Types
         {
             Task<HttpOperationResponse<object>> task;
 
-            if (Namespace?.Equals(State.AllNameSpace) != false)
+            if (Namespace == null)
             {
-                task = Client.ListClusterCustomObjectWithHttpMessagesAsync(Group, Version, Plural, watch: true);
+                task = State.Client.ListClusterCustomObjectWithHttpMessagesAsync(Group, Version, Plural, watch: true);
             }
             else
             {
-                task = Client.ListNamespacedCustomObjectWithHttpMessagesAsync(Group, Version, Namespace, Plural, watch: true);
+                task = State.Client.ListNamespacedCustomObjectWithHttpMessagesAsync(Group, Version, Namespace, Plural, watch: true);
             }
 
             watcher = task.Watch<JObject, object> ((type, item) =>
@@ -73,13 +74,13 @@ namespace KubeUI.Core.Components.Types
 
         private async Task Delete(JObject crd)
         {
-            if (Namespace?.Equals(State.AllNameSpace) != false)
+            if (Namespace == null)
             {
-                await Client.DeleteClusterCustomObjectAsync(new V1DeleteOptions(), Group, Version, Plural, crd["metadata"]["name"].Value<string>());
+                await State.Client.DeleteClusterCustomObjectAsync(new V1DeleteOptions(), Group, Version, Plural, crd["metadata"]["name"].Value<string>());
             }
             else
             {
-                await Client.DeleteNamespacedCustomObjectAsync(new V1DeleteOptions(), Group, Version, Namespace, Plural, crd["metadata"]["name"].Value<string>());
+                await State.Client.DeleteNamespacedCustomObjectAsync(new V1DeleteOptions(), Group, Version, Namespace, Plural, crd["metadata"]["name"].Value<string>());
             }
         }
 

@@ -13,7 +13,8 @@ namespace KubeUI.Core.Components.Types
         public string Name { get; set; }
 
         [Inject]
-        protected IKubernetes Client { get; set; }
+        protected IState State { get; set; }
+
 
         private V1CustomResourceDefinition Item;
 
@@ -24,7 +25,7 @@ namespace KubeUI.Core.Components.Types
 
         private async Task Update()
         {
-            Item = await Client.ReadCustomResourceDefinitionAsync(Name);
+            Item = await State.Client.ReadCustomResourceDefinitionAsync(Name);
 
             StateHasChanged();
         }

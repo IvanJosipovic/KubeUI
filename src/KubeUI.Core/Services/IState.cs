@@ -2,19 +2,31 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System;
+using System.IO;
+using k8s.KubeConfigModels;
+using System.Runtime.CompilerServices;
+using k8s;
 
 namespace KubeUI.Services
 {
     public interface IState
     {
-        string Namespace { get; set; }
+        IKubernetes Client { get; set; }
 
-        Dictionary<Type, Collection<object>> Data { get; set; }
+        string Context { get; set; }
+
+        string Namespace { get; set; }
 
         event PropertyChangedEventHandler PropertyChanged;
 
         void SetUILevel(UILevel uILevel);
+
         UILevel GetUILevel();
-        void RaisePropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string propertyName = null);
+
+        void SetK8SConfiguration(string config);
+
+        K8SConfiguration GetK8SConfiguration();
+
+        void RaisePropertyChanged([CallerMemberName] string propertyName = null);
     }
 }

@@ -29,7 +29,7 @@ namespace KubeUI.Core.Components.Types
         protected ILogger<PodLogs> Logger { get; set; }
 
         [Inject]
-        protected IKubernetes Client { get; set; }
+        protected KubeUI.Services.IState State { get; set; }
 
         private string Logs;
 
@@ -55,7 +55,7 @@ namespace KubeUI.Core.Components.Types
         {
             try
             {
-                var stream = await Client.ReadNamespacedPodLogAsync(Name, Namespace, container: Container, tailLines: Lines, previous: Previous);
+                var stream = await State.Client.ReadNamespacedPodLogAsync(Name, Namespace, container: Container, tailLines: Lines, previous: Previous);
 
                 using (var reader = new StreamReader(stream))
                 {

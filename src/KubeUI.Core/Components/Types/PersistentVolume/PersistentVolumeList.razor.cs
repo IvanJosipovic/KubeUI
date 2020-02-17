@@ -18,7 +18,8 @@ namespace KubeUI.Core.Components.Types
         public Expression<Func<V1PersistentVolume, bool>> Filter { get; set; }
 
         [Inject]
-        protected IKubernetes Client { get; set; }
+        protected IState State { get; set; }
+
 
         private readonly List<V1PersistentVolume> Items = new List<V1PersistentVolume>();
 
@@ -26,7 +27,7 @@ namespace KubeUI.Core.Components.Types
 
         protected override void OnParametersSet()
         {
-            watcher = Client.ListPersistentVolumeWithHttpMessagesAsync(watch: true).Watch<V1PersistentVolume, V1PersistentVolumeList>((type, item) =>
+            watcher = State.Client.ListPersistentVolumeWithHttpMessagesAsync(watch: true).Watch<V1PersistentVolume, V1PersistentVolumeList>((type, item) =>
             {
                 switch (type)
                 {
@@ -53,7 +54,7 @@ namespace KubeUI.Core.Components.Types
 
         private async Task Delete(V1PersistentVolume item)
         {
-            await Client.DeletePersistentVolumeAsync(item.Metadata.Name);
+            await State.Client.DeletePersistentVolumeAsync(item.Metadata.Name);
         }
 
         public void Dispose()

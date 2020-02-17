@@ -13,10 +13,7 @@ namespace KubeUI.Core.Components
     public partial class Namespaces : IDisposable
     {
         [Inject]
-        protected IState state { get; set; }
-
-        [Inject]
-        protected IKubernetes Client { get; set; }
+        protected IState State { get; set; }
 
         [Inject]
         protected NavigationManager navigationManager { get; set; }
@@ -27,7 +24,22 @@ namespace KubeUI.Core.Components
 
         protected override void OnInitialized()
         {
-            watcher = Client.ListNamespaceWithHttpMessagesAsync(watch: true).Watch<V1Namespace, V1NamespaceList>((type, item) =>
+            State.PropertyChanged += (xo, e) =>
+            {
+                if (e.PropertyName == Services.State.ContextNotification)
+                {
+                    Init();
+                }
+            };
+            Init();
+        }
+
+        private void Init()
+        {
+            watcher?.Dispose();
+            Items.Clear();
+            watcher = State.Client?.ListNamespaceWithHttpMessagesAsync(watch: true)
+                .Watch<V1Namespace, V1NamespaceList>((type, item) =>
             {
                 switch (type)
                 {
@@ -54,13 +66,30 @@ namespace KubeUI.Core.Components
 
         private void OnChange(ChangeEventArgs args)
         {
-            state.Namespace = args.Value.ToString();
+            var newVal = args.Value.ToString();
+
+            if (newVal == "0000-0000-0000")
+            {
+                State.Namespace = null;
+            } else
+            {
+                State.Namespace = newVal;
+            }
+            
             navigationManager.NavigateTo("/");
         }
 
         public void Dispose()
         {
             watcher?.Dispose();
+
+            State.PropertyChanged -= (xo, e) =>
+            {
+                if (e.PropertyName == KubeUI.Services.State.ContextNotification)
+                {
+                    Init();
+                }
+            };
         }
     }
 }

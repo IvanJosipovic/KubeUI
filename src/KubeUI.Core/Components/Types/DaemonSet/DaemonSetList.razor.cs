@@ -25,7 +25,8 @@ namespace KubeUI.Core.Components.Types
         protected ILogger<DaemonSetList> Logger { get; set; }
 
         [Inject]
-        protected IKubernetes Client { get; set; }
+        protected IState State { get; set; }
+
 
         private static readonly object Locker = new object();
 
@@ -37,13 +38,13 @@ namespace KubeUI.Core.Components.Types
         {
             Task<HttpOperationResponse<V1DaemonSetList>> task;
 
-            if (Namespace?.Equals(State.AllNameSpace) != false)
+            if (Namespace == null)
             {
-                task = Client.ListDaemonSetForAllNamespacesWithHttpMessagesAsync(watch: true);
+                task = State.Client.ListDaemonSetForAllNamespacesWithHttpMessagesAsync(watch: true);
             }
             else
             {
-                task = Client.ListNamespacedDaemonSetWithHttpMessagesAsync(Namespace, watch: true);
+                task = State.Client.ListNamespacedDaemonSetWithHttpMessagesAsync(Namespace, watch: true);
             }
 
             watcher = task.Watch<V1DaemonSet, V1DaemonSetList>((type, item) =>
@@ -77,7 +78,7 @@ namespace KubeUI.Core.Components.Types
 
         private async Task Delete(V1DaemonSet item)
         {
-            await Client.DeleteNamespacedDeploymentAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
+            await State.Client.DeleteNamespacedDeploymentAsync(item.Metadata.Name, item.Metadata.NamespaceProperty);
         }
 
         public void Dispose()

@@ -12,7 +12,7 @@ namespace KubeUI.Core.Components.Types
     public partial class CustomObject
     {
         [Inject]
-        protected IKubernetes Client { get; set; }
+        protected IState State { get; set; }
 
         [Parameter]
         public string Namespace { get; set; }
@@ -38,13 +38,13 @@ namespace KubeUI.Core.Components.Types
 
         private async Task Update()
         {
-            if (Namespace?.Equals(State.AllNameSpace) != false)
+            if (Namespace == null)
             {
-                Item = await Client.GetClusterCustomObjectAsync(Group, Version, Plural, Name);
+                Item = await State.Client.GetClusterCustomObjectAsync(Group, Version, Plural, Name);
             }
             else
             {
-                Item = await Client.GetNamespacedCustomObjectAsync(Group, Version, Namespace, Plural, Name);
+                Item = await State.Client.GetNamespacedCustomObjectAsync(Group, Version, Namespace, Plural, Name);
             }
 
             StateHasChanged();
