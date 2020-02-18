@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="BlazorFileSaver" Version="3.1.0" />
+    <PackageReference Include="BlazorFileSaver" Version="3.1.1" />
     <PackageReference Include="BlazorStrap" Version="1.1.101" />
     <PackageReference Include="BlazorTable" Version="1.1.0" />
     <PackageReference Include="FluentValidation" Version="8.6.1" />
