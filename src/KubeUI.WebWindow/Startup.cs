@@ -28,8 +28,10 @@ namespace KubeUI.WebWindow
             cfg.RegisterValidatorsFromAssemblyContaining<Startup>();
         }
 
-        public void Configure(DesktopApplicationBuilder app)
+        public void Configure(DesktopApplicationBuilder app, WebWindows.WebWindow window)
         {
+            window.SetIconFile("wwwroot/favicon.ico");
+
             app.AddComponent<App>("app");
         }
     }
