@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="WebWindow.Blazor" Version="0.1.0-20200214.9" />
+    <PackageReference Include="WebWindow.Blazor" Version="0.1.0-20200214.10" />
   </ItemGroup>
 
   <ItemGroup>
