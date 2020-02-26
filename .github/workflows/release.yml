@@ -17,7 +17,7 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 3.1.101
+        dotnet-version: 3.1.102
 
     - name: Publish
       working-directory: src/KubeUI.Wasm
@@ -25,7 +25,7 @@ jobs:
       shell: pwsh
       
     - name: Deploy to Production
-      uses: ivanjosipovic/actions/cli@master
+      uses: netlify/actions/cli@master
       with:
         args: deploy --prod --json -d src/KubeUI.Wasm/bin/Release/netstandard2.1/publish/KubeUI.Wasm/dist/
       env:
@@ -67,7 +67,7 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 3.1.101
+        dotnet-version: 3.1.102
 
     - name: Publish
       working-directory: src/KubeUI.WebWindow

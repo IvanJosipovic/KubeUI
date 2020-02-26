@@ -16,7 +16,7 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 3.1.101
+        dotnet-version: 3.1.102
 
     - name: Publish
       working-directory: src/KubeUI.Wasm
@@ -24,18 +24,12 @@ jobs:
 
     - name: Deploy to Test
       id: netlify
-      uses: ivanjosipovic/actions/cli@master
+      uses: netlify/actions/cli@master
       with:
         args: deploy --json -d src/KubeUI.Wasm/bin/Release/netstandard2.1/publish/KubeUI.Wasm/dist/
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN_CI }}
         NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID_CI }}
-        
-    - name: Get Test Address
-      run: |
-        $url = $(ConvertFrom-Json '${{ steps.netlify.outputs.output }}').deploy_url;
-        Write-Output $url;
-      shell: pwsh
 
   build2:
     name: Build WebWindow
@@ -57,7 +51,7 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 3.1.100
+        dotnet-version: 3.1.102
 
     - name: Publish
       working-directory: src/KubeUI.WebWindow
