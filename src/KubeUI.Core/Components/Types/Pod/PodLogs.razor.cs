@@ -1,4 +1,5 @@
 ﻿using k8s;
+using KubeUI.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
 using System;
@@ -29,7 +30,7 @@ namespace KubeUI.Core.Components.Types
         protected ILogger<PodLogs> Logger { get; set; }
 
         [Inject]
-        protected KubeUI.Services.IState State { get; set; }
+        protected IState State { get; set; }
 
         private string Logs;
 
