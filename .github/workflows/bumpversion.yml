@@ -47,11 +47,10 @@ jobs:
       with:
         name: new_tag.config
         path: .
+
     - name: Set Version
       id: version
       run: |
-        Get-ChildItem;
-        Get-ChildItem -Path "new_tag.config";
         $new_tag = (Get-Content -Path "new_tag.config").Trim();
         Remove-Item -Path "new_tag.config";
         Write-Output $new_tag;
@@ -114,7 +113,8 @@ jobs:
       uses: actions/download-artifact@v1.0.0
       with:
         name: new_tag.config
-   
+        path: .
+
     - name: Set Version
       id: version
       run: |
@@ -149,6 +149,7 @@ jobs:
       uses: actions/download-artifact@v1.0.0
       with:
         name: new_tag.config
+        path: .
 
     - name: Set Version
       id: version
