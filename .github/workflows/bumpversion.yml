@@ -34,4 +34,4 @@ jobs:
         # Artifact name
         name: new_tag.config
         # Directory containing files to upload
-        path: /new_tag.config
+        path: new_tag.config
