@@ -5,6 +5,7 @@
     <OutputType>WinExe</OutputType>
     <IsTransformWebConfigDisabled>true</IsTransformWebConfigDisabled>
     <ApplicationIcon>wwwroot\favicon.ico</ApplicationIcon>
+    <AssemblyName>KubeUI</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>

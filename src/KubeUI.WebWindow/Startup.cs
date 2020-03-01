@@ -4,6 +4,7 @@ using KubeUI.Services;
 using KubeUI.Validators;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.IO;
 using WebWindows.Blazor;
 
 namespace KubeUI.WebWindow
@@ -32,7 +33,9 @@ namespace KubeUI.WebWindow
 
         public void Configure(DesktopApplicationBuilder app, WebWindows.WebWindow window)
         {
-            window.SetIconFile("wwwroot/favicon.ico");
+            var executingDir = Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
+
+            window.SetIconFile(Path.Combine(executingDir, "wwwroot/favicon.ico"));
 
             app.AddComponent<App>("app");
         }
