@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <OutputType>WinExe</OutputType>
+    <IsTransformWebConfigDisabled>true</IsTransformWebConfigDisabled>
+    <ApplicationIcon>wwwroot\favicon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,9 +20,5 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-  
-  <PropertyGroup>
-    <IsTransformWebConfigDisabled>true</IsTransformWebConfigDisabled>
-  </PropertyGroup>
   
 </Project>
