@@ -65,7 +65,7 @@ jobs:
 
     - name: Publish
       working-directory: src/KubeUI.Wasm
-      run: dotnet publish -c Release -p:Version=${{ steps.version.value }}
+      run: dotnet publish -c Release -p:Version=${{ steps.version.outputs.value }}
       shell: pwsh
       
     - name: Deploy to Production
@@ -132,7 +132,7 @@ jobs:
 
     - name: Publish
       working-directory: src/KubeUI.WebWindow
-      run: dotnet publish -r ${{matrix.RUNTIME}} -c Release -p:SelfContained=true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:DebugType=None -p:Version=${{ steps.version.value }}
+      run: dotnet publish -r ${{matrix.RUNTIME}} -c Release -p:SelfContained=true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:DebugType=None -p:Version=${{ steps.version.outputs.value }}
       shell: pwsh
 
     - uses: actions/upload-artifact@v1
@@ -167,8 +167,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ steps.version.tag }}
-        release_name: Release ${{ steps.version.tag }}
+        tag_name: ${{ steps.version.outputs.tag }}
+        release_name: Release ${{ steps.version.outputs.tag }}
         draft: true
         prerelease: false
 
