@@ -55,7 +55,7 @@ jobs:
 
     - name: Publish
       working-directory: src/KubeUI.WebWindow
-      run: dotnet publish -r ${{matrix.RUNTIME}} -c Release -p:SelfContained=true -p:PublishSingleFile=true -p:PublishTrimmed=true
+      run: dotnet publish -r ${{matrix.RUNTIME}} -c Release -p:SelfContained=true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:DebugType=None
 
     - uses: actions/upload-artifact@v1
       with:

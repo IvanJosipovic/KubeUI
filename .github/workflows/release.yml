@@ -71,7 +71,7 @@ jobs:
 
     - name: Publish
       working-directory: src/KubeUI.WebWindow
-      run: dotnet publish -r ${{matrix.RUNTIME}} -c Release -p:SelfContained=true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:Version=$($Env:GITHUB_REF.Substring($Env:GITHUB_REF.IndexOf("/v") + 2))
+      run: dotnet publish -r ${{matrix.RUNTIME}} -c Release -p:SelfContained=true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:DebugType=None -p:Version=$($Env:GITHUB_REF.Substring($Env:GITHUB_REF.IndexOf("/v") + 2))
       shell: pwsh
 
     - uses: actions/upload-artifact@v1
