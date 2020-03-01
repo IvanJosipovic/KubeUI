@@ -3,7 +3,7 @@ name: Bump version
 on:
   push:
     branches:
-      - '*'
+      - master
 
 jobs:
   bump_version:
@@ -19,7 +19,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         WITH_V: true
         DRY_RUN: true
-        RELEASE_BRANCHES: .*
 
     - name: Set Version
       run: |
@@ -169,7 +168,7 @@ jobs:
       with:
         tag_name: ${{ steps.version.outputs.tag }}
         release_name: Release ${{ steps.version.outputs.tag }}
-        draft: true
+        draft: false
         prerelease: false
 
     - name: Download artifact win-x64
