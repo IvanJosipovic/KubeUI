@@ -3,18 +3,35 @@ name: Bump version
 on:
   push:
     branches:
-      - 'master'
+      - '*'
 
 jobs:
   build:
+    name: Bump Version
     runs-on: ubuntu-latest    
     steps:
     - uses: actions/checkout@master
-      with:
-        fetch-depth: '0'
+
     - name: Bump version and push tag
+      id: github-tag-action
       uses: anothrNick/github-tag-action@master
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         WITH_V: true
         DRY_RUN: true
+        RELEASE_BRANCHES: .*
+
+    - name: Set Version
+      run: |
+        $new_tag = '${{ steps.github-tag-action.outputs.new_tag }}';
+        Write-Output $new_tag;
+        Set-Content -Path "new_tag.config" -Value $new_tag;
+      shell: pwsh
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        # Artifact name
+        name: new_tag.config
+        # Directory containing files to upload
+        path: /new_tag.config
