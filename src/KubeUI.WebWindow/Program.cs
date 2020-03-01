@@ -1,3 +1,4 @@
+using System.IO;
 using WebWindows.Blazor;
 
 namespace KubeUI.WebWindow
@@ -6,7 +7,8 @@ namespace KubeUI.WebWindow
     {
         public static void Main(string[] args)
         {
-            ComponentsDesktop.Run<Startup>("KubeUI", "wwwroot/index.html");
+            var executingDir = Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
+            ComponentsDesktop.Run<Startup>("KubeUI", Path.Combine(executingDir, "wwwroot/index.html"));
         }
     }
 }
