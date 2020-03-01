@@ -14,27 +14,21 @@
             }
         ); window[aiName] = aisdk, aisdk.queue && 0 === aisdk.queue.length && aisdk.trackPageView({});
     </script>
-    <script>
-        window.trackPageView = () => {
-            return appInsights.trackPageView();
-        };
-        window.trackEvent = (name) => {
-            return appInsights.trackEvent({ name: name });
-        };
-        window.loadData = (key) => {
-            return localStorage.getItem(key);
-        };
-        window.saveData = (key, data) => {
-            return localStorage.setItem(key, data);
-        };
-    </script>
     <link href="_content/KubeUI.Core/lib/twitter-bootstrap/css/bootstrap.min.css" rel="stylesheet" />
     <link href="_content/KubeUI.Core/lib/font-awesome/css/all.min.css" rel="stylesheet" />
     <link href="_content/KubeUI.Core/css/site.css" rel="stylesheet" />
 </head>
 <body>
     <app>
-        <div class="loader">Loading...</div>
+        <div class="modal-overlay">
+            <div class="spinner">
+                <div class="rect1"></div>
+                <div class="rect2"></div>
+                <div class="rect3"></div>
+                <div class="rect4"></div>
+                <div class="rect5"></div>
+            </div>
+        </div>
     </app>
     <div id="blazor-error-ui">
         An unhandled error has occurred.
