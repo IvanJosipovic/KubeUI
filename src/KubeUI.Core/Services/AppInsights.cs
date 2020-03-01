@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Components.Routing;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
+using System.Threading.Tasks;
 
 namespace KubeUI.Services
 {
@@ -17,14 +18,14 @@ namespace KubeUI.Services
             NavigationManager.LocationChanged += NavigationManager_LocationChanged;
         }
 
-        private void NavigationManager_LocationChanged(object sender, LocationChangedEventArgs e)
+        private async void NavigationManager_LocationChanged(object sender, LocationChangedEventArgs e)
         {
-            JSRuntime.InvokeVoidAsync("trackPageView");
+            await JSRuntime.InvokeVoidAsync("appInsights.trackPageView");
         }
 
-        public void TrackEvent(string name)
+        public async Task TrackEvent(string name)
         {
-            JSRuntime.InvokeVoidAsync("trackEvent", name);
+            await JSRuntime.InvokeVoidAsync("appInsights.trackEvent", new { name = name });
         }
     }
 }

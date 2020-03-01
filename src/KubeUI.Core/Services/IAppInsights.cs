@@ -1,7 +1,9 @@
-﻿namespace KubeUI.Services
+﻿using System.Threading.Tasks;
+
+namespace KubeUI.Services
 {
     public interface IAppInsights
     {
-        void TrackEvent(string name);
+        Task TrackEvent(string name);
     }
 }
