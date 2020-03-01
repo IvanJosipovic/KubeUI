@@ -23,6 +23,8 @@ namespace KubeUI.WebWindow
             services.AddSingleton<IState, State>();
 
             services.AddScoped<IAppInsights, AppInsights>();
+            
+            services.AddSingleton<Updater>();
 
             var cfg = new FluentValidationMvcConfiguration();
             cfg.RegisterValidatorsFromAssemblyContaining<Startup>();
