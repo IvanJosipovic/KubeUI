@@ -27,7 +27,7 @@ namespace KubeUI.Services
 
             var release = await GetRelease();
 
-            return release?.tag_name != version;
+            return release?.tag_name.TrimStart('v') != version;
         }
 
         public async Task<GithubRelease> GetRelease()
