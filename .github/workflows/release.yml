@@ -1,19 +1,62 @@
-on:
-  push:
-    # Sequence of patterns matched against refs/tags
-    tags:
-    - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
-
 name: Release
 
+on:
+  push:
+    branches:
+      - master
+
 jobs:
-  build:
+  bump_version:
+    name: Bump Version
+    runs-on: ubuntu-latest    
+    steps:
+    - uses: actions/checkout@master
+
+    - name: Bump version
+      id: github-tag-action
+      uses: anothrNick/github-tag-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        WITH_V: true
+        DRY_RUN: true
+
+    - name: Set Version
+      run: |
+        $new_tag = '${{ steps.github-tag-action.outputs.new_tag }}'.Trim();
+        Write-Output $new_tag;
+        Set-Content -Path "new_tag.config" -Value $new_tag;
+      shell: pwsh
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        name: new_tag.config
+        path: new_tag.config
+
+  build_wasm:
     name: Build Wasm
+    needs: [bump_version]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
     - uses: actions/checkout@v1
 
+    - name: Download artifact
+      uses: actions/download-artifact@v1.0.0
+      with:
+        name: new_tag.config
+        path: .
+
+    - name: Set Version
+      id: version
+      run: |
+        $new_tag = (Get-Content -Path "new_tag.config").Trim();
+        Remove-Item -Path "new_tag.config";
+        Write-Output $new_tag;
+        echo "::set-output name=tag::$($new_tag)"
+        echo "::set-output name=value::$($new_tag.TrimStart('v'))"
+      shell: pwsh
+    
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
@@ -21,7 +64,7 @@ jobs:
 
     - name: Publish
       working-directory: src/KubeUI.Wasm
-      run: dotnet publish -c Release -p:Version=$($Env:GITHUB_REF.Substring($Env:GITHUB_REF.IndexOf("/v") + 2))
+      run: dotnet publish -c Release -p:Version=${{ steps.version.outputs.value }}
       shell: pwsh
       
     - name: Deploy to Production
@@ -47,8 +90,9 @@ jobs:
         Invoke-RestMethod @Params
       shell: pwsh    
 
-  build2:
+  build_webwindow:
     name: Build WebWindow
+    needs: [bump_version]    
     timeout-minutes: 10
     runs-on: ${{ matrix.os }}
     strategy:
@@ -64,6 +108,22 @@ jobs:
     steps:
     - uses: actions/checkout@v1
 
+    - name: Download artifact
+      uses: actions/download-artifact@v1.0.0
+      with:
+        name: new_tag.config
+        path: .
+
+    - name: Set Version
+      id: version
+      run: |
+        $new_tag = (Get-Content -Path "new_tag.config").Trim();
+        Remove-Item -Path "new_tag.config";
+        Write-Output $new_tag;
+        echo "::set-output name=tag::$($new_tag)"
+        echo "::set-output name=value::$($new_tag.TrimStart('v'))"
+      shell: pwsh
+
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
@@ -71,7 +131,7 @@ jobs:
 
     - name: Publish
       working-directory: src/KubeUI.WebWindow
-      run: dotnet publish -r ${{matrix.RUNTIME}} -c Release -p:SelfContained=true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:DebugType=None -p:Version=$($Env:GITHUB_REF.Substring($Env:GITHUB_REF.IndexOf("/v") + 2))
+      run: dotnet publish -r ${{matrix.RUNTIME}} -c Release -p:SelfContained=true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:DebugType=None -p:Version=${{ steps.version.outputs.value }}
       shell: pwsh
 
     - uses: actions/upload-artifact@v1
@@ -81,67 +141,82 @@ jobs:
 
   release:
     name: Upload Release Asset
-    needs: build2
+    needs: [bump_version, build_wasm, build_webwindow]
     runs-on: ubuntu-latest
     steps:
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1.0.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
+    - name: Download artifact
+      uses: actions/download-artifact@v1.0.0
+      with:
+        name: new_tag.config
+        path: .
 
-      - name: Download artifact win-x64
-        uses: actions/download-artifact@v1
-        with:
-          name: KubeUI-win-x64
-          
-      - name: Download artifact linux-x64
-        uses: actions/download-artifact@v1
-        with:
-          name: KubeUI-linux-x64
-          
-      - name: Download artifact osx-x64
-        uses: actions/download-artifact@v1
-        with:
-          name: KubeUI-osx-x64
+    - name: Set Version
+      id: version
+      run: |
+        $new_tag = (Get-Content -Path "new_tag.config").Trim();
+        Remove-Item -Path "new_tag.config";
+        Write-Output $new_tag;
+        echo "::set-output name=tag::$($new_tag)"
+        echo "::set-output name=value::$($new_tag.TrimStart('v'))"
+      shell: pwsh
 
-      - name: Zip Files
-        run: |
-          zip -r KubeUI-win-x64.zip KubeUI-win-x64/
-          zip -r KubeUI-linux-x64.zip KubeUI-linux-x64/
-          zip -r KubeUI-osx-x64.zip KubeUI-osx-x64/
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1.0.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.version.outputs.tag }}
+        release_name: Release ${{ steps.version.outputs.tag }}
+        draft: false
+        prerelease: false
 
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1.0.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./KubeUI-win-x64.zip
-          asset_name: KubeUI-win-x64.zip
-          asset_content_type: application/zip
+    - name: Download artifact win-x64
+      uses: actions/download-artifact@v1
+      with:
+        name: KubeUI-win-x64
 
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1.0.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./KubeUI-linux-x64.zip
-          asset_name: KubeUI-linux-x64.zip
-          asset_content_type: application/zip
+    - name: Download artifact linux-x64
+      uses: actions/download-artifact@v1
+      with:
+        name: KubeUI-linux-x64
 
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1.0.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./KubeUI-osx-x64.zip
-          asset_name: KubeUI-osx-x64.zip
-          asset_content_type: application/zip
+    - name: Download artifact osx-x64
+      uses: actions/download-artifact@v1
+      with:
+        name: KubeUI-osx-x64
+
+    - name: Zip Files
+      run: |
+        zip -r KubeUI-win-x64.zip KubeUI-win-x64/
+        zip -r KubeUI-linux-x64.zip KubeUI-linux-x64/
+        zip -r KubeUI-osx-x64.zip KubeUI-osx-x64/
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./KubeUI-win-x64.zip
+        asset_name: KubeUI-win-x64.zip
+        asset_content_type: application/zip
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./KubeUI-linux-x64.zip
+        asset_name: KubeUI-linux-x64.zip
+        asset_content_type: application/zip
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./KubeUI-osx-x64.zip
+        asset_name: KubeUI-osx-x64.zip
+        asset_content_type: application/zip
