@@ -50,6 +50,7 @@ jobs:
     - name: Set Version
       id: version
       run: |
+        Get-ChildItem -Path "new_tag.config";
         $new_tag = (Get-Content -Path "new_tag.config").Trim();
         Remove-Item -Path "new_tag.config";
         Write-Output $new_tag;
