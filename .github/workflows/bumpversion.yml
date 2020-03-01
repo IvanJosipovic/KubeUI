@@ -3,7 +3,7 @@ name: Bump version
 on:
   push:
     branches:
-      - '*'
+      - 'master'
 
 jobs:
   build:
@@ -17,4 +17,3 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         WITH_V: true
-        DRY_RUN: true
