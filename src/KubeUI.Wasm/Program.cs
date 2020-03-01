@@ -2,8 +2,10 @@
 using KubeUI.Core;
 using KubeUI.Services;
 using Microsoft.AspNetCore.Blazor.Hosting;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace KubeUI.Wasm

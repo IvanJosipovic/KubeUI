@@ -23,13 +23,13 @@ There are two options to get around CORS:
 
 
 ### Desktop
-**Please Note:** Windows users will need to install the new [Edge (Chromium)](https://www.microsoft.com/en-us/edge") or be on Windows 10 build 2004 or higher.
+**Please Note:** Windows users will need to install the new [Edge (Chromium)](https://www.microsoft.com/en-us/edge) or be on Windows 10 build 2004 or higher.
 
 Go to [Releases](https://github.com/IvanJosipovic/KubeUI/releases) and download the version for your OS.
 
 ## How to build?
 
-1. [Download .Net Core SDK 3.1.101](https://dotnet.microsoft.com/download/dotnet-core/3.1)
+1. [Download .Net Core SDK 3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1)
 2. [Download an IDE](https://dotnet.microsoft.com/platform/tools)
 3. Build away!
 
