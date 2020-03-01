@@ -29,6 +29,8 @@ namespace KubeUI.Wasm
             builder.Services.AddSingleton<IState, State>();
 
             builder.Services.AddScoped<IAppInsights, AppInsights>();
+            
+            builder.Services.AddSingleton<Updater>();
 
             await builder.Build().RunAsync();
         }

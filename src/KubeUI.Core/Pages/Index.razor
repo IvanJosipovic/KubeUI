@@ -5,3 +5,18 @@ This is an Experimental user interface for Kubernetes.
 <br />
 <br />
 Contact: <a href="mailto:admin@KubeUI.com">admin@KubeUI.com</a>
+
+<br />
+<br />
+@if (UpdateRequired)
+{
+<BSAlert Color="Color.Danger">
+    Update is available!
+    <br />
+    <br />
+    <BSButton ButtonType="ButtonType.Link" Href="@(GithubRelease?.assets.Where(x => x.name == "KubeUI-win-x64.zip").Select(x => x.browser_download_url).FirstOrDefault())">Win x64</BSButton>
+    <BSButton ButtonType="ButtonType.Link" Href="@(GithubRelease?.assets.Where(x => x.name == "KubeUI-linux-x64.zip").Select(x => x.browser_download_url).FirstOrDefault())">Linux x64</BSButton>
+    <BSButton ButtonType="ButtonType.Link" Href="@(GithubRelease?.assets.Where(x => x.name == "KubeUI-osx-x64.zip").Select(x => x.browser_download_url).FirstOrDefault())">Mac x64</BSButton>
+
+</BSAlert>
+}
