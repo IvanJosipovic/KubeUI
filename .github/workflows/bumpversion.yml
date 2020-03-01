@@ -8,13 +8,13 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest    
-	steps:
-	- uses: actions/checkout@master
+    steps:
+    - uses: actions/checkout@master
       with:
         fetch-depth: '0'
-	- name: Bump version and push tag
+    - name: Bump version and push tag
       uses: anothrNick/github-tag-action@master
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         WITH_V: true
-		DRY_RUN: true
+        DRY_RUN: true
