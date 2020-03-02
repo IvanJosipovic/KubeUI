@@ -17,7 +17,6 @@ namespace KubeUI.Core.Components.Types
         [Inject]
         protected IState State { get; set; }
 
-
         [Parameter]
         public string Namespace { get; set; }
 

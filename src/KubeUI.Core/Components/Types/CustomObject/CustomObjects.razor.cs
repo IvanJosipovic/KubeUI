@@ -2,8 +2,8 @@
 
 namespace KubeUI.Core.Components.Types
 {
-    [Route("/{Group}/{Version}/{Plural}/CustomObjects")]
-    [Route("/{Namespace}/{Group}/{Version}/{Plural}/CustomObjects")]
+    [Route("/CustomObjects/{Group}/{Version}/{Plural}")]
+    [Route("/CustomObjects/{Namespace}/{Group}/{Version}/{Plural}")]
     public partial class CustomObjects
     {
         [Parameter]

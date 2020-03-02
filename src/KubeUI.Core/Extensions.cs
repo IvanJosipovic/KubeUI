@@ -172,7 +172,7 @@ namespace KubeUI
                     
                     var xml = $"KubeUI.{assemblyName}.xml";
                     Console.WriteLine(xml);
-                    typeof(Utillities).Assembly.GetManifestResourceStream(xml).CopyTo(ms);
+                    typeof(Utilities).Assembly.GetManifestResourceStream(xml).CopyTo(ms);
                     ms.Seek(0, SeekOrigin.Begin);
 
                     var xmlDocument = new XmlDocument();

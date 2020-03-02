@@ -3,7 +3,7 @@
 <Table PageSize="20" TableItem="V1CustomResourceDefinition" Items="Items">
     <Column TableItem="V1CustomResourceDefinition" Title="Name" Field="@(x => x.Metadata.Name)" Sortable="true" Filterable="true" DefaultSortColumn="true">
         <Template>
-            <a href="/CustomResourceDefinition/@context.Metadata.Name">@context.Metadata.Name</a>
+            <a href="/CustomObjects@(State.Namespace != null ? "/" + State.Namespace : "")/@context.Spec.Group/@context.Spec.Versions.First().Name/@context.Spec.Names.Plural">@context.Spec.Names.Kind</a>
         </Template>
     </Column>
     <Column TableItem="V1CustomResourceDefinition" Title="Group" Field="@(x => x.Spec.Group)" Sortable="true" Filterable="true" />

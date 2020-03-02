@@ -14,7 +14,6 @@ namespace KubeUI.Core.Components.Types
         [Inject]
         protected IState State { get; set; }
 
-
         private List<V1CustomResourceDefinition> Items = new List<V1CustomResourceDefinition>();
 
         private Watcher<V1CustomResourceDefinition> watcher;
