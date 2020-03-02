@@ -15,7 +15,7 @@
             @context.FirstTimestamp.Value.ToPrettyDate()
         </Template>
     </Column>
-    <Column Title="Last Seen" TableItem="V1Event" Field="@(x => x.LastTimestamp)" Sortable="true" Filterable="true" Width="7%" >
+    <Column Title="Last Seen" TableItem="V1Event" Field="@(x => x.LastTimestamp)" Sortable="true" Filterable="true" Width="7%" DefaultSortColumn="true">
         <Template>
             @context.LastTimestamp.Value.ToPrettyDate()
         </Template>

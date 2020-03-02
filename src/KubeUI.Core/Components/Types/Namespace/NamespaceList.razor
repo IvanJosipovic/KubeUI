@@ -1,7 +1,7 @@
 ﻿@namespace KubeUI.Core.Components.Types
 
 <Table PageSize="20" TableItem="V1Namespace" Items="Items">
-    <Column TableItem="V1Namespace" Title="Name" Field="@(x => x.Metadata.Name)" Sortable="true" Filterable="true" Width="20%">
+    <Column TableItem="V1Namespace" Title="Name" Field="@(x => x.Metadata.Name)" Sortable="true" Filterable="true" Width="20%" DefaultSortColumn="true">
         <Template>
             <a href="/Namespace/@context.Metadata.Name">@context.Metadata.Name</a>
         </Template>

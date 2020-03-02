@@ -4,63 +4,86 @@
 
 <br />
 <BSRow>
+    @if (RuntimeInformation.IsOSPlatform(OSPlatform.Create("WEBASSEMBLY")))
+    {
+        <BSCol SM="6" MD="6" LG="6">
+            <BSCard>
+                <BSCard CardType="CardType.Header"><strong>Browser</strong></BSCard>
+                <BSCard CardType="CardType.Body">
+                    <BSCard CardType="CardType.Text">
+                        <strong>Please Note: </strong>As this version of KubeUI operates in the browser, it's limited by <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS">CORS</a>.
+                        <br />
+                        <br />
+                        There are two options to get around CORS:
+                        <ol>
+                            <li>
+                                Download KubeUI Desktop
+                            </li>
+
+                            <br />
+
+                            <li>
+                                Kubectl Proxy + API Server change
+                                <ul>
+                                    <li>
+                                        kubectl proxy
+                                    </li>
+                                    <li>
+                                        Add the following line to the <a href="https://kubernetes.io/docs/reference/command-line-tools-reference/kube-apiserver/">Kube API Server</a> configuration: <br />
+                                        --cors-allowed-origins=https://KubeUI.com
+                                    </li>
+                                </ul>
+                            </li>
+                        </ol>
+                    </BSCard>
+                </BSCard>
+            </BSCard>
+            <br />
+        </BSCol>
+        <BSCol SM="6" MD="6" LG="6">
+            <BSCard>
+                <BSCard CardType="CardType.Header"><strong>Desktop</strong></BSCard>
+                <BSCard CardType="CardType.Body">
+                    <BSCard CardType="CardType.Title">A Desktop version of KubeUI with no restrictions.</BSCard>
+                    <BSCard CardType="CardType.Text"><strong>Please Note: </strong>Windows users will need to install the new <a href="https://www.microsoft.com/en-us/edge">Edge (Chromium)</a> or be on Windows 10 build 2004 or higher.</BSCard>
+                    <BSButton ButtonType="ButtonType.Link" Href="@(GithubRelease?.assets.Where(x => x.name == "KubeUI-win-x64.zip").Select(x => x.browser_download_url).FirstOrDefault())">Win x64</BSButton>
+                    <BSButton ButtonType="ButtonType.Link" Href="@(GithubRelease?.assets.Where(x => x.name == "KubeUI-linux-x64.zip").Select(x => x.browser_download_url).FirstOrDefault())">Linux x64</BSButton>
+                    <BSButton ButtonType="ButtonType.Link" Href="@(GithubRelease?.assets.Where(x => x.name == "KubeUI-osx-x64.zip").Select(x => x.browser_download_url).FirstOrDefault())">Mac x64</BSButton>
+                </BSCard>
+            </BSCard>
+            <br />
+        </BSCol>
+    }
     <BSCol SM="6" MD="6" LG="6">
         <BSCard>
-            <BSCard CardType="CardType.Header"><strong>Browser</strong></BSCard>
+            <BSCard CardType="CardType.Header"><strong>Current Kube Config</strong></BSCard>
             <BSCard CardType="CardType.Body">
                 <BSCard CardType="CardType.Text">
-                    <strong>Please Note: </strong>As this version of KubeUI operates in the browser, it's limited by <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS">CORS</a>.
-                    <br />
-                    <br />
-                    There are two options to get around CORS:
-                    <ol>
-                        <li>
-                            Download KubeUI Desktop
-                        </li>
+                    @{var cfg = State.GetK8SConfiguration();}
 
-                        <br />
-
-                        <li>
-                            Kubectl Proxy + API Server change
-                            <ul>
-                                <li>
-                                    kubectl proxy
-                                </li>
-                                <li>
-                                    Add the following line to the <a href="https://kubernetes.io/docs/reference/command-line-tools-reference/kube-apiserver/">Kube API Server</a> configuration: <br />
-                                    --cors-allowed-origins=https://KubeUI.com
-                                </li>
-                            </ul>
-                        </li>
-                    </ol>
+                    <strong>Filename:</strong> @cfg.FileName
+                    <br />
+                    <strong>Cluster:</strong> @cfg.Clusters.Count()
+                    <br />
+                    <strong>Contexts:</strong> @cfg.Contexts.Count()
+                    <br />
+                    <strong>Users:</strong> @cfg.Users.Count()
                 </BSCard>
             </BSCard>
         </BSCard>
-    </BSCol>
-    <BSCol SM="6" MD="6" LG="6">
-        <BSCard>
-            <BSCard CardType="CardType.Header"><strong>Desktop</strong></BSCard>
-            <BSCard CardType="CardType.Body">
-                <BSCard CardType="CardType.Title">A Desktop version of KubeUI with no restrictions.</BSCard>
-                <BSCard CardType="CardType.Text"><strong>Please Note: </strong>Windows users will need to install the new <a href="https://www.microsoft.com/en-us/edge">Edge (Chromium)</a> or be on Windows 10 build 2004 or higher.</BSCard>
-                <BSButton ButtonType="ButtonType.Link" Href="@(GithubRelease?.assets.Where(x => x.name == "KubeUI-win-x64.zip").Select(x => x.browser_download_url).FirstOrDefault())">Win x64</BSButton>
-                <BSButton ButtonType="ButtonType.Link" Href="@(GithubRelease?.assets.Where(x => x.name == "KubeUI-linux-x64.zip").Select(x => x.browser_download_url).FirstOrDefault())">Linux x64</BSButton>
-                <BSButton ButtonType="ButtonType.Link" Href="@(GithubRelease?.assets.Where(x => x.name == "KubeUI-osx-x64.zip").Select(x => x.browser_download_url).FirstOrDefault())">Mac x64</BSButton>
-            </BSCard>
-        </BSCard>
-    </BSCol>
-    <BSCol SM="6" MD="6" LG="6">
         <br />
+    </BSCol>
+    <BSCol SM="6" MD="6" LG="6">
         <BSCard>
             <BSCard CardType="CardType.Header"><strong>Load a Kube Config</strong></BSCard>
             <BSCard CardType="CardType.Body">
                 <BSCard CardType="CardType.Text">
-                    <BSButton ButtonType="ButtonType.Button" OnClick="LoadConfig">Load Config</BSButton>
-
                     <textarea class="form-control" type="text" spellcheck="false" style="height:200px" @bind="@Config"></textarea>
+                    <br />
+                    <BSButton ButtonType="ButtonType.Button" OnClick="LoadConfig">Load Config</BSButton>
                 </BSCard>
-
             </BSCard>
         </BSCard>
+        <br />
     </BSCol>
 </BSRow>

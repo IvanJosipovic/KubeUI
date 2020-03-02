@@ -11,12 +11,12 @@
 <div class=@(collapseNavMenu ? "collapse" : null) @onclick=@ToggleNavMenu>
     <ul class="nav flex-column">
         <li class="nav-item px-1">
-            <NavLink class="nav-link" href="" Match=NavLinkMatch.All>
+            <NavLink class="nav-link" href="" Match=NavLinkMatch.All title="Home">
                 <i class="fas fa-home"></i>&nbsp;Home
             </NavLink>
         </li>
         <li class="nav-item px-1">
-            <NavLink class="nav-link" href="@("/Connect")">
+            <NavLink class="nav-link" href="@("/Connect")" title="Connect">
                 <i class="fas fa-link"></i>&nbsp;Connect
             </NavLink>
         </li>
@@ -27,17 +27,17 @@
             </NavLink>
         </li>
         <li class="nav-item px-1">
-            <NavLink class="nav-link" href="@("/Namespaces")">
+            <NavLink class="nav-link" href="@("/Namespaces")" title="Namespaces">
                 <img src="_content/KubeUI.Core/png/resources/unlabeled/ns-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Namespaces
             </NavLink>
         </li>
         <li class="nav-item px-1">
-            <NavLink class="nav-link" href="@("/Nodes")">
+            <NavLink class="nav-link" href="@("/Nodes")" title="Nodes">
                 <img src="_content/KubeUI.Core/png/infrastructure_components/unlabeled/node-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Nodes
             </NavLink>
         </li>
         <li class="nav-item px-1">
-            <NavLink class="nav-link" href="@("/PersistentVolumes")">
+            <NavLink class="nav-link" href="@("/PersistentVolumes")" title="Persistent Volumes">
                 <img src="_content/KubeUI.Core/png/resources/unlabeled/pv-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Persistent Volumes
             </NavLink>
         </li>
@@ -48,17 +48,17 @@
             </NavLink>
         </li>
         <li class="nav-item px-1">
-            <NavLink class="nav-link" href="@($"{State.Namespace}/ConfigMaps")">
+            <NavLink class="nav-link" href="@($"{State.Namespace}/ConfigMaps")" title="Config Maps">
                 <img src="_content/KubeUI.Core/png/resources/unlabeled/cm-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Config Maps
             </NavLink>
         </li>
         <li class="nav-item px-1">
-            <NavLink class="nav-link" href="@($"{State.Namespace}/Secrets")">
+            <NavLink class="nav-link" href="@($"{State.Namespace}/Secrets")" title="Secrets">
                 <img src="_content/KubeUI.Core/png/resources/unlabeled/sc-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Secrets
             </NavLink>
         </li>
         <li class="nav-item px-1">
-            <NavLink class="nav-link" href="@($"{State.Namespace}/PersistentVolumeClaims")">
+            <NavLink class="nav-link" href="@($"{State.Namespace}/PersistentVolumeClaims")" title="Persistent Volume Claims">
                 <img src="_content/KubeUI.Core/png/resources/unlabeled/pvc-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Persistent Volume Claims
             </NavLink>
         </li>
@@ -69,7 +69,7 @@
             </NavLink>
         </li>
         <li class="nav-item px-1">
-            <NavLink class="nav-link" href="@("/CustomResourceDefinitions")">
+            <NavLink class="nav-link" href="@("/CustomResourceDefinitions")" title="Custom Resource Definitions">
                 <img src="_content/KubeUI.Core/png/resources/unlabeled/crd-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>CRDs
             </NavLink>
         </li>
@@ -80,12 +80,12 @@
             </NavLink>
         </li>
         <li class="nav-item px-1">
-            <NavLink class="nav-link" href="@($"{State.Namespace}/Ingresses")">
+            <NavLink class="nav-link" href="@($"{State.Namespace}/Ingresses")" title="Ingresses">
                 <img src="_content/KubeUI.Core/png/resources/unlabeled/ing-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Ingresses
             </NavLink>
         </li>
         <li class="nav-item px-1">
-            <NavLink class="nav-link" href="@($"{State.Namespace}/Services")">
+            <NavLink class="nav-link" href="@($"{State.Namespace}/Services")" title="Services">
                 <img src="_content/KubeUI.Core/png/resources/unlabeled/svc-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Services
             </NavLink>
         </li>
@@ -96,32 +96,32 @@
             </NavLink>
         </li>
         <li class="nav-item px-1">
-            <NavLink class="nav-link" href="@($"{State.Namespace}/DaemonSets")">
+            <NavLink class="nav-link" href="@($"{State.Namespace}/DaemonSets")" title="Daemon Sets">
                 <img src="_content/KubeUI.Core/png/resources/unlabeled/ds-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Daemon Sets
             </NavLink>
         </li>
         <li class="nav-item px-1">
-            <NavLink class="nav-link" href="@($"{State.Namespace}/Deployments")">
+            <NavLink class="nav-link" href="@($"{State.Namespace}/Deployments")" title="Deployments">
                 <img src="_content/KubeUI.Core/png/resources/unlabeled/deploy-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Deployments
             </NavLink>
         </li>
         <li class="nav-item px-1">
-            <NavLink class="nav-link" href="@($"{State.Namespace}/Pods")">
+            <NavLink class="nav-link" href="@($"{State.Namespace}/Pods")" title="Pods">
                 <img src="_content/KubeUI.Core/png/resources/unlabeled/pod-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Pods
             </NavLink>
         </li>
         <li class="nav-item px-1">
-            <NavLink class="nav-link" href="@($"{State.Namespace}/ReplicaSets")">
+            <NavLink class="nav-link" href="@($"{State.Namespace}/ReplicaSets")" title="Replica Sets">
                 <img src="_content/KubeUI.Core/png/resources/unlabeled/rs-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Replica Sets
             </NavLink>
         </li>
         <li class="nav-item px-1">
-            <NavLink class="nav-link" href="@($"{State.Namespace}/StatefulSets")">
+            <NavLink class="nav-link" href="@($"{State.Namespace}/StatefulSets")" title="Stateful Sets">
                 <img src="_content/KubeUI.Core/png/resources/unlabeled/sts-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Stateful Sets
             </NavLink>
         </li>
         <li class="nav-item px-1">
-            <NavLink class="nav-link" href="@($"{State.Namespace}/Events")">
+            <NavLink class="nav-link" href="@($"{State.Namespace}/Events")" title="Events">
                 <img src="_content/KubeUI.Core/png/resources/unlabeled/sts-128.png" width="22" style="filter: grayscale(40%)" /><span>&nbsp;</span>Events
             </NavLink>
         </li>

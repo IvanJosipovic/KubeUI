@@ -36,12 +36,15 @@ namespace KubeUI.Services
 
                 K8SConfiguration = new K8SConfiguration
                 {
-                    Clusters = new List<Cluster>() {
-                    new Cluster() { Name = "localhost:8001", ClusterEndpoint = new ClusterEndpoint() { Server = "http://localhost:8001" } }
-                },
-                    Contexts = new List<Context>() {
-                    new Context() { Name = "localhost:8001", ContextDetails = new ContextDetails() { Cluster = "localhost:8001" } }
-                }
+                    FileName = "config",
+                    Clusters = new List<Cluster>()
+                    {
+                        new Cluster() { Name = "localhost:8001", ClusterEndpoint = new ClusterEndpoint() { Server = "http://localhost:8001" } }
+                    },
+                    Contexts = new List<Context>()
+                    {
+                        new Context() { Name = "localhost:8001", ContextDetails = new ContextDetails() { Cluster = "localhost:8001" } }
+                    }
                 };
 
                 Context = "localhost:8001";
