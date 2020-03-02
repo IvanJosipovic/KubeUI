@@ -14,8 +14,21 @@ Contact: <a href="mailto:admin@KubeUI.com">admin@KubeUI.com</a>
         Update is available: <a href="https://github.com/IvanJosipovic/KubeUI/releases/latest">@GithubRelease.tag_name</a>
         <br />
         <br />
-        <BSButton ButtonType="ButtonType.Link" Href="@(GithubRelease?.assets.Where(x => x.name == "KubeUI-win-x64.zip").Select(x => x.browser_download_url).FirstOrDefault())">Win x64</BSButton>
-        <BSButton ButtonType="ButtonType.Link" Href="@(GithubRelease?.assets.Where(x => x.name == "KubeUI-linux-x64.zip").Select(x => x.browser_download_url).FirstOrDefault())">Linux x64</BSButton>
-        <BSButton ButtonType="ButtonType.Link" Href="@(GithubRelease?.assets.Where(x => x.name == "KubeUI-osx-x64.zip").Select(x => x.browser_download_url).FirstOrDefault())">Mac x64</BSButton>
+        @if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            <BSButton ButtonType="ButtonType.Link" Href="@(GithubRelease?.assets.Where(x => x.name == "KubeUI-win-x64.zip").Select(x => x.browser_download_url).FirstOrDefault())">Win x64</BSButton>
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            <BSButton ButtonType="ButtonType.Link" Href="@(GithubRelease?.assets.Where(x => x.name == "KubeUI-osx-x64.zip").Select(x => x.browser_download_url).FirstOrDefault())">Mac x64</BSButton>
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            <BSButton ButtonType="ButtonType.Link" Href="@(GithubRelease?.assets.Where(x => x.name == "KubeUI-linux-x64.zip").Select(x => x.browser_download_url).FirstOrDefault())">Linux x64</BSButton>
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Create("WEBASSEMBLY")))
+        {
+            <div>Refresh your browser or connect to the internet to update.</div>
+        }   
     </BSAlert>
 }

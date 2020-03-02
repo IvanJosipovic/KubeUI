@@ -20,7 +20,6 @@ namespace KubeUI.Core.Pages
         {
             GithubRelease = await Updater.GetRelease();
             UpdateRequired = await Updater.UpdateRequired();
-
         }
     }
 }
