@@ -1,7 +1,7 @@
 ﻿@namespace KubeUI.Core.Components.Types
 
 <Table PageSize="20" TableItem="Extensionsv1beta1Ingress" Items="(Filter == null ? Items : Items.AsQueryable().Where(Filter).ToList())">
-    <Column TableItem="Extensionsv1beta1Ingress" Title="Name" Field="@(x => x.Metadata.Name)" Sortable="true" Filterable="true" Width="20%">
+    <Column TableItem="Extensionsv1beta1Ingress" Title="Name" Field="@(x => x.Metadata.Name)" Sortable="true" Filterable="true" Width="20%" DefaultSortColumn="true">
         <Template>
             <a href="/@context.Metadata.NamespaceProperty/Ingress/@context.Metadata.Name">@context.Metadata.Name</a>
         </Template>
