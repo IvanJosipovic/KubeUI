@@ -28,5 +28,7 @@ namespace KubeUI.Services
         K8SConfiguration GetK8SConfiguration();
 
         void RaisePropertyChanged([CallerMemberName] string propertyName = null);
+        
+        string GetNamespaceUrl();
     }
 }
