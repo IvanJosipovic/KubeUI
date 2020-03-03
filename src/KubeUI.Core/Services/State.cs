@@ -117,5 +117,14 @@ namespace KubeUI.Services
         {
             return K8SConfiguration;
         }
+
+        /// <summary>
+        /// If namespace is selected, returns Namespace + /
+        /// </summary>
+        /// <returns></returns>
+        public string GetNamespaceUrl()
+        {
+            return Namespace != null ? Namespace + "/" : string.Empty;
+        }
     }
 }

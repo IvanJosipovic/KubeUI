@@ -3,7 +3,6 @@ using k8s.Models;
 using KubeUI.Services;
 using Microsoft.AspNetCore.Components;
 using System.Threading.Tasks;
-using YamlDotNet.Serialization;
 
 namespace KubeUI.Core.Components.Types
 {

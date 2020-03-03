@@ -1,12 +1,16 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using YamlDotNet.Serialization;
 
 namespace KubeUI
 {
-    public static class Utillities
+    public static class Utilities
     {
         public static string GetVersion()
         {
@@ -63,6 +67,15 @@ namespace KubeUI
             writer.Flush();
             stream.Position = 0;
             return stream;
+        }
+
+        public static string ToYaml(object item)
+        {
+            var serializer = new Serializer();
+            var jsonString = JsonConvert.SerializeObject(item);
+            var expConverter = new ExpandoObjectConverter();
+            var expandoObject = JsonConvert.DeserializeObject<ExpandoObject>(jsonString, expConverter);
+            return serializer.Serialize(expandoObject);
         }
     }
 }

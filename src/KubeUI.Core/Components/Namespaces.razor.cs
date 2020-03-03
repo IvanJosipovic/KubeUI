@@ -2,11 +2,9 @@
 using k8s.Models;
 using KubeUI.Services;
 using Microsoft.AspNetCore.Components;
-using Microsoft.Rest;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace KubeUI.Core.Components
 {

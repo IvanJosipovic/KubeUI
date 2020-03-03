@@ -1,7 +1,7 @@
 ﻿@namespace KubeUI.Core.Components.Types
-<h2>
-    <img src="_content/KubeUI.Core/png/resources/unlabeled/crd-128.png" width="32"> <a href="/CustomObjects">Custom Object</a>
-</h2>
+    <h2>
+        <img src="_content/KubeUI.Core/png/resources/unlabeled/crd-128.png" width="32"> <a href="/CustomResourceDefinitions">Custom Resource Definitions</a> / <a href="/CustomObjects/@(State.GetNamespaceUrl() + @Group)/@Version/@Plural">@Plural.@Group</a> / @Name
+    </h2>
 
 <br />
 @if (Item != null)
@@ -10,7 +10,7 @@
         <BSTabList>
             <BSTab>
                 <BSTabLabel>Yaml</BSTabLabel>
-                <BSTabContent><YamlViewer Yaml="@Item.ToString()" /></BSTabContent>
+                <BSTabContent><YamlViewer Yaml="@Utilities.ToYaml(Item)" /></BSTabContent>
             </BSTab>
 
             @*<BSTab>
