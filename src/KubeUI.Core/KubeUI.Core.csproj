@@ -17,10 +17,10 @@
     <PackageReference Include="BlazorStrap" Version="1.2.0" />
     <PackageReference Include="BlazorTable" Version="1.4.0" />
     <PackageReference Include="FluentValidation" Version="8.6.2" />
-    <PackageReference Include="KubernetesClient" Version="1.6.16-gb07e78afa4" />
+    <PackageReference Include="KubernetesClient" Version="1.6.20" />
     <PackageReference Include="Microsoft.AspNetCore.Components" Version="3.1.2" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="3.1.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Blazor.HttpClient" Version="3.2.0-preview1.20073.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Blazor.HttpClient" Version="3.2.0-preview2.20160.5" />
   </ItemGroup>
 
 </Project>
