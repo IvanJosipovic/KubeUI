@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
-    <LangVersion>latest</LangVersion>
     <RazorLangVersion>3.0</RazorLangVersion>
+    <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
     <ApplicationInsightsResourceId>/subscriptions/610de101-7d90-48c6-88fb-e2f72dc99a3e/resourcegroups/PayAsYouGo/providers/microsoft.insights/components/KubeUI</ApplicationInsightsResourceId>
     <ApplicationInsightsAnnotationResourceId>/subscriptions/610de101-7d90-48c6-88fb-e2f72dc99a3e/resourcegroups/PayAsYouGo/providers/microsoft.insights/components/KubeUI</ApplicationInsightsAnnotationResourceId>
   </PropertyGroup>
@@ -16,6 +16,12 @@
     <PackageReference Include="Microsoft.Extensions.Http" Version="3.1.2" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.2" />    
   </ItemGroup>
+  
+  <!-- When publishing, swap service-worker.published.js in place of service-worker.js -->
+  <ItemGroup Condition="'$(DesignTimeBuild)' != 'true'">
+    <Content Remove="wwwroot\service-worker.js" />
+    <Content Update="wwwroot\service-worker.published.js" Link="wwwroot\service-worker.js" />
+  </ItemGroup>  
 
   <ItemGroup>
     <ProjectReference Include="..\KubeUI.Core\KubeUI.Core.csproj" />
