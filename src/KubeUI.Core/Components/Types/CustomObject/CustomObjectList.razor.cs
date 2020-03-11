@@ -71,15 +71,15 @@ namespace KubeUI.Core.Components.Types
             });
         }
 
-        private async Task Delete(JObject crd)
+        private async Task Delete(JObject obj)
         {
             if (Namespace == null)
             {
-                await State.Client.DeleteClusterCustomObjectAsync(new V1DeleteOptions(), Group, Version, Plural, crd["metadata"]["name"].Value<string>());
+                await State.Client.DeleteClusterCustomObjectAsync(new V1DeleteOptions(), Group, Version, Plural, obj["metadata"]["name"].Value<string>());
             }
             else
             {
-                await State.Client.DeleteNamespacedCustomObjectAsync(new V1DeleteOptions(), Group, Version, Namespace, Plural, crd["metadata"]["name"].Value<string>());
+                await State.Client.DeleteNamespacedCustomObjectAsync(new V1DeleteOptions(), Group, Version, Namespace, Plural, obj["metadata"]["name"].Value<string>());
             }
         }
 

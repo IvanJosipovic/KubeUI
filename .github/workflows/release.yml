@@ -60,7 +60,7 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 3.1.200-preview-014977
+        dotnet-version: 3.1.102
 
     - name: Publish
       working-directory: src/KubeUI.Wasm
@@ -70,7 +70,7 @@ jobs:
     - name: Deploy to Production
       uses: netlify/actions/cli@master
       with:
-        args: deploy --prod --json -d src/KubeUI.Wasm/bin/Release/netstandard2.1/publish/KubeUI.Wasm/dist/
+        args: deploy --prod --json -d src/KubeUI.Wasm/bin/Release/netstandard2.1/publish/wwwroot
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
         NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
