@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 using System;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Threading.Tasks;
 
 namespace KubeUI.Services
@@ -36,7 +37,7 @@ namespace KubeUI.Services
             {
                 DateTime = DateTime.UtcNow;
                 HttpClient.DefaultRequestHeaders.UserAgent.TryParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.122 Safari/537.36 Edg/80.0.361.62");
-                githubRelease = await HttpClient.GetJsonAsync<GithubRelease>("https://api.github.com/repos/IvanJosipovic/KubeUI/releases/latest");
+                githubRelease = await HttpClient.GetFromJsonAsync<GithubRelease>("https://api.github.com/repos/IvanJosipovic/KubeUI/releases/latest");
             }
 
             return githubRelease;
