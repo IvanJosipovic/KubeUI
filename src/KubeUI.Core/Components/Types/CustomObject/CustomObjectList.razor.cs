@@ -75,11 +75,11 @@ namespace KubeUI.Core.Components.Types
         {
             if (Namespace == null)
             {
-                await State.Client.DeleteClusterCustomObjectAsync(new V1DeleteOptions(), Group, Version, Plural, obj["metadata"]["name"].Value<string>());
+                await State.Client.DeleteClusterCustomObjectAsync(Group, Version, Plural, obj["metadata"]["name"].Value<string>());
             }
             else
             {
-                await State.Client.DeleteNamespacedCustomObjectAsync(new V1DeleteOptions(), Group, Version, Namespace, Plural, obj["metadata"]["name"].Value<string>());
+                await State.Client.DeleteNamespacedCustomObjectAsync(Group, Version, Namespace, Plural, obj["metadata"]["name"].Value<string>());
             }
         }
 
