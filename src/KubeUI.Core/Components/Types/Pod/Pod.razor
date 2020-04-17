@@ -44,6 +44,8 @@
                             <option value="50" selected="@(50 == LogLineCount)">50</option>
                             <option value="100" selected="@(100 == LogLineCount)">100</option>
                             <option value="200" selected="@(200 == LogLineCount)">200</option>
+                            <option value="500" selected="@(500 == LogLineCount)">500</option>
+                            <option value="1000" selected="@(1000 == LogLineCount)">1000</option>
                         </select>
 
                         <input class="form-check-input" type="checkbox" id="previousLogs" @onchange="@((e) => { PreviousLog = bool.Parse(e.Value.ToString()); StateHasChanged(); })" />
