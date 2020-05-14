@@ -10,11 +10,11 @@ jobs:
     name: Bump Version
     runs-on: ubuntu-latest    
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v2
 
     - name: Bump version
       id: github-tag-action
-      uses: anothrNick/github-tag-action@master
+      uses: anothrNick/github-tag-actionn@1.19.0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         WITH_V: true
@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
     - name: Download artifact
       uses: actions/download-artifact@v1.0.0
@@ -60,7 +60,7 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 3.1.201
+        dotnet-version: 3.1.202
 
     - name: Publish
       working-directory: src/KubeUI.Wasm
@@ -106,7 +106,7 @@ jobs:
         - os: macos-latest
           RUNTIME: osx-x64
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
     - name: Download artifact
       uses: actions/download-artifact@v1.0.0
@@ -127,7 +127,7 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 3.1.201
+        dotnet-version: 3.1.202
 
     - name: Publish
       working-directory: src/KubeUI.WebWindow
