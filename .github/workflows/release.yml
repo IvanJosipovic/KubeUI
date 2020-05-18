@@ -14,7 +14,7 @@ jobs:
 
     - name: Bump version
       id: github-tag-action
-      uses: anothrNick/github-tag-actionn@1.19.0
+      uses: anothrNick/github-tag-action@1.19.0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         WITH_V: true
