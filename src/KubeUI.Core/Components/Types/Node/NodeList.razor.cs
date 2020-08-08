@@ -24,6 +24,8 @@ namespace KubeUI.Core.Components.Types
 
         protected override void OnParametersSet()
         {
+            watcher?.Dispose();
+
             watcher = State.Client.ListNodeWithHttpMessagesAsync(watch: true)
                 .Watch<V1Node, V1NodeList>((type, item) =>
             {

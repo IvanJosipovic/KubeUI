@@ -30,6 +30,8 @@ namespace KubeUI.Core.Components.Types
 
         protected override void OnParametersSet()
         {
+            watcher?.Dispose();
+
             Task<HttpOperationResponse<V1PersistentVolumeClaimList>> task;
 
             if (Namespace == null)

@@ -12,12 +12,9 @@ namespace KubeUI.Core.Components.Types
 {
     public partial class NamespaceList : IDisposable
     {
-        [Inject]
-        protected ILogger<NamespaceList> Logger { get; set; }
+        [Inject] protected ILogger<NamespaceList> Logger { get; set; }
 
-        [Inject]
-        protected IState State { get; set; }
-
+        [Inject] protected IState State { get; set; }
 
         private readonly List<V1Namespace> Items = new List<V1Namespace>();
 
@@ -25,6 +22,7 @@ namespace KubeUI.Core.Components.Types
 
         protected override void OnParametersSet()
         {
+            watcher?.Dispose();
             watcher = State.Client.ListNamespaceWithHttpMessagesAsync(watch: true)
                 .Watch<V1Namespace, V1NamespaceList>((type, item) =>
             {

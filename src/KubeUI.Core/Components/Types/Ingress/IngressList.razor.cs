@@ -34,6 +34,8 @@ namespace KubeUI.Core.Components.Types
 
         protected override void OnParametersSet()
         {
+            watcher?.Dispose();
+
             Task<HttpOperationResponse<Extensionsv1beta1IngressList>> task;
 
             if (Namespace == null)

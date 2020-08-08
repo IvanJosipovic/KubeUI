@@ -32,6 +32,8 @@ namespace KubeUI.Core.Components.Types
 
         protected override void OnParametersSet()
         {
+            watcher?.Dispose();
+
             Task<HttpOperationResponse<V1ConfigMapList>> task;
 
             if (Namespace == null)
