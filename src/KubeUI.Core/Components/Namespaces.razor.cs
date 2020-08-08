@@ -10,11 +10,9 @@ namespace KubeUI.Core.Components
 {
     public partial class Namespaces : IDisposable
     {
-        [Inject]
-        protected IState State { get; set; }
+        [Inject] protected IState State { get; set; }
 
-        [Inject]
-        protected NavigationManager navigationManager { get; set; }
+        [Inject] protected NavigationManager navigationManager { get; set; }
 
         private readonly List<V1Namespace> Items = new List<V1Namespace>();
 
@@ -83,7 +81,7 @@ namespace KubeUI.Core.Components
 
             State.PropertyChanged -= (xo, e) =>
             {
-                if (e.PropertyName == KubeUI.Services.State.ContextNotification)
+                if (e.PropertyName == Services.State.ContextNotification)
                 {
                     Init();
                 }

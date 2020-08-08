@@ -20,7 +20,9 @@ namespace KubeUI.Core.Components.Types
 
         protected override void OnParametersSet()
         {
-            watcher = State.Client.ListCustomResourceDefinitionWithHttpMessagesAsync(watch: true).Watch<V1CustomResourceDefinition, V1CustomResourceDefinitionList>((type, item) =>
+            watcher?.Dispose();
+            watcher = State.Client.ListCustomResourceDefinitionWithHttpMessagesAsync(watch: true)
+                .Watch<V1CustomResourceDefinition, V1CustomResourceDefinitionList>((type, item) =>
             {
                 switch (type)
                 {

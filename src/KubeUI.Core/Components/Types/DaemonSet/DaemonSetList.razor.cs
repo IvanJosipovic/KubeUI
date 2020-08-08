@@ -36,6 +36,8 @@ namespace KubeUI.Core.Components.Types
 
         protected override void OnParametersSet()
         {
+            watcher?.Dispose();
+
             Task<HttpOperationResponse<V1DaemonSetList>> task;
 
             if (Namespace == null)

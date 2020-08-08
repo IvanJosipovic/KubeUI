@@ -27,6 +27,8 @@ namespace KubeUI.Core.Components.Types
 
         protected override void OnParametersSet()
         {
+            watcher?.Dispose();
+
             watcher = State.Client.ListPersistentVolumeWithHttpMessagesAsync(watch: true).Watch<V1PersistentVolume, V1PersistentVolumeList>((type, item) =>
             {
                 switch (type)

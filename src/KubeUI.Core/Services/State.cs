@@ -8,6 +8,9 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace KubeUI.Services
 {
@@ -74,7 +77,8 @@ namespace KubeUI.Services
                 _context = value;
                 try
                 {
-                    Client = new Kubernetes(KubernetesClientConfiguration.BuildConfigFromConfigObject(K8SConfiguration, _context));
+                    var handler = new StreamingHttpHandler(new HttpClientHandler());
+                    Client = new Kubernetes(KubernetesClientConfiguration.BuildConfigFromConfigObject(K8SConfiguration, _context), new[] { handler});
                 }
                 catch (Exception ex)
                 {
@@ -125,6 +129,19 @@ namespace KubeUI.Services
         public string GetNamespaceUrl()
         {
             return Namespace != null ? Namespace + "/" : string.Empty;
+        }
+    }
+
+    public class StreamingHttpHandler : DelegatingHandler
+    {
+        public StreamingHttpHandler(HttpMessageHandler innerHandler) : base(innerHandler)
+        {
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            request.Properties["WebAssemblyEnableStreamingResponse"] = true;
+            return base.SendAsync(request, cancellationToken);
         }
     }
 }

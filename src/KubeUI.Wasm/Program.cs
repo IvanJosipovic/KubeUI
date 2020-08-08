@@ -1,4 +1,5 @@
-﻿using k8s;
+﻿using BlazorStrap;
+using k8s;
 using KubeUI.Core;
 using KubeUI.Services;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
@@ -29,6 +30,8 @@ namespace KubeUI.Wasm
             builder.Services.AddScoped<IAppInsights, AppInsights>();
             
             builder.Services.AddSingleton<Updater>();
+
+            builder.Services.AddBootstrapCss();
 
             await builder.Build().RunAsync();
         }
