@@ -118,13 +118,13 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: Download artifact win-x64
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: KubeUI-win-x64
         path: dist/win-x64
 
     - name: Download artifact win-x64
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: KubeUI-web
         path: dist/web
