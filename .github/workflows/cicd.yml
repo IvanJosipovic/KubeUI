@@ -16,8 +16,8 @@ jobs:
     name: Bump Version
     runs-on: ubuntu-latest
     outputs:
-      new_release_version: ${{ steps.semantic.outputs.new_release_version }}
       new_release_published: ${{ steps.semantic.outputs.new_release_published }}
+      new_release_version: ${{ (steps.semantic-release.outputs.new_release_published && steps.semantic-release.outputs.new_release_version) || '0.0.1' }}
     steps:
     - uses: actions/checkout@v3
 
@@ -63,7 +63,7 @@ jobs:
 
     - name: Publish
       working-directory: src/KubeUI.Web
-      run: dotnet publish -c Release -p:Version=${{ (needs.semantic-release.outputs.new_release_published && needs.semantic-release.outputs.new_release_version) || '0.0.1' }} -o bin/publish
+      run: dotnet publish -c Release -p:Version=${{ needs.semantic-release.outputs.new_release_version }} -o bin/publish
 
     - name: Deploy
       uses: netlify/actions/cli@master
@@ -75,13 +75,13 @@ jobs:
 
     - name: Publish
       working-directory: src/KubeUI.Web
-      run: Compress-Archive -Path bin/publish/wwwroot/* -DestinationPath KubeUI-web.zip
+      run: Compress-Archive -Path bin/publish/wwwroot/* -DestinationPath KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-web.zip
       shell: pwsh
 
     - uses: actions/upload-artifact@v3
       with:
         name: KubeUI-web
-        path: src/KubeUI.Web/KubeUI-web.zip
+        path: src/KubeUI.Web/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-web.zip
 
   build_hybrid:
     name: Build Hybrid
@@ -107,17 +107,17 @@ jobs:
 
     - name: Publish
       working-directory: ${{matrix.FOLDER}}
-      run: dotnet publish -c Release -r ${{matrix.RUNTIME}} -p:Version=${{ (needs.semantic-release.outputs.new_release_published && needs.semantic-release.outputs.new_release_version) || '0.0.1' }} -o bin/publish ${{matrix.ARGS}}
+      run: dotnet publish -c Release -r ${{matrix.RUNTIME}} -p:Version=${{ needs.semantic-release.outputs.new_release_version }} -o bin/publish ${{matrix.ARGS}}
 
     - name: Publish
       working-directory: ${{matrix.FOLDER}}
-      run: Compress-Archive -Path bin/publish/* -DestinationPath KubeUI-${{matrix.RUNTIME}}.zip
+      run: Compress-Archive -Path bin/publish/* -DestinationPath KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-${{matrix.RUNTIME}}.zip
       shell: pwsh
 
     - uses: actions/upload-artifact@v3
       with:
         name: KubeUI-${{matrix.RUNTIME}}
-        path: ${{matrix.FOLDER}}/KubeUI-${{matrix.RUNTIME}}.zip
+        path: ${{matrix.FOLDER}}/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-${{matrix.RUNTIME}}.zip
         
   release:
     if: needs.semantic-release.outputs.new_release_published == 'true'
@@ -131,13 +131,13 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: KubeUI-win-x64
-        path: dist/win-x64
+        path: dist/
 
     - name: Download artifact win-x64
       uses: actions/download-artifact@v3
       with:
         name: KubeUI-web
-        path: dist/web
+        path: dist/
 
     - name: Semantic Release
       uses: cycjimmy/semantic-release-action@v2
