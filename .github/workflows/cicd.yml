@@ -73,7 +73,7 @@ jobs:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
         NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: KubeUI-web
         path: src/KubeUI.Web/bin/publish/wwwroot
@@ -104,7 +104,7 @@ jobs:
       working-directory: ${{matrix.FOLDER}}
       run: dotnet publish -c Release -r ${{matrix.RUNTIME}} -p:Version=${{ (needs.semantic-release.outputs.new_release_published && needs.semantic-release.outputs.new_release_version) || '0.0.1' }} -o bin/publish ${{matrix.ARGS}}
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: KubeUI-${{matrix.RUNTIME}}
         path: ${{matrix.FOLDER}}/bin/publish/
