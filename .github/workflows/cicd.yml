@@ -75,7 +75,7 @@ jobs:
 
     - name: Publish
       working-directory: src/KubeUI.Web
-      run: Compress-Archive -Path bin/publish/wwwroot -DestinationPath KubeUI-web.zip
+      run: Compress-Archive -Path bin/publish/wwwroot/* -DestinationPath KubeUI-web.zip
       shell: pwsh
 
     - uses: actions/upload-artifact@v3
@@ -111,7 +111,7 @@ jobs:
 
     - name: Publish
       working-directory: ${{matrix.FOLDER}}
-      run: Compress-Archive -Path bin/publish/ -DestinationPath KubeUI-${{matrix.RUNTIME}}.zip
+      run: Compress-Archive -Path bin/publish/* -DestinationPath KubeUI-${{matrix.RUNTIME}}.zip
       shell: pwsh
 
     - uses: actions/upload-artifact@v3
