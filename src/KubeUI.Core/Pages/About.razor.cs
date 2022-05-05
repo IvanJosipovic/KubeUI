@@ -1,11 +1,15 @@
 using Microsoft.AspNetCore.Components;
 using KubeUI.Core.Services;
 using static KubeUI.Core.Services.Updater;
+using Microsoft.Extensions.Logging;
 
 namespace KubeUI.Core.Pages
 {
     public partial class About
     {
+        [Inject]
+        private ILogger<About> Logger { get; set; }
+
         [Inject]
         private Updater Updater { get; set; }
 
@@ -15,8 +19,15 @@ namespace KubeUI.Core.Pages
 
         protected override async Task OnInitializedAsync()
         {
-            UpdateRequired = await Updater.UpdateRequired();
-            GithubRelease = await Updater.GetRelease();
+            try
+            {
+                UpdateRequired = await Updater.UpdateRequired();
+                GithubRelease = await Updater.GetRelease();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Error getting update information!");
+            }
         }
     }
 }
