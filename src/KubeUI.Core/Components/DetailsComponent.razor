@@ -1,0 +1,29 @@
+﻿@typeparam TItem where TItem : class, IKubernetesObject<V1ObjectMeta>, new()
+
+@if (IsInSideMenu)
+{
+    <MudAppBar Color="Color.Info" Fixed="false" Dense="true">
+        <MudText>@(groupApiVersionKind.Kind.AddSpacesBeforeCapitals()) @Name</MudText>
+        <MudSpacer />
+        <MudIconButton Color="Color.Inherit" Icon="@Icons.Material.Filled.Close" OnClick="() => MainLayout.HideMenu()" Size="Size.Small"  />
+    </MudAppBar>
+    <MudCard>
+        <MudCardContent Class="mb-4">
+            @if (Item != null && ChildContent != null)
+            {
+                @ChildContent(Item)    
+            }
+        </MudCardContent>
+    </MudCard>
+}
+else
+{
+    <MudText Typo="Typo.h5" GutterBottom="true">
+        @(groupApiVersionKind.Kind.AddSpacesBeforeCapitals()) @Name
+    </MudText>
+
+    @if (Item != null && ChildContent != null)
+    {
+        @ChildContent(Item)    
+    } 
+}

@@ -1,0 +1,64 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31717.71
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{5B766DDD-FA5A-4E37-A4F5-0B75FC6A2C3A}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		..\.releaserc.json = ..\.releaserc.json
+		global.json = global.json
+		..\.github\workflows\cicd.yml = ..\.github\workflows\cicd.yml
+		..\README.md = ..\README.md
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeUI.Core", "KubeUI.Core\KubeUI.Core.csproj", "{CF271D1E-0C00-4277-8C52-F9AB3EBFA984}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeUI.WPF", "KubeUI.WPF\KubeUI.WPF.csproj", "{C6EC3540-8754-48A3-A31A-32C9E74BC2B4}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeUI.Console", "KubeUI.Console\KubeUI.Console.csproj", "{C7050E48-18D2-4EF4-83D1-988F120298DF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeUI.Web", "KubeUI.Web\KubeUI.Web.csproj", "{9CC7D5BA-A131-4A74-B340-7CA7328922E7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeCRDGenerator", "KubeCRDGenerator\KubeCRDGenerator.csproj", "{2AB1F77A-0904-4E89-8C99-2DDD9458625D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeCRDGenerator.Tests", "KubeCRDGenerator.Tests\KubeCRDGenerator.Tests.csproj", "{F2CC4E8B-897F-4541-AFB8-C549FABE260F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CF271D1E-0C00-4277-8C52-F9AB3EBFA984}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF271D1E-0C00-4277-8C52-F9AB3EBFA984}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF271D1E-0C00-4277-8C52-F9AB3EBFA984}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF271D1E-0C00-4277-8C52-F9AB3EBFA984}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C6EC3540-8754-48A3-A31A-32C9E74BC2B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C6EC3540-8754-48A3-A31A-32C9E74BC2B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C6EC3540-8754-48A3-A31A-32C9E74BC2B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C6EC3540-8754-48A3-A31A-32C9E74BC2B4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C7050E48-18D2-4EF4-83D1-988F120298DF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C7050E48-18D2-4EF4-83D1-988F120298DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C7050E48-18D2-4EF4-83D1-988F120298DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C7050E48-18D2-4EF4-83D1-988F120298DF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9CC7D5BA-A131-4A74-B340-7CA7328922E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9CC7D5BA-A131-4A74-B340-7CA7328922E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9CC7D5BA-A131-4A74-B340-7CA7328922E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9CC7D5BA-A131-4A74-B340-7CA7328922E7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2AB1F77A-0904-4E89-8C99-2DDD9458625D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2AB1F77A-0904-4E89-8C99-2DDD9458625D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2AB1F77A-0904-4E89-8C99-2DDD9458625D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2AB1F77A-0904-4E89-8C99-2DDD9458625D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F2CC4E8B-897F-4541-AFB8-C549FABE260F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F2CC4E8B-897F-4541-AFB8-C549FABE260F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F2CC4E8B-897F-4541-AFB8-C549FABE260F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F2CC4E8B-897F-4541-AFB8-C549FABE260F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {02FA0B85-6C2A-40B2-BC0B-72141BB628AF}
+	EndGlobalSection
+EndGlobal

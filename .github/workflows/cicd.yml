@@ -1,0 +1,137 @@
+name: CICD
+
+on:
+  push:
+    branches:
+      - '*'
+
+env:
+  dotnet-version: 7.0.x
+  include-prerelease: true
+  semantic_version: 18
+
+jobs:
+  semantic-release:
+    name: Bump Version
+    runs-on: ubuntu-latest
+    outputs:
+      new_release_version: ${{ steps.semantic.outputs.new_release_version }}
+      new_release_published: ${{ steps.semantic.outputs.new_release_published }}
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Semantic Release
+      uses: cycjimmy/semantic-release-action@v2
+      id: semantic
+      with:
+        semantic_version: ${{ env.semantic_version }}
+        dry_run: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  tests:
+    name: Tests
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: ${{ env.dotnet-version }}
+        include-prerelease: ${{ env.include-prerelease }}
+        
+    - name: Test
+      working-directory: src
+      run: dotnet test -c Release
+
+  build_web:
+    name: Build & Deploy Web
+    needs: [semantic-release, tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: ${{ env.dotnet-version }}
+        include-prerelease: ${{ env.include-prerelease }}
+
+    - name: Publish
+      working-directory: src/KubeUI.Web
+      run: dotnet publish -c Release -p:Version=${{ (needs.semantic-release.outputs.new_release_published && needs.semantic-release.outputs.new_release_version) || '0.0.1' }} -o bin/publish
+
+    - name: Deploy
+      uses: netlify/actions/cli@master
+      with:
+        args: deploy ${{ (github.ref == 'refs/heads/master' && '--prod') || '' }} --json -d src/KubeUI.Web/bin/publish/wwwroot
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: KubeUI-web
+        path: src/KubeUI.Web/bin/publish/wwwroot
+
+  build_hybrid:
+    name: Build Hybrid
+    needs: [semantic-release, tests]    
+    timeout-minutes: 10
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest]
+        include:
+        - os: windows-latest
+          RUNTIME: win-x64
+          FOLDER: src/KubeUI.WPF
+          ARGS: --self-contained -p:PublishSingleFile=true -p:DebugType=None -p:IncludeNativeLibrariesForSelfExtract=true 
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: ${{ env.dotnet-version }}
+        include-prerelease: ${{ env.include-prerelease }}
+
+    - name: Publish
+      working-directory: ${{matrix.FOLDER}}
+      run: dotnet publish -c Release -r ${{matrix.RUNTIME}} -p:Version=${{ (needs.semantic-release.outputs.new_release_published && needs.semantic-release.outputs.new_release_version) || '0.0.1' }} -o bin/publish ${{matrix.ARGS}}
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: KubeUI-${{matrix.RUNTIME}}
+        path: ${{matrix.FOLDER}}/bin/publish/
+        
+  release:
+    if: needs.semantic-release.outputs.new_release_published == 'true'
+    name: Create Release
+    needs: [build_web, build_hybrid]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Download artifact win-x64
+      uses: actions/download-artifact@v2
+      with:
+        name: KubeUI-win-x64
+        path: dist/win-x64
+
+    - name: Download artifact win-x64
+      uses: actions/download-artifact@v2
+      with:
+        name: KubeUI-web
+        path: dist/web
+
+    - name: Semantic Release
+      uses: cycjimmy/semantic-release-action@v2
+      id: semantic
+      with:
+        semantic_version: ${{ env.semantic_version }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

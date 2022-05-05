@@ -1,0 +1,16 @@
+﻿@typeparam TItem
+
+<MudTreeView Items="TreeItems" Dense="true" @bind-SelectedValue="SelectedValue">
+    <ItemTemplate>
+        <MudTreeViewItem @bind-Expanded="@context.IsExpanded" 
+                        Items="@context.TreeItems"
+                        Value="@context"
+                        Text="@context.Name"
+                        >
+                <Content>
+                    <MudTreeViewItemToggleButton @bind-Expanded="@context.IsExpanded" Visible="@(context.TreeItems.Count > 0)" />
+                    <MudText>@context.Name</MudText>
+                </Content>
+        </MudTreeViewItem>
+    </ItemTemplate>
+</MudTreeView>

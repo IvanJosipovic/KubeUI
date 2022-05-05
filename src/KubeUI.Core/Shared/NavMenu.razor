@@ -1,0 +1,86 @@
+﻿@using k8s.Models
+
+<MudNavMenu>
+    <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Home</MudNavLink>
+
+    <MudNavGroup Title="Clusters" Expanded="false" Icon="@GetIcon("infrastructure_components/unlabeled/control-plane.svg")">
+        <MudNavLink Href="/cluster" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Settings">Manage</MudNavLink>
+
+        @foreach (var cluster in ClusterManager.GetClusters())
+        {
+            <MudNavLink OnClick="() => SetActiveCluster(cluster)" Icon="@GetIcon("infrastructure_components/unlabeled/control-plane.svg")">@cluster.Name</MudNavLink>
+        }
+
+    </MudNavGroup>
+
+    @if (ClusterManager.GetActiveCluster() != null && ClusterManager.GetActiveCluster() is GitOpsCluster)
+    {
+        <InputFile id="fileInput" OnChange="UploadFiles" hidden multiple accept=".yaml, .yml" />
+        <label class="mud-nav-item mud-ripple" for="fileInput">
+	        <a class="mud-nav-link">
+		        <svg class="mud-icon-root mud-icon-default mud-svg-icon mud-icon-size-medium mud-nav-link-icon mud-nav-link-icon-default" focusable="false" viewBox="0 0 24 24" aria-hidden="true">
+			        <g>
+				        <rect fill="none" height="24" width="24"/>
+			        </g>
+			        <g>
+				        <path d="M5,20h14v-2H5V20z M5,10h4v6h6v-6h4l-7-7L5,10z"/>
+			        </g>
+		        </svg>
+		        <div class="mud-nav-link-text">Load</div>
+	        </a>
+        </label>
+    }
+
+    @if (ClusterManager.GetActiveCluster() != null && ClusterManager.GetActiveCluster().IsConnected)
+    {
+        <NavItem TItem="V1Node" Icon="infrastructure_components/unlabeled/node.svg"/>
+        <NavItem TItem="V1Namespace" Icon="resources/unlabeled/ns.svg"/>
+        <NavItem TItem="Corev1Event" Icon="infrastructure_components/unlabeled/etcd.svg"/>
+     
+        <MudNavGroup Title="Workloads" Expanded="false">
+            <NavItem TItem="V1Pod" Icon="resources/unlabeled/pod.svg"/>
+            <NavItem TItem="V1Deployment" Icon="resources/unlabeled/deploy.svg"/>
+            <NavItem TItem="V1DaemonSet" Icon="resources/unlabeled/ds.svg"/>
+            <NavItem TItem="V1StatefulSet" Icon="resources/unlabeled/sts.svg"/>
+            <NavItem TItem="V1ReplicaSet" Icon="resources/unlabeled/rs.svg"/>
+            <NavItem TItem="V1Job" Icon="resources/unlabeled/job.svg"/>
+            <NavItem TItem="V1CronJob" Icon="resources/unlabeled/cronjob.svg"/>
+        </MudNavGroup>
+
+        <MudNavGroup Title="Configuration" Expanded="false">
+            <NavItem TItem="V1ConfigMap" Icon="resources/unlabeled/cm.svg"/>
+            <NavItem TItem="V1Secret" Icon="resources/unlabeled/secret.svg"/>
+            <NavItem TItem="V1ResourceQuota" Icon="resources/unlabeled/quota.svg"/>
+            <NavItem TItem="V1LimitRange" Icon="resources/unlabeled/limits.svg"/>            
+            <NavItem TItem="V1HorizontalPodAutoscaler" Icon="resources/unlabeled/hpa.svg"/>
+            <NavItem TItem="V1PodDisruptionBudget" Icon="resources/unlabeled/job.svg"/> @*needs icon*@
+        </MudNavGroup>
+        
+        <MudNavGroup Title="Network" Expanded="false">
+            <NavItem TItem="V1Service" Icon="resources/unlabeled/sc.svg"/>
+            @*<NavItem TItem="V1Endpoint" Icon="resources/unlabeled/ep.svg"/>*@
+            <MudNavLink Href="/list/v1/endpoints" Match="NavLinkMatch.Prefix" Icon="@NavMenu.GetIcon("resources/unlabeled/ep.svg")">Endpoints</MudNavLink>
+            <NavItem TItem="V1Ingress" Icon="resources/unlabeled/ing.svg"/>
+            <NavItem TItem="V1NetworkPolicy" Icon="resources/unlabeled/netpol.svg"/>            
+        </MudNavGroup>
+        
+        <MudNavGroup Title="Storage" Expanded="false">
+            <NavItem TItem="V1PersistentVolumeClaim" Icon="resources/unlabeled/pvc.svg"/>     
+            <NavItem TItem="V1PersistentVolume" Icon="resources/unlabeled/pv.svg"/>     
+            <NavItem TItem="V1StorageClass" Icon="resources/unlabeled/sc.svg"/>     
+        </MudNavGroup>
+        
+        <MudNavGroup Title="Access Control" Expanded="false">
+            <NavItem TItem="V1ServiceAccount" Icon="resources/unlabeled/sa.svg"/>     
+            <NavItem TItem="V1ClusterRole" Icon="resources/unlabeled/c-role.svg"/>     
+            <NavItem TItem="V1Role" Icon="resources/unlabeled/role.svg"/>                 
+            <NavItem TItem="V1ClusterRoleBinding" Icon="resources/unlabeled/crb.svg"/>     
+            <NavItem TItem="V1RoleBinding" Icon="resources/unlabeled/rb.svg"/>                 
+            <NavItem TItem="V1beta1PodSecurityPolicy" Icon="resources/unlabeled/psp.svg"/>     
+        </MudNavGroup>
+
+        <CRDNavList />
+    }
+
+</MudNavMenu>
+

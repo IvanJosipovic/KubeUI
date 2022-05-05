@@ -1,0 +1,26 @@
+﻿@page "/list/apiextensions.k8s.io/v1/customresourcedefinition"
+
+<ListComponent TItem="V1CustomResourceDefinition">
+    <ColumnComponent TItem="V1CustomResourceDefinition" Name="Resource" Object="(x => x.Spec.Names.Kind)" Sort="SortDirection.Ascending">
+        <DisplayContent>
+            <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Dehaze" OnClick="() => context.Item2.DisplayDetails(context.Item1.Metadata.NamespaceProperty, context.Item1.ApiGroup(), context.Item1.ApiGroupVersion(), context.Item1.Kind, context.Item1.Metadata.Name)">X</MudIconButton>
+            <MudLink Href="@($"/list/{context.Item1.Spec.Group}/{context.Item1.Spec.Versions.Where(x => x.Storage).First().Name}/{context.Item1.Spec.Names.Kind}")" Typo="Typo.body2">@context.Item1.Spec.Names.Kind</MudLink>
+        </DisplayContent>
+    </ColumnComponent>
+    <ColumnComponent TItem="V1CustomResourceDefinition" Name="Group" Object="(x => x.Spec.Group)" />
+    <ColumnComponent TItem="V1CustomResourceDefinition" Name="Version" Object="(x => x.Spec.Versions.Where(x => x.Storage).First().Name)" />
+    <ColumnComponent TItem="V1CustomResourceDefinition" Name="Scope" Object="(x => x.Spec.Scope)" />
+    <ColumnComponent TItem="V1CustomResourceDefinition" Name="Age" Object="(x => x.Metadata.CreationTimestamp)" >
+        <DisplayContent>
+            <Age TItem="V1CustomResourceDefinition" Date="@context.Item1.Metadata.CreationTimestamp" />
+        </DisplayContent>
+    </ColumnComponent>
+    <ColumnComponent TItem="V1CustomResourceDefinition">
+        <HeaderContent>
+            <ColumnPicker TItem="V1CustomResourceDefinition" />
+        </HeaderContent>
+        <DisplayContent>
+            <Actions TItem="V1CustomResourceDefinition" Item="context.Item1"/>
+        </DisplayContent>        
+    </ColumnComponent>
+</ListComponent>

@@ -1,0 +1,9 @@
+﻿@typeparam TItem where TItem : class, IKubernetesObject<V1ObjectMeta>, new()
+
+<MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small">
+    @foreach(var col in ListComponent.GetColumns().Where(x => !string.IsNullOrEmpty(x.Name)))
+    {
+        <MudCheckBox T="bool" Checked="@(col.Hide == false)" Label="@col.Name" Class="mr-4" CheckedChanged="(() => Toggle(col))" ></MudCheckBox>
+        <br />
+    }
+</MudMenu>

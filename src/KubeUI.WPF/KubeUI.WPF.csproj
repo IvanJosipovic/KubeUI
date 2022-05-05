@@ -1,0 +1,55 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net7.0-windows</TargetFramework>
+		<Nullable>enable</Nullable>
+		<UseWPF>true</UseWPF>
+		<PackageIcon>icon.ico</PackageIcon>
+		<ApplicationIcon>icon.ico</ApplicationIcon>
+		<AssemblyName>KubeUI</AssemblyName>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <Content Remove="appsettings.json" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Content Include="icon.ico" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebView.Wpf" Version="6.0.300-rc.2.5513" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.0-preview.3.22175.4" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="7.0.0-preview.3.22175.4" />
+		<PackageReference Include="Serilog.Extensions.Logging.File" Version="2.0.0" />
+
+		<!--Needed to Build Sereliog-->
+		<PackageReference Include="System.IO.FileSystem.Primitives" Version="4.3.0" />
+		<PackageReference Include="System.Runtime.Handles" Version="4.3.0" />
+		<PackageReference Include="System.Runtime.InteropServices" Version="4.3.0" />
+		<PackageReference Include="System.Text.Encoding.Extensions" Version="4.3.0" />
+		<PackageReference Include="System.Threading" Version="4.3.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\KubeUI.Core\KubeUI.Core.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Content Update="wwwroot\**">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Properties\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Include="appsettings.json">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+
+</Project>

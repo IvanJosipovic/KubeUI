@@ -1,0 +1,44 @@
+﻿@page "/details/v1/pod"
+
+<DetailsGeneric Namespace="@Namespace"
+                  Name="@Name"
+                  TItem="V1Pod"
+                  IsInSideMenu="IsInSideMenu">
+    <Overview>
+        Containers: @context.Spec.Containers.Count
+        <br />
+        Image: @context.Spec.Containers[0].Image       
+    </Overview>
+    <Tabs>
+        <MudTabPanel Text="Logs">
+            <MudTabs Elevation="4" Rounded="true" AlwaysShowScrollButtons="true" Color="@Color.Success" Class="mt-4">
+                @foreach (var cont in context.Spec.Containers)
+                {
+                    <MudTabPanel Text="@cont.Name">
+                        <ResizePanel Context="resize" Offset="240" SetHeigh="true">
+                            <PodLogs Name="@Name" Namespace="@Namespace" Container="@cont.Name" Lines="@LogLineCount" Previous="@PreviousLog" />
+                        </ResizePanel>
+                    </MudTabPanel>
+                }
+            </MudTabs>
+        </MudTabPanel>
+        <MudTabPanel Text="Console"/>
+    </Tabs>
+</DetailsGeneric>
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string Namespace { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string Name { get; set; }
+
+    [Parameter]
+    public bool IsInSideMenu { get; set; }
+
+    private int LogLineCount { get; set; } = 500;
+
+    private bool PreviousLog { get; set; } = false;
+}

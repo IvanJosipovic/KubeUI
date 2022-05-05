@@ -1,0 +1,55 @@
+﻿@typeparam TItem where TItem : class, IKubernetesObject<V1ObjectMeta>, new()
+
+<DetailsComponent Namespace="@Namespace"
+                  Name="@Name"
+                  TItem="TItem"
+                  IsInSideMenu="IsInSideMenu">
+    <MudTabs Elevation="4" Rounded="true" Centered="true" Color="@Color.Primary">
+        <MudTabPanel Text="Details">
+            <KubeUI.Core.Components.Dynamic.UI TItem="TItem" Item="context" />
+        </MudTabPanel>
+        <MudTabPanel Text="Overview">
+            Created: @context.Metadata.CreationTimestamp
+            <br />
+            @if (Overview != null)
+            {
+                @Overview(context);
+            }    
+        </MudTabPanel>
+        <MudTabPanel Text="Yaml">
+            <ResizePanel Context="resize" Offset="180" SetHeigh="true">
+                <MonacoViewer Value="@KubernetesYaml.Serialize(context)" />
+            </ResizePanel>
+        </MudTabPanel>
+        <MudTabPanel Text="Json">
+            <ResizePanel Context="resize" Offset="180" SetHeigh="true">
+                <MonacoViewer Value="@Utilities.JsonPrettifyString(KubernetesJson.Serialize(context))" Language="json" />
+            </ResizePanel>
+        </MudTabPanel>
+
+        @if (Tabs != null)
+        {
+            @Tabs(context);
+        }
+    </MudTabs>
+</DetailsComponent>
+
+@code {
+    [Inject]
+    private ClusterManager ClusterManager { get; set; }
+
+    [Parameter]
+    public bool IsInSideMenu { get; set; }
+
+    [Parameter]
+    public string Namespace { get; set; }
+
+    [Parameter]
+    public string Name { get; set; }
+
+    [Parameter]
+    public RenderFragment<TItem> Overview { get; set; }
+
+    [Parameter]
+    public RenderFragment<TItem> Tabs { get; set; }
+}

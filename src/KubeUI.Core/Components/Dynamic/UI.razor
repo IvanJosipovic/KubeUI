@@ -1,0 +1,19 @@
+﻿@typeparam TItem where TItem : class, IKubernetesObject<V1ObjectMeta>, new()
+
+@if (Item != null)
+{
+    <MudGrid Spacing="1">
+        <MudItem xs="3">
+            <MudPaper Class="d-flex align-left justify-left mud-width-full">
+                <Tree TItem="TItem" Item="Item" />
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="9">
+            <MudPaper Class="d-flex align-center justify-center mud-width-full">Form</MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    [Parameter] public TItem Item { get; set; }
+}

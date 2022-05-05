@@ -1,0 +1,32 @@
+﻿@typeparam TItem where TItem : class, IKubernetesObject<V1ObjectMeta>
+
+@if (Date.HasValue)
+{
+    if (Delta.TotalDays > 1)
+    {
+        @(Delta.TotalDays.ToString("N0"))@("d")
+    }
+    else if (Delta.TotalHours > 1)
+    {
+        @(Delta.TotalHours.ToString("N0"))@("h")
+    }
+    else if (Delta.TotalMinutes > 1)
+    {
+        @(Delta.TotalMinutes.ToString("N0"))@("m")
+    }
+    else if (Delta.TotalSeconds > 1)
+    {
+        @(Delta.TotalSeconds.ToString("N0"))@("s")
+    }
+    else
+    {
+        @(Delta.TotalMilliseconds.ToString("N0"))@("ms")
+    }
+}
+
+@code {
+    [Parameter]
+    public DateTime? Date { get; set; }
+
+    private TimeSpan Delta => DateTime.UtcNow - Date.Value;
+}

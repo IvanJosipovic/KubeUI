@@ -1,0 +1,22 @@
+﻿@page "/list/v1/event"
+
+<ListGeneric TItem="Corev1Event" HideName="true" HideNamespace="true">
+    <Columns>
+        <ColumnComponent TItem="Corev1Event" Name="Type" Object="(x => x.Type)" Width="5%" />
+        <ColumnComponent TItem="Corev1Event" Name="Message" Object="(x => x.Message)" Width="70%">
+            <DisplayContent>
+                <MudText Color="@(@context.Item1.Type == "Warning" ? Color.Error : Color.Inherit)" Typo="Typo.inherit">@context.Item1.Message</MudText>
+            </DisplayContent>
+        </ColumnComponent>
+        <ColumnComponent TItem="Corev1Event" Name="Namespace" Object="(x => x.Metadata.NamespaceProperty)" Width="10%"/>
+        <ColumnComponent TItem="Corev1Event" Name="Last Seen" Object="(x => DateTime.UtcNow - x.LastTimestamp)" Sort="SortDirection.Ascending" Width="5%">
+            <DisplayContent>
+                <Age TItem="Corev1Event" Date="@context.Item1.LastTimestamp" />
+            </DisplayContent>
+        </ColumnComponent>
+    </Columns>
+</ListGeneric>
+
+@code {
+
+}

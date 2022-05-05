@@ -1,0 +1,31 @@
+﻿@page "/Cluster"
+
+<InputFile id="fileInput" OnChange="ImportConfig" hidden multiple />
+
+<MudDataGrid Items="this.ClusterManager.GetClusters()" Sortable="true" Filterable="true" Dense="true">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Clusters</MudText>
+        <MudSpacer />
+        <MudIconButton HtmlTag="label"
+                   Title="Import Config"
+                   Color="Color.Primary"
+                   Icon="@Icons.Filled.CloudUpload"
+                   for="fileInput">
+        </MudIconButton>
+    </ToolBarContent>
+    <Columns>
+        <Column T="ICluster" Field="Name" HeaderStyle="width:95%"/>
+
+        <Column T="ICluster" Sortable="false" Filterable="false" HeaderStyle="width:5%">
+            <CellTemplate>
+                <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small">
+                    @if(context.Item is not GitOpsCluster)
+                    {
+                        <MudMenuItem OnClick="@(() => Delete(context.Item))">Delete</MudMenuItem>
+                    }
+                </MudMenu>            
+            </CellTemplate>
+        </Column>
+    </Columns>
+</MudDataGrid>
+

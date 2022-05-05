@@ -1,0 +1,43 @@
+﻿@using MudBlazor.Services
+@inherits LayoutComponentBase
+
+<MudThemeProvider Theme="@Theme" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="0" Dense="true">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+        <MudSpacer />
+        <MudIconButton Icon="@Icons.Custom.Brands.GitHub" Color="Color.Inherit" Link="https://github.com/IvanJosipovic/KubeUI" Target="_blank" />
+        <MudIconButton Icon="@Icons.Material.Filled.QuestionMark" Color="Color.Inherit" Href="/About"/>
+    </MudAppBar>
+    <MudDrawer @bind-Open="_drawerOpen" Elevation="5" ClipMode="@DrawerClipMode.Always" Variant="@DrawerVariant.Responsive" Width="300px">
+        <ErrorBoundary @ref="errorBoundary">
+            <ChildContent>
+                <NavMenu />
+            </ChildContent>
+            <ErrorContent>
+                <p class="errorUI">Nothing to see here right now. Sorry!</p> @context.Message
+            </ErrorContent>
+        </ErrorBoundary>
+    </MudDrawer>
+    <CascadingValue IsFixed="true" Value="this">
+        <MudMainContent>
+            <MudContainer MaxWidth="MaxWidth.False" Class="my-2 pt-2">
+            <ErrorBoundary @ref="errorBoundary">
+                <ChildContent>
+                @Body
+                </ChildContent>
+                <ErrorContent>
+                    <p class="errorUI">Nothing to see here right now. Sorry!</p> @context.Message
+                </ErrorContent>
+            </ErrorBoundary>
+            </MudContainer>
+        </MudMainContent>
+        <MudDrawer @bind-Open="_drawerOpen2" Elevation="1" Width="@MenuWidth" Anchor="Anchor.Right" ClipMode="@DrawerClipMode.Always" Variant="@DrawerVariant.Persistent" DisableOverlay="true" PreserveOpenState="true">
+            @menuRenderFragment
+        </MudDrawer>
+    </CascadingValue>
+</MudLayout>
+

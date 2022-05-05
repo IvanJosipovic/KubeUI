@@ -1,0 +1,37 @@
+﻿@page "/list/v1/pod"
+
+<ListGeneric TItem="V1Pod">
+    <Columns>
+        <ColumnComponent TItem="V1Pod" Name="Containers" Object="(x => x.Spec.Containers?.Count)" >
+            <DisplayContent>
+                @foreach (var container in context.Item1?.Status?.ContainerStatuses.EnsureNotEmpty())
+                {
+                    @container.Ready
+                }
+            </DisplayContent>
+        </ColumnComponent>
+        <ColumnComponent TItem="V1Pod" Name="Restarts" Object="(x => x.Status?.ContainerStatuses?.Sum(x => x.RestartCount))" />
+        <ColumnComponent TItem="V1Pod" Name="QoS" Object="(x => x.Status.QosClass)" />
+        <ColumnComponent TItem="V1Pod" Name="Status" Object="(x => x.Status?.Phase)" >
+            <DisplayContent>
+                @{
+                    var color = Color.Success;
+
+                    if (context.Item1.Status?.Phase == "Failed")
+                    {
+                        color = Color.Error;
+                    }
+                    else if (context.Item1.Status?.Phase == "Pending")
+                    {
+                        color = Color.Warning;
+                    };
+                }
+                <MudText Color="color" Typo="Typo.inherit">@context.Item1.Status?.Phase</MudText>
+            </DisplayContent>
+        </ColumnComponent>
+    </Columns>
+</ListGeneric>
+
+@code {
+
+}

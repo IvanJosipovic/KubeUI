@@ -1,0 +1,12 @@
+﻿@page "/Connect"
+
+@if (string.IsNullOrEmpty(ErrorMessage))
+{
+    <MudText Typo="Typo.h5" GutterBottom="true">Connecting...</MudText>    
+}
+else    
+{
+    <MudText Typo="Typo.h5" GutterBottom="true">Failed</MudText>    
+    <MudText Typo="Typo.body1" GutterBottom="true" Color="Color.Error">@ErrorMessage</MudText>    
+}
+

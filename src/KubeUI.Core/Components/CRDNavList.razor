@@ -1,0 +1,43 @@
+﻿<MudNavGroup Title="Custom Resource Definitions" Expanded="false" Icon="@NavMenu.GetIcon("resources/unlabeled/crd.svg")">
+    <MudNavLink Href=@($"/list/{V1CustomResourceDefinition.KubeGroup}/{V1CustomResourceDefinition.KubeApiVersion}/{V1CustomResourceDefinition.KubeKind}") Match="NavLinkMatch.Prefix">Definitions</MudNavLink>
+
+    @foreach (var item in ClusterManager.GetActiveCluster().GetObjects<V1CustomResourceDefinition>().GroupBy(x => x.Spec.Group).OrderBy(x => x.Key))
+    {
+        <MudNavGroup Title="@item.Key" Expanded="false">
+            @foreach (var item in item)
+            {
+                <MudNavLink Href=@($"/list/{item.Spec.Group}/{item.Spec.Versions.First(x => x.Storage).Name}/{item.Spec.Names.Kind.ToLowerInvariant()}") Match="NavLinkMatch.Prefix">@item.Spec.Names.Kind</MudNavLink>
+            }
+        </MudNavGroup>
+    }
+
+</MudNavGroup>
+
+@code {
+    [Inject]
+    private ClusterManager ClusterManager { get; set; }
+    
+    protected override void OnInitialized()
+    {
+        ClusterManager.OnChange += ClusterManager_OnChange;
+        ClusterManager.GetActiveCluster().OnChange += NavMenu_OnChange;    
+    }
+
+    private void ClusterManager_OnChange(ClusterManagerEvents obj)
+    {
+        if (obj == ClusterManagerEvents.ActiveClusterChanged)
+        {
+            ClusterManager.GetClusters().ForEach(c => c.OnChange -= NavMenu_OnChange);
+            ClusterManager.GetActiveCluster().OnChange += NavMenu_OnChange;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void NavMenu_OnChange(WatchEventType arg1, GroupApiVersionKind arg2, IKubernetesObject<V1ObjectMeta> arg3)
+    {
+        if (arg2.Equals(GroupApiVersionKind.From<V1CustomResourceDefinition>()))
+        {
+            InvokeAsync(StateHasChanged);
+        }
+    }
+}

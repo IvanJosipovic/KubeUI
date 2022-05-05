@@ -1,0 +1,38 @@
+{
+  "branches": [
+    {
+      "name": "main"
+    },
+    {
+      "name": "alpha",
+      "prerelease": true
+    },
+    {
+      "name": "beta",
+      "prerelease": true
+    }
+  ],
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    [
+      "@semantic-release/github",
+      {
+        "assets": [
+          {
+            "path": "dist/win-x64/**",
+            "label": "KubeUI-win-x64"
+          },
+          {
+            "path": "dist/osx-x64/**",
+            "label": "KubeUI-osx-x64"
+          },
+          {
+            "path": "dist/web/**",
+            "label": "KubeUI-web"
+          }
+        ]
+      }
+    ]
+  ]
+}
