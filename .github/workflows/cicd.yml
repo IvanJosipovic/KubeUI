@@ -73,10 +73,15 @@ jobs:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
         NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
 
+    - name: Publish
+      working-directory: src/KubeUI.Web
+      run: Compress-Archive -Path src/KubeUI.Web/bin/publish/wwwroot -DestinationPath KubeUI-web.zip
+      shell: pwsh
+
     - uses: actions/upload-artifact@v3
       with:
         name: KubeUI-web
-        path: src/KubeUI.Web/bin/publish/wwwroot
+        path: src/KubeUI.Web/KubeUI-web.zip
 
   build_hybrid:
     name: Build Hybrid
@@ -104,10 +109,15 @@ jobs:
       working-directory: ${{matrix.FOLDER}}
       run: dotnet publish -c Release -r ${{matrix.RUNTIME}} -p:Version=${{ (needs.semantic-release.outputs.new_release_published && needs.semantic-release.outputs.new_release_version) || '0.0.1' }} -o bin/publish ${{matrix.ARGS}}
 
+    - name: Publish
+      working-directory: ${{matrix.FOLDER}}
+      run: Compress-Archive -Path ${{matrix.FOLDER}}/bin/publish/ -DestinationPath KubeUI-${{matrix.RUNTIME}}.zip
+      shell: pwsh
+
     - uses: actions/upload-artifact@v3
       with:
         name: KubeUI-${{matrix.RUNTIME}}
-        path: ${{matrix.FOLDER}}/bin/publish/
+        path: ${{matrix.FOLDER}}/KubeUI-${{matrix.RUNTIME}}.zip
         
   release:
     if: needs.semantic-release.outputs.new_release_published == 'true'
