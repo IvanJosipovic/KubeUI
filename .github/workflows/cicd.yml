@@ -19,7 +19,7 @@ jobs:
       new_release_version: ${{ steps.semantic.outputs.new_release_version }}
       new_release_published: ${{ steps.semantic.outputs.new_release_published }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Semantic Release
       uses: cycjimmy/semantic-release-action@v2
@@ -35,7 +35,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 10
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
@@ -53,7 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
@@ -92,7 +92,7 @@ jobs:
           FOLDER: src/KubeUI.WPF
           ARGS: --self-contained -p:PublishSingleFile=true -p:DebugType=None -p:IncludeNativeLibrariesForSelfExtract=true 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
@@ -115,7 +115,7 @@ jobs:
     needs: [build_web, build_hybrid]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Download artifact win-x64
       uses: actions/download-artifact@v2
