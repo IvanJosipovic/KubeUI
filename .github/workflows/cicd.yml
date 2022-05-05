@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       new_release_published: ${{ steps.semantic.outputs.new_release_published }}
-      new_release_version: ${{ (steps.semantic-release.outputs.new_release_published && steps.semantic-release.outputs.new_release_version) || '0.0.1' }}
+      new_release_version: ${{ (steps.semantic.outputs.new_release_published && steps.semantic.outputs.new_release_version) || '0.0.1' }}
     steps:
     - uses: actions/checkout@v3
 
