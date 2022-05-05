@@ -3,15 +3,13 @@
 <MudText Typo="Typo.h5" GutterBottom="true">About</MudText>
 
 <MudText Typo="Typo.body1" GutterBottom="true">
-   Version: v@(Utilities.GetVersion()) <MudLink Typo="Typo.inherit" Href="@(GithubRelease.html_url)">(Update Available: @(GithubRelease.tag_name))</MudLink>
+   Version: v@(Utilities.GetVersion())&nbsp;
+   @if (UpdateRequired)
+    {
+        <MudLink Typo="Typo.inherit" Href="@(GithubRelease?.html_url)">(Update Available: @(GithubRelease?.tag_name))</MudLink>
+    }
 </MudText>
-@if (UpdateRequired)
-{
-    <MudText Typo="Typo.body1" GutterBottom="true">
 
-    </MudText>
-
-}
 <MudText Typo="Typo.body1" GutterBottom="true">
     Created by: <MudLink Href="https://github.com/ivanjosipovic">Ivan Josipovic</MudLink>
 </MudText>
