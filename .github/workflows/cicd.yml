@@ -1,6 +1,7 @@
 name: CICD
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - '*'
@@ -67,7 +68,7 @@ jobs:
     - name: Deploy
       uses: netlify/actions/cli@master
       with:
-        args: deploy ${{ (github.ref == 'refs/heads/master' && '--prod') || '' }} --json -d src/KubeUI.Web/bin/publish/wwwroot
+        args: deploy ${{ (github.ref == 'refs/heads/alpha' && '--prod') || '' }} --json -d src/KubeUI.Web/bin/publish/wwwroot
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
         NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
