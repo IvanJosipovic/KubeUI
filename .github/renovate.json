@@ -1,0 +1,15 @@
+{
+    "enabled": true,
+    "timezone": "America/Vancouver",
+    "dependencyDashboard": true,
+    "dependencyDashboardTitle": "Renovate Dashboard",
+    "commitMessageSuffix": "",
+    "commitBody": "",
+    "semanticCommits": "enabled",
+    "suppressNotifications": ["prIgnoreNotification"],
+    "rebaseWhen": "conflicted",
+    "assignees": ["@ivanjosipovic"],
+    "extends": [
+        "config:base"
+    ]
+}
