@@ -38,7 +38,7 @@ namespace KubeUI.Core.Pages
 
         private void ImportConfig(InputFileChangeEventArgs e)
         {
-            foreach (var file in e.GetMultipleFiles())
+            foreach (var file in e.GetMultipleFiles(500))
             {
                 try
                 {

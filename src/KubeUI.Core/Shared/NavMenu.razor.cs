@@ -25,7 +25,7 @@ namespace KubeUI.Core.Shared
 
         private async Task UploadFiles(InputFileChangeEventArgs e)
         {
-            foreach (var file in e.GetMultipleFiles())
+            foreach (var file in e.GetMultipleFiles(500))
             {
                 try
                 {
