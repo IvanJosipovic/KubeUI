@@ -8,7 +8,6 @@ public class GitOpsCluster : ClusterBase, ICluster
 {
     public string Path { get; set; }
 
-    public bool IsConnected { get; set; } = true;
 
     public GitOpsCluster(ICRDGenerator cRDGenerator) : base(cRDGenerator)
     {

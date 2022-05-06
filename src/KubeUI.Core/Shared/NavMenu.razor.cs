@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace KubeUI.Core.Shared;
 
-public partial class NavMenu
+public partial class NavMenu : IDisposable
 {
     [Inject]
     private ILogger<NavMenu> Logger { get; set; }
@@ -41,7 +41,28 @@ public partial class NavMenu
 
     private void SetActiveCluster(ICluster cluster)
     {
+        if (ClusterManager.GetActiveCluster() != null)
+        {
+            ClusterManager.GetActiveCluster().PropertyChanged -= Cluster_PropertyChanged;
+        }
+
         ClusterManager.SetActiveCluster(cluster);
+
+        cluster.PropertyChanged += Cluster_PropertyChanged;
+
         NavigationManager.NavigateTo("/Connect");
+    }
+
+    private void Cluster_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        if (ClusterManager.GetActiveCluster() != null)
+        {
+            ClusterManager.GetActiveCluster().PropertyChanged -= Cluster_PropertyChanged;
+        }
     }
 }

@@ -2,13 +2,16 @@
 using k8s.Models;
 using KubeCRDGenerator;
 using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.Reflection;
 
 namespace KubeUI.Core.Client;
 
-public abstract class ClusterBase
+public abstract class ClusterBase : INotifyPropertyChanged
 {
     public string Name { get; set; }
+
+    public bool IsConnected { get; set; } = true;
 
     private ICRDGenerator CRDGenerator { get; set; }
 
@@ -22,6 +25,8 @@ public abstract class ClusterBase
     protected List<Assembly> Assemblies = new() { { typeof(V1Namespace).Assembly } };
 
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>> OnChange;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
 
     private List<string> SelectedNamespaces = new();
 

@@ -16,8 +16,6 @@ public class Cluster : ClusterBase, ICluster
 
     public string KubeConfig { get; set; }
 
-    public bool IsConnected { get; set; }
-
     private KubernetesClientConfiguration? KubernetesClientConfiguration;
 
     public IKubernetes? Client;

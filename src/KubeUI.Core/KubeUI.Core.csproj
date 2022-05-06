@@ -13,6 +13,7 @@
 		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="7.0.0-preview.3.22175.4" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0-preview.3.22175.4" />
 		<PackageReference Include="MudBlazor" Version="6.0.10" />
+		<PackageReference Include="PropertyChanged.Fody" Version="3.4.0" />
 	</ItemGroup>
 
 	<ItemGroup>

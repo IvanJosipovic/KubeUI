@@ -1,5 +1,6 @@
 ﻿using k8s;
 using k8s.Models;
+using System.ComponentModel;
 
 namespace KubeUI.Core.Client;
 
@@ -40,4 +41,6 @@ public interface ICluster
     void SetSelectedNamespaces(IEnumerable<string> namespaces);
 
     Task<KubeVersion> GetVersion();
+
+    public event PropertyChangedEventHandler? PropertyChanged;
 }
