@@ -48,9 +48,9 @@ namespace KubeUI.Core.Shared
                 {
                     Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
 
-                    var release = await Updater.GetRelease();
+                    var release = await Updater.GetReleases();
 
-                    Snackbar.Add($"Update {release.tag_name} is available!", Severity.Normal);
+                    Snackbar.Add($"Update {release.FirstOrDefault()?.tag_name} is available!", Severity.Normal);
                 }
             }
             catch (Exception ex)

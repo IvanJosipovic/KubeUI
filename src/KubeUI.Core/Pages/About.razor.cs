@@ -15,14 +15,14 @@ namespace KubeUI.Core.Pages
 
         private bool UpdateRequired { get; set; }
 
-        private GithubRelease GithubRelease { get; set; }
+        private GithubRelease[] GithubReleases { get; set; }
 
         protected override async Task OnInitializedAsync()
         {
             try
             {
                 UpdateRequired = await Updater.UpdateRequired();
-                GithubRelease = await Updater.GetRelease();
+                GithubReleases = await Updater.GetReleases();
             }
             catch (Exception ex)
             {

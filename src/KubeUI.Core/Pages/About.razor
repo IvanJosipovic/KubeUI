@@ -6,7 +6,7 @@
    Version: v@(Utilities.GetVersion())&nbsp;
    @if (UpdateRequired)
     {
-        <MudLink Typo="Typo.inherit" Href="@(GithubRelease?.html_url)">(Update Available: @(GithubRelease?.tag_name))</MudLink>
+        <MudLink Typo="Typo.inherit" Href="@(GithubReleases.FirstOrDefault()?.html_url)">(Update Available: @(GithubReleases.FirstOrDefault()?.tag_name))</MudLink>
     }
 </MudText>
 
