@@ -10,19 +10,22 @@
         Image: @context.Spec.Containers[0].Image
     </Overview>
     <Tabs>
-        <MudTabPanel Text="Logs">
-            <MudTabs Elevation="4" Rounded="true" AlwaysShowScrollButtons="true" Color="@Color.Success" Class="mt-4">
-                @foreach (var cont in context.Spec.Containers)
-                {
-                    <MudTabPanel Text="@cont.Name">
-                        <ResizePanel Context="resize" Offset="240" SetHeigh="true">
-                            <PodLogs Name="@Name" Namespace="@Namespace" Container="@cont.Name" Lines="@LogLineCount" Previous="@PreviousLog" />
-                        </ResizePanel>
-                    </MudTabPanel>
-                }
-            </MudTabs>
-        </MudTabPanel>
-        <MudTabPanel Text="Console"/>
+        @if (ClusterManager.GetActiveCluster() is Cluster)
+        {
+            <MudTabPanel Text="Logs">
+                <MudTabs Elevation="4" Rounded="true" AlwaysShowScrollButtons="true" Color="@Color.Success" Class="mt-4">
+                    @foreach (var cont in context.Spec.Containers)
+                    {
+                        <MudTabPanel Text="@cont.Name">
+                            <ResizePanel Context="resize" Offset="240" SetHeigh="true">
+                                <PodLogs Name="@Name" Namespace="@Namespace" Container="@cont.Name" Lines="@LogLineCount" Previous="@PreviousLog" />
+                            </ResizePanel>
+                        </MudTabPanel>
+                    }
+                </MudTabs>
+            </MudTabPanel>
+            <MudTabPanel Text="Console"/>
+        }
     </Tabs>
 </DetailsGeneric>
 
@@ -37,6 +40,9 @@
 
     [Parameter]
     public bool IsInSideMenu { get; set; }
+
+    [Inject]
+    private ClusterManager ClusterManager { get; set; }
 
     private int LogLineCount { get; set; } = 500;
 
