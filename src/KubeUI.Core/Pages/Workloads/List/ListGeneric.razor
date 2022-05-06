@@ -3,7 +3,7 @@
 <ListComponent TItem="TItem">
     @if (HideName == false)
     {
-        <ColumnComponent TItem="TItem" Name="Name" Object="(x => x.Metadata.Name)" Sort="SortDirection.Ascending" Width="20%">            
+        <ColumnComponent TItem="TItem" Name="Name" Object="(x => x.Metadata.Name)" Sort="SortDirection.Ascending" Width="20%">
             <DisplayContent>
                 <Link TItem="TItem" Object="@context.Item1" />
             </DisplayContent>
@@ -13,7 +13,7 @@
     @if (HideNamespace == false)
     {
         <ColumnComponent TItem="TItem" Name="Namespace" Object="(x => x.Metadata.NamespaceProperty)" Width="10%"/>
-    }    
+    }
 
     @if (Columns != null)
     {
@@ -25,14 +25,14 @@
             <Age TItem="TItem" Date="@context.Item1.Metadata.CreationTimestamp" />
         </DisplayContent>
     </ColumnComponent>
-    
+
     <ColumnComponent TItem="TItem" Width="5%">
         <HeaderContent>
             <ColumnPicker TItem="TItem" />
         </HeaderContent>
         <DisplayContent>
             <Actions TItem="TItem" Item="context.Item1"/>
-        </DisplayContent>        
+        </DisplayContent>
     </ColumnComponent>
 </ListComponent>
 

@@ -1,73 +1,56 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
-using System.Net.Http;
-using System.Net.Http.Json;
-using Microsoft.AspNetCore.Components.Forms;
-using Microsoft.AspNetCore.Components.Routing;
-using Microsoft.AspNetCore.Components.Web;
-using Microsoft.AspNetCore.Components.Web.Virtualization;
-using Microsoft.JSInterop;
-using MudBlazor;
-using KubeUI.Core.Shared;
-using KubeUI.Core.Components;
-using k8s.Models;
-using k8s;
 using KubeUI.Core.Client;
 using Microsoft.Extensions.Logging;
 
-namespace KubeUI.Core.Pages
+namespace KubeUI.Core.Pages;
+
+public partial class Connect : IDisposable
 {
-    public partial class Connect : IDisposable
+    [Inject]
+    private ClusterManager ClusterManager { get; set; }
+
+    [Inject]
+    private ILogger<Connect> Logger { get; set; }
+
+    [Inject]
+    private NavigationManager NavigationManager { get; set; }
+
+    private string? ErrorMessage;
+
+    private Timer? Timer;
+
+    protected override async Task OnInitializedAsync()
     {
-        [Inject]
-        private ClusterManager ClusterManager { get; set; }
+        await ConnectToCluster();
+    }
 
-        [Inject]
-        private ILogger<Connect> Logger { get; set; }
+    private async Task ConnectToCluster()
+    {
+        ErrorMessage = null;
+        await InvokeAsync(StateHasChanged);
 
-        [Inject]
-        private NavigationManager NavigationManager { get; set; }
-
-        private string? ErrorMessage;
-
-        private Timer? Timer;
-
-        protected override async Task OnInitializedAsync()
+        try
         {
-            await ConnectToCluster();
+            var ver = await ClusterManager.GetActiveCluster().GetVersion();
+            ClusterManager.GetActiveCluster().IsConnected = true;
+            await InvokeAsync(StateHasChanged);
+            NavigationManager.NavigateTo("/");
         }
-
-        private async Task ConnectToCluster()
+        catch (Exception ex)
         {
-            ErrorMessage = null;
+            Logger.LogError(ex, "Failed to connect to cluster");
+            ErrorMessage = ex.ToString();
             await InvokeAsync(StateHasChanged);
 
-            try
+            if (Timer == null)
             {
-                var ver = await ClusterManager.GetActiveCluster().GetVersion();
-                ClusterManager.GetActiveCluster().IsConnected = true;
-                await InvokeAsync(StateHasChanged);
-                NavigationManager.NavigateTo("/");
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "Failed to connect to cluster");
-                ErrorMessage = ex.ToString();
-                await InvokeAsync(StateHasChanged);
-
-                if (Timer == null)
-                {
-                    Timer = new Timer(async (_) => await ConnectToCluster(), null, 5000, 5000);
-                }
+                Timer = new Timer(async (_) => await ConnectToCluster(), null, 5000, 5000);
             }
         }
+    }
 
-        public void Dispose()
-        {
-            Timer?.Dispose();
-        }
+    public void Dispose()
+    {
+        Timer?.Dispose();
     }
 }

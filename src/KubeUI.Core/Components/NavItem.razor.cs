@@ -4,69 +4,68 @@ using k8s;
 using KubeUI.Core.Client;
 using Microsoft.Extensions.Logging;
 
-namespace KubeUI.Core.Components
+namespace KubeUI.Core.Components;
+
+public partial class NavItem<TItem> : IDisposable where TItem : class, IKubernetesObject<V1ObjectMeta>, new()
 {
-    public partial class NavItem<TItem> : IDisposable where TItem : class, IKubernetesObject<V1ObjectMeta>, new()
+    [Parameter]
+    public string Icon { get; set; }
+
+    [Inject]
+    private ILogger<NavItem<TItem>> Logger { get; set; }
+
+    [Inject]
+    private ClusterManager ClusterManager { get; set; }
+
+    private bool disposedValue;
+
+    private GroupApiVersionKind GroupApiVersionKind => GroupApiVersionKind.From<TItem>();
+
+    protected override void OnInitialized()
     {
-        [Parameter]
-        public string Icon { get; set; }
+        base.OnInitialized();
 
-        [Inject]
-        private ILogger<NavItem<TItem>> Logger { get; set; }
+        ClusterManager.OnChange += ClusterManager_OnChange;
+        ClusterManager.GetActiveCluster().OnChange += NavMenu_OnChange;
+    }
 
-        [Inject]
-        private ClusterManager ClusterManager { get; set; }
-
-        private bool disposedValue;
-
-        private GroupApiVersionKind GroupApiVersionKind => GroupApiVersionKind.From<TItem>();
-
-        protected override void OnInitialized()
+    private void ClusterManager_OnChange(ClusterManagerEvents obj)
+    {
+        if (obj == ClusterManagerEvents.ActiveClusterChanged)
         {
-            base.OnInitialized();
-
-            ClusterManager.OnChange += ClusterManager_OnChange;
+            ClusterManager.GetClusters().ForEach(c => c.OnChange -= NavMenu_OnChange);
             ClusterManager.GetActiveCluster().OnChange += NavMenu_OnChange;
+            InvokeAsync(StateHasChanged);
         }
+    }
 
-        private void ClusterManager_OnChange(ClusterManagerEvents obj)
+    private void NavMenu_OnChange(WatchEventType arg1, GroupApiVersionKind arg2, IKubernetesObject<V1ObjectMeta> arg3)
+    {
+        if (arg2.Equals(GroupApiVersionKind))
         {
-            if (obj == ClusterManagerEvents.ActiveClusterChanged)
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!disposedValue)
+        {
+            if (disposing)
             {
-                ClusterManager.GetClusters().ForEach(c => c.OnChange -= NavMenu_OnChange);
-                ClusterManager.GetActiveCluster().OnChange += NavMenu_OnChange;
-                InvokeAsync(StateHasChanged);
+                ClusterManager.OnChange -= ClusterManager_OnChange;
+                ClusterManager.GetActiveCluster().OnChange -= NavMenu_OnChange;
             }
-        }
 
-        private void NavMenu_OnChange(WatchEventType arg1, GroupApiVersionKind arg2, IKubernetesObject<V1ObjectMeta> arg3)
-        {
-            if (arg2.Equals(GroupApiVersionKind))
-            {
-                InvokeAsync(StateHasChanged);
-            }
+            // TODO: set large fields to null
+            disposedValue = true;
         }
+    }
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    ClusterManager.OnChange -= ClusterManager_OnChange;
-                    ClusterManager.GetActiveCluster().OnChange -= NavMenu_OnChange;
-                }
-
-                // TODO: set large fields to null
-                disposedValue = true;
-            }
-        }
-
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
-        }
+    public void Dispose()
+    {
+        // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
     }
 }

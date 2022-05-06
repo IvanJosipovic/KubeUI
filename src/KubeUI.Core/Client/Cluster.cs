@@ -163,7 +163,7 @@ public class Cluster : ClusterBase, ICluster
     public async Task<KubeVersion> GetVersion()
     {
         Init();
-        
+
         var resp = await ((Kubernetes)Client).SendRequestRaw(null, new HttpRequestMessage(HttpMethod.Get, Client.BaseUri + "version"), CancellationToken.None);
 
         if (resp.IsSuccessStatusCode)

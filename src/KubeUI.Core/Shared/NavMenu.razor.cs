@@ -5,44 +5,43 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.Extensions.Logging;
 
-namespace KubeUI.Core.Shared
+namespace KubeUI.Core.Shared;
+
+public partial class NavMenu
 {
-    public partial class NavMenu
+    [Inject]
+    private ILogger<NavMenu> Logger { get; set; }
+
+    [Inject]
+    private ClusterManager ClusterManager { get; set; }
+
+    [Inject]
+    private NavigationManager NavigationManager { get; set; }
+
+    public static string GetIcon(string iconPath)
     {
-        [Inject]
-        private ILogger<NavMenu> Logger { get; set; }
+        return $"<image href=\"_content/KubeUI.Core/svg/{iconPath}\" height=\"24px\" width=\"24px\" />";
+    }
 
-        [Inject]
-        private ClusterManager ClusterManager { get; set; }
-
-        [Inject]
-        private NavigationManager NavigationManager { get; set; }
-
-        public static string GetIcon(string iconPath)
+    private async Task UploadFiles(InputFileChangeEventArgs e)
+    {
+        foreach (var file in e.GetMultipleFiles(500))
         {
-            return $"<image href=\"_content/KubeUI.Core/svg/{iconPath}\" height=\"24px\" width=\"24px\" />";
-        }
-
-        private async Task UploadFiles(InputFileChangeEventArgs e)
-        {
-            foreach (var file in e.GetMultipleFiles(500))
+            try
             {
-                try
-                {
-                    var objects = await KubernetesYaml.LoadAllFromStreamAsync(file.OpenReadStream());
-                    ClusterManager.GetActiveCluster().AddObjects(objects.Cast<IKubernetesObject<V1ObjectMeta>>());
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogError(ex, "Error parsing file: {file}", file.Name);
-                }
+                var objects = await KubernetesYaml.LoadAllFromStreamAsync(file.OpenReadStream());
+                ClusterManager.GetActiveCluster().AddObjects(objects.Cast<IKubernetesObject<V1ObjectMeta>>());
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Error parsing file: {file}", file.Name);
             }
         }
+    }
 
-        private void SetActiveCluster(ICluster cluster)
-        {
-            ClusterManager.SetActiveCluster(cluster);
-            NavigationManager.NavigateTo("/Connect");
-        }
+    private void SetActiveCluster(ICluster cluster)
+    {
+        ClusterManager.SetActiveCluster(cluster);
+        NavigationManager.NavigateTo("/Connect");
     }
 }

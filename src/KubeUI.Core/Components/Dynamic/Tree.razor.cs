@@ -114,7 +114,7 @@ namespace KubeUI.Core.Components.Dynamic
         }
 
         private TreeItem SelectedValue { get; set; }
-        
+
         protected override void OnInitialized()
         {
             TreeItems = BuildTree(Item);
