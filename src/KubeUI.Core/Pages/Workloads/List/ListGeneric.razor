@@ -20,11 +20,14 @@
         @Columns
     }
 
-    <ColumnComponent TItem="TItem" Name="Age" Object="(x => x.Metadata.CreationTimestamp)" Width="5%">
-        <DisplayContent>
-            <Age TItem="TItem" Date="@context.Item1.Metadata.CreationTimestamp" />
-        </DisplayContent>
-    </ColumnComponent>
+    @if (HideAge == false)
+    {
+        <ColumnComponent TItem="TItem" Name="Age" Object="(x => x.Metadata.CreationTimestamp)" Width="5%">
+            <DisplayContent>
+                <Age TItem="TItem" Date="@context.Item1.Metadata.CreationTimestamp" />
+            </DisplayContent>
+        </ColumnComponent>
+    }
 
     <ColumnComponent TItem="TItem" Width="5%">
         <HeaderContent>
@@ -48,4 +51,7 @@
 
     [Parameter]
     public bool HideName { get; set; }
+
+    [Parameter]
+    public bool HideAge { get; set; }
 }
