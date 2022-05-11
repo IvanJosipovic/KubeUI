@@ -8,10 +8,10 @@
 
 	<ItemGroup>
 		<PackageReference Include="BlazorMonaco" Version="2.1.0" />
-		<PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="7.0.0-preview.3.22178.4" />
-		<PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="7.0.0-preview.3.22175.4" />
-		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="7.0.0-preview.3.22175.4" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0-preview.3.22175.4" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="7.0.0-preview.4.22251.1" />
+		<PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="7.0.0-preview.4.22229.4" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="7.0.0-preview.4.22229.4" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0-preview.4.22229.4" />
 		<PackageReference Include="MudBlazor" Version="6.0.10" />
 		<PackageReference Include="PropertyChanged.Fody" Version="3.4.0" PrivateAssets="All" />
 	</ItemGroup>

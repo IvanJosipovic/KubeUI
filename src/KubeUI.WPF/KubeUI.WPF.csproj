@@ -19,12 +19,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.AspNetCore.Components.WebView.Wpf" Version="6.0.300-rc.2.5513" />
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.0-preview.3.22175.4" />
-		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="7.0.0-preview.3.22175.4" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebView.Wpf" Version="6.0.300-rc.3.5667" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.0-preview.4.22229.4" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="7.0.0-preview.4.22229.4" />
 		<PackageReference Include="Serilog.Extensions.Logging.File" Version="2.0.0" />
 
-		<!--Needed to Build Sereliog-->
+		<!--Needed to Build Serilog-->
 		<PackageReference Include="System.IO.FileSystem.Primitives" Version="4.3.0" />
 		<PackageReference Include="System.Runtime.Handles" Version="4.3.0" />
 		<PackageReference Include="System.Runtime.InteropServices" Version="4.3.0" />
