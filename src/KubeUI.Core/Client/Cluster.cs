@@ -138,9 +138,29 @@ public class Cluster : ClusterBase, ICluster
     public async Task Delete<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var api = GroupApiVersionKind.From<T>();
-        using var client = new GenericClient(Client, api.Group, api.ApiVersion, api.PluralName);
 
-        await client.DeleteNamespacedAsync<T>(item.Namespace(), item.Name());
+        GenericClient client;
+
+        if (string.IsNullOrEmpty(api.Group))
+        {
+            client = new GenericClient(Client, api.ApiVersion, api.PluralName);
+        }
+        else
+        {
+            client = new GenericClient(Client, api.Group, api.ApiVersion, api.PluralName);
+        }
+
+        using (client)
+        {
+            if (string.IsNullOrEmpty(item.Namespace()))
+            {
+                await client.DeleteAsync<T>(item.Name());
+            }
+            else
+            {
+                await client.DeleteNamespacedAsync<T>(item.Namespace(), item.Name());
+            }
+        }
     }
 
     public async Task<V1APIGroupList> GetAPIs()
