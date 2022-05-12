@@ -1,9 +1,11 @@
 ﻿@using MudBlazor.Services
 
-<div style="@(SetHeigh ? $"height: {Height}" : "")">
+@if (Height != null)
+{
+    <div style="@(SetHeigh ? $"height: {Height}" : "")">
     @ChildContent(Height)
 </div>
-
+}
 
 @code {
     [Inject]
@@ -18,7 +20,7 @@
     [Parameter]
     public bool SetHeigh { get; set; }
 
-    private string Height { get; set; }
+    private string? Height { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
