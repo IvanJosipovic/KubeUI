@@ -61,7 +61,7 @@ public partial class PodLogs : IDisposable
             if (stream == null)
             {
                 var cluster = (Cluster)ClusterManager.GetActiveCluster();
-                stream = await cluster.Client.ReadNamespacedPodLogAsync(Name, Namespace, container: Container, tailLines: Lines, previous: Previous, follow: false, pretty: true);
+                stream = await cluster.Client.CoreV1.ReadNamespacedPodLogAsync(Name, Namespace, container: Container, tailLines: Lines, previous: Previous, follow: false, pretty: true);
             }
             using (var reader = new StreamReader(stream))
             {

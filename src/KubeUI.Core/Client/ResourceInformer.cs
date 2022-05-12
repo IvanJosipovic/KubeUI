@@ -191,7 +191,7 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
             cancellationToken.ThrowIfCancellationRequested();
 
             // request next page of items
-            using var listWithHttpMessage = await _client.ListClusterCustomObjectWithHttpMessagesAsync(
+            using var listWithHttpMessage = await _client.CustomObjects.ListClusterCustomObjectWithHttpMessagesAsync(
                 _names.Group,
                 _names.ApiVersion,
                 _names.PluralName,
@@ -261,7 +261,7 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
         var watcherCompletionSource = new TaskCompletionSource<int>();
 
         // begin watching where list left off
-        var watchWithHttpMessage = _client.ListClusterCustomObjectWithHttpMessagesAsync(
+        var watchWithHttpMessage = _client.CustomObjects.ListClusterCustomObjectWithHttpMessagesAsync(
             _names.Group,
             _names.ApiVersion,
             _names.PluralName,
