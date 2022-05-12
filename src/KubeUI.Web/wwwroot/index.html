@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>KubeUI - Kubernetes UI Configuration Tool</title>
     <meta name="description" content="Kubernetes UI Configuration Tool" />
-    <meta name="keywords" content="Kubernetes, Kube, UI, KubeUI, GUI, Web, Wizzard, k8s, yaml, json, configuraion" />
+    <meta name="keywords" content="Kubernetes, Kube, UI, KubeUI, GUI, Web, Wizard, k8s, yaml, json, configuration" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -16,10 +16,10 @@
     <meta name="theme-color" content="#ffffff">
     <meta http-equiv="Content-Language" content="en-US">
     <base href="/" />
-    <link href="_content/KubeUI.Core/css/app.css" rel="stylesheet" />
-    <link href="KubeUI.Web.styles.css" rel="stylesheet" />
-    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
-    <link href="_content/BlazorMonaco/lib/monaco-editor/min/vs/editor/editor.main.css" rel="stylesheet" />
+    <link href="_content/KubeUI.Core/css/app.css?v={{version}}" rel="stylesheet" />
+    <link href="KubeUI.Web.styles.css?v={{version}}" rel="stylesheet" />
+    <link href="_content/MudBlazor/MudBlazor.min.css?v={{version}}" rel="stylesheet" />
+    <link href="_content/BlazorMonaco/lib/monaco-editor/min/vs/editor/editor.main.css?v={{version}}" rel="stylesheet" />
 </head>
 
 <body>
@@ -39,11 +39,11 @@
         <a href="" class="reload">Reload</a>
         <a class="dismiss">🗙</a>
     </div>
-    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
-    <script src="_content/BlazorMonaco/lib/monaco-editor/min/vs/loader.js"></script>
+    <script src="_content/MudBlazor/MudBlazor.min.js?v={{version}}"></script>
+    <script src="_content/BlazorMonaco/lib/monaco-editor/min/vs/loader.js?v={{version}}"></script>
     <script>require.config({ paths: { 'vs': '_content/BlazorMonaco/lib/monaco-editor/min/vs' } });</script>
-    <script src="_content/BlazorMonaco/lib/monaco-editor/min/vs/editor/editor.main.js"></script>
-    <script src="_content/BlazorMonaco/jsInterop.js"></script>
-    <script src="_framework/blazor.webassembly.js"></script>
+    <script src="_content/BlazorMonaco/lib/monaco-editor/min/vs/editor/editor.main.js?v={{version}}"></script>
+    <script src="_content/BlazorMonaco/jsInterop.js?v={{version}}"></script>
+    <script src="_framework/blazor.webassembly.js?v={{version}}"></script>
 </body>
 </html>
