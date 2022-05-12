@@ -12,7 +12,7 @@
                     <MudTextField T="string" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
                     <MudSpacer />
                     <MudSelect T="string" Placeholder="Namespaces" MultiSelection="true" Class="mt-0" SelectedValues="ClusterManager.GetActiveCluster().GetSelectedNamespaces()" SelectedValuesChanged="x => ClusterManager.GetActiveCluster().SetSelectedNamespaces(x)" SelectAll="true" SelectAllText="Select all">
-                        @foreach (var ns in this.ClusterManager.GetActiveCluster().GetObjects<V1Namespace>())
+                        @foreach (var ns in this.ClusterManager.GetActiveCluster().GetObjects<V1Namespace>().OrderBy(x => x.Metadata.Name))
                         {
                             <MudSelectItem @key="ns" T="string" Value="@ns.Name()">@ns.Name()</MudSelectItem>
                         }
