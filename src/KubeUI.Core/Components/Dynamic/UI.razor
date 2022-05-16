@@ -4,16 +4,40 @@
 {
     <MudGrid Spacing="1">
         <MudItem xs="3">
-            <MudPaper Class="d-flex align-left justify-left mud-width-full">
-                <Tree TItem="TItem" Item="Item" />
+            <MudPaper Class="d-flex align-left justify-left mud-width-full mt-3" Elevation="3">
+                <Tree TItem="TItem" Item="Item" ObjectSelected="(x) => RenderForm(x)" />
             </MudPaper>
         </MudItem>
         <MudItem xs="9">
-            <MudPaper Class="d-flex align-center justify-center mud-width-full">Form</MudPaper>
+            <MudPaper Class="d-flex align-center justify-center mud-width-full mt-3" Elevation="3">@Controls</MudPaper>
         </MudItem>
     </MudGrid>
 }
 
 @code {
     [Parameter] public TItem Item { get; set; }
+    
+    private RenderFragment Controls;
+
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        RenderForm(Item);
+    }
+
+    private void RenderForm(object obj)
+    {
+        Controls = builder =>
+        {
+            builder.OpenComponent(0, typeof(KubeUI.Core.Components.Dynamic.Controls<>).MakeGenericType(obj.GetType()));
+            builder.AddAttribute(1, "Item", obj);
+            //builder.AddAttribute(2, "SetHelp", EventCallback.Factory.Create<object>(this, (e) => SetHelp(e)));
+            //builder.AddAttribute(3, "ItemChanged", EventCallback.Factory.Create(this, (e) => obj = e ));
+            //builder.AddAttribute(2, "ItemChanged", __value => obj = __value);
+            builder.CloseComponent();
+        };
+        StateHasChanged();
+    }
 }

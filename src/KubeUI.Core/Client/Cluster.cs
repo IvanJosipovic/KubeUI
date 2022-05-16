@@ -14,7 +14,7 @@ public class Cluster : ClusterBase, ICluster
 
     public string KubeConfigPath { get; set; }
 
-    public string KubeConfig { get; set; }
+    public KubernetesClientConfiguration KubeConfig { get; set; }
 
     private KubernetesClientConfiguration? KubernetesClientConfiguration;
 
@@ -33,7 +33,7 @@ public class Cluster : ClusterBase, ICluster
         }
         else
         {
-            KubernetesClientConfiguration = KubernetesClientConfiguration.BuildConfigFromConfigFile(new MemoryStream(Encoding.UTF8.GetBytes(KubeConfig)), Name);
+            KubernetesClientConfiguration = KubeConfig;
         }
 
         return KubernetesClientConfiguration;

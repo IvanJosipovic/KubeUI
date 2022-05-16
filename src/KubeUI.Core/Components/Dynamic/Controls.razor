@@ -1,0 +1,121 @@
+﻿@using System.Reflection
+@typeparam TItem
+
+<MudContainer>
+    @foreach (var prop in Item.GetType().GetProperties().Where(x => !x.PropertyType.FullName.StartsWith("k8s.")))
+    {
+        if (prop.PropertyType == typeof(IDictionary<string, string>))
+        {
+    @*        <Dictionary Value="@((IDictionary<string, string>)property.GetValue(Item))" ValueChanged="@((e) => OnChange(e, property))" Name="@property.Name" Parent="@Item.GetType()" results="@results" SetHelp="@SetHelp" />
+    *@  }
+        else if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(IList<>))
+        {
+    @*        <KubeUI.Core.Components.UI.Collection Value="@(property.GetValue(Item))" ValueChanged="@((e) => OnChange(e, property))" Type="@property.PropertyType" Name="@property.Name" Parent="@Item.GetType()" results="@results" SetHelp="@SetHelp" />
+    *@  }
+        else if (prop.PropertyType == typeof(string))
+        {
+            <MudTextField T="string" Label="@prop.Name.AddSpacesBeforeCapitals()" Value="@(prop.GetValue(Item) as string)" ValueChanged="@((e) => OnChange(e, prop))" Variant="Variant.Text" D />
+        }
+        else if (prop.PropertyType == typeof(bool) || prop.PropertyType == typeof(bool?))
+        {
+            <MudSwitch T="bool?" Label="@prop.Name.AddSpacesBeforeCapitals()" Checked="@(prop.GetValue(Item) != null ? bool.Parse(prop.GetValue(Item).ToString()) : null)" CheckedChanged="@((e) => OnChange(e, prop))" Class="mt-2"></MudSwitch>
+            <br />
+        }
+        else if (prop.PropertyType == typeof(int) || prop.PropertyType == typeof(int?))
+        {
+            <MudNumericField T="int?" Label="@prop.Name.AddSpacesBeforeCapitals()" Value="@(prop.GetValue(Item) != null ? int.Parse(prop.GetValue(Item).ToString()) : null)" ValueChanged="@((e) => OnChange(e, prop))" Variant="Variant.Text" />
+        }
+        else if (prop.PropertyType == typeof(long) || prop.PropertyType == typeof(long?))
+        {
+            <MudNumericField T="long?" Label="@prop.Name.AddSpacesBeforeCapitals()" Value="@(prop.GetValue(Item) != null ? long.Parse(prop.GetValue(Item).ToString()) : null)" ValueChanged="@((e) => OnChange(e, prop))" Variant="Variant.Text" />
+        }
+        else if (prop.PropertyType == typeof(DateTime) || prop.PropertyType == typeof(DateTime?))
+        {
+            <MudTextField T="object" Label="@prop.Name.AddSpacesBeforeCapitals()" Value="@(prop.GetValue(Item))" ValueChanged="@((e) => OnChange(e, prop))" Variant="Variant.Text" InputType="InputType.Text" />
+        }
+        else
+        {
+            Logger.LogWarning("Controls: Unknown property type: " + prop.PropertyType.FullName);
+            <MudText>Missing Control Type @prop.PropertyType</MudText>
+        }
+    }
+</MudContainer>
+
+@code {
+    [Parameter] public EventCallback<object> SetHelp { get; set; }
+
+    [Parameter] public TItem Item { get; set; }
+    
+    [Parameter] public EventCallback<TItem> ItemChanged { get; set; }
+
+    [Inject] protected ILogger<Controls<TItem>> Logger { get; set; }
+
+    protected void Update()
+    {
+        if (ItemChanged.HasDelegate) {
+            ItemChanged.InvokeAsync(Item);
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        if (Item == null)
+        {
+            Item = Activator.CreateInstance<TItem>();
+            Update();
+        }
+    }
+
+    protected void OnChange(Object e, PropertyInfo prop)
+    {
+        try
+        {
+            if (prop.PropertyType == typeof(string))
+            {
+                prop.SetValue(Item, e == null ? null : e.ToString());
+            }
+            else if (prop.PropertyType == typeof(bool))
+            {
+                prop.SetValue(Item, bool.TryParse(e?.ToString(), out var tmpvalue) ? tmpvalue : default(bool));
+            }
+            else if (prop.PropertyType == typeof(bool?))
+            {
+                prop.SetValue(Item, bool.TryParse(e?.ToString(), out var tmpvalue) ? tmpvalue : (bool?)null);
+            }
+            else if (prop.PropertyType == typeof(int))
+            {
+                prop.SetValue(Item, int.TryParse(e?.ToString(), out var tmpvalue) ? tmpvalue : default(int));
+            }
+            else if (prop.PropertyType == typeof(int?))
+            {
+                prop.SetValue(Item, int.TryParse(e?.ToString(), out var tmpvalue) ? tmpvalue : (int?)null);
+            }
+            else if (prop.PropertyType == typeof(long))
+            {
+                prop.SetValue(Item, long.TryParse(e?.ToString(), out var tmpvalue) ? tmpvalue : default(long));
+            }
+            else if (prop.PropertyType == typeof(long?))
+            {
+                prop.SetValue(Item, long.TryParse(e?.ToString(), out var tmpvalue) ? tmpvalue : (long?)null);
+            }
+            else if (prop.PropertyType == typeof(Dictionary<string, string>))
+            {
+                prop.SetValue(Item, (Dictionary<string, string>)e);
+            }
+            else if (prop.PropertyType == typeof(System.Collections.ObjectModel.Collection<string>))
+            {
+                prop.SetValue(Item, (System.Collections.ObjectModel.Collection<string>)e);
+            }
+            else
+            {
+                prop.SetValue(Item, e);
+            }
+
+            Update();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("Casting Error : {0} - {1} - {2}", e.GetType(), e, ex);
+        }
+    }
+}

@@ -19,5 +19,7 @@ public class TreeItem
 
     public bool IsExpanded { get; set; }
 
+    public object Collection { get; set; }
+
     public HashSet<TreeItem> TreeItems { get; set; } = new HashSet<TreeItem>();
 }
