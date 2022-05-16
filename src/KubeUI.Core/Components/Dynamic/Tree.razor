@@ -1,15 +1,20 @@
 ﻿@typeparam TItem
 
-<MudTreeView Items="TreeItems" Dense="true" @bind-SelectedValue="SelectedValue" Width="100%">
+<MudTreeView Items="TreeItems" Dense="true" Width="100%">
     <ItemTemplate>
         <MudTreeViewItem @bind-Expanded="@context.IsExpanded" 
                         Items="@context.TreeItems"
                         Value="@context"
                         Text="@context.Name"
+                        OnClick="(x) => ObjectSelected.InvokeAsync(context.Object)"
                         >
                 <Content>
                     <MudTreeViewItemToggleButton @bind-Expanded="@context.IsExpanded" Visible="@(context.TreeItems.Count > 0)" />
                     <MudText>@context.Name</MudText>
+                    @if (context.IsCollection)
+                    {
+                        <MudIconButton OnClick="@(() => AddItem(context.Object))" Icon="@Icons.Filled.Add" Color="Color.Secondary" />
+                    }
                 </Content>
         </MudTreeViewItem>
     </ItemTemplate>

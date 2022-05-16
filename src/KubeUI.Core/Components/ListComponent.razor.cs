@@ -144,6 +144,14 @@ public partial class ListComponent<TItem> : IDisposable where TItem : class, IKu
         }));
     }
 
+    public void DisplayDetails(string @namespace, string groupVersion, string kind, string name)
+    {
+        string group = groupVersion.Substring(0, groupVersion.IndexOf('/'));
+        string version = groupVersion.Substring(groupVersion.IndexOf('/') + 1);
+
+        DisplayDetails(@namespace, group, version, kind, name);
+    }
+
     private RenderFragment CreateRenderFragent(Type type, Dictionary<string, object> attributes) => builder =>
     {
         var count = 0;

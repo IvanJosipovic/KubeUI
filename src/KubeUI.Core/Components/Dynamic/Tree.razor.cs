@@ -1,20 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
-using System.Net.Http;
-using System.Net.Http.Json;
-using Microsoft.AspNetCore.Components.Forms;
-using Microsoft.AspNetCore.Components.Routing;
-using Microsoft.AspNetCore.Components.Web;
-using Microsoft.AspNetCore.Components.Web.Virtualization;
-using Microsoft.JSInterop;
-using MudBlazor;
-using KubeUI.Core.Shared;
-using KubeUI.Core.Components;
-using k8s.Models;
-using k8s;
 using KubeUI.Core.Client;
 using Microsoft.Extensions.Logging;
 using System.Reflection;
@@ -28,42 +12,60 @@ namespace KubeUI.Core.Components.Dynamic
         [Parameter]
         public TItem Item { get; set; }
 
+        [Parameter]
+        public EventCallback<object> ObjectSelected { get; set; }
+
         private HashSet<TreeItem> TreeItems { get; set; } = new HashSet<TreeItem>();
 
         public HashSet<TreeItem> BuildTree(object obj)
         {
-            if (obj.GetType().FullName.StartsWith("System.Collections."))
-            {
-                return GetCollectionItems(obj);
-            }
-
-            //Logger.LogDebug("BuildTree {0}", obj.GetType());
             HashSet<TreeItem> Tree = new HashSet<TreeItem>();
 
-            foreach (var property in obj.GetType().GetProperties().Where(x => x.PropertyType.FullName.StartsWith("k8s.")))
+            foreach (var property in obj.GetType().GetProperties().Where(x => x.PropertyType.FullName.StartsWith("k8s.") || x.PropertyType.FullName.StartsWith("System.Collections.")))
             {
                 try
                 {
-                    //Logger.LogDebug("BuildTree {0}", property.PropertyType);
-
                     var item = property.GetValue(obj);
+
                     if (item == null)
                     {
-                        item = Activator.CreateInstance(property.PropertyType);
-                        property.SetValue(obj, item);
+                        try
+                        {
+                            item = Activator.CreateInstance(property.PropertyType);
+                            property.SetValue(obj, item);
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.LogError(ex, "Failed to create instance of {0}", property.PropertyType.FullName);
+                            continue;
+                        }
                     }
 
-                    Tree.Add(new TreeItem()
+                    if (item.GetType().FullName.StartsWith("System.Collections."))
                     {
-                        Name = property.Name.AddSpacesBeforeCapitals(),
-                        TreeItems = BuildTree(item),
-                        Object = item,
-                        //Summary = property.GetSummary()
-                    });
+                        Tree.Add(new TreeItem()
+                        {
+                            Name = property.Name.AddSpacesBeforeCapitals(),
+                            TreeItems = GetCollectionItems(item),
+                            Object = item,
+                            IsCollection = true
+                            //Summary = property.GetSummary()
+                        });
+                    }
+                    else
+                    {
+                        Tree.Add(new TreeItem()
+                        {
+                            Name = property.Name.AddSpacesBeforeCapitals(),
+                            TreeItems = BuildTree(item),
+                            Object = item,
+                            //Summary = property.GetSummary()
+                        });
+                    }
                 }
                 catch (Exception e)
                 {
-                    Logger.LogError(e, "BuildTree Failed: " + e.Message);
+                    Logger.LogError(e, "BuildTree Failed: {msg}", e.Message);
                 }
             }
 
@@ -84,9 +86,9 @@ namespace KubeUI.Core.Components.Dynamic
 
                 object myObject = type.GetProperty("Item").GetValue(collection, index);
 
-                string displayPropertyName = null; //Common.GetDisplayInTreeName(attributes);
+                string? displayPropertyName = null; //Common.GetDisplayInTreeName(attributes);
 
-                string propertyValue = null;
+                string? propertyValue = null;
 
                 if (displayPropertyName != null)
                 {
@@ -107,6 +109,7 @@ namespace KubeUI.Core.Components.Dynamic
                     Object = myObject,
                     //Summary = genType.GetSummary(),
                     IsCollectionItem = true,
+                    Collection = collection
                 });
             }
 
@@ -117,7 +120,27 @@ namespace KubeUI.Core.Components.Dynamic
 
         protected override void OnInitialized()
         {
-            TreeItems = BuildTree(Item);
+            TreeItems.Add(new TreeItem()
+            {
+                Name = Item.GetType().Name,
+                Object = Item,
+                IsExpanded = true,
+                TreeItems = BuildTree(Item)
+                //Summary = property.GetSummary()
+            });
+        }
+
+        private void AddItem(object obj)
+        {
+            var genType = obj.GetType().GetTypeInfo().GenericTypeArguments[0];
+
+            var newObj = Activator.CreateInstance(genType);
+
+            object[] data = { newObj };
+
+            obj.GetType().GetMethod("Add").Invoke(obj, data);
+
+            StateHasChanged();
         }
     }
 }

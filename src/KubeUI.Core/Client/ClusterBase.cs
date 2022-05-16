@@ -178,7 +178,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
     public void GenerateCRDAssembly(V1CustomResourceDefinition crd)
     {
-        var assembly = CRDGenerator.GenerateAssembly(crd);
+        var assembly = CRDGenerator.GenerateAssembly(crd, "k8s.Models");
 
         if (assembly.Item1 != null)
         {
