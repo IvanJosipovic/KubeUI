@@ -2,6 +2,7 @@ using KubeUI.Core.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Logging;
+using Microsoft.JSInterop;
 using MudBlazor;
 using MudBlazor.Services;
 
@@ -20,6 +21,9 @@ public partial class MainLayout
 
     [Inject]
     private ISnackbar Snackbar { get; set; }
+
+    [Inject]
+    private IJSRuntime jSRuntime { get; set; }
 
     private bool _drawerOpen = true;
     private bool _drawerOpen2 = false;
@@ -50,7 +54,13 @@ public partial class MainLayout
 
                 var release = await Updater.GetReleases();
 
-                Snackbar.Add($"Update {release.FirstOrDefault()?.tag_name} is available!", Severity.Normal);
+                Snackbar.Add($"Update {release.FirstOrDefault()?.tag_name} is available!", Severity.Success, config =>
+                {
+                    config.Onclick = async snackbar =>
+                    {
+                        await jSRuntime.InvokeVoidAsync("open", new object[2] { release.FirstOrDefault().html_url, "_blank" });
+                    };
+                });
             }
         }
         catch (Exception ex)
