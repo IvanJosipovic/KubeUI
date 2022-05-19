@@ -70,14 +70,7 @@ public class Cluster : ClusterBase, ICluster
             case WatchEventType.Added:
                 if (item is V1CustomResourceDefinition)
                 {
-                    try
-                    {
-                        Task.Run(() => base.GenerateCRDAssembly((V1CustomResourceDefinition)item));
-                    }
-                    catch (Exception)
-                    {
-                        //throw;
-                    }
+                    Task.Run(() => base.GenerateCRDAssembly((V1CustomResourceDefinition)item));
                 }
                 break;
             case WatchEventType.Modified:

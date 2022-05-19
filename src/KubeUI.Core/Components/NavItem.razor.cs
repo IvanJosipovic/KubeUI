@@ -33,7 +33,11 @@ public partial class NavItem<TItem> : IDisposable where TItem : class, IKubernet
     {
         if (obj == ClusterManagerEvents.ActiveClusterChanged)
         {
-            ClusterManager.GetClusters().ForEach(c => c.OnChange -= NavMenu_OnChange);
+            foreach (var cluster in ClusterManager.GetClusters())
+            {
+                cluster.OnChange -= NavMenu_OnChange;
+            }
+
             ClusterManager.GetActiveCluster().OnChange += NavMenu_OnChange;
             InvokeAsync(StateHasChanged);
         }

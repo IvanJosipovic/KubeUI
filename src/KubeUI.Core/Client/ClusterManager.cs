@@ -85,9 +85,9 @@ public class ClusterManager : IDisposable
         NotifyStateChanged(ClusterManagerEvents.ActiveClusterChanged);
     }
 
-    public List<ICluster> GetClusters()
+    public IEnumerable<ICluster> GetClusters()
     {
-        return _clusters;
+        return _clusters.OrderBy(x => x.Name);
     }
 
     public ICluster? GetCluster(string name)

@@ -30,9 +30,9 @@ public interface ICluster
 
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>> OnChange;
 
-    public Type? GetResourceType(GroupApiVersionKind type);
+    Type? GetResourceType(GroupApiVersionKind type);
 
-    public Type? GetResourceType(string group, string version, string kind);
+    Type? GetResourceType(string group, string version, string kind);
 
     Task<V1APIGroupList> GetAPIs();
 
@@ -42,5 +42,7 @@ public interface ICluster
 
     Task<KubeVersion> GetVersion();
 
-    public event PropertyChangedEventHandler? PropertyChanged;
+    event PropertyChangedEventHandler? PropertyChanged;
+
+    Task ImportYaml(Stream stream);
 }

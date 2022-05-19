@@ -51,18 +51,18 @@ public class CRDGenerator : ICRDGenerator
         model.Attributes.Add($"[KubernetesEntity(ApiVersion = \"{version.Name}\", Group = \"{crd.Spec.Group}\", Kind = \"{crd.Spec.Names.Kind}\", PluralName = \"{crd.Spec.Names.Plural}\")]");
         model.Description = version.Schema.OpenAPIV3Schema.Description;
 
-        model.Fields.Add(new DynamicProperty("ApiVersion", "string"));
+        model.Fields.Add(new DynamicProperty("ApiVersion", "string", false, null, new() { "[JsonPropertyName(\"apiVersion\")]" }));
 
-        model.Fields.Add(new DynamicProperty("Kind", "string"));
+        model.Fields.Add(new DynamicProperty("Kind", "string", false, null, new() { "[JsonPropertyName(\"kind\")]" }));
 
-        model.Fields.Add(new DynamicProperty("Metadata", "V1ObjectMeta"));
+        model.Fields.Add(new DynamicProperty("Metadata", "V1ObjectMeta", false, null, new() { "[JsonPropertyName(\"metadata\")]" }));
 
         var spec = version.Schema.OpenAPIV3Schema.Properties["spec"];
 
         var specTypes = GenerateTypes(spec, specModelName);
         types.AddRange(specTypes);
 
-        model.Fields.Add(new DynamicProperty("Spec", specModelName));
+        model.Fields.Add(new DynamicProperty("Spec", specModelName, false, null, new() { "[JsonPropertyName(\"spec\")]" }));
 
         if (version.Schema.OpenAPIV3Schema.Properties.ContainsKey("status"))
         {
@@ -71,7 +71,7 @@ public class CRDGenerator : ICRDGenerator
             var statusTypes = GenerateTypes(status, statusModelName);
             types.AddRange(statusTypes);
 
-            model.Fields.Add(new DynamicProperty("Status", statusModelName));
+            model.Fields.Add(new DynamicProperty("Status", statusModelName, false, null, new() { "[JsonPropertyName(\"status\")]" }));
         }
 
         var str = model.ToString() + "\n" + types.Select(x => x.ToString()).Aggregate((a, b) => a + "\n" + b);
@@ -166,17 +166,25 @@ public class CRDGenerator : ICRDGenerator
         {
             foreach (var property in type.Properties)
             {
-                var fieldName = property.Key;
+                var attribute = $"[JsonPropertyName(\"{property.Key}\")]";
+                string fieldName = property.Key;
 
-                if (fieldName == "continue" || fieldName == "ref")
+                if (fieldName == "continue" || fieldName == "ref" || fieldName == "namespace" || fieldName == "static")
                 {
                     fieldName = "@" + fieldName;
                 }
 
+                if (fieldName.Contains("$"))
+                {
+                    fieldName = fieldName.Replace("$", "");
+                }
+
+                fieldName = CapitalizeFirstLetter(fieldName);
+
                 switch (property.Value.Type)
                 {
                     case "object":
-                        model.Fields.Add(new DynamicProperty(fieldName, Name + fieldName, false, property.Value.Description));
+                        model.Fields.Add(new DynamicProperty(fieldName, Name + fieldName, false, property.Value.Description, new() { attribute }));
                         types.AddRange(GenerateTypes(property.Value, Name + fieldName));
 
                         if (property.Value.XKubernetesPreserveUnknownFields == true)
@@ -186,28 +194,27 @@ public class CRDGenerator : ICRDGenerator
                         break;
 
                     case "array":
-                        model.Fields.Add(new DynamicProperty(fieldName, $"List<{Name + fieldName}>", false, property.Value.Description));
+                        model.Fields.Add(new DynamicProperty(fieldName, $"List<{Name + fieldName}>", false, property.Value.Description, new() { attribute }));
                         types.AddRange(GenerateTypes(property.Value, Name + fieldName));
                         break;
 
                     case "boolean":
-                        model.Fields.Add(new DynamicProperty(fieldName, "bool", false, property.Value.Description));
+                        model.Fields.Add(new DynamicProperty(fieldName, "bool", false, property.Value.Description, new() { attribute }));
                         break;
 
                     case "integer":
-
                         if (property.Value.Format == "int64")
                         {
-                            model.Fields.Add(new DynamicProperty(fieldName, "long", false, property.Value.Description));
+                            model.Fields.Add(new DynamicProperty(fieldName, "long", false, property.Value.Description, new() { attribute }));
                         }
                         else
                         {
-                            model.Fields.Add(new DynamicProperty(fieldName, "int", false, property.Value.Description));
+                            model.Fields.Add(new DynamicProperty(fieldName, "int", false, property.Value.Description, new() { attribute }));
                         }
                         break;
 
                     case "string":
-                        model.Fields.Add(new DynamicProperty(fieldName, "string", false, property.Value.Description));
+                        model.Fields.Add(new DynamicProperty(fieldName, "string", false, property.Value.Description, new() { attribute }));
                         break;
 
                     default:
@@ -218,5 +225,21 @@ public class CRDGenerator : ICRDGenerator
         }
 
         return types;
+    }
+
+    public static string CapitalizeFirstLetter(string str)
+    {
+        if (str.Length == 0)
+        {
+            return string.Empty;
+        }
+        else if (str.Length == 1)
+        {
+            return char.ToUpper(str[0]).ToString();
+        }
+        else
+        {
+            return char.ToUpper(str[0]) + str[1..];
+        }
     }
 }
