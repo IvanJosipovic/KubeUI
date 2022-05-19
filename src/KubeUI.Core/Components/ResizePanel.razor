@@ -3,8 +3,10 @@
 @if (Height != null)
 {
     <div style="@(SetHeigh ? $"height: {Height}" : "")">
-    @ChildContent(Height)
-</div>
+        <ErrorBoundary>
+            @ChildContent(Height)        
+        </ErrorBoundary>    
+    </div>
 }
 
 @code {

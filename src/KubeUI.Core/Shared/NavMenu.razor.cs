@@ -29,8 +29,7 @@ public partial class NavMenu : IDisposable
         {
             try
             {
-                var objects = await KubernetesYaml.LoadAllFromStreamAsync(file.OpenReadStream());
-                ClusterManager.GetActiveCluster().AddObjects(objects.Cast<IKubernetesObject<V1ObjectMeta>>());
+                await ClusterManager.GetActiveCluster().ImportYaml(file.OpenReadStream());
             }
             catch (Exception ex)
             {

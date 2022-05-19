@@ -34,7 +34,7 @@ public class UnitTest1
     {
         var crd = await KubernetesYaml.LoadAllFromFileAsync(filename);
 
-        var assembly = GetCRDGenerator().GenerateAssembly((V1CustomResourceDefinition)crd[0]);
+        var assembly = GetCRDGenerator().GenerateAssembly((V1CustomResourceDefinition)crd[0], "KubeCRDGenerator.Tests.Models");
 
         var types = assembly.Item1.DefinedTypes.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(KubernetesEntityAttribute) && y.NamedArguments.Any(z => z.MemberName == "Kind" && z.TypedValue.Value.Equals(kind))));
 
@@ -45,7 +45,7 @@ public class UnitTest1
     public async Task TestNamespace()
     {
         var type = await GetType("CRDs/1.yaml", "Alert");
-        type.Namespace.Should().Be("KubeCRDGenerator.Models");
+        type.Namespace.Should().Be("KubeCRDGenerator.Tests.Models");
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public class UnitTest1
 
         var specType = type.GetProperty("Spec").PropertyType;
 
-        specType.GetProperty("enumString", typeof(string)).Should().NotBeNull();
+        specType.GetProperty("EnumString", typeof(string)).Should().NotBeNull();
     }
 
     [Fact]
@@ -85,7 +85,7 @@ public class UnitTest1
 
         var specType = type.GetProperty("Spec").PropertyType;
 
-        specType.GetProperty("suspend", typeof(bool)).Should().NotBeNull();
+        specType.GetProperty("Suspend", typeof(bool)).Should().NotBeNull();
     }
 
     [Fact]
@@ -95,7 +95,7 @@ public class UnitTest1
 
         var specType = type.GetProperty("Spec").PropertyType;
 
-        specType.GetProperty("intProp", typeof(int)).Should().NotBeNull();
+        specType.GetProperty("IntProp", typeof(int)).Should().NotBeNull();
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public class UnitTest1
 
         var specType = type.GetProperty("Spec").PropertyType;
 
-        specType.GetProperty("int64Prop", typeof(long)).Should().NotBeNull();
+        specType.GetProperty("Int64Prop", typeof(long)).Should().NotBeNull();
     }
 
     [Fact]
@@ -123,12 +123,22 @@ public class UnitTest1
     }
 
     //[Fact]
-    public async Task Test()
+    public async Task GitRepository()
     {
         var type = await GetType("CRDs/gitrepository.yaml", "GitRepository");
 
         var specType = type.GetProperty("Spec").PropertyType;
 
         var prop = specType.GetProperty("ExtensionData", typeof(Dictionary<string, JsonElement>));
+    }
+
+    [Fact]
+    public async Task FlexibleServer()
+    {
+        var type = await GetType("CRDs/apiextensions.k8s.io_v1_customresourcedefinition_flexibleservers.dbforpostgresql.azure.com.yaml", "FlexibleServer");
+
+        var specType = type.GetProperty("Spec").PropertyType;
+
+        var prop = specType.GetProperty("AdministratorLogin", typeof(string));
     }
 }

@@ -202,4 +202,30 @@ public abstract class ClusterBase : INotifyPropertyChanged
             SelectedNamespaces = namespaces.ToList();
         }
     }
+
+    public async Task ImportYaml(Stream stream)
+    {
+        var types = GenerateTypeMap();
+        var objects = await KubernetesYaml.LoadAllFromStreamAsync(stream, types);
+
+        AddObjects(objects.Cast<IKubernetesObject<V1ObjectMeta>>());
+    }
+
+    private IDictionary<string, Type> GenerateTypeMap()
+    {
+        var ModelTypeMap = Assemblies.Where(x => x.FullName != typeof(KubernetesEntityAttribute).Assembly.FullName)
+            .SelectMany(x => x.GetTypes())
+            .Where(t => t.GetCustomAttributes(typeof(KubernetesEntityAttribute), true).Any())
+            .ToDictionary(
+                t =>
+                {
+                    var attr = (KubernetesEntityAttribute)t.GetCustomAttribute(
+                        typeof(KubernetesEntityAttribute), true);
+                    var groupPrefix = string.IsNullOrEmpty(attr.Group) ? "" : $"{attr.Group}/";
+                    return $"{groupPrefix}{attr.ApiVersion}/{attr.Kind}";
+                },
+                t => t);
+
+        return ModelTypeMap;
+    }
 }

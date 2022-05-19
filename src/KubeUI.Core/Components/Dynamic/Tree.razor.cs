@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Components;
 using KubeUI.Core.Client;
 using Microsoft.Extensions.Logging;
 using System.Reflection;
+using System.Collections;
+using k8s.Models;
 
 namespace KubeUI.Core.Components.Dynamic
 {
@@ -21,17 +23,23 @@ namespace KubeUI.Core.Components.Dynamic
         {
             HashSet<TreeItem> Tree = new HashSet<TreeItem>();
 
+            if (obj is V1JSONSchemaProps)
+            {
+                return Tree;
+            }
+
             foreach (var property in obj.GetType().GetProperties().Where(x => x.PropertyType.FullName.StartsWith("k8s.") || x.PropertyType.FullName.StartsWith("System.Collections.")))
             {
                 try
                 {
                     var item = property.GetValue(obj);
 
+
                     if (item == null)
                     {
                         try
                         {
-                            item = Activator.CreateInstance(property.PropertyType);
+                            item = Utilities.CreateInstance(property.PropertyType);
                             property.SetValue(obj, item);
                         }
                         catch (Exception ex)
@@ -78,39 +86,42 @@ namespace KubeUI.Core.Components.Dynamic
             var type = collection.GetType();
             var genType = type.GetTypeInfo().GenericTypeArguments[0];
 
-            int n = (int)type.GetProperty("Count").GetValue(collection);
-
-            for (int i = 0; i < n; i++)
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>) && genType == typeof(string))
             {
-                object[] index = { i };
-
-                object myObject = type.GetProperty("Item").GetValue(collection, index);
-
-                string? displayPropertyName = null; //Common.GetDisplayInTreeName(attributes);
-
-                string? propertyValue = null;
-
-                if (displayPropertyName != null)
+                foreach (DictionaryEntry obj in (IDictionary)collection)
                 {
-                    var property = genType.GetProperty(displayPropertyName);
-
-                    propertyValue = property?.GetValue(myObject)?.ToString();
+                    tree.Add(new TreeItem()
+                    {
+                        Name = obj.Key.ToString(),
+                        TreeItems = BuildTree(obj),
+                        Object = obj,
+                        //Summary = genType.GetSummary(),
+                        IsCollectionItem = true,
+                        Collection = collection
+                    });
                 }
+            }
+            else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
+            {
+                var list = (IList)collection;
+                int n = list.Count;
 
-                if (string.IsNullOrEmpty(propertyValue))
+                for (int i = 0; i < n; i++)
                 {
-                    propertyValue = $"Item {index[0]}";
+                    object myObject = list[i];
+
+                    string? propertyValue = null;
+
+                    tree.Add(new TreeItem()
+                    {
+                        Name = $"Item {i}",
+                        TreeItems = BuildTree(myObject),
+                        Object = myObject,
+                        //Summary = genType.GetSummary(),
+                        IsCollectionItem = true,
+                        Collection = collection
+                    });
                 }
-
-                tree.Add(new TreeItem()
-                {
-                    Name = propertyValue,
-                    TreeItems = BuildTree(myObject),
-                    Object = myObject,
-                    //Summary = genType.GetSummary(),
-                    IsCollectionItem = true,
-                    Collection = collection
-                });
             }
 
             return tree;
@@ -134,11 +145,9 @@ namespace KubeUI.Core.Components.Dynamic
         {
             var genType = obj.GetType().GetTypeInfo().GenericTypeArguments[0];
 
-            var newObj = Activator.CreateInstance(genType);
+            var newObj = Utilities.CreateInstance(genType);
 
-            object[] data = { newObj };
-
-            obj.GetType().GetMethod("Add").Invoke(obj, data);
+            ((IList)genType).Add(newObj);
 
             StateHasChanged();
         }
