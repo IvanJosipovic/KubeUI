@@ -1,6 +1,7 @@
 ﻿using k8s;
 using k8s.Models;
 using KubeCRDGenerator;
+using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Reflection;
@@ -9,14 +10,17 @@ namespace KubeUI.Core.Client;
 
 public abstract class ClusterBase : INotifyPropertyChanged
 {
+    private ILogger<ClusterBase> Logger { get; set; }
+
     public string Name { get; set; }
 
     public bool IsConnected { get; set; } = true;
 
     private ICRDGenerator CRDGenerator { get; set; }
 
-    protected ClusterBase(ICRDGenerator cRDGenerator)
+    protected ClusterBase(ILogger<ClusterBase> logger, ICRDGenerator cRDGenerator)
     {
+        Logger = logger;
         CRDGenerator = cRDGenerator;
     }
 
@@ -176,9 +180,9 @@ public abstract class ClusterBase : INotifyPropertyChanged
         return null;
     }
 
-    public void GenerateCRDAssembly(V1CustomResourceDefinition crd)
+    public async Task GenerateCRDAssembly(V1CustomResourceDefinition crd)
     {
-        var assembly = CRDGenerator.GenerateAssembly(crd, "k8s.Models");
+        var assembly = await CRDGenerator.GenerateAssembly(crd, "k8s.Models");
 
         if (assembly.Item1 != null)
         {

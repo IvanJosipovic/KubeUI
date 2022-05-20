@@ -27,7 +27,7 @@ public class ClusterManager : IDisposable
 
         LoadClusters();
 
-        AddCluster(new GitOpsCluster(cRDGenerator) { Name = "GitOps" });
+        AddCluster(new GitOpsCluster(loggerFactory.CreateLogger<GitOpsCluster>(), cRDGenerator) { Name = "GitOps" });
 
         LoadFromConfigFromPath(KubernetesClientConfiguration.KubeConfigDefaultLocation);
     }

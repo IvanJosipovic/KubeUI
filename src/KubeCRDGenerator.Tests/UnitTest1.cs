@@ -21,6 +21,7 @@ public class UnitTest1
         services.AddSingleton<ILoggerFactory, LoggerFactory>();
         services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
         services.AddSingleton<ICRDGenerator, CRDGenerator>();
+        services.AddHttpClient();
 
         return services.BuildServiceProvider();
     }
@@ -34,7 +35,7 @@ public class UnitTest1
     {
         var crd = await KubernetesYaml.LoadAllFromFileAsync(filename);
 
-        var assembly = GetCRDGenerator().GenerateAssembly((V1CustomResourceDefinition)crd[0], "KubeCRDGenerator.Tests.Models");
+        var assembly = await GetCRDGenerator().GenerateAssembly((V1CustomResourceDefinition)crd[0], "KubeCRDGenerator.Tests.Models");
 
         var types = assembly.Item1.DefinedTypes.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(KubernetesEntityAttribute) && y.NamedArguments.Any(z => z.MemberName == "Kind" && z.TypedValue.Value.Equals(kind))));
 
