@@ -15,7 +15,7 @@ public static class ConfigureServices
         services.TryAddScoped<IErrorBoundaryLogger, ErrorBoundaryLogger>();
         services.AddMudServices();
         services.AddHttpClient();
-        services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient());
+        services.TryAddTransient(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient());
 
         services.AddSingleton<ClusterManager>();
         services.AddSingleton<ICRDGenerator, CRDGenerator>();

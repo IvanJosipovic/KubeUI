@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis.Text;
 using Microsoft.Extensions.Logging;
 using System.ComponentModel;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Xml.Linq;
 
@@ -14,9 +15,14 @@ public class CRDGenerator : ICRDGenerator
 {
     private ILogger<CRDGenerator> Logger { get; set; }
 
-    public CRDGenerator(ILogger<CRDGenerator> logger)
+    private IHttpClientFactory HttpClientFactory { get; set; }
+
+    private MetadataReference[] metadataReferences { get; set; }
+
+    public CRDGenerator(ILogger<CRDGenerator> logger, IHttpClientFactory httpClientFactory)
     {
         Logger = logger;
+        HttpClientFactory = httpClientFactory;
     }
 
     public string GenerateCode(V1CustomResourceDefinition crd, string @namespace = "KubeCRDGenerator.Models")
@@ -79,63 +85,59 @@ public class CRDGenerator : ICRDGenerator
         return ArrangeUsingRoslyn(str);
     }
 
-    public (Assembly?, XDocument?) GenerateAssembly(V1CustomResourceDefinition crd, string @namespace = "KubeCRDGenerator.Models")
+    public async Task<(Assembly?, XDocument?)> GenerateAssembly(V1CustomResourceDefinition crd, string @namespace = "KubeCRDGenerator.Models")
     {
         var code = GenerateCode(crd, @namespace);
-        return GenerateAssembly(code);
+        return await GenerateAssembly(code);
     }
 
-    private (Assembly?, XDocument?) GenerateAssembly(string code)
+    private async Task<(Assembly?, XDocument?)> GenerateAssembly(string code)
     {
-        var syntaxTree = SyntaxFactory.ParseSyntaxTree(SourceText.From(code));
-        var dotNetCoreDir = Path.GetDirectoryName(typeof(object).GetTypeInfo().Assembly.Location);
-
-        var assemblyName = Path.GetRandomFileName();
-
-        var references = new MetadataReference[]
+        try
         {
-            MetadataReference.CreateFromFile(Assembly.Load("netstandard, Version=2.0.0.0").Location),
-            MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(V1Pod).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(DescriptionAttribute).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(List<>).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(JsonElement).Assembly.Location),
-            MetadataReference.CreateFromFile(Path.Combine(dotNetCoreDir, "System.Runtime.dll"))
-        };
+            var syntaxTree = SyntaxFactory.ParseSyntaxTree(SourceText.From(code));
 
-        var compilation = CSharpCompilation.Create(
-            assemblyName,
-            syntaxTrees: new[] { syntaxTree },
-            references: references,
-            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+            var assemblyName = Path.GetRandomFileName();
 
-        using (var peStream = new MemoryStream())
-        {
-            using (var xmlDocumentationStream = new MemoryStream())
+            if (metadataReferences == null)
             {
-                var result = compilation.Emit(peStream, xmlDocumentationStream: xmlDocumentationStream);
+                await GenerateReferences();
+            }
 
-                if (!result.Success)
+            var compilation = CSharpCompilation.Create(
+                assemblyName,
+                syntaxTrees: new[] { syntaxTree },
+                references: metadataReferences,
+                options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+            using var peStream = new MemoryStream();
+            using var xmlDocumentationStream = new MemoryStream();
+
+            var result = compilation.Emit(peStream, xmlDocumentationStream: xmlDocumentationStream);
+
+            if (!result.Success)
+            {
+                var failures = result.Diagnostics.Where(diagnostic => diagnostic.IsWarningAsError || diagnostic.Severity == DiagnosticSeverity.Error);
+
+                foreach (var diagnostic in failures)
                 {
-                    var failures = result.Diagnostics.Where(diagnostic => diagnostic.IsWarningAsError || diagnostic.Severity == DiagnosticSeverity.Error);
-
-                    foreach (var diagnostic in failures)
-                    {
-                        Logger.LogError("Error creating Assembly: {0}: {1}", diagnostic.Id, diagnostic.GetMessage());
-                    }
-                }
-                else
-                {
-                    peStream.Seek(0, SeekOrigin.Begin);
-                    var assembly = Assembly.Load(peStream.ToArray());
-
-                    xmlDocumentationStream.Seek(0, SeekOrigin.Begin);
-                    var xml = XDocument.Load(xmlDocumentationStream);
-
-                    return (assembly, xml);
+                    Logger.LogError("Error creating Assembly: {0}: {1}", diagnostic.Id, diagnostic.GetMessage());
                 }
             }
+            else
+            {
+                peStream.Seek(0, SeekOrigin.Begin);
+                var assembly = Assembly.Load(peStream.ToArray());
+
+                xmlDocumentationStream.Seek(0, SeekOrigin.Begin);
+                var xml = XDocument.Load(xmlDocumentationStream);
+
+                return (assembly, xml);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error creating Assembly");
         }
 
         return (null, null);
@@ -145,6 +147,7 @@ public class CRDGenerator : ICRDGenerator
     {
         var tree = CSharpSyntaxTree.ParseText(csCode);
         var root = tree.GetRoot().NormalizeWhitespace();
+
         return root.ToFullString();
     }
 
@@ -240,6 +243,54 @@ public class CRDGenerator : ICRDGenerator
         else
         {
             return char.ToUpper(str[0]) + str[1..];
+        }
+    }
+
+    private async Task GenerateReferences()
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")))
+        {
+            var assemblies = new string[]
+            {
+                "netstandard.dll",
+                "System.Private.CoreLib.dll",
+                "System.Linq.dll",
+                "KubernetesClient.Models.dll",
+                "System.ComponentModel.Primitives.dll",
+                "System.Private.CoreLib.dll",
+                "System.Text.Json.dll",
+                "System.Runtime.dll",
+            };
+
+            var references = new List<MetadataReference>(assemblies.Length);
+
+            foreach (var assemblie in assemblies)
+            {
+                var data = await HttpClientFactory.CreateClient().GetAsync("_framework/" + assemblie);
+
+                using (var task = await data.Content.ReadAsStreamAsync())
+                {
+                    references.Add(MetadataReference.CreateFromStream(task));
+                }
+            }
+
+            metadataReferences = references.ToArray();
+        }
+        else
+        {
+            var dotNetCoreDir = Path.GetDirectoryName(typeof(object).GetTypeInfo().Assembly.Location);
+
+            metadataReferences = new MetadataReference[]
+            {
+                MetadataReference.CreateFromFile(Assembly.Load("netstandard, Version=2.0.0.0").Location),
+                MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(V1Pod).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(DescriptionAttribute).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(List<>).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(JsonElement).Assembly.Location),
+                MetadataReference.CreateFromFile(Path.Combine(dotNetCoreDir, "System.Runtime.dll"))
+            };
         }
     }
 }

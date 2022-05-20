@@ -1,17 +1,20 @@
 ﻿using k8s;
 using k8s.Models;
 using KubeCRDGenerator;
+using Microsoft.Extensions.Logging;
 
 namespace KubeUI.Core.Client;
 
 public class GitOpsCluster : ClusterBase, ICluster
 {
+    private ILogger<GitOpsCluster> Logger { get; set; }
+
     public string Path { get; set; }
 
-    public GitOpsCluster(ICRDGenerator cRDGenerator) : base(cRDGenerator)
+    public GitOpsCluster(ILogger<GitOpsCluster> logger, ICRDGenerator cRDGenerator) : base(logger, cRDGenerator)
     {
-
-        this.OnChange += Cluster_OnChange;
+        Logger = logger;
+        OnChange += Cluster_OnChange;
     }
 
     private void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind type, IKubernetesObject<V1ObjectMeta> item)
@@ -21,7 +24,9 @@ public class GitOpsCluster : ClusterBase, ICluster
             case WatchEventType.Added:
                 if (item is V1CustomResourceDefinition)
                 {
-                    Task.Run(() => base.GenerateCRDAssembly((V1CustomResourceDefinition)item));
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                    base.GenerateCRDAssembly((V1CustomResourceDefinition)item);
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                 }
                 break;
             case WatchEventType.Modified:
