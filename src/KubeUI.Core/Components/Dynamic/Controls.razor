@@ -14,10 +14,10 @@
     {
         foreach (var prop in Item.GetType().GetProperties().Where(x => !x.PropertyType.FullName.StartsWith("k8s.")))
         {
-            if (prop.PropertyType == typeof(IDictionary<string, string>))
+            if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
             {
             }
-            else if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(IList<>))
+            else if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(List<>))
             {
             }
             else if (prop.PropertyType == typeof(string))
