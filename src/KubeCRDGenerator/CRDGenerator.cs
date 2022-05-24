@@ -17,7 +17,7 @@ public class CRDGenerator : ICRDGenerator
 
     private IHttpClientFactory HttpClientFactory { get; set; }
 
-    private MetadataReference[] metadataReferences { get; set; }
+    private MetadataReference[] MetadataReferences { get; set; }
 
     public CRDGenerator(ILogger<CRDGenerator> logger, IHttpClientFactory httpClientFactory)
     {
@@ -99,7 +99,7 @@ public class CRDGenerator : ICRDGenerator
 
             var assemblyName = Path.GetRandomFileName();
 
-            if (metadataReferences == null)
+            if (MetadataReferences == null)
             {
                 await GenerateReferences();
             }
@@ -107,7 +107,7 @@ public class CRDGenerator : ICRDGenerator
             var compilation = CSharpCompilation.Create(
                 assemblyName,
                 syntaxTrees: new[] { syntaxTree },
-                references: metadataReferences,
+                references: MetadataReferences,
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
             using var peStream = new MemoryStream();
@@ -143,7 +143,7 @@ public class CRDGenerator : ICRDGenerator
         return (null, null);
     }
 
-    private string ArrangeUsingRoslyn(string csCode)
+    private static string ArrangeUsingRoslyn(string csCode)
     {
         var tree = CSharpSyntaxTree.ParseText(csCode);
         var root = tree.GetRoot().NormalizeWhitespace();
@@ -187,37 +187,37 @@ public class CRDGenerator : ICRDGenerator
                 switch (property.Value.Type)
                 {
                     case "object":
-                        model.Fields.Add(new DynamicProperty(fieldName, Name + fieldName, false, property.Value.Description, new() { attribute }));
+                        model.Fields.Add(new DynamicProperty(fieldName, Name + fieldName, IsNullable(property), property.Value.Description, new() { attribute }));
                         types.AddRange(GenerateTypes(property.Value, Name + fieldName));
 
                         if (property.Value.XKubernetesPreserveUnknownFields == true)
                         {
-                            model.Fields.Add(new DynamicProperty("ExtensionData", $"Dictionary<string, JsonElement>", false, null, new List<string>() { "[JsonExtensionData]" }));
+                            model.Fields.Add(new DynamicProperty("ExtensionData", $"IDictionary<string, JsonElement>", IsNullable(property), null, new List<string>() { "[JsonExtensionData]" }));
                         }
                         break;
 
                     case "array":
-                        model.Fields.Add(new DynamicProperty(fieldName, $"List<{Name + fieldName}>", false, property.Value.Description, new() { attribute }));
+                        model.Fields.Add(new DynamicProperty(fieldName, $"IList<{Name + fieldName}>", IsNullable(property), property.Value.Description, new() { attribute }));
                         types.AddRange(GenerateTypes(property.Value, Name + fieldName));
                         break;
 
                     case "boolean":
-                        model.Fields.Add(new DynamicProperty(fieldName, "bool", false, property.Value.Description, new() { attribute }));
+                        model.Fields.Add(new DynamicProperty(fieldName, "bool", IsNullable(property), property.Value.Description, new() { attribute }));
                         break;
 
                     case "integer":
                         if (property.Value.Format == "int64")
                         {
-                            model.Fields.Add(new DynamicProperty(fieldName, "long", false, property.Value.Description, new() { attribute }));
+                            model.Fields.Add(new DynamicProperty(fieldName, "long", IsNullable(property), property.Value.Description, new() { attribute }));
                         }
                         else
                         {
-                            model.Fields.Add(new DynamicProperty(fieldName, "int", false, property.Value.Description, new() { attribute }));
+                            model.Fields.Add(new DynamicProperty(fieldName, "int", IsNullable(property), property.Value.Description, new() { attribute }));
                         }
                         break;
 
                     case "string":
-                        model.Fields.Add(new DynamicProperty(fieldName, "string", false, property.Value.Description, new() { attribute }));
+                        model.Fields.Add(new DynamicProperty(fieldName, "string", IsNullable(property), property.Value.Description, new() { attribute }));
                         break;
 
                     default:
@@ -230,7 +230,17 @@ public class CRDGenerator : ICRDGenerator
         return types;
     }
 
-    public static string CapitalizeFirstLetter(string str)
+    private static bool IsNullable(KeyValuePair<string, V1JSONSchemaProps> item)
+    {
+        if (item.Value.Required == null)
+        {
+            return true;
+        }
+
+        return !item.Value.Required.Contains(item.Key);
+    }
+
+    private static string CapitalizeFirstLetter(string str)
     {
         if (str.Length == 0)
         {
@@ -274,13 +284,13 @@ public class CRDGenerator : ICRDGenerator
                 }
             }
 
-            metadataReferences = references.ToArray();
+            MetadataReferences = references.ToArray();
         }
         else
         {
             var dotNetCoreDir = Path.GetDirectoryName(typeof(object).GetTypeInfo().Assembly.Location);
 
-            metadataReferences = new MetadataReference[]
+            MetadataReferences = new MetadataReference[]
             {
                 MetadataReference.CreateFromFile(Assembly.Load("netstandard, Version=2.0.0.0").Location),
                 MetadataReference.CreateFromFile(typeof(object).Assembly.Location),

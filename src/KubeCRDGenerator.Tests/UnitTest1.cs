@@ -86,7 +86,7 @@ public class UnitTest1
 
         var specType = type.GetProperty("Spec").PropertyType;
 
-        specType.GetProperty("Suspend", typeof(bool)).Should().NotBeNull();
+        specType.GetProperty("Suspend", typeof(bool?)).Should().NotBeNull();
     }
 
     [Fact]
@@ -96,7 +96,7 @@ public class UnitTest1
 
         var specType = type.GetProperty("Spec").PropertyType;
 
-        specType.GetProperty("IntProp", typeof(int)).Should().NotBeNull();
+        specType.GetProperty("IntProp", typeof(int?)).Should().NotBeNull();
     }
 
     [Fact]
@@ -106,7 +106,7 @@ public class UnitTest1
 
         var specType = type.GetProperty("Spec").PropertyType;
 
-        specType.GetProperty("Int64Prop", typeof(long)).Should().NotBeNull();
+        specType.GetProperty("Int64Prop", typeof(long?)).Should().NotBeNull();
     }
 
     [Fact]
