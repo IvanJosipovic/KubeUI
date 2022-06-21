@@ -29,7 +29,11 @@ public partial class NavMenu : IDisposable
         {
             try
             {
-                await ClusterManager.GetActiveCluster().ImportYaml(file.OpenReadStream());
+                using var stream = new MemoryStream();
+                await file.OpenReadStream().CopyToAsync(stream);
+                stream.Position = 0;
+
+                await ClusterManager.GetActiveCluster().ImportYaml(stream);
             }
             catch (Exception ex)
             {
