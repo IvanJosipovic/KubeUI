@@ -1,7 +1,7 @@
-using Microsoft.AspNetCore.Components;
-using k8s.Models;
 using k8s;
+using k8s.Models;
 using KubeUI.Core.Client;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
 
 namespace KubeUI.Core.Components;

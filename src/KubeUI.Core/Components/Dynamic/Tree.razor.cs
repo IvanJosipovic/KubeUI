@@ -1,9 +1,9 @@
-using Microsoft.AspNetCore.Components;
-using KubeUI.Core.Client;
-using Microsoft.Extensions.Logging;
-using System.Reflection;
-using System.Collections;
 using k8s.Models;
+using KubeUI.Core.Client;
+using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Logging;
+using System.Collections;
+using System.Reflection;
 
 namespace KubeUI.Core.Components.Dynamic
 {
@@ -33,7 +33,6 @@ namespace KubeUI.Core.Components.Dynamic
                 try
                 {
                     var item = property.GetValue(obj);
-
 
                     if (item == null)
                     {

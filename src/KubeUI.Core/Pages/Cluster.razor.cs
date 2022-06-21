@@ -1,9 +1,9 @@
+using KubeUI.Core.Client;
+using KubeUI.Core.Components;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
-using MudBlazor;
-using KubeUI.Core.Components;
-using KubeUI.Core.Client;
 using Microsoft.Extensions.Logging;
+using MudBlazor;
 
 namespace KubeUI.Core.Pages;
 

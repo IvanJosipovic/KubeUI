@@ -1,15 +1,15 @@
-using Xunit;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using k8s.Models;
-using Microsoft.Extensions.DependencyInjection;
-using System.Linq;
-using System;
 using FluentAssertions;
 using k8s;
+using k8s.Models;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
+using Xunit;
 
 namespace KubeCRDGenerator.Tests;
 
