@@ -1,7 +1,3 @@
-using KubeUI.Core.Client;
-using Microsoft.AspNetCore.Components;
-using Microsoft.Extensions.Logging;
-
 namespace KubeUI.Core.Pages;
 
 public partial class Connect : IDisposable

@@ -1,6 +1,4 @@
-using KubeUI.Core.Client;
 using KubeUI.Core.Pages.Workloads.List;
-using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
 
 namespace KubeUI.Core.Pages;

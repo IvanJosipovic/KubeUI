@@ -1,0 +1,17 @@
+﻿@using BlazorMonaco
+
+<MonacoViewer Value="@diff" Language="json" />
+
+@code {
+    [Parameter] public IKubernetesObject<V1ObjectMeta> Left { get; set; }
+    [Parameter] public IKubernetesObject<V1ObjectMeta> Right { get; set; }
+
+    private string diff;
+
+    protected override void OnInitialized()
+    {
+        var result = ObjectCompare.CompareObjects(Left, Right);
+
+        diff = result.Document?.ToString();
+    }
+}

@@ -1,6 +1,4 @@
-﻿using k8s;
-using k8s.Models;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 
 namespace KubeUI.Core.Client;
 

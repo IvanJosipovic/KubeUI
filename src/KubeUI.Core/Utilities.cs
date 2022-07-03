@@ -1,13 +1,7 @@
-﻿using k8s;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections;
 using System.Reflection;
-using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace KubeUI.Core;
 
@@ -180,6 +174,8 @@ public static class Utilities
 
     public static T CloneObject<T>(T obj)
     {
-        return KubernetesJson.Deserialize<T>(KubernetesJson.Serialize(obj));
+        var source = KubernetesJson.Serialize(obj);
+
+        return KubernetesJson.Deserialize<T>(source);
     }
 }

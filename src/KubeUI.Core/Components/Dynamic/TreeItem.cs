@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.ComponentModel;
-
-namespace KubeUI.Core.Components.Dynamic;
+﻿namespace KubeUI.Core.Components.Dynamic;
 
 public class TreeItem
 {

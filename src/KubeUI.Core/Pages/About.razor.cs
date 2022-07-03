@@ -1,6 +1,4 @@
 using KubeUI.Core.Services;
-using Microsoft.AspNetCore.Components;
-using Microsoft.Extensions.Logging;
 using static KubeUI.Core.Services.Updater;
 
 namespace KubeUI.Core.Pages;

@@ -1,6 +1,6 @@
 ﻿@page "/list/apiextensions.k8s.io/v1/customresourcedefinition"
 
-<ListComponent TItem="V1CustomResourceDefinition">
+<ListComponent TItem="V1CustomResourceDefinition" MultiSelection="true">
     <ColumnComponent TItem="V1CustomResourceDefinition" Name="Resource" Object="(x => x.Spec.Names.Kind)" Sort="SortDirection.Ascending">
         <DisplayContent>
             <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Dehaze" OnClick="() => context.Item2.DisplayDetails(context.Item1.Metadata.NamespaceProperty, context.Item1.ApiGroup(), context.Item1.ApiGroupVersion(), context.Item1.Kind, context.Item1.Metadata.Name)">X</MudIconButton>

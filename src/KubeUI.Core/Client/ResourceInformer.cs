@@ -1,9 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-using k8s;
-using k8s.Models;
-using Microsoft.Extensions.Logging;
 using System.Collections.Immutable;
 using System.Net.Sockets;
 

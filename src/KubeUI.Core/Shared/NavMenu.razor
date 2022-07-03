@@ -4,7 +4,7 @@
     <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Home</MudNavLink>
 
     <MudNavGroup Title="Clusters" Expanded="false" Icon="@GetIcon("infrastructure_components/unlabeled/control-plane.svg")">
-        <MudNavLink Href="/cluster" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Settings">Manage</MudNavLink>
+        <MudNavLink Href="/clusters" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Settings">Manage</MudNavLink>
 
         @foreach (var cluster in ClusterManager.GetClusters())
         {

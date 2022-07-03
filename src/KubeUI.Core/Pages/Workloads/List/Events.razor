@@ -1,6 +1,6 @@
 ﻿@page "/list/v1/event"
 
-<ListGeneric TItem="Corev1Event" HideName="true" HideNamespace="true" HideAge="true">
+<ListGeneric TItem="Corev1Event" HideName="true" HideNamespace="true" HideAge="true" MultiSelection="false">
     <Columns>
         <ColumnComponent TItem="Corev1Event" Name="Type" Object="(x => x.Type)" Width="5%" />
         <ColumnComponent TItem="Corev1Event" Name="Message" Object="(x => x.Message)" Width="70%">

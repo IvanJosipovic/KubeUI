@@ -1,22 +1,19 @@
-using KubeUI.Core.Client;
-using KubeUI.Core.Components;
-using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
-using Microsoft.Extensions.Logging;
-using MudBlazor;
 
 namespace KubeUI.Core.Pages;
 
-public partial class Cluster
+public partial class Clusters
 {
     [Inject]
-    private ILogger<Cluster> Logger { get; set; }
+    private ILogger<Clusters> Logger { get; set; }
 
     [Inject]
     private IDialogService Dialog { get; set; }
 
     [Inject]
     private ClusterManager ClusterManager { get; set; }
+
+    private HashSet<ICluster> SelectedItems;
 
     private async Task Delete(ICluster cluster)
     {
@@ -49,5 +46,27 @@ public partial class Cluster
                 Logger.LogError(ex, "Error importing Kube Config");
             }
         }
+    }
+
+    private void AddGitOpsCluster()
+    {
+        ClusterManager.AddGitOpsCluster();
+    }
+
+    private async Task Compare()
+    {
+        var left = SelectedItems.ElementAt(0);
+        var right = SelectedItems.ElementAt(1);
+        var parameters = new DialogParameters()
+        {
+            { "Left", left },
+            { "Right", right },
+        };
+
+        //var dialog = Dialog.Show<CompareObject>($"Compare {left.Name} and {right.Name}", parameters, new DialogOptions()
+        //{
+        //    CloseButton = true,
+        //    FullScreen = true
+        //});
     }
 }

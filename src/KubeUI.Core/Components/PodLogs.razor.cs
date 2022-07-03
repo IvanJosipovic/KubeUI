@@ -1,8 +1,3 @@
-using k8s;
-using KubeUI.Core.Client;
-using Microsoft.AspNetCore.Components;
-using Microsoft.Extensions.Logging;
-
 namespace KubeUI.Core.Components;
 
 public partial class PodLogs : IDisposable

@@ -1,7 +1,4 @@
-﻿using k8s;
-using k8s.Models;
-using KubeCRDGenerator;
-using Microsoft.Extensions.Logging;
+﻿using KubeCRDGenerator;
 
 namespace KubeUI.Core.Client;
 

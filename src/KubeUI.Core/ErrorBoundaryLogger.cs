@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Components.Web;
-using Microsoft.Extensions.Logging;
 
 namespace KubeUI.Core;
 

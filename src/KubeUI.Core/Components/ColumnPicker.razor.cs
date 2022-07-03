@@ -1,8 +1,3 @@
-using k8s;
-using k8s.Models;
-using Microsoft.AspNetCore.Components;
-using Microsoft.Extensions.Logging;
-
 namespace KubeUI.Core.Components;
 
 public partial class ColumnPicker<TItem> where TItem : class, IKubernetesObject<V1ObjectMeta>, new()

@@ -1,6 +1,4 @@
-﻿using k8s;
-using KubeCRDGenerator;
-using Microsoft.Extensions.Logging;
+﻿using KubeCRDGenerator;
 using System.Text;
 using System.Text.Json.Serialization;
 
@@ -106,6 +104,11 @@ public class ClusterManager : IDisposable
 
     public void SaveClusters()
     {
+    }
+
+    public void AddGitOpsCluster()
+    {
+        AddCluster(new GitOpsCluster(loggerFactory.CreateLogger<GitOpsCluster>(), cRDGenerator) { Name = "GitOps" + _clusters.Count });
     }
 
     public void Dispose()

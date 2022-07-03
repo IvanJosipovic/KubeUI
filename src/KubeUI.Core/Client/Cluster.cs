@@ -1,9 +1,5 @@
-﻿using k8s;
-using k8s.Models;
-using KubeCRDGenerator;
-using Microsoft.Extensions.Logging;
+﻿using KubeCRDGenerator;
 using System.Collections.Concurrent;
-using System.Text;
 using System.Text.Json;
 
 namespace KubeUI.Core.Client;

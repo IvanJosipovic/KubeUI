@@ -1,5 +1,4 @@
-﻿using k8s;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace KubeUI.Core.Client;

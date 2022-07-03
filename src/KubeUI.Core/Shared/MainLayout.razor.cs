@@ -1,10 +1,10 @@
 using KubeUI.Core.Services;
-using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
-using MudBlazor;
 using MudBlazor.Services;
+using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace KubeUI.Core.Shared;
 
@@ -45,6 +45,21 @@ public partial class MainLayout
         ResizeListenerService.OnBreakpointChanged += ResizeListenerService_OnBreakpointChanged;
 
         ResizeMenu(await ResizeListenerService.GetBreakpoint());
+
+        try
+        {
+            var property = typeof(KubernetesJson).GetField("JsonSerializerOptions", BindingFlags.Static | BindingFlags.NonPublic);
+
+            var options = (JsonSerializerOptions)property.GetValue(null);
+
+            options.NumberHandling = JsonNumberHandling.AllowReadingFromString;
+            options.Converters.Add(new BoolConverter());
+            options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error setting JsonSerializerOptions");
+        }
 
         try
         {
@@ -119,5 +134,21 @@ public partial class MainLayout
     {
         _drawerOpen2 = false;
         StateHasChanged();
+    }
+
+    public class BoolConverter : JsonConverter<bool>
+    {
+        public override void Write(Utf8JsonWriter writer, bool value, JsonSerializerOptions options) =>
+            writer.WriteBooleanValue(value);
+
+        public override bool Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+            reader.TokenType switch
+            {
+                JsonTokenType.True => true,
+                JsonTokenType.False => false,
+                JsonTokenType.String => bool.TryParse(reader.GetString(), out var b) ? b : throw new JsonException(),
+                JsonTokenType.Number => reader.TryGetInt64(out long l) ? Convert.ToBoolean(l) : reader.TryGetDouble(out double d) ? Convert.ToBoolean(d) : false,
+                _ => throw new JsonException(),
+            };
     }
 }

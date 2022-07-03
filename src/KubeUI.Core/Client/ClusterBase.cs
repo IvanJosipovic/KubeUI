@@ -1,10 +1,10 @@
-﻿using k8s;
-using k8s.Models;
-using KubeCRDGenerator;
-using Microsoft.Extensions.Logging;
+﻿using KubeCRDGenerator;
 using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Reflection;
+using YamlDotNet.Core;
+using YamlDotNet.Core.Events;
+using YamlDotNet.Serialization;
 
 namespace KubeUI.Core.Client;
 
@@ -210,21 +210,62 @@ public abstract class ClusterBase : INotifyPropertyChanged
     public async Task ImportYaml(Stream stream)
     {
         var types = GenerateTypeMap();
-        var objects = await KubernetesYaml.LoadAllFromStreamAsync(stream, types);
 
-        AddObjects(objects.Cast<IKubernetesObject<V1ObjectMeta>>());
+        var serializer = new SerializerBuilder()
+            .JsonCompatible()
+            .Build();
+        var deserializer = new DeserializerBuilder().Build();
+        var method = typeof(KubernetesJson).GetMethod("Deserialize", BindingFlags.Static | BindingFlags.Public, new[] { typeof(string) });
+
+        using var reader = new StreamReader(stream);
+
+        var parser = new Parser(reader);
+
+        parser.Consume<StreamStart>();
+
+        while (parser.Accept<DocumentStart>())
+        {
+            var doc = deserializer.Deserialize(parser);
+            var json = serializer.Serialize(doc);
+
+            var meta = KubernetesJson.Deserialize<KubernetesObject>(json);
+            var key = $"{meta.ApiVersion}/{meta.Kind}";
+
+            if (types.ContainsKey(key))
+            {
+                try
+                {
+                    var type = types[key];
+                    var generic = method.MakeGenericMethod(type);
+                    var obj = generic.Invoke(null, new[] { json });
+
+                    AddObject((IKubernetesObject<V1ObjectMeta>)obj);
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, "Error converting from Json to {type} {json}", key, json);
+                }
+            }
+            else
+            {
+                Logger.LogWarning("Missing Type: {type}", key);
+            }
+        }
     }
 
     private IDictionary<string, Type> GenerateTypeMap()
     {
-        var ModelTypeMap = Assemblies.Where(x => x.FullName != typeof(KubernetesEntityAttribute).Assembly.FullName)
+        var type = typeof(KubernetesEntityAttribute);
+
+        var ModelTypeMap = Assemblies
             .SelectMany(x => x.GetTypes())
-            .Where(t => t.GetCustomAttributes(typeof(KubernetesEntityAttribute), true).Any())
+            .Where(t => t.GetCustomAttributes(type, true).Any())
             .ToDictionary(
                 t =>
                 {
-                    var attr = (KubernetesEntityAttribute)t.GetCustomAttribute(
-                        typeof(KubernetesEntityAttribute), true);
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
+                    var attr = (KubernetesEntityAttribute)t.GetCustomAttribute(type, true);
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
                     var groupPrefix = string.IsNullOrEmpty(attr.Group) ? "" : $"{attr.Group}/";
                     return $"{groupPrefix}{attr.ApiVersion}/{attr.Kind}";
                 },

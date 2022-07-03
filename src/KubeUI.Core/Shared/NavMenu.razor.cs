@@ -1,9 +1,4 @@
-using k8s;
-using k8s.Models;
-using KubeUI.Core.Client;
-using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
-using Microsoft.Extensions.Logging;
 
 namespace KubeUI.Core.Shared;
 
@@ -17,6 +12,18 @@ public partial class NavMenu : IDisposable
 
     [Inject]
     private NavigationManager NavigationManager { get; set; }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        ClusterManager.OnChange += ClusterManager_OnChange;
+    }
+
+    private void ClusterManager_OnChange(ClusterManagerEvents obj)
+    {
+        StateHasChanged();
+    }
 
     public static string GetIcon(string iconPath)
     {
@@ -63,6 +70,8 @@ public partial class NavMenu : IDisposable
 
     public void Dispose()
     {
+        ClusterManager.OnChange -= ClusterManager_OnChange;
+
         if (ClusterManager.GetActiveCluster() != null)
         {
             ClusterManager.GetActiveCluster().PropertyChanged -= Cluster_PropertyChanged;

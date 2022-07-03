@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-using k8s.Models;
 using System.Reflection;
 
 namespace KubeUI.Core.Client;

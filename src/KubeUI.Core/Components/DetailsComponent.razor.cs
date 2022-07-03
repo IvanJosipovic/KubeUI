@@ -1,10 +1,3 @@
-using k8s;
-using k8s.Models;
-using KubeUI.Core.Client;
-using KubeUI.Core.Shared;
-using Microsoft.AspNetCore.Components;
-using Microsoft.Extensions.Logging;
-
 namespace KubeUI.Core.Components;
 
 public partial class DetailsComponent<TItem> : IDisposable where TItem : class, IKubernetesObject<V1ObjectMeta>, new()

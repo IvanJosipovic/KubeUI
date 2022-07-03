@@ -1,11 +1,4 @@
-using k8s;
-using k8s.Models;
-using KubeUI.Core.Client;
-using KubeUI.Core.Pages;
-using KubeUI.Core.Shared;
-using Microsoft.AspNetCore.Components;
-using Microsoft.Extensions.Logging;
-using MudBlazor.Services;
+using static MudBlazor.CategoryTypes;
 
 namespace KubeUI.Core.Components;
 
@@ -18,11 +11,23 @@ public partial class ListComponent<TItem> : IDisposable where TItem : class, IKu
     [Inject]
     private ClusterManager ClusterManager { get; set; }
 
+    [Inject]
+    private IDialogService Dialog { get; set; }
+
     [CascadingParameter]
     private MainLayout MainLayout { get; set; }
 
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public bool MultiSelection { get; set; }
+
+    [Parameter]
+    public HashSet<TItem> SelectedItems { get; set; } = new HashSet<TItem>();
+
+    [Parameter]
+    public EventCallback<HashSet<TItem>> SelectedItemsChanged { get; set; }
 
     private string? Version;
 
@@ -165,4 +170,42 @@ public partial class ListComponent<TItem> : IDisposable where TItem : class, IKu
 
         builder.CloseComponent();
     };
+
+    private async Task Compare()
+    {
+        var left = SelectedItems.ElementAt(0);
+        var right = SelectedItems.ElementAt(1);
+        var parameters = new DialogParameters()
+            {
+                {"Left", left},
+                {"Right", right},
+            };
+        var dialog = Dialog.Show<CompareObject>($"Compare {left.Name()} and {right.Name()}", parameters, new DialogOptions()
+        {
+            CloseButton = true,
+            FullScreen = true
+        });
+    }
+
+    private async Task Delete()
+    {
+        var parameters = new DialogParameters()
+        {
+            { "ContentText", $"Do you want to delete {SelectedItems.Count} Objects?" },
+            { "ButtonText", "Delete" },
+            { "Color", Color.Error }
+        };
+        var dialog = Dialog.Show<Dialog>("Delete", parameters, new DialogOptions()
+        {
+            CloseButton = true
+        });
+
+        if (!(await dialog.Result).Cancelled)
+        {
+            foreach (var item in SelectedItems)
+            {
+                await ClusterManager.GetActiveCluster().Delete<TItem>(item);
+            }
+        }
+    }
 }

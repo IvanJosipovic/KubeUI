@@ -1,9 +1,3 @@
-using k8s;
-using k8s.Models;
-using Microsoft.AspNetCore.Components;
-using Microsoft.Extensions.Logging;
-using MudBlazor;
-
 namespace KubeUI.Core.Components;
 
 [CascadingTypeParameter(nameof(TItem))]
