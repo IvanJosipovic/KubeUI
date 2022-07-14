@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - '*'
+  pull_request:
+    types: [opened, reopened]
 
 env:
   dotnet-version: 7.0.x
