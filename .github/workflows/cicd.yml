@@ -11,7 +11,7 @@ on:
 env:
   dotnet-version: 7.0.x
   include-prerelease: true
-  semantic_version: 18
+  semantic_version: 19
 
 jobs:
   semantic-release:
