@@ -6,7 +6,7 @@ on:
     branches:
       - '*'
   pull_request:
-    types: [opened, reopened]
+    types: [opened, reopened, synchronize]
 
 env:
   dotnet-version: 7.0.x
