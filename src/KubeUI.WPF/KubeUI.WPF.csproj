@@ -19,7 +19,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.AspNetCore.Components.WebView.Wpf" Version="6.0.408" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebView.Wpf" Version="6.0.419" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.0-preview.6.22324.4" />
 		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="7.0.0-preview.6.22324.4" />
 		<PackageReference Include="Serilog.Extensions.Logging.File" Version="3.0.0" />
