@@ -25,45 +25,45 @@ public partial class PodLogs : IDisposable
 
     private Stream stream;
 
+    private StreamReader streamReader;
+
     private string Logs;
 
-    private Timer timer;
+    private bool IsDisposed;
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
-        SetTimer();
+        await Update();
     }
 
     public void Dispose()
     {
-        timer?.Dispose();
+        IsDisposed = true;
         stream?.Dispose();
-    }
-
-    public void SetTimer()
-    {
-        timer?.Dispose();
-        stream?.Dispose();
-        stream = null;
-
-        timer = new Timer(async (_) => await Update(), null, 0, 1000);
+        streamReader?.Dispose();
     }
 
     private async Task Update()
     {
         try
         {
-            if (stream == null)
-            {
-                var cluster = (Cluster)ClusterManager.GetActiveCluster();
-                stream = await cluster.Client.CoreV1.ReadNamespacedPodLogAsync(Name, Namespace, container: Container, tailLines: Lines, previous: Previous, follow: false, pretty: true);
-            }
-            using (var reader = new StreamReader(stream))
-            {
-                Logs = await reader.ReadToEndAsync();
-            }
+            var cluster = (Cluster)ClusterManager.GetActiveCluster();
+            stream = await cluster.Client.CoreV1.ReadNamespacedPodLogAsync(Name, Namespace, container: Container, tailLines: Lines, previous: Previous, follow: true, pretty: true);
 
-            await InvokeAsync(StateHasChanged);
+            using (streamReader = new StreamReader(stream))
+            {
+                while (!IsDisposed && streamReader.Peek() != -1)
+                {
+                    try
+                    {
+                        Logs += Environment.NewLine + await streamReader.ReadLineAsync();
+                    }
+                    catch (IOException ex) when (ex.Message.Equals("The request was aborted.")) { break; }
+                    catch (ObjectDisposedException) { break; }
+
+                    await InvokeAsync(StateHasChanged);
+                }
+            }
         }
         catch (Exception ex)
         {
