@@ -11,7 +11,7 @@
                 <Content>
                     <MudTreeViewItemToggleButton @bind-Expanded="@context.IsExpanded" Visible="@(context.TreeItems.Count > 0)" />
                     <MudText>@context.Name</MudText>
-                    @if (context.IsCollection)
+                    @if (context.IsCollection && !ReadOnly)
                     {
                         <MudIconButton OnClick="@(() => AddItem(context.Object))" Icon="@Icons.Filled.Add" Color="Color.Secondary" />
                     }

@@ -14,32 +14,41 @@
     {
         foreach (var prop in Item.GetType().GetProperties().Where(x => !x.PropertyType.FullName.StartsWith("k8s.")))
         {
-            if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
+            object value = GetValue(prop, Item);
+
+            if (ReadOnly && value == null)
             {
+                continue;
             }
-            else if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(List<>))
+
+            if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(IDictionary<,>))
             {
+                <MudText>Missing Control Type @prop.PropertyType</MudText>
             }
-            else if (prop.PropertyType == typeof(string))
+            else if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(IList<>))
             {
-                <MudTextField T="string" Label="@prop.Name.AddSpacesBeforeCapitals()" Value="@(prop.GetValue(Item) != null ? prop.GetValue(Item) as string : null)" ValueChanged="@((e) => OnChange(e, prop))" Variant="Variant.Text" D />
+                <MudText>Missing Control Type @prop.PropertyType</MudText>
+            }
+            else if (prop.PropertyType == typeof(string) || prop.DeclaringType == typeof(string))
+            {
+                <MudTextField T="string" Label="@prop.Name.AddSpacesBeforeCapitals()" Value="@(value as string)" ValueChanged="@((e) => OnChange(e, prop))" Variant="Variant.Text" Disabled="ReadOnly" />
             }
             else if (prop.PropertyType == typeof(bool) || prop.PropertyType == typeof(bool?))
             {
-                <MudSwitch T="bool?" Label="@prop.Name.AddSpacesBeforeCapitals()" Checked="@(prop.GetValue(Item) != null ? bool.Parse(prop.GetValue(Item).ToString()) : null)" CheckedChanged="@((e) => OnChange(e, prop))" Class="mt-2"></MudSwitch>
+                <MudSwitch T="bool?" Label="@prop.Name.AddSpacesBeforeCapitals()" Checked="@(value as bool?)" CheckedChanged="@((e) => OnChange(e, prop))" Class="mt-2" Disabled="ReadOnly"></MudSwitch>
                 <br />
             }
             else if (prop.PropertyType == typeof(int) || prop.PropertyType == typeof(int?))
             {
-                <MudNumericField T="int?" Label="@prop.Name.AddSpacesBeforeCapitals()" Value="@(prop.GetValue(Item) != null ? int.Parse(prop.GetValue(Item).ToString()) : null)" ValueChanged="@((e) => OnChange(e, prop))" Variant="Variant.Text" />
+                <MudNumericField T="int?" Label="@prop.Name.AddSpacesBeforeCapitals()" Value="@(value as int?)" ValueChanged="@((e) => OnChange(e, prop))" Variant="Variant.Text" Disabled="ReadOnly" />
             }
             else if (prop.PropertyType == typeof(long) || prop.PropertyType == typeof(long?))
             {
-                <MudNumericField T="long?" Label="@prop.Name.AddSpacesBeforeCapitals()" Value="@(prop.GetValue(Item) != null ? long.Parse(prop.GetValue(Item).ToString()) : null)" ValueChanged="@((e) => OnChange(e, prop))" Variant="Variant.Text" />
+                <MudNumericField T="long?" Label="@prop.Name.AddSpacesBeforeCapitals()" Value="@(value as long?)" ValueChanged="@((e) => OnChange(e, prop))" Variant="Variant.Text" Disabled="ReadOnly" />
             }
             else if (prop.PropertyType == typeof(DateTime) || prop.PropertyType == typeof(DateTime?))
             {
-                <MudTextField T="object" Label="@prop.Name.AddSpacesBeforeCapitals()" Value="@(prop.GetValue(Item))" ValueChanged="@((e) => OnChange(e, prop))" Variant="Variant.Text" InputType="InputType.Text" />
+                <MudTextField T="object" Label="@prop.Name.AddSpacesBeforeCapitals()" Value="@value" ValueChanged="@((e) => OnChange(e, prop))" Variant="Variant.Text" InputType="InputType.Text" Disabled="ReadOnly" />
             }
             else
             {
@@ -55,8 +64,10 @@
     [Parameter] public EventCallback<object> SetHelp { get; set; }
 
     [Parameter] public TItem Item { get; set; }
-    
+
     [Parameter] public EventCallback<TItem> ItemChanged { get; set; }
+
+    [Parameter] public bool ReadOnly { get; set; }
 
     [Inject] protected ILogger<Controls<TItem>> Logger { get; set; }
 
@@ -80,7 +91,7 @@
     {
         try
         {
-            if (prop.PropertyType == typeof(string))
+            if (prop.PropertyType == typeof(string) || prop.DeclaringType == typeof(string))
             {
                 prop.SetValue(Item, e == null ? null : e.ToString());
             }
@@ -127,5 +138,27 @@
         {
             Logger.LogError(ex,"Casting Error : {0} - {1}", e.GetType(), e);
         }
+    }
+
+    private object? GetValue(PropertyInfo prop, object item)
+    {
+        if (prop.PropertyType == typeof(string) || prop.DeclaringType == typeof(string))
+        {
+            return item as string;
+        } 
+        else if (prop.PropertyType == typeof(bool) || prop.PropertyType == typeof(bool?))
+        {
+            return prop.GetValue(Item) != null ? bool.Parse(prop.GetValue(Item).ToString()) : null;
+        }
+        else if (prop.PropertyType == typeof(int) || prop.PropertyType == typeof(int?))
+        {
+            return prop.GetValue(Item) != null ? int.Parse(prop.GetValue(Item).ToString()) : null;
+        }
+        else if (prop.PropertyType == typeof(long) || prop.PropertyType == typeof(long?))
+        {
+            return prop.GetValue(Item) != null ? long.Parse(prop.GetValue(Item).ToString()) : null;
+        }
+
+        return prop.GetValue(item, null);
     }
 }

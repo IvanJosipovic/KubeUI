@@ -11,6 +11,9 @@ namespace KubeUI.Core.Components.Dynamic
         public TItem Item { get; set; }
 
         [Parameter]
+        public bool ReadOnly { get; set; }
+
+        [Parameter]
         public EventCallback<object> ObjectSelected { get; set; }
 
         private HashSet<TreeItem> TreeItems { get; set; } = new HashSet<TreeItem>();
@@ -29,6 +32,11 @@ namespace KubeUI.Core.Components.Dynamic
                 try
                 {
                     var item = property.GetValue(obj);
+
+                    if (item == null && ReadOnly)
+                    {
+                        continue;
+                    }
 
                     if (item == null)
                     {
