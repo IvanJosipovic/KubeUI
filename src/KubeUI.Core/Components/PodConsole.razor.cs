@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components.Web;
 using System.IO;
+using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text;
 
@@ -67,7 +68,7 @@ public partial class PodConsole : IDisposable
             {
                 try
                 {
-                    Memory<char> memory = new Memory<char>(new char[1024]);
+                    var memory = new Memory<char>(new char[1024]);
                     await streamReader.ReadAsync(memory);
                     var str = memory.ToString().Replace("\0", "");
                     Console += str;
@@ -86,21 +87,28 @@ public partial class PodConsole : IDisposable
         {
             textbox = "";
 
-            if (args.Key.Equals("Enter"))
+            try
             {
-                Stream.Write(Encoding.Default.GetBytes("\r"));
+                if (args.Key.Equals("Enter"))
+                {
+                    Stream.Write(Encoding.Default.GetBytes("\r"));
+                }
+                else if (args.Key.Equals("Backspace"))
+                {
+                    Stream.Write(Encoding.Default.GetBytes("\b"));
+                }
+                else if (args.Key.Equals("Tab"))
+                {
+                    Stream.Write(Encoding.Default.GetBytes("\t"));
+                }
+                else if (args.Key.Length == 1)
+                {
+                    Stream.Write(Encoding.Default.GetBytes(args.Key));
+                }
             }
-            else if (args.Key.Equals("Backspace"))
+            catch (Exception ex) when (ex is IOException && ex is SocketException)
             {
-                Stream.Write(Encoding.Default.GetBytes("\b"));
-            }
-            else if (args.Key.Equals("Tab"))
-            {
-                Stream.Write(Encoding.Default.GetBytes("\t"));
-            }
-            else if (args.Key.Length == 1)
-            {
-                Stream.Write(Encoding.Default.GetBytes(args.Key));
+                Logger.LogError(ex, "Error sending key to console");
             }
         }
     }
