@@ -55,8 +55,8 @@ public class GitOpsCluster : ClusterBase, ICluster
         throw new NotImplementedException();
     }
 
-    public Task<KubeVersion> GetVersion()
+    public Task<VersionInfo> GetVersion()
     {
-        return Task.FromResult(new KubeVersion());
+        return Task.FromResult(new VersionInfo());
     }
 }

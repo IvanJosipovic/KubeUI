@@ -38,7 +38,7 @@ public interface ICluster
 
     void SetSelectedNamespaces(IEnumerable<string> namespaces);
 
-    Task<KubeVersion> GetVersion();
+    Task<VersionInfo> GetVersion();
 
     event PropertyChangedEventHandler? PropertyChanged;
 

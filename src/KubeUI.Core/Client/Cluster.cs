@@ -172,20 +172,10 @@ public class Cluster : ClusterBase, ICluster
         }
     }
 
-    public async Task<KubeVersion> GetVersion()
+    public async Task<VersionInfo> GetVersion()
     {
         Init();
 
-        var resp = await ((Kubernetes)Client).SendRequestRaw(null, new HttpRequestMessage(HttpMethod.Get, Client.BaseUri + "version"), CancellationToken.None);
-
-        if (resp.IsSuccessStatusCode)
-        {
-            var obj = JsonSerializer.Deserialize<KubeVersion>(await resp.Content.ReadAsStringAsync());
-            return obj;
-        }
-        else
-        {
-            return new KubeVersion();
-        }
+        return await Client.Version.GetCodeAsync();
     }
 }
