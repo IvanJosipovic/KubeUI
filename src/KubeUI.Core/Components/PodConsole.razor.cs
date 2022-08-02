@@ -52,8 +52,12 @@ public partial class PodConsole : IDisposable
     {
         var cluster = (Cluster)ClusterManager.GetActiveCluster();
 
-        var command2 = "sh -c \"clear; (bash || ash || sh)\"";
-        var command = "sh";
+        string[] command = new string[]
+        {
+            "sh",
+            "-c",
+            "clear; (bash || ash || sh)"
+        };
 
         WebSocket = await cluster.Client.WebSocketNamespacedPodExecAsync(Name, Namespace, command, Container).ConfigureAwait(false);
 
