@@ -31,6 +31,7 @@ public class DynamicType
             result += "using System.ComponentModel;\n";
             result += "using System.Collections.Generic;\n";
             result += "using System.Text.Json;\n";
+            result += "using System.Text.Json.Nodes;\n";
             result += "using System.Text.Json.Serialization;\n";
         }
 

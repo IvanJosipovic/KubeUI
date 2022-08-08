@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Xunit;
@@ -116,30 +117,42 @@ public class UnitTest1
 
         var specType = type.GetProperty("Spec").PropertyType;
 
-        var prop = specType.GetProperty("ExtensionData", typeof(Dictionary<string, JsonElement>));
+        var prop = specType.GetProperty("ExtensionData", typeof(Dictionary<string, JsonNode>));
 
         prop.Should().NotBeNull();
 
         prop.CustomAttributes.Any(y => y.AttributeType == typeof(JsonExtensionDataAttribute)).Should().BeTrue();
     }
 
-    //[Fact]
+    [Fact]
     public async Task GitRepository()
     {
         var type = await GetType("CRDs/gitrepository.yaml", "GitRepository");
 
         var specType = type.GetProperty("Spec").PropertyType;
 
-        var prop = specType.GetProperty("ExtensionData", typeof(Dictionary<string, JsonElement>));
+        var prop = specType.GetProperty("ExtensionData", typeof(Dictionary<string, JsonNode>));
     }
 
     [Fact]
     public async Task FlexibleServer()
     {
-        var type = await GetType("CRDs/apiextensions.k8s.io_v1_customresourcedefinition_flexibleservers.dbforpostgresql.azure.com.yaml", "FlexibleServer");
+        var type = await GetType("CRDs/flexibleserver.yaml", "FlexibleServer");
 
         var specType = type.GetProperty("Spec").PropertyType;
 
         var prop = specType.GetProperty("AdministratorLogin", typeof(string));
+    }
+
+    [Fact]
+    public async Task HelmRelease()
+    {
+        var type = await GetType("CRDs/helmrelease.yaml", "HelmRelease");
+
+        var specType = type.GetProperty("Spec").PropertyType;
+
+        var valuesType = specType.GetProperty("Values").PropertyType;
+
+        valuesType.Should().Be<JsonNode?>();
     }
 }

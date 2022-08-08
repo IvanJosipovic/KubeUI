@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Xml.Linq;
 
 namespace KubeCRDGenerator;
@@ -151,23 +152,23 @@ public class CRDGenerator : ICRDGenerator
         return root.ToFullString();
     }
 
-    private List<DynamicType> GenerateTypes(V1JSONSchemaProps type, string Name)
+    private List<DynamicType> GenerateTypes(V1JSONSchemaProps schema, string Name)
     {
         var types = new List<DynamicType>();
         var model = new DynamicType();
         types.Add(model);
 
-        model.Name = Name;
-        model.Description = type.Description;
+        model.Name = CapitalizeFirstLetter(Name);
+        model.Description = schema.Description;
 
-        if (type.XKubernetesPreserveUnknownFields == true)
+        if (schema.XKubernetesPreserveUnknownFields == true)
         {
-            model.Fields.Add(new DynamicProperty("ExtensionData", $"Dictionary<string, JsonElement>", false, null, new List<string>() { "[JsonExtensionData]" }));
+            model.Fields.Add(new DynamicProperty("ExtensionData", $"Dictionary<string, JsonNode>", false, null, new List<string>() { "[JsonExtensionData]" }));
         }
 
-        if (type.Properties != null)
+        if (schema.Properties != null)
         {
-            foreach (var property in type.Properties)
+            foreach (var property in schema.Properties)
             {
                 var attribute = $"[JsonPropertyName(\"{property.Key}\")]";
                 string fieldName = property.Key;
@@ -184,21 +185,23 @@ public class CRDGenerator : ICRDGenerator
 
                 fieldName = CapitalizeFirstLetter(fieldName);
 
+                var combinedFieldName = Name + CapitalizeFirstLetter(property.Key.Replace("$", "").Replace("@", ""));
+
                 switch (property.Value.Type)
                 {
                     case "object":
-                        model.Fields.Add(new DynamicProperty(fieldName, Name + fieldName, IsNullable(property), property.Value.Description, new() { attribute }));
-                        types.AddRange(GenerateTypes(property.Value, Name + fieldName));
+                        model.Fields.Add(new DynamicProperty(fieldName, combinedFieldName, IsNullable(property), property.Value.Description, new() { attribute }));
+                        types.AddRange(GenerateTypes(property.Value, combinedFieldName));
 
                         if (property.Value.XKubernetesPreserveUnknownFields == true)
                         {
-                            model.Fields.Add(new DynamicProperty("ExtensionData", $"IDictionary<string, JsonElement>", IsNullable(property), null, new List<string>() { "[JsonExtensionData]" }));
+                            model.Fields.Add(new DynamicProperty("ExtensionData", $"IDictionary<string, JsonNode>", IsNullable(property), null, new List<string>() { "[JsonExtensionData]" }));
                         }
                         break;
 
                     case "array":
-                        model.Fields.Add(new DynamicProperty(fieldName, $"IList<{Name + fieldName}>", IsNullable(property), property.Value.Description, new() { attribute }));
-                        types.AddRange(GenerateTypes(property.Value, Name + fieldName));
+                        model.Fields.Add(new DynamicProperty(fieldName, $"IList<{combinedFieldName}>", IsNullable(property), property.Value.Description, new() { attribute }));
+                        types.AddRange(GenerateTypes(property.Value, combinedFieldName));
                         break;
 
                     case "boolean":
@@ -220,11 +223,34 @@ public class CRDGenerator : ICRDGenerator
                         model.Fields.Add(new DynamicProperty(fieldName, "string", IsNullable(property), property.Value.Description, new() { attribute }));
                         break;
 
+                    case "":
+                    case null:
+                        if (property.Value.XKubernetesPreserveUnknownFields == true)
+                        {
+                            model.Fields.Add(new DynamicProperty(fieldName, $"JsonNode", IsNullable(property), property.Value.Description));
+                        }
+                        break;
+
                     default:
-                        //throw new Exception("Unhandled Type " + property.Value.Type);
+                        Logger.LogWarning("Unhandled Property Type {type}", property.Value.Type);
                         break;
                 }
             }
+        }
+        else if (schema.Type == "array")
+        {
+
+            //model.Fields.Add(new DynamicProperty(fieldName, $"IList<{Name + fieldName}>", IsNullable(property), property.Value.Description, new() { attribute }));
+            //types.AddRange(GenerateTypes(property.Value, Name + fieldName));
+        }
+        else if (schema.Type == "object")
+        {
+            //model.Fields.Add(new DynamicProperty(fieldName, $"IList<{Name + fieldName}>", IsNullable(property), property.Value.Description, new() { attribute }));
+            //types.AddRange(GenerateTypes(property.Value, Name + fieldName));
+        }
+        else
+        {
+            Logger.LogWarning("Unhandled Type {type}", schema.Type);
         }
 
         return types;
@@ -298,7 +324,7 @@ public class CRDGenerator : ICRDGenerator
                 MetadataReference.CreateFromFile(typeof(V1Pod).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(DescriptionAttribute).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(List<>).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(JsonElement).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(JsonNode).Assembly.Location),
                 MetadataReference.CreateFromFile(Path.Combine(dotNetCoreDir, "System.Runtime.dll"))
             };
         }
