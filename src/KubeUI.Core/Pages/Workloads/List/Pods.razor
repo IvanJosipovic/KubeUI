@@ -39,7 +39,7 @@
         <ColumnComponent TItem="V1Pod" Name="Restarts" Object="(x => x.Status?.ContainerStatuses?.Sum(x => x.RestartCount))" />
         <ColumnComponent TItem="V1Pod" Name="Controlled By" Object="(x => x.Metadata.OwnerReferences.FirstOrDefault()?.Kind)">
             <DisplayContent>
-                @if (context.Item1.Metadata.OwnerReferences.Any())
+                @if (context.Item1.Metadata.OwnerReferences != null && context.Item1.Metadata.OwnerReferences.Any())
                 {
                 <MudLink @onclick="@(x => context.Item2.DisplayDetails(context.Item1.Metadata.NamespaceProperty, context.Item1.Metadata.OwnerReferences[0].ApiVersion, context.Item1.Metadata.OwnerReferences[0].Kind, context.Item1.Metadata.OwnerReferences[0].Name))"
                     >@context.Item1.Metadata.OwnerReferences[0].Kind</MudLink>                
