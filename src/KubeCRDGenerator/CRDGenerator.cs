@@ -163,7 +163,7 @@ public class CRDGenerator : ICRDGenerator
 
         if (schema.XKubernetesPreserveUnknownFields == true)
         {
-            model.Fields.Add(new DynamicProperty("ExtensionData", $"Dictionary<string, JsonNode>", false, null, new List<string>() { "[JsonExtensionData]" }));
+            model.Fields.Add(new DynamicProperty("ExtensionData", $"Dictionary<string, object>", false, null, new List<string>() { "[JsonExtensionData]" }));
         }
 
         if (schema.Properties != null)
@@ -195,7 +195,7 @@ public class CRDGenerator : ICRDGenerator
 
                         if (property.Value.XKubernetesPreserveUnknownFields == true)
                         {
-                            model.Fields.Add(new DynamicProperty("ExtensionData", $"IDictionary<string, JsonNode>", IsNullable(property), null, new List<string>() { "[JsonExtensionData]" }));
+                            model.Fields.Add(new DynamicProperty("ExtensionData", $"IDictionary<string, object>", IsNullable(property), null, new List<string>() { "[JsonExtensionData]" }));
                         }
                         break;
 
