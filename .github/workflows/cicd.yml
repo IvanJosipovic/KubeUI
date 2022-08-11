@@ -47,7 +47,13 @@ jobs:
         
     - name: Test
       working-directory: src
-      run: dotnet test -c Release
+      run: dotnet test -c Release /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura
+
+    - name: Coverage
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: coverage.cobertura.xml
 
   build_web:
     name: Build & Deploy Web
