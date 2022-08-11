@@ -2,7 +2,7 @@
 
 <InputFile id="fileInput" OnChange="ImportConfig" hidden multiple />
 
-<MudDataGrid T="ICluster" Items="this.ClusterManager.GetClusters()" Hover="true" Sortable="true" Filterable="true" Dense="true" Breakpoint="Breakpoint.None" MultiSelection="true" @bind-SelectedItems="SelectedItems">
+<MudDataGrid T="ICluster" Items="this.ClusterManager.GetClusters()" Hover="true" SortMode="SortMode.Single" Filterable="false" Dense="true" Breakpoint="Breakpoint.None" MultiSelection="true" @bind-SelectedItems="SelectedItems">
     <ToolBarContent>
         <MudText Typo="Typo.h6">Clusters</MudText>
         <MudSpacer />
