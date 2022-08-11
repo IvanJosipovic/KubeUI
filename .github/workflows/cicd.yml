@@ -52,7 +52,6 @@ jobs:
     - name: Coverage
       uses: codecov/codecov-action@v3
       with:
-        token: ${{ secrets.CODECOV_TOKEN }}
         file: coverage.cobertura.xml
 
   build_web:

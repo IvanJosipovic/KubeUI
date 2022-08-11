@@ -187,6 +187,6 @@ public static class Utilities
 
         var data = JsonNode.Parse(source);
 
-        return YamlConverter.Serialize(data);
+        return YamlConverter.Serialize(data).TrimEnd();
     }
 }
