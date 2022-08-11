@@ -117,7 +117,7 @@ public class UnitTest1
 
         var specType = type.GetProperty("Spec").PropertyType;
 
-        var prop = specType.GetProperty("ExtensionData", typeof(Dictionary<string, JsonNode>));
+        var prop = specType.GetProperty("ExtensionData", typeof(Dictionary<string, object>));
 
         prop.Should().NotBeNull();
 
@@ -131,7 +131,7 @@ public class UnitTest1
 
         var specType = type.GetProperty("Spec").PropertyType;
 
-        var prop = specType.GetProperty("ExtensionData", typeof(Dictionary<string, JsonNode>));
+        specType.GetProperty("GitImplementation", typeof(string)).Should().NotBeNull();
     }
 
     [Fact]
@@ -141,7 +141,7 @@ public class UnitTest1
 
         var specType = type.GetProperty("Spec").PropertyType;
 
-        var prop = specType.GetProperty("AdministratorLogin", typeof(string));
+        var prop = specType.GetProperty("AdministratorLogin", typeof(string)).Should().NotBeNull();
     }
 
     [Fact]
@@ -151,8 +151,6 @@ public class UnitTest1
 
         var specType = type.GetProperty("Spec").PropertyType;
 
-        var valuesType = specType.GetProperty("Values").PropertyType;
-
-        valuesType.Should().Be<JsonNode?>();
+        specType.GetProperty("Values").PropertyType.Should().Be<JsonNode?>();
     }
 }
