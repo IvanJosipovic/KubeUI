@@ -2,6 +2,8 @@
 using System.Reflection;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Nodes;
+using YamlDotNet.System.Text.Json;
 
 namespace KubeUI.Core;
 
@@ -177,5 +179,14 @@ public static class Utilities
         var source = KubernetesJson.Serialize(obj);
 
         return KubernetesJson.Deserialize<T>(source);
+    }
+
+    public static string ToYaml(this IKubernetesObject<V1ObjectMeta> obj)
+    {
+        var source = KubernetesJson.Serialize(obj);
+
+        var data = JsonNode.Parse(source);
+
+        return YamlConverter.Serialize(data);
     }
 }

@@ -1,16 +1,40 @@
 ﻿@using System.Reflection
+@using System.Collections
 @typeparam TItem
 
 <MudContainer>
     @if (Item.GetType().IsGenericType && Item.GetType().GetGenericTypeDefinition() == typeof(Dictionary<,>))
     {
-  
-    }
+@*        <MudText>Missing Control Type @Item.GetType().GetGenericTypeDefinition()</MudText>
+*@    }
     else if (Item.GetType().IsGenericType && Item.GetType().GetGenericTypeDefinition() == typeof(List<>))
     {
-        
+@*        <MudText>Missing Control Type @Item.GetType().GetGenericTypeDefinition()</MudText>
+*@
     }
-    else
+    else if (Item.GetType() == typeof(KeyValuePair<string, string>))
+    {
+@*        var test = (KeyValuePair<string, string>)Item;
+
+        <MudTextField T="string" Label="Key" Value="@(test.Key)" Variant="Variant.Text" Disabled="ReadOnly" />
+
+        <MudTextField T="string" Label="Value" Value="@(test.Value)" Variant="Variant.Text" Disabled="ReadOnly" />*@
+
+    }
+    else if (Item.GetType() == typeof(string))
+    {
+        <MudText>Missing Control Type @Item.GetType()</MudText>
+
+@*      <MudTextField T="string" Label="" Value="@(Item == null ? "" : Item.ToString())" ValueChanged="@((e) => {(string)Item = e;})" Variant="Variant.Text" Disabled="ReadOnly" />
+*@    }
+    else if (Item.GetType() == typeof(object))
+    {
+        <MudText>Missing Control Type @Item.GetType()</MudText>
+
+        @*      <MudTextField T="string" Label="" Value="@(Item == null ? "" : Item.ToString())" ValueChanged="@((e) => {(string)Item = e;})" Variant="Variant.Text" Disabled="ReadOnly" />
+    *@          
+    }
+    else if (Item.GetType().FullName.StartsWith("k8s."))
     {
         foreach (var prop in Item.GetType().GetProperties().Where(x => !x.PropertyType.FullName.StartsWith("k8s.")))
         {
@@ -23,12 +47,12 @@
 
             if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(IDictionary<,>))
             {
-                <MudText>Missing Control Type @prop.PropertyType</MudText>
-            }
+@*                <MudText>Missing Control Type @prop.PropertyType</MudText>
+*@            }
             else if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(IList<>))
             {
-                <MudText>Missing Control Type @prop.PropertyType</MudText>
-            }
+@*                <MudText>Missing Control Type @prop.PropertyType</MudText>
+*@            }
             else if (prop.PropertyType == typeof(string) || prop.DeclaringType == typeof(string))
             {
                 <MudTextField T="string" Label="@prop.Name.AddSpacesBeforeCapitals()" Value="@(value as string)" ValueChanged="@((e) => OnChange(e, prop))" Variant="Variant.Text" Disabled="ReadOnly" />
@@ -56,6 +80,11 @@
                 <MudText>Missing Control Type @prop.PropertyType</MudText>
             }
         }
+    }
+    else
+    {
+        Logger.LogWarning("Controls: Unknown property type: {type}",Item.GetType());
+        <MudText>Missing Control Type @Item.GetType()</MudText>
     }
 
 </MudContainer>
@@ -144,7 +173,7 @@
     {
         if (prop.PropertyType == typeof(string) || prop.DeclaringType == typeof(string))
         {
-            return item as string;
+            return prop.GetValue(Item) as string;
         } 
         else if (prop.PropertyType == typeof(bool) || prop.PropertyType == typeof(bool?))
         {

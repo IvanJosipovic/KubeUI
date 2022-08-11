@@ -126,6 +126,10 @@ namespace KubeUI.Core.Components.Dynamic
                     });
                 }
             }
+            else
+            {
+                Logger.LogWarning("Missing Collection Type: {type}", type.FullName);
+            }
 
             return tree;
         }

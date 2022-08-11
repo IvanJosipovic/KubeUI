@@ -18,7 +18,7 @@
         </MudTabPanel>
         <MudTabPanel Text="Yaml">
             <ResizePanel Context="resize" Offset="180" SetHeigh="true">
-                <MonacoViewer Value="@KubernetesYaml.Serialize(Utilities.CloneObject(context).GutObject())" />
+                <MonacoViewer Value="@Utilities.CloneObject(context).GutObject().ToYaml()" />
             </ResizePanel>
         </MudTabPanel>
         <MudTabPanel Text="Json">

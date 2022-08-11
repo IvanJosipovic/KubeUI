@@ -227,7 +227,7 @@ public class CRDGenerator : ICRDGenerator
                     case null:
                         if (property.Value.XKubernetesPreserveUnknownFields == true)
                         {
-                            model.Fields.Add(new DynamicProperty(fieldName, $"JsonNode", IsNullable(property), property.Value.Description));
+                            model.Fields.Add(new DynamicProperty(fieldName, $"JsonNode", IsNullable(property), property.Value.Description, new() { attribute }));
                         }
                         break;
 

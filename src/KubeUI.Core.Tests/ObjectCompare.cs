@@ -35,7 +35,6 @@ namespace KubeUI.Core.Tests
                                             ContainerPort = 1234,
                                         }
                                     }
-
                                 }
                             }
                         }
