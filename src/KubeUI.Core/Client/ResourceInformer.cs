@@ -103,70 +103,68 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
     /// <returns>A <see cref="Task"/> representing the result of the asynchronous operation.</returns>
     public async Task RunAsync(CancellationToken cancellationToken)
     {
-        try
+        var limiter = new Limiter(new Limit(0.2), 3);
+        var shouldSync = true;
+        var firstSync = true;
+        while (true)
         {
-            var limiter = new Limiter(new Limit(0.2), 3);
-            var shouldSync = true;
-            var firstSync = true;
-            while (true)
+            if (cancellationToken.IsCancellationRequested)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                try
-                {
-                    if (shouldSync)
-                    {
-                        await ListAsync(cancellationToken).ConfigureAwait(true);
-                        shouldSync = false;
-                    }
-
-                    if (firstSync)
-                    {
-                        _ready.Release();
-                        firstSync = false;
-                    }
-
-                    await WatchAsync(cancellationToken).ConfigureAwait(true);
-                }
-                catch (IOException ex) when (ex.InnerException is SocketException)
-                {
-                    Logger.LogDebug(
-                        EventId(EventType.ReceivedError),
-                        "Received error watching {ResourceType}: {ErrorMessage}",
-                        typeof(TResource).Name,
-                        ex.Message);
-                }
-                catch (KubernetesException ex)
-                {
-                    Logger.LogDebug(
-                        EventId(EventType.ReceivedError),
-                        "Received error watching {ResourceType}: {ErrorMessage}",
-                        typeof(TResource).Name,
-                        ex.Message);
-
-                    // deal with this non-recoverable condition "too old resource version"
-                    // with a re-sync to listing everything again ensuring no subscribers miss updates
-                    if (ex is KubernetesException kubernetesError)
-                    {
-                        if (string.Equals(kubernetesError.Status.Reason, "Expired", StringComparison.Ordinal))
-                        {
-                            shouldSync = true;
-                        }
-                    }
-                }
-
-                // rate limiting the reconnect loop
-                await limiter.WaitAsync(cancellationToken).ConfigureAwait(true);
+                return;
             }
-        }
-        catch (Exception error)
-        {
-            Logger.LogInformation(
-                EventId(EventType.WatchingComplete),
-                error,
-                "No longer watching {ResourceType} resources from API server.",
-                typeof(TResource).Name);
-            throw;
+
+            try
+            {
+                if (shouldSync)
+                {
+                    await ListAsync(cancellationToken).ConfigureAwait(true);
+                    shouldSync = false;
+                }
+
+                if (firstSync)
+                {
+                    _ready.Release();
+                    firstSync = false;
+                }
+
+                await WatchAsync(cancellationToken).ConfigureAwait(true);
+            }
+            catch (IOException ex) when (ex.InnerException is SocketException)
+            {
+                Logger.LogDebug(
+                    EventId(EventType.ReceivedError),
+                    "Received error watching {ResourceType}: {ErrorMessage}",
+                    typeof(TResource).Name,
+                    ex.Message);
+            }
+            catch (KubernetesException ex)
+            {
+                Logger.LogDebug(
+                    EventId(EventType.ReceivedError),
+                    "Received error watching {ResourceType}: {ErrorMessage}",
+                    typeof(TResource).Name,
+                    ex.Message);
+
+                // deal with this non-recoverable condition "too old resource version"
+                // with a re-sync to listing everything again ensuring no subscribers miss updates
+                if (ex is KubernetesException kubernetesError)
+                {
+                    if (string.Equals(kubernetesError.Status.Reason, "Expired", StringComparison.Ordinal))
+                    {
+                        shouldSync = true;
+                    }
+                }
+            }
+            catch (Exception error)
+            {
+                Logger.LogInformation(
+                    EventId(EventType.WatchingComplete),
+                    error,
+                    "No longer watching {ResourceType} resources from API server.",
+                    typeof(TResource).Name);
+            }
+            // rate limiting the reconnect loop
+            await limiter.WaitAsync(cancellationToken).ConfigureAwait(true);
         }
     }
 
