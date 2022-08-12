@@ -1,5 +1,7 @@
 ﻿@using System.Reflection
 @using System.Collections
+@using System.Text.Json.Nodes
+@using YamlDotNet.System.Text.Json
 @typeparam TItem
 
 <MudContainer>
@@ -32,7 +34,11 @@
         <MudText>Missing Control Type @Item.GetType()</MudText>
 
         @*      <MudTextField T="string" Label="" Value="@(Item == null ? "" : Item.ToString())" ValueChanged="@((e) => {(string)Item = e;})" Variant="Variant.Text" Disabled="ReadOnly" />
-    *@          
+    *@
+    }
+    else if (Item.GetType() == typeof(JsonNode))
+    {
+        <MudText>Missing JsonNode</MudText>
     }
     else if (Item.GetType().FullName.StartsWith("k8s."))
     {
@@ -73,6 +79,13 @@
             else if (prop.PropertyType == typeof(DateTime) || prop.PropertyType == typeof(DateTime?))
             {
                 <MudTextField T="object" Label="@prop.Name.AddSpacesBeforeCapitals()" Value="@value" ValueChanged="@((e) => OnChange(e, prop))" Variant="Variant.Text" InputType="InputType.Text" Disabled="ReadOnly" />
+            }
+            else if (prop.PropertyType == typeof(JsonNode))
+            {
+                <MudText Typo="Typo.caption">@prop.Name.AddSpacesBeforeCapitals()</MudText>
+                <div style="height: 500px">
+                    <MonacoEditor Value="@YamlConverter.Serialize(value)" Language="yaml" ReadOnly="ReadOnly" />
+                </div>
             }
             else
             {

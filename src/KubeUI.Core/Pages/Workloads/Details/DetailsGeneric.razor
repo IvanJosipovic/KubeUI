@@ -18,12 +18,12 @@
         </MudTabPanel>
         <MudTabPanel Text="Yaml">
             <ResizePanel Context="resize" Offset="180" SetHeigh="true">
-                <MonacoViewer Value="@Utilities.CloneObject(context).GutObject().ToYaml()" />
+                <KubeMonacoEditor Value="@Utilities.CloneObject(context).GutObject().ToYaml()" />
             </ResizePanel>
         </MudTabPanel>
         <MudTabPanel Text="Json">
             <ResizePanel Context="resize" Offset="180" SetHeigh="true">
-                <MonacoViewer Value="@Utilities.JsonPrettifyString(KubernetesJson.Serialize(Utilities.CloneObject(context).GutObject()))" Language="json" />
+                <KubeMonacoEditor Value="@Utilities.JsonPrettifyString(KubernetesJson.Serialize(Utilities.CloneObject(context).GutObject()))" Language="json" />
             </ResizePanel>
         </MudTabPanel>
 
