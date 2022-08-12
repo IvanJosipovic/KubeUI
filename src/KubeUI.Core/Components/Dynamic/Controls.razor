@@ -84,7 +84,7 @@
             {
                 <MudText Typo="Typo.caption">@prop.Name.AddSpacesBeforeCapitals()</MudText>
                 <div style="height: 500px">
-                    <MonacoEditor Value="@YamlConverter.Serialize(value)" Language="yaml" ReadOnly="ReadOnly" />
+                    <KubeMonacoEditor Value="@YamlConverter.Serialize(value)" Language="yaml" ReadOnly="ReadOnly" />
                 </div>
             }
             else
