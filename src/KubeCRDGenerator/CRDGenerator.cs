@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Xml;
 using System.Xml.Linq;
 
 namespace KubeCRDGenerator;
@@ -28,71 +29,24 @@ public class CRDGenerator : ICRDGenerator
 
     public string GenerateCode(V1CustomResourceDefinition crd, string @namespace = "KubeCRDGenerator.Models")
     {
-        var model = new DynamicType();
-        model.AddUsing = true;
-
         var types = new List<DynamicType>();
 
         var version = crd.Spec.Versions.First(x => x.Served && x.Storage);
 
-        model.Name = crd.Spec.Names.Kind;
-        model.Namespace = @namespace;
+        types.AddRange(GenerateTypes(version.Schema.OpenAPIV3Schema, crd.Spec.Names.Kind, @namespace, version.Name, crd.Spec.Names.Kind, crd.Spec.Group, crd.Spec.Names.Plural));
 
-        var specModelName = model.Name + "Spec";
-        var statusModelName = model.Name + "Status";
-
-        if (version.Schema.OpenAPIV3Schema.Properties.ContainsKey("status"))
-        {
-            model.Implements = $"IKubernetesObject<V1ObjectMeta?>, ISpec<{specModelName}>, IStatus<{statusModelName}?>";
-        }
-        else
-        {
-            model.Implements = $"IKubernetesObject<V1ObjectMeta?>, ISpec<{specModelName}?>";
-        }
-
-        model.Constant.Add($"public const string KubeApiVersion = \"{version.Name}\";");
-        model.Constant.Add($"public const string KubeKind = \"{crd.Spec.Names.Kind}\";");
-        model.Constant.Add($"public const string KubeGroup = \"{crd.Spec.Group}\";");
-        model.Constant.Add($"public const string KubePluralName = \"{crd.Spec.Names.Plural}\";");
-
-        model.Attributes.Add($"[KubernetesEntity(ApiVersion = \"{version.Name}\", Group = \"{crd.Spec.Group}\", Kind = \"{crd.Spec.Names.Kind}\", PluralName = \"{crd.Spec.Names.Plural}\")]");
-        model.Description = version.Schema.OpenAPIV3Schema.Description;
-
-        model.Fields.Add(new DynamicProperty("ApiVersion", "string", false, null, new() { "[JsonPropertyName(\"apiVersion\")]" }));
-
-        model.Fields.Add(new DynamicProperty("Kind", "string", false, null, new() { "[JsonPropertyName(\"kind\")]" }));
-
-        model.Fields.Add(new DynamicProperty("Metadata", "V1ObjectMeta", false, null, new() { "[JsonPropertyName(\"metadata\")]" }));
-
-        var spec = version.Schema.OpenAPIV3Schema.Properties["spec"];
-
-        var specTypes = GenerateTypes(spec, specModelName);
-        types.AddRange(specTypes);
-
-        model.Fields.Add(new DynamicProperty("Spec", specModelName, false, null, new() { "[JsonPropertyName(\"spec\")]" }));
-
-        if (version.Schema.OpenAPIV3Schema.Properties.ContainsKey("status"))
-        {
-            var status = version.Schema.OpenAPIV3Schema.Properties["status"];
-
-            var statusTypes = GenerateTypes(status, statusModelName);
-            types.AddRange(statusTypes);
-
-            model.Fields.Add(new DynamicProperty("Status", statusModelName, false, null, new() { "[JsonPropertyName(\"status\")]" }));
-        }
-
-        var str = model.ToString() + "\n" + types.Select(x => x.ToString()).Aggregate((a, b) => a + "\n" + b);
+        var str = types.Select(x => x.ToString()).Aggregate((a, b) => a + "\n" + b);
 
         return ArrangeUsingRoslyn(str);
     }
 
-    public async Task<(Assembly?, XDocument?)> GenerateAssembly(V1CustomResourceDefinition crd, string @namespace = "KubeCRDGenerator.Models")
+    public async Task<(Assembly?, XmlDocument?)> GenerateAssembly(V1CustomResourceDefinition crd, string @namespace = "KubeCRDGenerator.Models")
     {
         var code = GenerateCode(crd, @namespace);
         return await GenerateAssembly(code);
     }
 
-    private async Task<(Assembly?, XDocument?)> GenerateAssembly(string code)
+    private async Task<(Assembly?, XmlDocument?)> GenerateAssembly(string code)
     {
         try
         {
@@ -131,7 +85,9 @@ public class CRDGenerator : ICRDGenerator
                 var assembly = Assembly.Load(peStream.ToArray());
 
                 xmlDocumentationStream.Seek(0, SeekOrigin.Begin);
-                var xml = XDocument.Load(xmlDocumentationStream);
+                var xml = new XmlDocument();
+
+                xml.Load(xmlDocumentationStream);
 
                 return (assembly, xml);
             }
@@ -152,14 +108,35 @@ public class CRDGenerator : ICRDGenerator
         return root.ToFullString();
     }
 
-    private List<DynamicType> GenerateTypes(V1JSONSchemaProps schema, string Name)
+    private List<DynamicType> GenerateTypes(V1JSONSchemaProps schema, string name, string @namespace = "KubeCRDGenerator.Models", string? version = null, string? kind = null, string? group = null, string? plural = null)
     {
+        bool isRoot = version != null && kind != null && group != null && plural != null;
+
         var types = new List<DynamicType>();
         var model = new DynamicType();
         types.Add(model);
 
-        model.Name = CapitalizeFirstLetter(Name);
+        model.Name = CapitalizeFirstLetter(name);
         model.Description = schema.Description;
+
+        if (isRoot)
+        {
+            // Root Model
+            model.Namespace = @namespace;
+            model.AddUsing = true;
+
+            model.Constant.Add($"public const string KubeApiVersion = \"{version}\";");
+            model.Constant.Add($"public const string KubeKind = \"{kind}\";");
+            model.Constant.Add($"public const string KubeGroup = \"{group}\";");
+            model.Constant.Add($"public const string KubePluralName = \"{plural}\";");
+
+            model.Attributes.Add($"[KubernetesEntity(ApiVersion = \"{version}\", Group = \"{group}\", Kind = \"{kind}\", PluralName = \"{plural}\")]");
+
+            if (schema.Properties.ContainsKey("metadata"))
+            {
+                model.Implements = $"IKubernetesObject<V1ObjectMeta?>";
+            }
+        }
 
         if (schema.XKubernetesPreserveUnknownFields == true)
         {
@@ -185,7 +162,18 @@ public class CRDGenerator : ICRDGenerator
 
                 fieldName = CapitalizeFirstLetter(fieldName);
 
-                var combinedFieldName = Name + CapitalizeFirstLetter(property.Key.Replace("$", "").Replace("@", ""));
+                var combinedFieldName = name + CapitalizeFirstLetter(property.Key.Replace("$", "").Replace("@", ""));
+
+                if (isRoot)
+                {
+                    // Root Model
+
+                    if (property.Key == "metadata")
+                    {
+                        model.Fields.Add(new DynamicProperty("Metadata", "V1ObjectMeta", false, property.Value.Description, new() { attribute }));
+                        continue;
+                    }
+                }
 
                 switch (property.Value.Type)
                 {
@@ -193,9 +181,18 @@ public class CRDGenerator : ICRDGenerator
                         model.Fields.Add(new DynamicProperty(fieldName, combinedFieldName, IsNullable(property), property.Value.Description, new() { attribute }));
                         types.AddRange(GenerateTypes(property.Value, combinedFieldName));
 
-                        if (property.Value.XKubernetesPreserveUnknownFields == true)
+                        if (isRoot)
                         {
-                            model.Fields.Add(new DynamicProperty("ExtensionData", $"IDictionary<string, object>", IsNullable(property), null, new List<string>() { "[JsonExtensionData]" }));
+                            // Root Model
+
+                            if (property.Key.Equals("status"))
+                            {
+                                model.Implements += $", IStatus<{combinedFieldName + (IsNullable(property) ? "?" : "")}>";
+                            }
+                            else if (property.Key.Equals("spec"))
+                            {
+                                model.Implements += $", ISpec<{combinedFieldName + (IsNullable(property) ? "?" : "")}>";
+                            }
                         }
                         break;
 
@@ -228,6 +225,20 @@ public class CRDGenerator : ICRDGenerator
                         if (property.Value.XKubernetesPreserveUnknownFields == true)
                         {
                             model.Fields.Add(new DynamicProperty(fieldName, $"JsonNode", IsNullable(property), property.Value.Description, new() { attribute }));
+
+                            if (isRoot)
+                            {
+                                // Root Model
+
+                                if (property.Key.Equals("status"))
+                                {
+                                    model.Implements += $", IStatus<JsonNode{(IsNullable(property) ? "?" : "")}>";
+                                }
+                                else if (property.Key.Equals("spec"))
+                                {
+                                    model.Implements += $", ISpec<JsonNode{(IsNullable(property) ? "?" : "")}>";
+                                }
+                            }
                         }
                         break;
 
@@ -304,9 +315,9 @@ public class CRDGenerator : ICRDGenerator
             {
                 var data = await HttpClientFactory.CreateClient().GetAsync("_framework/" + assemblie);
 
-                using (var task = await data.Content.ReadAsStreamAsync())
+                using (var stream = await data.Content.ReadAsStreamAsync())
                 {
-                    references.Add(MetadataReference.CreateFromStream(task));
+                    references.Add(MetadataReference.CreateFromStream(stream));
                 }
             }
 
