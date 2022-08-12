@@ -14,7 +14,7 @@ public class TreeItem
 
     public bool HideLink { get; set; }
 
-    public bool IsExpanded { get; set; }
+    public bool IsExpanded { get; set; } = true;
 
     public object Collection { get; set; }
 
