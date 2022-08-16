@@ -21,11 +21,11 @@
                 <KubeMonacoEditor Value="@Utilities.CloneObject(context).ToYaml()" />
             </ResizePanel>
         </MudTabPanel>
-        <MudTabPanel Text="Json">
+@*        <MudTabPanel Text="Json">
             <ResizePanel Context="resize" Offset="180" SetHeigh="true">
                 <KubeMonacoEditor Value="@Utilities.JsonPrettifyString(KubernetesJson.Serialize(Utilities.CloneObject(context)))" Language="json" />
             </ResizePanel>
-        </MudTabPanel>
+        </MudTabPanel>*@
 
         @if (Tabs != null)
         {
