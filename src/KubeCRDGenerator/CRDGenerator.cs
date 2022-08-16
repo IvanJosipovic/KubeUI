@@ -303,7 +303,7 @@ public class CRDGenerator : ICRDGenerator
             references.Add(ass);
         }
 
-        references.AddRange(Basic.Reference.Assemblies.NetStandard20.All);
+        references.Add(Basic.Reference.Assemblies.NetStandard20.netstandard);
 
         MetadataReferences = references.ToArray();
     }
