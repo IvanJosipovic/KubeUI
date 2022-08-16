@@ -1,0 +1,61 @@
+﻿@page "/details/helm.sh/v1/release"
+
+@{
+    content = helm => @<MudTabs Elevation="4" Rounded="true" Centered="true" Color="@Color.Primary">
+        <MudTabPanel Text="Details"><KubeUI.Core.Components.Dynamic.UI TItem="KubeUI.Core.Client.HelmRelease" Item="helm" /></MudTabPanel>
+    </MudTabs>;
+}
+
+@if (IsInSideMenu)
+{
+    <MudAppBar Color="Color.Info" Fixed="false" Dense="true">
+        <MudText>Helm Release</MudText>
+        <MudSpacer />
+        <MudIconButton Color="Color.Inherit" Icon="@Icons.Material.Filled.Close" OnClick="() => MainLayout.HideMenu()" Size="Size.Small"  />
+    </MudAppBar>
+    <MudCard>
+        <MudCardContent Class="mb-4">
+            @content(HelmClient.GetHelmRelease())
+        </MudCardContent>
+    </MudCard>
+}
+else
+{
+    <MudText Typo="Typo.h5" GutterBottom="true">
+        Helm Release
+    </MudText>
+
+    @content(HelmClient.GetHelmRelease())
+}
+
+@code {
+    [CascadingParameter]
+    private MainLayout MainLayout { get; set; }
+
+    [Inject]
+    private ClusterManager ClusterManager { get; set; }
+
+    [Parameter]
+    public bool IsInSideMenu { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string Namespace { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string Name { get; set; }
+
+    private V1Secret Secret;
+
+    private HelmClient HelmClient;
+
+    private RenderFragment<KubeUI.Core.Client.HelmRelease> content;
+
+    protected override void OnInitialized()
+    {
+        Secret = ClusterManager.GetActiveCluster().GetObject<V1Secret>(Namespace, Name);
+
+        HelmClient = new HelmClient(Secret);
+    }
+}

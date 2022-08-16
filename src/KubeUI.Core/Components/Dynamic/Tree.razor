@@ -1,6 +1,6 @@
 ﻿@typeparam TItem
 
-<MudTreeView Items="TreeItems" Dense="true" Width="100%">
+<MudTreeView Items="TreeItems" Dense="true" Width="100%" @bind-SelectedValue="SelectedValue">
     <ItemTemplate>
         <MudTreeViewItem @bind-Expanded="@context.IsExpanded" 
                         Items="@context.TreeItems"
@@ -10,7 +10,9 @@
                         >
                 <Content>
                     <MudTreeViewItemToggleButton @bind-Expanded="@context.IsExpanded" Visible="@(context.TreeItems.Count > 0)" />
-                    <MudText>@context.Name</MudText>
+                    <MudTooltip Text="@context.Summary" Inline="false" RootStyle="width:100%" Placement="Placement.Right">
+                        <MudText>@context.Name</MudText>
+                    </MudTooltip>
                     @if (context.IsCollection && !ReadOnly)
                     {
                         <MudIconButton OnClick="@(() => AddItem(context.Object))" Icon="@Icons.Filled.Add" Color="Color.Secondary" />

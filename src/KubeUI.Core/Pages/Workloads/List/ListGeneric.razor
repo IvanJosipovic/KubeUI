@@ -1,6 +1,7 @@
-﻿@typeparam TItem where TItem : class, IKubernetesObject<V1ObjectMeta>, new()
+﻿@using System.Linq.Expressions
+@typeparam TItem where TItem : class, IKubernetesObject<V1ObjectMeta>, new()
 
-<ListComponent TItem="TItem" MultiSelection="MultiSelection" @bind-SelectedItems="SelectedItems">
+<ListComponent TItem="TItem" MultiSelection="MultiSelection" @bind-SelectedItems="SelectedItems" Query="Query" Title="@Title">
     @if (HideName == false)
     {
         <ColumnComponent TItem="TItem" Name="Name" Object="(x => x.Metadata.Name)" Sort="SortDirection.Ascending" Width="100%">
@@ -29,14 +30,18 @@
         </ColumnComponent>
     }
 
-    <ColumnComponent TItem="TItem" Width="5%">
-        <HeaderContent>
-            <ColumnPicker TItem="TItem" />
-        </HeaderContent>
-        <DisplayContent>
-            <Actions TItem="TItem" Item="context.Item1" SelectedItems="SelectedItems" />
-        </DisplayContent>
-    </ColumnComponent>
+    @if (HideActions == false)
+    {
+        <ColumnComponent TItem="TItem" Width="5%">
+            <HeaderContent>
+                <ColumnPicker TItem="TItem" />
+            </HeaderContent>
+            <DisplayContent>
+                <Actions TItem="TItem" Item="context.Item1" SelectedItems="SelectedItems" />
+            </DisplayContent>
+        </ColumnComponent>
+    }
+
 </ListComponent>
 
 @code {
@@ -57,6 +62,15 @@
 
     [Parameter]
     public bool MultiSelection { get; set; } = true;
+
+    [Parameter]
+    public bool HideActions { get; set; }
+
+    [Parameter]
+    public Func<IQueryable<TItem>, IQueryable<TItem>>? Query { get; set; }
+
+    [Parameter]
+    public string? Title { get; set; }
 
     private HashSet<TItem> SelectedItems;
 }

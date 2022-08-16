@@ -1,4 +1,4 @@
-﻿@typeparam TItem where TItem : class, IKubernetesObject<V1ObjectMeta>, new()
+﻿@typeparam TItem where TItem : class, new() // : class, IKubernetesObject<V1ObjectMeta>, new()
 
 @if (Item != null)
 {

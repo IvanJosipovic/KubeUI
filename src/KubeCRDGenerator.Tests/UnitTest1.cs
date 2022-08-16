@@ -55,6 +55,10 @@ public class UnitTest1
     {
         var type = await GetType("CRDs/1.yaml", "Alert");
 
+        type.GetProperty("ApiVersion").PropertyType.Should().NotBeNull();
+        type.GetProperty("Kind").PropertyType.Should().NotBeNull();
+        type.GetProperty("Metadata").PropertyType.Should().NotBeNull();
+
         var attribute = type.CustomAttributes.First(x => x.AttributeType == typeof(KubernetesEntityAttribute));
 
         var kind = attribute.NamedArguments.First(x => x.MemberName == "Kind");
@@ -122,6 +126,10 @@ public class UnitTest1
         prop.Should().NotBeNull();
 
         prop.CustomAttributes.Any(y => y.AttributeType == typeof(JsonExtensionDataAttribute)).Should().BeTrue();
+
+        type.GetProperty("ApiVersion").PropertyType.Should().NotBeNull();
+        type.GetProperty("Kind").PropertyType.Should().NotBeNull();
+        type.GetProperty("Metadata").PropertyType.Should().NotBeNull();
     }
 
     [Fact]
@@ -152,5 +160,13 @@ public class UnitTest1
         var specType = type.GetProperty("Spec").PropertyType;
 
         specType.GetProperty("Values").PropertyType.Should().Be<JsonNode?>();
+    }
+
+    [Fact]
+    public async Task ClusterPolicyReport()
+    {
+        var type = await GetType("CRDs/clusterpolicyreport.yaml", "ClusterPolicyReport");
+
+        type.Should().NotBeNull();
     }
 }

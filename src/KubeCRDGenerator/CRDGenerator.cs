@@ -3,13 +3,8 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.Extensions.Logging;
-using System.ComponentModel;
 using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Xml;
-using System.Xml.Linq;
 
 namespace KubeCRDGenerator;
 
@@ -86,7 +81,6 @@ public class CRDGenerator : ICRDGenerator
 
                 xmlDocumentationStream.Seek(0, SeekOrigin.Begin);
                 var xml = new XmlDocument();
-
                 xml.Load(xmlDocumentationStream);
 
                 return (assembly, xml);
@@ -132,10 +126,12 @@ public class CRDGenerator : ICRDGenerator
 
             model.Attributes.Add($"[KubernetesEntity(ApiVersion = \"{version}\", Group = \"{group}\", Kind = \"{kind}\", PluralName = \"{plural}\")]");
 
-            if (schema.Properties.ContainsKey("metadata"))
-            {
-                model.Implements = $"IKubernetesObject<V1ObjectMeta?>";
-            }
+
+            model.Fields.Add(new DynamicProperty("ApiVersion", "string", false, "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources", new() { "[JsonPropertyName(\"apiVersion\")]" }));
+            model.Fields.Add(new DynamicProperty("Kind", "string", false, "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds", new() { "[JsonPropertyName(\"kind\")]" }));
+
+            model.Implements = $"IKubernetesObject<V1ObjectMeta?>";
+            model.Fields.Add(new DynamicProperty("Metadata", "V1ObjectMeta", false, "ObjectMeta is metadata that all persisted resources must have, which includes all objects users must create.", new() { $"[JsonPropertyName(\"metadata\")]" }));
         }
 
         if (schema.XKubernetesPreserveUnknownFields == true)
@@ -168,9 +164,8 @@ public class CRDGenerator : ICRDGenerator
                 {
                     // Root Model
 
-                    if (property.Key == "metadata")
+                    if (property.Key == "apiVersion" || property.Key == "kind" || property.Key == "metadata")
                     {
-                        model.Fields.Add(new DynamicProperty("Metadata", "V1ObjectMeta", false, property.Value.Description, new() { attribute }));
                         continue;
                     }
                 }
@@ -295,49 +290,21 @@ public class CRDGenerator : ICRDGenerator
 
     private async Task GenerateReferences()
     {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")))
+        var references = new List<MetadataReference>();
+
+        var assebly = this.GetType().Assembly;
+
+        var assemblies = assebly.GetManifestResourceNames().Where(x => x.StartsWith("runtime.") && x.EndsWith(".dll")).ToList();
+
+        foreach (var item in assemblies)
         {
-            var assemblies = new string[]
-            {
-                "netstandard.dll",
-                "System.Private.CoreLib.dll",
-                "System.Linq.dll",
-                "KubernetesClient.Models.dll",
-                "System.ComponentModel.Primitives.dll",
-                "System.Private.CoreLib.dll",
-                "System.Text.Json.dll",
-                "System.Runtime.dll",
-            };
-
-            var references = new List<MetadataReference>(assemblies.Length);
-
-            foreach (var assemblie in assemblies)
-            {
-                var data = await HttpClientFactory.CreateClient().GetAsync("_framework/" + assemblie);
-
-                using (var stream = await data.Content.ReadAsStreamAsync())
-                {
-                    references.Add(MetadataReference.CreateFromStream(stream));
-                }
-            }
-
-            MetadataReferences = references.ToArray();
+            using var stream = assebly.GetManifestResourceStream(item);
+            var ass = MetadataReference.CreateFromStream(stream);
+            references.Add(ass);
         }
-        else
-        {
-            var dotNetCoreDir = Path.GetDirectoryName(typeof(object).GetTypeInfo().Assembly.Location);
 
-            MetadataReferences = new MetadataReference[]
-            {
-                MetadataReference.CreateFromFile(Assembly.Load("netstandard, Version=2.0.0.0").Location),
-                MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(V1Pod).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(DescriptionAttribute).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(List<>).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(JsonNode).Assembly.Location),
-                MetadataReference.CreateFromFile(Path.Combine(dotNetCoreDir, "System.Runtime.dll"))
-            };
-        }
+        references.AddRange(Basic.Reference.Assemblies.NetStandard20.All);
+
+        MetadataReferences = references.ToArray();
     }
 }

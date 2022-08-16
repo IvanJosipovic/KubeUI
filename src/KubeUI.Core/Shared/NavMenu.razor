@@ -80,6 +80,11 @@
         </MudNavGroup>
 
         <CRDNavList />
+
+        @if (ClusterManager.GetActiveCluster() is Cluster)
+        {
+            <MudNavLink Href="/list/helm.sh/v1/release" Match="NavLinkMatch.Prefix" Icon="@NavMenu.GetIcon("resources/unlabeled/ep.svg")">Helm Releases</MudNavLink>
+        }
     }
 
 </MudNavMenu>
