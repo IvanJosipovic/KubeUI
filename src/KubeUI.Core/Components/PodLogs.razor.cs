@@ -1,3 +1,6 @@
+using MudBlazor.Services;
+using XtermBlazor;
+
 namespace KubeUI.Core.Components;
 
 public partial class PodLogs : IDisposable
@@ -23,13 +26,49 @@ public partial class PodLogs : IDisposable
     [Inject]
     private ClusterManager ClusterManager { get; set; }
 
+    [Inject]
+    private IResizeListenerService ResizeListenerService { get; set; }
+
     private Stream stream;
 
     private StreamReader streamReader;
 
-    private string Logs;
-
     private bool IsDisposed;
+
+    private Xterm _terminal;
+
+    private TerminalOptions _options = new TerminalOptions
+    {
+        CursorBlink = true,
+        CursorStyle = CursorStyle.Bar,
+        //Columns = 150,
+        Rows = 60,
+        Theme =
+        {
+            //Background = "#17615e",
+        },
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        ResizeListenerService.OnResized += ResizeListenerService_OnResized;
+    }
+
+    private async void ResizeListenerService_OnResized(object? sender, BrowserWindowSize e)
+    {
+        try
+        {
+            await _terminal.InvokeAddonFunctionVoidAsync("xterm-addon-fit", "fit");
+        }
+        catch (Exception)
+        {
+        }
+    }
+
+    private async Task OnFirstRender()
+    {
+        await _terminal.InvokeAddonFunctionVoidAsync("xterm-addon-fit", "fit");
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -56,12 +95,10 @@ public partial class PodLogs : IDisposable
                 {
                     try
                     {
-                        Logs += Environment.NewLine + await streamReader.ReadLineAsync();
+                        await _terminal.WriteLine(await streamReader.ReadLineAsync());
                     }
                     catch (IOException ex) when (ex.Message.Equals("The request was aborted.")) { break; }
                     catch (ObjectDisposedException) { break; }
-
-                    await InvokeAsync(StateHasChanged);
                 }
             }
         }
@@ -71,4 +108,9 @@ public partial class PodLogs : IDisposable
             Logger.LogError(ex, "Error getting logs");
         }
     }
+
+    private string[] _addonIds = new string[]
+    {
+        "xterm-addon-fit",
+    };
 }

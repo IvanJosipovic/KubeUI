@@ -1,2 +1,3 @@
-﻿<textarea type="text" spellcheck="false" disabled style="height: 100%" >@Console</textarea>
-<input @onkeydown="KeyboardEventHandler" @bind-value="@textbox"></input>
+﻿@using XtermBlazor
+
+<Xterm @ref="_terminal" Options="_options" AddonIds="_addonIds" OnFirstRender="@OnFirstRender" OnKey="KeyboardEventHandler" />

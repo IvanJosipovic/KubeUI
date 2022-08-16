@@ -1,1 +1,4 @@
-﻿<textarea type="text" spellcheck="false" disabled style="height: 100%">@Logs</textarea>
+﻿@using XtermBlazor
+<ResizePanel Context="resize" Offset="180" SetHeigh="true">
+    <Xterm @ref="_terminal" Options="_options" AddonIds="_addonIds" OnFirstRender="@OnFirstRender" />
+</ResizePanel>

@@ -1,8 +1,12 @@
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.Logging;
+using MudBlazor;
+using MudBlazor.Services;
 using System.IO;
 using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text;
+using XtermBlazor;
 
 namespace KubeUI.Core.Components;
 
@@ -23,17 +27,51 @@ public partial class PodConsole : IDisposable
     [Inject]
     private ClusterManager ClusterManager { get; set; }
 
+    [Inject]
+    private IResizeListenerService ResizeListenerService { get; set; }
+
     private WebSocket WebSocket;
 
     private Stream Stream;
 
     private StreamReader streamReader;
 
-    private string Console;
-
     private bool IsDisposed;
 
-    private string textbox;
+    private Xterm _terminal;
+
+    private TerminalOptions _options = new TerminalOptions
+    {
+        CursorBlink = true,
+        CursorStyle = CursorStyle.Bar,
+        Columns = 150,
+        Rows = 60,
+        Theme =
+        {
+            //Background = "#17615e",
+        },
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        ResizeListenerService.OnResized += ResizeListenerService_OnResized;
+    }
+
+    private async void ResizeListenerService_OnResized(object? sender, BrowserWindowSize e)
+    {
+        try
+        {
+            await _terminal.InvokeAddonFunctionVoidAsync("xterm-addon-fit", "fit");
+        }
+        catch (Exception)
+        {
+        }
+    }
+
+    private async Task OnFirstRender()
+    {
+        await _terminal.InvokeAddonFunctionVoidAsync("xterm-addon-fit", "fit");
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -75,12 +113,10 @@ public partial class PodConsole : IDisposable
                     var memory = new Memory<char>(new char[1024]);
                     await streamReader.ReadAsync(memory);
                     var str = memory.ToString().Replace("\0", "");
-                    Console += str;
+                    await _terminal.Write(str);
                 }
                 catch (IOException ex) when (ex.Message.Equals("The request was aborted.")) { break; }
                 catch (ObjectDisposedException) { break; }
-
-                await InvokeAsync(StateHasChanged);
             }
         }
     }
@@ -89,8 +125,6 @@ public partial class PodConsole : IDisposable
     {
         if (Stream.CanWrite)
         {
-            textbox = "";
-
             try
             {
                 if (args.Key.Equals("Enter"))
@@ -116,4 +150,9 @@ public partial class PodConsole : IDisposable
             }
         }
     }
+
+    private string[] _addonIds = new string[]
+    {
+        "xterm-addon-fit",
+    };
 }
