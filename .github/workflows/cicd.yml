@@ -4,7 +4,9 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - '*'
+      - 'main'
+      - 'alpha'
+      - 'beta'
   pull_request:
     types: [opened, reopened, synchronize]
 
@@ -118,7 +120,7 @@ jobs:
         - os: windows-latest
           RUNTIME: win-x64
           FOLDER: src/KubeUI.WPF
-          ARGS: --self-contained -p:PublishSingleFile=false -p:DebugType=None -p:IncludeNativeLibrariesForSelfExtract=true 
+          ARGS: --self-contained -p:PublishSingleFile=true -p:DebugType=None -p:IncludeNativeLibrariesForSelfExtract=true 
     steps:
     - uses: actions/checkout@v3
 
