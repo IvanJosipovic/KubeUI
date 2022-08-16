@@ -18,7 +18,7 @@
         </MudTabPanel>
         <MudTabPanel Text="Yaml">
             <ResizePanel Context="resize" Offset="180" SetHeigh="true">
-                <KubeMonacoEditor Value="@Utilities.CloneObject(context).ToYaml()" />
+                <KubeMonacoEditor Value="@context.ToYaml()" />
             </ResizePanel>
         </MudTabPanel>
 @*        <MudTabPanel Text="Json">
