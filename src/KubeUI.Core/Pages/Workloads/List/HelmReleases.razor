@@ -1,0 +1,35 @@
+﻿@page "/list/helm.sh/v1/release"
+
+<ListGeneric TItem="V1Secret" Query="(x => GetData(x))" HideName="true" HideNamespace="true" Title="Helm Releases" HideActions="true">
+    <Columns>
+        <ColumnComponent TItem="V1Secret" Name="Name" Object="@(x => x.GetLabel("name"))" Sort="SortDirection.Ascending" Width="100%">
+            <DisplayContent>
+                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Dehaze" OnClick="@(() => context.Item2.DisplayDetails(context.Item1.Namespace(), "helm.sh", "v1", "release", context.Item1.Name()))">X</MudIconButton>
+
+                @if (string.IsNullOrEmpty(context.Item1.Namespace()))
+                {
+                    <MudLink Href=@($"/details/helm.sh/v1/release?&Name={context.Item1.Name()}".Replace("//","/"))>@context.Item1.GetLabel("name")</MudLink>
+                }
+                else
+                {
+                    <MudLink Href=@($"/details/helm.sh/v1/release?Namespace={context.Item1.Namespace()}&Name={context.Item1.Name()}".Replace("//","/"))>@context.Item1.GetLabel("name")</MudLink>
+                }
+            </DisplayContent>
+        </ColumnComponent>
+        <ColumnComponent TItem="V1Secret" Name="Namespace" Object="@(x => x.Metadata.NamespaceProperty)" />
+        <ColumnComponent TItem="V1Secret" Name="Version" Object="@(x => (new HelmClient(x)).Version())" />
+        <ColumnComponent TItem="V1Secret" Name="App Version" Object="@(x => (new HelmClient(x)).AppVersion())" />
+        <ColumnComponent TItem="V1Secret" Name="Status" Object="@(x => x.GetLabel("status"))" />
+    </Columns>
+</ListGeneric>
+
+@code {
+    public static Func<IQueryable<V1Secret>, IQueryable<V1Secret>> query = x => x.Where(y => y.Type == "helm.sh/release.v1" && y.GetLabel("status") != "superseded")
+                        .GroupBy(y => y.GetLabel("name"), (key, g) => g.OrderByDescending(e => int.Parse(e.GetLabel("version"))).First());
+
+    private IQueryable<V1Secret> GetData(IQueryable<V1Secret> query)
+    {
+        return query.Where(y => y.Type == "helm.sh/release.v1" && y.GetLabel("status") != "superseded")
+                        .GroupBy(y => y.GetLabel("name"), (key, g) => g.OrderByDescending(e => int.Parse(e.GetLabel("version"))).First());
+    }
+}

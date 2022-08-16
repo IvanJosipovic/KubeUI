@@ -1,11 +1,16 @@
 ﻿using KubeCRDGenerator;
+using System.Reflection;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Xml;
 
 namespace KubeUI.Core.Client;
 
 public class ClusterManager : IDisposable
 {
+    private ILogger<ClusterManager> Logger;
+
     [JsonInclude]
     private List<ICluster> _clusters = new List<ICluster>();
 
@@ -21,11 +26,14 @@ public class ClusterManager : IDisposable
     public ClusterManager(ILoggerFactory loggerFactory, ICRDGenerator cRDGenerator)
     {
         this.loggerFactory = loggerFactory;
+        Logger = loggerFactory.CreateLogger<ClusterManager>();
         this.cRDGenerator = cRDGenerator;
+
+        Init();
 
         LoadClusters();
 
-        AddCluster(new GitOpsCluster(loggerFactory.CreateLogger<GitOpsCluster>(), cRDGenerator) { Name = "GitOps" });
+        AddGitOpsCluster("GitOps");
 
         LoadFromConfigFromPath(KubernetesClientConfiguration.KubeConfigDefaultLocation);
     }
@@ -106,14 +114,61 @@ public class ClusterManager : IDisposable
     {
     }
 
-    public void AddGitOpsCluster()
+    public void AddGitOpsCluster(string? name = null)
     {
-        AddCluster(new GitOpsCluster(loggerFactory.CreateLogger<GitOpsCluster>(), cRDGenerator) { Name = "GitOps" + _clusters.Count });
+        if (string.IsNullOrEmpty(name))
+        {
+            name = "GitOps " + _clusters.Count;
+        }
+
+        AddCluster(new GitOpsCluster(loggerFactory.CreateLogger<GitOpsCluster>(), cRDGenerator) { Name = name });
     }
 
     public void Dispose()
     {
         SaveClusters();
+    }
+
+    private void Init()
+    {
+        try
+        {
+            var property = typeof(KubernetesJson).GetField("JsonSerializerOptions", BindingFlags.Static | BindingFlags.NonPublic);
+
+            var options = (JsonSerializerOptions)property.GetValue(null);
+
+            options.NumberHandling = JsonNumberHandling.AllowReadingFromString;
+            options.Converters.Add(new BoolConverter());
+            options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error setting JsonSerializerOptions");
+        }
+
+        var assebly = typeof(CRDGenerator).Assembly;
+
+        var kubeAssebly = typeof(V1Deployment).Assembly;
+        var kubeAsseblyXmlDoc = new XmlDocument();
+        kubeAsseblyXmlDoc.Load(assebly.GetManifestResourceStream("runtime.KubernetesClient.Models.xml"));
+
+        AssemblyLoader.AddToCache(kubeAssebly, kubeAsseblyXmlDoc);
+    }
+
+    private class BoolConverter : JsonConverter<bool>
+    {
+        public override void Write(Utf8JsonWriter writer, bool value, JsonSerializerOptions options) =>
+            writer.WriteBooleanValue(value);
+
+        public override bool Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+            reader.TokenType switch
+            {
+                JsonTokenType.True => true,
+                JsonTokenType.False => false,
+                JsonTokenType.String => bool.TryParse(reader.GetString(), out var b) ? b : throw new JsonException(),
+                JsonTokenType.Number => reader.TryGetInt64(out long l) ? Convert.ToBoolean(l) : reader.TryGetDouble(out double d) ? Convert.ToBoolean(d) : false,
+                _ => throw new JsonException(),
+            };
     }
 }
 

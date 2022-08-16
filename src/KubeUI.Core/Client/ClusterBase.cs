@@ -1,4 +1,5 @@
 ﻿using KubeCRDGenerator;
+using Microsoft.CodeAnalysis;
 using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Reflection;
@@ -25,8 +26,6 @@ public abstract class ClusterBase : INotifyPropertyChanged
     }
 
     protected ConcurrentDictionary<string, ConcurrentDictionary<string, IKubernetesObject<V1ObjectMeta>>> Objects { get; set; } = new();
-
-    protected List<Assembly> Assemblies = new() { { typeof(V1Namespace).Assembly } };
 
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>> OnChange;
 
@@ -159,9 +158,9 @@ public abstract class ClusterBase : INotifyPropertyChanged
             return typeof(V1Endpoint);
         }
 
-        foreach (var item in Assemblies)
+        foreach (var item in AssemblyLoader.Cache.Keys)
         {
-            foreach (Type type in item.GetTypes())
+            foreach (var type in item.GetTypes())
             {
                 var attributes = type.GetCustomAttributes(typeof(KubernetesEntityAttribute), true);
 
@@ -186,7 +185,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
         if (assembly.Item1 != null)
         {
-            Assemblies.Add(assembly.Item1);
+            AssemblyLoader.AddToCache(assembly.Item1, assembly.Item2);
         }
     }
 
@@ -215,7 +214,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
             .JsonCompatible()
             .Build();
         var deserializer = new DeserializerBuilder().Build();
-        var method = typeof(KubernetesJson).GetMethod("Deserialize", BindingFlags.Static | BindingFlags.Public, new[] { typeof(string) });
+        var method = typeof(KubernetesJson).GetMethod(nameof(KubernetesJson.Deserialize), BindingFlags.Static | BindingFlags.Public, new[] { typeof(string) });
 
         using var reader = new StreamReader(stream);
 
@@ -257,17 +256,20 @@ public abstract class ClusterBase : INotifyPropertyChanged
     {
         var type = typeof(KubernetesEntityAttribute);
 
-        var ModelTypeMap = Assemblies
+        var assType = AssemblyLoader.Cache.Keys.First().GetTypes().First(x => x.FullName == type.FullName);
+
+        var ModelTypeMap = AssemblyLoader.Cache.Keys
             .SelectMany(x => x.GetTypes())
-            .Where(t => t.GetCustomAttributes(type, true).Any())
+            .Where(t => t.GetCustomAttributes(assType, true).Any())
             .ToDictionary(
-                t =>
+                type =>
                 {
-#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-                    var attr = (KubernetesEntityAttribute)t.GetCustomAttribute(type, true);
-#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
-                    var groupPrefix = string.IsNullOrEmpty(attr.Group) ? "" : $"{attr.Group}/";
-                    return $"{groupPrefix}{attr.ApiVersion}/{attr.Kind}";
+                    var groupProp = type.GetField(nameof(V1Deployment.KubeGroup));
+                    var apiVersionProp = type.GetField(nameof(V1Deployment.KubeApiVersion));
+                    var kindProp = type.GetField(nameof(V1Deployment.KubeKind));
+
+                    var groupPrefix = groupProp.GetValue(null) == null ? "" : $"{groupProp.GetValue(null)}/";
+                    return $"{groupPrefix}{apiVersionProp.GetValue(null)}/{kindProp.GetValue(null)}";
                 },
                 t => t);
 

@@ -55,7 +55,7 @@ public class DynamicType
             result += "/// </summary>\n";
         }
 
-        result += "public class " + Name + (Implements != null ? ": " + Implements : "");
+        result += "public class " + Name + (Implements != null ? ": " + Implements.Trim(',') : "");
         result += "\n{\n";
 
         foreach (var constant in Constant)

@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using static MudBlazor.CategoryTypes;
 
 namespace KubeUI.Core.Components;
@@ -29,6 +30,12 @@ public partial class ListComponent<TItem> : IDisposable where TItem : class, IKu
     [Parameter]
     public EventCallback<HashSet<TItem>> SelectedItemsChanged { get; set; }
 
+    [Parameter]
+    public Func<IQueryable<TItem>, IQueryable<TItem>>? Query { get; set; }
+
+    [Parameter]
+    public string? Title { get; set; }
+
     private string? Version;
 
     private string? Kind;
@@ -56,6 +63,16 @@ public partial class ListComponent<TItem> : IDisposable where TItem : class, IKu
         {
             await InvokeAsync(StateHasChanged);
         }
+    }
+
+    private IEnumerable<TItem> GetData()
+    {
+        if (Query != null)
+        {
+            return Query.Invoke(this.ClusterManager.GetActiveCluster().GetObjects<TItem>(Version, Kind, Group).AsQueryable());
+        }
+
+        return this.ClusterManager.GetActiveCluster().GetObjects<TItem>(Version, Kind, Group);
     }
 
     public void AddColumn(ColumnComponent<TItem> column)

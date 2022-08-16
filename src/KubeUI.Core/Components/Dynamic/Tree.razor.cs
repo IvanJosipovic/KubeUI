@@ -27,7 +27,7 @@ namespace KubeUI.Core.Components.Dynamic
                 return Tree;
             }
 
-            foreach (var property in obj.GetType().GetProperties().Where(x => x.PropertyType.FullName.StartsWith("k8s.") || x.PropertyType.FullName.StartsWith("System.Collections.")))
+            foreach (var property in obj.GetType().GetProperties().Where(x => x.PropertyType.Namespace.Equals(typeof(V1Deployment).Namespace) || x.PropertyType.Namespace.StartsWith("KubeUI.") || x.PropertyType.Namespace.StartsWith("System.Collections.")))
             {
                 try
                 {
@@ -59,8 +59,8 @@ namespace KubeUI.Core.Components.Dynamic
                             Name = property.Name.AddSpacesBeforeCapitals(),
                             TreeItems = GetCollectionItems(item),
                             Object = item,
-                            IsCollection = true
-                            //Summary = property.GetSummary()
+                            IsCollection = true,
+                            Summary = property.GetSummary()
                         });
                     }
                     else
@@ -70,7 +70,7 @@ namespace KubeUI.Core.Components.Dynamic
                             Name = property.Name.AddSpacesBeforeCapitals(),
                             TreeItems = BuildTree(item),
                             Object = item,
-                            //Summary = property.GetSummary()
+                            Summary = property.GetSummary()
                         });
                     }
                 }
@@ -98,7 +98,7 @@ namespace KubeUI.Core.Components.Dynamic
                         Name = obj.Key.ToString(),
                         TreeItems = BuildTree(obj),
                         Object = obj,
-                        //Summary = genType.GetSummary(),
+                        Summary = genType.GetSummary(),
                         IsCollectionItem = true,
                         Collection = collection
                     });
@@ -113,14 +113,12 @@ namespace KubeUI.Core.Components.Dynamic
                 {
                     object myObject = list[i];
 
-                    string? propertyValue = null;
-
                     tree.Add(new TreeItem()
                     {
                         Name = $"Item {i}",
                         TreeItems = BuildTree(myObject),
                         Object = myObject,
-                        //Summary = genType.GetSummary(),
+                        Summary = genType.GetSummary(),
                         IsCollectionItem = true,
                         Collection = collection
                     });
@@ -138,14 +136,17 @@ namespace KubeUI.Core.Components.Dynamic
 
         protected override void OnInitialized()
         {
-            TreeItems.Add(new TreeItem()
+            var rootItem = new TreeItem()
             {
                 Name = Item.GetType().Name,
                 Object = Item,
                 IsExpanded = true,
-                TreeItems = BuildTree(Item)
-                //Summary = property.GetSummary()
-            });
+                TreeItems = BuildTree(Item),
+                Summary = Item.GetType().GetSummary()
+            };
+
+            TreeItems.Add(rootItem);
+            SelectedValue = rootItem;
         }
 
         private void AddItem(object obj)
