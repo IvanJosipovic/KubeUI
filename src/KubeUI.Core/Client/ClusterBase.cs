@@ -1,4 +1,4 @@
-﻿using KubeCRDGenerator;
+﻿using KubernetesCRDModelGen;
 using Microsoft.CodeAnalysis;
 using System.Collections.Concurrent;
 using System.ComponentModel;

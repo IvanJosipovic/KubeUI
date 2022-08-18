@@ -1,0 +1,33 @@
+﻿@page "/details/v2beta1/HelmRelease"
+
+<DetailsGeneric Namespace="@Namespace"
+                  Name="@Name"
+                  TItem="KubernetesCRDModelGen.Models.fluxcd.io.HelmRelease"
+                  IsInSideMenu="IsInSideMenu">
+    <Overview>
+            
+    </Overview>
+    <Tabs>
+
+    </Tabs>
+</DetailsGeneric>
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string Namespace { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string Name { get; set; }
+
+    [Parameter]
+    public bool IsInSideMenu { get; set; }
+
+    [Inject]
+    private ClusterManager ClusterManager { get; set; }
+
+    private int LogLineCount { get; set; } = 500;
+
+    private bool PreviousLog { get; set; } = false;
+}

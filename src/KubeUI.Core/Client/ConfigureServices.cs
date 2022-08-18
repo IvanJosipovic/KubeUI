@@ -1,4 +1,4 @@
-﻿using KubeCRDGenerator;
+﻿using KubernetesCRDModelGen;
 using KubeUI.Core.Services;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Configuration;

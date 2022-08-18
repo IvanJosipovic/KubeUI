@@ -1,4 +1,4 @@
-﻿using KubeCRDGenerator;
+﻿using KubernetesCRDModelGen;
 using System.Collections.Concurrent;
 using System.Text.Json;
 

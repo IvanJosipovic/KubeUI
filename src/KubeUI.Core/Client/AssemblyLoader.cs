@@ -62,6 +62,7 @@ namespace KubeUI
         public static string GetSummary(this MemberInfo memberInfo)
         {
             var element = memberInfo.GetDocumentation();
+            if (element == null) return "";
             var summaryElm = element?.SelectSingleNode("summary");
             if (summaryElm == null) return "";
             return summaryElm.InnerText.Trim();
@@ -75,6 +76,7 @@ namespace KubeUI
         public static string GetSummary(this Type type)
         {
             var element = type.GetDocumentation();
+            if (element == null) return "";
             var summaryElm = element?.SelectSingleNode("summary");
             if (summaryElm == null) return "";
             return summaryElm.InnerText.Trim();
@@ -98,6 +100,11 @@ namespace KubeUI
                 fullName = prefix + ":" + type.FullName + "." + name;
 
             var xmlDocument = XmlFromAssembly(type.Assembly);
+
+            if (xmlDocument == null)
+            {
+                return null;
+            }
 
             var matchedElement = xmlDocument["doc"]["members"].SelectSingleNode("member[@name='" + fullName + "']") as XmlElement;
 

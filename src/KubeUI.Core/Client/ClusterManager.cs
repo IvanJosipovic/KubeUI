@@ -1,4 +1,4 @@
-﻿using KubeCRDGenerator;
+﻿using KubernetesCRDModelGen;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
@@ -131,20 +131,7 @@ public class ClusterManager : IDisposable
 
     private void Init()
     {
-        try
-        {
-            var property = typeof(KubernetesJson).GetField("JsonSerializerOptions", BindingFlags.Static | BindingFlags.NonPublic);
-
-            var options = (JsonSerializerOptions)property.GetValue(null);
-
-            options.NumberHandling = JsonNumberHandling.AllowReadingFromString;
-            options.Converters.Add(new BoolConverter());
-            options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Error setting JsonSerializerOptions");
-        }
+        CRDGenerator.FixSerializer();
 
         var assebly = typeof(CRDGenerator).Assembly;
 
@@ -153,22 +140,17 @@ public class ClusterManager : IDisposable
         kubeAsseblyXmlDoc.Load(assebly.GetManifestResourceStream("runtime.KubernetesClient.Models.xml"));
 
         AssemblyLoader.AddToCache(kubeAssebly, kubeAsseblyXmlDoc);
-    }
 
-    private class BoolConverter : JsonConverter<bool>
-    {
-        public override void Write(Utf8JsonWriter writer, bool value, JsonSerializerOptions options) =>
-            writer.WriteBooleanValue(value);
+        var coreAssebly = typeof(Cluster).Assembly;
 
-        public override bool Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
-            reader.TokenType switch
-            {
-                JsonTokenType.True => true,
-                JsonTokenType.False => false,
-                JsonTokenType.String => bool.TryParse(reader.GetString(), out var b) ? b : throw new JsonException(),
-                JsonTokenType.Number => reader.TryGetInt64(out long l) ? Convert.ToBoolean(l) : reader.TryGetDouble(out double d) ? Convert.ToBoolean(d) : false,
-                _ => throw new JsonException(),
-            };
+        initType(typeof(KubernetesCRDModelGen.Models.fluxcd.io.HelmRelease));
+
+        void initType(Type type)
+        {
+            var kubeAsseblyXmlDoc = new XmlDocument();
+            kubeAsseblyXmlDoc.Load(coreAssebly.GetManifestResourceStream($"model.docs.{Path.GetFileNameWithoutExtension(type.Assembly.ManifestModule.Name)}.xml"));
+            AssemblyLoader.AddToCache(type.Assembly, null);
+        }
     }
 }
 

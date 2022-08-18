@@ -1,4 +1,4 @@
-﻿using KubeCRDGenerator;
+﻿using KubernetesCRDModelGen;
 
 namespace KubeUI.Core.Client;
 
