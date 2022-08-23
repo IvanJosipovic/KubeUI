@@ -14,8 +14,6 @@ namespace KubeUI.Core.Components.flux.io;
 
 public partial class HelmReleaseUpgrade : IDisposable
 {
-    private static string GHPAT = "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";
-
     [Parameter]
     public string Namespace { get; set; }
 
