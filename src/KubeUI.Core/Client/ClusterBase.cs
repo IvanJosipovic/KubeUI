@@ -222,7 +222,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
         parser.Consume<StreamStart>();
 
-        while (parser.Accept<DocumentStart>())
+        while (parser.Accept<DocumentStart>(out var start))
         {
             var doc = deserializer.Deserialize(parser);
             var json = serializer.Serialize(doc);
@@ -268,8 +268,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
                     var apiVersionProp = type.GetField(nameof(V1Deployment.KubeApiVersion));
                     var kindProp = type.GetField(nameof(V1Deployment.KubeKind));
 
-                    var groupPrefix = groupProp.GetValue(null) == null ? "" : $"{groupProp.GetValue(null)}/";
-                    return $"{groupPrefix}{apiVersionProp.GetValue(null)}/{kindProp.GetValue(null)}";
+                    return $"{groupProp.GetValue(null)}/{apiVersionProp.GetValue(null)}/{kindProp.GetValue(null)}".TrimStart('/');
                 },
                 t => t);
 

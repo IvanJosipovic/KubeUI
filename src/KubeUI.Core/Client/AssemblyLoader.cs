@@ -165,7 +165,7 @@ namespace KubeUI
         /// </summary>
         /// <param name="assembly">The assembly to find the XML document for</param>
         /// <returns>The XML document</returns>
-        public static XmlDocument XmlFromAssemblyNonCached(Assembly assembly)
+        public static XmlDocument? XmlFromAssemblyNonCached(Assembly assembly)
         {
             try
             {
@@ -176,11 +176,11 @@ namespace KubeUI
             }
             catch (FileNotFoundException exception)
             {
-                return null; throw new Exception("XML documentation not found", exception);
+                return null;
             }
             catch (NullReferenceException exception)
             {
-                return null;  throw new Exception("XML documentation not found", exception);
+                return null;
             }
         }
 
