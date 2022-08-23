@@ -1,4 +1,7 @@
-﻿@page "/details/v2beta1/HelmRelease"
+﻿@using KubeUI.Core.Client
+@using KubeUI.Core.Components.flux.io
+
+@page "/details/helm.toolkit.fluxcd.io/v2beta1/HelmRelease"
 
 <DetailsGeneric Namespace="@Namespace"
                   Name="@Name"
@@ -8,7 +11,9 @@
             
     </Overview>
     <Tabs>
-
+        <MudTabPanel Text="Upgrade">
+            <HelmReleaseUpgrade Name="@context.Name()" Namespace="@context.Namespace()" />
+        </MudTabPanel>
     </Tabs>
 </DetailsGeneric>
 
@@ -27,7 +32,8 @@
     [Inject]
     private ClusterManager ClusterManager { get; set; }
 
-    private int LogLineCount { get; set; } = 500;
-
-    private bool PreviousLog { get; set; } = false;
+    protected override void OnInitialized()
+    {
+        ClusterManager.GetActiveCluster().Seed<KubernetesCRDModelGen.Models.fluxcd.io.HelmRepository>();
+    }
 }
