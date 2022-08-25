@@ -37,7 +37,7 @@ public partial class NavMenu : IDisposable
             try
             {
                 using var stream = new MemoryStream();
-                await file.OpenReadStream().CopyToAsync(stream);
+                await file.OpenReadStream(104857600).CopyToAsync(stream);
                 stream.Position = 0;
 
                 await ClusterManager.GetActiveCluster().ImportYaml(stream);
