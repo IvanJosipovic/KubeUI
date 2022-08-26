@@ -25,7 +25,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
         CRDGenerator = cRDGenerator;
     }
 
-    protected ConcurrentDictionary<string, ConcurrentDictionary<string, IKubernetesObject<V1ObjectMeta>>> Objects { get; set; } = new();
+    internal ConcurrentDictionary<string, ConcurrentDictionary<string, IKubernetesObject<V1ObjectMeta>>> Objects { get; set; } = new();
 
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>> OnChange;
 
@@ -44,7 +44,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
             Objects[key] = new ConcurrentDictionary<string, IKubernetesObject<V1ObjectMeta>>();
         }
 
-        Objects[key][$"{@object.Namespace()}-{@object.Name()}"] = @object;
+        Objects[key][$"{@object.Namespace()}|{@object.Name()}"] = @object;
 
         NotifyStateChanged(WatchEventType.Added, GroupApiVersionKind.From(@object.GetType()), @object);
     }
@@ -58,7 +58,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
             Objects[key] = new ConcurrentDictionary<string, IKubernetesObject<V1ObjectMeta>>();
         }
 
-        Objects[key][$"{@object.Namespace()}-{@object.Name()}"] = @object;
+        Objects[key][$"{@object.Namespace()}|{@object.Name()}"] = @object;
 
         NotifyStateChanged(WatchEventType.Modified, GroupApiVersionKind.From(@object.GetType()), @object);
     }
@@ -72,7 +72,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
             Objects[key] = new ConcurrentDictionary<string, IKubernetesObject<V1ObjectMeta>>();
         }
 
-        Objects[key].TryRemove($"{@object.Namespace()}-{@object.Name()}", out _);
+        Objects[key].TryRemove($"{@object.Namespace()}|{@object.Name()}", out _);
 
         NotifyStateChanged(WatchEventType.Deleted, GroupApiVersionKind.From(@object.GetType()), @object);
     }
@@ -134,7 +134,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
             Seed<T>(version, kind, group);
         }
 
-        var obj = Objects[key][$"{@namespace}-{name}"];
+        var obj = Objects[key][$"{@namespace}|{name}"];
 
         return obj as T;
     }
@@ -252,6 +252,22 @@ public abstract class ClusterBase : INotifyPropertyChanged
         }
     }
 
+    public async Task ImportFolder(string path)
+    {
+        if (Directory.Exists(path))
+        {
+            var files = new DirectoryInfo(path)
+                .EnumerateFiles("*", SearchOption.AllDirectories)
+                .Where(fi => fi.Extension.Equals(".yaml", StringComparison.InvariantCultureIgnoreCase) || fi.Extension.Equals(".yml", StringComparison.InvariantCultureIgnoreCase))
+                .ToList();
+
+            foreach (var file in files)
+            {
+                await ImportYaml(file.OpenRead());
+            }
+        }
+    }
+
     private IDictionary<string, Type> GenerateTypeMap()
     {
         var type = typeof(KubernetesEntityAttribute);
@@ -260,7 +276,8 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
         var ModelTypeMap = AssemblyLoader.Cache.Keys
             .SelectMany(x => x.GetTypes())
-            .Where(t => t.GetCustomAttributes(assType, true).Any())
+            .Where(t => t.GetCustomAttribute<KubernetesEntityAttribute>() != null)
+            .GroupBy(x => new { x.GetCustomAttribute<KubernetesEntityAttribute>().Group, x.GetCustomAttribute<KubernetesEntityAttribute>().ApiVersion, x.GetCustomAttribute<KubernetesEntityAttribute>().Kind }, (key, g) => g.First())
             .ToDictionary(
                 type =>
                 {

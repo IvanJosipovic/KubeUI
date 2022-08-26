@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.WindowsAPICodePack.Dialogs;
+using System.IO;
 
 namespace KubeUI.Core.Shared;
 
@@ -47,6 +49,18 @@ public partial class NavMenu : IDisposable
                 Logger.LogError(ex, "Error parsing file: {file}", file.Name);
             }
         }
+    }
+
+    private async Task LoadFolder()
+    {
+        var dialog = new CommonOpenFileDialog
+        {
+            IsFolderPicker = true
+        };
+
+        var result = dialog.ShowDialog();
+
+        await ClusterManager.GetActiveCluster().ImportFolder(dialog.FileName);
     }
 
     private void SetActiveCluster(ICluster cluster)

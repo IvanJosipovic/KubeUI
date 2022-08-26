@@ -43,4 +43,6 @@ public interface ICluster
     event PropertyChangedEventHandler? PropertyChanged;
 
     Task ImportYaml(Stream stream);
+
+    Task ImportFolder(string path);
 }

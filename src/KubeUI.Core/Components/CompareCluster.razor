@@ -1,0 +1,248 @@
+﻿@using System.Text.Json.JsonDiffPatch.Diffs
+@using YamlDotNet.System.Text.Json
+
+@*<MudDataGrid T="CompareObjectResult" Items="Results.Where(x => x.Result != CompareObjectResultEnum.None)" Hover="true" SortMode="SortMode.Single" Filterable="false" Dense="true" Breakpoint="Breakpoint.None" RowsPerPage="25">
+    <Columns>
+        <Column T="CompareObjectResult" Field="@nameof(CompareObjectResult.Type)" />
+
+        <Column T="CompareObjectResult" Field="@nameof(CompareObjectResult.Key)" />
+
+        <Column T="CompareObjectResult" Field="@nameof(CompareObjectResult.Result)" />
+    </Columns>
+    <PagerContent>
+        <MudDataGridPager T="CompareObjectResult" />
+    </PagerContent>
+</MudDataGrid>*@
+
+<ResizePanel Context="resize" Offset="140">
+    <MudTable T="CompareObjectResult" Items="@Results.Where(x => x.Result != CompareObjectResultEnum.None)" Hover="true" Dense="true" SortLabel="Sort By" Virtualize="true" FixedHeader="true" Height="@resize" Breakpoint="Breakpoint.None" HorizontalScrollbar="true">
+        <HeaderContent>
+            <MudTh Style="@($"width: 25%")">
+                <MudTableSortLabel T="CompareObjectResult" SortBy="(x => x.Type)" InitialDirection="SortDirection.Ascending">Type</MudTableSortLabel>
+            </MudTh>
+            <MudTh Style="@($"width: 25%")">
+                <MudTableSortLabel T="CompareObjectResult" SortBy="(x => x.Name)">Name</MudTableSortLabel>
+            </MudTh>
+            <MudTh Style="@($"width: 25%")">
+                <MudTableSortLabel T="CompareObjectResult" SortBy="(x => x.Namespace)">Namespace</MudTableSortLabel>
+            </MudTh>
+            <MudTh Style="@($"width: 25%")">
+                <MudTableSortLabel T="CompareObjectResult" SortBy="(x => x.Result)">Result</MudTableSortLabel>
+            </MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>
+                @context.Type
+            </MudTd>
+            <MudTd>
+                @if (context.Result == CompareObjectResultEnum.Modified)
+                {
+                    <a href="javascript:void(0)" @onclick="(x => ShowObjectDetails(context.JsonDiff))"><MudText Color="Color.Primary" Typo="Typo.inherit">@context.Name</MudText></a>
+                }
+                else
+                {
+                    @context.Name
+                }
+            </MudTd>
+            <MudTd>
+                @context.Namespace
+            </MudTd>
+            <MudTd>
+                @context.Result
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</ResizePanel>
+
+@code {
+    [Inject]
+    private IDialogService Dialog { get; set; }
+
+    [Parameter] public ICluster Left { get; set; }
+    [Parameter] public ICluster Right { get; set; }
+
+    private List<CompareObjectResult> Results = new();
+
+    protected override void OnInitialized()
+    {
+        Results = Compare(Left, Right);
+    }
+
+    public static List<CompareObjectResult> Compare(ICluster left, ICluster right)
+    {
+        var leftBase = ((ClusterBase)left);
+        var rightBase = ((ClusterBase)right);
+        var results = new List<CompareObjectResult>();
+
+        foreach (var type in leftBase.Objects.Keys)
+        {
+            var leftObjects = leftBase.Objects[type];
+
+            if (rightBase.Objects.ContainsKey(type))
+            {
+                var rightObjects = rightBase.Objects[type];
+
+                // type exists on the right
+                foreach (var itemKey in leftObjects.Keys)
+                {
+                    var leftObject = leftObjects[itemKey];
+
+                    if (rightObjects.ContainsKey(itemKey))
+                    {
+                        var rightObject = rightObjects[itemKey];
+
+                        var compare = ObjectCompare.CompareObjects(leftObject, rightObject);
+
+                        if (compare.Kind == System.Text.Json.JsonDiffPatch.Diffs.DeltaKind.None)
+                        {
+                            results.Add(new CompareObjectResult()
+                            {
+                                Type = type,
+                                Key = itemKey,
+                                Result = CompareObjectResultEnum.None,
+                                Name = GetName(itemKey),
+                                Namespace = GetNamespace(itemKey)
+                            });
+                        }
+                        else
+                        {
+                            results.Add(new CompareObjectResult()
+                            {
+                                Type = type,
+                                Key = itemKey,
+                                Result = CompareObjectResultEnum.Modified,
+                                JsonDiff = compare,
+                                Name = GetName(itemKey),
+                                Namespace = GetNamespace(itemKey)
+                            });
+                        }
+                    }
+                    else
+                    {
+                        results.Add(new CompareObjectResult()
+                        {
+                            Type = type,
+                            Key = itemKey,
+                            Result = CompareObjectResultEnum.Removed,
+                            Name = GetName(itemKey),
+                            Namespace = GetNamespace(itemKey)
+                        });
+                    }
+                }
+            }
+            else
+            {
+                // type doesn't exist on the right
+                foreach (var itemKey in leftObjects.Keys)
+                {
+                    results.Add(new CompareObjectResult()
+                    {
+                        Type = type,
+                        Key = itemKey,
+                        Result = CompareObjectResultEnum.Removed,
+                        Name = GetName(itemKey),
+                        Namespace = GetNamespace(itemKey)
+                    });
+                }
+            }
+        }
+
+        foreach (var type in rightBase.Objects.Keys)
+        {
+            var rightObjects = rightBase.Objects[type];
+
+            if (leftBase.Objects.ContainsKey(type))
+            {
+                var leftObjects = leftBase.Objects[type];
+
+                // type exists on the left
+                foreach (var itemKey in rightObjects.Keys)
+                {
+                    var rightObject = rightObjects[itemKey];
+
+                    if (!rightObjects.ContainsKey(itemKey))
+                    {
+                        results.Add(new CompareObjectResult()
+                        {
+                            Type = type,
+                            Key = itemKey,
+                            Result = CompareObjectResultEnum.Added,
+                            Object = rightObject,
+                            Name = GetName(itemKey),
+                            Namespace = GetNamespace(itemKey)
+                        });
+                    }
+                }
+            }
+            else
+            {
+                // type doesn't exist on the left
+                foreach (var itemKey in rightObjects.Keys)
+                {
+                    var rightObject = rightObjects[itemKey];
+
+                    results.Add(new CompareObjectResult()
+                    {
+                        Type = type,
+                        Key = itemKey,
+                        Result = CompareObjectResultEnum.Added,
+                        Object = rightObject,
+                        Name = GetName(itemKey),
+                        Namespace = GetNamespace(itemKey)
+                    });
+                }
+            }
+        }
+
+        return results;
+    }
+
+    private static string GetNamespace(string key)
+    {
+        return key.Substring(0, key.IndexOf('|'));
+    }
+
+    private static string GetName(string key)
+    {
+        return key.Substring(key.IndexOf('|') + 1);
+    }
+
+    public class CompareObjectResult
+    {
+        public string Namespace { get; set; }
+
+        public string Name { get; set; }
+
+        public string Type { get; set; }
+
+        public string Key { get; set; }
+
+        public CompareObjectResultEnum Result { get; set; }
+
+        public JsonDiffDelta JsonDiff { get; set; }
+
+        public IKubernetesObject<V1ObjectMeta> Object {get;set;}
+    }
+
+    public enum CompareObjectResultEnum
+    {
+        None,
+        Added,
+        Removed,
+        Modified
+    }
+
+    private void ShowObjectDetails(JsonDiffDelta delta)
+    {
+        var parameters = new DialogParameters()
+        {
+            { nameof(CompareObject.Diff), delta },
+        };
+
+        var dialog = Dialog.Show<CompareObject>($"Object Diff", parameters, new DialogOptions()
+        {
+            CloseButton = true,
+            FullScreen = true
+        });
+    }
+}

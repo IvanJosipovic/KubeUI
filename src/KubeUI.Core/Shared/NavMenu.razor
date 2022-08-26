@@ -1,4 +1,5 @@
-﻿@using k8s.Models
+﻿@using System.Runtime.InteropServices
+@using k8s.Models
 
 <MudNavMenu>
     <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Home</MudNavLink>
@@ -8,7 +9,14 @@
 
         @foreach (var cluster in ClusterManager.GetClusters())
         {
-            <MudNavLink OnClick="() => SetActiveCluster(cluster)" Icon="@GetIcon("infrastructure_components/unlabeled/control-plane.svg")">@cluster.Name</MudNavLink>
+            var isDisable = ClusterManager.GetActiveCluster() != null ? ClusterManager.GetActiveCluster().Name.Equals(cluster.Name) : false;
+            <MudNavLink OnClick="() => SetActiveCluster(cluster)" Icon="@GetIcon("infrastructure_components/unlabeled/control-plane.svg")" Disabled="isDisable">
+                @cluster.Name
+                @if (isDisable)
+                {
+                    <MudChip Size="Size.Small" Disabled="true" Color="Color.Success">Active</MudChip>
+                }
+            </MudNavLink>
         }
 
     </MudNavGroup>
@@ -29,6 +37,23 @@
 		        <div class="mud-nav-link-text">Load Yaml</div>
 	        </a>
         </label>
+
+        @if (!RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")))
+        {
+            <label class="mud-nav-item mud-ripple" @onclick="@LoadFolder">
+                <a class="mud-nav-link">
+                    <svg class="mud-icon-root mud-icon-default mud-svg-icon mud-icon-size-medium mud-nav-link-icon mud-nav-link-icon-default" focusable="false" viewBox="0 0 24 24" aria-hidden="true">
+                        <g>
+                            <rect fill="none" height="24" width="24" />
+                        </g>
+                        <g>
+                            <path d="M5,20h14v-2H5V20z M5,10h4v6h6v-6h4l-7-7L5,10z" />
+                        </g>
+                    </svg>
+                    <div class="mud-nav-link-text">Load Folder</div>
+                </a>
+            </label>
+        }
     }
 
     @if (ClusterManager.GetActiveCluster() != null && ClusterManager.GetActiveCluster().IsConnected)

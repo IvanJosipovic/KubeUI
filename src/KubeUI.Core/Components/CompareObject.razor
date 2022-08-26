@@ -1,21 +1,26 @@
 ﻿@using BlazorMonaco
+@using System.Text.Json.JsonDiffPatch.Diffs
 @using YamlDotNet.System.Text.Json
 
-<KubeMonacoEditor Value="@diff" Language="yaml" />
+<KubeMonacoEditor Value="@diffYson" Language="yaml" />
 
 @code {
+    [Parameter] public JsonDiffDelta Diff { get; set; }
     [Parameter] public IKubernetesObject<V1ObjectMeta> Left { get; set; }
     [Parameter] public IKubernetesObject<V1ObjectMeta> Right { get; set; }
 
-    private string diff;
+    private string diffYson;
 
     protected override void OnInitialized()
     {
-        var result = ObjectCompare.CompareObjects(Left, Right);
-
-        if (result.Document != null)
+        if (Diff.Document == null)
         {
-            diff = YamlConverter.Serialize(result.Document);    
+            Diff = ObjectCompare.CompareObjects(Left, Right);
+        }
+
+        if (Diff.Document != null)
+        {
+            diffYson = YamlConverter.Serialize(Diff.Document);
         }
     }
 }

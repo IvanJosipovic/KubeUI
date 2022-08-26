@@ -30,12 +30,6 @@ public class ClusterManager : IDisposable
         this.cRDGenerator = cRDGenerator;
 
         Init();
-
-        LoadClusters();
-
-        AddGitOpsCluster("GitOps");
-
-        LoadFromConfigFromPath(KubernetesClientConfiguration.KubeConfigDefaultLocation);
     }
 
     public void LoadFromConfigFromPath(string path)
@@ -114,14 +108,21 @@ public class ClusterManager : IDisposable
     {
     }
 
-    public void AddGitOpsCluster(string? name = null)
+    public void AddGitOpsCluster(string? name = null, string? path = null)
     {
         if (string.IsNullOrEmpty(name))
         {
             name = "GitOps " + _clusters.Count;
         }
 
-        AddCluster(new GitOpsCluster(loggerFactory.CreateLogger<GitOpsCluster>(), cRDGenerator) { Name = name });
+        var cluster = new GitOpsCluster(loggerFactory.CreateLogger<GitOpsCluster>(), cRDGenerator) { Name = name };
+
+        if (!string.IsNullOrEmpty(path))
+        {
+            cluster.ImportFolder(path);
+        }
+
+        AddCluster(cluster);
     }
 
     public void Dispose()
@@ -151,6 +152,12 @@ public class ClusterManager : IDisposable
             kubeAsseblyXmlDoc.Load(coreAssebly.GetManifestResourceStream($"model.docs.{Path.GetFileNameWithoutExtension(type.Assembly.ManifestModule.Name)}.xml"));
             AssemblyLoader.AddToCache(type.Assembly, null);
         }
+
+        LoadClusters();
+
+        LoadFromConfigFromPath(KubernetesClientConfiguration.KubeConfigDefaultLocation);
+
+        AddGitOpsCluster("GitOps");
     }
 }
 

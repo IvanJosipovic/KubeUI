@@ -63,10 +63,10 @@ public partial class Clusters
             { "Right", right },
         };
 
-        //var dialog = Dialog.Show<CompareObject>($"Compare {left.Name} and {right.Name}", parameters, new DialogOptions()
-        //{
-        //    CloseButton = true,
-        //    FullScreen = true
-        //});
+        var dialog = Dialog.Show<CompareCluster>($"Compare {left.Name} and {right.Name}", parameters, new DialogOptions()
+        {
+            CloseButton = true,
+            FullScreen = true
+        });
     }
 }
