@@ -38,8 +38,6 @@ public partial class HelmReleaseUpgrade : IDisposable
 
     private KubernetesCRDModelGen.Models.fluxcd.io.HelmRepository? HelmRepository;
 
-    private KubernetesCRDModelGen.Models.fluxcd.io.GitRepository? GitRepository;
-
     private List<string> Versions = new();
 
     private bool GetFromFlux;

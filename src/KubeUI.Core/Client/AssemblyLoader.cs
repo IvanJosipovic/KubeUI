@@ -174,11 +174,7 @@ namespace KubeUI
 
                 return xmlDocument;
             }
-            catch (FileNotFoundException exception)
-            {
-                return null;
-            }
-            catch (NullReferenceException exception)
+            catch (Exception)
             {
                 return null;
             }
