@@ -33,7 +33,7 @@
 	<Target Name="EmbedResolveReferences" AfterTargets="ResolveReferences">
 		<ItemGroup>
 			<FilesToEmbed Include="@(ReferencePath)" Condition="('%(ReferencePath.Filename)' == 'KubernetesCRDModelGen.Models.fluxcd.io')" />
-			<XmlFilesToEmbed Include="@(FilesToEmbed-&gt;'%(RelativeDir)%(FileName).xml'-&gt; Exists())" Condition="('%(FilesToEmbed.Filename)' == 'KubernetesCRDModelGen.Models.fluxcd.io')" />
+			<XmlFilesToEmbed Include="@(FilesToEmbed->'%(RelativeDir)%(FileName).xml'-> Exists())" Condition="('%(FilesToEmbed.Filename)' == 'KubernetesCRDModelGen.Models.fluxcd.io')" />
 
 			<!-- add xml documentation for list of assemblies -->
 			<EmbeddedResource Include="@(XmlFilesToEmbed)">
