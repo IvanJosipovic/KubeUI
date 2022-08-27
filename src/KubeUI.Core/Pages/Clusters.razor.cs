@@ -53,7 +53,7 @@ public partial class Clusters
         ClusterManager.AddGitOpsCluster();
     }
 
-    private async Task Compare()
+    private void Compare()
     {
         var left = SelectedItems.ElementAt(0);
         var right = SelectedItems.ElementAt(1);
