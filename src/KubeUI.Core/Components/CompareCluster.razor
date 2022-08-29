@@ -176,8 +176,8 @@
                 foreach (var itemKey in rightObjects.Keys)
                 {
                     var rightObject = rightObjects[itemKey];
-
-                    if (!rightObjects.ContainsKey(itemKey))
+                    
+                    if (!leftObjects.ContainsKey(itemKey))
                     {
                         results.Add(new CompareObjectResult()
                         {

@@ -141,6 +141,62 @@ namespace KubeUI.Core.Tests
         }
 
         [Fact]
+        public void AddedRemoved()
+        {
+            var services = GetServices();
+
+            var left = new V1Deployment()
+            {
+                ApiVersion = V1Deployment.KubeApiVersion,
+                Kind = V1Deployment.KubeKind,
+                Metadata = new V1ObjectMeta
+                {
+                    Name = "test",
+                    NamespaceProperty = "ns"
+                },
+                Spec = new V1DeploymentSpec()
+                {
+                    MinReadySeconds = 2
+                }
+            };
+
+            var right = new V1Deployment()
+            {
+                ApiVersion = V1Deployment.KubeApiVersion,
+                Kind = V1Deployment.KubeKind,
+                Metadata = new V1ObjectMeta
+                {
+                    Name = "test2",
+                    NamespaceProperty = "ns"
+                },
+                Spec = new V1DeploymentSpec()
+                {
+                    MinReadySeconds = 2
+                }
+            };
+
+            var leftCluster = services.GetRequiredService<GitOpsCluster>();
+
+            leftCluster.AddObject(left);
+
+            var rightCluster = services.GetRequiredService<GitOpsCluster>();
+
+            rightCluster.AddObject(right);
+
+            var result = Components.CompareCluster.Compare(leftCluster, rightCluster);
+
+            result.Count.Should().Be(2);
+            result[0].Key.Should().Be("ns|test");
+            result[0].Name = "test";
+            result[0].Namespace = "ns";
+            result[0].Result.Should().Be(Components.CompareCluster.CompareObjectResultEnum.Removed);
+            result[1].Key.Should().Be("ns|test2");
+            result[1].Name = "test2";
+            result[1].Namespace = "ns";
+            result[1].Result.Should().Be(Components.CompareCluster.CompareObjectResultEnum.Added);
+        }
+
+        [Fact]
         public void Equal()
         {
             var services = GetServices();
