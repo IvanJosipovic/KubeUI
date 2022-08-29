@@ -60,7 +60,10 @@ public partial class NavMenu : IDisposable
 
         var result = dialog.ShowDialog();
 
-        await ClusterManager.GetActiveCluster().ImportFolder(dialog.FileName);
+        if (result == CommonFileDialogResult.Ok)
+        {
+            await ClusterManager.GetActiveCluster().ImportFolder(dialog.FileName);
+        }
     }
 
     private void SetActiveCluster(ICluster cluster)
