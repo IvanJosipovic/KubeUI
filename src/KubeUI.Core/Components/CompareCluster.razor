@@ -48,7 +48,24 @@
                 @context.Namespace
             </MudTd>
             <MudTd>
-                @context.Result
+                @{
+                    Color color = Color.Primary;
+
+                    switch (context.Result)
+                    {
+                        case CompareObjectResultEnum.Added:
+                            color = Color.Success;
+                            break;
+                        case CompareObjectResultEnum.Modified:
+                            color = Color.Info;
+                            break;
+                        case CompareObjectResultEnum.Removed:
+                            color = Color.Warning;
+                            break;
+                    }
+                }
+                <MudText Typo="Typo.inherit" Color="color">@context.Result</MudText>
+                
             </MudTd>
         </RowTemplate>
     </MudTable>
