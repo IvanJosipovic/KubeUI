@@ -86,11 +86,12 @@
             @*<NavItem TItem="V1Endpoint" Icon="resources/unlabeled/ep.svg"/>*@
             <MudNavLink Href="/list/v1/endpoints" Match="NavLinkMatch.Prefix" Icon="@NavMenu.GetIcon("resources/unlabeled/ep.svg")">Endpoints</MudNavLink>
             <NavItem TItem="V1Ingress" Icon="resources/unlabeled/ing.svg"/>
-            <NavItem TItem="V1NetworkPolicy" Icon="resources/unlabeled/netpol.svg"/>            
+            <NavItem TItem="V1NetworkPolicy" Icon="resources/unlabeled/netpol.svg"/>
+            <NavItem TItem="V1ValidatingWebhookConfiguration" Icon="resources/unlabeled/netpol.svg" Name="Validating Webhook" />
         </MudNavGroup>
         
         <MudNavGroup Title="Storage" Expanded="false">
-            <NavItem TItem="V1PersistentVolumeClaim" Icon="resources/unlabeled/pvc.svg"/>     
+            <NavItem TItem="V1PersistentVolumeClaim" Icon="resources/unlabeled/pvc.svg"/>
             <NavItem TItem="V1PersistentVolume" Icon="resources/unlabeled/pv.svg"/>     
             <NavItem TItem="V1StorageClass" Icon="resources/unlabeled/sc.svg"/>     
         </MudNavGroup>

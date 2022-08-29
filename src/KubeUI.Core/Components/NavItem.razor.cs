@@ -5,6 +5,9 @@ public partial class NavItem<TItem> : IDisposable where TItem : class, IKubernet
     [Parameter]
     public string Icon { get; set; }
 
+    [Parameter]
+    public string? Name { get; set; }
+
     [Inject]
     private ILogger<NavItem<TItem>> Logger { get; set; }
 

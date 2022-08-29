@@ -1,5 +1,5 @@
 ﻿@typeparam TItem where TItem : class, IKubernetesObject<V1ObjectMeta>, new()
 
-<MudNavLink Href="@($"/list/{GroupApiVersionKind.GroupApiVersion}/{GroupApiVersionKind.Kind}")" Match="NavLinkMatch.Prefix" Icon="@(string.IsNullOrEmpty(Icon) ? string.Empty : NavMenu.GetIcon(Icon))">@(GroupApiVersionKind.Kind.AddSpacesBeforeCapitals()) <MudChip Size="Size.Small" Disabled="true">@(ClusterManager.GetActiveCluster().GetObjects<TItem>().Count())</MudChip></MudNavLink>
+<MudNavLink Href="@($"/list/{GroupApiVersionKind.GroupApiVersion}/{GroupApiVersionKind.Kind}")" Match="NavLinkMatch.Prefix" Icon="@(string.IsNullOrEmpty(Icon) ? string.Empty : NavMenu.GetIcon(Icon))">@(string.IsNullOrEmpty(Name) ? GroupApiVersionKind.Kind.AddSpacesBeforeCapitals() : Name) <MudChip Size="Size.Small" Disabled="true">@(ClusterManager.GetActiveCluster().GetObjects<TItem>().Count())</MudChip></MudNavLink>
 
     
