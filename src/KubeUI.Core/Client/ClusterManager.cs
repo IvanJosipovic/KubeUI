@@ -148,8 +148,16 @@ public class ClusterManager : IDisposable
 
         void initType(Type type)
         {
-            var kubeAsseblyXmlDoc = new XmlDocument();
-            kubeAsseblyXmlDoc.Load(coreAssebly.GetManifestResourceStream($"model.docs.{Path.GetFileNameWithoutExtension(type.Assembly.ManifestModule.Name)}.xml"));
+            var xmlDoc = new XmlDocument();
+            try
+            {
+                xmlDoc.Load(coreAssebly.GetManifestResourceStream($"model.docs.KubernetesCRDModelGen.Models.fluxcd.io.xml"));
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Error Loading docs for type {type}", type.FullName);
+            }
+
             AssemblyLoader.AddToCache(type.Assembly, null);
         }
 
