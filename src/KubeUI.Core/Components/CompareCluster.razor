@@ -91,8 +91,18 @@
         var rightBase = ((ClusterBase)right);
         var results = new List<CompareObjectResult>();
 
+        var objectsToSkip = new List<string>()
+        {
+            $"{Corev1Event.KubeApiVersion.ToLower()}/{Corev1Event.KubeKind.ToLower()}"
+        };
+
         foreach (var type in leftBase.Objects.Keys)
         {
+            if (objectsToSkip.Contains(type))
+            {
+                continue;
+            }
+
             var leftObjects = leftBase.Objects[type];
 
             if (rightBase.Objects.ContainsKey(type))
@@ -166,6 +176,11 @@
 
         foreach (var type in rightBase.Objects.Keys)
         {
+            if (objectsToSkip.Contains(type))
+            {
+                continue;
+            }
+
             var rightObjects = rightBase.Objects[type];
 
             if (leftBase.Objects.ContainsKey(type))
