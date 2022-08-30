@@ -40,13 +40,13 @@ jobs:
     timeout-minutes: 10
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v2
       with:
         dotnet-version: ${{ env.dotnet-version }}
         include-prerelease: ${{ env.include-prerelease }}
-        
+
     - name: Test
       working-directory: src
       run: dotnet test -c Release /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura
@@ -63,7 +63,7 @@ jobs:
     timeout-minutes: 10
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v2
       with:
@@ -96,7 +96,7 @@ jobs:
           ContentType = 'application/json'
         }
         Invoke-RestMethod @Params
-      shell: pwsh   
+      shell: pwsh
 
     - name: Publish
       working-directory: src/KubeUI.Web
@@ -110,7 +110,7 @@ jobs:
 
   build_hybrid:
     name: Build Hybrid
-    needs: [semantic-release, tests]    
+    needs: [semantic-release, tests]
     timeout-minutes: 10
     runs-on: ${{ matrix.os }}
     strategy:
@@ -120,7 +120,7 @@ jobs:
         - os: windows-latest
           RUNTIME: win-x64
           FOLDER: src/KubeUI.WPF
-          ARGS: --self-contained -p:PublishSingleFile=true -p:DebugType=None -p:IncludeNativeLibrariesForSelfExtract=true 
+          ARGS: --self-contained -p:PublishSingleFile=true -p:DebugType=None -p:IncludeNativeLibrariesForSelfExtract=true
     steps:
     - uses: actions/checkout@v3
 
@@ -143,7 +143,7 @@ jobs:
       with:
         name: KubeUI-${{matrix.RUNTIME}}
         path: ${{matrix.FOLDER}}/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-${{matrix.RUNTIME}}.zip
-        
+
   release:
     if: needs.semantic-release.outputs.new_release_published == 'true'
     name: Create Release
