@@ -1,7 +1,9 @@
 ﻿using KubeUI.Core.Client;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using MudBlazor.Utilities;
 using System;
 using System.ComponentModel;
 using System.Windows;
@@ -29,7 +31,10 @@ public partial class MainWindow : Window
 #endif
             ConfigureServices.Configure(hostBuilder.Configuration, services);
 
-            services.AddLogging(config => config.AddFile("Logs/{Date}.txt"));
+            if (hostBuilder.Configuration.GetValue<string>("Logging:PathFormat") != null)
+            {
+                services.AddLogging(config => config.AddFile(hostBuilder.Configuration.GetSection("Logging")));
+            }
         })
         .Build();
 
