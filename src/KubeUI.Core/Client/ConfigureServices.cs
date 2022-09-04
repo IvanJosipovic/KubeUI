@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MudBlazor.Services;
+using System.Runtime.InteropServices;
 
 namespace KubeUI.Core.Client;
 
@@ -19,6 +20,10 @@ public static class ConfigureServices
 
         services.AddSingleton<ClusterManager>();
         services.AddSingleton<ICRDGenerator, CRDGenerator>();
-        services.AddSingleton<Updater>();
+
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")))
+        {
+            services.AddSingleton<Updater>();
+        }
     }
 }
