@@ -1,7 +1,5 @@
 ﻿using KubernetesCRDModelGen;
-using System.Reflection;
 using System.Text;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Xml;
 
@@ -151,7 +149,7 @@ public class ClusterManager : IDisposable
             var xmlDoc = new XmlDocument();
             try
             {
-                xmlDoc.Load(coreAssebly.GetManifestResourceStream($"model.docs.KubernetesCRDModelGen.Models.fluxcd.io.xml"));
+                xmlDoc.Load(coreAssebly.GetManifestResourceStream($"model.docs.{type.Namespace}.xml"));
             }
             catch (Exception ex)
             {
