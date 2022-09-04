@@ -2,13 +2,10 @@ using BlazorMonaco;
 using ICSharpCode.SharpZipLib.GZip;
 using ICSharpCode.SharpZipLib.Tar;
 using KubernetesCRDModelGen.Models.fluxcd.io;
-using MudBlazor.Services;
 using System.Text;
 using System.Text.Json.Nodes;
-using System.Text.RegularExpressions;
 using YamlDotNet.RepresentationModel;
 using YamlDotNet.System.Text.Json;
-using static MudBlazor.Icons.Custom;
 
 namespace KubeUI.Core.Components.flux.io;
 

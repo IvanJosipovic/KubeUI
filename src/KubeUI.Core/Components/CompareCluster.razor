@@ -65,7 +65,7 @@
                     }
                 }
                 <MudText Typo="Typo.inherit" Color="color">@context.Result</MudText>
-                
+
             </MudTd>
         </RowTemplate>
     </MudTable>
@@ -191,7 +191,7 @@
                 foreach (var itemKey in rightObjects.Keys)
                 {
                     var rightObject = rightObjects[itemKey];
-                    
+
                     if (!leftObjects.ContainsKey(itemKey))
                     {
                         results.Add(new CompareObjectResult()

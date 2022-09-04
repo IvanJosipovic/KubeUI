@@ -16,11 +16,11 @@
 @code {
     [Inject]
     private ClusterManager ClusterManager { get; set; }
-    
+
     protected override void OnInitialized()
     {
         ClusterManager.OnChange += ClusterManager_OnChange;
-        ClusterManager.GetActiveCluster().OnChange += NavMenu_OnChange;    
+        ClusterManager.GetActiveCluster().OnChange += NavMenu_OnChange;
     }
 
     private void ClusterManager_OnChange(ClusterManagerEvents obj)
@@ -31,7 +31,7 @@
             {
                 cluster.OnChange -= NavMenu_OnChange;
             }
-            
+
             ClusterManager.GetActiveCluster().OnChange += NavMenu_OnChange;
             InvokeAsync(StateHasChanged);
         }
