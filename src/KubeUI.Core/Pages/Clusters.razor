@@ -2,44 +2,43 @@
 
 <InputFile id="fileInput" OnChange="ImportConfig" hidden multiple />
 
-<MudDataGrid T="ICluster" Items="this.ClusterManager.GetClusters()" Hover="true" SortMode="SortMode.Single" Filterable="false" Dense="true" Breakpoint="Breakpoint.None" MultiSelection="true" @bind-SelectedItems="SelectedItems">
-    <ToolBarContent>
-        <MudText Typo="Typo.h6">Clusters</MudText>
-        <MudSpacer />
-        <MudIconButton OnClick="AddGitOpsCluster"
-                    Title="Add GitOps Cluster"
-                    Color="Color.Primary"
-                    Icon="@Icons.Filled.Code">
-        </MudIconButton>
-        &nbsp;
-        <MudIconButton HtmlTag="label"
-                    Title="Import Config"
-                    Color="Color.Primary"
-                    Icon="@Icons.Filled.CloudUpload"
-                    for="fileInput">
-        </MudIconButton>
-        &nbsp;
-    </ToolBarContent>
-    <Columns>
-        <SelectColumn T="ICluster" />
+<ResizePanel Context="resize" Offset="140">
+    <MudDataGrid T="ICluster" Items="this.ClusterManager.GetClusters()" Virtualize="true" Height="@resize" FixedHeader="true" FixedFooter="true" Hover="true" SortMode="SortMode.Single" Filterable="false" Dense="true" Breakpoint="Breakpoint.None" MultiSelection="true" @bind-SelectedItems="SelectedItems">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Clusters</MudText>
+            <MudSpacer />
+            <MudIconButton OnClick="AddGitOpsCluster"
+                        Title="Add GitOps Cluster"
+                        Color="Color.Primary"
+                        Icon="@Icons.Filled.Code">
+            </MudIconButton>
+            &nbsp;
+            <MudIconButton HtmlTag="label"
+                        Title="Import Config"
+                        Color="Color.Primary"
+                        Icon="@Icons.Filled.CloudUpload"
+                        for="fileInput">
+            </MudIconButton>
+            &nbsp;
+        </ToolBarContent>
+        <Columns>
+            <SelectColumn T="ICluster" />
 
-        <Column T="ICluster" Field="Name" HeaderStyle="width:95%"/>
+            <Column T="ICluster" Field="Name" HeaderStyle="width:95%"/>
 
-        <Column T="ICluster" Sortable="false" Filterable="false" HeaderStyle="width:5%">
-            <CellTemplate>
-                <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small">
-                    <MudMenuItem OnClick="@(() => Delete(context.Item))">Delete</MudMenuItem>
-                </MudMenu>
-            </CellTemplate>
-            <FooterTemplate>
-                @if (SelectedItems != null && SelectedItems.Count == 2)
-                {
-                    <MudFab OnClick="Compare" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Compare" Class="d-flex" Size="Size.Small" Title="Compare" />
-                }
-            </FooterTemplate>
-        </Column>
-    </Columns>
-    <PagerContent>
-        <MudDataGridPager T="ICluster" />
-    </PagerContent>
-</MudDataGrid>
+            <Column T="ICluster" Sortable="false" Filterable="false" HeaderStyle="width:5%">
+                <CellTemplate>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small">
+                        <MudMenuItem OnClick="@(() => Delete(context.Item))">Delete</MudMenuItem>
+                    </MudMenu>
+                </CellTemplate>
+                <FooterTemplate>
+                    @if (SelectedItems != null && SelectedItems.Count == 2)
+                    {
+                        <MudFab OnClick="Compare" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Compare" Class="d-flex" Size="Size.Small" Title="Compare" />
+                    }
+                </FooterTemplate>
+            </Column>
+        </Columns>
+    </MudDataGrid>
+</ResizePanel>
