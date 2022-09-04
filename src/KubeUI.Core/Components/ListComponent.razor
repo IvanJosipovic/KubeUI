@@ -1,86 +1,83 @@
 ﻿@attribute [CascadingTypeParameter(nameof(TItem))]
 @typeparam TItem where TItem : class, IKubernetesObject<V1ObjectMeta>, new()
 
-@if (!string.IsNullOrEmpty(Version) && !string.IsNullOrEmpty(Kind))
-{
-    <CascadingValue Value="this" IsFixed="true">
-        <ResizePanel Context="resize" Offset="140">
-            <MudTable T="TItem" Items="GetData()" Hover="true" Dense="true" SortLabel="Sort By" Virtualize="true" FixedHeader="true" FixedFooter="true" Height="@resize" Breakpoint="Breakpoint.None" HorizontalScrollbar="true" MultiSelection="@MultiSelection" SelectedItems="SelectedItems" SelectedItemsChanged="SelectedItemsChanged">
-                <ToolBarContent>
-                    <MudText Typo="Typo.h6">@(string.IsNullOrEmpty(Title) ? Kind.AddSpacesBeforeCapitals() : Title)</MudText>
-                    <MudSpacer />
-                    <MudTextField T="string" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
-                    <MudSpacer />
-                    <MudSelect T="string" Placeholder="Namespaces" MultiSelection="true" Class="mt-0" SelectedValues="ClusterManager.GetActiveCluster().GetSelectedNamespaces()" SelectedValuesChanged="x => ClusterManager.GetActiveCluster().SetSelectedNamespaces(x)" SelectAll="true" SelectAllText="Select all">
-                        @foreach (var ns in this.ClusterManager.GetActiveCluster().GetObjects<V1Namespace>().OrderBy(x => x.Metadata.Name))
+<CascadingValue Value="this" IsFixed="true">
+    <ResizePanel Context="resize" Offset="140">
+        <MudTable T="TItem" Items="GetData()" Hover="true" Dense="true" SortLabel="Sort By" Virtualize="true" FixedHeader="true" FixedFooter="true" Height="@resize" Breakpoint="Breakpoint.None" HorizontalScrollbar="true" MultiSelection="@MultiSelection" SelectedItems="SelectedItems" SelectedItemsChanged="SelectedItemsChanged">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">@(string.IsNullOrEmpty(Title) ? Kind.AddSpacesBeforeCapitals() : Title)</MudText>
+                <MudSpacer />
+                <MudTextField T="string" @bind-Value="SearchQuery" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                <MudSpacer />
+                <MudSelect T="string" Placeholder="Namespaces" MultiSelection="true" Class="mt-0" SelectedValues="ClusterManager.GetActiveCluster().GetSelectedNamespaces()" SelectedValuesChanged="x => ClusterManager.GetActiveCluster().SetSelectedNamespaces(x)" SelectAll="true" SelectAllText="Select all">
+                    @foreach (var ns in this.ClusterManager.GetActiveCluster().GetObjects<V1Namespace>().OrderBy(x => x.Metadata.Name))
+                    {
+                        <MudSelectItem @key="ns" T="string" Value="@ns.Name()">@ns.Name()</MudSelectItem>
+                    }
+                </MudSelect>
+            </ToolBarContent>
+            <HeaderContent>
+                @foreach (var col in this.Columns.Where(x => !x.Hide))
+                {
+                    <MudTh @key="col" Style="@($"width: {col.Width}")">
+                        @if (col.HeaderContent != null)
                         {
-                            <MudSelectItem @key="ns" T="string" Value="@ns.Name()">@ns.Name()</MudSelectItem>
+                            @col.HeaderContent;
                         }
-                    </MudSelect>
-                </ToolBarContent>
-                <HeaderContent>
-                    @foreach (var col in this.Columns.Where(x => !x.Hide))
-                    {
-                        <MudTh @key="col" Style="@($"width: {col.Width}")">
-                            @if (col.HeaderContent != null)
-                            {
-                                @col.HeaderContent;
-                            } 
-                            else
-                            {
-                                <MudTableSortLabel SortBy="col.Object" InitialDirection="col.Sort">@col.Name</MudTableSortLabel>        
-                            }                
-                        </MudTh>
-                    }
-                </HeaderContent>
-                <RowTemplate>
-                    @foreach (var col in this.Columns.Where(x => !x.Hide))
-                    {
-                        <MudTd @key="col" >
-                            @if (col.DisplayContent != null)
-                            {
-                                @col.DisplayContent(new (context, this));
-                            }
-                            else
-                            {
-                                @col.Object?.Invoke(context);
-                            }
-                        </MudTd>
-                    }
-                </RowTemplate>
-                <FooterContent>
-                    @for (int i = 0; i < this.Columns.Count - 3; i++) 
-                    {
-                        <MudTd></MudTd>
-                    }
-
-                    <MudTd colspan="3">
-                        <div class="d-flex gap-4 justify-end">
-                            @if (this.SelectedItems != null && this.SelectedItems.Count == 1)
-                            {
-                                var item = SelectedItems.First();
-                                var url = $"/details/{GroupApiVersionKind.From<TItem>().GroupApiVersion}/{item.Kind}?Name={item.Name()}";
-                                
-                                if (!string.IsNullOrEmpty(item.Metadata.NamespaceProperty))
-                                {
-                                    url = $"/details/{GroupApiVersionKind.From<TItem>().GroupApiVersion}/{item.Kind}?Namespace={item.Namespace()}&Name={item.Name()}";
-                                }
-                                <MudFab Href="@url" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit" Class="d-flex" Size="Size.Small" Title="Edit" />
-
-                            }
-                            @if (this.SelectedItems != null && this.SelectedItems.Count == 2)
-                            {
-                                <MudFab OnClick="Compare" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Compare" Class="d-flex" Size="Size.Small" Title="Compare" />
-                            }
-                            @if (this.SelectedItems != null && this.SelectedItems.Count >= 1)
-                            {
-                                <MudFab OnClick="Delete" Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete" Class="d-flex" Size="Size.Small" Title="Delete"/>
-                            }
-                        </div>
+                        else
+                        {
+                            <MudTableSortLabel SortBy="col.Object" InitialDirection="col.Sort">@col.Name</MudTableSortLabel>
+                        }
+                    </MudTh>
+                }
+            </HeaderContent>
+            <RowTemplate>
+                @foreach (var col in this.Columns.Where(x => !x.Hide))
+                {
+                    <MudTd @key="col" >
+                        @if (col.DisplayContent != null)
+                        {
+                            @col.DisplayContent(new (context, this));
+                        }
+                        else
+                        {
+                            @col.Object?.Invoke(context);
+                        }
                     </MudTd>
-                </FooterContent>
-            </MudTable>
-            @ChildContent
-        </ResizePanel>
-    </CascadingValue>
-}
+                }
+            </RowTemplate>
+            <FooterContent>
+                @for (int i = 0; i < this.Columns.Count - 3; i++)
+                {
+                    <MudTd></MudTd>
+                }
+
+                <MudTd colspan="3">
+                    <div class="d-flex gap-4 justify-end">
+                        @if (this.SelectedItems != null && this.SelectedItems.Count == 1)
+                        {
+                            var item = SelectedItems.First();
+                            var url = $"/details/{GroupApiVersionKind.From<TItem>().GroupApiVersion}/{item.Kind}?Name={item.Name()}";
+
+                            if (!string.IsNullOrEmpty(item.Metadata.NamespaceProperty))
+                            {
+                                url = $"/details/{GroupApiVersionKind.From<TItem>().GroupApiVersion}/{item.Kind}?Namespace={item.Namespace()}&Name={item.Name()}";
+                            }
+
+                            <MudFab Href="@url" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit" Class="d-flex" Size="Size.Small" Title="Edit" />
+                        }
+                        @if (this.SelectedItems != null && this.SelectedItems.Count == 2)
+                        {
+                            <MudFab OnClick="Compare" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Compare" Class="d-flex" Size="Size.Small" Title="Compare" />
+                        }
+                        @if (this.SelectedItems != null && this.SelectedItems.Count >= 1)
+                        {
+                            <MudFab OnClick="Delete" Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete" Class="d-flex" Size="Size.Small" Title="Delete"/>
+                        }
+                    </div>
+                </MudTd>
+            </FooterContent>
+        </MudTable>
+        @ChildContent
+    </ResizePanel>
+</CascadingValue>

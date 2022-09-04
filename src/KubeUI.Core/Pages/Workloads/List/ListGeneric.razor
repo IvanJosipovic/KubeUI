@@ -67,7 +67,7 @@
     public bool HideActions { get; set; }
 
     [Parameter]
-    public Func<IQueryable<TItem>, IQueryable<TItem>>? Query { get; set; }
+    public Func<IEnumerable<TItem>, IEnumerable<TItem>>? Query { get; set; }
 
     [Parameter]
     public string? Title { get; set; }

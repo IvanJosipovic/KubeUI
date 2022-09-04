@@ -31,7 +31,7 @@ public partial class ListComponent<TItem> : IDisposable where TItem : class, IKu
     public EventCallback<HashSet<TItem>> SelectedItemsChanged { get; set; }
 
     [Parameter]
-    public Func<IQueryable<TItem>, IQueryable<TItem>>? Query { get; set; }
+    public Func<IEnumerable<TItem>, IEnumerable<TItem>>? Query { get; set; }
 
     [Parameter]
     public string? Title { get; set; }
@@ -41,6 +41,8 @@ public partial class ListComponent<TItem> : IDisposable where TItem : class, IKu
     private string? Kind;
 
     private string? Group;
+
+    private string? SearchQuery;
 
     private List<ColumnComponent<TItem>> Columns { get; set; } = new List<ColumnComponent<TItem>>();
 
@@ -67,12 +69,19 @@ public partial class ListComponent<TItem> : IDisposable where TItem : class, IKu
 
     private IEnumerable<TItem> GetData()
     {
-        if (Query != null)
+        var items = ClusterManager.GetActiveCluster().GetObjects<TItem>();
+
+        if (SearchQuery is not null)
         {
-            return Query.Invoke(this.ClusterManager.GetActiveCluster().GetObjects<TItem>(Version, Kind, Group).AsQueryable());
+            items = items.Where(x => GlobalSearchQuery(x));
         }
 
-        return this.ClusterManager.GetActiveCluster().GetObjects<TItem>(Version, Kind, Group);
+        if (Query is not null)
+        {
+            items = Query.Invoke(items);
+        }
+
+        return items;
     }
 
     public void AddColumn(ColumnComponent<TItem> column)
@@ -224,5 +233,30 @@ public partial class ListComponent<TItem> : IDisposable where TItem : class, IKu
                 await ClusterManager.GetActiveCluster().Delete<TItem>(item);
             }
         }
+    }
+
+    private bool GlobalSearchQuery(TItem item)
+    {
+        return SearchQuery.Split(' ').All(x => GlobalSearchQuery(item, x));
+    }
+
+    private bool GlobalSearchQuery(TItem item, string query)
+    {
+        foreach (var column in Columns.Where(x => x.Object != null))
+        {
+            var obj = column.Object.Invoke(item);
+
+            if (obj == null)
+            {
+                continue;
+            }
+
+            if (obj.ToString().Contains(query, StringComparison.InvariantCultureIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

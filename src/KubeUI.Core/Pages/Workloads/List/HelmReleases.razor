@@ -24,10 +24,10 @@
 </ListGeneric>
 
 @code {
-    public static Func<IQueryable<V1Secret>, IQueryable<V1Secret>> query = x => x.Where(y => y.Type == "helm.sh/release.v1" && y.GetLabel("status") != "superseded")
-                        .GroupBy(y => y.GetLabel("name"), (key, g) => g.OrderByDescending(e => int.Parse(e.GetLabel("version"))).First());
+    //public static Func<IQueryable<V1Secret>, IQueryable<V1Secret>> query = x => x.Where(y => y.Type == "helm.sh/release.v1" && y.GetLabel("status") != "superseded")
+    //                    .GroupBy(y => y.GetLabel("name"), (key, g) => g.OrderByDescending(e => int.Parse(e.GetLabel("version"))).First());
 
-    private IQueryable<V1Secret> GetData(IQueryable<V1Secret> query)
+    private IEnumerable<V1Secret> GetData(IEnumerable<V1Secret> query)
     {
         return query.Where(y => y.Type == "helm.sh/release.v1" && y.GetLabel("status") != "superseded")
                         .GroupBy(y => y.GetLabel("name"), (key, g) => g.OrderByDescending(e => int.Parse(e.GetLabel("version"))).First());
