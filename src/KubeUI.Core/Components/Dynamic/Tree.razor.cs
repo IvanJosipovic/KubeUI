@@ -27,7 +27,11 @@ namespace KubeUI.Core.Components.Dynamic
                 return Tree;
             }
 
-            foreach (var property in obj.GetType().GetProperties().Where(x => x.PropertyType.Namespace.Equals(typeof(V1Deployment).Namespace) || x.PropertyType.Namespace.StartsWith("KubeUI.") || x.PropertyType.Namespace.StartsWith("System.Collections.")))
+            foreach (var property in obj.GetType().GetProperties()
+                .Where(x => x.PropertyType.Namespace.Equals(typeof(V1Deployment).Namespace) ||
+                x.PropertyType.Namespace.StartsWith("KubeUI.") ||
+                x.PropertyType.Namespace.StartsWith("System.Collections.") ||
+                x.PropertyType.Namespace.StartsWith(typeof(KubernetesCRDModelGen.GenericObject).Namespace)))
             {
                 try
                 {

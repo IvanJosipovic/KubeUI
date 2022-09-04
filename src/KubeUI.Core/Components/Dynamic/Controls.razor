@@ -40,7 +40,7 @@
     {
         <MudText>Missing JsonNode</MudText>
     }
-    else if (Item.GetType().Namespace.Equals(typeof(V1Deployment).Namespace) || Item.GetType().Namespace.Equals(typeof(HelmRelease).Namespace))
+    else if (Item.GetType().Namespace.Equals(typeof(V1Deployment).Namespace) || Item.GetType().Namespace.StartsWith(typeof(KubernetesCRDModelGen.GenericObject).Namespace))
     {
         foreach (var prop in Item.GetType().GetProperties().Where(x => !x.PropertyType.Namespace.Equals(typeof(V1Deployment).Namespace)))
         {
@@ -192,7 +192,7 @@
         if (prop.PropertyType == typeof(string) || prop.DeclaringType == typeof(string))
         {
             return prop.GetValue(Item) as string;
-        } 
+        }
         else if (prop.PropertyType == typeof(bool) || prop.PropertyType == typeof(bool?))
         {
             return prop.GetValue(Item) != null ? bool.Parse(prop.GetValue(Item).ToString()) : null;
