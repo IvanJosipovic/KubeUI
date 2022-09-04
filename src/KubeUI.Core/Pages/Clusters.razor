@@ -3,7 +3,19 @@
 <InputFile id="fileInput" OnChange="ImportConfig" hidden multiple />
 
 <ResizePanel Context="resize" Offset="140">
-    <MudDataGrid T="ICluster" Items="this.ClusterManager.GetClusters()" Virtualize="true" Height="@resize" FixedHeader="true" FixedFooter="true" Hover="true" SortMode="SortMode.Single" Filterable="false" Dense="true" Breakpoint="Breakpoint.None" MultiSelection="true" @bind-SelectedItems="SelectedItems">
+    <MudDataGrid T="ICluster"
+                 @bind-SelectedItems="SelectedItems"
+                 Breakpoint="Breakpoint.None"
+                 Dense="true"
+                 Filterable="false"
+                 FixedFooter="true"
+                 FixedHeader="true"
+                 Height="@resize"
+                 Hover="true"
+                 Items="this.ClusterManager.GetClusters()"
+                 MultiSelection="true"
+                 SortMode="SortMode.Single"
+                 Virtualize="true">
         <ToolBarContent>
             <MudText Typo="Typo.h6">Clusters</MudText>
             <MudSpacer />
@@ -22,7 +34,7 @@
             &nbsp;
         </ToolBarContent>
         <Columns>
-            <SelectColumn T="ICluster" />
+            <SelectColumn T="ICluster" ShowInFooter="false" Size="Size.Small" />
 
             <Column T="ICluster" Field="Name" HeaderStyle="width:95%"/>
 

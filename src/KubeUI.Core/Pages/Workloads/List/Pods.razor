@@ -4,40 +4,43 @@
     <Columns>
         <ColumnComponent TItem="V1Pod" Name="Containers" Object="(x => x.Spec.Containers?.Count)" >
             <DisplayContent>
-                @foreach (var container in context.Item1?.Status?.ContainerStatuses.EnsureNotEmpty())
+                @if (context.Item1.Status != null)
                 {
-                    @if (container.State?.Running != null)
+                    @foreach (var container in context.Item1?.Status?.ContainerStatuses?.EnsureNotEmpty())
                     {
-                        <MudAvatar Style="height:10px; width:10px; margin-right: 2px;" Color="Color.Success"></MudAvatar>
+                        @if (container.State?.Running != null)
+                        {
+                            <MudAvatar Style="height:10px; width:10px; margin-right: 2px;" Color="Color.Success"></MudAvatar>
+                        }
+                        else if (container.State?.Terminated?.Reason == "Error")
+                        {
+                            <MudAvatar Style="height:10px; width:10px; margin-right: 2px" Color="Color.Dark"></MudAvatar>
+                        }
+                        else
+                        {
+                            <MudAvatar Style="height:10px; width:10px; margin-right: 2px" Color="Color.Primary"></MudAvatar>
+                        }
                     }
-                    else if (container.State?.Terminated?.Reason == "Error")
+                    @foreach (var container in context.Item1?.Status?.InitContainerStatuses?.EnsureNotEmpty())
                     {
-                        <MudAvatar Style="height:10px; width:10px; margin-right: 2px" Color="Color.Dark"></MudAvatar>
-                    }
-                    else
-                    {
-                        <MudAvatar Style="height:10px; width:10px; margin-right: 2px" Color="Color.Primary"></MudAvatar>
-                    }
-                }
-                @foreach (var container in context.Item1?.Status?.InitContainerStatuses.EnsureNotEmpty())
-                {
-                    @if (container.State?.Terminated?.Reason == "Completed")
-                    {
-                        <MudAvatar Style="height:10px; width:10px; margin-right: 2px;" Color="Color.Dark"></MudAvatar>
-                    }
-                    else if (container.State?.Terminated?.Reason == "Error")
-                    {
-                        <MudAvatar Style="height:10px; width:10px; margin-right: 2px" Color="Color.Error"></MudAvatar>
-                    }
-                    else
-                    {
-                        <MudAvatar Style="height:10px; width:10px; margin-right: 2px" Color="Color.Primary"></MudAvatar>
+                        @if (container.State?.Terminated?.Reason == "Completed")
+                        {
+                            <MudAvatar Style="height:10px; width:10px; margin-right: 2px;" Color="Color.Dark"></MudAvatar>
+                        }
+                        else if (container.State?.Terminated?.Reason == "Error")
+                        {
+                            <MudAvatar Style="height:10px; width:10px; margin-right: 2px" Color="Color.Error"></MudAvatar>
+                        }
+                        else
+                        {
+                            <MudAvatar Style="height:10px; width:10px; margin-right: 2px" Color="Color.Primary"></MudAvatar>
+                        }
                     }
                 }
             </DisplayContent>
         </ColumnComponent>
         <ColumnComponent TItem="V1Pod" Name="Restarts" Object="(x => x.Status?.ContainerStatuses?.Sum(x => x.RestartCount))" />
-        <ColumnComponent TItem="V1Pod" Name="Controlled By" Object="(x => x.Metadata.OwnerReferences.FirstOrDefault()?.Kind)">
+        <ColumnComponent TItem="V1Pod" Name="Controlled By" Object="(x => x.Metadata.OwnerReferences?.FirstOrDefault()?.Kind)">
             <DisplayContent>
                 @if (context.Item1.Metadata.OwnerReferences != null && context.Item1.Metadata.OwnerReferences.Any())
                 {
@@ -51,7 +54,7 @@
                 <MudLink @onclick="@(x => context.Item2.DisplayDetails(null, V1Node.KubeGroup, V1Node.KubeApiVersion, V1Node.KubeKind, context.Item1.Spec.NodeName))">@context.Item1.Spec.NodeName</MudLink>
             </DisplayContent>
         </ColumnComponent>
-        <ColumnComponent TItem="V1Pod" Name="QoS" Object="(x => x.Status.QosClass)" />
+        <ColumnComponent TItem="V1Pod" Name="QoS" Object="(x => x.Status?.QosClass)" />
         <ColumnComponent TItem="V1Pod" Name="Status" Object="(x => x.Status?.Phase)" >
             <DisplayContent>
                 @{
