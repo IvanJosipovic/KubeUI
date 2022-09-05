@@ -1,74 +1,58 @@
 ﻿@using System.Text.Json.JsonDiffPatch.Diffs
 @using YamlDotNet.System.Text.Json
 
-@*<MudDataGrid T="CompareObjectResult" Items="Results.Where(x => x.Result != CompareObjectResultEnum.None)" Hover="true" SortMode="SortMode.Single" Filterable="false" Dense="true" Breakpoint="Breakpoint.None" RowsPerPage="25">
-    <Columns>
-        <Column T="CompareObjectResult" Field="@nameof(CompareObjectResult.Type)" />
+<ResizePanel Context="resize" Offset="80">
+    <MudDataGrid T="CompareObjectResult"
+                 Breakpoint="Breakpoint.None"
+                 Dense="true"
+                 Filterable="true"
+                 FixedHeader="true"
+                 Height="@resize"
+                 Hover="true"
+                 Items="Results.Where(x => x.Result != CompareObjectResultEnum.None)"
+                 SortMode="SortMode.Single"
+                 Virtualize="true">
+        <Columns>
+            <Column T="CompareObjectResult" Field="@nameof(CompareObjectResult.Type)" HeaderStyle="@($"width: 25%")" He />
 
-        <Column T="CompareObjectResult" Field="@nameof(CompareObjectResult.Key)" />
-
-        <Column T="CompareObjectResult" Field="@nameof(CompareObjectResult.Result)" />
-    </Columns>
-    <PagerContent>
-        <MudDataGridPager T="CompareObjectResult" />
-    </PagerContent>
-</MudDataGrid>*@
-
-<ResizePanel Context="resize" Offset="140">
-    <MudTable T="CompareObjectResult" Items="@Results.Where(x => x.Result != CompareObjectResultEnum.None)" Hover="true" Dense="true" SortLabel="Sort By" Virtualize="true" FixedHeader="true" Height="@resize" Breakpoint="Breakpoint.None" HorizontalScrollbar="true">
-        <HeaderContent>
-            <MudTh Style="@($"width: 25%")">
-                <MudTableSortLabel T="CompareObjectResult" SortBy="(x => x.Type)" InitialDirection="SortDirection.Ascending">Type</MudTableSortLabel>
-            </MudTh>
-            <MudTh Style="@($"width: 25%")">
-                <MudTableSortLabel T="CompareObjectResult" SortBy="(x => x.Name)">Name</MudTableSortLabel>
-            </MudTh>
-            <MudTh Style="@($"width: 25%")">
-                <MudTableSortLabel T="CompareObjectResult" SortBy="(x => x.Namespace)">Namespace</MudTableSortLabel>
-            </MudTh>
-            <MudTh Style="@($"width: 25%")">
-                <MudTableSortLabel T="CompareObjectResult" SortBy="(x => x.Result)">Result</MudTableSortLabel>
-            </MudTh>
-        </HeaderContent>
-        <RowTemplate>
-            <MudTd>
-                @context.Type
-            </MudTd>
-            <MudTd>
-                @if (context.Result == CompareObjectResultEnum.Modified)
-                {
-                    <a href="javascript:void(0)" @onclick="(x => ShowObjectDetails(context.JsonDiff))"><MudText Color="Color.Primary" Typo="Typo.inherit">@context.Name</MudText></a>
-                }
-                else
-                {
-                    @context.Name
-                }
-            </MudTd>
-            <MudTd>
-                @context.Namespace
-            </MudTd>
-            <MudTd>
-                @{
-                    Color color = Color.Primary;
-
-                    switch (context.Result)
+            <Column T="CompareObjectResult" Field="@nameof(CompareObjectResult.Name)" HeaderStyle="@($"width: 25%")">
+                <CellTemplate>
+                    @if (context.Item.Result == CompareObjectResultEnum.Modified)
                     {
-                        case CompareObjectResultEnum.Added:
-                            color = Color.Success;
-                            break;
-                        case CompareObjectResultEnum.Modified:
-                            color = Color.Info;
-                            break;
-                        case CompareObjectResultEnum.Removed:
-                            color = Color.Warning;
-                            break;
+                        <a href="javascript:void(0)" @onclick="(x => ShowObjectDetails(context.Item.JsonDiff))"><MudText Color="Color.Primary" Typo="Typo.inherit">@context.Item.Name</MudText></a>
                     }
-                }
-                <MudText Typo="Typo.inherit" Color="color">@context.Result</MudText>
+                    else
+                    {
+                        @context.Item.Name
+                    }
+                </CellTemplate>
+            </Column>
 
-            </MudTd>
-        </RowTemplate>
-    </MudTable>
+            <Column T="CompareObjectResult" Field="@nameof(CompareObjectResult.Namespace)" HeaderStyle="@($"width: 25%")" />
+
+            <Column T="CompareObjectResult" Field="@nameof(CompareObjectResult.Result)" HeaderStyle="@($"width: 25%")">
+                <CellTemplate>
+                    @{
+                        Color color = Color.Primary;
+
+                        switch (context.Item.Result)
+                        {
+                            case CompareObjectResultEnum.Added:
+                                color = Color.Success;
+                                break;
+                            case CompareObjectResultEnum.Modified:
+                                color = Color.Info;
+                                break;
+                            case CompareObjectResultEnum.Removed:
+                                color = Color.Warning;
+                                break;
+                        }
+                    }
+                    <MudText Typo="Typo.inherit" Color="color">@context.Item.Result</MudText>
+                </CellTemplate>
+            </Column>
+        </Columns>
+    </MudDataGrid>
 </ResizePanel>
 
 @code {
