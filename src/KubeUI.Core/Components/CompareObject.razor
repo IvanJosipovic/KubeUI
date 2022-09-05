@@ -2,14 +2,14 @@
 @using System.Text.Json.JsonDiffPatch.Diffs
 @using YamlDotNet.System.Text.Json
 
-<KubeMonacoEditor Value="@diffYson" Language="yaml" />
+<KubeMonacoEditor Value="@diffJson" Language="yaml" />
 
 @code {
     [Parameter] public JsonDiffDelta Diff { get; set; }
     [Parameter] public IKubernetesObject<V1ObjectMeta> Left { get; set; }
     [Parameter] public IKubernetesObject<V1ObjectMeta> Right { get; set; }
 
-    private string diffYson;
+    private string diffJson;
 
     protected override void OnInitialized()
     {
@@ -20,7 +20,7 @@
 
         if (Diff.Document != null)
         {
-            diffYson = YamlConverter.Serialize(Diff.Document);
+            diffJson = YamlConverter.Serialize(Diff.Document);
         }
     }
 }
