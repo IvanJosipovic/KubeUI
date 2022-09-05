@@ -21,9 +21,6 @@ public static class ConfigureServices
         services.AddSingleton<ClusterManager>();
         services.AddSingleton<ICRDGenerator, CRDGenerator>();
 
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")))
-        {
-            services.AddSingleton<Updater>();
-        }
+        services.AddSingleton<Updater>();
     }
 }

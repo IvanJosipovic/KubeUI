@@ -1,10 +1,7 @@
-using KubeUI.Core.Services;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using MudBlazor.Services;
-using System.Reflection;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using System.Runtime.InteropServices;
 
 namespace KubeUI.Core.Shared;
 
@@ -14,7 +11,7 @@ public partial class MainLayout
     private ILogger<MainLayout> Logger { get; set; }
 
     [Inject]
-    private IResizeListenerService? ResizeListenerService { get; set; }
+    private IResizeListenerService ResizeListenerService { get; set; }
 
     [Inject]
     private Updater Updater { get; set; }
@@ -47,26 +44,29 @@ public partial class MainLayout
 
         ResizeMenu(await ResizeListenerService.GetBreakpoint());
 
-        try
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")))
         {
-            if (await Updater.UpdateRequired())
+            try
             {
-                Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
-
-                var release = await Updater.GetReleases();
-
-                Snackbar.Add($"Update {release.FirstOrDefault()?.tag_name} is available!", Severity.Success, config =>
+                if (await Updater.UpdateRequired())
                 {
-                    config.Onclick = async snackbar =>
+                    Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+
+                    var release = await Updater.GetReleases();
+
+                    Snackbar.Add($"Update {release.FirstOrDefault()?.tag_name} is available!", Severity.Success, config =>
                     {
-                        await jSRuntime.InvokeVoidAsync("open", new object[2] { release.FirstOrDefault().html_url, "_blank" });
-                    };
-                });
+                        config.Onclick = async snackbar =>
+                        {
+                            await jSRuntime.InvokeVoidAsync("open", new object[2] { release.FirstOrDefault().html_url, "_blank" });
+                        };
+                    });
+                }
             }
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Error checking for updates!");
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Error checking for updates!");
+            }
         }
     }
 
