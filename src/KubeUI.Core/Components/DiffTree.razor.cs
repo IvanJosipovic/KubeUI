@@ -45,6 +45,7 @@ public partial class DiffTree
                     var arrayDiff = new DiffItem()
                     {
                         Name = item.Index.ToString(),
+                        Items = BuildTree(item.Index.ToString(), item.Diff),
                         Delta = item.Diff,
                         Icon = GetIcon(item.Diff.Kind)
                     };
