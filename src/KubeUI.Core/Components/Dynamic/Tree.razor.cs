@@ -1,167 +1,166 @@
 using System.Collections;
 using System.Reflection;
 
-namespace KubeUI.Core.Components.Dynamic
+namespace KubeUI.Core.Components.Dynamic;
+
+public partial class Tree<TItem>
 {
-    public partial class Tree<TItem>
+    [Inject] private ILogger<Tree<TItem>> Logger { get; set; }
+
+    [Parameter]
+    public TItem Item { get; set; }
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    [Parameter]
+    public EventCallback<object> ObjectSelected { get; set; }
+
+    private HashSet<TreeItem> TreeItems { get; set; } = new HashSet<TreeItem>();
+
+    public HashSet<TreeItem> BuildTree(object obj)
     {
-        [Inject] private ILogger<Tree<TItem>> Logger { get; set; }
+        HashSet<TreeItem> Tree = new HashSet<TreeItem>();
 
-        [Parameter]
-        public TItem Item { get; set; }
-
-        [Parameter]
-        public bool ReadOnly { get; set; }
-
-        [Parameter]
-        public EventCallback<object> ObjectSelected { get; set; }
-
-        private HashSet<TreeItem> TreeItems { get; set; } = new HashSet<TreeItem>();
-
-        public HashSet<TreeItem> BuildTree(object obj)
+        if (obj is V1JSONSchemaProps)
         {
-            HashSet<TreeItem> Tree = new HashSet<TreeItem>();
-
-            if (obj is V1JSONSchemaProps)
-            {
-                return Tree;
-            }
-
-            foreach (var property in obj.GetType().GetProperties()
-                .Where(x => x.PropertyType.Namespace.Equals(typeof(V1Deployment).Namespace) ||
-                x.PropertyType.Namespace.StartsWith("KubeUI.") ||
-                x.PropertyType.Namespace.StartsWith("System.Collections.") ||
-                x.PropertyType.Namespace.StartsWith(typeof(KubernetesCRDModelGen.GenericObject).Namespace)))
-            {
-                try
-                {
-                    var item = property.GetValue(obj);
-
-                    if (item == null && ReadOnly)
-                    {
-                        continue;
-                    }
-
-                    if (item == null)
-                    {
-                        try
-                        {
-                            item = Utilities.CreateInstance(property.PropertyType);
-                            property.SetValue(obj, item);
-                        }
-                        catch (Exception ex)
-                        {
-                            Logger.LogError(ex, "Failed to create instance of {0}", property.PropertyType.FullName);
-                            continue;
-                        }
-                    }
-
-                    if (item.GetType().FullName.StartsWith("System.Collections."))
-                    {
-                        Tree.Add(new TreeItem()
-                        {
-                            Name = property.Name.AddSpacesBeforeCapitals(),
-                            TreeItems = GetCollectionItems(item),
-                            Object = item,
-                            IsCollection = true,
-                            Summary = property.GetSummary()
-                        });
-                    }
-                    else
-                    {
-                        Tree.Add(new TreeItem()
-                        {
-                            Name = property.Name.AddSpacesBeforeCapitals(),
-                            TreeItems = BuildTree(item),
-                            Object = item,
-                            Summary = property.GetSummary()
-                        });
-                    }
-                }
-                catch (Exception e)
-                {
-                    Logger.LogError(e, "BuildTree Failed: {msg}", e.Message);
-                }
-            }
-
             return Tree;
         }
 
-        public HashSet<TreeItem> GetCollectionItems(object collection)
+        foreach (var property in obj.GetType().GetProperties()
+            .Where(x => x.PropertyType.Namespace.Equals(typeof(V1Deployment).Namespace) ||
+            x.PropertyType.Namespace.StartsWith("KubeUI.") ||
+            x.PropertyType.Namespace.StartsWith("System.Collections.") ||
+            x.PropertyType.Namespace.StartsWith(typeof(KubernetesCRDModelGen.GenericObject).Namespace)))
         {
-            var tree = new HashSet<TreeItem>();
-            var type = collection.GetType();
-            var genType = type.GetTypeInfo().GenericTypeArguments[0];
-
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>) && genType == typeof(string))
+            try
             {
-                foreach (DictionaryEntry obj in (IDictionary)collection)
+                var item = property.GetValue(obj);
+
+                if (item == null && ReadOnly)
                 {
-                    tree.Add(new TreeItem()
+                    continue;
+                }
+
+                if (item == null)
+                {
+                    try
                     {
-                        Name = obj.Key.ToString(),
-                        TreeItems = BuildTree(obj),
-                        Object = obj,
-                        Summary = genType.GetSummary(),
-                        IsCollectionItem = true,
-                        Collection = collection
+                        item = Utilities.CreateInstance(property.PropertyType);
+                        property.SetValue(obj, item);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError(ex, "Failed to create instance of {0}", property.PropertyType.FullName);
+                        continue;
+                    }
+                }
+
+                if (item.GetType().FullName.StartsWith("System.Collections."))
+                {
+                    Tree.Add(new TreeItem()
+                    {
+                        Name = property.Name.AddSpacesBeforeCapitals(),
+                        TreeItems = GetCollectionItems(item),
+                        Object = item,
+                        IsCollection = true,
+                        Summary = property.GetSummary()
+                    });
+                }
+                else
+                {
+                    Tree.Add(new TreeItem()
+                    {
+                        Name = property.Name.AddSpacesBeforeCapitals(),
+                        TreeItems = BuildTree(item),
+                        Object = item,
+                        Summary = property.GetSummary()
                     });
                 }
             }
-            else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
+            catch (Exception e)
             {
-                var list = (IList)collection;
-                int n = list.Count;
+                Logger.LogError(e, "BuildTree Failed: {msg}", e.Message);
+            }
+        }
 
-                for (int i = 0; i < n; i++)
+        return Tree;
+    }
+
+    public HashSet<TreeItem> GetCollectionItems(object collection)
+    {
+        var tree = new HashSet<TreeItem>();
+        var type = collection.GetType();
+        var genType = type.GetTypeInfo().GenericTypeArguments[0];
+
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>) && genType == typeof(string))
+        {
+            foreach (DictionaryEntry obj in (IDictionary)collection)
+            {
+                tree.Add(new TreeItem()
                 {
-                    object myObject = list[i];
-
-                    tree.Add(new TreeItem()
-                    {
-                        Name = $"Item {i}",
-                        TreeItems = BuildTree(myObject),
-                        Object = myObject,
-                        Summary = genType.GetSummary(),
-                        IsCollectionItem = true,
-                        Collection = collection
-                    });
-                }
+                    Name = obj.Key.ToString(),
+                    TreeItems = BuildTree(obj),
+                    Object = obj,
+                    Summary = genType.GetSummary(),
+                    IsCollectionItem = true,
+                    Collection = collection
+                });
             }
-            else
+        }
+        else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
+        {
+            var list = (IList)collection;
+            int n = list.Count;
+
+            for (int i = 0; i < n; i++)
             {
-                Logger.LogWarning("Missing Collection Type: {type}", type.FullName);
+                object myObject = list[i];
+
+                tree.Add(new TreeItem()
+                {
+                    Name = $"Item {i}",
+                    TreeItems = BuildTree(myObject),
+                    Object = myObject,
+                    Summary = genType.GetSummary(),
+                    IsCollectionItem = true,
+                    Collection = collection
+                });
             }
-
-            return tree;
         }
-
-        private TreeItem SelectedValue { get; set; }
-
-        protected override void OnInitialized()
+        else
         {
-            var rootItem = new TreeItem()
-            {
-                Name = Item.GetType().Name,
-                Object = Item,
-                IsExpanded = true,
-                TreeItems = BuildTree(Item),
-                Summary = Item.GetType().GetSummary()
-            };
-
-            TreeItems.Add(rootItem);
-            SelectedValue = rootItem;
+            Logger.LogWarning("Missing Collection Type: {type}", type.FullName);
         }
 
-        private void AddItem(object obj)
+        return tree;
+    }
+
+    private TreeItem SelectedValue { get; set; }
+
+    protected override void OnInitialized()
+    {
+        var rootItem = new TreeItem()
         {
-            var genType = obj.GetType().GetTypeInfo().GenericTypeArguments[0];
+            Name = Item.GetType().Name,
+            Object = Item,
+            IsExpanded = true,
+            TreeItems = BuildTree(Item),
+            Summary = Item.GetType().GetSummary()
+        };
 
-            var newObj = Utilities.CreateInstance(genType);
+        TreeItems.Add(rootItem);
+        SelectedValue = rootItem;
+    }
 
-            ((IList)genType).Add(newObj);
+    private void AddItem(object obj)
+    {
+        var genType = obj.GetType().GetTypeInfo().GenericTypeArguments[0];
 
-            StateHasChanged();
-        }
+        var newObj = Utilities.CreateInstance(genType);
+
+        ((IList)genType).Add(newObj);
+
+        StateHasChanged();
     }
 }

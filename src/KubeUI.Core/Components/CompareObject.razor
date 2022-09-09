@@ -2,14 +2,40 @@
 @using System.Text.Json.JsonDiffPatch.Diffs
 @using YamlDotNet.System.Text.Json
 
-<KubeMonacoEditor Value="@diffJson" Language="yaml" />
+<MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="mud-height-full" Style="height: 100%" Color="Color.Primary">
+    <MudTabPanel Text="Diff" Style="height: 100%">
+        <MudGrid Spacing="1">
+            <MudItem sm="4">
+                <MudCard Class="align-left justify-left mud-width-full mt-1" Elevation="3">
+                    <DiffTree Item="Diff" ObjectSelected="DiffSelected" />
+                </MudCard>
+            </MudItem>
+            <MudItem sm="8">
+                <MudCard Class="mt-1" Elevation="3" Style="height: 100%">
+                    @if (selectedDiff.Document == null)
+                    {
+                        <MudText Typo="Typo.h6">Select a change on the left to see the details!</MudText>
+                    }
+                    else
+                    {
+                        <DiffViewer Diff="selectedDiff" />
+                    }
+                </MudCard>
+            </MudItem>
+        </MudGrid>
+    </MudTabPanel>
+    <MudTabPanel Text="Side by Side" Style="height: 100%">
+        <KubeMonacoDiff Original="@(Left.ToYaml())" Modified="@(Right.ToYaml())" Language="yaml" />
+    </MudTabPanel>
+</MudTabs>
+
 
 @code {
     [Parameter] public JsonDiffDelta Diff { get; set; }
     [Parameter] public IKubernetesObject<V1ObjectMeta> Left { get; set; }
     [Parameter] public IKubernetesObject<V1ObjectMeta> Right { get; set; }
 
-    private string diffJson;
+    private JsonDiffDelta selectedDiff;
 
     protected override void OnInitialized()
     {
@@ -17,10 +43,15 @@
         {
             Diff = ObjectCompare.CompareObjects(Left, Right);
         }
+    }
 
-        if (Diff.Document != null)
+    private void DiffSelected(JsonDiffDelta diff)
+    {
+        if (diff.Kind == DeltaKind.Object || diff.Kind == DeltaKind.Array)
         {
-            diffJson = YamlConverter.Serialize(Diff.Document);
+            return;
         }
+
+        selectedDiff = diff;
     }
 }

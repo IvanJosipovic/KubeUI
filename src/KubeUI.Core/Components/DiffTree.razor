@@ -1,0 +1,32 @@
+﻿@using System.Text.Json.JsonDiffPatch.Diffs
+<MudTreeView Items="Items" Dense="true" Width="100%" @bind-SelectedValue="SelectedValue">
+    <ItemTemplate>
+        <MudTreeViewItem @bind-Expanded="@context.IsExpanded"
+                         Items="@context.Items"
+                         Value="@context"
+                         OnClick="(x) => ObjectSelected.InvokeAsync(context.Delta)">
+            <Content>
+                <MudTreeViewItemToggleButton @bind-Expanded="@context.IsExpanded" Visible="@(context.Items.Count > 0)" />
+                @switch (context.Delta.Kind)
+                {
+                    case DeltaKind.Added:
+                        <MudIcon Icon="@context.Icon" Size="Size.Small" Color="Color.Success"></MudIcon>
+                        <MudText Color="Color.Inherit" Typo="Typo.inherit">@context.Name</MudText>
+                        break;
+                    case DeltaKind.Modified:
+                        <MudIcon Icon="@context.Icon" Size="Size.Small" Color="Color.Info"></MudIcon>
+                        <MudText Color="Color.Inherit" Typo="Typo.inherit">@context.Name</MudText>
+                        break;
+                    case DeltaKind.Deleted:
+                        <MudIcon Icon="@context.Icon" Size="Size.Small" Color="Color.Warning"></MudIcon>
+                        <MudText Color="Color.Inherit" Typo="Typo.inherit">@context.Name</MudText>
+                        break;
+                    default:
+                        <MudText Typo="Typo.inherit">@context.Name</MudText>
+                        break;
+                }
+
+            </Content>
+        </MudTreeViewItem>
+    </ItemTemplate>
+</MudTreeView>

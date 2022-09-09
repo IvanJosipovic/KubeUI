@@ -20,7 +20,7 @@
                 <CellTemplate>
                     @if (context.Item.Result == CompareObjectResultEnum.Modified)
                     {
-                        <a href="javascript:void(0)" @onclick="(x => ShowObjectDetails(context.Item.JsonDiff))"><MudText Color="Color.Primary" Typo="Typo.inherit">@context.Item.Name</MudText></a>
+                        <a href="javascript:void(0)" @onclick="(x => ShowObjectDetails(context.Item))"><MudText Color="Color.Primary" Typo="Typo.inherit">@context.Item.Name</MudText></a>
                     }
                     else
                     {
@@ -95,25 +95,25 @@
                 var rightObjects = rightBase.Objects[type];
 
                 // type exists on the right
-                foreach (var itemKey in leftObjects.Keys)
+                foreach (var leftObject in leftObjects)
                 {
-                    var leftObject = leftObjects[itemKey];
-
-                    if (rightObjects.ContainsKey(itemKey))
+                    if (rightObjects.ContainsKey(leftObject.Key))
                     {
-                        var rightObject = rightObjects[itemKey];
+                        var rightObject = rightObjects[leftObject.Key];
 
-                        var compare = ObjectCompare.CompareObjects(leftObject, rightObject);
+                        var compare = ObjectCompare.CompareObjects(leftObject.Value, rightObject);
 
                         if (compare.Kind == System.Text.Json.JsonDiffPatch.Diffs.DeltaKind.None)
                         {
                             results.Add(new CompareObjectResult()
                             {
                                 Type = type,
-                                Key = itemKey,
+                                Key = leftObject.Key,
                                 Result = CompareObjectResultEnum.None,
-                                Name = GetName(itemKey),
-                                Namespace = GetNamespace(itemKey)
+                                Name = GetName(leftObject.Key),
+                                Namespace = GetNamespace(leftObject.Key),
+                                Original = leftObject.Value,
+                                Modified = rightObject
                             });
                         }
                         else
@@ -121,11 +121,13 @@
                             results.Add(new CompareObjectResult()
                             {
                                 Type = type,
-                                Key = itemKey,
+                                Key = leftObject.Key,
                                 Result = CompareObjectResultEnum.Modified,
                                 JsonDiff = compare,
-                                Name = GetName(itemKey),
-                                Namespace = GetNamespace(itemKey)
+                                Name = GetName(leftObject.Key),
+                                Namespace = GetNamespace(leftObject.Key),
+                                Original = leftObject.Value,
+                                Modified = rightObject
                             });
                         }
                     }
@@ -134,10 +136,11 @@
                         results.Add(new CompareObjectResult()
                         {
                             Type = type,
-                            Key = itemKey,
+                            Key = leftObject.Key,
                             Result = CompareObjectResultEnum.Removed,
-                            Name = GetName(itemKey),
-                            Namespace = GetNamespace(itemKey)
+                            Modified = leftObject.Value,
+                            Name = GetName(leftObject.Key),
+                            Namespace = GetNamespace(leftObject.Key)
                         });
                     }
                 }
@@ -145,15 +148,16 @@
             else
             {
                 // type doesn't exist on the right
-                foreach (var itemKey in leftObjects.Keys)
+                foreach (var item in leftObjects)
                 {
                     results.Add(new CompareObjectResult()
                     {
                         Type = type,
-                        Key = itemKey,
+                        Key = item.Key,
                         Result = CompareObjectResultEnum.Removed,
-                        Name = GetName(itemKey),
-                        Namespace = GetNamespace(itemKey)
+                        Modified = item.Value,
+                        Name = GetName(item.Key),
+                        Namespace = GetNamespace(item.Key)
                     });
                 }
             }
@@ -184,7 +188,7 @@
                             Type = type,
                             Key = itemKey,
                             Result = CompareObjectResultEnum.Added,
-                            Object = rightObject,
+                            Modified = rightObject,
                             Name = GetName(itemKey),
                             Namespace = GetNamespace(itemKey)
                         });
@@ -203,7 +207,7 @@
                         Type = type,
                         Key = itemKey,
                         Result = CompareObjectResultEnum.Added,
-                        Object = rightObject,
+                        Modified = rightObject,
                         Name = GetName(itemKey),
                         Namespace = GetNamespace(itemKey)
                     });
@@ -238,7 +242,9 @@
 
         public JsonDiffDelta JsonDiff { get; set; }
 
-        public IKubernetesObject<V1ObjectMeta> Object {get;set;}
+        public IKubernetesObject<V1ObjectMeta> Original {get;set;}
+
+        public IKubernetesObject<V1ObjectMeta> Modified { get; set; }
     }
 
     public enum CompareObjectResultEnum
@@ -249,11 +255,13 @@
         Modified
     }
 
-    private void ShowObjectDetails(JsonDiffDelta delta)
+    private void ShowObjectDetails(CompareObjectResult result)
     {
         var parameters = new DialogParameters()
         {
-            { nameof(CompareObject.Diff), delta },
+            { nameof(CompareObject.Diff), result.JsonDiff },
+            { nameof(CompareObject.Left), result.Original },
+            { nameof(CompareObject.Right), result.Modified },
         };
 
         var dialog = Dialog.Show<CompareObject>($"Object Diff", parameters, new DialogOptions()

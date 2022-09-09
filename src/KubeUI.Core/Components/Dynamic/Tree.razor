@@ -5,27 +5,26 @@
         <MudTreeViewItem @bind-Expanded="@context.IsExpanded"
                         Items="@context.TreeItems"
                         Value="@context"
-                        Text="@context.Name"
                         OnClick="(x) => ObjectSelected.InvokeAsync(context.Object)"
-                        >
-                <Content>
-                    <MudTreeViewItemToggleButton @bind-Expanded="@context.IsExpanded" Visible="@(context.TreeItems.Count > 0)" />
-                    <MudTooltip Text="" Inline="false" RootStyle="width:100%" Placement="Placement.Bottom">
-                        <ChildContent>
-                            <MudText>@context.Name</MudText>
-                        </ChildContent>
+        >
+            <Content>
+                <MudTreeViewItemToggleButton @bind-Expanded="@context.IsExpanded" Visible="@(context.TreeItems.Count > 0)" />
+                <MudTooltip Text="" Inline="false" RootStyle="width:100%" Placement="Placement.Bottom">
+                    <ChildContent>
+                        <MudText>@context.Name</MudText>
+                    </ChildContent>
 
-                        <TooltipContent>
-                            <div style="max-width: 500px">
-                                @context.Summary
-                            </div>
-                        </TooltipContent>
-                    </MudTooltip>
-                    @if (context.IsCollection && !ReadOnly)
-                    {
-                        <MudIconButton OnClick="@(() => AddItem(context.Object))" Icon="@Icons.Filled.Add" Color="Color.Secondary" />
-                    }
-                </Content>
+                    <TooltipContent>
+                        <div style="max-width: 500px">
+                            @context.Summary
+                        </div>
+                    </TooltipContent>
+                </MudTooltip>
+                @if (context.IsCollection && !ReadOnly)
+                {
+                    <MudIconButton OnClick="@(() => AddItem(context.Object))" Icon="@Icons.Filled.Add" Color="Color.Secondary" />
+                }
+            </Content>
         </MudTreeViewItem>
     </ItemTemplate>
 </MudTreeView>

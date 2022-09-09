@@ -21,13 +21,16 @@ namespace KubeUI.Core.Client
 
         public static IKubernetesObject<V1ObjectMeta> CleanObject(IKubernetesObject<V1ObjectMeta> kubeObject)
         {
-            kubeObject.Metadata.Generation = null;
-            kubeObject.Metadata.CreationTimestamp = null;
-            kubeObject.Metadata.Finalizers = null;
-            kubeObject.Metadata.ManagedFields = null;
-            kubeObject.Metadata.ResourceVersion = null;
-            kubeObject.Metadata.SelfLink = null;
-            kubeObject.Metadata.Uid = null;
+            if (kubeObject.Metadata != null)
+            {
+                kubeObject.Metadata.Generation = null;
+                kubeObject.Metadata.CreationTimestamp = null;
+                kubeObject.Metadata.Finalizers = null;
+                kubeObject.Metadata.ManagedFields = null;
+                kubeObject.Metadata.ResourceVersion = null;
+                kubeObject.Metadata.SelfLink = null;
+                kubeObject.Metadata.Uid = null;
+            }
 
             var prop = kubeObject.GetType().GetProperty(nameof(V1Deployment.Status));
 

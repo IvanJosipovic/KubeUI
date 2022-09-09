@@ -1,0 +1,22 @@
+﻿@using System.Text.Json.JsonDiffPatch.Diffs
+@using YamlDotNet.System.Text.Json
+<MudText Class="mb-2 ml-3" Typo="Typo.h6">@Diff.Kind</MudText>
+
+@switch (Diff.Kind)
+{
+    case DeltaKind.Added:
+        <KubeMonacoEditor ReadOnly="true" Value="@YamlConverter.Serialize(@Diff.GetAdded())"></KubeMonacoEditor>
+        break;
+    case DeltaKind.Modified:
+        <KubeMonacoDiff Original="@YamlConverter.Serialize(@Diff.GetOldValue())" Modified="@YamlConverter.Serialize(@Diff.GetNewValue())" />
+        break;
+    case DeltaKind.Deleted:
+        <KubeMonacoEditor ReadOnly="true" Value="@YamlConverter.Serialize(@Diff.GetDeleted())"></KubeMonacoEditor>
+        break;
+    default:
+        break;
+}
+
+@code {
+    [Parameter] public JsonDiffDelta Diff { get; set; }
+}
