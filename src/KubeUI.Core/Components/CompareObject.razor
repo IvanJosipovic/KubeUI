@@ -5,12 +5,12 @@
 <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="mud-height-full" Style="height: 100%" Color="Color.Primary">
     <MudTabPanel Text="Diff" Style="height: 100%">
         <MudGrid Spacing="1">
-            <MudItem sm="4">
+                <MudItem sm="3">
                 <MudCard Class="align-left justify-left mud-width-full mt-1" Elevation="3">
                     <DiffTree Item="Diff" ObjectSelected="DiffSelected" />
                 </MudCard>
             </MudItem>
-            <MudItem sm="8">
+                <MudItem sm="9">
                 <MudCard Class="mt-1" Elevation="3" Style="height: 100%">
                     @if (selectedDiff.Document == null)
                     {
