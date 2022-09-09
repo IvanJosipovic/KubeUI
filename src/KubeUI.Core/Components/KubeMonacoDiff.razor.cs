@@ -18,7 +18,8 @@ public partial class KubeMonacoDiff : IDisposable
     {
         return new DiffEditorConstructionOptions
         {
-            AutomaticLayout = true
+            AutomaticLayout = true,
+            IgnoreTrimWhitespace = false
         };
     }
 
