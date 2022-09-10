@@ -6,9 +6,9 @@
             <DisplayContent>
                 @if (context.Item1.Status != null)
                 {
-                    @foreach (var container in context.Item1?.Status?.ContainerStatuses?.EnsureNotEmpty())
+                    foreach (var container in context.Item1.Status.ContainerStatuses.EnsureNotEmpty())
                     {
-                        @if (container.State?.Running != null)
+                        if (container.State?.Running != null)
                         {
                             <MudAvatar Style="height:10px; width:10px; margin-right: 2px;" Color="Color.Success"></MudAvatar>
                         }
@@ -21,9 +21,10 @@
                             <MudAvatar Style="height:10px; width:10px; margin-right: 2px" Color="Color.Primary"></MudAvatar>
                         }
                     }
-                    @foreach (var container in context.Item1?.Status?.InitContainerStatuses?.EnsureNotEmpty())
+
+                    foreach (var container in context.Item1.Status.InitContainerStatuses.EnsureNotEmpty())
                     {
-                        @if (container.State?.Terminated?.Reason == "Completed")
+                        if (container.State?.Terminated?.Reason == "Completed")
                         {
                             <MudAvatar Style="height:10px; width:10px; margin-right: 2px;" Color="Color.Dark"></MudAvatar>
                         }
