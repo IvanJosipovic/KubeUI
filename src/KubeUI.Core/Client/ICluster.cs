@@ -45,4 +45,6 @@ public interface ICluster
     Task ImportYaml(Stream stream);
 
     Task ImportFolder(string path);
+
+    Task ImportZip(Stream stream);
 }

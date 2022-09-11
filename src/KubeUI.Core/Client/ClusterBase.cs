@@ -2,6 +2,8 @@
 using Microsoft.CodeAnalysis;
 using System.Collections.Concurrent;
 using System.ComponentModel;
+using System.IO.Abstractions;
+using System.IO.Compression;
 using System.Reflection;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
@@ -258,12 +260,26 @@ public abstract class ClusterBase : INotifyPropertyChanged
         {
             var files = new DirectoryInfo(path)
                 .EnumerateFiles("*", SearchOption.AllDirectories)
-                .Where(fi => fi.Extension.Equals(".yaml", StringComparison.InvariantCultureIgnoreCase) || fi.Extension.Equals(".yml", StringComparison.InvariantCultureIgnoreCase))
+                .Where(fi => fi.Extension.Equals(".yaml", StringComparison.OrdinalIgnoreCase) || fi.Extension.Equals(".yml", StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
             foreach (var file in files)
             {
                 await ImportYaml(file.OpenRead());
+            }
+        }
+    }
+
+    public async Task ImportZip(Stream stream)
+    {
+        using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read))
+        {
+            foreach (ZipArchiveEntry entry in archive.Entries)
+            {
+                if (entry.FullName.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase) || entry.FullName.EndsWith(".yml", StringComparison.OrdinalIgnoreCase))
+                {
+                    await ImportYaml(entry.Open());
+                }
             }
         }
     }

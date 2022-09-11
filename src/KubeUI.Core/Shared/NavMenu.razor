@@ -23,7 +23,7 @@
 
     @if (ClusterManager.GetActiveCluster() != null && ClusterManager.GetActiveCluster() is GitOpsCluster)
     {
-        <InputFile id="fileInput" OnChange="UploadFiles" hidden multiple accept=".yaml, .yml" />
+        <InputFile id="fileInput" OnChange="UploadFiles" hidden multiple accept=".yaml, .yml, .zip" />
         <label class="mud-nav-item mud-ripple" for="fileInput">
             <a class="mud-nav-link">
                 <svg class="mud-icon-root mud-icon-default mud-svg-icon mud-icon-size-medium mud-nav-link-icon mud-nav-link-icon-default" focusable="false" viewBox="0 0 24 24" aria-hidden="true">

@@ -42,7 +42,14 @@ public partial class NavMenu : IDisposable
                 await file.OpenReadStream(104857600).CopyToAsync(stream);
                 stream.Position = 0;
 
-                await ClusterManager.GetActiveCluster().ImportYaml(stream);
+                if (Path.GetExtension(file.Name) == ".zip")
+                {
+                    await ClusterManager.GetActiveCluster().ImportZip(stream);
+                }
+                else if (Path.GetExtension(file.Name) == ".yaml" || Path.GetExtension(file.Name) == ".yml")
+                {
+                    await ClusterManager.GetActiveCluster().ImportYaml(stream);
+                }
             }
             catch (Exception ex)
             {
