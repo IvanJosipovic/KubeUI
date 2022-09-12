@@ -212,45 +212,11 @@ public abstract class ClusterBase : INotifyPropertyChanged
     {
         var types = GenerateTypeMap();
 
-        var serializer = new SerializerBuilder()
-            .JsonCompatible()
-            .Build();
-        var deserializer = new DeserializerBuilder().Build();
-        var method = typeof(KubernetesJson).GetMethod(nameof(KubernetesJson.Deserialize), BindingFlags.Static | BindingFlags.Public, new[] { typeof(string) });
+        var objects = await KubernetesYaml.LoadAllFromStreamAsync(stream, types);
 
-        using var reader = new StreamReader(stream);
-
-        var parser = new Parser(reader);
-
-        parser.Consume<StreamStart>();
-
-        while (parser.Accept<DocumentStart>(out var start))
+        foreach (var obj in objects)
         {
-            var doc = deserializer.Deserialize(parser);
-            var json = serializer.Serialize(doc);
-
-            var meta = KubernetesJson.Deserialize<KubernetesObject>(json);
-            var key = $"{meta.ApiVersion}/{meta.Kind}";
-
-            if (types.ContainsKey(key))
-            {
-                try
-                {
-                    var type = types[key];
-                    var generic = method.MakeGenericMethod(type);
-                    var obj = generic.Invoke(null, new[] { json });
-
-                    AddObject((IKubernetesObject<V1ObjectMeta>)obj);
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogError(ex, "Error converting from Json to {type} {json}", key, json);
-                }
-            }
-            else
-            {
-                Logger.LogWarning("Missing Type: {type}", key);
-            }
+            AddObject((IKubernetesObject<V1ObjectMeta>)obj);
         }
     }
 
@@ -265,7 +231,14 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
             foreach (var file in files)
             {
-                await ImportYaml(file.OpenRead());
+                try
+                {
+                    await ImportYaml(file.OpenRead());
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, "Error parsing Yaml {filename}", file.FullName);
+                }
             }
         }
     }
@@ -278,7 +251,14 @@ public abstract class ClusterBase : INotifyPropertyChanged
             {
                 if (entry.FullName.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase) || entry.FullName.EndsWith(".yml", StringComparison.OrdinalIgnoreCase))
                 {
-                    await ImportYaml(entry.Open());
+                    try
+                    {
+                        await ImportYaml(entry.Open());
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError(ex, "Error parsing Yaml {filename}", entry.FullName);
+                    }
                 }
             }
         }
