@@ -183,10 +183,11 @@ public static class Utilities
 
     public static string ToYaml(this IKubernetesObject<V1ObjectMeta> obj)
     {
-        var source = KubernetesJson.Serialize(obj);
+        return KubeUI.Core.Client.Seralization.KubernetesYaml.Serialize(obj).TrimEnd();
+    }
 
-        var data = JsonNode.Parse(source);
-
-        return YamlConverter.Serialize(data).TrimEnd();
+    public static string ToJson(this IKubernetesObject<V1ObjectMeta> obj)
+    {
+        return JsonPrettifyString(KubernetesJson.Serialize(obj));
     }
 }

@@ -212,7 +212,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
     {
         var types = GenerateTypeMap();
 
-        var objects = await KubernetesYaml.LoadAllFromStreamAsync(stream, types);
+        var objects = await Seralization.KubernetesYaml.LoadAllFromStreamAsync(stream, types);
 
         foreach (var obj in objects)
         {

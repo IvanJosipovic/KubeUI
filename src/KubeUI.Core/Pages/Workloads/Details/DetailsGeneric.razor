@@ -23,7 +23,7 @@
         </MudTabPanel>
 @*        <MudTabPanel Text="Json">
             <ResizePanel Context="resize" Offset="180" SetHeigh="true">
-                <KubeMonacoEditor Value="@Utilities.JsonPrettifyString(KubernetesJson.Serialize(Utilities.CloneObject(context)))" Language="json" />
+                <KubeMonacoEditor Value="@context.ToJson()" Language="json" />
             </ResizePanel>
         </MudTabPanel>*@
 
