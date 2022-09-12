@@ -21,7 +21,7 @@
 		<PackageReference Include="SystemTextJson.JsonDiffPatch" Version="1.3.0" />
 		<PackageReference Include="WindowsAPICodePack-Shell" Version="1.1.1" />
 		<PackageReference Include="XtermBlazor" Version="1.5.2" />
-		<PackageReference Include="YamlDotNet.System.Text.Json" Version="1.1.0" />
+		<PackageReference Include="YamlDotNet.System.Text.Json" Version="1.2.0" />
 	</ItemGroup>
 
 	<ItemGroup>
