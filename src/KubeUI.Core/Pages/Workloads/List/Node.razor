@@ -1,5 +1,16 @@
 ﻿@page "/list/v1/node"
 
 <ListGeneric TItem="V1Node" HideNamespace="true" MultiSelection="true">
-
+    <Columns>
+        <ColumnComponent TItem="V1Node" Name="Pods">
+            <DisplayContent>
+                @(ClusterManager.GetActiveCluster().GetObjects<V1Pod>().Where(x => x.Spec.NodeName == context.Item1.Name()).Count())
+            </DisplayContent>
+        </ColumnComponent>
+    </Columns>
 </ListGeneric>
+
+@code {
+    [Inject]
+    private ClusterManager ClusterManager { get; set; }
+}
