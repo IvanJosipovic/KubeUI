@@ -127,7 +127,7 @@ jobs:
 
     - name: Package
       working-directory: src/KubeUI.WPF
-      run: iscc "/DMyAppVersion=${{ needs.semantic-release.outputs.new_release_version }}" "/DMyOutputBaseFilename=KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-win-x64" .\setup.iss
+      run: ../../inst/iscc.exe "/DMyAppVersion=${{ needs.semantic-release.outputs.new_release_version }}" "/DMyOutputBaseFilename=KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-win-x64" .\setup.iss
 
     - uses: actions/upload-artifact@v3
       with:
