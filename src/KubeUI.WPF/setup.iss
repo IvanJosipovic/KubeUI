@@ -6,9 +6,6 @@
 #define MyAppPublisher "Ivan Josipovic"
 #define MyAppURL "https://www.KubeUI.com"
 #define MyAppExeName "KubeUI.exe"
-#define MyAppAssocName MyAppName + " File"
-#define MyAppAssocExt ".kui"
-#define MyAppAssocKey StringChange(MyAppAssocName, " ", "") + MyAppAssocExt
 ;#define MyOutputBaseFilename "KubeUI"
 
 [Setup]
@@ -28,7 +25,7 @@ DisableProgramGroupPage=yes
 LicenseFile=..\..\LICENSE
 ; Remove the following line to run in administrative install mode (install for all users.)
 PrivilegesRequired=lowest
-PrivilegesRequiredOverridesAllowed=dialog
+;PrivilegesRequiredOverridesAllowed=dialog
 OutputBaseFilename={#MyOutputBaseFilename}
 SetupIconFile=icon.ico
 Compression=lzma
@@ -45,13 +42,6 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Source: "bin\publish\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "bin\publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
-
-[Registry]
-Root: HKA; Subkey: "Software\Classes\{#MyAppAssocExt}\OpenWithProgids"; ValueType: string; ValueName: "{#MyAppAssocKey}"; ValueData: ""; Flags: uninsdeletevalue
-Root: HKA; Subkey: "Software\Classes\{#MyAppAssocKey}"; ValueType: string; ValueName: ""; ValueData: "{#MyAppAssocName}"; Flags: uninsdeletekey
-Root: HKA; Subkey: "Software\Classes\{#MyAppAssocKey}\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName},0"
-Root: HKA; Subkey: "Software\Classes\{#MyAppAssocKey}\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""
-Root: HKA; Subkey: "Software\Classes\Applications\{#MyAppExeName}\SupportedTypes"; ValueType: string; ValueName: ".myp"; ValueData: ""
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
