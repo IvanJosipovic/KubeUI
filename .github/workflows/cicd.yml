@@ -137,7 +137,7 @@ jobs:
   release:
     if: needs.semantic-release.outputs.new_release_published == 'true'
     name: Create Release
-    needs: [build_web, build_hybrid]
+    needs: [build_web, build_windows]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
