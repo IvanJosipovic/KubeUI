@@ -1,0 +1,33 @@
+﻿@page "/details/v1/node"
+@using KubeUI.Core.Pages.Workloads.List
+
+<DetailsGeneric Name="@Name"
+                TItem="V1Node"
+                IsInSideMenu="IsInSideMenu">
+    <Overview>
+        <ListGeneric TItem="V1Pod" HideNamespace="false" MultiSelection="true" Query="(x => x.Where(y => y.Spec.NodeName == context.Name()))">
+        </ListGeneric>
+    </Overview>
+    <Tabs>
+    </Tabs>
+</DetailsGeneric>
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string Namespace { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string Name { get; set; }
+
+    [Parameter]
+    public bool IsInSideMenu { get; set; }
+
+    [Inject]
+    private ClusterManager ClusterManager { get; set; }
+
+    private int LogLineCount { get; set; } = 500;
+
+    private bool PreviousLog { get; set; } = false;
+}
