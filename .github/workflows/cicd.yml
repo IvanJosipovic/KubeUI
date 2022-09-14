@@ -131,8 +131,18 @@ jobs:
 
     - uses: actions/upload-artifact@v3
       with:
-        name: KubeUI-win-x64
+        name: KubeUI-win-x64-setup
         path: src/KubeUI.WPF/Output/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-win-x64.exe
+
+    - name: Publish
+      working-directory: src/KubeUI.WPF
+      run: Compress-Archive -Path bin/publish/* -DestinationPath KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-win-x64.zip
+      shell: pwsh
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: KubeUI-win-x64
+        path: src/KubeUI.WPF/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-win-x64.zip
 
   release:
     if: needs.semantic-release.outputs.new_release_published == 'true'
@@ -146,6 +156,12 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: KubeUI-win-x64
+        path: dist/
+
+    - name: Download artifact win-x64
+      uses: actions/download-artifact@v3
+      with:
+        name: KubeUI-win-x64-setup
         path: dist/
 
     - name: Download artifact web
