@@ -102,19 +102,11 @@ jobs:
         name: KubeUI-web
         path: src/KubeUI.Web/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-web.zip
 
-  build_hybrid:
-    name: Build Hybrid
+  build_windows:
+    name: Build Windows
     needs: [semantic-release, tests]
+    runs-on: windows-latest
     timeout-minutes: 10
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [windows-latest]
-        include:
-        - os: windows-latest
-          RUNTIME: win-x64
-          FOLDER: src/KubeUI.WPF
-          ARGS: --self-contained -p:PublishSingleFile=true -p:DebugType=None -p:IncludeNativeLibrariesForSelfExtract=true
     steps:
     - uses: actions/checkout@v3
 
@@ -123,19 +115,24 @@ jobs:
       with:
         global-json-file: src/global.json
 
-    - name: Publish
-      working-directory: ${{matrix.FOLDER}}
-      run: dotnet publish -c Release -r ${{matrix.RUNTIME}} -p:Version=${{ needs.semantic-release.outputs.new_release_version }} -o bin/publish ${{matrix.ARGS}}
+    - name: Download Inno Setup installer
+      run: curl -L -o installer.exe https://jrsoftware.org/download.php/is.exe
+
+    - name: Install Inno Setup
+      run: ./installer.exe /verysilent /allusers /dir=inst /DOWNLOADISCRYPT=1
 
     - name: Publish
-      working-directory: ${{matrix.FOLDER}}
-      run: Compress-Archive -Path bin/publish/* -DestinationPath KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-${{matrix.RUNTIME}}.zip
-      shell: pwsh
+      working-directory: src/KubeUI.WPF
+      run: dotnet publish -c Release -r win-x64 -p:Version=${{ needs.semantic-release.outputs.new_release_version }} -o bin/publish --self-contained -p:PublishSingleFile=true -p:DebugType=None -p:IncludeNativeLibrariesForSelfExtract=true
+
+    - name: Package
+      working-directory: src/KubeUI.WPF
+      run: iscc "/DMyAppVersion=${{ needs.semantic-release.outputs.new_release_version }}" "/DMyOutputBaseFilename=KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-win-x64" .\setup.iss
 
     - uses: actions/upload-artifact@v3
       with:
-        name: KubeUI-${{matrix.RUNTIME}}
-        path: ${{matrix.FOLDER}}/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-${{matrix.RUNTIME}}.zip
+        name: KubeUI-win-x64
+        path: src/KubeUI.WPF/Output/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-win-x64.exe
 
   release:
     if: needs.semantic-release.outputs.new_release_published == 'true'
