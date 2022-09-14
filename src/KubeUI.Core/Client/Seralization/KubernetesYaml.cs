@@ -13,18 +13,18 @@ namespace KubeUI.Core.Client.Seralization
     /// </summary>
     public static class KubernetesYaml
     {
-        private static readonly IDeserializer Deserializer =
+        public static readonly IDeserializer Deserializer =
             new DeserializerBuilder()
                 .WithNamingConvention(CamelCaseNamingConvention.Instance)
                 .WithTypeConverter(new IntOrStringYamlConverter())
                 .WithTypeConverter(new ByteArrayStringYamlConverter())
                 .WithTypeConverter(new ResourceQuantityYamlConverter())
                 .WithTypeConverter(new SystemTextJsonYamlTypeConverter())
-                .WithTypeInspector(x => new SystemTextJsonTypeInspector(x))
+                .WithTypeInspector(x => new SystemTextJsonTypeInspector(x, true))
                 .IgnoreUnmatchedProperties()
                 .Build();
 
-        private static readonly IValueSerializer Serializer =
+        public static readonly IValueSerializer Serializer =
             new SerializerBuilder()
                 .DisableAliases()
                 .WithNamingConvention(CamelCaseNamingConvention.Instance)
@@ -33,7 +33,7 @@ namespace KubeUI.Core.Client.Seralization
                 .WithTypeConverter(new ResourceQuantityYamlConverter())
                 .WithEventEmitter(e => new StringQuotingEmitter(e))
                 .WithTypeConverter(new SystemTextJsonYamlTypeConverter())
-                .WithTypeInspector(x => new SystemTextJsonTypeInspector(x))
+                .WithTypeInspector(x => new SystemTextJsonTypeInspector(x, true))
                 .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull)
                 .BuildValueSerializer();
 

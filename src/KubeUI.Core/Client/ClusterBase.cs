@@ -2,12 +2,10 @@
 using Microsoft.CodeAnalysis;
 using System.Collections.Concurrent;
 using System.ComponentModel;
-using System.IO.Abstractions;
 using System.IO.Compression;
 using System.Reflection;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
-using YamlDotNet.Serialization;
 
 namespace KubeUI.Core.Client;
 
@@ -212,11 +210,31 @@ public abstract class ClusterBase : INotifyPropertyChanged
     {
         var types = GenerateTypeMap();
 
-        var objects = await Seralization.KubernetesYaml.LoadAllFromStreamAsync(stream, types);
+        var reader = new StreamReader(stream);
+        var parser = new Parser(new StringReader(reader.ReadToEnd()));
+        parser.Consume<StreamStart>();
 
-        foreach (var obj in objects)
+        while (parser.Accept<DocumentStart>(out _))
         {
-            AddObject((IKubernetesObject<V1ObjectMeta>)obj);
+            var doc = Seralization.KubernetesYaml.Deserializer.Deserialize(parser);
+            var yaml = Seralization.KubernetesYaml.Serialize(doc);
+
+            var obj = Seralization.KubernetesYaml.Deserialize<KubernetesObject>(yaml);
+            try
+            {
+                var type = types[obj.ApiVersion + "/" + obj.Kind];
+
+                var model = Seralization.KubernetesYaml.Deserializer.Deserialize(yaml, type);
+
+                if (model != null)
+                {
+                    AddObject((IKubernetesObject<V1ObjectMeta>)model);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Error Deserializing {kind}", obj.ApiVersion + "/" + obj.Kind);
+            }
         }
     }
 
