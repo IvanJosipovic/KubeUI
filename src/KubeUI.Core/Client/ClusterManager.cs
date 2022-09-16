@@ -130,8 +130,6 @@ public class ClusterManager : IDisposable
 
     private void Init()
     {
-        CRDGenerator.FixSerializer();
-
         var assebly = typeof(CRDGenerator).Assembly;
 
         var kubeAssebly = typeof(V1Deployment).Assembly;
