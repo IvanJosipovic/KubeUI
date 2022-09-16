@@ -59,14 +59,14 @@ public partial class HelmReleaseUpgrade : IDisposable
         // Get Source
         var sourceType = HelmRelease.Spec.Chart.Spec.SourceRef.Kind;
 
-        if (string.IsNullOrEmpty(HelmRelease.Spec.Chart.Spec.SourceRef.@namespace))
+        if (string.IsNullOrEmpty(HelmRelease.Spec.Chart.Spec.SourceRef.Namespace))
         {
-            HelmRelease.Spec.Chart.Spec.SourceRef.@namespace = HelmRelease.Namespace();
+            HelmRelease.Spec.Chart.Spec.SourceRef.Namespace = HelmRelease.Namespace();
         }
 
         if (sourceType == "HelmRepository")
         {
-            HelmRepository = ClusterManager.GetActiveCluster().GetObject<KubernetesCRDModelGen.Models.fluxcd.io.HelmRepository>(HelmRelease.Spec.Chart.Spec.SourceRef.@namespace, HelmRelease.Spec.Chart.Spec.SourceRef.Name);
+            HelmRepository = ClusterManager.GetActiveCluster().GetObject<KubernetesCRDModelGen.Models.fluxcd.io.HelmRepository>(HelmRelease.Spec.Chart.Spec.SourceRef.Namespace, HelmRelease.Spec.Chart.Spec.SourceRef.name);
 
             if (HelmRepository == null)
             {

@@ -4,7 +4,7 @@
     <ColumnComponent TItem="V1CustomResourceDefinition" Name="Resource" Object="(x => x.Spec.Names.Kind)" Sort="SortDirection.Ascending">
         <DisplayContent>
             <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Dehaze" OnClick="() => context.Item2.DisplayDetails(context.Item1.Metadata.NamespaceProperty, context.Item1.ApiGroup(), context.Item1.ApiGroupVersion(), context.Item1.Kind, context.Item1.Metadata.Name)">X</MudIconButton>
-            <MudLink Href="@($"/list/{context.Item1.Spec.Group}/{context.Item1.Spec.Versions.Where(x => x.Storage).First().Name}/{context.Item1.Spec.Names.Kind}")" Typo="Typo.body2">@context.Item1.Spec.Names.Kind</MudLink>
+            <MudLink Typo="Typo.inherit" Href="@($"/list/{context.Item1.Spec.Group}/{context.Item1.Spec.Versions.Where(x => x.Storage).First().Name}/{context.Item1.Spec.Names.Kind}")">@context.Item1.Spec.Names.Kind</MudLink>
         </DisplayContent>
     </ColumnComponent>
     <ColumnComponent TItem="V1CustomResourceDefinition" Name="Group" Object="(x => x.Spec.Group)" />

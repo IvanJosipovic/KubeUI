@@ -8,11 +8,11 @@
 
                 @if (string.IsNullOrEmpty(context.Item1.Namespace()))
                 {
-                    <MudLink Href=@($"/details/helm.sh/v1/release?&Name={context.Item1.Name()}".Replace("//","/"))>@context.Item1.GetLabel("name")</MudLink>
+                    <MudLink Typo="Typo.inherit" Href=@($"/details/helm.sh/v1/release?&Name={context.Item1.Name()}".Replace("//","/"))>@context.Item1.GetLabel("name")</MudLink>
                 }
                 else
                 {
-                    <MudLink Href=@($"/details/helm.sh/v1/release?Namespace={context.Item1.Namespace()}&Name={context.Item1.Name()}".Replace("//","/"))>@context.Item1.GetLabel("name")</MudLink>
+                    <MudLink Typo="Typo.inherit" Href=@($"/details/helm.sh/v1/release?Namespace={context.Item1.Namespace()}&Name={context.Item1.Name()}".Replace("//","/"))>@context.Item1.GetLabel("name")</MudLink>
                 }
             </DisplayContent>
         </ColumnComponent>

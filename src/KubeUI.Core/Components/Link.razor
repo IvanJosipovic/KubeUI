@@ -4,11 +4,11 @@
 
 @if (string.IsNullOrEmpty(Object.Metadata.NamespaceProperty))
 {
-    <MudLink Href=@($"/details/{Object.ApiVersion}/{Object.Kind}?&Name={Object.Metadata.Name}".Replace("//","/"))>@Object.Metadata.Name</MudLink>
+    <MudLink Typo="Typo.inherit" Href=@($"/details/{Object.ApiVersion}/{Object.Kind}?&Name={Object.Metadata.Name}".Replace("//","/"))>@Object.Metadata.Name</MudLink>
 }
 else
 {
-    <MudLink Href=@($"/details/{Object.ApiVersion}/{Object.Kind}?Namespace={Object.Namespace()}&Name={Object.Metadata.Name}".Replace("//","/"))>@Object.Metadata.Name</MudLink>
+    <MudLink Typo="Typo.inherit" Href=@($"/details/{Object.ApiVersion}/{Object.Kind}?Namespace={Object.Namespace()}&Name={Object.Metadata.Name}".Replace("//","/"))>@Object.Metadata.Name</MudLink>
 }
 
 @code {

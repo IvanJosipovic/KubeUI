@@ -45,14 +45,14 @@
             <DisplayContent>
                 @if (context.Item1.Metadata.OwnerReferences != null && context.Item1.Metadata.OwnerReferences.Any())
                 {
-                <MudLink @onclick="@(x => context.Item2.DisplayDetails(context.Item1.Metadata.NamespaceProperty, context.Item1.Metadata.OwnerReferences[0].ApiVersion, context.Item1.Metadata.OwnerReferences[0].Kind, context.Item1.Metadata.OwnerReferences[0].Name))"
+                <MudLink Typo="Typo.inherit" @onclick="@(x => context.Item2.DisplayDetails(context.Item1.Metadata.NamespaceProperty, context.Item1.Metadata.OwnerReferences[0].ApiVersion, context.Item1.Metadata.OwnerReferences[0].Kind, context.Item1.Metadata.OwnerReferences[0].Name))"
                     >@context.Item1.Metadata.OwnerReferences[0].Kind</MudLink>
                 }
             </DisplayContent>
         </ColumnComponent>
         <ColumnComponent TItem="V1Pod" Name="Node" Object="(x => x.Spec.NodeName)">
             <DisplayContent>
-                <MudLink @onclick="@(x => context.Item2.DisplayDetails(null, V1Node.KubeGroup, V1Node.KubeApiVersion, V1Node.KubeKind, context.Item1.Spec.NodeName))">@context.Item1.Spec.NodeName</MudLink>
+                <MudLink Typo="Typo.inherit" @onclick="@(x => context.Item2.DisplayDetails(null, V1Node.KubeGroup, V1Node.KubeApiVersion, V1Node.KubeKind, context.Item1.Spec.NodeName))">@context.Item1.Spec.NodeName</MudLink>
             </DisplayContent>
         </ColumnComponent>
         <ColumnComponent TItem="V1Pod" Name="QoS" Object="(x => x.Status?.QosClass)" />
