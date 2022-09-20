@@ -149,12 +149,12 @@ public partial class HelmReleaseUpgrade : IDisposable
         using (var tarInputStream = new TarInputStream(gzipStream, Encoding.UTF8))
         {
             TarEntry entry;
-            while ((entry = tarInputStream.GetNextEntry()) != null)
+            while ((entry = await tarInputStream.GetNextEntryAsync(new CancellationToken())) != null)
             {
                 if (entry.Name.EndsWith("values.yaml", StringComparison.InvariantCultureIgnoreCase))
                 {
                     using var fileContents = new MemoryStream();
-                    tarInputStream.CopyEntryContents(fileContents);
+                    await tarInputStream.CopyEntryContentsAsync(fileContents, new CancellationToken());
                     fileContents.Position = 0;
                     var stringStream = new StreamReader(fileContents);
 
