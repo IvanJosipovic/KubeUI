@@ -66,7 +66,7 @@ public partial class HelmReleaseUpgrade : IDisposable
 
         if (sourceType == "HelmRepository")
         {
-            HelmRepository = ClusterManager.GetActiveCluster().GetObject<KubernetesCRDModelGen.Models.fluxcd.io.HelmRepository>(HelmRelease.Spec.Chart.Spec.SourceRef.Namespace, HelmRelease.Spec.Chart.Spec.SourceRef.name);
+            HelmRepository = ClusterManager.GetActiveCluster().GetObject<KubernetesCRDModelGen.Models.fluxcd.io.HelmRepository>(HelmRelease.Spec.Chart.Spec.SourceRef.Namespace, HelmRelease.Spec.Chart.Spec.SourceRef.Name);
 
             if (HelmRepository == null)
             {
