@@ -242,6 +242,6 @@ public partial class HelmReleaseUpgrade : IDisposable
     public void Dispose()
     {
         IsDisposed = true;
-        YamlDiffEditor.Dispose();
+        YamlDiffEditor?.Dispose();
     }
 }
