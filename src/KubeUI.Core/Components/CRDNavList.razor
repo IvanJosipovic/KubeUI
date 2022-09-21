@@ -18,43 +18,4 @@
 
 </MudNavGroup>
 
-@code {
-    [Inject]
-    private ClusterManager ClusterManager { get; set; }
 
-    [Parameter]
-    public bool Expanded { get; set; }
-
-    [Parameter]
-    public EventCallback<bool> ExpandedChanged { get; set; }
-
-    public Dictionary<string, bool> ExpandedGroups { get; set; } = new();
-
-    protected override void OnInitialized()
-    {
-        ClusterManager.OnChange += ClusterManager_OnChange;
-        ClusterManager.GetActiveCluster().OnChange += NavMenu_OnChange;
-    }
-
-    private void ClusterManager_OnChange(ClusterManagerEvents obj)
-    {
-        if (obj == ClusterManagerEvents.ActiveClusterChanged)
-        {
-            foreach (var cluster in ClusterManager.GetClusters())
-            {
-                cluster.OnChange -= NavMenu_OnChange;
-            }
-
-            ClusterManager.GetActiveCluster().OnChange += NavMenu_OnChange;
-            InvokeAsync(StateHasChanged);
-        }
-    }
-
-    private void NavMenu_OnChange(WatchEventType arg1, GroupApiVersionKind arg2, IKubernetesObject<V1ObjectMeta> arg3)
-    {
-        if (arg2.Equals(GroupApiVersionKind.From<V1CustomResourceDefinition>()))
-        {
-            InvokeAsync(StateHasChanged);
-        }
-    }
-}

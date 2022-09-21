@@ -15,16 +15,31 @@ public partial class NavMenu : IDisposable
     [Inject]
     private NavigationManager NavigationManager { get; set; }
 
+    private System.Timers.Timer Timer { get; set; }
+
     protected override void OnInitialized()
     {
         base.OnInitialized();
 
         ClusterManager.OnChange += ClusterManager_OnChange;
+
+        Timer = new System.Timers.Timer(TimeSpan.FromSeconds(1));
+        Timer.Elapsed += Timer_Elapsed;
+        Timer.Enabled = true;
+        Timer.AutoReset = true;
+    }
+
+    private async void Timer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
+    {
+        await InvokeAsync(StateHasChanged);
     }
 
     private void ClusterManager_OnChange(ClusterManagerEvents obj)
     {
-        StateHasChanged();
+        if (obj == ClusterManagerEvents.ActiveClusterChanged)
+        {
+            InvokeAsync(StateHasChanged);
+        }
     }
 
     public static string GetIcon(string iconPath)
@@ -75,26 +90,16 @@ public partial class NavMenu : IDisposable
 
     private void SetActiveCluster(ICluster cluster)
     {
-        if (ClusterManager.GetActiveCluster() != null)
-        {
-            ClusterManager.GetActiveCluster().PropertyChanged -= Cluster_PropertyChanged;
-        }
-
         ClusterManager.SetActiveCluster(cluster);
 
-        cluster.PropertyChanged += Cluster_PropertyChanged;
-
         NavigationManager.NavigateTo("/Connect");
-    }
-
-    private void Cluster_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
-    {
-        StateHasChanged();
     }
 
     public void Dispose()
     {
         ClusterManager.OnChange -= ClusterManager_OnChange;
+        Timer.Dispose();
+    }
 
     private bool ClustersExpanded { get; set; }
     private bool WorkloadsExpanded { get; set; }
