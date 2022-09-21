@@ -1,9 +1,14 @@
-﻿<MudNavGroup Title="Custom Resource Definitions" Expanded="false" Icon="@NavMenu.GetIcon("resources/unlabeled/crd.svg")">
+﻿<MudNavGroup Title="Custom Resource Definitions" Expanded="Expanded" ExpandedChanged="((x) => {Expanded = x; ExpandedChanged.InvokeAsync(x);})" Icon="@NavMenu.GetIcon("resources/unlabeled/crd.svg")">
     <MudNavLink Href=@($"/list/{V1CustomResourceDefinition.KubeGroup}/{V1CustomResourceDefinition.KubeApiVersion}/{V1CustomResourceDefinition.KubeKind}") Match="NavLinkMatch.Prefix">Definitions</MudNavLink>
 
     @foreach (var item in ClusterManager.GetActiveCluster().GetObjects<V1CustomResourceDefinition>().GroupBy(x => x.Spec.Group).OrderBy(x => x.Key))
     {
-        <MudNavGroup Title="@item.Key" Expanded="false">
+        @if (!ExpandedGroups.ContainsKey(item.Key))
+        {
+            ExpandedGroups.Add(item.Key, false);
+        }
+
+        <MudNavGroup @key="item.Key" Title="@item.Key" @bind-Expanded="ExpandedGroups[item.Key]">
             @foreach (var item in item)
             {
                 <MudNavLink Href=@($"/list/{item.Spec.Group}/{item.Spec.Versions.First(x => x.Storage).Name}/{item.Spec.Names.Kind.ToLowerInvariant()}") Match="NavLinkMatch.Prefix">@item.Spec.Names.Kind</MudNavLink>
@@ -16,6 +21,14 @@
 @code {
     [Inject]
     private ClusterManager ClusterManager { get; set; }
+
+    [Parameter]
+    public bool Expanded { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> ExpandedChanged { get; set; }
+
+    public Dictionary<string, bool> ExpandedGroups { get; set; } = new();
 
     protected override void OnInitialized()
     {

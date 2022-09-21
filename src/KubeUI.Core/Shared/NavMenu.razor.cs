@@ -96,9 +96,11 @@ public partial class NavMenu : IDisposable
     {
         ClusterManager.OnChange -= ClusterManager_OnChange;
 
-        if (ClusterManager.GetActiveCluster() != null)
-        {
-            ClusterManager.GetActiveCluster().PropertyChanged -= Cluster_PropertyChanged;
-        }
-    }
+    private bool ClustersExpanded { get; set; }
+    private bool WorkloadsExpanded { get; set; }
+    private bool ConfigurationExpanded { get; set; }
+    private bool NetworkExpanded { get; set; }
+    private bool StorageExpanded { get; set; }
+    private bool AccessControlExpanded { get; set; }
+    private bool CRDExpanded { get; set; }
 }
