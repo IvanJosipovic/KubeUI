@@ -1,10 +1,10 @@
-﻿using Foundation;
+﻿//using Foundation;
 
-namespace KubeUI.Maui
-{
-    [Register("AppDelegate")]
-    public class AppDelegate : MauiUIApplicationDelegate
-    {
-        protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
-    }
-}
+//namespace KubeUI.Maui
+//{
+//    [Register("AppDelegate")]
+//    public class AppDelegate : MauiUIApplicationDelegate
+//    {
+//        protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
+//    }
+//}

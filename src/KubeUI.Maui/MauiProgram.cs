@@ -1,25 +1,30 @@
 ﻿using KubeUI.Core.Client;
-using Microsoft.AspNetCore.Components.WebView.Maui;
+using Microsoft.Extensions.Logging;
 
-namespace KubeUI.Maui;
-
-public static class MauiProgram
+namespace KubeUI.Maui
 {
-    public static MauiApp CreateMauiApp()
+    public static class MauiProgram
     {
-        var builder = MauiApp.CreateBuilder();
-        builder
-            .RegisterBlazorMauiWebView()
-            .UseMauiApp<App>()
-            .ConfigureFonts(fonts =>
-            {
-                fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
-            });
+        public static MauiApp CreateMauiApp()
+        {
+            var builder = MauiApp.CreateBuilder();
+            builder
+                .UseMauiApp<App>()
+                .ConfigureFonts(fonts =>
+                {
+                    fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
+                });
 
-        ConfigureServices.Configure(builder.Configuration, builder.Services);
+            builder.Services.AddMauiBlazorWebView();
 
-        builder.Services.AddBlazorWebView();
+#if DEBUG
+		builder.Services.AddBlazorWebViewDeveloperTools();
+		builder.Logging.AddDebug();
+#endif
 
-        return builder.Build();
+            ConfigureServices.Configure(builder.Configuration, builder.Services);
+
+            return builder.Build();
+        }
     }
 }
