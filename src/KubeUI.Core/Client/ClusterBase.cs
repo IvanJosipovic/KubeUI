@@ -115,6 +115,31 @@ public abstract class ClusterBase : INotifyPropertyChanged
         return GetObjects<T>(attribute.ApiVersion, attribute.Kind, attribute.Group);
     }
 
+    public long CountObjects<T>(string version, string kind, string group = "") where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        var key = $"{group}/{version}/{kind}".TrimStart('/').ToLower();
+
+        if (!Objects.ContainsKey(key))
+        {
+            Objects[key] = new ConcurrentDictionary<string, IKubernetesObject<V1ObjectMeta>>();
+            Seed<T>(version, kind, group);
+        }
+
+        if (GetSelectedNamespaces().Any())
+        {
+            return Objects[key].Values.Cast<T>().Where(x => string.IsNullOrEmpty(x.Namespace()) || GetSelectedNamespaces().Contains(x.Namespace())).Count();
+        }
+
+        return Objects[key].Count;
+    }
+
+    public long CountObjects<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        var attribute = GroupApiVersionKind.From<T>();
+
+        return CountObjects<T>(attribute.ApiVersion, attribute.Kind, attribute.Group);
+    }
+
     public abstract void Seed<T>(string version, string kind, string group = "") where T : class, IKubernetesObject<V1ObjectMeta>, new();
 
     public void Seed<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
