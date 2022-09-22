@@ -119,7 +119,11 @@ jobs:
       run: curl -L -o installer.exe https://jrsoftware.org/download.php/is.exe
 
     - name: Install Inno Setup
-      run: ./installer.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /DIR=inst /DOWNLOADISCRYPT=1
+      run: |
+        do{
+          ./installer.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /DIR=inst /DOWNLOADISCRYPT=1
+        } while((Test-Path ../../inst/iscc.exe) -ne $true)
+      shell: pwsh
 
     - name: Publish
       working-directory: src/KubeUI.WPF
