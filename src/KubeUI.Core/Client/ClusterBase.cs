@@ -115,6 +115,24 @@ public abstract class ClusterBase : INotifyPropertyChanged
         return GetObjects<T>(attribute.ApiVersion, attribute.Kind, attribute.Group);
     }
 
+    public long CountObjects(string version, string kind, string group = "")
+    {
+        var key = $"{group}/{version}/{kind}".TrimStart('/').ToLower();
+
+        if (!Objects.ContainsKey(key))
+        {
+            Objects[key] = new ConcurrentDictionary<string, IKubernetesObject<V1ObjectMeta>>();
+            Seed(version, kind, group);
+        }
+
+        if (GetSelectedNamespaces().Any())
+        {
+            return Objects[key].Values.Where(x => string.IsNullOrEmpty(x.Namespace()) || GetSelectedNamespaces().Contains(x.Namespace())).Count();
+        }
+
+        return Objects[key].Count;
+    }
+
     public long CountObjects<T>(string version, string kind, string group = "") where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var key = $"{group}/{version}/{kind}".TrimStart('/').ToLower();
@@ -127,7 +145,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
         if (GetSelectedNamespaces().Any())
         {
-            return Objects[key].Values.Cast<T>().Where(x => string.IsNullOrEmpty(x.Namespace()) || GetSelectedNamespaces().Contains(x.Namespace())).Count();
+            return Objects[key].Values.Where(x => string.IsNullOrEmpty(x.Namespace()) || GetSelectedNamespaces().Contains(x.Namespace())).Count();
         }
 
         return Objects[key].Count;
@@ -147,6 +165,22 @@ public abstract class ClusterBase : INotifyPropertyChanged
         var attribute = GroupApiVersionKind.From<T>();
 
         Seed<T>(attribute.ApiVersion, attribute.Kind, attribute.Group);
+    }
+
+    public void Seed(string version, string kind, string group = "")
+    {
+        var type = GetResourceType(group, version, kind);
+
+        if (type == null)
+        {
+            return;
+        }
+
+        var thistype = this.GetType();
+
+        var mi = this.GetType().GetMethods().First(x => x.Name == nameof(Seed) && x.IsGenericMethod && x.GetParameters().Length == 0);
+        var fooRef = mi.MakeGenericMethod(type);
+        fooRef.Invoke(this, null);
     }
 
     public T? GetObject<T>(string version, string kind, string @namespace, string name, string group = "") where T : class, IKubernetesObject<V1ObjectMeta>, new()

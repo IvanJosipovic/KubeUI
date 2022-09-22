@@ -10,6 +10,11 @@
     <ColumnComponent TItem="V1CustomResourceDefinition" Name="Group" Object="(x => x.Spec.Group)" />
     <ColumnComponent TItem="V1CustomResourceDefinition" Name="Version" Object="(x => x.Spec.Versions.Where(x => x.Storage).First().Name)" />
     <ColumnComponent TItem="V1CustomResourceDefinition" Name="Scope" Object="(x => x.Spec.Scope)" />
+    <ColumnComponent TItem="V1CustomResourceDefinition" Name="Count" Object="(x => ClusterManager.GetActiveCluster().CountObjects(x.Spec.Versions.First(x => x.Storage).Name, x.Spec.Names.Kind, x.Spec.Group))">
+        <DisplayContent>
+            <MudText Typo="Typo.inherit">@(ClusterManager.GetActiveCluster().CountObjects(context.Item1.Spec.Versions.First(x => x.Storage).Name, context.Item1.Spec.Names.Kind, context.Item1.Spec.Group))</MudText>
+        </DisplayContent>
+    </ColumnComponent>
     <ColumnComponent TItem="V1CustomResourceDefinition" Name="Age" Object="(x => x.Metadata.CreationTimestamp)" >
         <DisplayContent>
             <Age TItem="V1CustomResourceDefinition" Date="@context.Item1.Metadata.CreationTimestamp" />
@@ -24,3 +29,8 @@
         </DisplayContent>
     </ColumnComponent>
 </ListComponent>
+
+@code {
+    [Inject]
+    private ClusterManager ClusterManager { get; set; }
+}

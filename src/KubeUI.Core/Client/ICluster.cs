@@ -12,6 +12,8 @@ public interface ICluster
 
     IEnumerable<T> GetObjects<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
 
+    long CountObjects(string version, string kind, string group = "");
+
     long CountObjects<T>(string version, string kind, string group = "") where T : class, IKubernetesObject<V1ObjectMeta>, new();
 
     long CountObjects<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
