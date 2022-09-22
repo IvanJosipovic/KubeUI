@@ -121,7 +121,7 @@ jobs:
     - name: Install Inno Setup
       run: |
         do{
-          ./installer.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /DIR=inst /DOWNLOADISCRYPT=1
+          ./installer.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /DIR=inst /DOWNLOADISCRYPT=1 | Out-Null
         } while((Test-Path ../../inst/iscc.exe) -ne $true)
       shell: pwsh
 
