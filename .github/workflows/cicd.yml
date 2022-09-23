@@ -146,10 +146,27 @@ jobs:
         name: KubeUI-win-x64
         path: src/KubeUI.WPF/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-win-x64.zip
 
+  build_mac:
+    name: Build Mac
+    needs: [semantic-release, tests]
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v2
+      with:
+        global-json-file: src/global.json
+
+    - name: Publish
+      working-directory: src/KubeUI.Maui
+      run: dotnet publish -c Release -f:net7.0-maccatalyst -p:Version=${{ needs.semantic-release.outputs.new_release_version }}
+
   release:
     if: needs.semantic-release.outputs.new_release_published == 'true'
     name: Create Release
-    needs: [build_web, build_windows]
+    needs: [build_web, build_windows, build_mac]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
