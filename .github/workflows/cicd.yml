@@ -159,6 +159,9 @@ jobs:
       with:
         global-json-file: src/global.json
 
+    - name: Install maui-maccatalyst
+      run: dotnet workload install maui-maccatalyst
+
     - name: Publish
       working-directory: src/KubeUI.Maui
       run: dotnet publish -c Release -f:net7.0-maccatalyst -p:Version=${{ needs.semantic-release.outputs.new_release_version }}
