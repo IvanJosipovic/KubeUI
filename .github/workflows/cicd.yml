@@ -197,6 +197,12 @@ jobs:
         name: KubeUI-web
         path: dist/
 
+    - name: Download artifact osx-x64
+      uses: actions/download-artifact@v3
+      with:
+        name: KubeUI-osx-x64
+        path: dist/
+
     - name: Semantic Release
       uses: cycjimmy/semantic-release-action@v3
       with:
