@@ -16,7 +16,7 @@ Supported Platforms:
 
 - Web
 - Windows
-- Future: Mac
+- Mac
 
 ## How to build?
 

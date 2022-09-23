@@ -45,7 +45,7 @@ jobs:
         global-json-file: src/global.json
 
     - name: Test
-      working-directory: src
+      working-directory: src/KubeUI.Core.Tests
       run: dotnet test -c Release /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura
 
     - name: Coverage
@@ -146,10 +146,39 @@ jobs:
         name: KubeUI-win-x64
         path: src/KubeUI.WPF/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-win-x64.zip
 
+  build_mac:
+    name: Build Mac
+    needs: [semantic-release, tests]
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '13'
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v2
+      with:
+        global-json-file: src/global.json
+
+    - name: Install maui-maccatalyst
+      run: dotnet workload install maui-maccatalyst
+
+    - name: Publish
+      working-directory: src/KubeUI.Maui
+      run: dotnet publish -c Release -f:net7.0-maccatalyst -p:Version=${{ needs.semantic-release.outputs.new_release_version }} -p:ApplicationDisplayVersion=${{ needs.semantic-release.outputs.new_release_version }} -p:ApplicationVersion=${{ needs.semantic-release.outputs.new_release_version }}
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: KubeUI-osx-x64
+        path: src/KubeUI.Maui/bin/Release/net7.0-maccatalyst/maccatalyst-x64/publish/KubeUI.Maui-${{ needs.semantic-release.outputs.new_release_version }}.pkg
+
   release:
     if: needs.semantic-release.outputs.new_release_published == 'true'
     name: Create Release
-    needs: [build_web, build_windows]
+    needs: [build_web, build_windows, build_mac]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -170,6 +199,12 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: KubeUI-web
+        path: dist/
+
+    - name: Download artifact osx-x64
+      uses: actions/download-artifact@v3
+      with:
+        name: KubeUI-osx-x64
         path: dist/
 
     - name: Semantic Release
