@@ -45,7 +45,7 @@ jobs:
         global-json-file: src/global.json
 
     - name: Test
-      working-directory: src
+      working-directory: src/KubeUI.Core.Tests
       run: dotnet test -c Release /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura
 
     - name: Coverage
