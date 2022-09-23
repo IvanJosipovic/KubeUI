@@ -18,8 +18,8 @@ namespace KubeUI.Maui
             builder.Services.AddMauiBlazorWebView();
 
 #if DEBUG
-		builder.Services.AddBlazorWebViewDeveloperTools();
-		builder.Logging.AddDebug();
+        builder.Services.AddBlazorWebViewDeveloperTools();
+        builder.Logging.AddDebug();
 #endif
 
             ConfigureServices.Configure(builder.Configuration, builder.Services);

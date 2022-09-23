@@ -22,6 +22,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeUI.Web", "KubeUI.Web\Ku
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeUI.Core.Tests", "KubeUI.Core.Tests\KubeUI.Core.Tests.csproj", "{AF6C8142-DDE9-41C4-B329-376A99E5250D}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeUI.Maui", "KubeUI.Maui\KubeUI.Maui.csproj", "{226F5DE5-40D7-4D57-83B4-9D3FB0AD35A6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -48,6 +50,12 @@ Global
 		{AF6C8142-DDE9-41C4-B329-376A99E5250D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AF6C8142-DDE9-41C4-B329-376A99E5250D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AF6C8142-DDE9-41C4-B329-376A99E5250D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{226F5DE5-40D7-4D57-83B4-9D3FB0AD35A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{226F5DE5-40D7-4D57-83B4-9D3FB0AD35A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{226F5DE5-40D7-4D57-83B4-9D3FB0AD35A6}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{226F5DE5-40D7-4D57-83B4-9D3FB0AD35A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{226F5DE5-40D7-4D57-83B4-9D3FB0AD35A6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{226F5DE5-40D7-4D57-83B4-9D3FB0AD35A6}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
