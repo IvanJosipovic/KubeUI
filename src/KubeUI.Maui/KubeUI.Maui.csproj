@@ -9,6 +9,7 @@
         <SingleProject>true</SingleProject>
         <ImplicitUsings>enable</ImplicitUsings>
         <EnableDefaultCssItems>false</EnableDefaultCssItems>
+        <PackageId>KubeUI</PackageId>
 
         <!-- Display name -->
         <ApplicationTitle>KubeUI</ApplicationTitle>
