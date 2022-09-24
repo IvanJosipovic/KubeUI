@@ -31,7 +31,7 @@
 
     <ItemGroup>
         <!-- App Icon -->
-        <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
+        <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#326CE5" />
 
         <!-- Splash Screen -->
         <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
@@ -53,6 +53,10 @@
 
     <ItemGroup>
       <ProjectReference Include="..\KubeUI.Core\KubeUI.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Resources\Images\" />
     </ItemGroup>
 
 </Project>
