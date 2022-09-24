@@ -10,7 +10,8 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <EnableDefaultCssItems>false</EnableDefaultCssItems>
         <AssemblyName>KubeUI</AssemblyName>
-
+        <ProductName>KubeUI</ProductName>
+        
         <!-- Display name -->
         <ApplicationTitle>KubeUI</ApplicationTitle>
 
@@ -31,7 +32,7 @@
 
     <ItemGroup>
         <!-- App Icon -->
-        <MauiIcon Include="Resources\AppIcon\appicon.svg" Color="#326CE5" />
+        <MauiIcon Include="Resources\AppIcon\appicon.svg" Color="#00FFFFFF" />
 
         <!-- Splash Screen -->
         <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#326CE5" BaseSize="128,128" />
