@@ -174,7 +174,7 @@ jobs:
     - uses: actions/upload-artifact@v3
       with:
         name: KubeUI-osx-x64
-        path: src/KubeUI.Maui/bin/Release/net7.0-maccatalyst/maccatalyst-x64/publish/KubeUI.Maui-${{ needs.semantic-release.outputs.new_release_version }}.pkg
+        path: src/KubeUI.Maui/bin/Release/net7.0-maccatalyst/maccatalyst-x64/publish/KubeUI.${{ needs.semantic-release.outputs.new_release_version }}.pkg
 
   release:
     if: needs.semantic-release.outputs.new_release_published == 'true'
