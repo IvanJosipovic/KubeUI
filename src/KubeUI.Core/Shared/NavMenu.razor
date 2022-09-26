@@ -7,7 +7,7 @@
     <MudNavGroup Title="Clusters" @bind-Expanded="ClustersExpanded" Icon="@GetIcon("infrastructure_components/unlabeled/control-plane.svg")">
         <MudNavLink Href="/clusters" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Settings">Manage</MudNavLink>
 
-        @foreach (var cluster in ClusterManager.GetClusters())
+        @foreach (var cluster in ClusterManager.GetClusters().ToList())
         {
             var isDisable = ClusterManager.GetActiveCluster() != null ? ClusterManager.GetActiveCluster().Name.Equals(cluster.Name) : false;
             <MudNavLink OnClick="() => SetActiveCluster(cluster)" Icon="@GetIcon("infrastructure_components/unlabeled/control-plane.svg")" Disabled="isDisable">

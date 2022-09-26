@@ -1,7 +1,7 @@
 ﻿<MudNavGroup Title="Custom Resource Definitions" Expanded="Expanded" ExpandedChanged="((x) => {Expanded = x; ExpandedChanged.InvokeAsync(x);})" Icon="@NavMenu.GetIcon("resources/unlabeled/crd.svg")">
     <MudNavLink Href=@($"/list/{V1CustomResourceDefinition.KubeGroup}/{V1CustomResourceDefinition.KubeApiVersion}/{V1CustomResourceDefinition.KubeKind}") Match="NavLinkMatch.Prefix">Definitions</MudNavLink>
 
-    @foreach (var item in ClusterManager.GetActiveCluster().GetObjects<V1CustomResourceDefinition>().GroupBy(x => x.Spec.Group).OrderBy(x => x.Key))
+    @foreach (var item in ClusterManager.GetActiveCluster().GetObjects<V1CustomResourceDefinition>().GroupBy(x => x.Spec.Group).OrderBy(x => x.Key).ToList())
     {
         @if (!ExpandedGroups.ContainsKey(item.Key))
         {
@@ -9,7 +9,7 @@
         }
 
         <MudNavGroup @key="item.Key" Title="@item.Key" @bind-Expanded="ExpandedGroups[item.Key]">
-            @foreach (var item in item)
+            @foreach (var item in item.ToList())
             {
                 <MudNavLink Href=@($"/list/{item.Spec.Group}/{item.Spec.Versions.First(x => x.Storage).Name}/{item.Spec.Names.Kind.ToLowerInvariant()}") Match="NavLinkMatch.Prefix">@item.Spec.Names.Kind <MudChip Size="Size.Small" Disabled="true">@(ClusterManager.GetActiveCluster().CountObjects(item.Spec.Versions.First(x => x.Storage).Name, item.Spec.Names.Kind, item.Spec.Group))</MudChip></MudNavLink>
             }

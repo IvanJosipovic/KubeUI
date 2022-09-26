@@ -217,7 +217,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
             return typeof(V1Endpoint);
         }
 
-        foreach (var item in AssemblyLoader.Cache.Keys)
+        foreach (var item in AssemblyLoader.Cache.Keys.ToList())
         {
             foreach (var type in item.GetTypes())
             {
