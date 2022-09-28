@@ -1,4 +1,3 @@
-
 namespace KubeUI.Core.Components;
 
 [CascadingTypeParameter(nameof(TItem))]
@@ -50,8 +49,6 @@ public partial class ListComponent<TItem> : IDisposable where TItem : class, IKu
 
     protected override void OnInitialized()
     {
-        ClusterManager.GetActiveCluster().OnChange += ListComponent_OnChange;
-
         var kube = GroupApiVersionKind.From<TItem>();
 
         Version = kube.ApiVersion;
@@ -67,14 +64,6 @@ public partial class ListComponent<TItem> : IDisposable where TItem : class, IKu
     private async void Timer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
     {
         await InvokeAsync(StateHasChanged);
-    }
-
-    private async void ListComponent_OnChange(WatchEventType eventType, GroupApiVersionKind type, object item)
-    {
-        //if (type.Equals(GroupApiVersionKind.From<TItem>()))
-        //{
-        //    await InvokeAsync(StateHasChanged);
-        //}
     }
 
     private IEnumerable<TItem> GetData()
@@ -116,7 +105,6 @@ public partial class ListComponent<TItem> : IDisposable where TItem : class, IKu
 
     public void Dispose()
     {
-        ClusterManager.GetActiveCluster().OnChange -= ListComponent_OnChange;
         Timer?.Dispose();
     }
 
