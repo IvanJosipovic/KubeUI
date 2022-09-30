@@ -80,18 +80,11 @@ jobs:
     - name: Purge CDN
       if: github.ref == 'refs/heads/alpha'
       run: |
-        $Params = @{
-          Method = 'Post'
-          URI = 'https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_SITE_ID }}/purge_cache'
-          Headers = @{
-            'X-Auth-Email'= 'admin@kubeui.com';
-            'X-Auth-Key'= '${{ secrets.CLOUDFLARE_AUTH_TOKEN }}'
-          }
-          Body = '{"purge_everything":true}'
-          ContentType = 'application/json'
-        }
-        Invoke-RestMethod @Params
-      shell: pwsh
+        curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_SITE_ID }}/purge_cache" \
+          -H "Authorization: ${{ secrets.CLOUDFLARE_AUTH_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          --data '{"purge_everything":true}'
+      shell: bash
 
     - name: Publish
       working-directory: src/KubeUI.Web
