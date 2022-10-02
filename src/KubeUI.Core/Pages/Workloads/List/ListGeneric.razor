@@ -1,4 +1,6 @@
 ﻿@using System.Linq.Expressions
+@using Json.Path
+@using System.Text.RegularExpressions
 @typeparam TItem where TItem : class, IKubernetesObject<V1ObjectMeta>, new()
 
 <ListComponent TItem="TItem" MultiSelection="MultiSelection" @bind-SelectedItems="SelectedItems" Query="Query" Title="@Title">
@@ -13,12 +15,34 @@
 
     @if (HideNamespace == false)
     {
-            <ColumnComponent TItem="TItem" Name="Namespace" Object="(x => x.Metadata.NamespaceProperty)" Width="10%"/>
+        <ColumnComponent TItem="TItem" Name="Namespace" Object="(x => x.Metadata.NamespaceProperty)" Width="10%"/>
     }
 
     @if (Columns != null)
     {
         @Columns
+    }
+    else if (typeof(TItem).Namespace != typeof(V1Deployment).Namespace)
+    {
+        var kind = GroupApiVersionKind.From<TItem>();
+        var crd = ClusterManager.GetActiveCluster().GetObject<V1CustomResourceDefinition>(null, kind.PluralNameGroup);
+        var version = crd.Spec.Versions.Where(x => x.Storage).First();
+
+        if (version.AdditionalPrinterColumns != null)
+        {
+            foreach (var item in version.AdditionalPrinterColumns)
+            {
+                if (item.JsonPath == ".metadata.creationTimestamp")
+                {
+                    continue;
+                }
+                <ColumnComponent TItem="TItem" Name="@(item.Name)" Width="10%">
+                    <DisplayContent>
+                        @JsonPath.Parse(item.JsonPath).Evaluate(System.Text.Json.JsonSerializer.SerializeToElement(context.Item1)).Matches.FirstOrDefault()?.Value
+                    </DisplayContent>
+                </ColumnComponent>
+            }
+        }
     }
 
     @if (HideAge == false)
@@ -73,4 +97,9 @@
     public string? Title { get; set; }
 
     private HashSet<TItem> SelectedItems;
+
+    private string FixQuery(string original)
+    {
+        return original;
+    }
 }
