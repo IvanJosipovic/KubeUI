@@ -1,4 +1,3 @@
-using BlazorMonaco;
 using ICSharpCode.SharpZipLib.GZip;
 using ICSharpCode.SharpZipLib.Tar;
 using KubernetesCRDModelGen.Models.fluxcd.io;
@@ -9,7 +8,7 @@ using YamlDotNet.System.Text.Json;
 
 namespace KubeUI.Core.Components.flux.io;
 
-public partial class HelmReleaseUpgrade : IDisposable
+public partial class HelmReleaseUpgrade
 {
     [Parameter]
     public string Namespace { get; set; }
@@ -26,10 +25,7 @@ public partial class HelmReleaseUpgrade : IDisposable
     [Inject]
     private ClusterManager ClusterManager { get; set; }
 
-    [Inject]
-    private IDialogService Dialog { get; set; }
-
-    private bool IsDisposed;
+    private IKubernetesObject<V1ObjectMeta> Right { get; set; }
 
     private KubernetesCRDModelGen.Models.fluxcd.io.HelmRelease? HelmRelease;
 
@@ -39,22 +35,14 @@ public partial class HelmReleaseUpgrade : IDisposable
 
     private bool GetFromFlux;
 
-    private MonacoDiffEditor YamlDiffEditor;
-
-    private DiffEditorConstructionOptions DiffEditorConstructionOptions(MonacoDiffEditor editor)
-    {
-        return new DiffEditorConstructionOptions
-        {
-            AutomaticLayout = true,
-            OriginalEditable = false,
-            IgnoreTrimWhitespace = false
-        };
-    }
+    private string SelectedVersion;
 
     protected override async Task OnInitializedAsync()
     {
         // Get Helm Release
         HelmRelease = ClusterManager.GetActiveCluster().GetObject<KubernetesCRDModelGen.Models.fluxcd.io.HelmRelease>(Namespace, Name);
+
+        HelmRelease = (KubernetesCRDModelGen.Models.fluxcd.io.HelmRelease?)ObjectCompare.CleanObject(HelmRelease);
 
         // Get Source
         var sourceType = HelmRelease.Spec.Chart.Spec.SourceRef.Kind;
@@ -81,6 +69,8 @@ public partial class HelmReleaseUpgrade : IDisposable
             {
                 Versions = await GetHelmRepositoryChartVersions(HelmRepository.Spec.Url, HelmRelease.Spec.Chart.Spec.Chart);
             }
+
+            await SetCompareVersion(HelmRelease.Spec.Chart.Spec.Version);
         }
         else
         {
@@ -112,7 +102,7 @@ public partial class HelmReleaseUpgrade : IDisposable
         return versions;
     }
 
-    private async Task<string> GelmHelmRepositoryChartUrl(string repoUrl, string chartName, string version)
+    private async Task<string> GetHelmRepositoryChartUrl(string repoUrl, string chartName, string version)
     {
         using var stream = await new HttpClient().GetStreamAsync(repoUrl.TrimEnd('/') + "/index.yaml");
         using var streamReader = new StreamReader(stream);
@@ -137,7 +127,7 @@ public partial class HelmReleaseUpgrade : IDisposable
 
     public async Task<string> GetHelmRepositoryChartValues(string repoUrl, string chartName, string version)
     {
-        string url = await GelmHelmRepositoryChartUrl(repoUrl, chartName, version);
+        string url = await GetHelmRepositoryChartUrl(repoUrl, chartName, version);
 
         if (string.IsNullOrEmpty(url))
         {
@@ -166,27 +156,10 @@ public partial class HelmReleaseUpgrade : IDisposable
         throw new Exception("values.yaml not found");
     }
 
-    private async Task EditorOnDidInit(MonacoEditorBase editor)
-    {
-        var clone = Utilities.CloneObject(HelmRelease);
-        clone = CleanObject(clone);
-
-        // Get or create the original model
-        TextModel original_model = await MonacoEditorBase.CreateModel(clone.ToYaml(), "yaml");
-
-        // Get or create the modified model
-        TextModel modified_model = await MonacoEditorBase.CreateModel("Select a version above.", "yaml");
-
-        // Set the editor model
-        await YamlDiffEditor.SetModel(new DiffEditorModel
-        {
-            Original = original_model,
-            Modified = modified_model
-        });
-    }
-
     private async Task SetCompareVersion(string version)
     {
+        SelectedVersion = version;
+
         var clone = Utilities.CloneObject(HelmRelease);
 
         clone.Spec.Chart.Spec.Version = version;
@@ -198,50 +171,25 @@ public partial class HelmReleaseUpgrade : IDisposable
 
         if (sourceType == "HelmRepository")
         {
-            values = await GetHelmRepositoryChartValues(HelmRepository.Spec.Url, HelmRelease.Spec.Chart.Spec.Chart, version);
+            try
+            {
+                values = await GetHelmRepositoryChartValues(HelmRepository.Spec.Url, HelmRelease.Spec.Chart.Spec.Chart, version);
+                clone.Spec.Values = YamlConverter.Deserialize<JsonNode>(values);
+            }
+            catch (Exception)
+            {
+                // Version can't be found
+                SelectedVersion = null;
+                return;
+            }
         }
         else
         {
             values = "";
         }
 
-        clone.Spec.Values = YamlConverter.Deserialize<JsonNode>(values);
+        Right = ObjectCompare.CleanObject(clone);
 
-        clone = CleanObject(clone);
-
-        await YamlDiffEditor.ModifiedEditor.SetValue(clone.ToYaml());
-
-        var parameters = new DialogParameters()
-        {
-            { "Left", CleanObject(HelmRelease) },
-            { "Right", clone },
-        };
-
-        var dialog = Dialog.Show<CompareObject>($"Compare {HelmRelease.Spec.Chart.Spec.Version} and {version}", parameters, new DialogOptions()
-        {
-            CloseButton = true,
-            FullScreen = true
-        });
-    }
-
-    private KubernetesCRDModelGen.Models.fluxcd.io.HelmRelease CleanObject(KubernetesCRDModelGen.Models.fluxcd.io.HelmRelease model)
-    {
-        model.Metadata.Generation = null;
-        model.Metadata.CreationTimestamp = null;
-        model.Metadata.Finalizers = null;
-        model.Metadata.ManagedFields = null;
-        model.Metadata.ResourceVersion = null;
-        model.Metadata.SelfLink = null;
-        model.Metadata.Uid = null;
-
-        model.Status = null;
-
-        return model;
-    }
-
-    public void Dispose()
-    {
-        IsDisposed = true;
-        YamlDiffEditor?.Dispose();
+        StateHasChanged();
     }
 }

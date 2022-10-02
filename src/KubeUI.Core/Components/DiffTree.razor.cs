@@ -18,14 +18,16 @@ public partial class DiffTree
 
     private DiffItem SelectedValue { get; set; }
 
-    protected override void OnInitialized()
+    protected override void OnParametersSet()
     {
-        var items = BuildTree("Root", Item);
-
-        foreach (var item in items)
+        var treeItems = BuildTree("Root", Item);
+        Items.Clear();
+        foreach (var item in treeItems)
         {
             Items.Add(item);
         }
+
+        StateHasChanged();
     }
 
     private static HashSet<DiffItem> BuildTree(string name, JsonDiffDelta delta)

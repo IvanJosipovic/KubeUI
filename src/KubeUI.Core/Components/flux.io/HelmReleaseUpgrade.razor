@@ -2,13 +2,16 @@
 @using BlazorMonaco
 
 <MudCard>
-    <MudSelect Dense="true" T="string" Label="Version" Variant="Variant.Filled" ValueChanged="(async x => await SetCompareVersion(x) )">
+    <MudSelect Dense="true" T="string" Label="Version" Variant="Variant.Filled" Value="SelectedVersion" ValueChanged="(async x => await SetCompareVersion(x) )">
         @foreach (var item in Versions)
         {
             <MudSelectItem Value="@item" />
         }
-</MudSelect>
-    <ResizePanel Context="resize" Offset="225" SetHeigh="true">
-        <MonacoDiffEditor @ref="YamlDiffEditor" Id="monacoDiffEditorYaml" ConstructionOptions="DiffEditorConstructionOptions" OnDidInit="EditorOnDidInit" />
-    </ResizePanel>
+    </MudSelect>
+    @if (!string.IsNullOrEmpty(SelectedVersion))
+    {
+        <ResizePanel Context="resize" Offset="225" SetHeigh="true">
+            <CompareObject Left="HelmRelease" Right="Right" />
+        </ResizePanel>
+    }
 </MudCard>

@@ -1,20 +1,27 @@
 ﻿@using BlazorMonaco
 @using System.Text.Json.JsonDiffPatch.Diffs
 @using YamlDotNet.System.Text.Json
-    <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="mud-height-full" Color="Color.Primary">
-        <MudTabPanel Text="Diff">
-            <MudGrid Spacing="1">
-                <MudItem sm="3">
-                    <ResizePanel Context="resize" Offset="130">
-                        <MudCard Class="align-left justify-left mud-width-full mt-1" Elevation="3" Style="@($"height: {resize}; overflow-x: scroll;")">
-                            <DiffTree Item="Diff" ObjectSelected="DiffSelected" />
-                        </MudCard>
-                    </ResizePanel>
-                </MudItem>
-                <MudItem sm="9">
-                    <ResizePanel Context="resize" Offset="170">
-                        <MudCard Class="mt-1" Elevation="3" Style="@($"height: {resize};")">
-                            @if (selectedDiff.Document == null)
+
+<MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="mud-height-full" Color="Color.Primary">
+    <MudTabPanel Text="Diff">
+        <MudGrid Spacing="1">
+            <MudItem sm="3">
+                <ResizePanel Context="resize" Offset="130">
+                    <MudCard Class="align-left justify-left mud-width-full mt-1" Elevation="3" Style="@($"height: {resize}; overflow-x: scroll;")">
+                        <DiffTree Item="Diff" ObjectSelected="DiffSelected" />
+                    </MudCard>
+                </ResizePanel>
+            </MudItem>
+            <MudItem sm="9">
+                <ResizePanel Context="resize" Offset="170">
+                    <MudCard Class="mt-1" Elevation="3" Style="@($"height: {resize};")">
+                        @if (Diff.Document == null)
+                        {
+                            <MudText Typo="Typo.h6" Class="mb-2 ml-3">The two objects are equal!</MudText>
+                        }
+                        else
+                        {
+                            if (selectedDiff.Document == null)
                             {
                                 <MudText Typo="Typo.h6" Class="mb-2 ml-3">Select a change on the left to see the details!</MudText>
                             }
@@ -22,19 +29,20 @@
                             {
                                 <DiffViewer Diff="selectedDiff" />
                             }
-                        </MudCard>
-                    </ResizePanel>
-                </MudItem>
-            </MudGrid>
-        </MudTabPanel>
-        <MudTabPanel Text="Side by Side">
-            <ResizePanel Context="resize" Offset="130">
-                <div style=@($"height: {resize}")>
-                    <KubeMonacoDiff Original="@(Left.ToYaml())" Modified="@(Right.ToYaml())" Language="yaml" />
-                </div>
-            </ResizePanel>
-        </MudTabPanel>
-    </MudTabs>
+                        }
+                    </MudCard>
+                </ResizePanel>
+            </MudItem>
+        </MudGrid>
+    </MudTabPanel>
+    <MudTabPanel Text="Yaml Compare">
+        <ResizePanel Context="resize" Offset="130">
+            <div style=@($"height: {resize}")>
+                <KubeMonacoDiff Original="@(Left.ToYaml())" Modified="@(Right.ToYaml())" Language="yaml" />
+            </div>
+        </ResizePanel>
+    </MudTabPanel>
+</MudTabs>
 
 @code {
     [Parameter] public JsonDiffDelta Diff { get; set; }
@@ -43,12 +51,16 @@
 
     private JsonDiffDelta selectedDiff;
 
-    protected override void OnInitialized()
+    protected override void OnParametersSet()
     {
-        if (Diff.Document == null)
+        if (Left != null && Right != null)
         {
             Diff = ObjectCompare.CompareObjects(Left, Right);
         }
+
+        selectedDiff = new JsonDiffDelta();
+
+        StateHasChanged();
     }
 
     private void DiffSelected(JsonDiffDelta diff)
