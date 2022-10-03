@@ -243,7 +243,13 @@ public partial class ListComponent<TItem> : IDisposable where TItem : class, IKu
     {
         foreach (var column in Columns.Where(x => x.Object != null))
         {
-            var obj = column.Object.Invoke(item);
+            object obj = null;
+
+            try
+            {
+                obj = column.Object.Invoke(item);
+            }
+            catch { }
 
             if (obj == null)
             {
