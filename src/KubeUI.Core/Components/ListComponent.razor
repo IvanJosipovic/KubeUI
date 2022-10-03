@@ -41,7 +41,14 @@
                         }
                         else
                         {
-                            @col.Object?.Invoke(context);
+                            try
+                            {
+                                @col.Object?.Invoke(context);
+                            }
+                            catch (Exception)
+                            {
+                                //throw;
+                            }
                         }
                     </MudTd>
                 }

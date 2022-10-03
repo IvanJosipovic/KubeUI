@@ -1,5 +1,4 @@
 ﻿@using System.Linq.Expressions
-@using Json.Path
 @using System.Text.RegularExpressions
 @typeparam TItem where TItem : class, IKubernetesObject<V1ObjectMeta>, new()
 
@@ -36,10 +35,10 @@
                 {
                     continue;
                 }
-                <ColumnComponent TItem="TItem" Name="@(item.Name)" Width="10%">
-                    <DisplayContent>
-                        @JsonPath.Parse(item.JsonPath).Evaluate(System.Text.Json.JsonSerializer.SerializeToElement(context.Item1)).Matches.FirstOrDefault()?.Value
-                    </DisplayContent>
+
+                var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<TItem>(item.JsonPath);
+
+                <ColumnComponent TItem="TItem" Name="@(item.Name)" Width="15%" Object="exp.Compile()">
                 </ColumnComponent>
             }
         }
