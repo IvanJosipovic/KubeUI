@@ -47,7 +47,7 @@ jobs:
 
     - name: Test
       working-directory: src/KubeUI.Core.Tests
-      run: dotnet test -c Release /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura
+      run: dotnet test -c Release --collect:"XPlat Code Coverage"
 
     - name: Coverage
       uses: codecov/codecov-action@v3
