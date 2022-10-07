@@ -36,7 +36,7 @@
                     continue;
                 }
 
-                var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<TItem>(item.JsonPath);
+                var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<TItem>(item.JsonPath, true);
 
                 <ColumnComponent TItem="TItem" Name="@(item.Name)" Width="15%" Object="exp.Compile()">
                 </ColumnComponent>
