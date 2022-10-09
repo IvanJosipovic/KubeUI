@@ -86,6 +86,8 @@ public partial class PodLogs : IDisposable
     {
         try
         {
+            await _terminal.Clear();
+
             var cluster = (Cluster)ClusterManager.GetActiveCluster();
             stream = await cluster.Client.CoreV1.ReadNamespacedPodLogAsync(Name, Namespace, container: Container, tailLines: Lines, previous: Previous, follow: true, pretty: true);
 

@@ -1,3 +1,3 @@
 ﻿@using XtermBlazor
-
+<MudCheckBox @bind-Checked="Previous" @bind-Checked:after="Update" Label="Show previous container logs"></MudCheckBox>
 <Xterm @ref="_terminal" Options="_options" AddonIds="_addonIds" OnFirstRender="@OnFirstRender" />
