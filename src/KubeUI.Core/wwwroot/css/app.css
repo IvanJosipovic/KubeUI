@@ -116,3 +116,12 @@
     flex-direction: column;
     --sk-color: white;
 }
+
+/*fixes table headers*/
+.mud-simple-table table * tr > th {
+    font-weight: 550 !Important;
+}
+
+.mud-table-root .mud-table-head .mud-table-cell {
+    font-weight: 550 !Important;
+}
