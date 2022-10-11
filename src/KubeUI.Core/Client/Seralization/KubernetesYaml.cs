@@ -178,18 +178,6 @@ namespace KubeUI.Core.Client.Seralization
             }
         }
 
-        [Obsolete("use Deserialize")]
-        public static T LoadFromString<T>(string content)
-        {
-            return Deserialize<T>(content);
-        }
-
-        [Obsolete("use Serialize")]
-        public static string SaveToString<T>(T value)
-        {
-            return Serialize(value);
-        }
-
         public static TValue Deserialize<TValue>(string yaml)
         {
             return Deserializer.Deserialize<TValue>(yaml);
