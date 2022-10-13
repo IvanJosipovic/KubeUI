@@ -94,9 +94,7 @@
                     Logger.LogWarning("Controls: Unknown property type: " + prop.PropertyType.FullName);
                     <MudText>Missing Control Type @prop.PropertyType</MudText>
                 }
-
             </MudTooltip>
-
         }
     }
     else
@@ -108,8 +106,6 @@
 </MudContainer>
 
 @code {
-    [Parameter] public EventCallback<object> SetHelp { get; set; }
-
     [Parameter] public TItem Item { get; set; }
 
     [Parameter] public EventCallback<TItem> ItemChanged { get; set; }

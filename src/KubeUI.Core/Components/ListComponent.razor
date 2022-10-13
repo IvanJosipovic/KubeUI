@@ -2,10 +2,11 @@
 @typeparam TItem where TItem : class, IKubernetesObject<V1ObjectMeta>, new()
 
 <CascadingValue Value="this" IsFixed="true">
-    <ResizePanel Context="resize" Offset="140">
+    <ResizePanel Context="resize" Offset="85">
         <MudTable T="TItem" Items="GetData()" Hover="true" Dense="true" SortLabel="Sort By" Virtualize="true" FixedHeader="true" FixedFooter="true" Height="@resize" Breakpoint="Breakpoint.None" HorizontalScrollbar="true" MultiSelection="@MultiSelection" SelectedItems="SelectedItems" SelectedItemsChanged="SelectedItemsChanged">
             <ToolBarContent>
                 <MudText Typo="Typo.h6">@(string.IsNullOrEmpty(Title) ? Kind.AddSpacesBeforeCapitals() : Title)</MudText>
+                <MudIconButton Icon="@Icons.Material.Filled.AddCircle" Color="Color.Success" aria-label="add new" OnClick="New"></MudIconButton>
                 <MudSpacer />
                 <MudTextField T="string" @bind-Value="SearchQuery" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
                 <MudSpacer />
@@ -58,7 +59,6 @@
                 {
                     <MudTd></MudTd>
                 }
-
                 <MudTd colspan="3">
                     <div class="d-flex gap-4 justify-end">
                         @if (this.SelectedItems != null && this.SelectedItems.Count == 1)

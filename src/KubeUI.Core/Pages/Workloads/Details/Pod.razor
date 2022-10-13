@@ -17,7 +17,7 @@
                     @foreach (var cont in context.Spec.InitContainers.EnsureNotEmpty())
                     {
                         <MudTabPanel Text="@cont.Name">
-                            <ResizePanel Context="resize" Offset="240" SetHeigh="true">
+                            <ResizePanel Context="resize" Offset="20" SetHeigh="true">
                                 <PodLogs Name="@Name" Namespace="@Namespace" Container="@cont.Name" Lines="@LogLineCount" Previous="@PreviousLog" />
                             </ResizePanel>
                         </MudTabPanel>
@@ -25,7 +25,7 @@
                     @foreach (var cont in context.Spec.Containers)
                     {
                         <MudTabPanel Text="@cont.Name">
-                            <ResizePanel Context="resize" Offset="240" SetHeigh="true">
+                            <ResizePanel Context="resize" Offset="20" SetHeigh="true">
                                 <PodLogs Name="@Name" Namespace="@Namespace" Container="@cont.Name" Lines="@LogLineCount" Previous="@PreviousLog" />
                             </ResizePanel>
                         </MudTabPanel>
@@ -37,7 +37,7 @@
                     @foreach (var cont in context.Spec.InitContainers.EnsureNotEmpty().OrderBy(x => x.Name))
                     {
                         <MudTabPanel Text="@cont.Name">
-                            <ResizePanel Context="resize" Offset="240" SetHeigh="true">
+                            <ResizePanel Context="resize" Offset="20" SetHeigh="true">
                                 <PodConsole Name="@Name" Namespace="@Namespace" Container="@cont.Name" />
                             </ResizePanel>
                         </MudTabPanel>
@@ -45,7 +45,7 @@
                     @foreach (var cont in context.Spec.Containers.OrderBy(x => x.Name))
                     {
                         <MudTabPanel Text="@cont.Name">
-                            <ResizePanel Context="resize" Offset="240" SetHeigh="true">
+                            <ResizePanel Context="resize" Offset="20" SetHeigh="true">
                                 <PodConsole Name="@Name" Namespace="@Namespace" Container="@cont.Name" />
                             </ResizePanel>
                         </MudTabPanel>

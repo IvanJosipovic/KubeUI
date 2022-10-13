@@ -1,15 +1,30 @@
 {
-    "enabled": true,
-    "timezone": "America/Vancouver",
-    "dependencyDashboard": true,
-    "dependencyDashboardTitle": "Renovate Dashboard",
-    "commitMessageSuffix": "",
-    "commitBody": "",
-    "semanticCommits": "enabled",
-    "suppressNotifications": ["prIgnoreNotification"],
-    "rebaseWhen": "conflicted",
-    "assignees": ["@ivanjosipovic"],
-    "extends": [
-        "config:base"
-    ]
+  "enabled": true,
+  "timezone": "America/Vancouver",
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "Renovate Dashboard",
+  "commitMessageSuffix": "",
+  "commitBody": "",
+  "semanticCommits": "enabled",
+  "suppressNotifications": [ "prIgnoreNotification" ],
+  "rebaseWhen": "conflicted",
+  "assignees": [ "@ivanjosipovic" ],
+  "extends": [
+    "config:base"
+  ],
+  "packageRules": [
+    {
+      "groupName": "kubernetescrdmodelgen",
+      "separateMajorMinor": true,
+      "groupSlug": "kubernetescrdmodelgen",
+      "packageRules": [
+        {
+          "matchPackagePatterns": [
+            "kubernetescrdmodelgen",
+            "kubernetescrdmodelgen.*"
+          ]
+        }
+      ]
+    }
+  ]
 }
