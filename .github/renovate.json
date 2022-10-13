@@ -20,8 +20,8 @@
       "packageRules": [
         {
           "matchPackagePatterns": [
-            "kubernetescrdmodelgen",
-            "kubernetescrdmodelgen.*"
+            "KubernetesCRDModelGen",
+            "KubernetesCRDModelGen.*"
           ]
         }
       ]
