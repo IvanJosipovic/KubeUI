@@ -5,8 +5,7 @@
         <MudTreeViewItem @bind-Expanded="@context.IsExpanded"
                         Items="@context.TreeItems"
                         Value="@context"
-                        OnClick="(x) => ObjectSelected.InvokeAsync(context.Object)"
-        >
+                         OnClick="(x) => ObjectSelected.InvokeAsync(RenderForm(context.Object))">
             <Content>
                 <MudTreeViewItemToggleButton @bind-Expanded="@context.IsExpanded" Visible="@(context.TreeItems.Count > 0)" />
                 <MudTooltip Text="" Inline="false" RootStyle="width:100%" Placement="Placement.Bottom">

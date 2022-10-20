@@ -55,11 +55,11 @@ namespace KubeUI.Core.Tests
 
             var leftCluster = services.GetRequiredService<GitOpsCluster>();
 
-            leftCluster.AddObject(left);
+            leftCluster.AddInternalObject(left);
 
             var rightCluster = services.GetRequiredService<GitOpsCluster>();
 
-            rightCluster.AddObject(right);
+            rightCluster.AddInternalObject(right);
 
             var result = Components.CompareCluster.Compare(leftCluster, rightCluster);
 
@@ -94,7 +94,7 @@ namespace KubeUI.Core.Tests
 
             var rightCluster = services.GetRequiredService<GitOpsCluster>();
 
-            rightCluster.AddObject(right);
+            rightCluster.AddInternalObject(right);
 
             var result = Components.CompareCluster.Compare(leftCluster, rightCluster);
 
@@ -127,7 +127,7 @@ namespace KubeUI.Core.Tests
 
             var leftCluster = services.GetRequiredService<GitOpsCluster>();
 
-            leftCluster.AddObject(right);
+            leftCluster.AddInternalObject(right);
 
             var rightCluster = services.GetRequiredService<GitOpsCluster>();
 
@@ -177,11 +177,11 @@ namespace KubeUI.Core.Tests
 
             var leftCluster = services.GetRequiredService<GitOpsCluster>();
 
-            leftCluster.AddObject(left);
+            leftCluster.AddInternalObject(left);
 
             var rightCluster = services.GetRequiredService<GitOpsCluster>();
 
-            rightCluster.AddObject(right);
+            rightCluster.AddInternalObject(right);
 
             var result = Components.CompareCluster.Compare(leftCluster, rightCluster);
 
@@ -217,11 +217,11 @@ namespace KubeUI.Core.Tests
 
             var leftCluster = services.GetRequiredService<GitOpsCluster>();
 
-            leftCluster.AddObject(left);
+            leftCluster.AddInternalObject(left);
 
             var rightCluster = services.GetRequiredService<GitOpsCluster>();
 
-            rightCluster.AddObject(left);
+            rightCluster.AddInternalObject(left);
 
             var result = Components.CompareCluster.Compare(leftCluster, rightCluster);
 

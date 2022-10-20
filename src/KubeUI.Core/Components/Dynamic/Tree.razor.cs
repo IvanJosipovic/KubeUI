@@ -11,10 +11,13 @@ public partial class Tree<TItem>
     public TItem Item { get; set; }
 
     [Parameter]
+    public EventCallback<TItem> ItemChanged { get; set; }
+
+    [Parameter]
     public bool ReadOnly { get; set; }
 
     [Parameter]
-    public EventCallback<object> ObjectSelected { get; set; }
+    public EventCallback<RenderFragment> ObjectSelected { get; set; }
 
     private HashSet<TreeItem> TreeItems { get; set; } = new HashSet<TreeItem>();
 
@@ -149,6 +152,7 @@ public partial class Tree<TItem>
             Summary = Item.GetType().GetSummary()
         };
 
+        TreeItems.Clear();
         TreeItems.Add(rootItem);
         SelectedValue = rootItem;
     }
@@ -159,8 +163,22 @@ public partial class Tree<TItem>
 
         var newObj = Utilities.CreateInstance(genType);
 
-        ((IList)genType).Add(newObj);
+        ((IList)obj).Add(newObj);
+
+        OnInitialized();
 
         StateHasChanged();
+    }
+
+    private RenderFragment RenderForm(object obj)
+    {
+        return builder =>
+        {
+            builder.OpenComponent(0, typeof(Controls<>).MakeGenericType(obj.GetType()));
+            builder.AddAttribute(1, "Item", obj);
+            //builder.AddAttribute(2, "ItemChanged", EventCallback.Factory.Create<TItem>(this, (e) => obj = e));
+            builder.AddAttribute(3, "ReadOnly", ReadOnly);
+            builder.CloseComponent();
+        };
     }
 }

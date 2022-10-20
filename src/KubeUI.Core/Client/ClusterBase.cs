@@ -33,9 +33,9 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
     private List<string> SelectedNamespaces = new();
 
-    private void NotifyStateChanged(WatchEventType eventType, GroupApiVersionKind type, IKubernetesObject<V1ObjectMeta> item) => OnChange?.Invoke(eventType, type, item);
+    protected void NotifyStateChanged(WatchEventType eventType, GroupApiVersionKind type, IKubernetesObject<V1ObjectMeta> item) => OnChange?.Invoke(eventType, type, item);
 
-    public void AddObject(IKubernetesObject<V1ObjectMeta> @object)
+    public void AddInternalObject(IKubernetesObject<V1ObjectMeta> @object)
     {
         var key = @object.ApiVersion.ToLower() + "/" + @object.Kind.ToLower();
 
@@ -49,7 +49,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
         NotifyStateChanged(WatchEventType.Added, GroupApiVersionKind.From(@object.GetType()), @object);
     }
 
-    public void UpdateObject(IKubernetesObject<V1ObjectMeta> @object)
+    public void UpdateInternalObject(IKubernetesObject<V1ObjectMeta> @object)
     {
         var key = @object.ApiVersion.ToLower() + "/" + @object.Kind.ToLower();
 
@@ -63,7 +63,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
         NotifyStateChanged(WatchEventType.Modified, GroupApiVersionKind.From(@object.GetType()), @object);
     }
 
-    public void DeleteObject(IKubernetesObject<V1ObjectMeta> @object)
+    public void DeleteInternalObject(IKubernetesObject<V1ObjectMeta> @object)
     {
         var key = @object.ApiVersion.ToLower() + "/" + @object.Kind.ToLower();
 
@@ -81,7 +81,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
     {
         foreach (var @object in objects)
         {
-            AddObject(@object);
+            AddInternalObject(@object);
         }
     }
 
@@ -175,8 +175,6 @@ public abstract class ClusterBase : INotifyPropertyChanged
         {
             return;
         }
-
-        var thistype = this.GetType();
 
         var mi = this.GetType().GetMethods().First(x => x.Name == nameof(Seed) && x.IsGenericMethod && x.GetParameters().Length == 0);
         var fooRef = mi.MakeGenericMethod(type);
@@ -287,7 +285,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
                 if (model != null)
                 {
-                    AddObject((IKubernetesObject<V1ObjectMeta>)model);
+                    AddInternalObject((IKubernetesObject<V1ObjectMeta>)model);
                 }
             }
             catch (Exception ex)
