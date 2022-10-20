@@ -14,7 +14,7 @@
   ],
   "packageRules": [
     {
-      "groupName": "kubernetescrdmodelgen",
+      "groupName": "KubernetesCRDModelGen",
       "separateMajorMinor": true,
       "groupSlug": "kubernetescrdmodelgen",
       "packageRules": [
