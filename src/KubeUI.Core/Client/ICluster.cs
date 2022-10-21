@@ -26,11 +26,9 @@ public interface ICluster
 
     void Seed<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
 
-    void AddObject(IKubernetesObject<V1ObjectMeta> @object);
-
-    void AddObjects(IEnumerable<IKubernetesObject<V1ObjectMeta>> objects);
-
     Task Delete<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
+
+    Task AddOrUpdate<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
 
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>> OnChange;
 

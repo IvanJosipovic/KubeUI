@@ -1,4 +1,5 @@
 ﻿using KubernetesCRDModelGen;
+using System.Collections.Concurrent;
 
 namespace KubeUI.Core.Client;
 
@@ -41,7 +42,7 @@ public class GitOpsCluster : ClusterBase, ICluster
 
     public Task Delete<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        DeleteObject(item);
+        DeleteInternalObject(item);
 
         return Task.CompletedTask;
     }
@@ -58,5 +59,21 @@ public class GitOpsCluster : ClusterBase, ICluster
     public Task<VersionInfo> GetVersion()
     {
         return Task.FromResult(new VersionInfo());
+    }
+
+    public Task AddOrUpdate<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        var key = item.ApiVersion.ToLower() + "/" + item.Kind.ToLower();
+
+        if (!Objects.ContainsKey(key))
+        {
+            Objects[key] = new ConcurrentDictionary<string, IKubernetesObject<V1ObjectMeta>>();
+        }
+
+        Objects[key][$"{item.Namespace()}|{item.Name()}"] = item;
+
+        base.NotifyStateChanged(WatchEventType.Added, GroupApiVersionKind.From(item.GetType()), item);
+
+        return Task.CompletedTask;
     }
 }

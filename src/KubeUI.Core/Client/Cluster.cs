@@ -100,13 +100,13 @@ public class Cluster : ClusterBase, ICluster
                     switch (x)
                     {
                         case WatchEventType.Added:
-                            AddObject(y);
+                            AddInternalObject(y);
                             break;
                         case WatchEventType.Modified:
-                            UpdateObject(y);
+                            UpdateInternalObject(y);
                             break;
                         case WatchEventType.Deleted:
-                            DeleteObject(y);
+                            DeleteInternalObject(y);
                             break;
                         case WatchEventType.Error:
                             break;
@@ -175,5 +175,51 @@ public class Cluster : ClusterBase, ICluster
         Init();
 
         return await Client.Version.GetCodeAsync();
+    }
+
+    public async Task AddOrUpdate<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        var api = GroupApiVersionKind.From<T>();
+
+        GenericClient client;
+
+        if (string.IsNullOrEmpty(api.Group))
+        {
+            client = new GenericClient(Client, api.ApiVersion, api.PluralName);
+        }
+        else
+        {
+            client = new GenericClient(Client, api.Group, api.ApiVersion, api.PluralName);
+        }
+
+        using (client)
+        {
+            if (string.IsNullOrEmpty(item.Namespace()))
+            {
+                if (item.Metadata.Uid != null)
+                {
+                    // update
+                    await client.ReplaceAsync<T>(item, item.Name());
+                }
+                else
+                {
+                    // add
+                    await client.CreateAsync<T>(item);
+                }
+            }
+            else
+            {
+                if (item.Metadata.Uid != null)
+                {
+                    // update namespaced
+                    await client.ReplaceNamespacedAsync<T>(item, item.Namespace(), item.Name());
+                }
+                else
+                {
+                    // add namespaced
+                    await client.CreateNamespacedAsync<T>(item, item.Namespace());
+                }
+            }
+        }
     }
 }

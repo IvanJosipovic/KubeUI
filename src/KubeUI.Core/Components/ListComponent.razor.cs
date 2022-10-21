@@ -212,6 +212,19 @@ public partial class ListComponent<TItem> : IDisposable where TItem : class, IKu
         });
     }
 
+    private async Task New()
+    {
+        var parameters = new DialogParameters()
+        {
+        };
+
+        var dialog = Dialog.Show<Edit<TItem>>($"New", parameters, new DialogOptions()
+        {
+            CloseButton = true,
+            FullScreen = true
+        });
+    }
+
     private async Task Delete()
     {
         var parameters = new DialogParameters()

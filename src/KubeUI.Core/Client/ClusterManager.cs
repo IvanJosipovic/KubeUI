@@ -140,18 +140,18 @@ public class ClusterManager : IDisposable
 
         var coreAssebly = typeof(Cluster).Assembly;
 
-        initType(typeof(KubernetesCRDModelGen.Models.fluxcd.io.HelmRelease));
+        initType(typeof(KubernetesCRDModelGen.Models.helm.toolkit.fluxcd.io.HelmRelease));
 
         void initType(Type type)
         {
             var xmlDoc = new XmlDocument();
             try
             {
-                xmlDoc.Load(coreAssebly.GetManifestResourceStream($"model.docs.{type.Namespace}.xml"));
+                xmlDoc.Load(coreAssebly.GetManifestResourceStream($"model.docs.{type.Module.Name.Substring(0, type.Module.Name.Length - 4)}.xml"));
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "Error Loading docs for type {type}", type.FullName);
+                Logger.LogError(ex, "Error Loading docs for type {group}", type.FullName);
             }
 
             AssemblyLoader.AddToCache(type.Assembly, null);
