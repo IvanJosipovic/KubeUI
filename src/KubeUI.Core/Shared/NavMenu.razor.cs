@@ -1,6 +1,4 @@
 using Microsoft.AspNetCore.Components.Forms;
-using Microsoft.WindowsAPICodePack.Dialogs;
-using System.IO;
 
 namespace KubeUI.Core.Shared;
 
@@ -75,17 +73,19 @@ public partial class NavMenu : IDisposable
 
     private async Task LoadFolder()
     {
-        var dialog = new CommonOpenFileDialog
+#if Windows
+        var dialog = new Microsoft.WindowsAPICodePack.Dialogs.CommonOpenFileDialog
         {
             IsFolderPicker = true
         };
 
         var result = dialog.ShowDialog();
 
-        if (result == CommonFileDialogResult.Ok)
+        if (result == Microsoft.WindowsAPICodePack.Dialogs.CommonFileDialogResult.Ok)
         {
             await ClusterManager.GetActiveCluster().ImportFolder(dialog.FileName);
         }
+#endif
     }
 
     private void SetActiveCluster(ICluster cluster)
