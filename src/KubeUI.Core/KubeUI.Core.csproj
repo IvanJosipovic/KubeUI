@@ -9,7 +9,7 @@
 	<ItemGroup>
 		<PackageReference Include="BlazorMonaco" Version="2.1.0" />
 		<PackageReference Include="JsonPathLINQ" Version="1.0.0-alpha.7" />
-		<PackageReference Include="KubernetesClient" Version="9.0.28" />
+		<PackageReference Include="KubernetesClient" Version="9.0.37" />
 		<PackageReference Include="KubernetesCRDModelGen" Version="1.0.0-alpha.21" />
 		<PackageReference Include="KubernetesCRDModelGen.Models.fluxcd.io" Version="1.0.0-alpha.21" />
 		<PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="7.0.0-rc.2.22476.2" />
