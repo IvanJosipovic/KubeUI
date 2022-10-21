@@ -29,8 +29,9 @@ namespace KubeUI.Core.Components
             }
         }
 
-        public void Save()
+        public async Task Save()
         {
+            await ClusterManager.GetActiveCluster().AddOrUpdate<TItem>(ObjectClone);
         }
     }
 }
