@@ -5,7 +5,7 @@
 
 <DetailsGeneric Namespace="@Namespace"
                   Name="@Name"
-                  TItem="KubernetesCRDModelGen.Models.fluxcd.io.HelmRelease"
+                  TItem="KubernetesCRDModelGen.Models.helm.toolkit.fluxcd.io.HelmRelease"
                   IsInSideMenu="IsInSideMenu">
     <Overview>
 
@@ -34,6 +34,6 @@
 
     protected override void OnInitialized()
     {
-        ClusterManager.GetActiveCluster().Seed<KubernetesCRDModelGen.Models.fluxcd.io.HelmRepository>();
+        ClusterManager.GetActiveCluster().Seed<KubernetesCRDModelGen.Models.source.toolkit.fluxcd.io.HelmRepository>();
     }
 }

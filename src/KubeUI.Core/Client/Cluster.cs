@@ -199,7 +199,7 @@ public class Cluster : ClusterBase, ICluster
                 if (item.Metadata.Uid != null)
                 {
                     // update
-
+                    await client.ReplaceAsync<T>(item, item.Name());
                 }
                 else
                 {
@@ -211,12 +211,12 @@ public class Cluster : ClusterBase, ICluster
             {
                 if (item.Metadata.Uid != null)
                 {
-                    // update
-
+                    // update namespaced
+                    await client.ReplaceNamespacedAsync<T>(item, item.Namespace(), item.Name());
                 }
                 else
                 {
-                    // add
+                    // add namespaced
                     await client.CreateNamespacedAsync<T>(item, item.Namespace());
                 }
             }
