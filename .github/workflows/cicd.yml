@@ -144,7 +144,7 @@ jobs:
     name: Build Mac
     needs: [semantic-release, tests]
     runs-on: macos-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
     - uses: actions/checkout@v3
 
