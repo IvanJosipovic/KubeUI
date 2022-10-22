@@ -12,4 +12,7 @@
             <KubeMonacoEditor Value="@ObjectClone.ToYaml()" ValueChanged="EditorValueChanged" />
         </ResizePanel>
     </MudTabPanel>
+    <MudTabPanel Text="Diff" Icon="@Icons.Filled.Compare">
+        <CompareObject Left="Object" Right="ObjectClone"/>
+    </MudTabPanel>
 </MudTabs>
