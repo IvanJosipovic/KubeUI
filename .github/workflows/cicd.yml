@@ -130,7 +130,7 @@ jobs:
         name: KubeUI-win-x64-setup
         path: src/KubeUI.WPF/Output/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-win-x64.exe
 
-    - name: Publish
+    - name: Compress
       working-directory: src/KubeUI.WPF
       run: Compress-Archive -Path bin/publish/* -DestinationPath KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-win-x64.zip
       shell: pwsh
@@ -165,12 +165,12 @@ jobs:
       run: dotnet publish -c Release -f:net7.0-maccatalyst -p:Version=${{ needs.semantic-release.outputs.new_release_version }} -p:ApplicationDisplayVersion=${{ needs.semantic-release.outputs.new_release_version }} -p:ApplicationVersion=${{ needs.semantic-release.outputs.new_release_version }}
 
     - name: Rename
-      run: mv src/KubeUI.Maui/bin/Release/net7.0-maccatalyst/maccatalyst-x64/publish/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}.pkg src/KubeUI.Maui/bin/Release/net7.0-maccatalyst/maccatalyst-x64/publish/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-osx-x64.pkg
+      run: mv src/KubeUI.Maui/bin/Release/net7.0-maccatalyst/publish/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}.pkg src/KubeUI.Maui/bin/Release/net7.0-maccatalyst/publish/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-osx-x64.pkg
 
     - uses: actions/upload-artifact@v3
       with:
         name: KubeUI-osx-x64
-        path: src/KubeUI.Maui/bin/Release/net7.0-maccatalyst/maccatalyst-x64/publish/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-osx-x64.pkg
+        path: src/KubeUI.Maui/bin/Release/net7.0-maccatalyst/publish/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-osx-x64.pkg
 
   release:
     if: needs.semantic-release.outputs.new_release_published == 'true'
