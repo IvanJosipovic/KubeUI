@@ -31,8 +31,8 @@
 *@    }
     else if (Item.GetType() == typeof(object))
     {
-        <MudText>Missing Control Type @Item.GetType()</MudText>
-
+@*        <MudText>Missing Control Type @Item.GetType()</MudText>
+*@
         @*      <MudTextField T="string" Label="" Value="@(Item == null ? "" : Item.ToString())" ValueChanged="@((e) => {(string)Item = e;})" Variant="Variant.Text" Disabled="ReadOnly" />
     *@
     }
@@ -86,14 +86,14 @@
                 {
                     <MudText Typo="Typo.caption" Class="@(ReadOnly ? "mud-text-disabled" : "")">@prop.Name.AddSpacesBeforeCapitals()</MudText>
                     <div style="height: 500px">
-                        <KubeMonacoEditor Value="@YamlConverter.Serialize(value)" Language="yaml" ReadOnly="ReadOnly" />
+                        <KubeMonacoEditor Value="@YamlConverter.Serialize(value)" ValueChanged="@((e) => OnChange(e, prop))" Language="yaml" ReadOnly="ReadOnly" />
                     </div>
                 }
                 else
                 {
                     Logger.LogWarning("Controls: Unknown property type: " + prop.PropertyType.FullName);
-                    <MudText>Missing Control Type @prop.PropertyType</MudText>
-                }
+@*                    <MudText>Missing Control Type @prop.PropertyType</MudText>
+*@                }
             </MudTooltip>
         }
     }
@@ -169,6 +169,10 @@
             else if (prop.PropertyType == typeof(System.Collections.ObjectModel.Collection<string>))
             {
                 prop.SetValue(Item, (System.Collections.ObjectModel.Collection<string>)e);
+            }
+            else if (prop.PropertyType == typeof(JsonNode))
+            {
+                prop.SetValue(Item, YamlConverter.Deserialize<JsonNode>(e?.ToString()));
             }
             else
             {
