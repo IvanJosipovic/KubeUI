@@ -30,11 +30,17 @@ public partial class KubeMonacoEditor : IDisposable
         };
     }
 
+    string oldValue;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         try
         {
-            await _editor.SetValue(Value);
+            if (!Value.Equals(oldValue))
+            {
+                await _editor.SetValue(Value);
+                oldValue = Value;
+            }
         }
         catch (JSException)
         {
