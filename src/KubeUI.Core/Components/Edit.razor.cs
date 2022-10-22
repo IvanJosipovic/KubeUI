@@ -16,7 +16,7 @@ namespace KubeUI.Core.Components
         {
             if (Object != null)
             {
-                ObjectClone = Object;
+                ObjectClone = Utilities.CloneObject(Object);
             }
             else
             {
