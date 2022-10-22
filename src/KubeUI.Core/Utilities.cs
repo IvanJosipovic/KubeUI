@@ -30,7 +30,7 @@ public static class Utilities
         return JsonSerializer.Serialize(obj, new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
     }
 
-    public static object CreateInstance(Type type)
+    public static object? CreateInstance(Type type)
     {
         try
         {
@@ -38,15 +38,13 @@ public static class Utilities
 
             if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IList<>))
             {
-                newType = typeof(List<>).MakeGenericType(type.GetGenericArguments()[0]);
+                newType = typeof(List<>).MakeGenericType(type.GenericTypeArguments);
             }
-
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IDictionary<,>))
+            else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IDictionary<,>))
             {
-                newType = typeof(Dictionary<,>).MakeGenericType(type.GetGenericArguments()[0], type.GetGenericArguments()[1]);
+                newType = typeof(Dictionary<,>).MakeGenericType(type.GenericTypeArguments);
             }
-
-            if (type == typeof(string))
+            else if (type == typeof(string))
             {
                 return string.Empty;
             }

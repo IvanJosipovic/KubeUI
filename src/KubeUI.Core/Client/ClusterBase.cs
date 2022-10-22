@@ -77,13 +77,6 @@ public abstract class ClusterBase : INotifyPropertyChanged
         NotifyStateChanged(WatchEventType.Deleted, GroupApiVersionKind.From(@object.GetType()), @object);
     }
 
-    public void AddObjects(IEnumerable<IKubernetesObject<V1ObjectMeta>> objects)
-    {
-        foreach (var @object in objects)
-        {
-            AddInternalObject(@object);
-        }
-    }
 
     public IEnumerable<T> GetObjects<T>(string version, string kind, string group = "") where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
@@ -159,6 +152,8 @@ public abstract class ClusterBase : INotifyPropertyChanged
     }
 
     public abstract void Seed<T>(string version, string kind, string group = "") where T : class, IKubernetesObject<V1ObjectMeta>, new();
+
+    public abstract Task AddOrUpdate<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
 
     public void Seed<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {

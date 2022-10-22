@@ -23,7 +23,7 @@ public partial class Tree<TItem>
 
     public HashSet<TreeItem> BuildTree(object obj)
     {
-        HashSet<TreeItem> Tree = new HashSet<TreeItem>();
+        HashSet<TreeItem> Tree = new();
 
         if (obj is V1JSONSchemaProps)
         {
@@ -49,6 +49,10 @@ public partial class Tree<TItem>
                 {
                     try
                     {
+                        if (property.PropertyType == typeof(IntstrIntOrString))
+                        {
+                            continue;
+                        }
                         item = Utilities.CreateInstance(property.PropertyType);
                         property.SetValue(obj, item);
                     }

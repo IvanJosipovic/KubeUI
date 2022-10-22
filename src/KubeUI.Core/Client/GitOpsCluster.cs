@@ -22,9 +22,7 @@ public class GitOpsCluster : ClusterBase, ICluster
             case WatchEventType.Added:
                 if (item is V1CustomResourceDefinition)
                 {
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                    base.GenerateCRDAssembly((V1CustomResourceDefinition)item);
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                    Task.Run(() => GenerateCRDAssembly((V1CustomResourceDefinition)item));
                 }
                 break;
             case WatchEventType.Modified:
@@ -61,7 +59,7 @@ public class GitOpsCluster : ClusterBase, ICluster
         return Task.FromResult(new VersionInfo());
     }
 
-    public Task AddOrUpdate<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public override Task AddOrUpdate<T>(T item)
     {
         var key = item.ApiVersion.ToLower() + "/" + item.Kind.ToLower();
 
@@ -70,9 +68,18 @@ public class GitOpsCluster : ClusterBase, ICluster
             Objects[key] = new ConcurrentDictionary<string, IKubernetesObject<V1ObjectMeta>>();
         }
 
+        var exists = Objects[key].ContainsKey($"{item.Namespace()}|{item.Name()}");
+
         Objects[key][$"{item.Namespace()}|{item.Name()}"] = item;
 
-        base.NotifyStateChanged(WatchEventType.Added, GroupApiVersionKind.From(item.GetType()), item);
+        if (exists)
+        {
+            base.NotifyStateChanged(WatchEventType.Modified, GroupApiVersionKind.From(item.GetType()), item);
+        }
+        else
+        {
+            base.NotifyStateChanged(WatchEventType.Added, GroupApiVersionKind.From(item.GetType()), item);
+        }
 
         return Task.CompletedTask;
     }

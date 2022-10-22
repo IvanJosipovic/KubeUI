@@ -12,6 +12,9 @@ public partial class KubeMonacoEditor : IDisposable
     public string Value { get; set; }
 
     [Parameter]
+    public EventCallback<string> ValueChanged { get; set; }
+
+    [Parameter]
     public bool ReadOnly { get; set; }
 
     private MonacoEditor _editor { get; set; }
@@ -47,5 +50,11 @@ public partial class KubeMonacoEditor : IDisposable
     {
         _editor?.DisposeEditor();
         _editor?.Dispose();
+    }
+
+    private async void OnDidBlurr(MonacoEditor editor)
+    {
+        var yaml = await editor.GetValue();
+        await ValueChanged.InvokeAsync(yaml);
     }
 }

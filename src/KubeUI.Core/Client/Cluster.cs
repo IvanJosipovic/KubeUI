@@ -177,7 +177,7 @@ public class Cluster : ClusterBase, ICluster
         return await Client.Version.GetCodeAsync();
     }
 
-    public async Task AddOrUpdate<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public override async Task AddOrUpdate<T>(T item)
     {
         var api = GroupApiVersionKind.From<T>();
 

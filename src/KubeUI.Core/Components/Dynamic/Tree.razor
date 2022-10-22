@@ -3,8 +3,8 @@
 <MudTreeView Items="TreeItems" Dense="true" Width="100%" @bind-SelectedValue="SelectedValue">
     <ItemTemplate>
         <MudTreeViewItem @bind-Expanded="@context.IsExpanded"
-                        Items="@context.TreeItems"
-                        Value="@context"
+                         Items="@context.TreeItems"
+                         Value="@context"
                          OnClick="(x) => ObjectSelected.InvokeAsync(RenderForm(context.Object))">
             <Content>
                 <MudTreeViewItemToggleButton @bind-Expanded="@context.IsExpanded" Visible="@(context.TreeItems.Count > 0)" />

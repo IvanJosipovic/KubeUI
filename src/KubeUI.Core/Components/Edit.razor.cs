@@ -1,4 +1,5 @@
 using KubeUI.Core.Client;
+using static MudBlazor.CategoryTypes;
 
 namespace KubeUI.Core.Components
 {
@@ -9,6 +10,9 @@ namespace KubeUI.Core.Components
         [Parameter] public EventCallback<TItem> ObjectChanged { get; set; }
 
         [Inject] ClusterManager ClusterManager { get; set; }
+
+        [Inject]
+        private IDialogService Dialog { get; set; }
 
         private TItem ObjectClone { get; set; }
 
@@ -31,7 +35,32 @@ namespace KubeUI.Core.Components
 
         public async Task Save()
         {
-            await ClusterManager.GetActiveCluster().AddOrUpdate<TItem>(ObjectClone);
+            var parameters = new DialogParameters()
+            {
+                { "ContentText", $"Do you want to save?" },
+                { "ButtonText", "Save" }, { "Color", Color.Success }
+            };
+            var dialog = Dialog.Show<Dialog>("Save", parameters, new DialogOptions()
+            {
+                CloseButton = true
+            });
+
+            if (!(await dialog.Result).Cancelled)
+            {
+                await ClusterManager.GetActiveCluster().AddOrUpdate(ObjectClone);
+            }
+        }
+
+        private void EditorValueChanged(string yaml)
+        {
+            try
+            {
+                ObjectClone = Client.Seralization.KubernetesYaml.Deserialize<TItem>(yaml);
+            }
+            catch (Exception ex)
+            {
+                //throw;
+            }
         }
     }
 }
