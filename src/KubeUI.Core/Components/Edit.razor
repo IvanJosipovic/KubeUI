@@ -2,11 +2,11 @@
 @using KubeUI.Core.Components.Dynamic
 
 <MudTabs Elevation="4" Rounded="true" Centered="true" Color="@Color.Secondary">
-    <MudTabPanel Text="Details">
+    <MudTabPanel Text="Details" Icon="@Icons.Filled.AccountTree">
         <MudButton OnClick="Save" FullWidth="true" Color="Color.Success" Variant="Variant.Filled" StartIcon="@Icons.Filled.Save">Save</MudButton>
         <UI TItem="TItem" @bind-Item="ObjectClone" ReadOnly="false" />
     </MudTabPanel>
-    <MudTabPanel Text="Yaml">
+    <MudTabPanel Text="Yaml" Icon="@Icons.Filled.Code">
         <MudButton OnClick="Save" FullWidth="true" Color="Color.Success" Variant="Variant.Filled" StartIcon="@Icons.Filled.Save">Save</MudButton>
         <ResizePanel Context="resize" Offset="30" SetHeigh="true">
             <KubeMonacoEditor Value="@ObjectClone.GutObject().ToYaml()" />
