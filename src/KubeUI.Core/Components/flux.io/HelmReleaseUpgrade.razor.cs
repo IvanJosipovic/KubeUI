@@ -1,6 +1,6 @@
 using ICSharpCode.SharpZipLib.GZip;
 using ICSharpCode.SharpZipLib.Tar;
-using KubernetesCRDModelGen.Models.Helm.toolkit.fluxcd.io;
+using KubernetesCRDModelGen.Models.helm.toolkit.fluxcd.io;
 using System.Text;
 using System.Text.Json.Nodes;
 using YamlDotNet.RepresentationModel;
@@ -27,9 +27,9 @@ public partial class HelmReleaseUpgrade
 
     private IKubernetesObject<V1ObjectMeta> Right { get; set; }
 
-    private KubernetesCRDModelGen.Models.Helm.toolkit.fluxcd.io.HelmRelease HelmRelease;
+    private KubernetesCRDModelGen.Models.helm.toolkit.fluxcd.io.HelmRelease HelmRelease;
 
-    private KubernetesCRDModelGen.Models.Source.toolkit.fluxcd.io.HelmRepository? HelmRepository;
+    private KubernetesCRDModelGen.Models.source.toolkit.fluxcd.io.HelmRepository? HelmRepository;
 
     private List<string> Versions = new();
 
@@ -40,21 +40,21 @@ public partial class HelmReleaseUpgrade
     protected override async Task OnInitializedAsync()
     {
         // Get Helm Release
-        HelmRelease = ClusterManager.GetActiveCluster().GetObject<KubernetesCRDModelGen.Models.Helm.toolkit.fluxcd.io.HelmRelease>(Namespace, Name);
+        HelmRelease = ClusterManager.GetActiveCluster().GetObject<KubernetesCRDModelGen.Models.helm.toolkit.fluxcd.io.HelmRelease>(Namespace, Name);
 
-        HelmRelease = (KubernetesCRDModelGen.Models.Helm.toolkit.fluxcd.io.HelmRelease?)ObjectCompare.CleanObject(HelmRelease);
+        HelmRelease = (KubernetesCRDModelGen.Models.helm.toolkit.fluxcd.io.HelmRelease?)ObjectCompare.CleanObject(HelmRelease);
 
         // Get Source
         var sourceType = HelmRelease.Spec.Chart.Spec.SourceRef.Kind;
 
-        if (string.IsNullOrEmpty(HelmRelease.Spec.Chart.Spec.SourceRef.@namespace))
+        if (string.IsNullOrEmpty(HelmRelease.Spec.Chart.Spec.SourceRef.Namespace))
         {
-            HelmRelease.Spec.Chart.Spec.SourceRef.@namespace = HelmRelease.Namespace();
+            HelmRelease.Spec.Chart.Spec.SourceRef.Namespace = HelmRelease.Namespace();
         }
 
         if (sourceType == "HelmRepository")
         {
-            HelmRepository = ClusterManager.GetActiveCluster().GetObject<KubernetesCRDModelGen.Models.Source.toolkit.fluxcd.io.HelmRepository>(HelmRelease.Spec.Chart.Spec.SourceRef.@namespace, HelmRelease.Spec.Chart.Spec.SourceRef.Name);
+            HelmRepository = ClusterManager.GetActiveCluster().GetObject<KubernetesCRDModelGen.Models.source.toolkit.fluxcd.io.HelmRepository>(HelmRelease.Spec.Chart.Spec.SourceRef.Namespace, HelmRelease.Spec.Chart.Spec.SourceRef.Name);
 
             if (HelmRepository == null)
             {
