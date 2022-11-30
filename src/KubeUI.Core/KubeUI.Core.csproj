@@ -22,6 +22,7 @@
 	<ItemGroup>
 		<PackageReference Include="BlazorMonaco" Version="2.1.0" />
 		<PackageReference Include="JsonPathLINQ" Version="1.0.0-alpha.7" />
+		<PackageReference Include="KristofferStrube.Blazor.FileSystemAccess" Version="2.1.0" />
 		<PackageReference Include="KubernetesClient" Version="9.0.38" />
 		<PackageReference Include="KubernetesCRDModelGen" Version="1.0.0-alpha.38" />
 		<PackageReference Include="KubernetesCRDModelGen.Models.fluxcd.io" Version="1.0.0-alpha.38" />
@@ -33,7 +34,6 @@
 		<PackageReference Include="PropertyChanged.Fody" Version="4.1.0" PrivateAssets="All" />
 		<PackageReference Include="SharpZipLib" Version="1.4.1" />
 		<PackageReference Include="SystemTextJson.JsonDiffPatch" Version="1.3.1" />
-		<PackageReference Include="WindowsAPICodePack-Shell" Version="1.1.1" Condition="'$(IsWindows)'=='true'" />
 		<PackageReference Include="XtermBlazor" Version="1.6.1" />
 		<PackageReference Include="YamlDotNet.System.Text.Json" Version="1.2.0" />
 	</ItemGroup>
@@ -47,7 +47,7 @@
 	<Target Name="EmbedResolveReferences" AfterTargets="ResolveReferences">
 		<ItemGroup>
 			<FilesToEmbed Include="@(ReferencePath)" Condition="('%(ReferencePath.Filename)' == 'KubernetesCRDModelGen.Models.fluxcd.io')" />
-			<XmlFilesToEmbed Include="@(FilesToEmbed->'%(RelativeDir)%(FileName).xml'-> Exists())" Condition="('%(FilesToEmbed.Filename)' == 'KubernetesCRDModelGen.Models.fluxcd.io')" />
+			<XmlFilesToEmbed Include="@(FilesToEmbed-&gt;'%(RelativeDir)%(FileName).xml'-&gt; Exists())" Condition="('%(FilesToEmbed.Filename)' == 'KubernetesCRDModelGen.Models.fluxcd.io')" />
 
 			<!-- add xml documentation for list of assemblies -->
 			<EmbeddedResource Include="@(XmlFilesToEmbed)">

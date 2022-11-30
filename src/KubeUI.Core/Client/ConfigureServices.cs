@@ -1,4 +1,5 @@
-﻿using KubernetesCRDModelGen;
+﻿using KristofferStrube.Blazor.FileSystemAccess;
+using KubernetesCRDModelGen;
 using KubeUI.Core.Services;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Configuration;
@@ -22,5 +23,7 @@ public static class ConfigureServices
         services.AddSingleton<ICRDGenerator, CRDGenerator>();
 
         services.AddSingleton<Updater>();
+
+        services.AddFileSystemAccessService();
     }
 }

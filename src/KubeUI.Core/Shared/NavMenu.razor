@@ -21,7 +21,7 @@
 
     </MudNavGroup>
 
-    @if (ClusterManager.GetActiveCluster() != null && ClusterManager.GetActiveCluster() is GitOpsCluster)
+    @if (ClusterManager.GetActiveCluster() != null)
     {
         <InputFile id="fileInput" OnChange="UploadFiles" hidden multiple accept=".yaml, .yml, .zip" />
         <label class="mud-nav-item mud-ripple" for="fileInput">
@@ -38,21 +38,11 @@
             </a>
         </label>
 
-        @if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        @if (OpenFolderSupported)
         {
-            <label class="mud-nav-item mud-ripple" @onclick="@LoadFolder">
-                <a class="mud-nav-link">
-                    <svg class="mud-icon-root mud-icon-default mud-svg-icon mud-icon-size-medium mud-nav-link-icon mud-nav-link-icon-default" focusable="false" viewBox="0 0 24 24" aria-hidden="true">
-                        <g>
-                            <rect fill="none" height="24" width="24" />
-                        </g>
-                        <g>
-                            <path d="M5,20h14v-2H5V20z M5,10h4v6h6v-6h4l-7-7L5,10z" />
-                        </g>
-                    </svg>
-                    <div class="mud-nav-link-text">Load Folder</div>
-                </a>
-            </label>
+            <MudNavLink OnClick="LoadFolder" Icon="@Icons.Filled.DriveFolderUpload">
+                Load Folder
+            </MudNavLink>
         }
     }
 

@@ -1,4 +1,7 @@
+using KristofferStrube.Blazor.FileSystemAccess;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.JSInterop;
+using System.IO;
 
 namespace KubeUI.Core.Shared;
 
@@ -13,18 +16,23 @@ public partial class NavMenu : IDisposable
     [Inject]
     private NavigationManager NavigationManager { get; set; }
 
+    [Inject]
+    private IFileSystemAccessService FileSystemAccessService { get; set; }
+
     private System.Timers.Timer Timer { get; set; }
 
-    protected override void OnInitialized()
-    {
-        base.OnInitialized();
+    private bool OpenFolderSupported { get; set; }
 
+    protected override async Task OnInitializedAsync()
+    {
         ClusterManager.OnChange += ClusterManager_OnChange;
 
         Timer = new System.Timers.Timer(TimeSpan.FromSeconds(1));
         Timer.Elapsed += Timer_Elapsed;
         Timer.Enabled = true;
         Timer.AutoReset = true;
+
+        OpenFolderSupported = await FileSystemAccessService.IsSupportedAsync();
     }
 
     private async void Timer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
@@ -73,19 +81,71 @@ public partial class NavMenu : IDisposable
 
     private async Task LoadFolder()
     {
-#if Windows
-        var dialog = new Microsoft.WindowsAPICodePack.Dialogs.CommonOpenFileDialog
+        try
         {
-            IsFolderPicker = true
-        };
+            var folder = await FileSystemAccessService.ShowDirectoryPickerAsync();
 
-        var result = dialog.ShowDialog();
+            var values = await folder.ValuesAsync();
 
-        if (result == Microsoft.WindowsAPICodePack.Dialogs.CommonFileDialogResult.Ok)
-        {
-            await ClusterManager.GetActiveCluster().ImportFolder(dialog.FileName);
+            var queue = new Queue<(Entity entity, FileSystemDirectoryHandle dir, FileSystemHandle value)>();
+            for (int i = 0; i < values.Count(); i++)
+            {
+                var value = values[i];
+                var entity = new Entity(await value.GetKindAsync(), value);
+                queue.Enqueue((entity, folder, value));
+            }
+
+            while (queue.Count > 0)
+            {
+                var (entity, dir, value) = queue.Dequeue();
+                if (await value.GetKindAsync() is FileSystemHandleKind.File)
+                {
+                    var fileSystemHandle = await dir.GetFileHandleAsync(await value.GetNameAsync());
+                    var file = await fileSystemHandle.GetFileAsync();
+                    var fileName = await fileSystemHandle.GetNameAsync();
+                    var fileStream = await file.StreamAsync();
+
+                    if (fileName.EndsWith(".yaml") || fileName.EndsWith(".yml"))
+                    {
+                        using var stream = new MemoryStream();
+                        await fileStream.CopyToAsync(stream);
+                        stream.Position = 0;
+
+                        await ClusterManager.GetActiveCluster().ImportYaml(stream);
+                    }
+                }
+                else
+                {
+                    var fileSystemDirectoryHandle = await dir.GetDirectoryHandleAsync(await value.GetNameAsync());
+                    var innerValues = await fileSystemDirectoryHandle.ValuesAsync();
+                    foreach (var innerValue in innerValues)
+                    {
+                        var innerEntity = new Entity(await innerValue.GetKindAsync(), innerValue);
+                        entity.Children.Add(innerEntity);
+                        queue.Enqueue((innerEntity, fileSystemDirectoryHandle, innerValue));
+                    }
+                }
+            }
         }
-#endif
+        catch (JSException ex) when (ex.Message.Equals("The user aborted a request.\nError: The user aborted a request.")) { }
+        catch (Exception ex)
+        {
+            //throw;
+        }
+    }
+
+    protected class Entity
+    {
+        public Entity(FileSystemHandleKind Kind, FileSystemHandle? Handle)
+        {
+            this.Kind = Kind;
+            this.Handle = Handle;
+            Children = new();
+        }
+        public FileSystemHandleKind Kind { get; set; }
+        public FileSystemHandle? Handle { get; set; }
+        public ulong Size { get; set; }
+        public List<Entity> Children { get; set; }
     }
 
     private void SetActiveCluster(ICluster cluster)
