@@ -7,7 +7,7 @@
                 @context.Item1?.Status?.AvailableReplicas.GetValueOrDefault()/@context.Item1?.Spec?.Replicas
             </DisplayContent>
         </ColumnComponent>
-        <ColumnComponent TItem="V1Deployment" Name="Replicas" Object="(x => x.Spec.Replicas)" />
+        <ColumnComponent TItem="V1Deployment" Name="Replicas" Object="(x => x.Spec?.Replicas)" />
     </Columns>
 </ListGeneric>
 
