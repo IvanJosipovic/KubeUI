@@ -161,8 +161,7 @@ public class Cluster : ClusterBase, ICluster
 
         if (resp.IsSuccessStatusCode)
         {
-            var obj = KubernetesJson.Deserialize<V1APIGroupList>(await resp.Content.ReadAsStringAsync());
-            return obj;
+            return KubernetesJson.Deserialize<V1APIGroupList>(await resp.Content.ReadAsStringAsync());
         }
         else
         {

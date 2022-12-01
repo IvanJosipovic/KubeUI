@@ -242,7 +242,7 @@ public partial class ListComponent<TItem> : IDisposable where TItem : class, IKu
         {
             foreach (var item in SelectedItems)
             {
-                await ClusterManager.GetActiveCluster().Delete<TItem>(item);
+                await ClusterManager.GetActiveCluster().Delete(item);
             }
         }
     }

@@ -130,7 +130,7 @@ public partial class NavMenu : IDisposable
         catch (JSException ex) when (ex.Message.Equals("The user aborted a request.\nError: The user aborted a request.")) { }
         catch (Exception ex)
         {
-            //throw;
+            Logger.LogError(ex, "Error loading Directory");
         }
     }
 
@@ -144,7 +144,6 @@ public partial class NavMenu : IDisposable
         }
         public FileSystemHandleKind Kind { get; set; }
         public FileSystemHandle? Handle { get; set; }
-        public ulong Size { get; set; }
         public List<Entity> Children { get; set; }
     }
 

@@ -77,7 +77,6 @@ public abstract class ClusterBase : INotifyPropertyChanged
         NotifyStateChanged(WatchEventType.Deleted, GroupApiVersionKind.From(@object.GetType()), @object);
     }
 
-
     public IEnumerable<T> GetObjects<T>(string version, string kind, string group = "") where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var key = $"{group}/{version}/{kind}".TrimStart('/').ToLower();
