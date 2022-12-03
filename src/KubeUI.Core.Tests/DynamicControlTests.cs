@@ -85,9 +85,9 @@ public class DynamicControlTests : TestContext
 
         var input = textField.Find("input");
 
-        input.Change(int.Max);
+        input.Change(int.MaxValue);
 
-        model.IntControl.Should().Be(123);
+        model.IntControl.Should().Be(int.MaxValue);
     }
 
     [Fact]
