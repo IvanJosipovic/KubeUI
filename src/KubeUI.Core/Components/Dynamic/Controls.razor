@@ -40,7 +40,7 @@
     {
         <MudText>Missing JsonNode</MudText>
     }
-    else if (Item.GetType().Namespace.Equals(typeof(V1Deployment).Namespace) || Item.GetType().Namespace.StartsWith(typeof(KubernetesCRDModelGen.GenericObject).Namespace))
+    else if (Item.GetType().Namespace.Equals(typeof(V1Deployment).Namespace) || Item.GetType().Namespace.StartsWith("KubernetesCRDModelGen.Models.") || Item.GetType().Namespace.StartsWith("KubeUI."))
     {
         foreach (var prop in Item.GetType().GetProperties().Where(x => !x.PropertyType.Namespace.Equals(typeof(V1Deployment).Namespace)))
         {
@@ -77,6 +77,10 @@
                 else if (prop.PropertyType == typeof(long) || prop.PropertyType == typeof(long?))
                 {
                     <MudNumericField T="long?" Label="@prop.Name.AddSpacesBeforeCapitals()" Value="@(value as long?)" ValueChanged="@((e) => OnChange(e, prop))" Variant="Variant.Text" Disabled="ReadOnly" />
+                }
+                else if (prop.PropertyType == typeof(double) || prop.PropertyType == typeof(double?))
+                {
+                    <MudNumericField T="double?" Label="@prop.Name.AddSpacesBeforeCapitals()" Value="@(value as double?)" ValueChanged="@((e) => OnChange(e, prop))" Variant="Variant.Text" Disabled="ReadOnly" />
                 }
                 else if (prop.PropertyType == typeof(DateTime) || prop.PropertyType == typeof(DateTime?))
                 {

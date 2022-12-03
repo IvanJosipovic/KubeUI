@@ -1,7 +1,3 @@
-using FluentAssertions;
-using k8s.Models;
-using KubeUI.Core.Client;
-
 namespace KubeUI.Core.Tests
 {
     public class ObjectCompareTests

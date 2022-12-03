@@ -4,19 +4,6 @@
 		<TargetFramework>net7.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
-		<IsWindows Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</IsWindows>
-		<IsOSX Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsOSX>
-		<IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(IsWindows)'=='true'">
-		<DefineConstants>Windows</DefineConstants>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(IsOSX)'=='true'">
-		<DefineConstants>OSX</DefineConstants>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(IsLinux)'=='true'">
-		<DefineConstants>Linux</DefineConstants>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -24,8 +11,8 @@
 		<PackageReference Include="JsonPathLINQ" Version="1.0.0-alpha.7" />
 		<PackageReference Include="KristofferStrube.Blazor.FileSystemAccess" Version="2.1.0" />
 		<PackageReference Include="KubernetesClient" Version="9.0.38" />
-		<PackageReference Include="KubernetesCRDModelGen" Version="1.0.0-alpha.38" />
-		<PackageReference Include="KubernetesCRDModelGen.Models.fluxcd.io" Version="1.0.0-alpha.38" />
+		<PackageReference Include="KubernetesCRDModelGen" Version="1.0.0-alpha.44" />
+		<PackageReference Include="KubernetesCRDModelGen.Models.fluxcd.io" Version="1.0.0-alpha.44" />
 		<PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="7.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="7.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="7.0.0" />

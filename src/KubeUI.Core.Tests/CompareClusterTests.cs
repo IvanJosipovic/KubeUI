@@ -1,8 +1,3 @@
-using k8s.Models;
-using KubernetesCRDModelGen;
-using KubeUI.Core.Client;
-using Microsoft.Extensions.DependencyInjection;
-using FluentAssertions;
 
 namespace KubeUI.Core.Tests
 {

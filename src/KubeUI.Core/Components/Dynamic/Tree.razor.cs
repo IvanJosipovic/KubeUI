@@ -34,7 +34,7 @@ public partial class Tree<TItem>
             .Where(x => x.PropertyType.Namespace.Equals(typeof(V1Deployment).Namespace) ||
             x.PropertyType.Namespace.StartsWith("KubeUI.") ||
             x.PropertyType.Namespace.StartsWith("System.Collections.") ||
-            x.PropertyType.Namespace.StartsWith(typeof(KubernetesCRDModelGen.GenericObject).Namespace)))
+            x.PropertyType.Namespace.StartsWith("KubernetesCRDModelGen.Models")))
         {
             try
             {
