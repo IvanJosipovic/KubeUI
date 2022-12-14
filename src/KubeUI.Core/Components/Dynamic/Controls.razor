@@ -5,44 +5,12 @@
 @typeparam TItem
 
 <MudContainer>
-    @if (Item.GetType().IsGenericType && Item.GetType().GetGenericTypeDefinition() == typeof(Dictionary<,>))
+    @if (Item.GetType().Namespace.Equals(typeof(V1Deployment).Namespace) ||
+         Item.GetType().Namespace.StartsWith("KubernetesCRDModelGen.Models.") ||
+         Item.GetType().Namespace.StartsWith("KubeUI.")
+    )
     {
-@*        <MudText>Missing Control Type @Item.GetType().GetGenericTypeDefinition()</MudText>
-*@    }
-    else if (Item.GetType().IsGenericType && Item.GetType().GetGenericTypeDefinition() == typeof(List<>))
-    {
-@*        <MudText>Missing Control Type @Item.GetType().GetGenericTypeDefinition()</MudText>
-*@
-    }
-    else if (Item.GetType() == typeof(KeyValuePair<string, string>))
-    {
-@*        var test = (KeyValuePair<string, string>)Item;
-
-        <MudTextField T="string" Label="Key" Value="@(test.Key)" Variant="Variant.Text" Disabled="ReadOnly" />
-
-        <MudTextField T="string" Label="Value" Value="@(test.Value)" Variant="Variant.Text" Disabled="ReadOnly" />*@
-
-    }
-    else if (Item.GetType() == typeof(string))
-    {
-        <MudText>Missing Control Type @Item.GetType()</MudText>
-
-@*      <MudTextField T="string" Label="" Value="@(Item == null ? "" : Item.ToString())" ValueChanged="@((e) => {(string)Item = e;})" Variant="Variant.Text" Disabled="ReadOnly" />
-*@    }
-    else if (Item.GetType() == typeof(object))
-    {
-@*        <MudText>Missing Control Type @Item.GetType()</MudText>
-*@
-        @*      <MudTextField T="string" Label="" Value="@(Item == null ? "" : Item.ToString())" ValueChanged="@((e) => {(string)Item = e;})" Variant="Variant.Text" Disabled="ReadOnly" />
-    *@
-    }
-    else if (Item.GetType() == typeof(JsonNode))
-    {
-        <MudText>Missing JsonNode</MudText>
-    }
-    else if (Item.GetType().Namespace.Equals(typeof(V1Deployment).Namespace) || Item.GetType().Namespace.StartsWith("KubernetesCRDModelGen.Models.") || Item.GetType().Namespace.StartsWith("KubeUI."))
-    {
-        foreach (var prop in Item.GetType().GetProperties().Where(x => !x.PropertyType.Namespace.Equals(typeof(V1Deployment).Namespace)))
+        foreach (var prop in Item.GetType().GetProperties().Where(ShowControl))
         {
             object value = GetValue(prop, Item);
 
@@ -53,10 +21,53 @@
 
             <MudTooltip Text="@prop.GetSummary()" Inline="false" RootStyle="width:100%">
 
-                @if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(IDictionary<,>))
+                @if (prop.PropertyType == typeof(IDictionary<string, string>))
                 {
-    @*                <MudText>Missing Control Type @prop.PropertyType</MudText>
-    *@            }
+                    <MudText Typo="Typo.caption">@prop.Name.AddSpacesBeforeCapitals()</MudText>
+                    <MudSimpleTable Style="overflow-x: auto;" Hover="true" Dense="true">
+                        <thead>
+                            <tr>
+                                <td>Key</td>
+                                <td>Value</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in value as IDictionary<string, string>)
+                            {
+                                <tr>
+                                    <td>@row.Key</td>
+                                    <td>@row.Value</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </MudSimpleTable>
+                }
+                else if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(IDictionary<,>))
+                {
+                }
+                else if (prop.PropertyType == typeof(IList<string>))
+                {
+                    <MudText Typo="Typo.caption">@prop.Name.AddSpacesBeforeCapitals()</MudText>
+                    <MudSimpleTable Style="overflow-x: auto;" Hover="true" Dense="true">
+                        <tbody>
+                            @if (value != null)
+                            {
+                                var count = (int)typeof(ICollection<string>).GetProperty("Count").GetValue(value);
+
+                                @for (int i = 0; i < count; i++)
+                                {
+                                    object[] index = { i };
+                                    <tr>
+                                        <td style="padding-top: 0; padding-bottom: 0">
+                                            <MudTextField T="string" Value="@(prop.PropertyType.GetProperty("Item").GetValue(value, index) as string)" ValueChanged=@(x => prop.PropertyType.GetProperty("Item").SetValue(value, x, index)) Variant=" Variant.Text" Disabled="ReadOnly" Margin="Margin.Dense" />
+                                        </td>
+                                    </tr>
+                                }
+                            }
+
+                        </tbody>
+                    </MudSimpleTable>
+                }
                 else if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(IList<>))
                 {
     @*                <MudText>Missing Control Type @prop.PropertyType</MudText>
@@ -84,7 +95,7 @@
                 }
                 else if (prop.PropertyType == typeof(DateTime) || prop.PropertyType == typeof(DateTime?))
                 {
-                    <MudTextField T="object" Label="@prop.Name.AddSpacesBeforeCapitals()" Value="@value" ValueChanged="@((e) => OnChange(e, prop))" Variant="Variant.Text" InputType="InputType.Text" Disabled="ReadOnly" />
+                    <MudDatePicker Label="@prop.Name.AddSpacesBeforeCapitals()" Date="@(value == null ? null : DateTime.Parse(value.ToString()))" DateChanged="@((e) => OnChange(e, prop))" Variant="Variant.Text" Disabled="ReadOnly" />
                 }
                 else if (prop.PropertyType == typeof(JsonNode) || prop.PropertyType == typeof(JsonObject))
                 {
@@ -96,120 +107,12 @@
                 else
                 {
                     Logger.LogWarning("Controls: Unknown property type: " + prop.PropertyType.FullName);
-@*                    <MudText>Missing Control Type @prop.PropertyType</MudText>
-*@                }
+                }
             </MudTooltip>
         }
     }
     else
     {
         Logger.LogWarning("Controls: Unknown property type: {type}",Item.GetType());
-        <MudText>Missing Control Type @Item.GetType()</MudText>
     }
-
 </MudContainer>
-
-@code {
-    [Parameter] public TItem Item { get; set; }
-
-    [Parameter] public EventCallback<TItem> ItemChanged { get; set; }
-
-    [Parameter] public bool ReadOnly { get; set; }
-
-    [Inject] protected ILogger<Controls<TItem>> Logger { get; set; }
-
-    protected void Update()
-    {
-        if (ItemChanged.HasDelegate) {
-            ItemChanged.InvokeAsync(Item);
-        }
-    }
-
-    protected override void OnInitialized()
-    {
-        if (Item == null)
-        {
-            Item = Utilities.CreateInstance<TItem>();
-            Update();
-        }
-    }
-
-    protected void OnChange(Object e, PropertyInfo prop)
-    {
-        try
-        {
-            if (prop.PropertyType == typeof(string) || prop.DeclaringType == typeof(string))
-            {
-                prop.SetValue(Item, e == null ? null : e.ToString());
-            }
-            else if (prop.PropertyType == typeof(bool))
-            {
-                prop.SetValue(Item, bool.TryParse(e?.ToString(), out var tmpvalue) ? tmpvalue : default(bool));
-            }
-            else if (prop.PropertyType == typeof(bool?))
-            {
-                prop.SetValue(Item, bool.TryParse(e?.ToString(), out var tmpvalue) ? tmpvalue : (bool?)null);
-            }
-            else if (prop.PropertyType == typeof(int))
-            {
-                prop.SetValue(Item, int.TryParse(e?.ToString(), out var tmpvalue) ? tmpvalue : default(int));
-            }
-            else if (prop.PropertyType == typeof(int?))
-            {
-                prop.SetValue(Item, int.TryParse(e?.ToString(), out var tmpvalue) ? tmpvalue : (int?)null);
-            }
-            else if (prop.PropertyType == typeof(long))
-            {
-                prop.SetValue(Item, long.TryParse(e?.ToString(), out var tmpvalue) ? tmpvalue : default(long));
-            }
-            else if (prop.PropertyType == typeof(long?))
-            {
-                prop.SetValue(Item, long.TryParse(e?.ToString(), out var tmpvalue) ? tmpvalue : (long?)null);
-            }
-            else if (prop.PropertyType == typeof(Dictionary<string, string>))
-            {
-                prop.SetValue(Item, (Dictionary<string, string>)e);
-            }
-            else if (prop.PropertyType == typeof(System.Collections.ObjectModel.Collection<string>))
-            {
-                prop.SetValue(Item, (System.Collections.ObjectModel.Collection<string>)e);
-            }
-            else if (prop.PropertyType == typeof(JsonNode))
-            {
-                prop.SetValue(Item, YamlConverter.Deserialize<JsonNode>(e?.ToString()));
-            }
-            else
-            {
-                prop.SetValue(Item, e);
-            }
-
-            Update();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex,"Casting Error : {0} - {1}", e.GetType(), e);
-        }
-    }
-
-    private object? GetValue(PropertyInfo prop, object item)
-    {
-        if (prop.PropertyType == typeof(string) || prop.DeclaringType == typeof(string))
-        {
-            return prop.GetValue(Item) as string;
-        }
-        else if (prop.PropertyType == typeof(bool) || prop.PropertyType == typeof(bool?))
-        {
-            return prop.GetValue(Item) != null ? bool.Parse(prop.GetValue(Item).ToString()) : null;
-        }
-        else if (prop.PropertyType == typeof(int) || prop.PropertyType == typeof(int?))
-        {
-            return prop.GetValue(Item) != null ? int.Parse(prop.GetValue(Item).ToString()) : null;
-        }
-        else if (prop.PropertyType == typeof(long) || prop.PropertyType == typeof(long?))
-        {
-            return prop.GetValue(Item) != null ? long.Parse(prop.GetValue(Item).ToString()) : null;
-        }
-
-        return prop.GetValue(item, null);
-    }
-}

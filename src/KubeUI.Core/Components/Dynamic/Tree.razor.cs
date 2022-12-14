@@ -5,7 +5,8 @@ namespace KubeUI.Core.Components.Dynamic;
 
 public partial class Tree<TItem>
 {
-    [Inject] private ILogger<Tree<TItem>> Logger { get; set; }
+    [Inject]
+    private ILogger<Tree<TItem>> Logger { get; set; }
 
     [Parameter]
     public TItem Item { get; set; }
@@ -30,11 +31,7 @@ public partial class Tree<TItem>
             return Tree;
         }
 
-        foreach (var property in obj.GetType().GetProperties()
-            .Where(x => x.PropertyType.Namespace.Equals(typeof(V1Deployment).Namespace) ||
-            x.PropertyType.Namespace.StartsWith("KubeUI.") ||
-            x.PropertyType.Namespace.StartsWith("System.Collections.") ||
-            x.PropertyType.Namespace.StartsWith("KubernetesCRDModelGen.Models")))
+        foreach (var property in obj.GetType().GetProperties().Where(ShowInTree))
         {
             try
             {
@@ -184,5 +181,21 @@ public partial class Tree<TItem>
             builder.AddAttribute(3, "ReadOnly", ReadOnly);
             builder.CloseComponent();
         };
+    }
+
+    public static bool ShowInTree(PropertyInfo prop)
+    {
+        if (!prop.PropertyType.Namespace.Equals(typeof(V1Deployment).Namespace) &&
+            !prop.PropertyType.Namespace.StartsWith("KubeUI.") &&
+            !prop.PropertyType.Namespace.StartsWith("System.Collections.") &&
+            !prop.PropertyType.Namespace.StartsWith("KubernetesCRDModelGen.Models")) return false;
+
+        if (prop.PropertyType == typeof(IList<string>)) return false;
+
+        if (prop.PropertyType == typeof(IDictionary<string, string>)) return false;
+
+        if (prop.PropertyType == typeof(IDictionary<string, ResourceQuantity>)) return false;
+
+        return true;
     }
 }

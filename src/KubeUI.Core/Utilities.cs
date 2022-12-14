@@ -2,8 +2,6 @@
 using System.Reflection;
 using System.Text.Encodings.Web;
 using System.Text.Json;
-using System.Text.Json.Nodes;
-using YamlDotNet.System.Text.Json;
 
 namespace KubeUI.Core;
 
@@ -87,59 +85,34 @@ public static class Utilities
                     {
                         property.SetValue(t, null);
                     }
-                    //else
-                    //{
-                    //    for (int i = 0; i < dict.Keys.Count; i++)
-                    //    {
-                    //        dict.Values.ElementAt(i).GutObject();
-                    //    }
-                    //}
+                    else
+                    {
+                        foreach (var item in dict.Values)
+                        {
+                            item.GutObject();
+                        }
+                    }
                 }
                 else if (property.PropertyType.IsGenericType && property.PropertyType.GetGenericTypeDefinition() == typeof(IList<>))
                 {
-                    var obj = (IList)property.GetValue(t);
+                    var list = (IList)property.GetValue(t);
 
-                    var count = obj?.Count;
+                    var count = list?.Count;
                     if (count == 0)
                     {
                         property.SetValue(t, null);
                     }
                     else
                     {
-                        //var type = property.PropertyType.GenericTypeArguments[0];
+                        for (int i = 0; i < count; i++)
+                        {
+                            var itm = list[i];
 
-                        //if (type.FullName.StartsWith("k8s."))
-                        //{
-                        //    var isnull = true;
-
-                        //    for (int i = 0; i < count; i++)
-                        //    {
-                        //        var itm = obj[i];
-
-                        //        itm.GutObject();
-
-                        //        if (itm.GetType()
-                        //            .GetProperties()
-                        //            .All(x => x.GetValue(itm) == null))
-                        //        {
-                        //            obj.RemoveAt(i);
-                        //            i--;
-                        //            count--;
-                        //        }
-                        //        else
-                        //        {
-                        //            isnull = false;
-                        //        }
-                        //    }
-
-                        //    if (isnull)
-                        //    {
-                        //        property.SetValue(t, null);
-                        //    }
-                        //}
+                            itm.GutObject();
+                        }
                     }
                 }
-                else if (property.PropertyType.FullName.StartsWith("k8s."))
+                else if (property.PropertyType.FullName.StartsWith("k8s.") || property.PropertyType.FullName.StartsWith("KubernetesCRDModelGen.Models."))
                 {
                     var obj = property.GetValue(t)?.GutObject();
 
