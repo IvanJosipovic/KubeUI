@@ -23,7 +23,7 @@
 
                 @if (prop.PropertyType == typeof(IDictionary<string, string>))
                 {
-                    <MudText Typo="Typo.caption">@prop.Name.AddSpacesBeforeCapitals()</MudText>
+                    <MudText Typo="Typo.caption" Class="@(ReadOnly ? "mud-text-disabled" : "")">@prop.Name.AddSpacesBeforeCapitals()</MudText>
                     <MudSimpleTable Style="overflow-x: auto;" Hover="true" Dense="true">
                         <thead>
                             <tr>
@@ -32,12 +32,15 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var row in value as IDictionary<string, string>)
+                            @if (value != null)
                             {
-                                <tr>
-                                    <td>@row.Key</td>
-                                    <td>@row.Value</td>
-                                </tr>
+                                @foreach (var row in value as IDictionary<string, string>)
+                                {
+                                    <tr>
+                                        <td>@row.Key</td>
+                                        <td>@row.Value</td>
+                                    </tr>
+                                }
                             }
                         </tbody>
                     </MudSimpleTable>
@@ -47,7 +50,7 @@
                 }
                 else if (prop.PropertyType == typeof(IList<string>))
                 {
-                    <MudText Typo="Typo.caption">@prop.Name.AddSpacesBeforeCapitals()</MudText>
+                    <MudText Typo="Typo.caption" Class="@(ReadOnly ? "mud-text-disabled" : "")">@prop.Name.AddSpacesBeforeCapitals()</MudText>
                     <MudSimpleTable Style="overflow-x: auto;" Hover="true" Dense="true">
                         <tbody>
                             @if (value != null)
@@ -104,9 +107,17 @@
                         <KubeMonacoEditor Value="@YamlConverter.Serialize(value)" ValueChanged="@((e) => OnChange(e, prop))" Language="yaml" ReadOnly="ReadOnly" />
                     </div>
                 }
+                else if (prop.PropertyType == typeof(byte[]))
+                {
+                    <MudText Typo="Typo.caption" Class="@(ReadOnly ? "mud-text-disabled" : "")">@prop.Name.AddSpacesBeforeCapitals()</MudText>
+                    <div style="height: 500px">
+                        <KubeMonacoEditor Value="@(value == null ? "" : System.Text.Encoding.UTF8.GetString(value as byte[]))" ValueChanged="@((e) => OnChange(e, prop))" Language="plaintext" ReadOnly="ReadOnly" />
+                    </div>
+                }
                 else
                 {
                     Logger.LogWarning("Controls: Unknown property type: " + prop.PropertyType.FullName);
+                    <MudText>Missing Control Type @prop.PropertyType</MudText>
                 }
             </MudTooltip>
         }
@@ -114,5 +125,6 @@
     else
     {
         Logger.LogWarning("Controls: Unknown property type: {type}",Item.GetType());
+        <MudText>Missing Control Object Type @(Item.GetType())</MudText>
     }
 </MudContainer>

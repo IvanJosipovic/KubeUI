@@ -45,7 +45,7 @@ namespace KubeUI.Core.Components.Dynamic
                 }
                 else if (prop.PropertyType == typeof(bool))
                 {
-                    prop.SetValue(Item, bool.TryParse(e?.ToString(), out var tmpvalue) ? tmpvalue : default(bool));
+                    prop.SetValue(Item, bool.TryParse(e?.ToString(), out var tmpvalue) ? tmpvalue : default);
                 }
                 else if (prop.PropertyType == typeof(bool? ))
                 {
@@ -53,7 +53,7 @@ namespace KubeUI.Core.Components.Dynamic
                 }
                 else if (prop.PropertyType == typeof(int))
                 {
-                    prop.SetValue(Item, int.TryParse(e?.ToString(), out var tmpvalue) ? tmpvalue : default(int));
+                    prop.SetValue(Item, int.TryParse(e?.ToString(), out var tmpvalue) ? tmpvalue : default);
                 }
                 else if (prop.PropertyType == typeof(int? ))
                 {
@@ -61,9 +61,9 @@ namespace KubeUI.Core.Components.Dynamic
                 }
                 else if (prop.PropertyType == typeof(long))
                 {
-                    prop.SetValue(Item, long.TryParse(e?.ToString(), out var tmpvalue) ? tmpvalue : default(long));
+                    prop.SetValue(Item, long.TryParse(e?.ToString(), out var tmpvalue) ? tmpvalue : default);
                 }
-                else if (prop.PropertyType == typeof(long? ))
+                else if (prop.PropertyType == typeof(long?))
                 {
                     prop.SetValue(Item, long.TryParse(e?.ToString(), out var tmpvalue) ? tmpvalue : null);
                 }
@@ -81,11 +81,15 @@ namespace KubeUI.Core.Components.Dynamic
                 }
                 else if (prop.PropertyType == typeof(DateTime))
                 {
-                    prop.SetValue(Item, DateTime.TryParse(e?.ToString(), out var tmpvalue) ? tmpvalue : default(DateTime));
+                    prop.SetValue(Item, DateTime.TryParse(e?.ToString(), out var tmpvalue) ? tmpvalue : default);
                 }
-                else if (prop.PropertyType == typeof(DateTime? ))
+                else if (prop.PropertyType == typeof(DateTime?))
                 {
                     prop.SetValue(Item, DateTime.TryParse(e?.ToString(), out var tmpvalue) ? tmpvalue : null);
+                }
+                else if (prop.PropertyType == typeof(byte[]))
+                {
+                    prop.SetValue(Item, e == null ? null : System.Text.Encoding.UTF8.GetBytes(e?.ToString()));
                 }
                 else
                 {
