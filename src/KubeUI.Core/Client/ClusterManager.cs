@@ -154,7 +154,7 @@ public class ClusterManager : IDisposable
                 Logger.LogError(ex, "Error Loading docs for type {group}", type.FullName);
             }
 
-            AssemblyLoader.AddToCache(type.Assembly, null);
+            AssemblyLoader.AddToCache(type.Assembly, xmlDoc);
         }
 
         LoadClusters();
