@@ -1,7 +1,9 @@
+using KubeUI.Core.Components;
 using KubeUI.Core.Components.Dynamic;
 using MudBlazor;
 using MudBlazor.Services;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace KubeUI.Core.Tests;
@@ -29,6 +31,8 @@ public class DynamicControlTests : TestContext
         public long LongControl { get; set; }
 
         public DateTime DateTimeControl { get; set; }
+
+        public byte[] ByteArrayControl { get; set; }
     }
 
     [Fact]
@@ -112,6 +116,7 @@ public class DynamicControlTests : TestContext
     }
 
     //[Fact]
+    // todo fix test
     public void SetDateTimeValue()
     {
         var model = new UI1();
@@ -127,6 +132,23 @@ public class DynamicControlTests : TestContext
         input.Change(date.ToString());
 
         model.DateTimeControl.Should().Be(date);
+    }
+
+    //[Fact]
+    // todo fix test. This test requires JavaScript due to BlazorMonaco
+    public void SetByteArrayValue()
+    {
+        var model = new UI1();
+
+        var cmpt = RenderComponent<Controls<UI1>>(param => param.Add(p => p.Item, model));
+
+        var textField = cmpt.FindComponent<KubeMonacoEditor>();
+
+        var input = textField.Find("input");
+
+        input.Change("test");
+
+        model.ByteArrayControl.Should().BeEquivalentTo(Encoding.UTF8.GetBytes("test"));
     }
 }
 
