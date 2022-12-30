@@ -342,17 +342,12 @@ public abstract class ClusterBase : INotifyPropertyChanged
         var ModelTypeMap = AssemblyLoader.Cache.Keys
             .SelectMany(x => x.GetTypes())
             .Where(t => t.GetCustomAttribute<KubernetesEntityAttribute>() != null)
-            .GroupBy(x => new { x.GetCustomAttribute<KubernetesEntityAttribute>().Group, x.GetCustomAttribute<KubernetesEntityAttribute>().ApiVersion, x.GetCustomAttribute<KubernetesEntityAttribute>().Kind }, (key, g) => g.First())
-            .ToDictionary(
-                type =>
-                {
-                    var groupProp = type.GetField(nameof(V1Deployment.KubeGroup));
-                    var apiVersionProp = type.GetField(nameof(V1Deployment.KubeApiVersion));
-                    var kindProp = type.GetField(nameof(V1Deployment.KubeKind));
-
-                    return $"{groupProp.GetValue(null)}/{apiVersionProp.GetValue(null)}/{kindProp.GetValue(null)}".TrimStart('/');
-                },
-                t => t);
+            .GroupBy(x =>
+            {
+                var attr = x.GetCustomAttribute<KubernetesEntityAttribute>();
+                return new { attr.Group, attr.ApiVersion, attr.Kind };
+            }
+            ).ToDictionary(x => $"{x.Key.Group}/{x.Key.ApiVersion}/{x.Key.Kind}".TrimStart('/'), y => y.First());
 
         return ModelTypeMap;
     }
