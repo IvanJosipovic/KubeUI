@@ -1,4 +1,5 @@
 ﻿using KubeUI.Core;
+using System.Collections.Concurrent;
 using System.Reflection;
 using System.Xml;
 
@@ -83,7 +84,7 @@ namespace KubeUI
         }
 
         /// <summary>
-        /// Obtains the XML Element that describes a reflection element by searching the 
+        /// Obtains the XML Element that describes a reflection element by searching the
         /// members for a member that has a name that describes the element.
         /// </summary>
         /// <param name="type">The type or parent type, used to fetch the assembly</param>
@@ -116,7 +117,7 @@ namespace KubeUI
         /// </summary>
         /// <param name="assembly">The assembly to find the XML document for</param>
         /// <returns>The XML document</returns>
-        /// <remarks>This version uses a cache to preserve the assemblies, so that 
+        /// <remarks>This version uses a cache to preserve the assemblies, so that
         /// the XML file is not loaded and parsed on every single lookup</remarks>
         public static XmlDocument XmlFromAssembly(this Assembly assembly)
         {
@@ -153,12 +154,12 @@ namespace KubeUI
         /// <summary>
         /// A cache used to remember Xml documentation for assemblies
         /// </summary>
-        public static readonly Dictionary<Assembly, XmlDocument> Cache = new Dictionary<Assembly, XmlDocument>();
+        public static readonly ConcurrentDictionary<Assembly, XmlDocument> Cache = new ConcurrentDictionary<Assembly, XmlDocument>();
 
         /// <summary>
         /// A cache used to store failure exceptions for assembly lookups
         /// </summary>
-        public static readonly Dictionary<Assembly, Exception> FailCache = new Dictionary<Assembly, Exception>();
+        public static readonly ConcurrentDictionary<Assembly, Exception> FailCache = new ConcurrentDictionary<Assembly, Exception>();
 
         /// <summary>
         /// Loads and parses the documentation file for the specified assembly
@@ -184,7 +185,7 @@ namespace KubeUI
         {
             if (!Cache.ContainsKey(assembly))
             {
-                Cache.Add(assembly, xmlDocument);
+                Cache.TryAdd(assembly, xmlDocument);
             }
         }
     }
