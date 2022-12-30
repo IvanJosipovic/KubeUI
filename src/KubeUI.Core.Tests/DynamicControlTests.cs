@@ -32,7 +32,7 @@ public class DynamicControlTests : TestContext
 
         public DateTime DateTimeControl { get; set; }
 
-        public byte[] ByteArrayControl { get; set; }
+        //public byte[] ByteArrayControl { get; set; }
     }
 
     [Fact]
@@ -136,20 +136,20 @@ public class DynamicControlTests : TestContext
 
     //[Fact]
     // todo fix test. This test requires JavaScript due to BlazorMonaco
-    public void SetByteArrayValue()
-    {
-        var model = new UI1();
+    //public void SetByteArrayValue()
+    //{
+    //    var model = new UI1();
 
-        var cmpt = RenderComponent<Controls<UI1>>(param => param.Add(p => p.Item, model));
+    //    var cmpt = RenderComponent<Controls<UI1>>(param => param.Add(p => p.Item, model));
 
-        var textField = cmpt.FindComponent<KubeMonacoEditor>();
+    //    var textField = cmpt.FindComponent<KubeMonacoEditor>();
 
-        var input = textField.Find("input");
+    //    var input = textField.Find("input");
 
-        input.Change("test");
+    //    input.Change("test");
 
-        model.ByteArrayControl.Should().BeEquivalentTo(Encoding.UTF8.GetBytes("test"));
-    }
+    //    model.ByteArrayControl.Should().BeEquivalentTo(Encoding.UTF8.GetBytes("test"));
+    //}
 }
 
 #pragma warning disable CS1998
@@ -217,7 +217,6 @@ public class MockScrollListener : IScrollListener
 
     public void Dispose()
     {
-
     }
 }
 
