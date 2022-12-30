@@ -54,7 +54,7 @@ else
         {
             var type = GroupApiVersionKind.From<TItem>();
 
-            var warning = cluster.GetObjects<Corev1Event>().Where(x => x.Type == "Warning"
+            var warning = cluster.GetObjects<Corev1Event>().OrderBy().Where(x => x.Type == "Warning"
                                                       && x.InvolvedObject.ApiVersion == type.GroupApiVersion
                                                       && x.InvolvedObject.Kind == type.Kind
                                                       && x.InvolvedObject.Name == name
