@@ -117,14 +117,14 @@
                 else
                 {
                     Logger.LogWarning("Controls: Unknown property type: " + prop.PropertyType.FullName);
-                    <MudText>Missing Control Type @prop.PropertyType</MudText>
-                }
+@*                    <MudText>Missing Control Type @prop.PropertyType</MudText>
+*@                }
             </MudTooltip>
         }
     }
     else
     {
         Logger.LogWarning("Controls: Unknown property type: {type}",Item.GetType());
-        <MudText>Missing Control Object Type @(Item.GetType())</MudText>
-    }
+@*        <MudText>Missing Control Object Type @(Item.GetType())</MudText>
+*@    }
 </MudContainer>
