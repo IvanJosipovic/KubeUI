@@ -163,11 +163,15 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
     public void Seed(string version, string kind, string group = "")
     {
-        var type = GetResourceType(group, version, kind);
+        Type? type = null;
 
-        if (type == null)
+        while (type == null)
         {
-            return;
+            type = GetResourceType(group, version, kind);
+            if (type == null)
+            {
+                Thread.Sleep(TimeSpan.FromSeconds(1));
+            }
         }
 
         var mi = this.GetType().GetMethods().First(x => x.Name == nameof(Seed) && x.IsGenericMethod && x.GetParameters().Length == 0);
@@ -232,9 +236,9 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
     public async Task GenerateCRDAssembly(V1CustomResourceDefinition crd)
     {
-        var assembly = await CRDGenerator.GenerateAssembly(crd, "k8s.Models");
+        var assembly = await CRDGenerator.GenerateAssembly(crd, "KubeUI.Models." + crd.Name());
 
-        if (assembly.Item1 != null)
+        if (assembly.Item1 != null && !AssemblyLoader.ExistsInCache(crd.Name()) && !crd.Spec.Group.EndsWith("fluxcd.io"))
         {
             AssemblyLoader.AddToCache(assembly.Item1, assembly.Item2);
         }
@@ -336,8 +340,6 @@ public abstract class ClusterBase : INotifyPropertyChanged
     private IDictionary<string, Type> GenerateTypeMap()
     {
         var type = typeof(KubernetesEntityAttribute);
-
-        var assType = AssemblyLoader.Cache.Keys.First().GetTypes().First(x => x.FullName == type.FullName);
 
         var ModelTypeMap = AssemblyLoader.Cache.Keys
             .SelectMany(x => x.GetTypes())

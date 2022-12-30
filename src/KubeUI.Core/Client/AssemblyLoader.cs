@@ -188,5 +188,10 @@ namespace KubeUI
                 Cache.TryAdd(assembly, xmlDocument);
             }
         }
+
+        public static bool ExistsInCache(string name)
+        {
+            return Cache.Keys.Any(x => x.ManifestModule.ScopeName == name + ".dll");
+        }
     }
 }
