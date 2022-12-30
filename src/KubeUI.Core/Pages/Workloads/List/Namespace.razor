@@ -1,5 +1,7 @@
 ﻿@page "/list/v1/namespace"
 
 <ListGeneric TItem="V1Namespace" HideNamespace="true">
-
+    <Columns>
+        <ColumnComponent TItem="V1Namespace" Name="Status" Object="@(x => x?.Status?.Phase)" />
+    </Columns>
 </ListGeneric>
