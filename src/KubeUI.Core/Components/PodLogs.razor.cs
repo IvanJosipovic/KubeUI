@@ -1,3 +1,4 @@
+using Microsoft.JSInterop;
 using MudBlazor.Services;
 using XtermBlazor;
 
@@ -29,10 +30,6 @@ public partial class PodLogs : IDisposable
     [Inject]
     private IResizeListenerService ResizeListenerService { get; set; }
 
-    private Stream stream;
-
-    private StreamReader streamReader;
-
     private bool IsDisposed;
 
     private Xterm _terminal;
@@ -48,6 +45,10 @@ public partial class PodLogs : IDisposable
             //Background = "#17615e",
         },
     };
+
+    private CancellationTokenSource token = new CancellationTokenSource();
+
+    bool shouldClear;
 
     protected override async Task OnInitializedAsync()
     {
@@ -72,14 +73,22 @@ public partial class PodLogs : IDisposable
 
     protected override async Task OnParametersSetAsync()
     {
-        await Update();
+        shouldClear = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender && shouldClear)
+        {
+            shouldClear = false;
+            await Update();
+        }
     }
 
     public void Dispose()
     {
         IsDisposed = true;
-        stream?.Dispose();
-        streamReader?.Dispose();
+        token.Cancel();
     }
 
     private async Task Update()
@@ -89,24 +98,22 @@ public partial class PodLogs : IDisposable
             await _terminal.Clear();
 
             var cluster = (Cluster)ClusterManager.GetActiveCluster();
-            stream = await cluster.Client.CoreV1.ReadNamespacedPodLogAsync(Name, Namespace, container: Container, tailLines: Lines, previous: Previous, follow: true, pretty: true);
+            var stream = await cluster.Client.CoreV1.ReadNamespacedPodLogAsync(Name, Namespace, container: Container, tailLines: Lines, previous: Previous, follow: true, pretty: true, cancellationToken: token.Token);
 
-            using (streamReader = new StreamReader(stream))
+            using var streamReader = new StreamReader(stream);
+
+            while (!IsDisposed && streamReader.Peek() != -1)
             {
-                while (!IsDisposed && streamReader.Peek() != -1)
+                try
                 {
-                    try
-                    {
-                        await _terminal.WriteLine(await streamReader.ReadLineAsync());
-                    }
-                    catch (IOException ex) when (ex.Message.Equals("The request was aborted.")) { break; }
-                    catch (ObjectDisposedException) { break; }
+                    await _terminal.WriteLine(await streamReader.ReadLineAsync());
                 }
+                catch (IOException ex) when (ex.Message.Equals("The request was aborted.")) { break; }
+                catch (ObjectDisposedException) { break; }
             }
         }
         catch (Exception ex)
         {
-            stream = null;
             Logger.LogError(ex, "Error getting logs");
         }
     }

@@ -27,15 +27,13 @@ public partial class PodConsole : IDisposable
     [Inject]
     private IResizeListenerService ResizeListenerService { get; set; }
 
-    private WebSocket WebSocket;
-
     private Stream Stream;
-
-    private StreamReader streamReader;
 
     private bool IsDisposed;
 
     private Xterm _terminal;
+
+    private CancellationTokenSource token = new CancellationTokenSource();
 
     private TerminalOptions _options = new TerminalOptions
     {
@@ -78,9 +76,7 @@ public partial class PodConsole : IDisposable
     public void Dispose()
     {
         IsDisposed = true;
-        WebSocket?.Dispose();
-        Stream?.Dispose();
-        streamReader?.Dispose();
+        token.Cancel();
     }
 
     private async Task PodExec()
@@ -94,27 +90,26 @@ public partial class PodConsole : IDisposable
             "clear; (bash || ash || sh)"
         };
 
-        WebSocket = await cluster.Client.WebSocketNamespacedPodExecAsync(Name, Namespace, command, Container).ConfigureAwait(false);
+        var WebSocket = await cluster.Client.WebSocketNamespacedPodExecAsync(Name, Namespace, command, Container, cancellationToken: token.Token).ConfigureAwait(false);
 
-        var demux = new StreamDemuxer(WebSocket);
-        demux.Start();
+        using var streamDemuxer = new StreamDemuxer(WebSocket);
+        streamDemuxer.Start();
 
-        Stream = demux.GetStream(ChannelIndex.StdOut, ChannelIndex.StdIn);
+        var Stream = streamDemuxer.GetStream(ChannelIndex.StdOut, ChannelIndex.StdIn);
 
-        using (streamReader = new StreamReader(Stream))
+        using var streamReader = new StreamReader(Stream);
+
+        while (!IsDisposed)
         {
-            while (!IsDisposed)
+            try
             {
-                try
-                {
-                    var memory = new Memory<char>(new char[1024]);
-                    await streamReader.ReadAsync(memory);
-                    var str = memory.ToString().Replace("\0", "");
-                    await _terminal.Write(str);
-                }
-                catch (IOException ex) when (ex.Message.Equals("The request was aborted.")) { break; }
-                catch (ObjectDisposedException) { break; }
+                var memory = new Memory<char>(new char[1024]);
+                await streamReader.ReadAsync(memory);
+                var str = memory.ToString().Replace("\0", "");
+                await _terminal.Write(str);
             }
+            catch (IOException ex) when (ex.Message.Equals("The request was aborted.")) { break; }
+            catch (ObjectDisposedException) { break; }
         }
     }
 
