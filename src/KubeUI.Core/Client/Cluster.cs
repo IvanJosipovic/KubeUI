@@ -65,9 +65,9 @@ public class Cluster : ClusterBase, ICluster
         switch (eventType)
         {
             case WatchEventType.Added:
-                if (item is V1CustomResourceDefinition)
+                if (item is V1CustomResourceDefinition v1CustomResourceDefinition)
                 {
-                    Task.Run(() => GenerateCRDAssembly((V1CustomResourceDefinition)item));
+                    Task.Run(() => GenerateCRDAssembly(v1CustomResourceDefinition));
                 }
                 break;
             case WatchEventType.Modified:
