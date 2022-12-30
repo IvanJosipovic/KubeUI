@@ -10,6 +10,22 @@ else
 {
     <MudLink Typo="Typo.inherit" Href=@($"/details/{Object.ApiVersion}/{Object.Kind}?Namespace={Object.Namespace()}&Name={Object.Metadata.Name}".Replace("//","/"))>@Object.Metadata.Name</MudLink>
 }
+@{
+    var warning = GetWarning(Object.Namespace(), Object.Name(), Object.Uid());
+
+    if (warning != null)
+    {
+        <MudTooltip Placement="Placement.Right" >
+            <ChildContent>
+                <MudIconButton Icon="@Icons.Material.Filled.Warning" Color="Color.Warning" Size="Size.Small" Class="ml-1" />
+            </ChildContent>
+            <TooltipContent>
+                <MudText Typo="Typo.h6">Warning</MudText>
+                <MudText Typo="Typo.body2">@warning?.Message</MudText>
+            </TooltipContent>
+        </MudTooltip>
+    }
+}
 
 @code {
     [CascadingParameter]
@@ -18,4 +34,43 @@ else
     [Parameter]
     [EditorRequired]
     public TItem Object { get; set; }
+
+    [Inject]
+    private ILogger<Link<TItem>> Logger { get; set; }
+
+    [Inject]
+    private ClusterManager ClusterManager { get; set; }
+
+    private Corev1Event? GetWarning(string @namespace, string name, string uuid)
+    {
+        var cluster = ClusterManager.GetActiveCluster();
+
+        if (cluster == null)
+        {
+            return null;
+        }
+
+        try
+        {
+            var type = GroupApiVersionKind.From<TItem>();
+
+            var warning = cluster.GetObjects<Corev1Event>().Where(x => x.Type == "Warning"
+                                                      && x.InvolvedObject.ApiVersion == type.GroupApiVersion
+                                                      && x.InvolvedObject.Kind == type.Kind
+                                                      && x.InvolvedObject.Name == name
+                                                      && x.InvolvedObject.NamespaceProperty == @namespace
+                                                      && x.InvolvedObject.Uid == uuid
+                                                      && x.LastTimestamp >= DateTime.UtcNow.AddMinutes(-5)
+                                                      ).FirstOrDefault();
+
+            return warning;
+
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex,"Error looking for Warning events");
+        }
+
+        return null;
+    }
 }
