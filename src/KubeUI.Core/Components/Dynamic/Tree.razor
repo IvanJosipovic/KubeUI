@@ -23,6 +23,10 @@
                 {
                     <MudIconButton OnClick="@(() => AddItem(context.Object))" Icon="@Icons.Filled.Add" Color="Color.Secondary" />
                 }
+                @if (context.IsCollectionItem && !ReadOnly)
+                {
+                    <MudIconButton OnClick="@(() => DeleteItem(context.Collection, context.Object))" Icon="@Icons.Filled.Delete" Color="Color.Error" />
+                }
             </Content>
         </MudTreeViewItem>
     </ItemTemplate>

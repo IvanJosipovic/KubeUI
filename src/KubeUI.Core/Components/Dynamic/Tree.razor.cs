@@ -171,6 +171,15 @@ public partial class Tree<TItem>
         StateHasChanged();
     }
 
+    private void DeleteItem(object collection, object obj)
+    {
+        ((IList)collection).Remove(obj);
+
+        OnInitialized();
+
+        StateHasChanged();
+    }
+
     private RenderFragment RenderForm(object obj)
     {
         return builder =>
