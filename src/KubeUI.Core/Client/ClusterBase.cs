@@ -163,15 +163,11 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
     public void Seed(string version, string kind, string group = "")
     {
-        Type? type = null;
+        Type? type = GetResourceType(group, version, kind);
 
-        while (type == null)
+        if (type == null)
         {
-            type = GetResourceType(group, version, kind);
-            if (type == null)
-            {
-                Thread.Sleep(TimeSpan.FromSeconds(1));
-            }
+            return;
         }
 
         var mi = this.GetType().GetMethods().First(x => x.Name == nameof(Seed) && x.IsGenericMethod && x.GetParameters().Length == 0);
