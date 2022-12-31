@@ -27,6 +27,8 @@ public partial class MainLayout
     private RenderFragment? menuRenderFragment;
     private string? MenuWidth;
     private ErrorBoundary? errorBoundary;
+    private ErrorBoundary? errorBoundary2;
+
 
     private MudTheme Theme = new MudTheme()
     {
