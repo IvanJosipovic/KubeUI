@@ -1,4 +1,3 @@
-global using Bunit;
 global using FluentAssertions;
 global using k8s.Models;
 global using KubernetesCRDModelGen;

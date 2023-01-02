@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace KubeUI.Core.Client
 {
-    internal class HelmClient
+    public class HelmClient
     {
         private V1Secret secret;
 

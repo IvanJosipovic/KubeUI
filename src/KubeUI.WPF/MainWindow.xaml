@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:KubeUI.WPF"
-        xmlns:myapp="clr-namespace:KubeUI.Core;assembly=KubeUI.Core"
+        xmlns:myapp="clr-namespace:KubeUI.UI;assembly=KubeUI.UI"
         xmlns:blazor="clr-namespace:Microsoft.AspNetCore.Components.WebView.Wpf;assembly=Microsoft.AspNetCore.Components.WebView.Wpf"
         mc:Ignorable="d"
         Title="KubeUI" Height="768" Width="1024">

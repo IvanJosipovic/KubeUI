@@ -33,10 +33,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\KubeUI.Core\KubeUI.Core.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<Content Update="wwwroot\**">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
@@ -46,6 +42,10 @@
 		<None Include="appsettings.json">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\KubeUI.UI\KubeUI.UI.csproj" />
 	</ItemGroup>
 
 </Project>

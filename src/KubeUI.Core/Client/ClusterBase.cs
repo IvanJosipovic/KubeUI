@@ -25,7 +25,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
         CRDGenerator = cRDGenerator;
     }
 
-    internal ConcurrentDictionary<string, ConcurrentDictionary<string, IKubernetesObject<V1ObjectMeta>>> Objects { get; set; } = new();
+    public ConcurrentDictionary<string, ConcurrentDictionary<string, IKubernetesObject<V1ObjectMeta>>> Objects { get; set; } = new();
 
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>> OnChange;
 

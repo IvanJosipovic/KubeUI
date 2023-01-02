@@ -13,7 +13,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\KubeUI.Core\KubeUI.Core.csproj" />
+	  <ProjectReference Include="..\KubeUI.UI\KubeUI.UI.csproj" />
 	</ItemGroup>
 
 	<UsingTask TaskName="ReplaceFileText" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
@@ -44,19 +44,12 @@
 			<MyStaticFiles Remove="$(PublishDir)\\wwwroot\\**\\*.gz" />
 		</ItemGroup>
 
-		<GZipCompress
-			FilesToCompress="@(MyStaticFiles)"
-			OutputDirectory="$(_BlazorBuildGZipCompressDirectory)">
+		<GZipCompress FilesToCompress="@(MyStaticFiles)" OutputDirectory="$(_BlazorBuildGZipCompressDirectory)">
 
 			<Output TaskParameter="CompressedFiles" ItemName="MyCompressedFiles" />
 		</GZipCompress>
 
-		<BrotliCompress
-			OutputDirectory="$(_BlazorBuildGZipCompressDirectory)"
-			FilesToCompress="@(MyStaticFiles)"
-			ToolAssembly="$(_BlazorWebAssemblySdkToolAssembly)"
-			ToolExe="$(_RazorSdkDotNetHostFileName)"
-			ToolPath="$(_RazorSdkDotNetHostDirectory)">
+		<BrotliCompress OutputDirectory="$(_BlazorBuildGZipCompressDirectory)" FilesToCompress="@(MyStaticFiles)" ToolAssembly="$(_BlazorWebAssemblySdkToolAssembly)" ToolExe="$(_RazorSdkDotNetHostFileName)" ToolPath="$(_RazorSdkDotNetHostDirectory)">
 			<Output TaskParameter="CompressedFiles" ItemName="MyCompressedFiles" />
 		</BrotliCompress>
 

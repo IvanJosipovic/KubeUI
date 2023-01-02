@@ -52,7 +52,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\KubeUI.Core\KubeUI.Core.csproj" />
+      <ProjectReference Include="..\KubeUI.UI\KubeUI.UI.csproj" />
     </ItemGroup>
 
 </Project>

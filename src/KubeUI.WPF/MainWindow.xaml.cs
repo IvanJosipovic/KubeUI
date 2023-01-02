@@ -1,5 +1,4 @@
-﻿using KubeUI.Core.Client;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -28,7 +27,8 @@ public partial class MainWindow : Window
 #if DEBUG
             services.AddBlazorWebViewDeveloperTools();
 #endif
-            ConfigureServices.Configure(hostBuilder.Configuration, services);
+            KubeUI.UI.ConfigureServices.Configure(hostBuilder.Configuration, services);
+            KubeUI.Core.Client.ConfigureServices.Configure(hostBuilder.Configuration, services);
 
             if (hostBuilder.Configuration.GetValue<string>("Logging:PathFormat") != null)
             {

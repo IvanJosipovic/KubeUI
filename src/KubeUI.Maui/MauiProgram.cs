@@ -1,5 +1,4 @@
-﻿using KubeUI.Core.Client;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 
 namespace KubeUI.Maui
 {
@@ -22,7 +21,8 @@ namespace KubeUI.Maui
             builder.Logging.AddDebug();
 #endif
 
-            ConfigureServices.Configure(builder.Configuration, builder.Services);
+            UI.ConfigureServices.Configure(builder.Configuration, builder.Services);
+            Core.Client.ConfigureServices.Configure(builder.Configuration, builder.Services);
 
             return builder.Build();
         }

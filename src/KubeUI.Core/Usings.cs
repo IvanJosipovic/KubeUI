@@ -1,10 +1,3 @@
 global using k8s;
 global using k8s.Models;
-global using MudBlazor;
 global using Microsoft.Extensions.Logging;
-global using Microsoft.AspNetCore.Components;
-global using KubeUI.Core.Shared;
-global using KubeUI.Core.Services;
-global using KubeUI.Core.Pages;
-global using KubeUI.Core.Components;
-global using KubeUI.Core.Client;

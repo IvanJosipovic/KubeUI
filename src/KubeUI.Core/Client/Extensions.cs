@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace KubeUI.Core.Client;
 
-internal static class Extensions
+public static class Extensions
 {
     public static async Task<HttpResponseMessage> SendRequestRaw(this Kubernetes kubernetes, string? requestContent, HttpRequestMessage httpRequest, CancellationToken cancellationToken)
     {

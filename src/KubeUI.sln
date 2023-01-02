@@ -25,6 +25,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeUI.Core.Tests", "KubeUI
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeUI.Maui", "KubeUI.Maui\KubeUI.Maui.csproj", "{226F5DE5-40D7-4D57-83B4-9D3FB0AD35A6}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeUI.UI", "KubeUI.UI\KubeUI.UI.csproj", "{09D3C7FF-A2CB-4A23-9F73-BA579BD858C6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Presentation", "Presentation", "{A457F633-2933-469B-83CB-60A4183C199A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KubeUI.UI.Tests", "KubeUI.UI.Tests\KubeUI.UI.Tests.csproj", "{1C719F32-EBB4-4C36-A448-DB71BE67FEAC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,9 +63,23 @@ Global
 		{226F5DE5-40D7-4D57-83B4-9D3FB0AD35A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{226F5DE5-40D7-4D57-83B4-9D3FB0AD35A6}.Release|Any CPU.Build.0 = Release|Any CPU
 		{226F5DE5-40D7-4D57-83B4-9D3FB0AD35A6}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{09D3C7FF-A2CB-4A23-9F73-BA579BD858C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{09D3C7FF-A2CB-4A23-9F73-BA579BD858C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{09D3C7FF-A2CB-4A23-9F73-BA579BD858C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{09D3C7FF-A2CB-4A23-9F73-BA579BD858C6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1C719F32-EBB4-4C36-A448-DB71BE67FEAC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C719F32-EBB4-4C36-A448-DB71BE67FEAC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1C719F32-EBB4-4C36-A448-DB71BE67FEAC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1C719F32-EBB4-4C36-A448-DB71BE67FEAC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{C6EC3540-8754-48A3-A31A-32C9E74BC2B4} = {A457F633-2933-469B-83CB-60A4183C199A}
+		{C7050E48-18D2-4EF4-83D1-988F120298DF} = {A457F633-2933-469B-83CB-60A4183C199A}
+		{9CC7D5BA-A131-4A74-B340-7CA7328922E7} = {A457F633-2933-469B-83CB-60A4183C199A}
+		{226F5DE5-40D7-4D57-83B4-9D3FB0AD35A6} = {A457F633-2933-469B-83CB-60A4183C199A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {02FA0B85-6C2A-40B2-BC0B-72141BB628AF}
