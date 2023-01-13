@@ -1,7 +1,5 @@
+using KristofferStrube.Blazor.FileSystem;
 using KristofferStrube.Blazor.FileSystemAccess;
-using Microsoft.AspNetCore.Components.Forms;
-using Microsoft.JSInterop;
-using System.IO;
 
 namespace KubeUI.UI.Shared;
 
