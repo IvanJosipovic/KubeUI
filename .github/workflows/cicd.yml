@@ -12,7 +12,7 @@ on:
     types: [opened, reopened, synchronize]
 
 env:
-  semantic_version: 19
+  semantic_version: 20
 
 jobs:
   semantic-release:
