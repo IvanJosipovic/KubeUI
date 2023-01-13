@@ -1,6 +1,5 @@
 ﻿using KubernetesCRDModelGen;
 using System.Collections.Concurrent;
-using System.Text.Json;
 
 namespace KubeUI.Core.Client;
 
@@ -140,16 +139,23 @@ public class Cluster : ClusterBase, ICluster
             client = new GenericClient(Client, api.Group, api.ApiVersion, api.PluralName);
         }
 
-        using (client)
+        try
         {
-            if (string.IsNullOrEmpty(item.Namespace()))
+            using (client)
             {
-                await client.DeleteAsync<T>(item.Name());
+                if (string.IsNullOrEmpty(item.Namespace()))
+                {
+                    await client.DeleteAsync<T>(item.Name());
+                }
+                else
+                {
+                    await client.DeleteNamespacedAsync<T>(item.Namespace(), item.Name());
+                }
             }
-            else
-            {
-                await client.DeleteNamespacedAsync<T>(item.Namespace(), item.Name());
-            }
+        }
+        catch (Exception ex)
+        {
+            throw;
         }
     }
 

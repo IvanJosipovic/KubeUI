@@ -1,6 +1,7 @@
 # [KubeUI.com](https://KubeUI.com)
 
 ![](https://github.com/IvanJosipovic/KubeUI/workflows/CICD/badge.svg)
+[![codecov](https://codecov.io/gh/IvanJosipovic/KubeUI/branch/alpha/graph/badge.svg?token=E05HWW1QYR)](https://codecov.io/gh/IvanJosipovic/KubeUI)
 
 ## What is this?
 KubeUI is a experimental user interface for Kubernetes.
@@ -26,4 +27,3 @@ Supported Platforms:
 
 ## Stats
 ![Alt](https://repobeats.axiom.co/api/embed/db926eb668f71f8de3314f03022de6bb35797d5d.svg "Repobeats analytics image")
- 

@@ -5,7 +5,6 @@ using System.ComponentModel;
 using System.IO.Compression;
 using System.Reflection;
 using YamlDotNet.Core;
-using YamlDotNet.Core.Events;
 
 namespace KubeUI.Core.Client;
 
@@ -185,9 +184,12 @@ public abstract class ClusterBase : INotifyPropertyChanged
             Seed<T>(version, kind, group);
         }
 
-        var obj = Objects[key][$"{@namespace}|{name}"];
+        if (Objects[key].TryGetValue($"{@namespace}|{name}", out var value))
+        {
+            return value as T;
+        }
 
-        return obj as T;
+        return null;
     }
 
     public T? GetObject<T>(string @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -263,9 +265,9 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
         var reader = new StreamReader(stream);
         var parser = new Parser(new StringReader(reader.ReadToEnd()));
-        parser.Consume<StreamStart>();
+        parser.Consume<YamlDotNet.Core.Events.StreamStart>();
 
-        while (parser.Accept<DocumentStart>(out _))
+        while (parser.Accept<YamlDotNet.Core.Events.DocumentStart>(out _))
         {
             var doc = Seralization.KubernetesYaml.Deserializer.Deserialize(parser);
             var yaml = Seralization.KubernetesYaml.Serialize(doc);
@@ -279,7 +281,9 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
                 if (model != null)
                 {
-                    AddInternalObject((IKubernetesObject<V1ObjectMeta>)model);
+                    var mi = this.GetType().GetMethods().First(x => x.Name == nameof(AddOrUpdate) && x.IsGenericMethod && x.GetParameters().Length == 1);
+                    var fooRef = mi.MakeGenericMethod(type);
+                    fooRef.Invoke(this, new[] { model });
                 }
             }
             catch (Exception ex)
