@@ -1,6 +1,7 @@
 ﻿using k8s;
 using k8s.KubeConfigModels;
 using System.Diagnostics;
+using System.IO;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -43,7 +44,7 @@ public class Kind
 
         var bytes = await client.GetByteArrayAsync(url);
 
-        System.IO.File.WriteAllBytes(FileName, bytes);
+        File.WriteAllBytes(FileName, bytes);
 
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
@@ -51,7 +52,8 @@ public class Kind
             {
                 FileName = "chmod",
                 Arguments = "+x ./kind",
-                CreateNoWindow = true
+                CreateNoWindow = true,
+                WorkingDirectory = Directory.GetCurrentDirectory()
             };
 
             var proc = new Process() { StartInfo = startInfo };

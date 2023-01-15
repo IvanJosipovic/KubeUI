@@ -4,17 +4,17 @@ namespace KubeUI.Core.Tests;
 
 public class TestHarness : IDisposable
 {
-    public IServiceProvider ServiceProvider { get; set; }
-
     public string Name { get; set; } = Guid.NewGuid().ToString();
+
+    public string Version { get; set; } = "kindest/node:v1.25.3";
+
+    public IServiceProvider ServiceProvider { get; set; }
 
     public ICluster Cluster { get; set; }
 
     public Kubernetes Kubernetes { get; set; }
 
     private Kind Kind { get; set; }
-
-    public string Version { get; set; } = "kindest/node:v1.25.3";
 
     public TestHarness()
     {
