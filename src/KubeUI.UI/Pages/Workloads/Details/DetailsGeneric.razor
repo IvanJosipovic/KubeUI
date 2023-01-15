@@ -5,10 +5,10 @@
                   TItem="TItem"
                   IsInSideMenu="IsInSideMenu">
     <MudTabs Elevation="4" Rounded="true" Centered="true" Color="@Color.Primary">
-        <MudTabPanel Text="Details" Icon="@Icons.Filled.AccountTree">
-            <KubeUI.Core.Components.Dynamic.UI TItem="TItem" Item="context" />
+        <MudTabPanel Text="Details" Icon="@Icons.Material.Filled.AccountTree">
+            <KubeUI.UI.Components.Dynamic.UI TItem="TItem" Item="context" />
         </MudTabPanel>
-        <MudTabPanel Text="Overview" Icon="@Icons.Filled.Analytics">
+        <MudTabPanel Text="Overview" Icon="@Icons.Material.Filled.Analytics">
             Created: @context.Metadata.CreationTimestamp
             <br />
             @if (Overview != null)
@@ -16,12 +16,12 @@
                 @Overview(context);
             }
         </MudTabPanel>
-        <MudTabPanel Text="Edit" Icon="@Icons.Filled.Edit">
+        <MudTabPanel Text="Edit" Icon="@Icons.Material.Filled.Edit">
             <ResizePanel Context="resize" Offset="20" SetHeigh="true">
                 <Edit TItem="TItem" Object="@context" />
             </ResizePanel>
         </MudTabPanel>
-        <MudTabPanel Text="Yaml" Icon="@Icons.Filled.Code">
+        <MudTabPanel Text="Yaml" Icon="@Icons.Material.Filled.Code">
             <ResizePanel Context="resize" Offset="30" SetHeigh="true">
                 <KubeMonacoEditor Value="@context.ToYaml()" ReadOnly="true" />
             </ResizePanel>

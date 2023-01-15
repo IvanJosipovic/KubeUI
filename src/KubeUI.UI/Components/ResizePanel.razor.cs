@@ -31,7 +31,7 @@ namespace KubeUI.UI.Components
             ResizeListenerService.OnResized += ResizeListenerService_OnResized;
         }
 
-        private async void ResizeListenerService_OnResized(object? sender, BrowserWindowSize e)
+        private void ResizeListenerService_OnResized(object? sender, BrowserWindowSize e)
         {
             Update(e.Height);
         }

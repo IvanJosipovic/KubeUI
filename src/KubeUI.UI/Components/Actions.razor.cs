@@ -26,7 +26,7 @@ public partial class Actions<TItem>
             CloseButton = true
         });
 
-        if (!(await dialog.Result).Cancelled)
+        if (!(await dialog.Result).Canceled)
         {
             await ClusterManager.GetActiveCluster().Delete(Item);
         }

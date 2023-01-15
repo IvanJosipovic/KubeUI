@@ -196,7 +196,7 @@ public partial class ListComponent<TItem> : IDisposable where TItem : class, IKu
         builder.CloseComponent();
     };
 
-    private async Task Compare()
+    private void Compare()
     {
         var left = SelectedItems.ElementAt(0);
         var right = SelectedItems.ElementAt(1);
@@ -212,7 +212,7 @@ public partial class ListComponent<TItem> : IDisposable where TItem : class, IKu
         });
     }
 
-    private async Task New()
+    private void New()
     {
         var parameters = new DialogParameters()
         {
@@ -238,7 +238,7 @@ public partial class ListComponent<TItem> : IDisposable where TItem : class, IKu
             CloseButton = true
         });
 
-        if (!(await dialog.Result).Cancelled)
+        if (!(await dialog.Result).Canceled)
         {
             foreach (var item in SelectedItems)
             {

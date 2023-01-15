@@ -12,7 +12,7 @@
     <Tabs>
         @if (ClusterManager.GetActiveCluster() is Cluster)
         {
-            <MudTabPanel Text="Logs" Icon="@Icons.Filled.Subject">
+            <MudTabPanel Text="Logs" Icon="@Icons.Material.Filled.Subject">
                 <MudTabs Elevation="4" Rounded="true" AlwaysShowScrollButtons="true" Color="@Color.Success" Class="mt-4">
                     @foreach (var cont in context.Spec.InitContainers.EnsureNotEmpty())
                     {
@@ -32,7 +32,7 @@
                     }
                 </MudTabs>
             </MudTabPanel>
-            <MudTabPanel Text="Console" Icon="@Icons.Filled.Computer">
+            <MudTabPanel Text="Console" Icon="@Icons.Material.Filled.Computer">
                 <MudTabs Elevation="4" Rounded="true" AlwaysShowScrollButtons="true" Color="@Color.Success" Class="mt-4">
                     @foreach (var cont in context.Spec.InitContainers.EnsureNotEmpty().OrderBy(x => x.Name))
                     {

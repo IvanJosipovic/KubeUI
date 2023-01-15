@@ -26,7 +26,7 @@ public partial class Clusters
 
         var dialog = Dialog.Show<Dialog>("Delete", parameters, new DialogOptions() { CloseButton = true });
 
-        if (!(await dialog.Result).Cancelled)
+        if (!(await dialog.Result).Canceled)
         {
             ClusterManager.RemoveCluster(cluster);
             StateHasChanged();

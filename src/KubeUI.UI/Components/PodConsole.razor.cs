@@ -47,7 +47,7 @@ public partial class PodConsole : IDisposable
         },
     };
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         ResizeListenerService.OnResized += ResizeListenerService_OnResized;
     }
@@ -95,7 +95,7 @@ public partial class PodConsole : IDisposable
         using var streamDemuxer = new StreamDemuxer(WebSocket);
         streamDemuxer.Start();
 
-        var Stream = streamDemuxer.GetStream(ChannelIndex.StdOut, ChannelIndex.StdIn);
+        Stream = streamDemuxer.GetStream(ChannelIndex.StdOut, ChannelIndex.StdIn);
 
         using var streamReader = new StreamReader(Stream);
 

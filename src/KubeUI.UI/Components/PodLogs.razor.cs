@@ -50,7 +50,7 @@ public partial class PodLogs : IDisposable
 
     bool shouldClear;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         ResizeListenerService.OnResized += ResizeListenerService_OnResized;
     }
@@ -71,7 +71,7 @@ public partial class PodLogs : IDisposable
         await _terminal.InvokeAddonFunctionVoidAsync("xterm-addon-fit", "fit");
     }
 
-    protected override async Task OnParametersSetAsync()
+    protected override void OnParametersSet()
     {
         shouldClear = true;
     }

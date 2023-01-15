@@ -15,6 +15,9 @@ namespace KubeUI.UI.Components
         [Inject]
         private IDialogService Dialog { get; set; }
 
+        [Inject]
+        private ILogger<Edit<TItem>> Logger { get; set; }
+
         private TItem ObjectClone { get; set; }
 
         protected override void OnInitialized()
@@ -46,7 +49,7 @@ namespace KubeUI.UI.Components
                 CloseButton = true
             });
 
-            if (!(await dialog.Result).Cancelled)
+            if (!(await dialog.Result).Canceled)
             {
                 await ClusterManager.GetActiveCluster().AddOrUpdate(ObjectClone);
             }
@@ -60,7 +63,7 @@ namespace KubeUI.UI.Components
             }
             catch (Exception ex)
             {
-                //throw;
+                Logger.LogError(ex, "Error converting from yaml to " + typeof(TItem));
             }
         }
     }

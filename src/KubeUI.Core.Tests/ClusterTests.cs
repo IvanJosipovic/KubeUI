@@ -30,7 +30,7 @@ public class ClusterTests
         var ns2 = await testHarnes.Kubernetes.CoreV1.ReadNamespaceAsync("test");
         ns2.Name().Should().Be("test");
 
-        await Task.Delay(TimeSpan.FromSeconds(10));
+        await Task.Delay(TimeSpan.FromSeconds(2));
 
         var ns3 = testHarnes.Cluster.GetObject<V1Namespace>(null, "test");
         ns3.Name().Should().Be("test");
