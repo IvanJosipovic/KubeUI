@@ -11,13 +11,14 @@ public class Kind
 {
     public string Version = "0.17.0";
 
+    public string FileName { get; } = "kind" + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "");
+
     public async Task DownloadClient()
     {
         var client = new HttpClient();
         var url = string.Empty;
-        var path = "kind" + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "");
 
-        if (System.IO.File.Exists(path)) return;
+        if (System.IO.File.Exists(FileName)) return;
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
@@ -42,7 +43,7 @@ public class Kind
 
         var bytes = await client.GetByteArrayAsync(url);
 
-        System.IO.File.WriteAllBytes(path, bytes);
+        System.IO.File.WriteAllBytes(FileName, bytes);
 
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
@@ -61,7 +62,7 @@ public class Kind
     public void CreateCluster(string name, string? image = null)
     {
         var p = new Process();
-        p.StartInfo.FileName = "kind.exe";
+        p.StartInfo.FileName = FileName;
         p.StartInfo.Arguments = $"create cluster --name {name}" + (string.IsNullOrEmpty(image) ? "" : $" --image {image}");
         p.StartInfo.RedirectStandardError = true;
         p.StartInfo.UseShellExecute = false;
@@ -78,7 +79,7 @@ public class Kind
     public void DeleteCluster(string name)
     {
         var p = new Process();
-        p.StartInfo.FileName = "kind.exe";
+        p.StartInfo.FileName = FileName;
         p.StartInfo.Arguments = $"delete cluster --name {name}";
         p.StartInfo.RedirectStandardError = true;
         p.StartInfo.UseShellExecute = false;
@@ -95,7 +96,7 @@ public class Kind
     public List<string> GetClusters()
     {
         var p = new Process();
-        p.StartInfo.FileName = "kind.exe";
+        p.StartInfo.FileName = FileName;
         p.StartInfo.Arguments = $"get clusters";
         p.StartInfo.RedirectStandardOutput = true;
         p.StartInfo.RedirectStandardError = true;
@@ -116,7 +117,7 @@ public class Kind
     public string GetKubeConfig(string name)
     {
         var p = new Process();
-        p.StartInfo.FileName = "kind.exe";
+        p.StartInfo.FileName = FileName;
         p.StartInfo.Arguments = $"get kubeconfig --name {name}";
         p.StartInfo.RedirectStandardOutput = true;
         p.StartInfo.RedirectStandardError = true;
