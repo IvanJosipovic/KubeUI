@@ -19,7 +19,7 @@ public class Kind
         var client = new HttpClient();
         var url = string.Empty;
 
-        if (System.IO.File.Exists(FileName)) return;
+        if (File.Exists(FileName)) return;
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
