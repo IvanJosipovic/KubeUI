@@ -25,6 +25,8 @@ public class ClusterTests
             }
         };
 
+        await Task.Delay(TimeSpan.FromSeconds(10));
+
         await testHarnes.Cluster.AddOrUpdate(ns);
 
         var ns2 = await testHarnes.Kubernetes.CoreV1.ReadNamespaceAsync("test");
@@ -58,10 +60,15 @@ public class ClusterTests
             }
         };
 
+        await Task.Delay(TimeSpan.FromSeconds(10));
+
         await testHarnes.Cluster.AddOrUpdate(secret);
 
         var ns2 = await testHarnes.Kubernetes.CoreV1.ReadNamespacedSecretAsync("test", "default");
         ns2.Name().Should().Be("test");
+
+        await Task.Delay(TimeSpan.FromSeconds(2));
+
         var ns3 = testHarnes.Cluster.GetObject<V1Secret>("default", "test");
         ns3.Name().Should().Be("test");
     }

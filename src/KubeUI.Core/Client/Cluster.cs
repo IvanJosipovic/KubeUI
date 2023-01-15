@@ -49,24 +49,17 @@ public class Cluster : ClusterBase, ICluster
             Client = new Kubernetes(GetClientConfiguration());
 
             OnChange += Cluster_OnChange;
-
-            Seed<V1Namespace>();
-
-            Seed<V1Deployment>();
-            Seed<V1DaemonSet>();
-
-            Seed<V1CustomResourceDefinition>();
         }
     }
 
-    private void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind type, IKubernetesObject<V1ObjectMeta> item)
+    private async void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind type, IKubernetesObject<V1ObjectMeta> item)
     {
         switch (eventType)
         {
             case WatchEventType.Added:
                 if (item is V1CustomResourceDefinition v1CustomResourceDefinition)
                 {
-                    Task.Run(() => GenerateCRDAssembly(v1CustomResourceDefinition));
+                    await Task.Run(() => GenerateCRDAssembly(v1CustomResourceDefinition));
                 }
                 break;
             case WatchEventType.Modified:
