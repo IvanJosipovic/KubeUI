@@ -220,6 +220,8 @@ public class ClusterTests
 
         await testHarnes.Kubernetes.CoreV1.CreateNamespaceAsync(ns);
 
+        await Task.Delay(TimeSpan.FromSeconds(10));
+
         await testHarnes.Cluster.Delete(ns);
 
         await Task.Delay(TimeSpan.FromSeconds(10));
