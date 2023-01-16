@@ -8,34 +8,12 @@
                 {
                     foreach (var container in context.Item1.Status.ContainerStatuses.EnsureNotEmpty())
                     {
-                        if (container.State?.Running != null)
-                        {
-                            <MudAvatar Style="height:10px; width:10px; margin-right: 2px;" Color="Color.Success"></MudAvatar>
-                        }
-                        else if (container.State?.Terminated?.Reason == "Error")
-                        {
-                            <MudAvatar Style="height:10px; width:10px; margin-right: 2px" Color="Color.Dark"></MudAvatar>
-                        }
-                        else
-                        {
-                            <MudAvatar Style="height:10px; width:10px; margin-right: 2px" Color="Color.Primary"></MudAvatar>
-                        }
+                        @containerStatus.Invoke(container);
                     }
 
                     foreach (var container in context.Item1.Status.InitContainerStatuses.EnsureNotEmpty())
                     {
-                        if (container.State?.Terminated?.Reason == "Completed")
-                        {
-                            <MudAvatar Style="height:10px; width:10px; margin-right: 2px;" Color="Color.Dark"></MudAvatar>
-                        }
-                        else if (container.State?.Terminated?.Reason == "Error")
-                        {
-                            <MudAvatar Style="height:10px; width:10px; margin-right: 2px" Color="Color.Error"></MudAvatar>
-                        }
-                        else
-                        {
-                            <MudAvatar Style="height:10px; width:10px; margin-right: 2px" Color="Color.Primary"></MudAvatar>
-                        }
+                        @containerStatus.Invoke(container);
                     }
                 }
             </DisplayContent>
@@ -45,7 +23,7 @@
             <DisplayContent>
                 @if (context.Item1.Metadata.OwnerReferences != null && context.Item1.Metadata.OwnerReferences.Any())
                 {
-                <MudLink Typo="Typo.inherit" @onclick="@(x => context.Item2.DisplayDetails(context.Item1.Metadata.NamespaceProperty, context.Item1.Metadata.OwnerReferences[0].ApiVersion, context.Item1.Metadata.OwnerReferences[0].Kind, context.Item1.Metadata.OwnerReferences[0].Name))"
+                    <MudLink Typo="Typo.inherit" @onclick="@(x => context.Item2.DisplayDetails(context.Item1.Metadata.NamespaceProperty, context.Item1.Metadata.OwnerReferences[0].ApiVersion, context.Item1.Metadata.OwnerReferences[0].Kind, context.Item1.Metadata.OwnerReferences[0].Name))"
                     >@context.Item1.Metadata.OwnerReferences[0].Kind</MudLink>
                 }
             </DisplayContent>
@@ -77,5 +55,69 @@
 </ListGeneric>
 
 @code {
-
+    RenderFragment<V1ContainerStatus> containerStatus = container =>
+    @<MudTooltip Placement="Placement.Right">
+        <ChildContent>
+            @if (container.State?.Running != null)
+            {
+                <MudAvatar Style="height:10px; width:10px; margin-right: 2px;" Color="Color.Success"></MudAvatar>
+            }
+            else if (container.State?.Waiting != null)
+            {
+                <MudAvatar Style="height:10px; width:10px; margin-right: 2px;" Color="Color.Warning"></MudAvatar>
+            }
+            else if (container.State?.Terminated != null)
+            {
+                if (container.State.Terminated.Reason == "Completed")
+                {
+                    <MudAvatar Style="height:10px; width:10px; margin-right: 2px" Color="Color.Dark"></MudAvatar>
+                }
+                else
+                {
+                    <MudAvatar Style="height:10px; width:10px; margin-right: 2px" Color="Color.Warning"></MudAvatar>
+                }
+            }
+        </ChildContent>
+        <TooltipContent>
+            <MudText Typo="Typo.body2">@container.Name</MudText>
+            @if (container.State.Running != null && container.State.Running.StartedAt.HasValue)
+            {
+                <MudText Typo="Typo.body2">Started at: @container.State.Running.StartedAt.Value.ToLocalTime()</MudText>
+            }
+            @if (container.State.Waiting != null)
+            {
+                <MudText Typo="Typo.body2">Reason: @container.State.Waiting.Reason</MudText>
+                @if (!string.IsNullOrEmpty(container.State.Waiting.Message))
+                {
+                    <MudText Typo="Typo.body2">Message: @container.State.Waiting.Message</MudText>
+                }
+                @if (container.State.Waiting.Reason == "CrashLoopBackOff")
+                {
+                    <MudText Typo="Typo.body2">Last State Reason: @container.LastState.Terminated.Reason</MudText>
+                    <MudText Typo="Typo.body2">Last State Exit Code: @container.LastState.Terminated.ExitCode</MudText>
+                    @if (!string.IsNullOrEmpty(container.LastState.Terminated.Message))
+                    {
+                        <MudText Typo="Typo.body2">Last State Message: @container.LastState.Terminated.Message</MudText>
+                    }
+                }
+            }
+            @if (container.State.Terminated != null)
+            {
+                <MudText Typo="Typo.body2">Reason: @container.State.Terminated.Reason</MudText>
+                @if (!string.IsNullOrEmpty(container.State.Terminated.Message))
+                {
+                    <MudText Typo="Typo.body2">Message: @container.State.Terminated.Message</MudText>
+                }
+                <MudText Typo="Typo.body2">Exit Code: @container.State.Terminated.ExitCode</MudText>
+                @if (container.State.Terminated.StartedAt.HasValue)
+                {
+                    <MudText Typo="Typo.body2">Started at: @container.State.Terminated.StartedAt.Value.ToLocalTime()</MudText>
+                }
+                @if (container.State.Terminated.FinishedAt.HasValue)
+                {
+                    <MudText Typo="Typo.body2">Finished at: @container.State.Terminated.FinishedAt.Value.ToLocalTime()</MudText>
+                }
+            }
+        </TooltipContent>
+    </MudTooltip>;
 }
