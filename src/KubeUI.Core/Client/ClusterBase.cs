@@ -34,7 +34,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
     protected void NotifyStateChanged(WatchEventType eventType, GroupApiVersionKind type, IKubernetesObject<V1ObjectMeta> item) => OnChange?.Invoke(eventType, type, item);
 
-    public void AddInternalObject(IKubernetesObject<V1ObjectMeta> @object)
+    protected void AddInternalObject(IKubernetesObject<V1ObjectMeta> @object)
     {
         var key = @object.ApiVersion.ToLower() + "/" + @object.Kind.ToLower();
 
@@ -48,7 +48,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
         NotifyStateChanged(WatchEventType.Added, GroupApiVersionKind.From(@object.GetType()), @object);
     }
 
-    public void UpdateInternalObject(IKubernetesObject<V1ObjectMeta> @object)
+    protected void UpdateInternalObject(IKubernetesObject<V1ObjectMeta> @object)
     {
         var key = @object.ApiVersion.ToLower() + "/" + @object.Kind.ToLower();
 
@@ -62,7 +62,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
         NotifyStateChanged(WatchEventType.Modified, GroupApiVersionKind.From(@object.GetType()), @object);
     }
 
-    public void DeleteInternalObject(IKubernetesObject<V1ObjectMeta> @object)
+    protected void DeleteInternalObject(IKubernetesObject<V1ObjectMeta> @object)
     {
         var key = @object.ApiVersion.ToLower() + "/" + @object.Kind.ToLower();
 
@@ -93,7 +93,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
         if (GetSelectedNamespaces().Any())
         {
-            return Objects[key].Values.Cast<T>().Where(x => string.IsNullOrEmpty(x.Namespace()) || GetSelectedNamespaces().Contains(x.Namespace())).ToList();
+            return Objects[key].Values.Where(x => string.IsNullOrEmpty(x.Namespace()) || GetSelectedNamespaces().Contains(x.Namespace())).Cast<T>();
         }
 
         return Objects[key].Values.Cast<T>();
@@ -199,12 +199,12 @@ public abstract class ClusterBase : INotifyPropertyChanged
         return GetObject<T>(attribute.ApiVersion, attribute.Kind, @namespace, name, attribute.Group);
     }
 
-    public Type? GetResourceType(GroupApiVersionKind type)
+    public static Type? GetResourceType(GroupApiVersionKind type)
     {
         return GetResourceType(type.Group, type.ApiVersion, type.Kind);
     }
 
-    public Type? GetResourceType(string group, string version, string kind)
+    public static Type? GetResourceType(string group, string version, string kind)
     {
         if (string.IsNullOrEmpty(group) && version == "v1" && kind == "endpoint")
         {
@@ -242,10 +242,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
         }
     }
 
-    public IEnumerable<string> GetSelectedNamespaces()
-    {
-        return SelectedNamespaces;
-    }
+    public IEnumerable<string> GetSelectedNamespaces() => SelectedNamespaces;
 
     public void SetSelectedNamespaces(IEnumerable<string> namespaces)
     {
@@ -262,6 +259,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
     public async Task ImportYaml(Stream stream)
     {
         var types = GenerateTypeMap();
+        var mi = GetType().GetMethods().First(x => x.Name == nameof(AddOrUpdate) && x.IsGenericMethod && x.GetParameters().Length == 1);
 
         var reader = new StreamReader(stream);
         var parser = new Parser(new StringReader(reader.ReadToEnd()));
@@ -281,7 +279,6 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
                 if (model != null)
                 {
-                    var mi = this.GetType().GetMethods().First(x => x.Name == nameof(AddOrUpdate) && x.IsGenericMethod && x.GetParameters().Length == 1);
                     var fooRef = mi.MakeGenericMethod(type);
                     fooRef.Invoke(this, new[] { model });
                 }
@@ -337,7 +334,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
         }
     }
 
-    private IDictionary<string, Type> GenerateTypeMap()
+    private static IDictionary<string, Type> GenerateTypeMap()
     {
         var type = typeof(KubernetesEntityAttribute);
 

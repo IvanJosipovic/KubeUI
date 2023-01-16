@@ -54,11 +54,11 @@ public class CompareClusterTests
 
         var leftCluster = services.GetRequiredService<GitOpsCluster>();
 
-        leftCluster.AddInternalObject(left);
+        leftCluster.AddOrUpdate(left);
 
         var rightCluster = services.GetRequiredService<GitOpsCluster>();
 
-        rightCluster.AddInternalObject(right);
+        rightCluster.AddOrUpdate(right);
 
         var result = UI.Components.CompareCluster.Compare(leftCluster, rightCluster);
 
@@ -93,7 +93,7 @@ public class CompareClusterTests
 
         var rightCluster = services.GetRequiredService<GitOpsCluster>();
 
-        rightCluster.AddInternalObject(right);
+        rightCluster.AddOrUpdate(right);
 
         var result = Components.CompareCluster.Compare(leftCluster, rightCluster);
 
@@ -126,7 +126,7 @@ public class CompareClusterTests
 
         var leftCluster = services.GetRequiredService<GitOpsCluster>();
 
-        leftCluster.AddInternalObject(right);
+        leftCluster.AddOrUpdate(right);
 
         var rightCluster = services.GetRequiredService<GitOpsCluster>();
 
@@ -176,11 +176,11 @@ public class CompareClusterTests
 
         var leftCluster = services.GetRequiredService<GitOpsCluster>();
 
-        leftCluster.AddInternalObject(left);
+        leftCluster.AddOrUpdate(left);
 
         var rightCluster = services.GetRequiredService<GitOpsCluster>();
 
-        rightCluster.AddInternalObject(right);
+        rightCluster.AddOrUpdate(right);
 
         var result = Components.CompareCluster.Compare(leftCluster, rightCluster);
 
@@ -216,11 +216,11 @@ public class CompareClusterTests
 
         var leftCluster = services.GetRequiredService<GitOpsCluster>();
 
-        leftCluster.AddInternalObject(left);
+        leftCluster.AddOrUpdate(left);
 
         var rightCluster = services.GetRequiredService<GitOpsCluster>();
 
-        rightCluster.AddInternalObject(left);
+        rightCluster.AddOrUpdate(left);
 
         var result = Components.CompareCluster.Compare(leftCluster, rightCluster);
 

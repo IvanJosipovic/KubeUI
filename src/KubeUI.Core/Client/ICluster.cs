@@ -30,11 +30,11 @@ public interface ICluster
 
     Task AddOrUpdate<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
 
-    public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>> OnChange;
+    event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>> OnChange;
 
-    Type? GetResourceType(GroupApiVersionKind type);
+    //Type? GetResourceType(GroupApiVersionKind type);
 
-    Type? GetResourceType(string group, string version, string kind);
+    //Type? GetResourceType(string group, string version, string kind);
 
     Task<V1APIGroupList> GetAPIs();
 
