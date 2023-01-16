@@ -9,6 +9,34 @@ namespace KubeUI.Core.Tests;
 public class ClusterTests
 {
     [Fact]
+    public async Task TestGeneric()
+    {
+        using var testHarnes = new TestHarness();
+
+        testHarnes.Cluster.Seed<V1Namespace>();
+
+        await Task.Delay(TimeSpan.FromSeconds(10));
+
+        var client = new GenericClient(testHarnes.Kubernetes, V1Namespace.KubeApiVersion, V1Namespace.KubePluralName);
+
+        var ns = new V1Namespace()
+        {
+            ApiVersion = V1Namespace.KubeApiVersion,
+            Kind = V1Namespace.KubeKind,
+            Metadata = new V1ObjectMeta()
+            {
+                Name = "test"
+            }
+        };
+
+        await client.CreateAsync(ns);
+
+        await Task.Delay(TimeSpan.FromSeconds(10));
+
+        await testHarnes.Cluster.Delete(ns);
+    }
+
+    [Fact]
     public async Task CreateObject()
     {
         using var testHarnes = new TestHarness();
@@ -25,7 +53,7 @@ public class ClusterTests
             }
         };
 
-        await Task.Delay(TimeSpan.FromSeconds(10));
+        await Task.Delay(TimeSpan.FromSeconds(2));
 
         await testHarnes.Cluster.AddOrUpdate(ns);
 
@@ -60,7 +88,7 @@ public class ClusterTests
             }
         };
 
-        await Task.Delay(TimeSpan.FromSeconds(10));
+        await Task.Delay(TimeSpan.FromSeconds(2));
 
         await testHarnes.Cluster.AddOrUpdate(secret);
 
@@ -90,11 +118,11 @@ public class ClusterTests
             }
         };
 
-        await Task.Delay(TimeSpan.FromSeconds(10));
+        await Task.Delay(TimeSpan.FromSeconds(2));
 
         await testHarnes.Kubernetes.CoreV1.CreateNamespaceAsync(ns);
 
-        await Task.Delay(TimeSpan.FromSeconds(10));
+        await Task.Delay(TimeSpan.FromSeconds(2));
 
         var ns2 = testHarnes.Cluster.GetObject<V1Namespace>(null, "test");
         ns2.Name().Should().Be("test");
@@ -117,16 +145,18 @@ public class ClusterTests
             }
         };
 
-        await testHarnes.Cluster.AddOrUpdate(ns);
+        await Task.Delay(TimeSpan.FromSeconds(2));
 
-        ns = await testHarnes.Kubernetes.CoreV1.ReadNamespaceAsync("test");
+        ns = await testHarnes.Kubernetes.CoreV1.CreateNamespaceAsync(ns);
 
         ns.Metadata.Labels = new Dictionary<string, string>();
         ns.Metadata.Labels.Add("test", "test");
 
         await testHarnes.Cluster.AddOrUpdate(ns);
 
-        var ns2 = testHarnes.Cluster.GetObject<V1Namespace>(null, "test");
+        await Task.Delay(TimeSpan.FromSeconds(2));
+
+        var ns2 = testHarnes.Cluster.GetObject<V1Namespace>(null, ns.Name());
         ns2.Name().Should().Be("test");
         ns2.Metadata.Labels["test"].Should().Be("test");
     }
@@ -153,14 +183,16 @@ public class ClusterTests
             }
         };
 
-        await testHarnes.Cluster.AddOrUpdate(secret);
+        await Task.Delay(TimeSpan.FromSeconds(2));
 
-        secret = await testHarnes.Kubernetes.CoreV1.ReadNamespacedSecretAsync("test", "default");
+        secret = await testHarnes.Kubernetes.CoreV1.CreateNamespacedSecretAsync(secret, "default");
 
         secret.Metadata.Labels = new Dictionary<string, string>();
         secret.Metadata.Labels.Add("test", "test");
 
         await testHarnes.Cluster.AddOrUpdate(secret);
+
+        await Task.Delay(TimeSpan.FromSeconds(2));
 
         var ns2 = testHarnes.Cluster.GetObject<V1Secret>("default", "test");
         ns2.Name().Should().Be("test");
@@ -184,7 +216,7 @@ public class ClusterTests
             }
         };
 
-        await Task.Delay(TimeSpan.FromSeconds(10));
+        await Task.Delay(TimeSpan.FromSeconds(2));
 
         await testHarnes.Kubernetes.CoreV1.CreateNamespaceAsync(ns);
 
@@ -222,7 +254,7 @@ public class ClusterTests
 
         await testHarnes.Cluster.Delete(secret);
 
-        await Task.Delay(TimeSpan.FromSeconds(10));
+        await Task.Delay(TimeSpan.FromSeconds(2));
 
         ((Cluster)testHarnes.Cluster).Objects[V1Secret.KubeApiVersion.ToLower() + "/" + V1Secret.KubeKind.ToLower()]
             .Values.All(x => x.Name() != "test").Should().BeTrue();
