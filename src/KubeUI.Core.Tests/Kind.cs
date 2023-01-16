@@ -58,6 +58,7 @@ public class Kind
 
             var proc = new Process() { StartInfo = startInfo };
             proc.Start();
+            await proc.WaitForExitAsync();
         }
     }
 
