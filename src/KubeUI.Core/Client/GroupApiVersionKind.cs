@@ -32,15 +32,6 @@ public struct GroupApiVersionKind : IEquatable<GroupApiVersionKind>
 
     public static GroupApiVersionKind From(Type resourceType)
     {
-        if (resourceType == typeof(V1Endpoint))
-        {
-            return new GroupApiVersionKind(
-                group: "",
-                apiVersion: "v1",
-                kind: "Endpoint",
-                pluralName: "endpoints");
-        }
-
         var entity = resourceType.GetTypeInfo().GetCustomAttribute<KubernetesEntityAttribute>();
 
         return new GroupApiVersionKind(

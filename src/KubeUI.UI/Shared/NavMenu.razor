@@ -73,8 +73,8 @@
 
         <MudNavGroup Title="Network" @bind-Expanded="NetworkExpanded">
             <NavItem TItem="V1Service" Icon="resources/unlabeled/sc.svg"/>
-            @*<NavItem TItem="V1Endpoint" Icon="resources/unlabeled/ep.svg"/>*@
-            <MudNavLink Href="/list/v1/endpoints" Match="NavLinkMatch.Prefix" Icon="@NavMenu.GetIcon("resources/unlabeled/ep.svg")">Endpoints</MudNavLink>
+            <NavItem TItem="V1Endpoints" Icon="resources/unlabeled/ep.svg" />
+            <NavItem TItem="V1EndpointSlice" Icon="resources/unlabeled/ep.svg" />
             <NavItem TItem="V1Ingress" Icon="resources/unlabeled/ing.svg"/>
             <NavItem TItem="V1NetworkPolicy" Icon="resources/unlabeled/netpol.svg"/>
             <NavItem TItem="V1MutatingWebhookConfiguration" Icon="resources/unlabeled/netpol.svg" Name="Mutating Webhook" />

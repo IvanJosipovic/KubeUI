@@ -206,11 +206,6 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
     public static Type? GetResourceType(string group, string version, string kind)
     {
-        if (string.IsNullOrEmpty(group) && version == "v1" && kind == "endpoint")
-        {
-            return typeof(V1Endpoint);
-        }
-
         foreach (var item in AssemblyLoader.Cache.Keys.ToList())
         {
             foreach (var type in item.GetTypes())
