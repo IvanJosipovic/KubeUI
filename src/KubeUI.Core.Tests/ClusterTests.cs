@@ -1,5 +1,6 @@
 using k8s;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,34 +9,6 @@ namespace KubeUI.Core.Tests;
 
 public class ClusterTests
 {
-    [Fact]
-    public async Task TestGeneric()
-    {
-        using var testHarnes = new TestHarness();
-
-        testHarnes.Cluster.Seed<V1Namespace>();
-
-        await Task.Delay(TimeSpan.FromSeconds(10));
-
-        var client = new GenericClient(testHarnes.Kubernetes, V1Namespace.KubeApiVersion, V1Namespace.KubePluralName);
-
-        var ns = new V1Namespace()
-        {
-            ApiVersion = V1Namespace.KubeApiVersion,
-            Kind = V1Namespace.KubeKind,
-            Metadata = new V1ObjectMeta()
-            {
-                Name = "test"
-            }
-        };
-
-        await client.CreateAsync(ns);
-
-        await Task.Delay(TimeSpan.FromSeconds(10));
-
-        await testHarnes.Cluster.Delete(ns);
-    }
-
     [Fact]
     public async Task CreateObject()
     {
@@ -99,6 +72,7 @@ public class ClusterTests
 
         var ns3 = testHarnes.Cluster.GetObject<V1Secret>("default", "test");
         ns3.Name().Should().Be("test");
+        ns3.Namespace().Should().Be("default");
     }
 
     [Fact]
@@ -126,6 +100,52 @@ public class ClusterTests
 
         var ns2 = testHarnes.Cluster.GetObject<V1Namespace>(null, "test");
         ns2.Name().Should().Be("test");
+    }
+
+    [Fact]
+    public async Task ReadNamespacedObject()
+    {
+        using var testHarnes = new TestHarness();
+
+        testHarnes.Cluster.Seed<V1Secret>();
+
+        var secret = new V1Secret()
+        {
+            ApiVersion = V1Secret.KubeApiVersion,
+            Kind = V1Secret.KubeKind,
+            Metadata = new V1ObjectMeta()
+            {
+                Name = "test",
+                NamespaceProperty = "default"
+            },
+            StringData = new Dictionary<string, string>()
+            {
+                { "data1", "secret1" }
+            }
+        };
+
+        await Task.Delay(TimeSpan.FromSeconds(2));
+
+        secret = await testHarnes.Kubernetes.CoreV1.CreateNamespacedSecretAsync(secret, "default");
+
+        await Task.Delay(TimeSpan.FromSeconds(2));
+
+        var ns2 = testHarnes.Cluster.GetObject<V1Secret>("default", "test");
+        ns2.Name().Should().Be("test");
+        ns2.Namespace().Should().Be("default");
+    }
+
+    [Fact]
+    public async Task ReadObjects()
+    {
+        using var testHarnes = new TestHarness();
+
+        testHarnes.Cluster.Seed<V1Namespace>();
+
+        await Task.Delay(TimeSpan.FromSeconds(2));
+
+        var ns = testHarnes.Cluster.GetObjects<V1Namespace>();
+        ns.Count().Should().BeGreaterThan(1);
     }
 
     [Fact]
@@ -196,6 +216,7 @@ public class ClusterTests
 
         var ns2 = testHarnes.Cluster.GetObject<V1Secret>("default", "test");
         ns2.Name().Should().Be("test");
+        ns2.Namespace().Should().Be("default");
         ns2.Metadata.Labels["test"].Should().Be("test");
     }
 
@@ -287,6 +308,50 @@ public class ClusterTests
 
         var ns2 = await testHarnes.Kubernetes.CoreV1.ReadNamespaceAsync("test");
         ns2.Name().Should().Be("test");
+
+        await Task.Delay(TimeSpan.FromSeconds(2));
+
+        var ns3 = testHarnes.Cluster.GetObject<V1Namespace>(null, "test");
+        ns3.Name().Should().Be("test");
+    }
+
+    [Fact]
+    public async Task ImportZip()
+    {
+        using var testHarnes = new TestHarness();
+
+        testHarnes.Cluster.Seed<V1Namespace>();
+
+        await Task.Delay(TimeSpan.FromSeconds(2));
+
+        var ns = new V1Namespace()
+        {
+            ApiVersion = V1Namespace.KubeApiVersion,
+            Kind = V1Namespace.KubeKind,
+            Metadata = new V1ObjectMeta()
+            {
+                Name = "test"
+            }
+        };
+
+        var yaml = KubernetesYaml.Serialize(ns);
+
+        using var memoryStream = new MemoryStream();
+
+        using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
+        {
+            var firstFile = archive.CreateEntry("ns.yaml");
+
+            using (var entryStream = firstFile.Open())
+            using (var streamWriter = new StreamWriter(entryStream))
+            {
+                streamWriter.Write(yaml);
+            }
+        }
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        await testHarnes.Cluster.ImportZip(memoryStream);
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
