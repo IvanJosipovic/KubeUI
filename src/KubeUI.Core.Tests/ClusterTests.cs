@@ -306,6 +306,8 @@ public class ClusterTests
 
         await testHarnes.Cluster.ImportYaml(stream);
 
+        await Task.Delay(TimeSpan.FromSeconds(2));
+
         var ns2 = await testHarnes.Kubernetes.CoreV1.ReadNamespaceAsync("test");
         ns2.Name().Should().Be("test");
 
