@@ -46,7 +46,7 @@ jobs:
         global-json-file: src/global.json
 
     - name: Test
-      working-directory: src/KubeUI.Core.Tests
+      working-directory: src
       run: dotnet test -c Release --collect:"XPlat Code Coverage"
 
     - name: Coverage
