@@ -300,6 +300,8 @@ public class ClusterTests
             }
         };
 
+        await Task.Delay(TimeSpan.FromSeconds(2));
+
         var yaml = KubernetesYaml.Serialize(ns);
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(yaml));
