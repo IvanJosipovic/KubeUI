@@ -2,6 +2,22 @@
 
 <MudText Typo="Typo.h5" GutterBottom="true">Welcome to KubeUI!</MudText>
 
-<MudText Typo="Typo.body1" GutterBottom="true">This is an Experimental user interface for Kubernetes.</MudText>
-
-<MudText Typo="Typo.body1" GutterBottom="true">Contact: <MudLink Href="mailto:admin@KubeUI.com">admin@KubeUI.com</MudLink></MudText>
+@if (System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture == System.Runtime.InteropServices.Architecture.Wasm)
+{
+<MudCard>
+    <MudCardContent>
+        <MudText Typo="Typo.h6">Note!</MudText>
+        <MudText Typo="Typo.body2">
+            This version of KubeUI is limited as it runs in the browsers sandbox.
+        </MudText>
+        <MudText Typo="Typo.body2">
+            To get the full power of this tool, try our Desktop versions.
+        </MudText>
+    </MudCardContent>
+    <MudCardActions>
+        <MudButton Href=@($"https://github.com/IvanJosipovic/KubeUI/releases/download/v{Utilities.GetVersion()}/KubeUI-{Utilities.GetVersion()}-osx-x64.pkg") Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.LaptopMac" Color="Color.Secondary">Mac</MudButton>
+        <MudButton Href=@($"https://github.com/IvanJosipovic/KubeUI/releases/download/v{Utilities.GetVersion()}/KubeUI-{Utilities.GetVersion()}-win-x64.exe") Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.LaptopWindows" Color="Color.Primary">Windows</MudButton>
+        <MudButton Href=@($"https://github.com/IvanJosipovic/KubeUI/releases") Variant="Variant.Outlined" StartIcon="@Icons.Custom.Brands.GitHub" Color="Color.Success">Releases</MudButton>
+    </MudCardActions>
+</MudCard>
+}
