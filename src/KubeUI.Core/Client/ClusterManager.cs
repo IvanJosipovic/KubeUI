@@ -147,7 +147,7 @@ public class ClusterManager : IDisposable
             var xmlDoc = new XmlDocument();
             try
             {
-                xmlDoc.Load(coreAssebly.GetManifestResourceStream($"model.docs.{type.Module.Name.Substring(0, type.Module.Name.Length - 4)}.xml"));
+                xmlDoc.Load(coreAssebly.GetManifestResourceStream($"model.docs.{type.Assembly.GetName().Name}.xml"));
             }
             catch (Exception ex)
             {
