@@ -132,7 +132,7 @@ public class ClusterManager : IDisposable
 
         var coreAssebly = typeof(Cluster).Assembly;
 
-        //initType(typeof(KubernetesCRDModelGen.Models.helm.toolkit.fluxcd.io.HelmRelease));
+        initType(typeof(KubernetesCRDModelGen.Models.helm.toolkit.fluxcd.io.HelmRelease));
 
         void initType(Type type)
         {
