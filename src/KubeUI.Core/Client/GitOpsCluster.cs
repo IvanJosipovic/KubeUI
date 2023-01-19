@@ -25,9 +25,7 @@ public class GitOpsCluster : ClusterBase, ICluster
                 {
                     Task.Run(async () =>
                     {
-                        var assembly = await GenerateCRDAssembly(v1CustomResourceDefinition).ConfigureAwait(false);
-
-                        Seed(assembly);
+                        await GenerateCRDAssembly(v1CustomResourceDefinition).ConfigureAwait(false);
                     });
                 }
                 break;
