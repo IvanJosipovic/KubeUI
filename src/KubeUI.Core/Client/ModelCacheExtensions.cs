@@ -119,7 +119,12 @@ namespace KubeUI
         /// the XML file is not loaded and parsed on every single lookup</remarks>
         public static XmlDocument XmlFromAssembly(this Assembly assembly)
         {
-            return ModelCache.Cache[assembly];
+            if (ModelCache.Cache.TryGetValue(assembly, out var value))
+            {
+                return value;
+            }
+
+            return null;
         }
     }
 }
