@@ -247,7 +247,7 @@ public class ClusterTests
 
         await Task.Delay(TimeSpan.FromSeconds(10));
 
-        ((Cluster)testHarnes.Cluster).Objects[V1Namespace.KubeApiVersion.ToLower() + "/" + V1Namespace.KubeKind.ToLower()]
+        ((Cluster)testHarnes.Cluster).Objects[V1Namespace.KubeApiVersion + "/" + V1Namespace.KubeKind]
             .Values.All(x => x.Name() != "test").Should().BeTrue();
     }
 
@@ -279,7 +279,7 @@ public class ClusterTests
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        ((Cluster)testHarnes.Cluster).Objects[V1Secret.KubeApiVersion.ToLower() + "/" + V1Secret.KubeKind.ToLower()]
+        ((Cluster)testHarnes.Cluster).Objects[V1Secret.KubeApiVersion+ "/" + V1Secret.KubeKind]
             .Values.All(x => x.Name() != "test").Should().BeTrue();
     }
 
