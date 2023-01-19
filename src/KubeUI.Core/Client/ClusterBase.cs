@@ -42,7 +42,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
         if (!Objects.ContainsKey(key))
         {
-            Objects[key] = new ConcurrentDictionary<string, IKubernetesObject<V1ObjectMeta>>();
+            Objects[key] = new();
         }
 
         Objects[key][$"{@object.Namespace()}|{@object.Name()}"] = @object;
@@ -56,7 +56,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
         if (!Objects.ContainsKey(key))
         {
-            Objects[key] = new ConcurrentDictionary<string, IKubernetesObject<V1ObjectMeta>>();
+            Objects[key] = new();
         }
 
         Objects[key][$"{@object.Namespace()}|{@object.Name()}"] = @object;
@@ -70,7 +70,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
         if (!Objects.ContainsKey(key))
         {
-            Objects[key] = new ConcurrentDictionary<string, IKubernetesObject<V1ObjectMeta>>();
+            Objects[key] = new();
         }
 
         Objects[key].TryRemove($"{@object.Namespace()}|{@object.Name()}", out _);
@@ -89,7 +89,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
         if (!Objects.ContainsKey(key))
         {
-            Objects[key] = new ConcurrentDictionary<string, IKubernetesObject<V1ObjectMeta>>();
+            Objects[key] = new();
             Seed<T>(version, kind, group);
         }
 
@@ -114,7 +114,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
         if (!Objects.ContainsKey(key))
         {
-            Objects[key] = new ConcurrentDictionary<string, IKubernetesObject<V1ObjectMeta>>();
+            Objects[key] = new();
             Seed(version, kind, group);
         }
 
@@ -132,7 +132,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
         if (!Objects.ContainsKey(key))
         {
-            Objects[key] = new ConcurrentDictionary<string, IKubernetesObject<V1ObjectMeta>>();
+            Objects[key] = new();
             Seed<T>(version, kind, group);
         }
 
@@ -196,7 +196,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
         if (!Objects.ContainsKey(key))
         {
-            Objects[key] = new ConcurrentDictionary<string, IKubernetesObject<V1ObjectMeta>>();
+            Objects[key] = new();
             Seed<T>(version, kind, group);
         }
 
