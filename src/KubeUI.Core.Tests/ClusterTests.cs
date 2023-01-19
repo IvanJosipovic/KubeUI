@@ -362,4 +362,68 @@ public class ClusterTests
         var ns3 = testHarnes.Cluster.GetObject<V1Namespace>(null, "test");
         ns3.Name().Should().Be("test");
     }
+
+    private string yamlCRD = @"
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: tests.kubeui.com
+spec:
+  group: kubeui.com
+  names:
+    plural: tests
+    singular: test
+    kind: Test
+    listKind: TestList
+  scope: Namespaced
+  versions:
+    - name: v1beta1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            metadata:
+              type: object
+            spec:
+              type: object
+              properties:
+                someString:
+                  type: string
+";
+
+    [Fact]
+    public async Task HandleCRD()
+    {
+        using var testHarnes = new TestHarness();
+        testHarnes.Cluster.Seed<V1CustomResourceDefinition>();
+
+        await Task.Delay(TimeSpan.FromSeconds(2));
+
+        await testHarnes.Kubernetes.CreateCustomResourceDefinitionAsync(KubernetesYaml.LoadFromString<V1CustomResourceDefinition>(yamlCRD));
+
+        await Task.Delay(TimeSpan.FromSeconds(5));
+
+        var yaml = @"
+apiVersion: kubeui.com/v1beta1
+kind: Test
+metadata:
+  name: test1
+  namespace: default
+spec:
+  someString: myValue
+";
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(yaml));
+
+        await testHarnes.Cluster.ImportYaml(stream);
+
+        await Task.Delay(TimeSpan.FromSeconds(5));
+
+        ((Cluster)testHarnes.Cluster).Objects["kubeui.com/v1beta1/Test"].Values.Any(x => x.Name() == "test1").Should().BeTrue();
+    }
 }

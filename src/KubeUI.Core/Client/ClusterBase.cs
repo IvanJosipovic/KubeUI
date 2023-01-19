@@ -22,6 +22,8 @@ public abstract class ClusterBase : INotifyPropertyChanged
     {
         Logger = logger;
         CRDGenerator = cRDGenerator;
+
+        SeedMethodInfo = GetType().GetMethods().First(x => x.Name == nameof(Seed) && x.IsGenericMethod && x.GetParameters().Length == 0);
     }
 
     public ConcurrentDictionary<string, ConcurrentDictionary<string, IKubernetesObject<V1ObjectMeta>>> Objects { get; set; } = new();
@@ -171,22 +173,21 @@ public abstract class ClusterBase : INotifyPropertyChanged
             return;
         }
 
-        if (SeedMethodInfo == null)
-        {
-            SeedMethodInfo = GetType().GetMethods().First(x => x.Name == nameof(Seed) && x.IsGenericMethod && x.GetParameters().Length == 0);
-        }
-
-        var fooRef = SeedMethodInfo.MakeGenericMethod(type);
-        fooRef.Invoke(this, null);
+        Seed(type);
     }
 
     public void Seed(Assembly assembly)
     {
         foreach (var type in ModelCache.GetTypes(assembly))
         {
-            var fooRef = SeedMethodInfo.MakeGenericMethod(type.Value);
-            fooRef.Invoke(this, null);
+            Seed(type.Value);
         }
+    }
+
+    public void Seed(Type type)
+    {
+        var fooRef = SeedMethodInfo.MakeGenericMethod(type);
+        fooRef.Invoke(this, null);
     }
 
     public T? GetObject<T>(string version, string kind, string @namespace, string name, string group = "") where T : class, IKubernetesObject<V1ObjectMeta>, new()
