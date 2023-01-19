@@ -52,14 +52,19 @@ public class Cluster : ClusterBase, ICluster
         }
     }
 
-    private async void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind type, IKubernetesObject<V1ObjectMeta> item)
+    private void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind type, IKubernetesObject<V1ObjectMeta> item)
     {
         switch (eventType)
         {
             case WatchEventType.Added:
                 if (item is V1CustomResourceDefinition v1CustomResourceDefinition)
                 {
-                    await Task.Run(() => GenerateCRDAssembly(v1CustomResourceDefinition));
+                    Task.Run(async () =>
+                    {
+                        var assembly = await GenerateCRDAssembly(v1CustomResourceDefinition).ConfigureAwait(false);
+
+                        Seed(assembly);
+                    });
                 }
                 break;
             case WatchEventType.Modified:
@@ -77,7 +82,7 @@ public class Cluster : ClusterBase, ICluster
 
     public override void Seed<T>(string version, string kind, string group = "")
     {
-        var key = $"{group}-{version}-{kind}";
+        var key = $"{group}/{version}/{kind}".TrimStart('/');
 
         if (!informers.ContainsKey(key))
         {

@@ -29,7 +29,7 @@ public partial class List : ComponentBase
     {
         base.OnParametersSet();
 
-        ItemType = ClusterBase.GetResourceType(Group, Version, Kind);
+        ItemType = ModelCache.GetResourceType(Group, Version, Kind);
         ComponentType = typeof(ListGeneric<>).MakeGenericType(new[] { ItemType });
     }
 

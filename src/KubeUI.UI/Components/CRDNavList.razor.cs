@@ -1,6 +1,6 @@
 namespace KubeUI.UI.Components;
 
-public partial class CRDNavList
+public partial class CRDNavList : IDisposable
 {
     [Inject]
     private ClusterManager ClusterManager { get; set; }
@@ -36,5 +36,11 @@ public partial class CRDNavList
         {
             InvokeAsync(StateHasChanged);
         }
+    }
+
+    public void Dispose()
+    {
+        ClusterManager.OnChange -= ClusterManager_OnChange;
+        Timer?.Dispose();
     }
 }

@@ -40,7 +40,7 @@ public partial class Details : ComponentBase
     {
         base.OnParametersSet();
 
-        ItemType = ClusterBase.GetResourceType(Group, Version, Kind);
+        ItemType = ModelCache.GetResourceType(Group, Version, Kind);
         ComponentType = typeof(DetailsGeneric<>).MakeGenericType(new[] { ItemType });
     }
 

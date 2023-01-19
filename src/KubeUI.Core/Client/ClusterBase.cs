@@ -36,7 +36,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
     protected void AddInternalObject(IKubernetesObject<V1ObjectMeta> @object)
     {
-        var key = @object.ApiVersion.ToLower() + "/" + @object.Kind.ToLower();
+        var key = @object.ApiVersion + "/" + @object.Kind;
 
         if (!Objects.ContainsKey(key))
         {
@@ -50,7 +50,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
     protected void UpdateInternalObject(IKubernetesObject<V1ObjectMeta> @object)
     {
-        var key = @object.ApiVersion.ToLower() + "/" + @object.Kind.ToLower();
+        var key = @object.ApiVersion + "/" + @object.Kind;
 
         if (!Objects.ContainsKey(key))
         {
@@ -64,7 +64,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
     protected void DeleteInternalObject(IKubernetesObject<V1ObjectMeta> @object)
     {
-        var key = @object.ApiVersion.ToLower() + "/" + @object.Kind.ToLower();
+        var key = @object.ApiVersion + "/" + @object.Kind;
 
         if (!Objects.ContainsKey(key))
         {
@@ -78,7 +78,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
     public IEnumerable<T> GetObjects<T>(string version, string kind, string group = "") where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        var key = $"{group}/{version}/{kind}".TrimStart('/').ToLower();
+        var key = $"{group}/{version}/{kind}".TrimStart('/');
 
         if (string.IsNullOrEmpty(key))
         {
@@ -108,7 +108,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
     public long CountObjects(string version, string kind, string group = "")
     {
-        var key = $"{group}/{version}/{kind}".TrimStart('/').ToLower();
+        var key = $"{group}/{version}/{kind}".TrimStart('/');
 
         if (!Objects.ContainsKey(key))
         {
@@ -118,7 +118,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
         if (GetSelectedNamespaces().Any())
         {
-            return Objects[key].Values.Where(x => string.IsNullOrEmpty(x.Namespace()) || GetSelectedNamespaces().Contains(x.Namespace())).Count();
+            return Objects[key].Values.Count(x => string.IsNullOrEmpty(x.Namespace()) || GetSelectedNamespaces().Contains(x.Namespace()));
         }
 
         return Objects[key].Count;
@@ -126,7 +126,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
     public long CountObjects<T>(string version, string kind, string group = "") where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        var key = $"{group}/{version}/{kind}".TrimStart('/').ToLower();
+        var key = $"{group}/{version}/{kind}".TrimStart('/');
 
         if (!Objects.ContainsKey(key))
         {
@@ -136,7 +136,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
         if (GetSelectedNamespaces().Any())
         {
-            return Objects[key].Values.Where(x => string.IsNullOrEmpty(x.Namespace()) || GetSelectedNamespaces().Contains(x.Namespace())).Count();
+            return Objects[key].Values.Count(x => string.IsNullOrEmpty(x.Namespace()) || GetSelectedNamespaces().Contains(x.Namespace()));
         }
 
         return Objects[key].Count;
@@ -160,23 +160,38 @@ public abstract class ClusterBase : INotifyPropertyChanged
         Seed<T>(attribute.ApiVersion, attribute.Kind, attribute.Group);
     }
 
+    protected MethodInfo SeedMethodInfo;
+
     public void Seed(string version, string kind, string group = "")
     {
-        Type? type = GetResourceType(group, version, kind);
+        var type = ModelCache.GetResourceType(group, version, kind);
 
         if (type == null)
         {
             return;
         }
 
-        var mi = this.GetType().GetMethods().First(x => x.Name == nameof(Seed) && x.IsGenericMethod && x.GetParameters().Length == 0);
-        var fooRef = mi.MakeGenericMethod(type);
+        if (SeedMethodInfo == null)
+        {
+            SeedMethodInfo = GetType().GetMethods().First(x => x.Name == nameof(Seed) && x.IsGenericMethod && x.GetParameters().Length == 0);
+        }
+
+        var fooRef = SeedMethodInfo.MakeGenericMethod(type);
         fooRef.Invoke(this, null);
+    }
+
+    public void Seed(Assembly assembly)
+    {
+        foreach (var type in ModelCache.GetTypes(assembly))
+        {
+            var fooRef = SeedMethodInfo.MakeGenericMethod(type.Value);
+            fooRef.Invoke(this, null);
+        }
     }
 
     public T? GetObject<T>(string version, string kind, string @namespace, string name, string group = "") where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        var key = $"{group}/{version}/{kind}".TrimStart('/').ToLower();
+        var key = $"{group}/{version}/{kind}".TrimStart('/');
 
         if (!Objects.ContainsKey(key))
         {
@@ -199,42 +214,16 @@ public abstract class ClusterBase : INotifyPropertyChanged
         return GetObject<T>(attribute.ApiVersion, attribute.Kind, @namespace, name, attribute.Group);
     }
 
-    public static Type? GetResourceType(GroupApiVersionKind type)
-    {
-        return GetResourceType(type.Group, type.ApiVersion, type.Kind);
-    }
-
-    public static Type? GetResourceType(string group, string version, string kind)
-    {
-        foreach (var item in AssemblyLoader.Cache.Keys.ToList())
-        {
-            foreach (var type in item.GetTypes())
-            {
-                var attributes = type.GetCustomAttributes(typeof(KubernetesEntityAttribute), true);
-
-                if (attributes.Length > 0)
-                {
-                    var attribute = (KubernetesEntityAttribute)attributes[0];
-
-                    if ((string.IsNullOrEmpty(group) || attribute.Group.Equals(group, StringComparison.InvariantCultureIgnoreCase)) && attribute.ApiVersion.Equals(version, StringComparison.InvariantCultureIgnoreCase) && attribute.Kind.Equals(kind, StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        return type;
-                    }
-                }
-            }
-        }
-
-        return null;
-    }
-
-    public async Task GenerateCRDAssembly(V1CustomResourceDefinition crd)
+    public async Task<Assembly?> GenerateCRDAssembly(V1CustomResourceDefinition crd)
     {
         var assembly = await CRDGenerator.GenerateAssembly(crd, "KubeUI.Models." + crd.Name());
 
-        if (assembly.Item1 != null && !AssemblyLoader.ExistsInCache(crd.Name()) && !crd.Spec.Group.EndsWith("fluxcd.io"))
+        if (assembly.Item1 != null && assembly.Item2 != null)
         {
-            AssemblyLoader.AddToCache(assembly.Item1, assembly.Item2);
+            ModelCache.AddToCache(assembly.Item1, assembly.Item2);
         }
+
+        return assembly.Item1;
     }
 
     public IEnumerable<string> GetSelectedNamespaces() => SelectedNamespaces;
@@ -253,7 +242,6 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
     public async Task ImportYaml(Stream stream)
     {
-        var types = GenerateTypeMap();
         var mi = GetType().GetMethods().First(x => x.Name == nameof(AddOrUpdate) && x.IsGenericMethod && x.GetParameters().Length == 1);
 
         var reader = new StreamReader(stream);
@@ -268,7 +256,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
             var obj = Seralization.KubernetesYaml.Deserialize<KubernetesObject>(yaml);
             try
             {
-                var type = types[obj.ApiVersion + "/" + obj.Kind];
+                var type = ModelCache.GetResourceType(obj.ApiGroup(), obj.ApiGroupVersion(), obj.Kind);
 
                 var model = Seralization.KubernetesYaml.Deserializer.Deserialize(yaml, type);
 
@@ -327,22 +315,5 @@ public abstract class ClusterBase : INotifyPropertyChanged
                 }
             }
         }
-    }
-
-    private static IDictionary<string, Type> GenerateTypeMap()
-    {
-        var type = typeof(KubernetesEntityAttribute);
-
-        var ModelTypeMap = AssemblyLoader.Cache.Keys
-            .SelectMany(x => x.GetTypes())
-            .Where(t => t.GetCustomAttribute<KubernetesEntityAttribute>() != null)
-            .GroupBy(x =>
-            {
-                var attr = x.GetCustomAttribute<KubernetesEntityAttribute>();
-                return new { attr.Group, attr.ApiVersion, attr.Kind };
-            }
-            ).ToDictionary(x => $"{x.Key.Group}/{x.Key.ApiVersion}/{x.Key.Kind}".TrimStart('/'), y => y.First());
-
-        return ModelTypeMap;
     }
 }

@@ -106,7 +106,7 @@ public class ClusterManager : IDisposable
     {
     }
 
-    public void AddGitOpsCluster(string? name = null, string? path = null)
+    public void AddGitOpsCluster(string? name = null)
     {
         if (string.IsNullOrEmpty(name))
         {
@@ -114,11 +114,6 @@ public class ClusterManager : IDisposable
         }
 
         var cluster = new GitOpsCluster(loggerFactory.CreateLogger<GitOpsCluster>(), cRDGenerator) { Name = name };
-
-        if (!string.IsNullOrEmpty(path))
-        {
-            cluster.ImportFolder(path);
-        }
 
         AddCluster(cluster);
     }
@@ -130,17 +125,14 @@ public class ClusterManager : IDisposable
 
     private void Init()
     {
-        var assebly = typeof(CRDGenerator).Assembly;
-
-        var kubeAssebly = typeof(V1Deployment).Assembly;
         var kubeAsseblyXmlDoc = new XmlDocument();
-        kubeAsseblyXmlDoc.Load(assebly.GetManifestResourceStream("runtime.KubernetesClient.Models.xml"));
+        kubeAsseblyXmlDoc.Load(typeof(CRDGenerator).Assembly.GetManifestResourceStream("runtime.KubernetesClient.Models.xml"));
 
-        AssemblyLoader.AddToCache(kubeAssebly, kubeAsseblyXmlDoc);
+        ModelCache.AddToCache(typeof(V1Deployment).Assembly, kubeAsseblyXmlDoc);
 
         var coreAssebly = typeof(Cluster).Assembly;
 
-        initType(typeof(KubernetesCRDModelGen.Models.helm.toolkit.fluxcd.io.HelmRelease));
+        //initType(typeof(KubernetesCRDModelGen.Models.helm.toolkit.fluxcd.io.HelmRelease));
 
         void initType(Type type)
         {
@@ -154,7 +146,7 @@ public class ClusterManager : IDisposable
                 Logger.LogError(ex, "Error Loading docs for type {group}", type.FullName);
             }
 
-            AssemblyLoader.AddToCache(type.Assembly, xmlDoc);
+            ModelCache.AddToCache(type.Assembly, xmlDoc);
         }
 
         LoadClusters();

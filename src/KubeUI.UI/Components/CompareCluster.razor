@@ -78,7 +78,7 @@
 
         var objectsToSkip = new List<string>()
         {
-            $"{Corev1Event.KubeApiVersion.ToLower()}/{Corev1Event.KubeKind.ToLower()}"
+            $"{Corev1Event.KubeApiVersion}/{Corev1Event.KubeKind}"
         };
 
         foreach (var type in leftBase.Objects.Keys)

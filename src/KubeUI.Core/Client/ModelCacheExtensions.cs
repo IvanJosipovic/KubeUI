@@ -1,11 +1,9 @@
-﻿using KubeUI.Core;
-using System.Collections.Concurrent;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Xml;
 
 namespace KubeUI
 {
-    public static class AssemblyLoaderExtensions
+    public static class ModelCacheExtensions
     {
         /// <summary>
         /// Provides the documentation comments for a specific method
@@ -121,77 +119,7 @@ namespace KubeUI
         /// the XML file is not loaded and parsed on every single lookup</remarks>
         public static XmlDocument XmlFromAssembly(this Assembly assembly)
         {
-            if (AssemblyLoader.FailCache.ContainsKey(assembly))
-            {
-                //throw AssemblyLoader.FailCache[assembly];
-            }
-
-            try
-            {
-                if (!AssemblyLoader.Cache.ContainsKey(assembly))
-                {
-                    // load the document into the cache
-                    AssemblyLoader.Cache[assembly] = AssemblyLoader.XmlFromAssemblyNonCached(assembly);
-                }
-
-                return AssemblyLoader.Cache[assembly];
-            }
-            catch (Exception exception)
-            {
-                AssemblyLoader.FailCache[assembly] = exception;
-                //throw;
-            }
-
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// Utility class to provide documentation for various types where available with the assembly
-    /// </summary>
-    public static class AssemblyLoader
-    {
-        /// <summary>
-        /// A cache used to remember Xml documentation for assemblies
-        /// </summary>
-        public static readonly ConcurrentDictionary<Assembly, XmlDocument> Cache = new ConcurrentDictionary<Assembly, XmlDocument>();
-
-        /// <summary>
-        /// A cache used to store failure exceptions for assembly lookups
-        /// </summary>
-        public static readonly ConcurrentDictionary<Assembly, Exception> FailCache = new ConcurrentDictionary<Assembly, Exception>();
-
-        /// <summary>
-        /// Loads and parses the documentation file for the specified assembly
-        /// </summary>
-        /// <param name="assembly">The assembly to find the XML document for</param>
-        /// <returns>The XML document</returns>
-        public static XmlDocument? XmlFromAssemblyNonCached(Assembly assembly)
-        {
-            try
-            {
-                var xmlDocument = new XmlDocument();
-                xmlDocument.Load(assembly.Location.Replace(".dll", ".xml"));
-
-                return xmlDocument;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        public static void AddToCache(Assembly assembly, XmlDocument xmlDocument)
-        {
-            if (!Cache.ContainsKey(assembly))
-            {
-                Cache.TryAdd(assembly, xmlDocument);
-            }
-        }
-
-        public static bool ExistsInCache(string name)
-        {
-            return Cache.Keys.Any(x => x.ManifestModule.ScopeName == name + ".dll");
+            return ModelCache.Cache[assembly];
         }
     }
 }

@@ -20,8 +20,6 @@ public partial class NavItem<TItem> : IDisposable where TItem : class, IKubernet
 
     protected override void OnInitialized()
     {
-        base.OnInitialized();
-
         ClusterManager.OnChange += ClusterManager_OnChange;
 
         Timer = new System.Timers.Timer(TimeSpan.FromSeconds(1));
@@ -46,6 +44,6 @@ public partial class NavItem<TItem> : IDisposable where TItem : class, IKubernet
     public void Dispose()
     {
         ClusterManager.OnChange -= ClusterManager_OnChange;
-        Timer.Dispose();
+        Timer?.Dispose();
     }
 }

@@ -1,4 +1,5 @@
-﻿using KubernetesCRDModelGen;
+﻿using k8s.Models;
+using KubernetesCRDModelGen;
 using System.Collections.Concurrent;
 
 namespace KubeUI.Core.Client;
@@ -20,9 +21,14 @@ public class GitOpsCluster : ClusterBase, ICluster
         switch (eventType)
         {
             case WatchEventType.Added:
-                if (item is V1CustomResourceDefinition)
+                if (item is V1CustomResourceDefinition v1CustomResourceDefinition)
                 {
-                    Task.Run(() => GenerateCRDAssembly((V1CustomResourceDefinition)item));
+                    Task.Run(async () =>
+                    {
+                        var assembly = await GenerateCRDAssembly(v1CustomResourceDefinition).ConfigureAwait(false);
+
+                        Seed(assembly);
+                    });
                 }
                 break;
             case WatchEventType.Modified:
@@ -61,16 +67,18 @@ public class GitOpsCluster : ClusterBase, ICluster
 
     public override Task AddOrUpdate<T>(T item)
     {
-        var key = item.ApiVersion.ToLower() + "/" + item.Kind.ToLower();
+        var key = item.ApiVersion + "/" + item.Kind;
 
         if (!Objects.ContainsKey(key))
         {
             Objects[key] = new ConcurrentDictionary<string, IKubernetesObject<V1ObjectMeta>>();
         }
 
-        var exists = Objects[key].ContainsKey($"{item.Namespace()}|{item.Name()}");
+        var itemKey = $"{item.Namespace()}|{item.Name()}";
 
-        Objects[key][$"{item.Namespace()}|{item.Name()}"] = item;
+        var exists = Objects[key].ContainsKey(itemKey);
+
+        Objects[key][itemKey] = item;
 
         if (exists)
         {
