@@ -1,5 +1,3 @@
-using Microsoft.JSInterop;
-using MudBlazor.Services;
 using XtermBlazor;
 
 namespace KubeUI.UI.Components;
@@ -50,6 +48,16 @@ public partial class PodLogs : IDisposable
 
     bool shouldClear;
 
+    string FilterString;
+
+    List<string> Logs = new();
+
+    Stream Stream;
+
+    StreamReader StreamReader;
+
+    Task Task;
+
     protected override void OnInitialized()
     {
         ResizeListenerService.OnResized += ResizeListenerService_OnResized;
@@ -88,34 +96,90 @@ public partial class PodLogs : IDisposable
     public void Dispose()
     {
         IsDisposed = true;
-        token.Cancel();
+        token?.Cancel();
+        Stream?.Dispose();
+        StreamReader?.Dispose();
+        Task?.Dispose();
     }
 
     private async Task Update()
     {
         try
         {
+            Logs.Clear();
             await _terminal.Clear();
 
+            Stream?.Dispose();
+            StreamReader?.Dispose();
+            Task?.Dispose();
+
             var cluster = (Cluster)ClusterManager.GetActiveCluster();
-            var stream = await cluster.Client.CoreV1.ReadNamespacedPodLogAsync(Name, Namespace, container: Container, tailLines: Lines, previous: Previous, follow: true, pretty: true, cancellationToken: token.Token);
+            Stream = await cluster.Client.CoreV1.ReadNamespacedPodLogAsync(Name, Namespace, container: Container, tailLines: Lines, previous: Previous, follow: true, pretty: true, cancellationToken: token.Token);
 
-            using var streamReader = new StreamReader(stream);
+            StreamReader = new StreamReader(Stream);
 
-            while (!IsDisposed && streamReader.Peek() != -1)
+            Task = Task.Run(async () =>
             {
-                try
+                while (!IsDisposed)
                 {
-                    await _terminal.WriteLine(await streamReader.ReadLineAsync());
+                    try
+                    {
+                        var log = await StreamReader.ReadLineAsync();
+
+                        if (!string.IsNullOrEmpty(log))
+                        {
+                            await AddEntry(log);
+                        }
+                    }
+                    catch (IOException ex) when (ex.Message.Equals("The request was aborted."))
+                    {
+                        break;
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        break;
+                    }
                 }
-                catch (IOException ex) when (ex.Message.Equals("The request was aborted.")) { break; }
-                catch (ObjectDisposedException) { break; }
-            }
+            });
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error getting logs");
         }
+    }
+
+    static readonly SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
+
+    private async Task AddEntry(string logEntry)
+    {
+        await semaphoreSlim.WaitAsync();
+
+        if (string.IsNullOrEmpty(FilterString) || logEntry.Contains(FilterString))
+        {
+            await _terminal.WriteLine(logEntry);
+            await InvokeAsync(StateHasChanged);
+        }
+
+        Logs.Add(logEntry);
+
+        semaphoreSlim.Release();
+    }
+
+    private async Task UpdateFilter()
+    {
+        await semaphoreSlim.WaitAsync();
+
+        await _terminal.Clear();
+
+        foreach (var log in Logs)
+        {
+            if (string.IsNullOrEmpty(FilterString) || log.Contains(FilterString))
+            {
+                await _terminal.WriteLine(log);
+            }
+        }
+
+        semaphoreSlim.Release();
     }
 
     private string[] _addonIds = new string[]
