@@ -1,0 +1,13 @@
+﻿@page "/list/apps/v1/replicaset"
+
+<ListGeneric TItem="V1ReplicaSet">
+    <Columns>
+        <ColumnComponent TItem="V1ReplicaSet" Name="Desired" Object="(x => x.Spec?.Replicas)" />
+        <ColumnComponent TItem="V1ReplicaSet" Name="Current" Object="(x => x.Status?.AvailableReplicas.GetValueOrDefault())" />
+        <ColumnComponent TItem="V1ReplicaSet" Name="Ready" Object="(x => x.Status?.ReadyReplicas.GetValueOrDefault())" />
+    </Columns>
+</ListGeneric>
+
+@code {
+
+}

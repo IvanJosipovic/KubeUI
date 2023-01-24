@@ -161,4 +161,16 @@ public static class Utilities
     {
         return JsonPrettifyString(KubernetesJson.Serialize(obj));
     }
+
+    public static string TrimAfter(this string input, int maxLength)
+    {
+        if (input.Length > maxLength)
+        {
+            return input[..maxLength] + "...";
+        }
+        else
+        {
+            return input;
+        }
+    }
 }

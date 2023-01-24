@@ -1,0 +1,16 @@
+﻿@page "/list/apps/v1/daemonset"
+
+<ListGeneric TItem="V1DaemonSet">
+    <Columns>
+        <ColumnComponent TItem="V1DaemonSet" Name="Pods" Object="(x => x.Status?.CurrentNumberScheduled)">
+            <DisplayContent>
+                @context.Item1?.Status?.CurrentNumberScheduled
+            </DisplayContent>
+        </ColumnComponent>
+        <ColumnComponent TItem="V1DaemonSet" Name="Node Selector" Object="(x => x.Spec?.Template.Spec.NodeSelector.First())" />
+    </Columns>
+</ListGeneric>
+
+@code {
+
+}

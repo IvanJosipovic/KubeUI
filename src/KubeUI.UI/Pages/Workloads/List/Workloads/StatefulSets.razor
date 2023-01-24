@@ -1,0 +1,16 @@
+﻿@page "/list/apps/v1/statefulset"
+
+<ListGeneric TItem="V1StatefulSet">
+    <Columns>
+        <ColumnComponent TItem="V1StatefulSet" Name="Pods" Object="(x => x.Status?.AvailableReplicas)">
+            <DisplayContent>
+                @context.Item1?.Status?.AvailableReplicas.GetValueOrDefault()/@context.Item1?.Spec?.Replicas
+            </DisplayContent>
+        </ColumnComponent>
+        <ColumnComponent TItem="V1StatefulSet" Name="Replicas" Object="(x => x.Spec?.Replicas)" />
+    </Columns>
+</ListGeneric>
+
+@code {
+
+}

@@ -1,0 +1,15 @@
+﻿@page "/list/v1/configmap"
+
+<ListGeneric TItem="V1ConfigMap">
+    <Columns>
+        <ColumnComponent TItem="V1ConfigMap" Name="Keys" Object="(x => x.Data)" OverFlow="true">
+            <DisplayContent>
+                @context.Item1?.Data?.Keys.Aggregate((x,y) => x + "," + y).TrimAfter(20)
+            </DisplayContent>
+        </ColumnComponent>
+    </Columns>
+</ListGeneric>
+
+@code {
+
+}

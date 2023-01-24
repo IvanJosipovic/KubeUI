@@ -1,0 +1,12 @@
+﻿@page "/list/batch/v1/job"
+
+<ListGeneric TItem="V1Job">
+    <Columns>
+        <ColumnComponent TItem="V1Job" Name="Completions" Object="(x => x.Spec?.Completions.GetValueOrDefault())" />
+        <ColumnComponent TItem="V1Job" Name="Conditions" Object="(x => x.Status?.Conditions)" />
+    </Columns>
+</ListGeneric>
+
+@code {
+
+}
