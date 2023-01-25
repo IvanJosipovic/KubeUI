@@ -9,12 +9,12 @@
             </DisplayContent>
         </ColumnComponent>
         <ColumnComponent TItem="Corev1Event" Name="Namespace" Object="(x => x.Metadata.NamespaceProperty)" Width="10%"/>
-        <ColumnComponent TItem="Corev1Event" Name="Last Seen" Object="(x => DateTime.UtcNow - x.LastTimestamp)" Width="5%">
+        <ColumnComponent TItem="Corev1Event" Name="Last Seen" Object="(x => DateTime.UtcNow - (x.LastTimestamp.HasValue ? x.LastTimestamp : x.Metadata.CreationTimestamp))" Width="5%" Sort="SortDirection.Ascending">
             <DisplayContent>
-                <Age TItem="Corev1Event" Date="@context.Item1.LastTimestamp" />
+                <Age TItem="Corev1Event" Date="@(context.Item1.LastTimestamp.HasValue ? context.Item1.LastTimestamp : @context.Item1.Metadata.CreationTimestamp)" />
             </DisplayContent>
         </ColumnComponent>
-        <ColumnComponent TItem="Corev1Event" Name="Age" Object="(x => x.Metadata.CreationTimestamp)" Sort="SortDirection.Descending" Width="5%">
+        <ColumnComponent TItem="Corev1Event" Name="Age" Object="(x => x.Metadata.CreationTimestamp)" Width="5%">
             <DisplayContent>
                 <Age TItem="Corev1Event" Date="@context.Item1.Metadata.CreationTimestamp" />
             </DisplayContent>
