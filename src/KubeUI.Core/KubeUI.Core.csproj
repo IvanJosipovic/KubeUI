@@ -9,7 +9,7 @@
 	<ItemGroup>
 		<PackageReference Include="JsonPathLINQ" Version="1.0.0-alpha.7" />
 		<PackageReference Include="KristofferStrube.Blazor.FileSystemAccess" Version="3.0.0" />
-		<PackageReference Include="KubernetesClient" Version="10.0.16" />
+		<PackageReference Include="KubernetesClient" Version="10.1.4" />
 		<PackageReference Include="KubernetesCRDModelGen" Version="1.0.0-alpha.81" />
 		<PackageReference Include="KubernetesCRDModelGen.Models.fluxcd.io" Version="1.0.0-alpha.81" />
 		<PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="7.0.0" />
