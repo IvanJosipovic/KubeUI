@@ -3,6 +3,7 @@
 <InputFile id="fileInput" OnChange="ImportConfig" hidden multiple />
 
 <ResizePanel Context="resize" Offset="85">
+
     <MudDataGrid T="ICluster"
                  @bind-SelectedItems="SelectedItems"
                  Breakpoint="Breakpoint.None"
@@ -34,11 +35,11 @@
             &nbsp;
         </ToolBarContent>
         <Columns>
-            <SelectColumn T="ICluster" ShowInFooter="false" Size="Size.Small" />
+            <SelectColumn ShowInFooter="false" Size="Size.Small" />
 
-            <Column T="ICluster" Field="Name" HeaderStyle="width:95%"/>
+            <PropertyColumn T="ICluster" TProperty="string" Property="(x => x.Name)" HeaderStyle="width:95%" />
 
-            <Column T="ICluster" Sortable="false" Filterable="false" HeaderStyle="width:5%">
+            <TemplateColumn T="ICluster" Sortable="false" Filterable="false" HeaderStyle="width:5%">
                 <CellTemplate>
                     <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small">
                         <MudMenuItem OnClick="@(() => Delete(context.Item))">Delete</MudMenuItem>
@@ -50,7 +51,8 @@
                         <MudFab OnClick="Compare" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Compare" Class="d-flex" Size="Size.Small" Title="Compare" />
                     }
                 </FooterTemplate>
-            </Column>
+            </TemplateColumn>
         </Columns>
     </MudDataGrid>
+
 </ResizePanel>

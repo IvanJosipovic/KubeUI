@@ -14,9 +14,9 @@
                  SortMode="SortMode.Single"
                  Virtualize="true">
         <Columns>
-            <Column T="CompareObjectResult" Field="@nameof(CompareObjectResult.Type)" HeaderStyle="@($"width: 25%")" />
+            <PropertyColumn T="CompareObjectResult" TProperty="string" Property="(x => x.Type)" HeaderStyle="@($"width: 25%")" />
 
-            <Column T="CompareObjectResult" Field="@nameof(CompareObjectResult.Name)" HeaderStyle="@($"width: 25%")">
+            <PropertyColumn T="CompareObjectResult" TProperty="string" Property="(x => x.Name)" HeaderStyle="@($"width: 25%")">
                 <CellTemplate>
                     @if (context.Item.Result == CompareObjectResultEnum.Modified)
                     {
@@ -27,11 +27,11 @@
                         @context.Item.Name
                     }
                 </CellTemplate>
-            </Column>
+            </PropertyColumn>
 
-            <Column T="CompareObjectResult" Field="@nameof(CompareObjectResult.Namespace)" HeaderStyle="@($"width: 25%")" />
+            <PropertyColumn T="CompareObjectResult" TProperty="string" Property="(x => x.Namespace)" HeaderStyle="@($"width: 25%")" />
 
-            <Column T="CompareObjectResult" Field="@nameof(CompareObjectResult.Result)" HeaderStyle="@($"width: 25%")">
+            <PropertyColumn T="CompareObjectResult" TProperty="CompareObjectResultEnum" Property="(x => x.Result)" HeaderStyle="@($"width: 25%")">
                 <CellTemplate>
                     @{
                         Color color = Color.Primary;
@@ -51,7 +51,7 @@
                     }
                     <MudText Typo="Typo.inherit" Color="color">@context.Item.Result</MudText>
                 </CellTemplate>
-            </Column>
+            </PropertyColumn>
         </Columns>
     </MudDataGrid>
 </ResizePanel>

@@ -15,7 +15,7 @@
     <PackageReference Include="BlazorMonaco" Version="3.0.0" />
     <PackageReference Include="KristofferStrube.Blazor.FileSystemAccess" Version="3.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="7.0.4" />
-    <PackageReference Include="MudBlazor" Version="6.1.7" />
+    <PackageReference Include="MudBlazor" Version="6.2.0" />
     <PackageReference Include="XtermBlazor" Version="1.7.0" />
   </ItemGroup>
 
