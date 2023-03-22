@@ -54,12 +54,13 @@ public partial class PodConsole : IDisposable
         }
         catch (Exception)
         {
-
         }
     }
 
     private async Task OnFirstRender()
     {
+        await Task.Delay(50);
+
         await _terminal.InvokeAddonFunctionVoidAsync("xterm-addon-fit", "fit");
     }
 
