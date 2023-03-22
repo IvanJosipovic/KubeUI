@@ -35,13 +35,7 @@ public partial class PodLogs : IDisposable
     private TerminalOptions _options = new TerminalOptions
     {
         CursorBlink = true,
-        CursorStyle = CursorStyle.Bar,
-        //Columns = 150,
-        Rows = 60,
-        Theme =
-        {
-            //Background = "#17615e",
-        },
+        CursorStyle = CursorStyle.Bar
     };
 
     private CancellationTokenSource token = new CancellationTokenSource();
@@ -99,7 +93,6 @@ public partial class PodLogs : IDisposable
         token?.Cancel();
         Stream?.Dispose();
         StreamReader?.Dispose();
-        Task?.Dispose();
     }
 
     private async Task Update()
@@ -111,7 +104,6 @@ public partial class PodLogs : IDisposable
 
             Stream?.Dispose();
             StreamReader?.Dispose();
-            Task?.Dispose();
 
             var cluster = (Cluster)ClusterManager.GetActiveCluster();
             Stream = await cluster.Client.CoreV1.ReadNamespacedPodLogAsync(Name, Namespace, container: Container, tailLines: Lines, previous: Previous, follow: true, pretty: true, cancellationToken: token.Token);

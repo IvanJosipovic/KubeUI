@@ -39,12 +39,6 @@ public partial class PodConsole : IDisposable
     {
         CursorBlink = true,
         CursorStyle = CursorStyle.Bar,
-        Columns = 150,
-        Rows = 60,
-        Theme =
-        {
-            //Background = "#17615e",
-        },
     };
 
     protected override void OnInitialized()
@@ -60,6 +54,7 @@ public partial class PodConsole : IDisposable
         }
         catch (Exception)
         {
+
         }
     }
 
