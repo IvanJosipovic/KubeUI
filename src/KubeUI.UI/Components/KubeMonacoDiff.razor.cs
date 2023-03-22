@@ -1,6 +1,7 @@
 using Microsoft.JSInterop;
 using BlazorMonaco;
 using YamlDotNet.Core.Tokens;
+using BlazorMonaco.Editor;
 
 namespace KubeUI.UI.Components;
 
@@ -12,11 +13,11 @@ public partial class KubeMonacoDiff : IDisposable
 
     [Parameter] public string Modified { get; set; }
 
-    private MonacoDiffEditor _editor { get; set; }
+    private StandaloneDiffEditor _editor { get; set; }
 
-    private DiffEditorConstructionOptions EditorConstructionOptions(MonacoDiffEditor editor)
+    private StandaloneDiffEditorConstructionOptions EditorConstructionOptions(StandaloneDiffEditor editor)
     {
-        return new DiffEditorConstructionOptions
+        return new StandaloneDiffEditorConstructionOptions
         {
             AutomaticLayout = true,
             IgnoreTrimWhitespace = false
@@ -29,8 +30,8 @@ public partial class KubeMonacoDiff : IDisposable
         {
             await _editor.SetModel(new DiffEditorModel()
             {
-                Original = await MonacoEditorBase.CreateModel(Original, Language),
-                Modified = await MonacoEditorBase.CreateModel(Modified, Language)
+                Original = await Global.CreateModel(Original, Language),
+                Modified = await Global.CreateModel(Modified, Language)
             });
         }
         catch (JSException)

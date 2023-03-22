@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="BlazorMonaco" Version="2.1.0" />
+    <PackageReference Include="BlazorMonaco" Version="3.0.0" />
     <PackageReference Include="KristofferStrube.Blazor.FileSystemAccess" Version="3.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="7.0.4" />
     <PackageReference Include="MudBlazor" Version="6.1.7" />

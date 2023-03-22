@@ -1,5 +1,6 @@
 using Microsoft.JSInterop;
 using BlazorMonaco;
+using BlazorMonaco.Editor;
 
 namespace KubeUI.UI.Components;
 
@@ -17,9 +18,9 @@ public partial class KubeMonacoEditor : IDisposable
     [Parameter]
     public bool ReadOnly { get; set; }
 
-    private MonacoEditor _editor { get; set; }
+    private StandaloneCodeEditor _editor { get; set; }
 
-    private StandaloneEditorConstructionOptions EditorConstructionOptions(MonacoEditor editor)
+    private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
     {
         return new StandaloneEditorConstructionOptions
         {
@@ -58,9 +59,9 @@ public partial class KubeMonacoEditor : IDisposable
         _editor?.Dispose();
     }
 
-    private async void OnDidBlurr(MonacoEditor editor)
+    private async void OnDidBlurr()
     {
-        var yaml = await editor.GetValue();
+        var yaml = await _editor.GetValue();
         await ValueChanged.InvokeAsync(yaml);
     }
 }
