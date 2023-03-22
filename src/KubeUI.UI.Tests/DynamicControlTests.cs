@@ -1,11 +1,15 @@
 using KubeUI.UI.Components;
 using KubeUI.UI.Components.Dynamic;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.JSInterop;
+using Moq;
 using MudBlazor;
 using MudBlazor.Services;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static KubeUI.Core.Client.HelmRelease;
 
 namespace KubeUI.UI.Tests;
 
@@ -17,6 +21,7 @@ public class DynamicControlTests : TestContext
         Services.AddSingleton<IScrollListener, MockScrollListener>();
         Services.AddSingleton<IScrollManager, MockScrollManager>();
         Services.AddSingleton<IBrowserWindowSizeProvider, MockBrowserWindowSizeProvider>();
+        Services.AddSingleton<IMudPopoverService, MockPopoverService>();
     }
 
     private class UI1
@@ -256,4 +261,25 @@ public class MockBrowserWindowSizeProvider : IBrowserWindowSizeProvider
     {
         return new ValueTask<BrowserWindowSize>(new BrowserWindowSize());
     }
+}
+
+public class MockPopoverService : IMudPopoverService
+{
+    private List<MudPopoverHandler> _handlers = new();
+    private static RenderFragment DefaultFragment = (builder) => { };
+    public IEnumerable<MudPopoverHandler> Handlers => _handlers;
+
+    public bool ThrowOnDuplicateProvider => false;
+
+    public event EventHandler FragmentsChanged;
+    public Task InitializeIfNeeded() => Task.FromResult(true);
+
+    public MudPopoverHandler Register(RenderFragment fragment) => new MudPopoverHandler(fragment ?? DefaultFragment, Mock.Of<IJSRuntime>(), () =>
+    {
+        FragmentsChanged?.Invoke(this, EventArgs.Empty);
+    });
+
+    public Task<bool> Unregister(MudPopoverHandler handler) => Task.FromResult(true);
+
+    public ValueTask<int> CountProviders() => ValueTask.FromResult(0);
 }
