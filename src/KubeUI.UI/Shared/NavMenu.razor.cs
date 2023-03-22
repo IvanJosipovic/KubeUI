@@ -88,7 +88,7 @@ public partial class NavMenu : IDisposable
             var queue = new Queue<(Entity entity, FileSystemDirectoryHandle dir, FileSystemHandle value)>();
             for (var i = 0; i < values.Count(); i++)
             {
-                var value = values[i];
+                var value = values[i] as FileSystemHandle;
                 var entity = new Entity(await value.GetKindAsync(), value);
                 queue.Enqueue((entity, folder, value));
             }
@@ -118,9 +118,10 @@ public partial class NavMenu : IDisposable
                     var innerValues = await fileSystemDirectoryHandle.ValuesAsync();
                     foreach (var innerValue in innerValues)
                     {
-                        var innerEntity = new Entity(await innerValue.GetKindAsync(), innerValue);
+                        var innerVal2 = innerValue as FileSystemHandle;
+                        var innerEntity = new Entity(await innerValue.GetKindAsync(), innerVal2);
                         entity.Children.Add(innerEntity);
-                        queue.Enqueue((innerEntity, fileSystemDirectoryHandle, innerValue));
+                        queue.Enqueue((innerEntity, fileSystemDirectoryHandle, innerVal2));
                     }
                 }
             }
