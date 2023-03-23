@@ -125,8 +125,3 @@
 .mud-table-root .mud-table-head .mud-table-cell {
     font-weight: 550 !Important;
 }
-
-/*fixes xterm not having full height*/
-div:has(>.terminal) {
-    height: 100%
-}

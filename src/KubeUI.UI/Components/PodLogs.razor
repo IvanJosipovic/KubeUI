@@ -4,6 +4,5 @@
     <MudCheckBox @bind-Checked="Previous" @bind-Checked:after="Update" Label="Show previous container logs" Dense="false" Size="Size.Medium"></MudCheckBox>
     <MudTextField T="string" Margin="Margin.Dense" @bind-Text="@FilterString" @bind-Text:after="UpdateFilter" Label="Filter Logs" Variant="Variant.Filled" Class="ml-4" />
 </div>
-<div style="height:95%">
-    <Xterm @ref="_terminal" Options="_options" AddonIds="_addonIds" OnFirstRender="@OnFirstRender" />
-</div>
+
+<Xterm @ref="_terminal" Options="_options" AddonIds="_addonIds" OnFirstRender="@OnFirstRender" Style="height:90%" />

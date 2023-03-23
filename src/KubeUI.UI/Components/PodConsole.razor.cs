@@ -60,7 +60,6 @@ public partial class PodConsole : IDisposable
     private async Task OnFirstRender()
     {
         await Task.Delay(50);
-
         await _terminal.InvokeAddonFunctionVoidAsync("xterm-addon-fit", "fit");
     }
 
