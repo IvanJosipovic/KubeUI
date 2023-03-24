@@ -58,6 +58,7 @@
             <NavItem TItem="V1DaemonSet" Icon="resources/unlabeled/ds.svg"/>
             <NavItem TItem="V1StatefulSet" Icon="resources/unlabeled/sts.svg"/>
             <NavItem TItem="V1ReplicaSet" Icon="resources/unlabeled/rs.svg"/>
+            <NavItem TItem="V1ReplicationController" Icon="resources/unlabeled/rs.svg" />
             <NavItem TItem="V1Job" Icon="resources/unlabeled/job.svg"/>
             <NavItem TItem="V1CronJob" Icon="resources/unlabeled/cronjob.svg"/>
         </MudNavGroup>
@@ -69,6 +70,9 @@
             <NavItem TItem="V1LimitRange" Icon="resources/unlabeled/limits.svg"/>
             <NavItem TItem="V1HorizontalPodAutoscaler" Icon="resources/unlabeled/hpa.svg"/>
             <NavItem TItem="V1PodDisruptionBudget" Icon="resources/unlabeled/job.svg"/> @*needs icon*@
+            <NavItem TItem="V1PriorityClass" Icon="resources/unlabeled/job.svg" />
+            <NavItem TItem="V1RuntimeClass" Icon="resources/unlabeled/job.svg" />
+            <NavItem TItem="V1Lease" Icon="resources/unlabeled/job.svg" />
         </MudNavGroup>
 
         <MudNavGroup Title="Network" @bind-Expanded="NetworkExpanded">
@@ -77,6 +81,7 @@
             <NavItem TItem="V1Endpoints" Icon="resources/unlabeled/ep.svg" />
             <NavItem TItem="V1EndpointSlice" Icon="resources/unlabeled/ep.svg" />
             <NavItem TItem="V1Ingress" Icon="resources/unlabeled/ing.svg"/>
+            <NavItem TItem="V1IngressClass" Icon="resources/unlabeled/ing.svg" />
             <NavItem TItem="V1NetworkPolicy" Icon="resources/unlabeled/netpol.svg"/>
             <NavItem TItem="V1MutatingWebhookConfiguration" Icon="resources/unlabeled/netpol.svg" Name="Mutating Webhook" />
             <NavItem TItem="V1ValidatingWebhookConfiguration" Icon="resources/unlabeled/netpol.svg" Name="Validating Webhook" />
