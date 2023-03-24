@@ -1,0 +1,106 @@
+﻿@using System.Linq.Expressions
+@using System.Text.RegularExpressions
+@using KubeUI.UI.Components.List
+
+@typeparam TItem where TItem : class, IKubernetesObject<V1ObjectMeta>, new()
+
+<ListComponent2 TItem="TItem" MultiSelection="MultiSelection" @bind-SelectedItems="SelectedItems" Query="Query" Title="@Title">
+    @if (HideName == false)
+    {
+        <ColumnComponent2 TItem="TItem" Name="Name" Object="(x => x.Metadata.Name)" Sort="SortDirection.Ascending" Width="100%">
+            <DisplayContent>
+                <Link TItem="TItem" Object="@context.Item1" />
+            </DisplayContent>
+        </ColumnComponent2>
+    }
+
+    @if (HideNamespace == false)
+    {
+        <ColumnComponent2 TItem="TItem" Name="Namespace" Object="(x => x.Metadata.NamespaceProperty)" Width="10%" />
+    }
+
+    @if (Columns != null)
+    {
+        @Columns
+    }
+    else if (typeof(TItem).Namespace != typeof(V1Deployment).Namespace)
+    {
+        var kind = GroupApiVersionKind.From<TItem>();
+        var crd = ClusterManager.GetActiveCluster().GetObject<V1CustomResourceDefinition>(null, kind.PluralNameGroup);
+        var version = crd.Spec.Versions.Where(x => x.Storage).First();
+
+        if (version.AdditionalPrinterColumns != null)
+        {
+            foreach (var item in version.AdditionalPrinterColumns)
+            {
+                if (item.JsonPath == ".metadata.creationTimestamp")
+                {
+                    continue;
+                }
+
+                var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<TItem>(item.JsonPath, true);
+
+                <ColumnComponent2 TItem="TItem" Name="@(item.Name)" Width="15%" Object="exp.Compile()">
+                </ColumnComponent2>
+            }
+        }
+    }
+
+    @if (HideAge == false)
+    {
+        <ColumnComponent2 TItem="TItem" Name="Age" Object="(x => x.Metadata.CreationTimestamp)" Width="5%">
+            <DisplayContent>
+                <Age TItem="TItem" Date="@context.Item1.Metadata.CreationTimestamp" />
+            </DisplayContent>
+        </ColumnComponent2>
+    }
+
+    @if (HideActions == false)
+    {
+        <ColumnComponent2 TItem="TItem" Width="5%">
+            <HeaderContent>
+                <ColumnPicker TItem="TItem" />
+            </HeaderContent>
+            <DisplayContent>
+                <Actions TItem="TItem" Item="context.Item1" SelectedItems="SelectedItems" />
+            </DisplayContent>
+        </ColumnComponent2>
+    }
+
+</ListComponent2>
+
+@code {
+    [Inject]
+    private ClusterManager ClusterManager { get; set; }
+
+    [Parameter]
+    public RenderFragment Columns { get; set; }
+
+    [Parameter]
+    public bool HideNamespace { get; set; }
+
+    [Parameter]
+    public bool HideName { get; set; }
+
+    [Parameter]
+    public bool HideAge { get; set; }
+
+    [Parameter]
+    public bool MultiSelection { get; set; } = true;
+
+    [Parameter]
+    public bool HideActions { get; set; }
+
+    [Parameter]
+    public Func<IEnumerable<TItem>, IEnumerable<TItem>>? Query { get; set; }
+
+    [Parameter]
+    public string? Title { get; set; }
+
+    private HashSet<TItem> SelectedItems;
+
+    private string FixQuery(string original)
+    {
+        return original;
+    }
+}

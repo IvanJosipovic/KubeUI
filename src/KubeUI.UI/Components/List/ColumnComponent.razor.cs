@@ -1,4 +1,4 @@
-namespace KubeUI.UI.Components;
+namespace KubeUI.UI.Components.List;
 
 [CascadingTypeParameter(nameof(TItem))]
 public partial class ColumnComponent<TItem> where TItem : class, IKubernetesObject<V1ObjectMeta>, new()

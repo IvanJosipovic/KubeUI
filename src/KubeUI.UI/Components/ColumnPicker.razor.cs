@@ -1,3 +1,5 @@
+using KubeUI.UI.Components.List;
+
 namespace KubeUI.UI.Components;
 
 public partial class ColumnPicker<TItem> where TItem : class, IKubernetesObject<V1ObjectMeta>, new()
