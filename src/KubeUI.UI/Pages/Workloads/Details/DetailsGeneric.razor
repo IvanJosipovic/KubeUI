@@ -18,12 +18,12 @@
         </MudTabPanel>
         <MudTabPanel Text="Edit" Icon="@Icons.Material.Filled.Edit">
             <ResizePanel Context="resize" Offset="20" SetHeigh="true">
-                <Edit TItem="TItem" Object="@context" />
+                <Edit Object="@context" />
             </ResizePanel>
         </MudTabPanel>
         <MudTabPanel Text="Yaml" Icon="@Icons.Material.Filled.Code">
             <ResizePanel Context="resize" Offset="30" SetHeigh="true">
-                <KubeMonacoEditor Value="@context.ToYaml()" ReadOnly="true" />
+                <YamlViewer Object="@context" />
             </ResizePanel>
         </MudTabPanel>
 @*        <MudTabPanel Text="Json">
