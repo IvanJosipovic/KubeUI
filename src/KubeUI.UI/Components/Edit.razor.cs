@@ -32,7 +32,7 @@ namespace KubeUI.UI.Components
 
                 var attribute = GroupApiVersionKind.From<TItem>();
 
-                ObjectClone.ApiVersion = attribute.ApiVersion;
+                ObjectClone.ApiVersion = attribute.GroupApiVersion;
                 ObjectClone.Kind = attribute.Kind;
             }
         }
