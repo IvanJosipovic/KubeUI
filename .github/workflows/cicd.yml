@@ -150,7 +150,7 @@ jobs:
 
     - uses: maxim-lobanov/setup-xcode@v1
       with:
-        xcode-version: '^13'
+        xcode-version: latest-stable
 
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v3
