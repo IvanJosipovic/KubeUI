@@ -11,9 +11,6 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
 
-env:
-  semantic_version: 19
-
 jobs:
   semantic-release:
     name: Bump Version
@@ -28,7 +25,6 @@ jobs:
       uses: cycjimmy/semantic-release-action@v3
       id: semantic
       with:
-        semantic_version: ${{ env.semantic_version }}
         dry_run: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -154,7 +150,7 @@ jobs:
 
     - uses: maxim-lobanov/setup-xcode@v1
       with:
-        xcode-version: '^13'
+        xcode-version: latest-stable
 
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v3
@@ -166,15 +162,15 @@ jobs:
 
     - name: Publish
       working-directory: src/KubeUI.Maui
-      run: dotnet publish -c Release -f:net7.0-maccatalyst -p:Version=${{ needs.semantic-release.outputs.new_release_version }} -p:ApplicationDisplayVersion=${{ needs.semantic-release.outputs.new_release_version }} -p:ApplicationVersion=${{ needs.semantic-release.outputs.new_release_version }}
+      run: dotnet publish -c Release -f:net8.0-maccatalyst -p:Version=${{ needs.semantic-release.outputs.new_release_version }} -p:ApplicationDisplayVersion=${{ needs.semantic-release.outputs.new_release_version }} -p:ApplicationVersion=${{ needs.semantic-release.outputs.new_release_version }}
 
     - name: Rename
-      run: mv src/KubeUI.Maui/bin/Release/net7.0-maccatalyst/publish/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}.pkg src/KubeUI.Maui/bin/Release/net7.0-maccatalyst/publish/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-osx-x64.pkg
+      run: mv src/KubeUI.Maui/bin/Release/net8.0-maccatalyst/publish/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}.pkg src/KubeUI.Maui/bin/Release/net8.0-maccatalyst/publish/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-osx-x64.pkg
 
     - uses: actions/upload-artifact@v3
       with:
         name: KubeUI-osx-x64
-        path: src/KubeUI.Maui/bin/Release/net7.0-maccatalyst/publish/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-osx-x64.pkg
+        path: src/KubeUI.Maui/bin/Release/net8.0-maccatalyst/publish/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-osx-x64.pkg
 
   release:
     if: needs.semantic-release.outputs.new_release_published == 'true'
@@ -210,7 +206,5 @@ jobs:
 
     - name: Semantic Release
       uses: cycjimmy/semantic-release-action@v3
-      with:
-        semantic_version: ${{ env.semantic_version }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

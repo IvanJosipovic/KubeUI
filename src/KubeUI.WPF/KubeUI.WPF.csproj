@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
-		<TargetFramework>net7.0-windows</TargetFramework>
+		<TargetFramework>net8.0-windows</TargetFramework>
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
 		<PackageIcon>icon.ico</PackageIcon>
@@ -19,9 +19,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.AspNetCore.Components.WebView.Wpf" Version="7.0.59" />
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.1" />
-		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="7.0.0" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebView.Wpf" Version="8.0.0-preview.2.7871" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0-preview.2.23128.3" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0-preview.2.23128.3" />
 		<PackageReference Include="Serilog.Extensions.Logging.File" Version="3.0.0" />
 
 		<!--Needed to Build Serilog-->

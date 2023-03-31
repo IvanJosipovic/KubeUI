@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-
-namespace KubeUI.Maui
+﻿namespace KubeUI.Maui
 {
     public static class MauiProgram
     {
@@ -18,7 +16,6 @@ namespace KubeUI.Maui
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();
-            builder.Logging.AddDebug();
 #endif
 
             UI.ConfigureServices.Configure(builder.Configuration, builder.Services);

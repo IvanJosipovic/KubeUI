@@ -36,7 +36,7 @@ Supported Platforms:
 
 ## How to build?
 
-1. [Download .Net SDK 7.0](https://dotnet.microsoft.com/en-us/download/dotnet/7.0)
+1. [Download .Net SDK 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
 2. [Download an IDE](https://dotnet.microsoft.com/platform/tools)
 3. Build away!
 

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>KubeUI.UI</RootNamespace>
@@ -14,7 +14,7 @@
   <ItemGroup>
     <PackageReference Include="BlazorMonaco" Version="3.0.0" />
     <PackageReference Include="KristofferStrube.Blazor.FileSystemAccess" Version="3.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="7.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.0-preview.2.23153.2" />
     <PackageReference Include="MudBlazor" Version="6.2.0" />
     <PackageReference Include="XtermBlazor" Version="1.8.1" />
   </ItemGroup>
