@@ -25,6 +25,23 @@
           ]
         }
       ]
+    },
+    {
+      "extends": "monorepo:dotnet",
+      "groupName": "dotnet monorepo",
+      "matchUpdateTypes": [
+        "digest",
+        "patch",
+        "minor",
+        "major"
+      ],
+      "packageRules": [
+        {
+          "matchPackagePatterns": [
+            "microsoft.aspnetcore.*"
+          ]
+        }
+      ]
     }
   ]
 }
