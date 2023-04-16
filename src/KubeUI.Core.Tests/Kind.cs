@@ -66,7 +66,7 @@ public class Kind
 
         var stdErr = stdErrBuffer.ToString();
 
-        if (!string.IsNullOrEmpty(stdErr))
+        if (!string.IsNullOrEmpty(stdErr) && stdErr.StartsWith("ERROR:"))
         {
             throw new Exception(stdErr);
         }
@@ -83,7 +83,7 @@ public class Kind
 
         var stdErr = stdErrBuffer.ToString();
 
-        if (!string.IsNullOrEmpty(stdErr))
+        if (!string.IsNullOrEmpty(stdErr) && stdErr.StartsWith("ERROR:"))
         {
             throw new Exception(stdErr);
         }
@@ -103,7 +103,7 @@ public class Kind
         var stdOut = stdOutBuffer.ToString();
         var stdErr = stdErrBuffer.ToString();
 
-        if (!string.IsNullOrEmpty(stdErr))
+        if (!string.IsNullOrEmpty(stdErr) && stdErr.StartsWith("ERROR:"))
         {
             throw new Exception(stdErr);
         }
@@ -125,7 +125,7 @@ public class Kind
         var stdOut = stdOutBuffer.ToString();
         var stdErr = stdErrBuffer.ToString();
 
-        if (!string.IsNullOrEmpty(stdErr))
+        if (!string.IsNullOrEmpty(stdErr) && stdErr.StartsWith("ERROR:"))
         {
             throw new Exception(stdErr);
         }
