@@ -1,46 +1,47 @@
-﻿using k8s;
+﻿using CliWrap;
+using k8s;
 using k8s.KubeConfigModels;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
+using System.Xml.Linq;
 
 namespace KubeUI.Core.Tests;
 
 public class Kind
 {
-    public string Version = "0.17.0";
+    public string Version = "0.18.0";
 
     public string FileName { get; } = "kind" + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "");
 
     public async Task DownloadClient()
     {
-        var client = new HttpClient();
-        var url = string.Empty;
-
         if (File.Exists(FileName)) return;
+
+        var client = new HttpClient();
+        var arch = "amd64";
+
+        if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+        {
+            arch = "arm64";
+        }
+
+        var os = $"linux-{arch}";
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
-            // Mac
-            url = $"https://kind.sigs.k8s.io/dl/v{Version}/kind-darwin-arm64";
+            os = $"darwin-{arch}";
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            os = $"windows-{arch}.exe";
+        }
 
-            if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
-            {
-                url = $"https://kind.sigs.k8s.io/dl/v{Version}/kind-darwin-amd64";
-            }
-        }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-        {
-            // Linux
-            url = $"https://kind.sigs.k8s.io/dl/v{Version}/kind-linux-amd64";
-        }
-        else
-        {
-            // Windows
-            url = $"https://kind.sigs.k8s.io/dl/v{Version}/kind-windows-amd64";
-        }
+        var url = $"https://kind.sigs.k8s.io/dl/v{Version}/kind-{os}";
 
         var bytes = await client.GetByteArrayAsync(url);
 
@@ -48,111 +49,105 @@ public class Kind
 
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            var startInfo = new ProcessStartInfo()
-            {
-                FileName = "chmod",
-                Arguments = "+x ./kind",
-                CreateNoWindow = true,
-                WorkingDirectory = Directory.GetCurrentDirectory()
-            };
-
-            var proc = new Process() { StartInfo = startInfo };
-            proc.Start();
-            await proc.WaitForExitAsync();
+            await Cli.Wrap("chmod")
+                .WithArguments("+x ./kind")
+                .ExecuteAsync();
         }
     }
 
-    public void CreateCluster(string name, string? image = null)
+    public async Task CreateCluster(string name, string? image = null)
     {
-        var p = new Process();
-        p.StartInfo.FileName = FileName;
-        p.StartInfo.Arguments = $"create cluster --name {name}" + (string.IsNullOrEmpty(image) ? "" : $" --image {image}");
-        p.StartInfo.RedirectStandardError = true;
-        p.StartInfo.UseShellExecute = false;
-        p.StartInfo.CreateNoWindow = true;
-        p.Start();
-        var error = p.StandardError.ReadToEnd();
+        var stdErrBuffer = new StringBuilder();
 
-        if (!string.IsNullOrEmpty(error) && error.StartsWith("ERROR:"))
+        await Cli.Wrap(FileName)
+            .WithArguments($"create cluster --name {name}" + (string.IsNullOrEmpty(image) ? "" : $" --image {image}"))
+            .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
+            .ExecuteAsync();
+
+        var stdErr = stdErrBuffer.ToString();
+
+        if (!string.IsNullOrEmpty(stdErr) && stdErr.StartsWith("ERROR:"))
         {
-            throw new Exception(error);
+            throw new Exception(stdErr);
         }
     }
 
-    public void DeleteCluster(string name)
+    public async Task DeleteCluster(string name)
     {
-        var p = new Process();
-        p.StartInfo.FileName = FileName;
-        p.StartInfo.Arguments = $"delete cluster --name {name}";
-        p.StartInfo.RedirectStandardError = true;
-        p.StartInfo.UseShellExecute = false;
-        p.StartInfo.CreateNoWindow = true;
-        p.Start();
-        var error = p.StandardError.ReadToEnd();
+        var stdErrBuffer = new StringBuilder();
 
-        if (!string.IsNullOrEmpty(error) && error.StartsWith("ERROR:"))
+        await Cli.Wrap(FileName)
+            .WithArguments($"delete cluster --name {name}")
+            .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
+            .ExecuteAsync();
+
+        var stdErr = stdErrBuffer.ToString();
+
+        if (!string.IsNullOrEmpty(stdErr) && stdErr.StartsWith("ERROR:"))
         {
-            throw new Exception(error);
+            throw new Exception(stdErr);
         }
     }
 
-    public List<string> GetClusters()
+    public async Task<List<string>> GetClusters()
     {
-        var p = new Process();
-        p.StartInfo.FileName = FileName;
-        p.StartInfo.Arguments = $"get clusters";
-        p.StartInfo.RedirectStandardOutput = true;
-        p.StartInfo.RedirectStandardError = true;
-        p.StartInfo.UseShellExecute = false;
-        p.StartInfo.CreateNoWindow = true;
-        p.Start();
-        var result = p.StandardOutput.ReadToEnd();
-        var error = p.StandardError.ReadToEnd();
+        var stdOutBuffer = new StringBuilder();
+        var stdErrBuffer = new StringBuilder();
 
-        if (!string.IsNullOrEmpty(error))
+        await Cli.Wrap(FileName)
+            .WithArguments("get clusters")
+            .WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdOutBuffer))
+            .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
+            .ExecuteAsync();
+
+        var stdOut = stdOutBuffer.ToString();
+        var stdErr = stdErrBuffer.ToString();
+
+        if (!string.IsNullOrEmpty(stdErr) && stdErr.StartsWith("ERROR:"))
         {
-            throw new Exception(error);
+            throw new Exception(stdErr);
         }
 
-        return new List<string>(result.TrimEnd().Split("\n"));
+        return new List<string>(stdOut.TrimEnd().Split("\n"));
     }
 
-    public string GetKubeConfig(string name)
+    public async Task<string> GetKubeConfig(string name)
     {
-        var p = new Process();
-        p.StartInfo.FileName = FileName;
-        p.StartInfo.Arguments = $"get kubeconfig --name {name}";
-        p.StartInfo.RedirectStandardOutput = true;
-        p.StartInfo.RedirectStandardError = true;
-        p.StartInfo.UseShellExecute = false;
-        p.StartInfo.CreateNoWindow = true;
-        p.Start();
-        var result = p.StandardOutput.ReadToEnd();
-        var error = p.StandardError.ReadToEnd();
+        var stdOutBuffer = new StringBuilder();
+        var stdErrBuffer = new StringBuilder();
 
-        if (!string.IsNullOrEmpty(error))
+        await Cli.Wrap(FileName)
+            .WithArguments($"get kubeconfig --name {name}")
+            .WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdOutBuffer))
+            .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
+            .ExecuteAsync();
+
+        var stdOut = stdOutBuffer.ToString();
+        var stdErr = stdErrBuffer.ToString();
+
+        if (!string.IsNullOrEmpty(stdErr) && stdErr.StartsWith("ERROR:"))
         {
-            throw new Exception(error);
+            throw new Exception(stdErr);
         }
 
-        return result;
+        return stdOut;
     }
 
-    public K8SConfiguration GetK8SConfiguration(string name)
+    public async Task<K8SConfiguration> GetK8SConfiguration(string name)
     {
-        return KubernetesYaml.Deserialize<K8SConfiguration>(GetKubeConfig(name));
+        return KubernetesYaml.Deserialize<K8SConfiguration>(await GetKubeConfig(name));
     }
 
-    public Kubernetes GetKubernetesClient(string name)
+    public async Task<Kubernetes> GetKubernetesClient(string name)
     {
-        return new Kubernetes(KubernetesClientConfiguration.BuildConfigFromConfigObject(GetK8SConfiguration(name)));
+        return new Kubernetes(KubernetesClientConfiguration.BuildConfigFromConfigObject(await GetK8SConfiguration(name)));
     }
 
-    public void DeleteAllClusters()
+    public async Task DeleteAllClusters()
     {
-        foreach (var cluster in GetClusters())
+        foreach (var cluster in await GetClusters())
         {
-            DeleteCluster(cluster);
+            await DeleteCluster(cluster);
         }
     }
 }

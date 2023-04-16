@@ -6,7 +6,7 @@ public class TestHarness : IDisposable
 {
     public string Name { get; set; } = Guid.NewGuid().ToString();
 
-    public string Version { get; set; } = "kindest/node:v1.25.3";
+    public string Version { get; set; } = "kindest/node:v1.26.3";
 
     public IServiceProvider ServiceProvider { get; set; }
 
@@ -20,8 +20,8 @@ public class TestHarness : IDisposable
     {
         Kind = new Kind();
         Kind.DownloadClient().Wait();
-        Kind.CreateCluster(Name, Version);
-        var kc = Kind.GetKubeConfig(Name);
+        Kind.CreateCluster(Name, Version).Wait();
+        var kc = Kind.GetKubeConfig(Name).Result;
 
         IServiceCollection sc = new ServiceCollection();
         ConfigureServices.Configure(null, sc);
@@ -34,11 +34,11 @@ public class TestHarness : IDisposable
 
         Cluster = cm.GetCluster($"kind-{Name}");
 
-        Kubernetes = Kind.GetKubernetesClient(Name);
+        Kubernetes = Kind.GetKubernetesClient(Name).Result;
     }
 
     public void Dispose()
     {
-        Kind.DeleteCluster(Name);
+        Kind.DeleteCluster(Name).Wait();
     }
 }
