@@ -1,7 +1,7 @@
 using ICSharpCode.SharpZipLib.GZip;
 using ICSharpCode.SharpZipLib.Tar;
-using KubernetesCRDModelGen.Models.helm.toolkit.fluxcd.io.helm.toolkit.fluxcd.io;
-using KubernetesCRDModelGen.Models.source.toolkit.fluxcd.io.source.toolkit.fluxcd.io;
+using KubernetesCRDModelGen.Models.helm.toolkit.fluxcd.io;
+using KubernetesCRDModelGen.Models.source.toolkit.fluxcd.io;
 using System.Text;
 using System.Text.Json.Nodes;
 using YamlDotNet.RepresentationModel;

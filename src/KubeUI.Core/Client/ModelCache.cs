@@ -40,6 +40,11 @@ namespace KubeUI
         {
             var dic = new Dictionary<string, Type>();
 
+            if (assembly == null)
+            {
+                return dic;
+            }
+
             foreach (var item in assembly.GetExportedTypes())
             {
                 var attributes = item.GetCustomAttributes(typeof(KubernetesEntityAttribute), true);

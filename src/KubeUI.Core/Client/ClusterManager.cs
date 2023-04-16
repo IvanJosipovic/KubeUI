@@ -1,5 +1,5 @@
 ﻿using KubernetesCRDModelGen;
-using KubernetesCRDModelGen.Models.helm.toolkit.fluxcd.io.helm.toolkit.fluxcd.io;
+using KubernetesCRDModelGen.Models.helm.toolkit.fluxcd.io;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Xml;
