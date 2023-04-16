@@ -1,6 +1,7 @@
 using ICSharpCode.SharpZipLib.GZip;
 using ICSharpCode.SharpZipLib.Tar;
-using KubernetesCRDModelGen.Models.helm.toolkit.fluxcd.io;
+using KubernetesCRDModelGen.Models.helm.toolkit.fluxcd.io.helm.toolkit.fluxcd.io;
+using KubernetesCRDModelGen.Models.source.toolkit.fluxcd.io.source.toolkit.fluxcd.io;
 using System.Text;
 using System.Text.Json.Nodes;
 using YamlDotNet.RepresentationModel;
@@ -27,9 +28,9 @@ public partial class HelmReleaseUpgrade
 
     private IKubernetesObject<V1ObjectMeta> Right { get; set; }
 
-    private KubernetesCRDModelGen.Models.helm.toolkit.fluxcd.io.HelmRelease HelmRelease;
+    private V2beta1HelmRelease HelmRelease;
 
-    private KubernetesCRDModelGen.Models.source.toolkit.fluxcd.io.HelmRepository? HelmRepository;
+    private V1beta2HelmRepository? HelmRepository;
 
     private List<string> Versions = new();
 
@@ -40,9 +41,9 @@ public partial class HelmReleaseUpgrade
     protected override async Task OnInitializedAsync()
     {
         // Get Helm Release
-        HelmRelease = ClusterManager.GetActiveCluster().GetObject<KubernetesCRDModelGen.Models.helm.toolkit.fluxcd.io.HelmRelease>(Namespace, Name);
+        HelmRelease = ClusterManager.GetActiveCluster().GetObject<V2beta1HelmRelease>(Namespace, Name);
 
-        HelmRelease = (KubernetesCRDModelGen.Models.helm.toolkit.fluxcd.io.HelmRelease?)ObjectCompare.CleanObject(HelmRelease);
+        HelmRelease = (V2beta1HelmRelease?)ObjectCompare.CleanObject(HelmRelease);
 
         // Get Source
         var sourceType = HelmRelease.Spec.Chart.Spec.SourceRef.Kind;
@@ -54,7 +55,7 @@ public partial class HelmReleaseUpgrade
 
         if (sourceType == "HelmRepository")
         {
-            HelmRepository = ClusterManager.GetActiveCluster().GetObject<KubernetesCRDModelGen.Models.source.toolkit.fluxcd.io.HelmRepository>(HelmRelease.Spec.Chart.Spec.SourceRef.Namespace, HelmRelease.Spec.Chart.Spec.SourceRef.Name);
+            HelmRepository = ClusterManager.GetActiveCluster().GetObject<V1beta2HelmRepository>(HelmRelease.Spec.Chart.Spec.SourceRef.Namespace, HelmRelease.Spec.Chart.Spec.SourceRef.Name);
 
             if (HelmRepository == null)
             {

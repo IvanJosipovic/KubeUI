@@ -1,11 +1,13 @@
 ﻿@using KubeUI.Core.Client
 @using KubeUI.Core.Components.flux.io
+@using KubernetesCRDModelGen.Models.helm.toolkit.fluxcd.io.helm.toolkit.fluxcd.io;
+@using KubernetesCRDModelGen.Models.source.toolkit.fluxcd.io.source.toolkit.fluxcd.io;
 
 @page "/details/helm.toolkit.fluxcd.io/v2beta1/HelmRelease"
 
 <DetailsGeneric Namespace="@Namespace"
                   Name="@Name"
-                  TItem="KubernetesCRDModelGen.Models.helm.toolkit.fluxcd.io.HelmRelease"
+                  TItem="V2beta1HelmRelease"
                   IsInSideMenu="IsInSideMenu">
     <Overview>
 
@@ -34,6 +36,6 @@
 
     protected override void OnInitialized()
     {
-        ClusterManager.GetActiveCluster().Seed<KubernetesCRDModelGen.Models.source.toolkit.fluxcd.io.HelmRepository>();
+        ClusterManager.GetActiveCluster().Seed<V1beta2HelmRepository>();
     }
 }

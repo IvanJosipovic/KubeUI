@@ -1,4 +1,5 @@
 ﻿using KubernetesCRDModelGen;
+using KubernetesCRDModelGen.Models.helm.toolkit.fluxcd.io.helm.toolkit.fluxcd.io;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Xml;
@@ -132,7 +133,7 @@ public class ClusterManager : IDisposable
 
         var coreAssebly = typeof(Cluster).Assembly;
 
-        initType(typeof(KubernetesCRDModelGen.Models.helm.toolkit.fluxcd.io.HelmRelease));
+        initType(typeof(V2beta1HelmRelease));
 
         void initType(Type type)
         {
