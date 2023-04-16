@@ -6,7 +6,7 @@ public class TestHarness : IDisposable
 {
     public string Name { get; set; } = Guid.NewGuid().ToString();
 
-    public string Version { get; set; } = "kindest/node:v1.25.3";
+    public string Version { get; set; } = "kindest/node:v1.26.3";
 
     public IServiceProvider ServiceProvider { get; set; }
 

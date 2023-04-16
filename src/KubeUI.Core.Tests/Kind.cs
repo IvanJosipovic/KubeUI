@@ -10,37 +10,34 @@ namespace KubeUI.Core.Tests;
 
 public class Kind
 {
-    public string Version = "0.17.0";
+    public string Version = "0.18.0";
 
     public string FileName { get; } = "kind" + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "");
 
     public async Task DownloadClient()
     {
-        var client = new HttpClient();
-        var url = string.Empty;
-
         if (File.Exists(FileName)) return;
+
+        var client = new HttpClient();
+        var arch = "amd64";
+
+        if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+        {
+            arch = "arm64";
+        }
+
+        var os = $"linux-{arch}";
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
-            // Mac
-            url = $"https://kind.sigs.k8s.io/dl/v{Version}/kind-darwin-arm64";
+            os = $"darwin-{arch}";
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            os = $"windows-{arch}.exe";
+        }
 
-            if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
-            {
-                url = $"https://kind.sigs.k8s.io/dl/v{Version}/kind-darwin-amd64";
-            }
-        }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-        {
-            // Linux
-            url = $"https://kind.sigs.k8s.io/dl/v{Version}/kind-linux-amd64";
-        }
-        else
-        {
-            // Windows
-            url = $"https://kind.sigs.k8s.io/dl/v{Version}/kind-windows-amd64";
-        }
+        var url = $"https://kind.sigs.k8s.io/dl/v{Version}/kind-{os}";
 
         var bytes = await client.GetByteArrayAsync(url);
 
