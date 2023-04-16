@@ -20,7 +20,7 @@ public class TestHarness : IDisposable
     {
         Kind = new Kind();
         Kind.DownloadClient().Wait();
-        Kind.CreateCluster(Name, Version);
+        Kind.CreateCluster(Name, Version).Wait();
         var kc = Kind.GetKubeConfig(Name);
 
         IServiceCollection sc = new ServiceCollection();

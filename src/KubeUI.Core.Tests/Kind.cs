@@ -1,9 +1,11 @@
-﻿using k8s;
+﻿using CliWrap;
+using k8s;
 using k8s.KubeConfigModels;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace KubeUI.Core.Tests;
@@ -59,20 +61,20 @@ public class Kind
         }
     }
 
-    public void CreateCluster(string name, string? image = null)
+    public async Task CreateCluster(string name, string? image = null)
     {
-        var p = new Process();
-        p.StartInfo.FileName = FileName;
-        p.StartInfo.Arguments = $"create cluster --name {name}" + (string.IsNullOrEmpty(image) ? "" : $" --image {image}");
-        p.StartInfo.RedirectStandardError = true;
-        p.StartInfo.UseShellExecute = false;
-        p.StartInfo.CreateNoWindow = true;
-        p.Start();
-        var error = p.StandardError.ReadToEnd();
+        var stdErrBuffer = new StringBuilder();
 
-        if (!string.IsNullOrEmpty(error) && error.StartsWith("ERROR:"))
+        await Cli.Wrap(FileName)
+            .WithArguments($"create cluster --name {name}" + (string.IsNullOrEmpty(image) ? "" : $" --image {image}"))
+            .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
+            .ExecuteAsync();
+
+        var stdErr = stdErrBuffer.ToString();
+
+        if (!string.IsNullOrEmpty(stdErr) && stdErr.StartsWith("ERROR:"))
         {
-            throw new Exception(error);
+            throw new Exception(stdErr);
         }
     }
 

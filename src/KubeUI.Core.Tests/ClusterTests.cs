@@ -279,7 +279,7 @@ public class ClusterTests
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        ((Cluster)testHarness.Cluster).Objects[V1Secret.KubeApiVersion+ "/" + V1Secret.KubeKind]
+        ((Cluster)testHarness.Cluster).Objects[V1Secret.KubeApiVersion + "/" + V1Secret.KubeKind]
             .Values.All(x => x.Name() != "test").Should().BeTrue();
     }
 
@@ -405,7 +405,7 @@ spec:
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        await testHarness.Kubernetes.CreateCustomResourceDefinitionAsync(KubernetesYaml.LoadFromString<V1CustomResourceDefinition>(yamlCRD));
+        await testHarness.Kubernetes.CreateCustomResourceDefinitionAsync(KubernetesYaml.Deserialize<V1CustomResourceDefinition>(yamlCRD));
 
         await Task.Delay(TimeSpan.FromSeconds(5));
 
