@@ -39,6 +39,6 @@ public class TestHarness : IDisposable
 
     public void Dispose()
     {
-        Kind.DeleteCluster(Name);
+        Kind.DeleteCluster(Name).Wait();
     }
 }

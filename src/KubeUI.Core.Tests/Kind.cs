@@ -7,6 +7,8 @@ using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
+using System.Xml.Linq;
 
 namespace KubeUI.Core.Tests;
 
@@ -47,17 +49,9 @@ public class Kind
 
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            var startInfo = new ProcessStartInfo()
-            {
-                FileName = "chmod",
-                Arguments = "+x ./kind",
-                CreateNoWindow = true,
-                WorkingDirectory = Directory.GetCurrentDirectory()
-            };
-
-            var proc = new Process() { StartInfo = startInfo };
-            proc.Start();
-            await proc.WaitForExitAsync();
+            await Cli.Wrap("chmod")
+                .WithArguments("+x ./kind")
+                .ExecuteAsync();
         }
     }
 
@@ -72,7 +66,7 @@ public class Kind
 
         var stdErr = stdErrBuffer.ToString();
 
-        if (!string.IsNullOrEmpty(stdErr) && stdErr.StartsWith("ERROR:"))
+        if (!string.IsNullOrEmpty(stdErr))
         {
             throw new Exception(stdErr);
         }
@@ -89,7 +83,7 @@ public class Kind
 
         var stdErr = stdErrBuffer.ToString();
 
-        if (!string.IsNullOrEmpty(stdErr) && stdErr.StartsWith("ERROR:"))
+        if (!string.IsNullOrEmpty(stdErr))
         {
             throw new Exception(stdErr);
         }
