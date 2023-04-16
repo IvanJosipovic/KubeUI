@@ -21,7 +21,7 @@ public class TestHarness : IDisposable
         Kind = new Kind();
         Kind.DownloadClient().Wait();
         Kind.CreateCluster(Name, Version).Wait();
-        var kc = Kind.GetKubeConfig(Name);
+        var kc = Kind.GetKubeConfig(Name).Result;
 
         IServiceCollection sc = new ServiceCollection();
         ConfigureServices.Configure(null, sc);
@@ -34,7 +34,7 @@ public class TestHarness : IDisposable
 
         Cluster = cm.GetCluster($"kind-{Name}");
 
-        Kubernetes = Kind.GetKubernetesClient(Name);
+        Kubernetes = Kind.GetKubernetesClient(Name).Result;
     }
 
     public void Dispose()

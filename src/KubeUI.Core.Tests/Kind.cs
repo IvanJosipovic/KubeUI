@@ -78,80 +78,82 @@ public class Kind
         }
     }
 
-    public void DeleteCluster(string name)
+    public async Task DeleteCluster(string name)
     {
-        var p = new Process();
-        p.StartInfo.FileName = FileName;
-        p.StartInfo.Arguments = $"delete cluster --name {name}";
-        p.StartInfo.RedirectStandardError = true;
-        p.StartInfo.UseShellExecute = false;
-        p.StartInfo.CreateNoWindow = true;
-        p.Start();
-        var error = p.StandardError.ReadToEnd();
+        var stdErrBuffer = new StringBuilder();
 
-        if (!string.IsNullOrEmpty(error) && error.StartsWith("ERROR:"))
+        await Cli.Wrap(FileName)
+            .WithArguments($"delete cluster --name {name}")
+            .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
+            .ExecuteAsync();
+
+        var stdErr = stdErrBuffer.ToString();
+
+        if (!string.IsNullOrEmpty(stdErr) && stdErr.StartsWith("ERROR:"))
         {
-            throw new Exception(error);
+            throw new Exception(stdErr);
         }
     }
 
-    public List<string> GetClusters()
+    public async Task<List<string>> GetClusters()
     {
-        var p = new Process();
-        p.StartInfo.FileName = FileName;
-        p.StartInfo.Arguments = $"get clusters";
-        p.StartInfo.RedirectStandardOutput = true;
-        p.StartInfo.RedirectStandardError = true;
-        p.StartInfo.UseShellExecute = false;
-        p.StartInfo.CreateNoWindow = true;
-        p.Start();
-        var result = p.StandardOutput.ReadToEnd();
-        var error = p.StandardError.ReadToEnd();
+        var stdOutBuffer = new StringBuilder();
+        var stdErrBuffer = new StringBuilder();
 
-        if (!string.IsNullOrEmpty(error))
+        await Cli.Wrap(FileName)
+            .WithArguments("get clusters")
+            .WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdOutBuffer))
+            .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
+            .ExecuteAsync();
+
+        var stdOut = stdOutBuffer.ToString();
+        var stdErr = stdErrBuffer.ToString();
+
+        if (!string.IsNullOrEmpty(stdErr))
         {
-            throw new Exception(error);
+            throw new Exception(stdErr);
         }
 
-        return new List<string>(result.TrimEnd().Split("\n"));
+        return new List<string>(stdOut.TrimEnd().Split("\n"));
     }
 
-    public string GetKubeConfig(string name)
+    public async Task<string> GetKubeConfig(string name)
     {
-        var p = new Process();
-        p.StartInfo.FileName = FileName;
-        p.StartInfo.Arguments = $"get kubeconfig --name {name}";
-        p.StartInfo.RedirectStandardOutput = true;
-        p.StartInfo.RedirectStandardError = true;
-        p.StartInfo.UseShellExecute = false;
-        p.StartInfo.CreateNoWindow = true;
-        p.Start();
-        var result = p.StandardOutput.ReadToEnd();
-        var error = p.StandardError.ReadToEnd();
+        var stdOutBuffer = new StringBuilder();
+        var stdErrBuffer = new StringBuilder();
 
-        if (!string.IsNullOrEmpty(error))
+        await Cli.Wrap(FileName)
+            .WithArguments($"get kubeconfig --name {name}")
+            .WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdOutBuffer))
+            .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
+            .ExecuteAsync();
+
+        var stdOut = stdOutBuffer.ToString();
+        var stdErr = stdErrBuffer.ToString();
+
+        if (!string.IsNullOrEmpty(stdErr))
         {
-            throw new Exception(error);
+            throw new Exception(stdErr);
         }
 
-        return result;
+        return stdOut;
     }
 
-    public K8SConfiguration GetK8SConfiguration(string name)
+    public async Task<K8SConfiguration> GetK8SConfiguration(string name)
     {
-        return KubernetesYaml.Deserialize<K8SConfiguration>(GetKubeConfig(name));
+        return KubernetesYaml.Deserialize<K8SConfiguration>(await GetKubeConfig(name));
     }
 
-    public Kubernetes GetKubernetesClient(string name)
+    public async Task<Kubernetes> GetKubernetesClient(string name)
     {
-        return new Kubernetes(KubernetesClientConfiguration.BuildConfigFromConfigObject(GetK8SConfiguration(name)));
+        return new Kubernetes(KubernetesClientConfiguration.BuildConfigFromConfigObject(await GetK8SConfiguration(name)));
     }
 
-    public void DeleteAllClusters()
+    public async Task DeleteAllClusters()
     {
-        foreach (var cluster in GetClusters())
+        foreach (var cluster in await GetClusters())
         {
-            DeleteCluster(cluster);
+            await DeleteCluster(cluster);
         }
     }
 }
