@@ -2,7 +2,11 @@
 
 @if (Date.HasValue)
 {
-    if (Delta.TotalDays > 1)
+    if (Delta.TotalMilliseconds < 0)
+    {
+        @("0ms")
+    }
+    else if (Delta.TotalDays > 1)
     {
         @(Delta.TotalDays.ToString("N0"))@("d")
     }
@@ -22,11 +26,4 @@
     {
         @(Delta.TotalMilliseconds.ToString("N0"))@("ms")
     }
-}
-
-@code {
-    [Parameter]
-    public DateTime? Date { get; set; }
-
-    private TimeSpan Delta => DateTime.UtcNow - Date.Value;
 }
