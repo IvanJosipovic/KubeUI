@@ -11,12 +11,6 @@ namespace KubeUI.UI.Components
         [Parameter]
         public bool HideNosiyFields { get; set; } = true;
 
-        [Inject]
-        ClusterManager ClusterManager { get; set; }
-
-        [Inject]
-        private ILogger<Edit<TItem>> Logger { get; set; }
-
         private TItem ObjectClone { get; set; }
 
         protected override async Task OnInitializedAsync()
@@ -31,6 +25,8 @@ namespace KubeUI.UI.Components
             if (HideNosiyFields)
             {
                 ObjectClone.Metadata.ManagedFields = null;
+
+                ObjectClone?.Metadata?.Annotations?.Remove("kubectl.kubernetes.io/last-applied-configuration");
             }
 
             if (refresh)

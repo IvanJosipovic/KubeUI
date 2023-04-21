@@ -13,6 +13,7 @@ public class GitOpsCluster : ClusterBase, ICluster
     public GitOpsCluster(ILogger<GitOpsCluster> logger, ICRDGenerator cRDGenerator) : base(logger, cRDGenerator)
     {
         Logger = logger;
+        this.IsConnected = true;
         OnChange += Cluster_OnChange;
     }
 

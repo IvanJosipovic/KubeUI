@@ -14,7 +14,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
     public string Name { get; set; }
 
-    public bool IsConnected { get; set; } = true;
+    public bool IsConnected { get; set; }
 
     private ICRDGenerator CRDGenerator { get; set; }
 

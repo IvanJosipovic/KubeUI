@@ -1,4 +1,5 @@
-﻿using KubernetesCRDModelGen;
+﻿using k8s.KubeConfigModels;
+using KubernetesCRDModelGen;
 using System.Collections.Concurrent;
 
 namespace KubeUI.Core.Client;
@@ -9,37 +10,29 @@ public class Cluster : ClusterBase, ICluster
 
     public string KubeConfigPath { get; set; }
 
-    public KubernetesClientConfiguration KubeConfig { get; set; }
-
-    private KubernetesClientConfiguration? KubernetesClientConfiguration;
+    public K8SConfiguration KubeConfig { get; set; }
 
     public IKubernetes? Client;
 
     private KubernetesClientConfiguration GetClientConfiguration()
     {
-        if (KubernetesClientConfiguration != null)
-        {
-            return KubernetesClientConfiguration;
-        }
-
         if (!string.IsNullOrEmpty(KubeConfigPath))
         {
-            KubernetesClientConfiguration = KubernetesClientConfiguration.BuildConfigFromConfigFile(KubeConfigPath, Name);
+            return KubernetesClientConfiguration.BuildConfigFromConfigFile(KubeConfigPath, Name);
         }
         else
         {
-            KubernetesClientConfiguration = KubeConfig;
+            return KubernetesClientConfiguration.BuildConfigFromConfigObject(KubeConfig, Name);
         }
 
-        return KubernetesClientConfiguration;
+        throw new Exception("Unable to find KubeConfig");
     }
 
-    private ConcurrentDictionary<string, object> informers = new ConcurrentDictionary<string, object>();
+    private readonly ConcurrentDictionary<string, object> informers = new();
 
     public Cluster(ILoggerFactory loggerFactory, ICRDGenerator cRDGenerator) : base(loggerFactory.CreateLogger<ClusterBase>(), cRDGenerator)
     {
         this.loggerFactory = loggerFactory;
-        this.IsConnected = false;
     }
 
     private void Init()
@@ -126,25 +119,15 @@ public class Cluster : ClusterBase, ICluster
     {
         var api = GroupApiVersionKind.From<T>();
 
-        var client = new GenericClient(Client, api.Group, api.ApiVersion, api.PluralName);
+        using var client = new GenericClient(Client, api.Group, api.ApiVersion, api.PluralName, false);
 
-        try
+        if (string.IsNullOrEmpty(item.Namespace()))
         {
-            using (client)
-            {
-                if (string.IsNullOrEmpty(item.Namespace()))
-                {
-                    await client.DeleteAsync<T>(item.Name());
-                }
-                else
-                {
-                    await client.DeleteNamespacedAsync<T>(item.Namespace(), item.Name());
-                }
-            }
+            await client.DeleteAsync<T>(item.Name());
         }
-        catch (Exception ex)
+        else
         {
-            throw;
+            await client.DeleteNamespacedAsync<T>(item.Namespace(), item.Name());
         }
     }
 
@@ -152,16 +135,7 @@ public class Cluster : ClusterBase, ICluster
     {
         Init();
 
-        var resp = await ((Kubernetes)Client).SendRequestRaw(null, new HttpRequestMessage(HttpMethod.Get, Client.BaseUri + "apis"), CancellationToken.None);
-
-        if (resp.IsSuccessStatusCode)
-        {
-            return KubernetesJson.Deserialize<V1APIGroupList>(await resp.Content.ReadAsStringAsync());
-        }
-        else
-        {
-            return new V1APIGroupList();
-        }
+        return await Client.Apis.GetAPIVersionsAsync();
     }
 
     public async Task<VersionInfo> GetVersion()
@@ -175,35 +149,32 @@ public class Cluster : ClusterBase, ICluster
     {
         var api = GroupApiVersionKind.From<T>();
 
-        var client = new GenericClient(Client, api.Group, api.ApiVersion, api.PluralName);
+        using var client = new GenericClient(Client, api.Group, api.ApiVersion, api.PluralName, false);
 
-        using (client)
+        if (string.IsNullOrEmpty(item.Namespace()))
         {
-            if (string.IsNullOrEmpty(item.Namespace()))
+            if (item.Metadata.Uid != null)
             {
-                if (item.Metadata.Uid != null)
-                {
-                    // update
-                    await client.ReplaceAsync<T>(item, item.Name());
-                }
-                else
-                {
-                    // add
-                    await client.CreateAsync<T>(item);
-                }
+                // update
+                await client.ReplaceAsync<T>(item, item.Name());
             }
             else
             {
-                if (item.Metadata.Uid != null)
-                {
-                    // update namespaced
-                    await client.ReplaceNamespacedAsync<T>(item, item.Namespace(), item.Name());
-                }
-                else
-                {
-                    // add namespaced
-                    await client.CreateNamespacedAsync<T>(item, item.Namespace());
-                }
+                // add
+                await client.CreateAsync<T>(item);
+            }
+        }
+        else
+        {
+            if (item.Metadata.Uid != null)
+            {
+                // update namespaced
+                await client.ReplaceNamespacedAsync<T>(item, item.Namespace(), item.Name());
+            }
+            else
+            {
+                // add namespaced
+                await client.CreateNamespacedAsync<T>(item, item.Namespace());
             }
         }
     }

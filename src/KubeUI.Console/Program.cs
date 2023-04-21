@@ -8,7 +8,7 @@ IHost host = Host.CreateDefaultBuilder(args)
 
         services.AddHostedService<Worker>();
 
-        services.AddSingleton<ClusterManager>();
+        ConfigureServices.Configure(host.Configuration, services);
     })
     .Build();
 

@@ -8,10 +8,10 @@ namespace KubeUI.Core.Client;
 
 public class ClusterManager : IDisposable
 {
-    private ILogger<ClusterManager> Logger;
+    private readonly ILogger<ClusterManager> Logger;
 
     [JsonInclude]
-    private List<ICluster> _clusters = new List<ICluster>();
+    private readonly List<ICluster> _clusters = new List<ICluster>();
 
     [JsonInclude]
     private ICluster? activeCluster;
@@ -33,34 +33,40 @@ public class ClusterManager : IDisposable
 
     public void LoadFromConfigFromPath(string path)
     {
+        ArgumentNullException.ThrowIfNull(path);
+
         if (File.Exists(path))
         {
             var config = KubernetesClientConfiguration.LoadKubeConfig(path);
 
             foreach (var item in config.Contexts)
             {
-                AddCluster(new Cluster(loggerFactory, cRDGenerator) { Name = item.Name, KubeConfigPath = config.FileName });
+                AddCluster(new Cluster(loggerFactory, cRDGenerator) { Name = item.Name, KubeConfigPath = config.FileName, KubeConfig = config });
             }
         }
     }
 
     public void LoadFromConfig(string kubeConfig)
     {
+        ArgumentNullException.ThrowIfNull(kubeConfig);
+
         var config = KubernetesClientConfiguration.LoadKubeConfig(new MemoryStream(Encoding.UTF8.GetBytes(kubeConfig)));
 
         foreach (var item in config.Contexts)
         {
-            AddCluster(new Cluster(loggerFactory, cRDGenerator) { Name = item.Name, KubeConfigPath = config.FileName });
+            AddCluster(new Cluster(loggerFactory, cRDGenerator) { Name = item.Name, KubeConfigPath = config.FileName, KubeConfig = config });
         }
     }
 
     public void LoadFromConfig(Stream stream)
     {
+        ArgumentNullException.ThrowIfNull(stream);
+
         var config = KubernetesClientConfiguration.LoadKubeConfig(stream);
 
         foreach (var item in config.Contexts)
         {
-            AddCluster(new Cluster(loggerFactory, cRDGenerator) { Name = item.Name, KubeConfigPath = config.FileName });
+            AddCluster(new Cluster(loggerFactory, cRDGenerator) { Name = item.Name, KubeConfigPath = config.FileName, KubeConfig = config });
         }
     }
 
@@ -91,7 +97,7 @@ public class ClusterManager : IDisposable
 
     public ICluster? GetCluster(string name)
     {
-        return _clusters.FirstOrDefault(c => c.Name == name);
+        return _clusters.Find(c => c.Name == name);
     }
 
     public ICluster? GetActiveCluster()
@@ -126,12 +132,12 @@ public class ClusterManager : IDisposable
 
     private void Init()
     {
-        var kubeAsseblyXmlDoc = new XmlDocument();
-        kubeAsseblyXmlDoc.Load(typeof(CRDGenerator).Assembly.GetManifestResourceStream("runtime.KubernetesClient.Models.xml"));
+        var kubeAssemblyXmlDoc = new XmlDocument();
+        kubeAssemblyXmlDoc.Load(typeof(CRDGenerator).Assembly.GetManifestResourceStream("runtime.KubernetesClient.Models.xml"));
 
-        ModelCache.AddToCache(typeof(V1Deployment).Assembly, kubeAsseblyXmlDoc);
+        ModelCache.AddToCache(typeof(V1Deployment).Assembly, kubeAssemblyXmlDoc);
 
-        var coreAssebly = typeof(Cluster).Assembly;
+        var coreAssembly = typeof(Cluster).Assembly;
 
         initType(typeof(V2beta1HelmRelease));
 
@@ -140,7 +146,7 @@ public class ClusterManager : IDisposable
             var xmlDoc = new XmlDocument();
             try
             {
-                xmlDoc.Load(coreAssebly.GetManifestResourceStream($"model.docs.{type.Assembly.GetName().Name}.xml"));
+                xmlDoc.Load(coreAssembly.GetManifestResourceStream($"model.docs.{type.Assembly.GetName().Name}.xml"));
             }
             catch (Exception ex)
             {
