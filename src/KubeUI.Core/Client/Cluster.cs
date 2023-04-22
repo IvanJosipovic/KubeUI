@@ -119,7 +119,7 @@ public class Cluster : ClusterBase, ICluster
     {
         var api = GroupApiVersionKind.From<T>();
 
-        using var client = new GenericClient(Client, api.Group, api.ApiVersion, api.PluralName, false);
+        using var client = new GenericClient(Client, api.Group, api.ApiVersion, api.PluralName);
 
         if (string.IsNullOrEmpty(item.Namespace()))
         {
@@ -149,7 +149,7 @@ public class Cluster : ClusterBase, ICluster
     {
         var api = GroupApiVersionKind.From<T>();
 
-        using var client = new GenericClient(Client, api.Group, api.ApiVersion, api.PluralName, false);
+        using var client = new GenericClient(Client, api.Group, api.ApiVersion, api.PluralName);
 
         if (string.IsNullOrEmpty(item.Namespace()))
         {
