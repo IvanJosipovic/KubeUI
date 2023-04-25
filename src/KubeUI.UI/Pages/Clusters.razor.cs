@@ -33,13 +33,17 @@ public partial class Clusters
         }
     }
 
-    private void ImportConfig(InputFileChangeEventArgs e)
+    private async Task ImportConfig(InputFileChangeEventArgs e)
     {
         foreach (var file in e.GetMultipleFiles(500))
         {
             try
             {
-                ClusterManager.LoadFromConfig(file.OpenReadStream());
+                var mem = new MemoryStream();
+                await file.OpenReadStream().CopyToAsync(mem);
+                mem.Seek(0, SeekOrigin.Begin);
+
+                ClusterManager.LoadFromConfig(mem);
             }
             catch (Exception ex)
             {
