@@ -49,7 +49,7 @@ public partial class HelmReleaseUpgrade
         // Get Helm Release
         HelmRelease = ClusterManager.GetActiveCluster().GetObject<V2beta1HelmRelease>(Namespace, Name);
 
-        HelmRelease = (V2beta1HelmRelease?)ObjectCompare.CleanObject(HelmRelease);
+        HelmRelease = (V2beta1HelmRelease?)ObjectCompare.CleanObject(Utilities.CloneObject(HelmRelease));
 
         // Get Source
         var sourceType = HelmRelease.Spec.Chart.Spec.SourceRef.Kind;

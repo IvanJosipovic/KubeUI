@@ -34,7 +34,7 @@ namespace KubeUI.Core.Client.Serialization
                 .WithTypeConverter(new ResourceQuantityYamlConverter())
                 .WithEventEmitter(e => new StringQuotingEmitter(e))
                 .WithEventEmitter(e => new FloatEmitter(e))
-                .WithTypeConverter(new SystemTextJsonYamlTypeConverter())
+                .WithTypeConverter(new SystemTextJsonYamlTypeConverter(true))
                 .WithTypeInspector(x => new SystemTextJsonTypeInspector(x))
                 .WithTypeInspector(x => new SortedTypeInspector(x))
                 .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull)

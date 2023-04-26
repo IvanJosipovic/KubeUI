@@ -10,8 +10,7 @@
     </MudSelect>
     @if (!string.IsNullOrEmpty(SelectedVersion))
     {
-        <ResizePanel Context="resize" Offset="225" SetHeigh="true">
-            <CompareObject Left="HelmRelease" Right="Right" />
-        </ResizePanel>
+        <CompareObject Left="HelmRelease" Right="Right" />
+
     }
 </MudCard>
