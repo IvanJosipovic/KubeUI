@@ -2,6 +2,7 @@ using ICSharpCode.SharpZipLib.GZip;
 using ICSharpCode.SharpZipLib.Tar;
 using KubernetesCRDModelGen.Models.helm.toolkit.fluxcd.io;
 using KubernetesCRDModelGen.Models.source.toolkit.fluxcd.io;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Text.Json.Nodes;
 using YamlDotNet.RepresentationModel;
@@ -26,6 +27,8 @@ public partial class HelmReleaseUpgrade
     [Inject]
     private ClusterManager ClusterManager { get; set; }
 
+    private HttpClient httpClient { get; set; }
+
     private IKubernetesObject<V1ObjectMeta> Right { get; set; }
 
     private V2beta1HelmRelease HelmRelease;
@@ -40,6 +43,9 @@ public partial class HelmReleaseUpgrade
 
     protected override async Task OnInitializedAsync()
     {
+        httpClient = new HttpClient();
+        httpClient.DefaultRequestHeaders.UserAgent.TryParseAdd("KubeUI.com");
+
         // Get Helm Release
         HelmRelease = ClusterManager.GetActiveCluster().GetObject<V2beta1HelmRelease>(Namespace, Name);
 
@@ -81,7 +87,7 @@ public partial class HelmReleaseUpgrade
 
     public async Task<List<string>> GetHelmRepositoryChartVersions(string repoUrl, string chartName)
     {
-        using var stream = await new HttpClient().GetStreamAsync(repoUrl.TrimEnd('/') + "/index.yaml");
+        using var stream = await httpClient.GetStreamAsync(repoUrl.TrimEnd('/') + "/index.yaml");
         using var streamReader = new StreamReader(stream);
 
         var yaml = new YamlStream();
@@ -105,7 +111,7 @@ public partial class HelmReleaseUpgrade
 
     private async Task<string> GetHelmRepositoryChartUrl(string repoUrl, string chartName, string version)
     {
-        using var stream = await new HttpClient().GetStreamAsync(repoUrl.TrimEnd('/') + "/index.yaml");
+        using var stream = await httpClient.GetStreamAsync(repoUrl.TrimEnd('/') + "/index.yaml");
         using var streamReader = new StreamReader(stream);
         var yaml = new YamlStream();
         yaml.Load(streamReader);
@@ -135,7 +141,7 @@ public partial class HelmReleaseUpgrade
             throw new Exception("Cant find Chart Url");
         }
 
-        using var stream = await new HttpClient().GetStreamAsync(url);
+        using var stream = await httpClient.GetStreamAsync(url);
         using var gzipStream = new GZipInputStream(stream);
         using (var tarInputStream = new TarInputStream(gzipStream, Encoding.UTF8))
         {
@@ -175,7 +181,7 @@ public partial class HelmReleaseUpgrade
             try
             {
                 values = await GetHelmRepositoryChartValues(HelmRepository.Spec.Url, HelmRelease.Spec.Chart.Spec.Chart, version);
-                clone.Spec.Values = YamlConverter.Deserialize<JsonNode>(values);
+                clone.Spec.Values = Client.Serialization.KubernetesYaml.Deserialize<JsonNode>(values);
             }
             catch (Exception)
             {
