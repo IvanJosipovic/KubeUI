@@ -154,7 +154,7 @@ public static class Utilities
 
     public static string ToYaml(this IKubernetesObject<V1ObjectMeta> obj)
     {
-        return KubeUI.Core.Client.Seralization.KubernetesYaml.Serialize(obj).TrimEnd();
+        return KubeUI.Core.Client.Serialization.KubernetesYaml.Serialize(obj).TrimEnd();
     }
 
     public static string ToJson(this IKubernetesObject<V1ObjectMeta> obj)

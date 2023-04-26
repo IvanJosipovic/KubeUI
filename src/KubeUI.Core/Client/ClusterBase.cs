@@ -256,15 +256,15 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
         while (parser.Accept<YamlDotNet.Core.Events.DocumentStart>(out _))
         {
-            var doc = Seralization.KubernetesYaml.Deserializer.Deserialize(parser);
-            var yaml = Seralization.KubernetesYaml.Serialize(doc);
+            var doc = Serialization.KubernetesYaml.Deserializer.Deserialize(parser);
+            var yaml = Serialization.KubernetesYaml.Serialize(doc);
 
-            var obj = Seralization.KubernetesYaml.Deserialize<KubernetesObject>(yaml);
+            var obj = Serialization.KubernetesYaml.Deserialize<KubernetesObject>(yaml);
             try
             {
                 var type = ModelCache.GetResourceType(obj.ApiGroup(), obj.ApiGroupVersion(), obj.Kind);
 
-                var model = Seralization.KubernetesYaml.Deserializer.Deserialize(yaml, type);
+                var model = Serialization.KubernetesYaml.Deserializer.Deserialize(yaml, type);
 
                 if (model != null)
                 {

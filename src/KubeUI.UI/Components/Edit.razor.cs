@@ -59,7 +59,7 @@ namespace KubeUI.UI.Components
         {
             try
             {
-                ObjectClone = Core.Client.Seralization.KubernetesYaml.Deserialize<TItem>(yaml);
+                ObjectClone = Core.Client.Serialization.KubernetesYaml.Deserialize<TItem>(yaml);
             }
             catch (Exception ex)
             {

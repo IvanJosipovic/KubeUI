@@ -6,7 +6,7 @@ using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 using YamlDotNet.System.Text.Json;
 
-namespace KubeUI.Core.Client.Seralization
+namespace KubeUI.Core.Client.Serialization
 {
     /// <summary>
     /// This is a utility class that helps you load objects from YAML files.
@@ -20,7 +20,8 @@ namespace KubeUI.Core.Client.Seralization
                 .WithTypeConverter(new ByteArrayStringYamlConverter())
                 .WithTypeConverter(new ResourceQuantityYamlConverter())
                 .WithTypeConverter(new SystemTextJsonYamlTypeConverter())
-                .WithTypeInspector(x => new SystemTextJsonTypeInspector(x, true))
+                .WithTypeInspector(x => new SystemTextJsonTypeInspector(x))
+                .WithAttemptingUnquotedStringTypeDeserialization()
                 .IgnoreUnmatchedProperties()
                 .Build();
 
@@ -32,8 +33,10 @@ namespace KubeUI.Core.Client.Seralization
                 .WithTypeConverter(new ByteArrayStringYamlConverter())
                 .WithTypeConverter(new ResourceQuantityYamlConverter())
                 .WithEventEmitter(e => new StringQuotingEmitter(e))
+                .WithEventEmitter(e => new FloatEmitter(e))
                 .WithTypeConverter(new SystemTextJsonYamlTypeConverter())
-                .WithTypeInspector(x => new SystemTextJsonTypeInspector(x, true))
+                .WithTypeInspector(x => new SystemTextJsonTypeInspector(x))
+                .WithTypeInspector(x => new SortedTypeInspector(x))
                 .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull)
                 .BuildValueSerializer();
 
