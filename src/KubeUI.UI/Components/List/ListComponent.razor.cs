@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace KubeUI.UI.Components.List;
 
 [CascadingTypeParameter(nameof(TItem))]
@@ -242,7 +244,11 @@ public partial class ListComponent<TItem> : IDisposable where TItem : class, IKu
         {
             foreach (var item in SelectedItems)
             {
-                await ClusterManager.GetActiveCluster().Delete(item);
+                try
+                {
+                    await ClusterManager.GetActiveCluster().Delete(item);
+                }
+                catch (JsonException ex){}
             }
         }
     }
