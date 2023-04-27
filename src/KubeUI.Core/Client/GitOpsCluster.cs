@@ -13,7 +13,6 @@ public class GitOpsCluster : ClusterBase, ICluster
     public GitOpsCluster(ILogger<GitOpsCluster> logger, ICRDGenerator cRDGenerator) : base(logger, cRDGenerator)
     {
         Logger = logger;
-        this.IsConnected = true;
         OnChange += Cluster_OnChange;
     }
 
@@ -56,7 +55,10 @@ public class GitOpsCluster : ClusterBase, ICluster
 
     public Task<V1APIGroupList> GetAPIs()
     {
-        throw new NotImplementedException();
+        return Task.FromResult(new V1APIGroupList()
+        {
+            Groups = new List<V1APIGroup>() { }
+        });
     }
 
     public Task<VersionInfo> GetVersion()
@@ -87,6 +89,20 @@ public class GitOpsCluster : ClusterBase, ICluster
         {
             base.NotifyStateChanged(WatchEventType.Added, GroupApiVersionKind.From(item.GetType()), item);
         }
+
+        return Task.CompletedTask;
+    }
+
+    public Task<PodMetrics> GetPodMetrics(string @namespace, string name)
+    {
+        return Task.FromResult(new PodMetrics());
+    }
+
+    public Task Connect()
+    {
+        APIGroups = GetAPIs().Result;
+
+        IsConnected = true;
 
         return Task.CompletedTask;
     }

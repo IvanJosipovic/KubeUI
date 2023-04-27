@@ -16,6 +16,10 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
     public bool IsConnected { get; set; }
 
+    public bool PodMetrics => APIGroups.Groups.Any(g => g.Name == "metrics.k8s.io");
+
+    public V1APIGroupList APIGroups { get; set; }
+
     private ICRDGenerator CRDGenerator { get; set; }
 
     protected ClusterBase(ILogger<ClusterBase> logger, ICRDGenerator cRDGenerator)

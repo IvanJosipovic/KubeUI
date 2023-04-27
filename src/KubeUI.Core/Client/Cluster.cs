@@ -1,6 +1,7 @@
 ﻿using k8s.KubeConfigModels;
 using KubernetesCRDModelGen;
 using System.Collections.Concurrent;
+using System.Text.Json;
 
 namespace KubeUI.Core.Client;
 
@@ -177,5 +178,18 @@ public class Cluster : ClusterBase, ICluster
                 await client.CreateNamespacedAsync<T>(item, item.Namespace());
             }
         }
+    }
+
+    public async Task<PodMetrics> GetPodMetrics(string @namespace, string name)
+    {
+        var customObject = (JsonElement)await ((Kubernetes)Client).CustomObjects.GetNamespacedCustomObjectAsync("metrics.k8s.io", "v1beta1", @namespace, "pods", name).ConfigureAwait(false);
+
+        return customObject.Deserialize<PodMetrics>();
+    }
+
+    public async Task Connect()
+    {
+        APIGroups = await GetAPIs();
+        IsConnected = true;
     }
 }

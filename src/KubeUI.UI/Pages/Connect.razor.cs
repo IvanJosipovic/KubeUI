@@ -11,42 +11,49 @@ public partial class Connect : IDisposable
     [Inject]
     private NavigationManager NavigationManager { get; set; }
 
-    private string? ErrorMessage;
+    private string? Status;
 
-    private Timer? Timer;
-
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        await ConnectToCluster();
+        ClusterManager.OnChange += ClusterManager_OnChange;
+    }
+
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await ConnectToCluster();
+        }
+    }
+
+    private void ClusterManager_OnChange(ClusterManagerEvents obj)
+    {
+        if (obj == ClusterManagerEvents.ActiveClusterChanged)
+        {
+            Status = null;
+            InvokeAsync(ConnectToCluster);
+        }
     }
 
     private async Task ConnectToCluster()
     {
-        ErrorMessage = null;
-        await InvokeAsync(StateHasChanged);
-
         try
         {
-            var ver = await ClusterManager.GetActiveCluster().GetVersion();
-            ClusterManager.GetActiveCluster().IsConnected = true;
-            await InvokeAsync(StateHasChanged);
+            await ClusterManager.GetActiveCluster().Connect();
+
+            StateHasChanged();
             NavigationManager.NavigateTo("/");
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Failed to connect to cluster");
-            ErrorMessage = ex.ToString();
-            await InvokeAsync(StateHasChanged);
-
-            if (Timer == null)
-            {
-                Timer = new Timer(async (_) => await ConnectToCluster(), null, 5000, 5000);
-            }
+            Status = ex.Message;
+            StateHasChanged();
         }
     }
 
     public void Dispose()
     {
-        Timer?.Dispose();
+        ClusterManager.OnChange -= ClusterManager_OnChange;
     }
 }

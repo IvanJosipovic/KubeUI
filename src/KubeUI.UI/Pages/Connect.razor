@@ -1,11 +1,12 @@
 ﻿@page "/Connect"
 
-@if (string.IsNullOrEmpty(ErrorMessage))
+@if (string.IsNullOrEmpty(Status))
 {
     <MudText Typo="Typo.h5" GutterBottom="true">Connecting...</MudText>
 }
 else
 {
     <MudText Typo="Typo.h5" GutterBottom="true">Failed</MudText>
-    <MudText Typo="Typo.body1" GutterBottom="true" Color="Color.Error">@ErrorMessage</MudText>
+    <MudText Typo="Typo.body1" GutterBottom="true" Color="Color.Error">@Status</MudText>
+    <MudButton OnClick="@ConnectToCluster" StartIcon="@Icons.Material.Filled.Refresh" Color="Color.Warning" Variant="Variant.Filled">Reconnect</MudButton>
 }

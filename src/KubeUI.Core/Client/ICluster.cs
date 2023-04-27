@@ -6,7 +6,9 @@ public interface ICluster
 {
     string Name { get; set; }
 
-    bool IsConnected { get; set; }
+    bool IsConnected { get; }
+
+    bool PodMetrics { get; }
 
     IEnumerable<T> GetObjects<T>(string version, string kind, string group = "") where T : class, IKubernetesObject<V1ObjectMeta>, new();
 
@@ -51,4 +53,8 @@ public interface ICluster
     Task ImportFolder(string path);
 
     Task ImportZip(Stream stream);
+
+    Task<PodMetrics> GetPodMetrics(string @namespace, string name);
+
+    Task Connect();
 }
