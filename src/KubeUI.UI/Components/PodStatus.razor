@@ -1,4 +1,5 @@
-﻿@if (Pod.Status != null)
+﻿@using k8s.Autorest;
+@if (Pod.Status != null)
 {
     foreach (var status in Pod.Status.ContainerStatuses.EnsureNotEmpty())
     {
@@ -24,7 +25,11 @@
     {
         if (ClusterManager.GetActiveCluster().PodMetrics)
         {
-            podMetrics = await ClusterManager.GetActiveCluster().GetPodMetrics(Pod.Namespace(), Pod.Name());
+            try
+            {
+                podMetrics = await ClusterManager.GetActiveCluster().GetPodMetrics(Pod.Namespace(), Pod.Name());
+            }
+            catch (HttpOperationException){}
         }
     }
 
@@ -52,56 +57,107 @@
             }
         </ChildContent>
         <TooltipContent>
-            <MudText Typo="Typo.body2">@context.Status.Name</MudText>
+        <div style="text-align: left">
+            <MudText Typo="Typo.body2" Style="font-weight: bold" Inline="true">Name: </MudText>
+            <MudText Typo="Typo.body2" Inline="true">@context.Status.Name</MudText>
             @if (context.Status.State.Running != null && context.Status.State.Running.StartedAt.HasValue)
             {
-                <MudText Typo="Typo.body2">Started at: @context.Status.State.Running.StartedAt.Value.ToLocalTime()</MudText>
+                <p />
+                <MudText Typo="Typo.body2" Style="font-weight: bold" Inline="true">Started at: </MudText>
+                <MudText Typo="Typo.body2" Inline="true">@context.Status.State.Running.StartedAt.Value.ToLocalTime()</MudText>
+
                 @if(context.Metrics != null)
                 {
-                    <MudText Typo="Typo.body2">CPU: @(context.Metrics.Containers.FirstOrDefault(x => x.Name == context.Status.Name)?.Usage["cpu"].ToDecimal() * 10000)m</MudText>
-                    <MudText Typo="Typo.body2">Memory: @(context.Metrics.Containers.FirstOrDefault(x => x.Name == context.Status.Name)?.Usage["memory"].ToInt32() / 1000000)Mi</MudText>
+                    <p />
+                    <MudText Typo="Typo.body2" Style="font-weight: bold" Inline="true">CPU: </MudText>
+                    <MudText Typo="Typo.body2" Inline="true">@(ConvertCPU(context.Metrics, context.Status.Name))</MudText>
+                    <p />
+                    <MudText Typo="Typo.body2" Style="font-weight: bold" Inline="true">Memory: </MudText>
+                    <MudText Typo="Typo.body2" Inline="true">@(ConvertMemory(context.Metrics, context.Status.Name))</MudText>
                 }
             }
             @if (context.Status.State.Waiting != null)
             {
-                <MudText Typo="Typo.body2">Reason: @context.Status.State.Waiting.Reason</MudText>
+                <p/>
+                <MudText Typo="Typo.body2" Style="font-weight: bold" Inline="true">Reason: </MudText>
+                <MudText Typo="Typo.body2" Inline="true">@context.Status.State.Waiting.Reason</MudText>
+
                 @if (!string.IsNullOrEmpty(context.Status.State.Waiting.Message))
                 {
-                    <MudText Typo="Typo.body2">Message: @context.Status.State.Waiting.Message</MudText>
+                    <p/>
+                    <MudText Typo="Typo.body2" Style="font-weight: bold" Inline="true">Message: </MudText>
+                    <MudText Typo="Typo.body2" Inline="true">@context.Status.State.Waiting.Message</MudText>
                 }
                 @if (context.Status.State.Waiting.Reason == "CrashLoopBackOff")
                 {
-                    <MudText Typo="Typo.body2">Last State Reason: @context.Status.LastState.Terminated.Reason</MudText>
-                    <MudText Typo="Typo.body2">Last State Exit Code: @context.Status.LastState.Terminated.ExitCode</MudText>
+                    <p/>
+                    <MudText Typo="Typo.body2" Style="font-weight: bold" Inline="true">Last State Reason: </MudText>
+                    <MudText Typo="Typo.body2" Inline="true">@context.Status.LastState.Terminated.Reason</MudText>
+                    <p/>
+                    <MudText Typo="Typo.body2" Style="font-weight: bold" Inline="true">Last State Exit Code: </MudText>
+                    <MudText Typo="Typo.body2" Inline="true">@context.Status.LastState.Terminated.ExitCode</MudText>
+
                     @if (!string.IsNullOrEmpty(context.Status.LastState.Terminated.Message))
                     {
-                        <MudText Typo="Typo.body2">Last State Message: @context.Status.LastState.Terminated.Message</MudText>
+                        <p/>
+                        <MudText Typo="Typo.body2" Style="font-weight: bold" Inline="true">Last State Message: </MudText>
+                        <MudText Typo="Typo.body2" Inline="true">@context.Status.LastState.Terminated.Message</MudText>
                     }
                 }
             }
             @if (context.Status.State.Terminated != null)
             {
-                <MudText Typo="Typo.body2">Reason: @context.Status.State.Terminated.Reason</MudText>
+                <p/>
+                <MudText Typo="Typo.body2" Style="font-weight: bold" Inline="true">Reason: </MudText>
+                <MudText Typo="Typo.body2" Inline="true">@context.Status.State.Terminated.Reason</MudText>
+
                 @if (!string.IsNullOrEmpty(context.Status.State.Terminated.Message))
                 {
-                    <MudText Typo="Typo.body2">Message: @context.Status.State.Terminated.Message</MudText>
-                    <MudText Typo="Typo.body2">Exit Code: @context.Status.State.Terminated.ExitCode</MudText>
+                    <p/>
+                    <MudText Typo="Typo.body2" Style="font-weight: bold" Inline="true">Message: </MudText>
+                    <MudText Typo="Typo.body2" Inline="true">@context.Status.State.Terminated.Message</MudText>
+                    <p/>
+                    <MudText Typo="Typo.body2" Style="font-weight: bold" Inline="true">Exit Code: </MudText>
+                    <MudText Typo="Typo.body2" Inline="true">@context.Status.State.Terminated.ExitCode</MudText>
                 }
                 @if (context.Status.State.Terminated.StartedAt.HasValue)
                 {
-                    <MudText Typo="Typo.body2">Started at: @context.Status.State.Terminated.StartedAt.Value.ToLocalTime()</MudText>
+                    <p/>
+                    <MudText Typo="Typo.body2" Style="font-weight: bold" Inline="true">Started at: </MudText>
+                    <MudText Typo="Typo.body2" Inline="true">@context.Status.State.Terminated.StartedAt.Value.ToLocalTime()</MudText>
                 }
                 @if (context.Status.State.Terminated.FinishedAt.HasValue)
                 {
-                    <MudText Typo="Typo.body2">Finished at: @context.Status.State.Terminated.FinishedAt.Value.ToLocalTime()</MudText>
+                    <p/>
+                    <MudText Typo="Typo.body2" Style="font-weight: bold" Inline="true">Finished at: </MudText>
+                    <MudText Typo="Typo.body2" Inline="true">@context.Status.State.Terminated.FinishedAt.Value.ToLocalTime()</MudText>
                 }
             }
+        </div>
         </TooltipContent>
-    </MudTooltip>;
+    </MudTooltip>
+    ;
 
     public class Combine
     {
         public V1ContainerStatus Status { get; set; }
         public k8s.Models.PodMetrics Metrics { get; set; }
+    }
+
+    static string ConvertCPU(PodMetrics metrics, string podName)
+    {
+        var cpu = (int)(metrics.Containers.FirstOrDefault(x => x.Name == podName)?.Usage["cpu"].ToDecimal() * 1000);
+
+        if ((int)cpu == 0)
+        {
+            cpu = 1;
+        }
+
+        return cpu + "m";
+    }
+
+    static string ConvertMemory(PodMetrics metrics, string podName)
+    {
+        return (metrics.Containers.FirstOrDefault(x => x.Name == podName)?.Usage["memory"].ToInt64() / 1048576) + "Mi";
     }
 }
