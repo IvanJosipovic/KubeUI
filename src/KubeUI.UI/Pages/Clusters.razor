@@ -1,6 +1,6 @@
 ﻿@page "/Clusters"
 
-<InputFile id="fileInput" OnChange="ImportConfig" hidden multiple />
+<InputFile id="clusterInput" OnChange="ImportConfig" hidden multiple />
 
 <ResizePanel Context="resize" Offset="85">
 
@@ -30,7 +30,7 @@
                         Title="Import Config"
                         Color="Color.Primary"
                         Icon="@Icons.Material.Filled.CloudUpload"
-                        for="fileInput">
+                           for="clusterInput">
             </MudIconButton>
             &nbsp;
         </ToolBarContent>
