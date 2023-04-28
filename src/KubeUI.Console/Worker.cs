@@ -1,6 +1,7 @@
 using k8s;
 using k8s.Models;
 using KubeUI.Core.Client;
+using KubeUI.Core.Client.Informer;
 
 namespace KubeUI.Console
 {

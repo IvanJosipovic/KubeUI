@@ -3,7 +3,7 @@
 
 using Microsoft.Extensions.Internal;
 
-namespace KubeUI.Core.Client;
+namespace KubeUI.Core.Client.Informer;
 
 /// <summary>
 /// <para>

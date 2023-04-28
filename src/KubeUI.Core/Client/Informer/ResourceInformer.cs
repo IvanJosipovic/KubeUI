@@ -6,7 +6,7 @@ using System.Net.Sockets;
 
 #pragma warning disable CA2213 // Disposable fields should be disposed
 
-namespace KubeUI.Core.Client;
+namespace KubeUI.Core.Client.Informer;
 
 /// <summary>
 /// Class ResourceInformer.
@@ -264,7 +264,7 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
             resourceVersion: _lastResourceVersion,
             cancellationToken: cancellationToken);
 
-        DateTime lastEventUtc = DateTime.UtcNow;
+        var lastEventUtc = DateTime.UtcNow;
 
         var watcher = watchWithHttpMessage.Watch<TResource, object>(
             (watchEventType, item) =>

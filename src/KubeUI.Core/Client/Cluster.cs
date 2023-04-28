@@ -1,5 +1,6 @@
 ﻿using k8s.KubeConfigModels;
 using KubernetesCRDModelGen;
+using KubeUI.Core.Client.Informer;
 using System.Collections.Concurrent;
 using System.Text.Json;
 

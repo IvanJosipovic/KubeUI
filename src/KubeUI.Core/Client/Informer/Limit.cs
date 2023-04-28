@@ -3,7 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace KubeUI.Core.Client;
+namespace KubeUI.Core.Client.Informer;
 
 /// <summary>
 /// Struct Limit defines the maximum frequency of some events.

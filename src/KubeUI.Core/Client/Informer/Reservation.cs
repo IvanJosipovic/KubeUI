@@ -5,7 +5,7 @@ using Microsoft.Extensions.Internal;
 
 #pragma warning disable CS0169 // The field 'Reservation.limit' is never used
 
-namespace KubeUI.Core.Client;
+namespace KubeUI.Core.Client.Informer;
 
 /// <summary>
 /// Class Reservation holds information about events that are permitted by a Limiter to happen after a delay.
