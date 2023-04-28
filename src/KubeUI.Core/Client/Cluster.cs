@@ -8,13 +8,15 @@ namespace KubeUI.Core.Client;
 
 public class Cluster : ClusterBase, ICluster
 {
-    private ILoggerFactory loggerFactory;
+    private readonly ILoggerFactory loggerFactory;
 
     public string KubeConfigPath { get; set; }
 
     public K8SConfiguration KubeConfig { get; set; }
 
     public IKubernetes? Client;
+
+    private PodMetricsCache PodMetricsCache { get; set; }
 
     private KubernetesClientConfiguration GetClientConfiguration()
     {
@@ -188,16 +190,24 @@ public class Cluster : ClusterBase, ICluster
         }
     }
 
-    public async Task<PodMetrics> GetPodMetrics(string @namespace, string name)
+    public PodMetrics? GetPodMetrics(string @namespace, string name)
     {
-        var customObject = (JsonElement)await ((Kubernetes)Client).CustomObjects.GetNamespacedCustomObjectAsync("metrics.k8s.io", "v1beta1", @namespace, "pods", name).ConfigureAwait(false);
+        if (PodMetricsCache != null && PodMetricsCache.PodMetricsList != null)
+        {
+            return PodMetricsCache.PodMetricsList.Items.FirstOrDefault(x => x.Namespace() == @namespace && x.Name() == name);
+        }
 
-        return customObject.Deserialize<PodMetrics>();
+        return null;
     }
 
     public async Task Connect()
     {
         APIGroups = await GetAPIs();
         IsConnected = true;
+
+        if (PodMetrics)
+        {
+            PodMetricsCache = new PodMetricsCache(this);
+        }
     }
 }

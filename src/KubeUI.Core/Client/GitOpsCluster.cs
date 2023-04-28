@@ -93,9 +93,9 @@ public class GitOpsCluster : ClusterBase, ICluster
         return Task.CompletedTask;
     }
 
-    public Task<PodMetrics> GetPodMetrics(string @namespace, string name)
+    public PodMetrics? GetPodMetrics(string @namespace, string name)
     {
-        return Task.FromResult(new PodMetrics());
+        return null;
     }
 
     public Task Connect()

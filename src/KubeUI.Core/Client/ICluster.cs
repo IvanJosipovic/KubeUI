@@ -54,7 +54,7 @@ public interface ICluster
 
     Task ImportZip(Stream stream);
 
-    Task<PodMetrics> GetPodMetrics(string @namespace, string name);
+    PodMetrics? GetPodMetrics(string @namespace, string name);
 
     Task Connect();
 }

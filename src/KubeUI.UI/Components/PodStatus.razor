@@ -1,14 +1,16 @@
 ﻿@using k8s.Autorest;
 @if (Pod.Status != null)
 {
+    var metrics = ClusterManager.GetActiveCluster().GetPodMetrics(Pod.Namespace(), Pod.Name());
     foreach (var status in Pod.Status.ContainerStatuses.EnsureNotEmpty())
     {
-        @containerStatus.Invoke(new Combine() { Metrics = podMetrics, Status = status});
+        @containerStatus.Invoke(new Combine() { Metrics = metrics, Status = status})
+        ;
     }
 
     foreach (var status in Pod.Status.InitContainerStatuses.EnsureNotEmpty())
     {
-        @containerStatus.Invoke(new Combine() { Metrics = podMetrics, Status = status});
+        @containerStatus.Invoke(new Combine() { Metrics = metrics, Status = status});
     }
 }
 
@@ -19,18 +21,8 @@
     [Parameter]
     public V1Pod Pod { get; set; }
 
-    private k8s.Models.PodMetrics podMetrics;
-
     protected override async Task OnInitializedAsync()
     {
-        if (ClusterManager.GetActiveCluster().PodMetrics)
-        {
-            try
-            {
-                podMetrics = await ClusterManager.GetActiveCluster().GetPodMetrics(Pod.Namespace(), Pod.Name());
-            }
-            catch (HttpOperationException){}
-        }
     }
 
     RenderFragment<Combine> containerStatus = context =>
