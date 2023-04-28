@@ -10,7 +10,7 @@ namespace KubeUI.Core.Client;
 
 public abstract class ClusterBase : INotifyPropertyChanged
 {
-    private ILogger<ClusterBase> Logger { get; set; }
+    protected ILogger<ClusterBase> Logger { get; set; }
 
     public string Name { get; set; }
 

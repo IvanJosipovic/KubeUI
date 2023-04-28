@@ -122,13 +122,20 @@ public class Cluster : ClusterBase, ICluster
 
         using var client = new GenericClient(Client, api.Group, api.ApiVersion, api.PluralName);
 
-        if (string.IsNullOrEmpty(item.Namespace()))
+        try
         {
-            await client.DeleteAsync<T>(item.Name());
+            if (string.IsNullOrEmpty(item.Namespace()))
+            {
+                await client.DeleteAsync<T>(item.Name());
+            }
+            else
+            {
+                await client.DeleteNamespacedAsync<T>(item.Namespace(), item.Name());
+            }
         }
-        else
+        catch (JsonException ex)
         {
-            await client.DeleteNamespacedAsync<T>(item.Namespace(), item.Name());
+            Logger.LogError(ex, "Failed to delete");
         }
     }
 

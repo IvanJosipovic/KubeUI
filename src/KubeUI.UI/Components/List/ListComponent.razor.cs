@@ -244,11 +244,7 @@ public partial class ListComponent<TItem> : IDisposable where TItem : class, IKu
         {
             foreach (var item in SelectedItems)
             {
-                try
-                {
-                    await ClusterManager.GetActiveCluster().Delete(item);
-                }
-                catch (JsonException ex){}
+                await ClusterManager.GetActiveCluster().Delete(item);
             }
         }
     }
