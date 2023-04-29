@@ -5,16 +5,50 @@
                   TItem="TItem"
                   IsInSideMenu="IsInSideMenu">
     <MudTabs Elevation="4" Rounded="true" Centered="true" Color="@Color.Primary">
-        <MudTabPanel Text="Details" Icon="@Icons.Material.Filled.AccountTree">
-            <KubeUI.UI.Components.Dynamic.UI TItem="TItem" Item="context" />
-        </MudTabPanel>
         <MudTabPanel Text="Overview" Icon="@Icons.Material.Filled.Analytics">
-            Created: @context.Metadata.CreationTimestamp
-            <br />
+            <OverviewSection>
+                <OverviewSectionItem Title="Created" Value="@(context.Metadata.CreationTimestamp.ToString())" />
+                <OverviewSectionItem Title="Name" Value="@(context.Name())" />
+                @if (!string.IsNullOrEmpty(context.Namespace()))
+                {
+                    <OverviewSectionItem Title="Namespace" Value="@(context.Namespace())" />
+                }
+                @if (context.Metadata.Labels != null && context.Metadata.Labels.Any())
+                {
+                    <OverviewSectionItem Title="Labels">
+                        @foreach (var item in context.Metadata.Labels)
+                        {
+                            <MudChip>@(item.Key)=@(item.Value.TrimAfter(40))</MudChip><br />
+                        }
+                    </OverviewSectionItem>
+                }
+                @if (context.Metadata.Annotations != null && context.Metadata.Annotations.Any())
+                {
+                    <OverviewSectionItem Title="Annotations">
+                        @foreach (var item in context.Metadata.Annotations)
+                        {
+                            <MudChip>@(item.Key)=@(item.Value.TrimAfter(40))</MudChip><br />
+                        }
+                    </OverviewSectionItem>
+                }
+                @if (context.Metadata.OwnerReferences != null && context.Metadata.OwnerReferences.Any())
+                {
+                    <OverviewSectionItem Title="Controlled By">
+                        @foreach (var item in context.Metadata.OwnerReferences.Where(x => x.Controller.GetValueOrDefault()))
+                        {
+                            @(item.Kind)
+                        }
+                    </OverviewSectionItem>
+                }
+
+            </OverviewSection>
             @if (Overview != null)
             {
                 @Overview(context);
             }
+        </MudTabPanel>
+        <MudTabPanel Text="Details" Icon="@Icons.Material.Filled.AccountTree">
+            <KubeUI.UI.Components.Dynamic.UI TItem="TItem" Item="context" />
         </MudTabPanel>
         <MudTabPanel Text="Edit" Icon="@Icons.Material.Filled.Edit">
             <ResizePanel Context="resize" Offset="20" SetHeigh="true">

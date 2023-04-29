@@ -1,0 +1,161 @@
+﻿@page "/details/v1/pod"
+
+<DetailsGeneric Namespace="@Namespace"
+                  Name="@Name"
+                  TItem="V1Pod"
+                  IsInSideMenu="IsInSideMenu">
+    <Overview>
+        <OverviewSection>
+            <OverviewSectionItem Title="Status">
+                @{
+                    var color = Color.Success;
+
+                    if (context.Status?.Phase == "Failed")
+                    {
+                        color = Color.Error;
+                    }
+                    else if (context.Status?.Phase == "Pending")
+                    {
+                        color = Color.Warning;
+                    }
+                }
+                <MudText Color="color" Typo="Typo.inherit">@context.Status?.Phase</MudText>
+            </OverviewSectionItem>
+            <OverviewSectionItem Title="Node">
+                @context.Spec.NodeName
+            </OverviewSectionItem>
+            <OverviewSectionItem Title="Pod IP" Value="@context.Status.PodIP" />
+        </OverviewSection>
+        @if (context.Spec.InitContainers != null && context.Spec.InitContainers.Count > 0)
+        {
+            <OverviewSection Title="Init Containers">
+                @foreach (var container in context.Spec.InitContainers)
+                {
+                    @containerFragment((container, context.Status.InitContainerStatuses))
+                }
+            </OverviewSection>
+        }
+
+        <OverviewSection Title="Containers">
+            @foreach (var container in context.Spec.Containers)
+            {
+                @containerFragment((container, context.Status.ContainerStatuses))
+            }
+        </OverviewSection>
+
+    </Overview>
+    <Tabs>
+        @if (ClusterManager.GetActiveCluster() is Cluster)
+        {
+            <MudTabPanel Text="Logs" Icon="@Icons.Material.Filled.Subject">
+                <MudTabs Elevation="4" Rounded="true" AlwaysShowScrollButtons="true" Color="@Color.Success" Class="mt-4">
+                    @foreach (var cont in context.Spec.InitContainers.EnsureNotEmpty())
+                    {
+                        <MudTabPanel Text="@cont.Name">
+                            <ResizePanel Context="resize" Offset="20" SetHeigh="true">
+                                <PodLogs Name="@Name" Namespace="@Namespace" Container="@cont.Name" Lines="@LogLineCount" Previous="@PreviousLog" />
+                            </ResizePanel>
+                        </MudTabPanel>
+                    }
+                    @foreach (var cont in context.Spec.Containers)
+                    {
+                        <MudTabPanel Text="@cont.Name">
+                            <ResizePanel Context="resize" Offset="20" SetHeigh="true">
+                                <PodLogs Name="@Name" Namespace="@Namespace" Container="@cont.Name" Lines="@LogLineCount" Previous="@PreviousLog" />
+                            </ResizePanel>
+                        </MudTabPanel>
+                    }
+                </MudTabs>
+            </MudTabPanel>
+            <MudTabPanel Text="Console" Icon="@Icons.Material.Filled.Computer">
+                <MudTabs Elevation="4" Rounded="true" AlwaysShowScrollButtons="true" Color="@Color.Success" Class="mt-4">
+                    @foreach (var cont in context.Spec.InitContainers.EnsureNotEmpty().OrderBy(x => x.Name))
+                    {
+                        <MudTabPanel Text="@cont.Name">
+                            <ResizePanel Context="resize" Offset="20" SetHeigh="true">
+                                <PodConsole Name="@Name" Namespace="@Namespace" Container="@cont.Name" />
+                            </ResizePanel>
+                        </MudTabPanel>
+                    }
+                    @foreach (var cont in context.Spec.Containers.OrderBy(x => x.Name))
+                    {
+                        <MudTabPanel Text="@cont.Name">
+                            <ResizePanel Context="resize" Offset="20" SetHeigh="true">
+                                <PodConsole Name="@Name" Namespace="@Namespace" Container="@cont.Name" />
+                            </ResizePanel>
+                        </MudTabPanel>
+                    }
+                </MudTabs>
+            </MudTabPanel>
+        }
+    </Tabs>
+</DetailsGeneric>
+
+@code {
+        [Parameter]
+        [SupplyParameterFromQuery]
+        public string Namespace { get; set; }
+
+        [Parameter]
+        [SupplyParameterFromQuery]
+        public string Name { get; set; }
+
+        [Parameter]
+        public bool IsInSideMenu { get; set; }
+
+        [Inject]
+        private ClusterManager ClusterManager { get; set; }
+
+    private int LogLineCount { get; set; } = 100;
+
+    private bool PreviousLog { get; set; } = false;
+
+    private RenderFragment<(V1Container, IList<V1ContainerStatus>)> containerFragment = context =>
+        @<DummyComponent>
+            <OverviewSectionItem Title="Container" Value="@(context.Item1.Name)" />
+
+            @{
+                var status = context.Item2.FirstOrDefault(x => x.Name == context.Item1.Name);
+            }
+
+            @if (status != null)
+            {
+                <OverviewSectionItem Title="Status">
+                    @if (status.State.Running != null)
+                    {
+                        <MudText Typo="Typo.inherit" Color="Color.Success">Running, </MudText>
+
+                        @if (status.Ready)
+                        {
+                            <MudText Typo="Typo.inherit" Color="Color.Success">Ready</MudText>
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.inherit" Color="Color.Warning">Not Ready</MudText>
+                        }
+                    }
+                    else if (status.State.Waiting != null)
+                    {
+                        <MudText Typo="Typo.inherit" Color="Color.Success">Waiting</MudText>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.inherit" Color="Color.Warning">Terminated</MudText>
+                    }
+
+                </OverviewSectionItem>
+
+                @if (status.LastState != null && status.LastState.Terminated != null)
+                {
+                    <OverviewSectionItem Title="Last Status">
+                        <MudText Typo="Typo.inherit">Terminated</MudText><br \>
+                        <MudText Typo="Typo.inherit">Reason: @(status.LastState.Terminated.Reason)</MudText><br \>
+                        <MudText Typo="Typo.inherit">Started at: @(status.LastState.Terminated.StartedAt)</MudText><br \>
+                        <MudText Typo="Typo.inherit">Finished at: @(status.LastState.Terminated.FinishedAt)</MudText>
+                    </OverviewSectionItem>
+                }
+            }
+            <OverviewSectionItem Title="Image" Value="@(context.Item1.Image)" />
+        </DummyComponent>
+        ;
+}

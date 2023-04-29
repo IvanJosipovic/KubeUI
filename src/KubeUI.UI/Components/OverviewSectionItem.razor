@@ -1,0 +1,29 @@
+﻿<tr>
+    <td style="width:30%">@Title</td>
+
+    <td>
+        <div>
+            @if (string.IsNullOrEmpty(Value))
+            {
+                @ChildContent
+            }
+            else
+            {
+                @Value
+            }
+        </div>
+    </td>
+
+
+</tr>
+
+@code {
+    [Parameter]
+    public string Title { get; set; }
+
+    [Parameter]
+    public string Value { get; set; }
+
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+}

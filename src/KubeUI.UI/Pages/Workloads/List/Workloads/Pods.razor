@@ -12,8 +12,7 @@
             <DisplayContent>
                 @if (context.Item1.Metadata.OwnerReferences != null && context.Item1.Metadata.OwnerReferences.Any())
                 {
-                    <MudLink Typo="Typo.inherit" @onclick="@(x => context.Item2.DisplayDetails(context.Item1.Metadata.NamespaceProperty, context.Item1.Metadata.OwnerReferences[0].ApiVersion, context.Item1.Metadata.OwnerReferences[0].Kind, context.Item1.Metadata.OwnerReferences[0].Name))"
-                    >@context.Item1.Metadata.OwnerReferences[0].Kind</MudLink>
+                    <MudLink Typo="Typo.inherit" @onclick="@(x => context.Item2.DisplayDetails(context.Item1.Metadata.NamespaceProperty, context.Item1.Metadata.OwnerReferences[0].ApiVersion, context.Item1.Metadata.OwnerReferences[0].Kind, context.Item1.Metadata.OwnerReferences[0].Name))">@context.Item1.Metadata.OwnerReferences[0].Kind</MudLink>
                 }
             </DisplayContent>
         </ColumnComponent>

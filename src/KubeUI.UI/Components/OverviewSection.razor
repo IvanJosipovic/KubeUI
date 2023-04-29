@@ -1,0 +1,21 @@
+﻿<MudSimpleTable Dense="true" Square="true">
+    @if (!string.IsNullOrEmpty(Title))
+    {
+        <thead>
+            <tr>
+                <th colspan="2" style="background-color: var(--mud-palette-primary-lighten); color: #ffff;">@Title</th>
+            </tr>
+        </thead>
+    }
+    <tbody>
+        @ChildContent
+    </tbody>
+</MudSimpleTable>
+
+@code {
+    [Parameter]
+    public string Title { get; set; }
+
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+}
