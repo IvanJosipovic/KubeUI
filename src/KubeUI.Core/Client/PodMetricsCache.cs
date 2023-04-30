@@ -2,15 +2,18 @@
 {
     public class PodMetricsCache
     {
-        private ICluster Cluster { get; set; }
+        private ILogger<PodMetricsCache> Logger { get; }
+
+        private ICluster Cluster { get; }
 
         public PodMetricsList PodMetricsList { get; private set; }
 
-        private System.Timers.Timer Timer { get; set; }
+        private System.Timers.Timer Timer { get; }
 
-        public PodMetricsCache(ICluster cluster)
+        public PodMetricsCache(ICluster cluster, ILogger<PodMetricsCache> logger)
         {
-            this.Cluster = cluster;
+            Logger = logger;
+            Cluster = cluster;
             Timer = new System.Timers.Timer(TimeSpan.FromMinutes(1));
             Timer.Enabled = true;
             Timer.AutoReset = true;
@@ -21,7 +24,14 @@
 
         private async Task Timer_Elapsed()
         {
-            PodMetricsList = await ((Cluster)Cluster).Client.GetKubernetesPodsMetricsAsync();
+            try
+            {
+                PodMetricsList = await ((Cluster)Cluster).Client.GetKubernetesPodsMetricsAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Error Getting PodMetrics");
+            }
         }
     }
 }

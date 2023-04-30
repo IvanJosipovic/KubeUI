@@ -207,7 +207,7 @@ public class Cluster : ClusterBase, ICluster
 
         if (PodMetrics)
         {
-            PodMetricsCache = new PodMetricsCache(this);
+            PodMetricsCache = new PodMetricsCache(this, loggerFactory.CreateLogger<PodMetricsCache>());
         }
     }
 }
