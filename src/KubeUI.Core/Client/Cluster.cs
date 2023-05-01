@@ -94,10 +94,10 @@ public class Cluster : ClusterBase, ICluster
                     switch (x)
                     {
                         case WatchEventType.Added:
-                            AddInternalObject(y);
+                            AddOrUpdateInternalObject(y);
                             break;
                         case WatchEventType.Modified:
-                            UpdateInternalObject(y);
+                            AddOrUpdateInternalObject(y);
                             break;
                         case WatchEventType.Deleted:
                             DeleteInternalObject(y);

@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.IO.Compression;
 using System.Reflection;
 using YamlDotNet.Core;
+using YamlDotNet.Core.Events;
 
 namespace KubeUI.Core.Client;
 
@@ -40,7 +41,7 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
     protected void NotifyStateChanged(WatchEventType eventType, GroupApiVersionKind type, IKubernetesObject<V1ObjectMeta> item) => OnChange?.Invoke(eventType, type, item);
 
-    protected void AddInternalObject(IKubernetesObject<V1ObjectMeta> @object)
+    protected void AddOrUpdateInternalObject(IKubernetesObject<V1ObjectMeta> @object)
     {
         var key = @object.ApiVersion + "/" + @object.Kind;
 
@@ -49,23 +50,20 @@ public abstract class ClusterBase : INotifyPropertyChanged
             Objects[key] = new();
         }
 
-        Objects[key][$"{@object.Namespace()}|{@object.Name()}"] = @object;
+        var itemKey = $"{@object.Namespace()}|{@object.Name()}";
 
-        NotifyStateChanged(WatchEventType.Added, GroupApiVersionKind.From(@object.GetType()), @object);
-    }
+        var exists = Objects[key].ContainsKey(itemKey);
 
-    protected void UpdateInternalObject(IKubernetesObject<V1ObjectMeta> @object)
-    {
-        var key = @object.ApiVersion + "/" + @object.Kind;
+        Objects[key][itemKey] = @object;
 
-        if (!Objects.ContainsKey(key))
+        if (exists)
         {
-            Objects[key] = new();
+            NotifyStateChanged(WatchEventType.Modified, GroupApiVersionKind.From(@object.GetType()), @object);
         }
-
-        Objects[key][$"{@object.Namespace()}|{@object.Name()}"] = @object;
-
-        NotifyStateChanged(WatchEventType.Modified, GroupApiVersionKind.From(@object.GetType()), @object);
+        else
+        {
+            NotifyStateChanged(WatchEventType.Added, GroupApiVersionKind.From(@object.GetType()), @object);
+        }
     }
 
     protected void DeleteInternalObject(IKubernetesObject<V1ObjectMeta> @object)
@@ -256,9 +254,9 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
         var reader = new StreamReader(stream);
         var parser = new Parser(new StringReader(reader.ReadToEnd()));
-        parser.Consume<YamlDotNet.Core.Events.StreamStart>();
+        parser.Consume<StreamStart>();
 
-        while (parser.Accept<YamlDotNet.Core.Events.DocumentStart>(out _))
+        while (parser.Accept<DocumentStart>(out _))
         {
             var doc = Serialization.KubernetesYaml.Deserializer.Deserialize(parser);
             var yaml = Serialization.KubernetesYaml.Serialize(doc);
