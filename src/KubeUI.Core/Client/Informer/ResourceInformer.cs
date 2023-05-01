@@ -104,10 +104,17 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
     public async Task RunAsync(CancellationToken cancellationToken)
     {
         var limiter = new Limiter(new Limit(0.2), 3);
-        var shouldSync = true;
         var firstSync = true;
+
         while (true)
         {
+            Logger.LogInformation(
+                EventId(EventType.WatchingResource),
+                "Starting Informer on {ResourceType}",
+                typeof(TResource).Name);
+
+            var shouldSync = true;
+
             if (cancellationToken.IsCancellationRequested)
             {
                 return;
@@ -332,7 +339,7 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
 
     private void OnEvent(WatchEventType watchEventType, TResource item)
     {
-        if (watchEventType != WatchEventType.Modified || item.Kind != "ConfigMap")
+        if (watchEventType != WatchEventType.Modified)
         {
             Logger.LogDebug(
                 EventId(EventType.InformerWatchEvent),
