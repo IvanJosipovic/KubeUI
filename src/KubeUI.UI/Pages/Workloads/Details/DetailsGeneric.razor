@@ -31,7 +31,7 @@
                         }
                     </OverviewSectionItem>
                 }
-                @if (context.Metadata.OwnerReferences != null && context.Metadata.OwnerReferences.Any())
+                @if (context.Metadata.OwnerReferences != null && context.Metadata.OwnerReferences.Any(x => x.Controller.GetValueOrDefault()))
                 {
                     <OverviewSectionItem Title="Controlled By">
                         @foreach (var item in context.Metadata.OwnerReferences.Where(x => x.Controller.GetValueOrDefault()))
