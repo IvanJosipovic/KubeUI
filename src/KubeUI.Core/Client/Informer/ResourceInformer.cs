@@ -108,17 +108,17 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
 
         while (true)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
             Logger.LogInformation(
                 EventId(EventType.WatchingResource),
                 "Starting Informer on {ResourceType}",
                 typeof(TResource).Name);
 
             var shouldSync = true;
-
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return;
-            }
 
             try
             {
