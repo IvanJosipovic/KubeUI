@@ -16,17 +16,14 @@ public class GitOpsCluster : ClusterBase, ICluster
         OnChange += Cluster_OnChange;
     }
 
-    private void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind type, IKubernetesObject<V1ObjectMeta> item)
+    private async void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind type, IKubernetesObject<V1ObjectMeta> item)
     {
         switch (eventType)
         {
             case WatchEventType.Added:
                 if (item is V1CustomResourceDefinition v1CustomResourceDefinition)
                 {
-                    Task.Run(async () =>
-                    {
-                        await GenerateCRDAssembly(v1CustomResourceDefinition).ConfigureAwait(false);
-                    });
+                    await Task.Run(async () => await GenerateCRDAssembly(v1CustomResourceDefinition).ConfigureAwait(false));
                 }
                 break;
             case WatchEventType.Modified:

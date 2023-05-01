@@ -20,8 +20,9 @@
     [Parameter]
     public V1Pod Pod { get; set; }
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnParametersSet()
     {
+        StateHasChanged();
     }
 
     RenderFragment<(V1ContainerStatus, k8s.Models.PodMetrics)> containerStatus = context =>

@@ -20,7 +20,7 @@ namespace KubeUI.UI.Components
 
         private TItem ObjectClone { get; set; }
 
-        protected override void OnInitialized()
+        protected override void OnParametersSet()
         {
             if (Object != null)
             {

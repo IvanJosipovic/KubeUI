@@ -16,9 +16,9 @@ public class ClusterManager : IDisposable
     [JsonInclude]
     private ICluster? activeCluster;
 
-    private ILoggerFactory loggerFactory;
+    private readonly ILoggerFactory loggerFactory;
 
-    private ICRDGenerator cRDGenerator;
+    private readonly ICRDGenerator cRDGenerator;
 
     public event Action<ClusterManagerEvents> OnChange;
 

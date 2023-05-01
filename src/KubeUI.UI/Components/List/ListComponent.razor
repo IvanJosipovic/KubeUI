@@ -44,11 +44,12 @@
                         {
                             try
                             {
-                                @col.Object?.Invoke(context);
+                                @col.Object?.Invoke(context)
+                                ;
                             }
-                            catch (Exception)
+                            catch (Exception ex)
                             {
-                                //throw;
+                                Logger.LogError(ex, "Error Displaying Object Column: {name}", col.Name);
                             }
                         }
                     </MudTd>

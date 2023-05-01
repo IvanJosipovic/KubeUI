@@ -49,14 +49,14 @@ public class Cluster : ClusterBase, ICluster
         }
     }
 
-    private void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind type, IKubernetesObject<V1ObjectMeta> item)
+    private async void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind type, IKubernetesObject<V1ObjectMeta> item)
     {
         switch (eventType)
         {
             case WatchEventType.Added:
                 if (item is V1CustomResourceDefinition v1CustomResourceDefinition)
                 {
-                    Task.Run(async () =>
+                    await Task.Run(async () =>
                     {
                         var assembly = await GenerateCRDAssembly(v1CustomResourceDefinition).ConfigureAwait(false);
 
@@ -123,7 +123,7 @@ public class Cluster : ClusterBase, ICluster
     {
         var api = GroupApiVersionKind.From<T>();
 
-        using var client = new GenericClient(Client, api.Group, api.ApiVersion, api.PluralName);
+        using var client = new GenericClient(Client, api.Group, api.ApiVersion, api.PluralName, false);
 
         try
         {
@@ -160,7 +160,7 @@ public class Cluster : ClusterBase, ICluster
     {
         var api = GroupApiVersionKind.From<T>();
 
-        using var client = new GenericClient(Client, api.Group, api.ApiVersion, api.PluralName);
+        using var client = new GenericClient(Client, api.Group, api.ApiVersion, api.PluralName, false);
 
         if (string.IsNullOrEmpty(item.Namespace()))
         {

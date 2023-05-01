@@ -9,11 +9,11 @@ namespace KubeUI.UI.Components
         public TItem Object { get; set; }
 
         [Parameter]
-        public bool HideNosiyFields { get; set; } = true;
+        public bool HideNoisyFields { get; set; } = true;
 
         private TItem ObjectClone { get; set; }
 
-        protected override async Task OnInitializedAsync()
+        protected override async Task OnParametersSetAsync()
         {
             await Update();
         }
@@ -22,7 +22,7 @@ namespace KubeUI.UI.Components
         {
             ObjectClone = Utilities.CloneObject(Object);
 
-            if (HideNosiyFields)
+            if (HideNoisyFields)
             {
                 ObjectClone.Metadata.ManagedFields = null;
 

@@ -1,7 +1,7 @@
 ﻿@typeparam TItem where TItem : class, IKubernetesObject<V1ObjectMeta>, new()
 
 <div class="d-flex">
-    <MudCheckBox @bind-Checked="HideNosiyFields" @bind-Checked:after="(async () => await Update(true))" Label="Hide Noisy Fields" Dense="false" Size="Size.Medium"></MudCheckBox>
+    <MudCheckBox @bind-Checked="HideNoisyFields" @bind-Checked:after="(async () => await Update(true))" Label="Hide Noisy Fields" Dense="false" Size="Size.Medium"></MudCheckBox>
 </div>
 <KubeMonacoEditor Value="@ObjectClone.ToYaml()" ReadOnly="true" />
 

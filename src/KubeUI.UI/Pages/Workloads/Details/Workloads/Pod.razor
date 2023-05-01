@@ -106,11 +106,11 @@
         [Inject]
         private ClusterManager ClusterManager { get; set; }
 
-    private int LogLineCount { get; set; } = 100;
+        private int LogLineCount { get; set; } = 100;
 
-    private bool PreviousLog { get; set; } = false;
+        private bool PreviousLog { get; set; } = false;
 
-    private RenderFragment<(V1Container, IList<V1ContainerStatus>)> containerFragment = context =>
+        private RenderFragment<(V1Container, IList<V1ContainerStatus>)> containerFragment = context =>
         @<DummyComponent>
             <OverviewSectionItem Title="Container" Value="@(context.Item1.Name)" />
 
