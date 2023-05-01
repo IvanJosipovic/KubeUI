@@ -12,7 +12,7 @@ public class TreeItem
 
     public bool IsCollectionItem { get; set; }
 
-    public bool IsExpanded { get; set; } = true;
+    public bool IsExpanded { get; set; } = false;
 
     public object Collection { get; set; }
 
