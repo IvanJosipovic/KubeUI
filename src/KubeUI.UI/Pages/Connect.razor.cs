@@ -39,12 +39,12 @@ public partial class Connect : IDisposable
         }
     }
 
-    private void ClusterManager_OnChange(ClusterManagerEvents obj)
+    private async void ClusterManager_OnChange(ClusterManagerEvents obj)
     {
         if (obj == ClusterManagerEvents.ActiveClusterChanged)
         {
             Status = null;
-            ConnectToCluster();
+            await Task.Run(ConnectToCluster);
         }
     }
 
