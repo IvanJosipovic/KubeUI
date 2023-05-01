@@ -159,7 +159,7 @@ public partial class NavMenu : IDisposable
         Timer.Dispose();
     }
 
-    private bool ClustersExpanded { get; set; }
+    private bool ClustersExpanded { get; set; } = true;
     private bool WorkloadsExpanded { get; set; }
     private bool ConfigurationExpanded { get; set; }
     private bool NetworkExpanded { get; set; }
