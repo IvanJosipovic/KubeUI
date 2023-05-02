@@ -1,18 +1,30 @@
 ﻿<MudNavGroup Title="Custom Resource Definitions" Expanded="Expanded" ExpandedChanged="((x) => {Expanded = x; ExpandedChanged.InvokeAsync(x);})" Icon="@NavMenu.GetIcon("resources/unlabeled/crd.svg")">
     <MudNavLink Href=@($"/list/{V1CustomResourceDefinition.KubeGroup}/{V1CustomResourceDefinition.KubeApiVersion}/{V1CustomResourceDefinition.KubeKind}") Match="NavLinkMatch.Prefix">Definitions</MudNavLink>
 
-    @foreach (var item in ClusterManager.GetActiveCluster().GetObjects<V1CustomResourceDefinition>().GroupBy(x => x.Spec.Group).OrderBy(x => x.Key).ToList())
+    @foreach (var sld in ClusterManager.GetActiveCluster().GetObjects<V1CustomResourceDefinition>().GroupBy(x => GetSLD(x.Spec.Group)).OrderBy(x => x.Key).Select(x => x.Key).ToList())
     {
-        if (!ExpandedGroups.ContainsKey(item.Key))
+        if (!ExpandedGroups.ContainsKey(sld))
         {
-            ExpandedGroups.Add(item.Key, false);
+            ExpandedGroups.Add(sld, false);
         }
 
-        <MudNavGroup @key="item.Key" Title="@item.Key" @bind-Expanded="ExpandedGroups[item.Key]">
-            @foreach (var item in item.ToList())
+        <MudNavGroup @key="@sld" Title="@sld" @bind-Expanded="@ExpandedGroups[sld]">
+
+            @foreach (var item2 in ClusterManager.GetActiveCluster().GetObjects<V1CustomResourceDefinition>().GroupBy(x => x.Spec.Group).OrderBy(x => x.Key).Where(x => x.Key.EndsWith(sld)).ToList())
             {
-                <MudNavLink Href=@($"/list/{item.Spec.Group}/{item.Spec.Versions.First(x => x.Storage).Name}/{item.Spec.Names.Kind}") Match="NavLinkMatch.Prefix">@item.Spec.Names.Kind <MudChip Size="Size.Small" Disabled="true">@(ClusterManager.GetActiveCluster().CountObjects(item.Spec.Versions.First(x => x.Storage).Name, item.Spec.Names.Kind, item.Spec.Group))</MudChip></MudNavLink>
+                if (!ExpandedGroups2.ContainsKey(item2.Key))
+                {
+                    ExpandedGroups2.Add(item2.Key, false);
+                }
+
+                <MudNavGroup @key="item2.Key" Title="@item2.Key" @bind-Expanded="@ExpandedGroups2[item2.Key]">
+                    @foreach (var item2 in item2.ToList())
+                    {
+                        <MudNavLink Href=@($"/list/{item2.Spec.Group}/{item2.Spec.Versions.First(x => x.Storage).Name}/{item2.Spec.Names.Kind}") Match="NavLinkMatch.Prefix">@item2.Spec.Names.Kind <MudChip Size="Size.Small" Disabled="true">@(ClusterManager.GetActiveCluster().CountObjects(item2.Spec.Versions.First(x => x.Storage).Name, item2.Spec.Names.Kind, item2.Spec.Group))</MudChip></MudNavLink>
+                    }
+                </MudNavGroup>
             }
+
         </MudNavGroup>
     }
 

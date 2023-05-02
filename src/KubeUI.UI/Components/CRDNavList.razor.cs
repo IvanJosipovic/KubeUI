@@ -13,6 +13,8 @@ public partial class CRDNavList : IDisposable
 
     public Dictionary<string, bool> ExpandedGroups { get; set; } = new();
 
+    public Dictionary<string, bool> ExpandedGroups2 { get; set; } = new();
+
     private System.Timers.Timer Timer { get; set; }
 
     protected override void OnInitialized()
@@ -42,5 +44,17 @@ public partial class CRDNavList : IDisposable
     {
         ClusterManager.OnChange -= ClusterManager_OnChange;
         Timer?.Dispose();
+    }
+
+    public static string GetSLD(string domain)
+    {
+        var parts = domain.Split('.');
+
+        if (parts.Length < 2)
+        {
+            return domain;
+        }
+
+        return parts[^2] + "." + parts[^1];
     }
 }
