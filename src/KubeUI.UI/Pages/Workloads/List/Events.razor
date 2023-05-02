@@ -1,9 +1,10 @@
 ﻿@page "/list/v1/event"
 
-<ListGeneric TItem="Corev1Event" HideName="true" HideNamespace="true" HideAge="true" MultiSelection="false">
+<ListGeneric TItem="Corev1Event" HideName="true" HideNamespace="true" HideAge="true" MultiSelection="false" HideNew="true">
     <Columns>
         <ColumnComponent TItem="Corev1Event" Name="Type" Object="(x => x.Type)" Width="5%" />
-        <ColumnComponent TItem="Corev1Event" Name="Message" Object="(x => x.Message)" Width="70%">
+@*        <ColumnComponent TItem="Corev1Event" Name="Type" Object="(x => x.InvolvedObject.Name)" Width="5%" />
+*@        <ColumnComponent TItem="Corev1Event" Name="Message" Object="(x => x.Message)" Width="70%">
             <DisplayContent>
                 <MudText Color="@(@context.Item1.Type == "Warning" ? Color.Error : Color.Inherit)" Typo="Typo.inherit">@context.Item1.Message</MudText>
             </DisplayContent>
