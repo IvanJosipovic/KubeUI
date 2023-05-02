@@ -1,5 +1,6 @@
 using KubeUI.Core;
 using KubeUI.Core.Client;
+using Microsoft.AspNetCore.Components;
 using static MudBlazor.CategoryTypes;
 
 namespace KubeUI.UI.Components
@@ -9,6 +10,8 @@ namespace KubeUI.UI.Components
         [Parameter] public TItem Object { get; set; }
 
         [Parameter] public EventCallback<TItem> ObjectChanged { get; set; }
+
+        [Parameter] public bool ShowTitle { get; set; }
 
         [Inject] ClusterManager ClusterManager { get; set; }
 
@@ -20,6 +23,13 @@ namespace KubeUI.UI.Components
 
         private TItem ObjectClone { get; set; }
 
+        private GroupApiVersionKind Type { get; set; }
+
+        protected override void OnInitialized()
+        {
+            Type = GroupApiVersionKind.From<TItem>();
+        }
+
         protected override void OnParametersSet()
         {
             if (Object != null)
@@ -28,12 +38,11 @@ namespace KubeUI.UI.Components
             }
             else
             {
-                ObjectClone = new TItem();
-
-                var attribute = GroupApiVersionKind.From<TItem>();
-
-                ObjectClone.ApiVersion = attribute.GroupApiVersion;
-                ObjectClone.Kind = attribute.Kind;
+                ObjectClone = new TItem
+                {
+                    ApiVersion = Type.GroupApiVersion,
+                    Kind = Type.Kind
+                };
             }
         }
 
@@ -41,7 +50,7 @@ namespace KubeUI.UI.Components
         {
             var parameters = new DialogParameters()
             {
-                { "ContentText", $"Do you want to save?" },
+                { "ContentText", "Do you want to save?" },
                 { "ButtonText", "Save" }, { "Color", Color.Success }
             };
             var dialog = Dialog.Show<Dialog>("Save", parameters, new DialogOptions()

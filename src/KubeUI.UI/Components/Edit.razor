@@ -1,5 +1,10 @@
 ﻿@typeparam TItem where TItem : class, IKubernetesObject<V1ObjectMeta>, new()
 
+@if (ShowTitle)
+{
+    <MudText Typo="Typo.h5">New @Type.Kind</MudText>
+}
+
 <MudTabs Elevation="4" Rounded="true" Centered="true" Color="@Color.Secondary">
     <MudTabPanel Text="Details" Icon="@Icons.Material.Filled.AccountTree">
         <MudButton OnClick="Save" FullWidth="true" Color="Color.Success" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Save">Save</MudButton>
