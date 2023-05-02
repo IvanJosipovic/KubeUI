@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Components;
 using System.Runtime.InteropServices;
 
 namespace KubeUI.UI.Shared;
@@ -82,7 +81,7 @@ public partial class MainLayout
                 MenuWidth = "100%";
                 break;
             case Breakpoint.Sm:
-                MenuWidth = "70%";
+                MenuWidth = "100%";
                 break;
             case Breakpoint.Md:
                 MenuWidth = "50%";
