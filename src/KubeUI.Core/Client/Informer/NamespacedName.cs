@@ -3,7 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace KubeUI.Core.Client;
+namespace KubeUI.Core.Client.Informer;
 
 /// <summary>
 /// Struct NamespacedName is a value that acts as a dictionary key. It is a comparable
