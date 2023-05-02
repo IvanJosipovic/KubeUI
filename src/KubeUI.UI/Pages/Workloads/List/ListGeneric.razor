@@ -1,8 +1,16 @@
 ﻿@using System.Linq.Expressions
 @using System.Text.RegularExpressions
-@typeparam TItem where TItem : class, IKubernetesObject<V1ObjectMeta>, new()
 
-<ListComponent TItem="TItem" MultiSelection="MultiSelection" @bind-SelectedItems="SelectedItems" Query="Query" Title="@Title">
+@typeparam TItem where TItem : class, IKubernetesObject<V1ObjectMeta>, new()
+@inherits ListBase<TItem>
+
+<ListComponent TItem="TItem"
+    MultiSelection="MultiSelection"
+    @bind-SelectedItems="SelectedItems"
+    Query="Query"
+    Title="@Title"
+    HideNew="HideNew"
+    HideNamespaceSelector="HideNamespaceSelector">
     @if (HideName == false)
     {
         <ColumnComponent TItem="TItem" Name="Name" Object="(x => x.Metadata.Name)" Sort="SortDirection.Ascending" Width="100%">
@@ -70,37 +78,6 @@
 </ListComponent>
 
 @code {
-    [Inject]
-    private ClusterManager ClusterManager { get; set; }
-
     [Parameter]
     public RenderFragment Columns { get; set; }
-
-    [Parameter]
-    public bool HideNamespace { get; set; }
-
-    [Parameter]
-    public bool HideName { get; set; }
-
-    [Parameter]
-    public bool HideAge { get; set; }
-
-    [Parameter]
-    public bool MultiSelection { get; set; } = true;
-
-    [Parameter]
-    public bool HideActions { get; set; }
-
-    [Parameter]
-    public Func<IEnumerable<TItem>, IEnumerable<TItem>>? Query { get; set; }
-
-    [Parameter]
-    public string? Title { get; set; }
-
-    private HashSet<TItem> SelectedItems;
-
-    private string FixQuery(string original)
-    {
-        return original;
-    }
 }

@@ -1,5 +1,6 @@
 ﻿@attribute [CascadingTypeParameter(nameof(TItem))]
 @typeparam TItem where TItem : class, IKubernetesObject<V1ObjectMeta>, new()
+@inherits ListBase<TItem>
 
 @if (!string.IsNullOrEmpty(Version) && !string.IsNullOrEmpty(Kind))
 {
@@ -8,16 +9,22 @@
             <MudDataGrid T="TItem" Items="GetData()" Hover="true" Dense="true" Virtualize="true" FixedHeader="true" Height="@resize" Breakpoint="Breakpoint.None" HorizontalScrollbar="true" MultiSelection="@MultiSelection" SelectedItems="SelectedItems" SelectedItemsChanged="SelectedItemsChanged">
                 <ToolBarContent>
                     <MudText Typo="Typo.h6">@(string.IsNullOrEmpty(Title) ? Kind.AddSpacesBeforeCapitals() : Title)</MudText>
+                    @if (!HideNew)
+                    {
                         <MudIconButton Icon="@Icons.Material.Filled.AddCircle" Color="Color.Success" aria-label="add new" OnClick="New"></MudIconButton>
-                        <MudSpacer />
-                        <MudTextField T="string" @bind-Value="SearchQuery" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
-                        <MudSpacer />
+                    }
+                    <MudSpacer />
+                    <MudTextField T="string" @bind-Value="SearchQuery" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                    <MudSpacer />
+                    @if (!HideNamespaceSelector)
+                    {
                         <MudSelect T="string" Placeholder="Namespaces" MultiSelection="true" Class="mt-0" SelectedValues="ClusterManager.GetActiveCluster().GetSelectedNamespaces()" SelectedValuesChanged="x => ClusterManager.GetActiveCluster().SetSelectedNamespaces(x)" SelectAll="true" SelectAllText="Select all">
                             @foreach (var ns in this.ClusterManager.GetActiveCluster().GetObjects<V1Namespace>().OrderBy(x => x.Metadata.Name))
                             {
                                 <MudSelectItem @key="ns" T="string" Value="@ns.Name()">@ns.Name()</MudSelectItem>
                             }
-                    </MudSelect>
+                        </MudSelect>
+                    }
                 </ToolBarContent>
                 <Columns>
                     @foreach (var col in this.Columns)

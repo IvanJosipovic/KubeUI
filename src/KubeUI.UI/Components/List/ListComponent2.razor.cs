@@ -1,13 +1,12 @@
+using KubeUI.UI.Pages.Workloads.List;
+
 namespace KubeUI.UI.Components.List;
 
 [CascadingTypeParameter(nameof(TItem))]
-public partial class ListComponent2<TItem> : IDisposable where TItem : class, IKubernetesObject<V1ObjectMeta>, new()
+public partial class ListComponent2<TItem> : ListBase<TItem>, IDisposable where TItem : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     [Inject]
     private ILogger<ListComponent<TItem>> Logger { get; set; }
-
-    [Inject]
-    private ClusterManager ClusterManager { get; set; }
 
     [Inject]
     private IDialogService Dialog { get; set; }
@@ -19,19 +18,7 @@ public partial class ListComponent2<TItem> : IDisposable where TItem : class, IK
     public RenderFragment? ChildContent { get; set; }
 
     [Parameter]
-    public bool MultiSelection { get; set; }
-
-    [Parameter]
-    public HashSet<TItem> SelectedItems { get; set; } = new HashSet<TItem>();
-
-    [Parameter]
     public EventCallback<HashSet<TItem>> SelectedItemsChanged { get; set; }
-
-    [Parameter]
-    public Func<IEnumerable<TItem>, IEnumerable<TItem>>? Query { get; set; }
-
-    [Parameter]
-    public string? Title { get; set; }
 
     private string? Version;
 
@@ -152,7 +139,7 @@ public partial class ListComponent2<TItem> : IDisposable where TItem : class, IK
 
         if (GetRoutes().ContainsKey(routeTemplate.ToLower()))
         {
-            DisplayDetails(CreateRenderFragent(GetRoutes()[routeTemplate.ToLower()], new Dictionary<string, object>
+            DisplayDetails(CreateRenderFragment(GetRoutes()[routeTemplate.ToLower()], new Dictionary<string, object>
             {
                 { "Name", name },
                 { "Namespace", @namespace },
@@ -163,7 +150,7 @@ public partial class ListComponent2<TItem> : IDisposable where TItem : class, IK
         }
 
         // Fall back to Default Component
-        DisplayDetails(CreateRenderFragent(typeof(Details), new Dictionary<string, object>
+        DisplayDetails(CreateRenderFragment(typeof(Details), new Dictionary<string, object>
         {
             { "Group", group },
             { "Version", version },
@@ -182,7 +169,7 @@ public partial class ListComponent2<TItem> : IDisposable where TItem : class, IK
         DisplayDetails(@namespace, group, version, kind, name);
     }
 
-    private RenderFragment CreateRenderFragent(Type type, Dictionary<string, object> attributes) => builder =>
+    private RenderFragment CreateRenderFragment(Type type, Dictionary<string, object> attributes) => builder =>
     {
         var count = 0;
 
@@ -201,10 +188,10 @@ public partial class ListComponent2<TItem> : IDisposable where TItem : class, IK
         var left = SelectedItems.ElementAt(0);
         var right = SelectedItems.ElementAt(1);
         var parameters = new DialogParameters()
-            {
-                {"Left", left},
-                {"Right", right},
-            };
+        {
+            {"Left", left},
+            {"Right", right},
+        };
         var dialog = Dialog.Show<CompareObject>($"Compare {left.Name()} and {right.Name()}", parameters, new DialogOptions()
         {
             CloseButton = true,
@@ -214,15 +201,8 @@ public partial class ListComponent2<TItem> : IDisposable where TItem : class, IK
 
     private void New()
     {
-        var parameters = new DialogParameters()
-        {
-        };
-
-        var dialog = Dialog.Show<Edit<TItem>>($"New", parameters, new DialogOptions()
-        {
-            CloseButton = true,
-            FullScreen = true
-        });
+        var type = GroupApiVersionKind.From<TItem>();
+        NavigationManager.NavigateTo($"new/{type.Group}/{type.ApiVersion}/{type.Kind}");
     }
 
     private async Task Delete()

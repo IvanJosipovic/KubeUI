@@ -1,15 +1,12 @@
-using System.Text.Json;
+using KubeUI.UI.Pages.Workloads.List;
 
 namespace KubeUI.UI.Components.List;
 
 [CascadingTypeParameter(nameof(TItem))]
-public partial class ListComponent<TItem> : IDisposable where TItem : class, IKubernetesObject<V1ObjectMeta>, new()
+public partial class ListComponent<TItem> : ListBase<TItem>, IDisposable where TItem : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     [Inject]
     private ILogger<ListComponent<TItem>> Logger { get; set; }
-
-    [Inject]
-    private ClusterManager ClusterManager { get; set; }
 
     [Inject]
     private IDialogService Dialog { get; set; }
@@ -21,19 +18,7 @@ public partial class ListComponent<TItem> : IDisposable where TItem : class, IKu
     public RenderFragment? ChildContent { get; set; }
 
     [Parameter]
-    public bool MultiSelection { get; set; }
-
-    [Parameter]
-    public HashSet<TItem> SelectedItems { get; set; } = new HashSet<TItem>();
-
-    [Parameter]
     public EventCallback<HashSet<TItem>> SelectedItemsChanged { get; set; }
-
-    [Parameter]
-    public Func<IEnumerable<TItem>, IEnumerable<TItem>>? Query { get; set; }
-
-    [Parameter]
-    public string? Title { get; set; }
 
     private string? Version;
 
@@ -216,15 +201,8 @@ public partial class ListComponent<TItem> : IDisposable where TItem : class, IKu
 
     private void New()
     {
-        var parameters = new DialogParameters()
-        {
-        };
-
-        var dialog = Dialog.Show<Edit<TItem>>($"New", parameters, new DialogOptions()
-        {
-            CloseButton = true,
-            FullScreen = true
-        });
+        var type = GroupApiVersionKind.From<TItem>();
+        NavigationManager.NavigateTo($"new/{type.Group}/{type.ApiVersion}/{type.Kind}");
     }
 
     private async Task Delete()
