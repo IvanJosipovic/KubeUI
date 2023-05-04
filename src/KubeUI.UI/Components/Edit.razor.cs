@@ -1,3 +1,4 @@
+using k8s.Models;
 using KubeUI.Core;
 using KubeUI.Core.Client;
 using Microsoft.AspNetCore.Components;
@@ -20,6 +21,9 @@ namespace KubeUI.UI.Components
 
         [Inject]
         private ILogger<Edit<TItem>> Logger { get; set; }
+
+        [Inject]
+        private ISnackbar Snackbar { get; set; }
 
         private TItem ObjectClone { get; set; }
 
@@ -60,7 +64,14 @@ namespace KubeUI.UI.Components
 
             if (!(await dialog.Result).Canceled)
             {
-                await ClusterManager.GetActiveCluster().AddOrUpdate(ObjectClone);
+                try
+                {
+                    await ClusterManager.GetActiveCluster().AddOrUpdate(ObjectClone);
+                }
+                catch (Exception ex)
+                {
+                    Snackbar.Add("Failed Save Resource: " + ex.Message, Severity.Error);
+                }
             }
         }
 

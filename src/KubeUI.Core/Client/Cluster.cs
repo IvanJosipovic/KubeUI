@@ -140,6 +140,11 @@ public class Cluster : ClusterBase, ICluster
         {
             Logger.LogError(ex, "Failed to delete");
         }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to delete");
+            throw;
+        }
     }
 
     public async Task<V1APIGroupList> GetAPIs()
@@ -162,31 +167,43 @@ public class Cluster : ClusterBase, ICluster
 
         using var client = new GenericClient(Client, api.Group, api.ApiVersion, api.PluralName, false);
 
-        if (string.IsNullOrEmpty(item.Namespace()))
+        try
         {
-            if (item.Metadata.Uid != null)
+            if (string.IsNullOrEmpty(item.Namespace()))
             {
-                // update
-                await client.ReplaceAsync<T>(item, item.Name());
+                if (item.Metadata.Uid != null)
+                {
+                    // update
+                    await client.ReplaceAsync<T>(item, item.Name());
+                }
+                else
+                {
+                    // add
+                    await client.CreateAsync<T>(item);
+                }
             }
             else
             {
-                // add
-                await client.CreateAsync<T>(item);
+                if (item.Metadata.Uid != null)
+                {
+                    // update namespaced
+                    await client.ReplaceNamespacedAsync<T>(item, item.Namespace(), item.Name());
+                }
+                else
+                {
+                    // add namespaced
+                    await client.CreateNamespacedAsync<T>(item, item.Namespace());
+                }
             }
         }
-        else
+        catch (JsonException ex)
         {
-            if (item.Metadata.Uid != null)
-            {
-                // update namespaced
-                await client.ReplaceNamespacedAsync<T>(item, item.Namespace(), item.Name());
-            }
-            else
-            {
-                // add namespaced
-                await client.CreateNamespacedAsync<T>(item, item.Namespace());
-            }
+            Logger.LogError(ex, "Failed to AddOrUpdate");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to AddOrUpdate");
+            throw;
         }
     }
 

@@ -11,6 +11,9 @@ public partial class ListComponent2<TItem> : ListBase<TItem>, IDisposable where 
     [Inject]
     private IDialogService Dialog { get; set; }
 
+    [Inject]
+    private ISnackbar Snackbar { get; set; }
+
     [CascadingParameter]
     private MainLayout MainLayout { get; set; }
 
@@ -222,7 +225,14 @@ public partial class ListComponent2<TItem> : ListBase<TItem>, IDisposable where 
         {
             foreach (var item in SelectedItems)
             {
-                await ClusterManager.GetActiveCluster().Delete(item);
+                try
+                {
+                    await ClusterManager.GetActiveCluster().Delete(item);
+                }
+                catch (Exception ex)
+                {
+                    Snackbar.Add("Failed Delete Resource: " + ex.Message, Severity.Error);
+                }
             }
         }
     }

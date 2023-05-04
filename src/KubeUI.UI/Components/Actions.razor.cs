@@ -14,6 +14,9 @@ public partial class Actions<TItem>
     [Inject]
     private ClusterManager ClusterManager { get; set; }
 
+    [Inject]
+    private ISnackbar Snackbar { get; set; }
+
     private async Task Delete()
     {
         var parameters = new DialogParameters()
@@ -28,7 +31,14 @@ public partial class Actions<TItem>
 
         if (!(await dialog.Result).Canceled)
         {
-            await ClusterManager.GetActiveCluster().Delete(Item);
+            try
+            {
+                await ClusterManager.GetActiveCluster().Delete(Item);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add("Failed Delete Resource: " + ex.Message, Severity.Error);
+            }
         }
     }
 }

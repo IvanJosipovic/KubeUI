@@ -11,6 +11,9 @@ public partial class ListComponent<TItem> : ListBase<TItem>, IDisposable where T
     [Inject]
     private IDialogService Dialog { get; set; }
 
+    [Inject]
+    private ISnackbar Snackbar { get; set; }
+
     [CascadingParameter]
     private MainLayout MainLayout { get; set; }
 
@@ -139,7 +142,7 @@ public partial class ListComponent<TItem> : ListBase<TItem>, IDisposable where T
 
         if (GetRoutes().ContainsKey(routeTemplate.ToLower()))
         {
-            DisplayDetails(CreateRenderFragent(GetRoutes()[routeTemplate.ToLower()], new Dictionary<string, object>
+            DisplayDetails(CreateRenderFragment(GetRoutes()[routeTemplate.ToLower()], new Dictionary<string, object>
             {
                 { "Name", name },
                 { "Namespace", @namespace },
@@ -150,7 +153,7 @@ public partial class ListComponent<TItem> : ListBase<TItem>, IDisposable where T
         }
 
         // Fall back to Default Component
-        DisplayDetails(CreateRenderFragent(typeof(Details), new Dictionary<string, object>
+        DisplayDetails(CreateRenderFragment(typeof(Details), new Dictionary<string, object>
         {
             { "Group", group },
             { "Version", version },
@@ -169,7 +172,7 @@ public partial class ListComponent<TItem> : ListBase<TItem>, IDisposable where T
         DisplayDetails(@namespace, group, version, kind, name);
     }
 
-    private RenderFragment CreateRenderFragent(Type type, Dictionary<string, object> attributes) => builder =>
+    private RenderFragment CreateRenderFragment(Type type, Dictionary<string, object> attributes) => builder =>
     {
         var count = 0;
 
@@ -222,7 +225,14 @@ public partial class ListComponent<TItem> : ListBase<TItem>, IDisposable where T
         {
             foreach (var item in SelectedItems)
             {
-                await ClusterManager.GetActiveCluster().Delete(item);
+                try
+                {
+                    await ClusterManager.GetActiveCluster().Delete(item);
+                }
+                catch (Exception ex)
+                {
+                    Snackbar.Add("Failed Delete Resource: " + ex.Message, Severity.Error);
+                }
             }
         }
     }
