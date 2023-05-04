@@ -6,7 +6,7 @@
   "dependencyDashboardTitle": "Renovate Dashboard",
   "semanticCommits": "enabled",
   "suppressNotifications": [ "prIgnoreNotification" ],
-  "rebaseWhen": "conflicted",
+  "rebaseWhen": "auto",
   "assignees": [ "@ivanjosipovic" ],
   "extends": [ "config:base" ],
   "platformAutomerge": true,
