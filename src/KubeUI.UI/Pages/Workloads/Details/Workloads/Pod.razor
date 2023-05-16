@@ -138,6 +138,10 @@
                     {
                         <MudText Typo="Typo.inherit" Color="Color.Success">Waiting</MudText>
                     }
+                    else if (status.State.Terminated.Reason == "Completed")
+                    {
+                        <MudText Typo="Typo.inherit" Color="Color.Success">Completed</MudText>
+                    }
                     else
                     {
                         <MudText Typo="Typo.inherit" Color="Color.Warning">Terminated</MudText>
