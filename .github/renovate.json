@@ -32,17 +32,6 @@
           ]
         }
       ]
-    },
-    {
-      "extends": "monorepo:dotnet",
-      "groupName": "dotnet monorepo",
-      "packageRules": [
-        {
-          "matchPackagePatterns": [
-            "microsoft.aspnetcore.*"
-          ]
-        }
-      ]
     }
   ]
 }
