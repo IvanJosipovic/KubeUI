@@ -219,12 +219,12 @@ public abstract class ClusterBase : INotifyPropertyChanged
 
     public async Task<Assembly?> GenerateCRDAssembly(V1CustomResourceDefinition crd)
     {
-        if (crd.Spec.Group.EndsWith("fluxcd.io"))
+        if (ModelCache.CheckIfCRDExists(crd))
         {
             return null;
         }
 
-        var assembly = await CRDGenerator.GenerateAssembly(crd, "KubernetesCRDModelGen.Models." + crd.Spec.Group);
+        var assembly = await CRDGenerator.GenerateAssembly(crd);
 
         if (assembly.Item1 != null && assembly.Item2 != null)
         {

@@ -32,7 +32,7 @@ public class Cluster : ClusterBase, ICluster
         throw new Exception("Unable to find KubeConfig");
     }
 
-    private readonly ConcurrentDictionary<string, object> informers = new();
+    private readonly ConcurrentDictionary<string, IResourceInformer> informers = new();
 
     public Cluster(ILoggerFactory loggerFactory, ICRDGenerator cRDGenerator) : base(loggerFactory.CreateLogger<ClusterBase>(), cRDGenerator)
     {
@@ -60,7 +60,10 @@ public class Cluster : ClusterBase, ICluster
                     {
                         var assembly = await GenerateCRDAssembly(v1CustomResourceDefinition).ConfigureAwait(false);
 
-                        Seed(assembly);
+                        if (assembly != null)
+                        {
+                            Seed(assembly);
+                        }
                     });
                 }
                 break;
@@ -209,7 +212,7 @@ public class Cluster : ClusterBase, ICluster
 
     public PodMetrics? GetPodMetrics(string @namespace, string name)
     {
-        if (PodMetricsCache != null && PodMetricsCache.PodMetricsList != null)
+        if (PodMetricsCache?.PodMetricsList != null)
         {
             return PodMetricsCache.PodMetricsList.Items.FirstOrDefault(x => x.Namespace() == @namespace && x.Name() == name);
         }

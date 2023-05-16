@@ -59,5 +59,12 @@ namespace KubeUI
 
             return dic;
         }
+
+        public static bool CheckIfCRDExists(V1CustomResourceDefinition crd)
+        {
+            var version = crd.Spec.Versions.First(x => x.Served && x.Storage).Name;
+
+            return TypeCache.ContainsKey($"{crd.Spec.Group}/{version}/{crd.Spec.Names.Kind}");
+        }
     }
 }
