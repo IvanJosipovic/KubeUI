@@ -6,8 +6,6 @@ namespace KubeUI.Core.Client;
 
 public class GitOpsCluster : ClusterBase, ICluster
 {
-    private ILogger<GitOpsCluster> Logger { get; set; }
-
     public string Path { get; set; }
 
     public GitOpsCluster(ILogger<GitOpsCluster> logger, ICRDGenerator cRDGenerator) : base(logger, cRDGenerator)
