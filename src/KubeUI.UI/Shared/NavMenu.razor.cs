@@ -29,8 +29,14 @@ public partial class NavMenu : IDisposable
         Timer.Elapsed += Timer_Elapsed;
         Timer.Enabled = true;
         Timer.AutoReset = true;
+    }
 
-        OpenFolderSupported = await FileSystemAccessService.IsSupportedAsync();
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            OpenFolderSupported = await FileSystemAccessService.IsSupportedAsync();
+        }
     }
 
     private async void Timer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
