@@ -22,11 +22,11 @@ namespace KubeUI.Console
         {
             _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
 
-            var informer = new ResourceInformer<V1Pod>(loggerFactory.CreateLogger<ResourceInformer<V1Pod>>(), new Kubernetes(KubernetesClientConfiguration.BuildDefaultConfig()));
+            var informer = new ResourceInformer<Corev1Event>(loggerFactory.CreateLogger<ResourceInformer<Corev1Event>>(), new Kubernetes(KubernetesClientConfiguration.BuildDefaultConfig()));
 
-            informer.Register(new ResourceInformerCallback<V1Pod>((x, y) =>
+            informer.Register(new ResourceInformerCallback<Corev1Event>((x, y) =>
             {
-                _logger.LogInformation("{type} - {type} - {name}", typeof(V1Pod), x, y.Metadata.Name);
+                _logger.LogInformation("{type} - {type} - {name}", typeof(Corev1Event), x, y.Metadata.Name);
             }));
 
             await informer.RunAsync(stoppingToken);

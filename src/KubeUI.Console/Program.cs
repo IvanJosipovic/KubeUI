@@ -1,15 +1,18 @@
-using KubeUI.Console;
-using KubeUI.Core.Client;
-
-IHost host = Host.CreateDefaultBuilder(args)
-    .ConfigureServices((host, services) =>
+namespace KubeUI.Console
+{
+    public class Program
     {
-        services.AddLogging(config => config.AddFile("Logs/{Date}.txt"));
+        public static void Main(string[] args)
+        {
+            var builder = Host.CreateApplicationBuilder(args);
+            builder.Services.AddHostedService<Worker>();
 
-        services.AddHostedService<Worker>();
+            builder.Services.AddLogging(config => config.AddFile("Logs/{Date}.txt"));
 
-        ConfigureServices.Configure(host.Configuration, services);
-    })
-    .Build();
+            Core.Client.ConfigureServices.Configure(builder.Configuration, builder.Services);
 
-await host.RunAsync();
+            var host = builder.Build();
+            host.Run();
+        }
+    }
+}

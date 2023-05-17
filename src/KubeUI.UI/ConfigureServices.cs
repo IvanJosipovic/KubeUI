@@ -1,9 +1,7 @@
 ﻿using KristofferStrube.Blazor.FileSystemAccess;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using MudBlazor.Services;
 
 namespace KubeUI.UI;
 
