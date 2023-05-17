@@ -2,7 +2,7 @@ namespace KubeUI.Console
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = Host.CreateApplicationBuilder(args);
             builder.Services.AddHostedService<Worker>();
@@ -12,7 +12,7 @@ namespace KubeUI.Console
             Core.Client.ConfigureServices.Configure(builder.Configuration, builder.Services);
 
             var host = builder.Build();
-            host.Run();
+            await host.RunAsync();
         }
     }
 }
