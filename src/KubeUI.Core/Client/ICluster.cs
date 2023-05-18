@@ -28,15 +28,13 @@ public interface ICluster
 
     void Seed<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
 
+    void Seed(string version, string kind, string group = "");
+
     Task Delete<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
 
     Task AddOrUpdate<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
 
     event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>> OnChange;
-
-    //Type? GetResourceType(GroupApiVersionKind type);
-
-    //Type? GetResourceType(string group, string version, string kind);
 
     Task<V1APIGroupList> GetAPIs();
 

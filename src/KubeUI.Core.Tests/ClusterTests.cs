@@ -421,6 +421,7 @@ spec:
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(yaml));
 
         await testHarness.Cluster.ImportYaml(stream);
+        testHarness.Cluster.Seed("v1beta1", "Test", "kubeui.com");
 
         await Task.Delay(TimeSpan.FromSeconds(5));
 
