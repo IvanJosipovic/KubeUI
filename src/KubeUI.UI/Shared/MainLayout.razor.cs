@@ -39,31 +39,37 @@ public partial class MainLayout
     protected override async Task OnInitializedAsync()
     {
         ResizeListenerService.OnBreakpointChanged += ResizeListenerService_OnBreakpointChanged;
+    }
 
-        ResizeMenu(await ResizeListenerService.GetBreakpoint());
-
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")))
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
         {
-            try
+            ResizeMenu(await ResizeListenerService.GetBreakpoint());
+
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")))
             {
-                if (await Updater.UpdateRequired())
+                try
                 {
-                    Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
-
-                    var release = await Updater.GetReleases();
-
-                    Snackbar.Add($"Update {release.FirstOrDefault()?.tag_name} is available!", Severity.Success, config =>
+                    if (await Updater.UpdateRequired())
                     {
-                        config.Onclick = async snackbar =>
+                        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+
+                        var release = await Updater.GetReleases();
+
+                        Snackbar.Add($"Update {release.FirstOrDefault()?.tag_name} is available!", Severity.Success, config =>
                         {
-                            await jSRuntime.InvokeVoidAsync("open", new object[2] { release.FirstOrDefault().html_url, "_blank" });
-                        };
-                    });
+                            config.Onclick = async snackbar =>
+                            {
+                                await jSRuntime.InvokeVoidAsync("open", new object[2] { release.FirstOrDefault().html_url, "_blank" });
+                            };
+                        });
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "Error checking for updates!");
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, "Error checking for updates!");
+                }
             }
         }
     }
@@ -90,7 +96,7 @@ public partial class MainLayout
                 MenuWidth = "50%";
                 break;
             case Breakpoint.Xl:
-                MenuWidth = "50%";
+                MenuWidth = "40%";
                 break;
         }
 

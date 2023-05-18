@@ -56,15 +56,7 @@ public class Cluster : ClusterBase, ICluster
             case WatchEventType.Added:
                 if (item is V1CustomResourceDefinition v1CustomResourceDefinition)
                 {
-                    await Task.Run(async () =>
-                    {
-                        var assembly = await GenerateCRDAssembly(v1CustomResourceDefinition).ConfigureAwait(false);
-
-                        if (assembly != null)
-                        {
-                            Seed(assembly);
-                        }
-                    });
+                    await Task.Run(async () => await GenerateCRDAssembly(v1CustomResourceDefinition).ConfigureAwait(false));
                 }
                 break;
             case WatchEventType.Modified:

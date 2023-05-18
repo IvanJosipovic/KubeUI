@@ -164,7 +164,7 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
             }
             catch (Exception error)
             {
-                Logger.LogInformation(
+                Logger.LogError(
                     EventId(EventType.WatchingComplete),
                     error,
                     "No longer watching {ResourceType} resources from API server.",
@@ -293,6 +293,12 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
                         watcherCompletionSource.TrySetException(error);
                         throw error;
                     }
+                }
+
+                if (error is HttpRequestException requestException)
+                {
+                    watcherCompletionSource.TrySetException(error);
+                    throw error;
                 }
 
                 Logger.LogDebug(

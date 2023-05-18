@@ -20,7 +20,7 @@
                 <MudNavGroup @key="item2.Key" Title="@item2.Key" @bind-Expanded="@ExpandedGroups2[item2.Key]">
                     @foreach (var item2 in item2.ToList())
                     {
-                        <MudNavLink Href=@($"/list/{item2.Spec.Group}/{item2.Spec.Versions.First(x => x.Storage).Name}/{item2.Spec.Names.Kind}") Match="NavLinkMatch.Prefix">@item2.Spec.Names.Kind <MudChip Size="Size.Small" Disabled="true">@(ClusterManager.GetActiveCluster().CountObjects(item2.Spec.Versions.First(x => x.Storage).Name, item2.Spec.Names.Kind, item2.Spec.Group))</MudChip></MudNavLink>
+                        <MudNavLink Href=@($"/list/{item2.Spec.Group}/{item2.Spec.Versions.First(x => x.Storage).Name}/{item2.Spec.Names.Kind}") Match="NavLinkMatch.Prefix">@item2.Spec.Names.Kind</MudNavLink>
                     }
                 </MudNavGroup>
             }
