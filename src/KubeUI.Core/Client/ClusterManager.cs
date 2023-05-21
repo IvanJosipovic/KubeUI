@@ -107,6 +107,7 @@ public class ClusterManager : IDisposable
 
     public void LoadClusters()
     {
+        LoadFromConfigFromPath(KubernetesClientConfiguration.KubeConfigDefaultLocation);
     }
 
     public void SaveClusters()
@@ -157,8 +158,6 @@ public class ClusterManager : IDisposable
         }
 
         LoadClusters();
-
-        LoadFromConfigFromPath(KubernetesClientConfiguration.KubeConfigDefaultLocation);
 
         AddGitOpsCluster("GitOps");
     }
