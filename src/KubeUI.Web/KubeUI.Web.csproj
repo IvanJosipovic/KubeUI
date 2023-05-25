@@ -35,27 +35,4 @@
 		<ReplaceFileText InputFilename="$(PublishDir)wwwroot\index.html" MatchExpression="{{version}}" ReplacementText="$(Version)" />
 	</Target>
 
-	<Target Name="CustomGZipAndBrotliCompression" AfterTargets="Publish">
-
-		<ItemGroup>
-			<MyStaticFiles Include="$(PublishDir)\\wwwroot\\**\\*.*" />
-			<MyStaticFiles Remove="$(PublishDir)\\wwwroot\\_framework\\**\\*.*" />
-			<MyStaticFiles Remove="$(PublishDir)\\wwwroot\\**\\*.br" />
-			<MyStaticFiles Remove="$(PublishDir)\\wwwroot\\**\\*.gz" />
-		</ItemGroup>
-
-		<GZipCompress FilesToCompress="@(MyStaticFiles)" OutputDirectory="$(_BlazorBuildGZipCompressDirectory)">
-
-			<Output TaskParameter="CompressedFiles" ItemName="MyCompressedFiles" />
-		</GZipCompress>
-
-		<BrotliCompress OutputDirectory="$(_BlazorBuildGZipCompressDirectory)" FilesToCompress="@(MyStaticFiles)" ToolAssembly="$(_BlazorWebAssemblySdkToolAssembly)" ToolExe="$(_RazorSdkDotNetHostFileName)" ToolPath="$(_RazorSdkDotNetHostDirectory)">
-			<Output TaskParameter="CompressedFiles" ItemName="MyCompressedFiles" />
-		</BrotliCompress>
-
-		<Message Importance="High" Text="======= Brotli/GZip Compression For @(MyCompressedFiles-&gt;Count()) Static Files =======" />
-		<Message Importance="High" Text=" Compressing: %(MyCompressedFiles.OriginalItemSpec)%(MyCompressedFiles.Extension)" />
-		<Move SourceFiles="%(MyCompressedFiles.FullPath)" DestinationFiles="%(MyCompressedFiles.OriginalItemSpec)%(MyCompressedFiles.Extension)" />
-	</Target>
-	
 </Project>
