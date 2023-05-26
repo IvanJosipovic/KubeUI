@@ -7,7 +7,7 @@
     <MudTabs Elevation="4" Rounded="true" Centered="true" Color="@Color.Primary">
         <MudTabPanel Text="Overview" Icon="@Icons.Material.Filled.Analytics">
             <OverviewSection>
-                <OverviewSectionItem Title="Created" Value="@(context.Metadata.CreationTimestamp.ToString())" />
+                <OverviewSectionItem Title="Created" Value="@(context.Metadata.CreationTimestamp.GetValueOrDefault().ToLocalTime().ToString())" />
                 <OverviewSectionItem Title="Name" Value="@(context.Name())" />
                 @if (!string.IsNullOrEmpty(context.Namespace()))
                 {
