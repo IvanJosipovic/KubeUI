@@ -1,51 +1,53 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
-	<PropertyGroup>
-		<OutputType>WinExe</OutputType>
-		<TargetFramework>net8.0-windows</TargetFramework>
-		<Nullable>enable</Nullable>
-		<UseWPF>true</UseWPF>
-		<PackageIcon>icon.ico</PackageIcon>
-		<ApplicationIcon>icon.ico</ApplicationIcon>
-		<AssemblyName>KubeUI</AssemblyName>
-	</PropertyGroup>
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <PackageIcon>icon.ico</PackageIcon>
+    <ApplicationIcon>icon.ico</ApplicationIcon>
+    <AssemblyName>KubeUI</AssemblyName>
+  </PropertyGroup>
 
-	<ItemGroup>
-		<Content Remove="appsettings.json" />
-	</ItemGroup>
+  <ItemGroup>
+    <Content Remove="appsettings.json" />
+  </ItemGroup>
 
-	<ItemGroup>
-		<Content Include="icon.ico" />
-	</ItemGroup>
+  <ItemGroup>
+    <Content Include="icon.ico" />
+  </ItemGroup>
 
-	<ItemGroup>
-		<PackageReference Include="Microsoft.AspNetCore.Components.WebView.Wpf" Version="8.0.0-preview.3.8149" />
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0-preview.3.23174.8" />
-		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0-preview.3.23174.8" />
-		<PackageReference Include="Serilog.Extensions.Logging.File" Version="3.0.0" />
+  <ItemGroup>
+    <!--workaround for https://github.com/dotnet/maui/issues/15287-->
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebView" Version="8.0.0-preview.4.23260.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Wpf" Version="8.0.0-preview.4.8333" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0-preview.4.23259.5" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0-preview.4.23259.5" />
+    <PackageReference Include="Serilog.Extensions.Logging.File" Version="3.0.0" />
 
-		<!--Needed to Build Serilog-->
-		<PackageReference Include="System.IO.FileSystem.Primitives" Version="4.3.0" />
-		<PackageReference Include="System.Runtime.Handles" Version="4.3.0" />
-		<PackageReference Include="System.Runtime.InteropServices" Version="4.3.0" />
-		<PackageReference Include="System.Text.Encoding.Extensions" Version="4.3.0" />
-		<PackageReference Include="System.Threading" Version="4.3.0" />
-	</ItemGroup>
+    <!--Needed to Build Serilog-->
+    <PackageReference Include="System.IO.FileSystem.Primitives" Version="4.3.0" />
+    <PackageReference Include="System.Runtime.Handles" Version="4.3.0" />
+    <PackageReference Include="System.Runtime.InteropServices" Version="4.3.0" />
+    <PackageReference Include="System.Text.Encoding.Extensions" Version="4.3.0" />
+    <PackageReference Include="System.Threading" Version="4.3.0" />
+  </ItemGroup>
 
-	<ItemGroup>
-		<Content Update="wwwroot\**">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
-	</ItemGroup>
+  <ItemGroup>
+    <Content Update="wwwroot\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
-	<ItemGroup>
-		<None Include="appsettings.json">
-			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</None>
-	</ItemGroup>
+  <ItemGroup>
+    <None Include="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 
-	<ItemGroup>
-	  <ProjectReference Include="..\KubeUI.UI\KubeUI.UI.csproj" />
-	</ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\KubeUI.UI\KubeUI.UI.csproj" />
+  </ItemGroup>
 
 </Project>
