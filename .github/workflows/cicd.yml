@@ -119,7 +119,7 @@ jobs:
 
     - name: Publish
       working-directory: src/KubeUI.WPF
-      run: dotnet publish -c Release -r win-x64 -p:Version=${{ needs.semantic-release.outputs.new_release_version }} -o bin/publish --self-contained -p:PublishSingleFile=true -p:DebugType=None -p:IncludeNativeLibrariesForSelfExtract=true
+      run: dotnet publish -c Release -r win-x64 -p:Version=${{ needs.semantic-release.outputs.new_release_version }} -o bin/publish --self-contained
 
     - name: Package
       working-directory: src/KubeUI.WPF

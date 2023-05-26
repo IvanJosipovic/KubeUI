@@ -8,6 +8,9 @@
     <PackageIcon>icon.ico</PackageIcon>
     <ApplicationIcon>icon.ico</ApplicationIcon>
     <AssemblyName>KubeUI</AssemblyName>
+    <PublishSingleFile>true</PublishSingleFile>
+    <DebugType>None</DebugType>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
 
   <ItemGroup>
