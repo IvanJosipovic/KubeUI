@@ -19,7 +19,10 @@ public class Updater : IDisposable
     {
         var version = Utilities.GetVersion();
 
-        version = version.Substring(0, version.IndexOf('+'));
+        if (version.Contains('+'))
+        {
+            version = version.Substring(0, version.IndexOf('+'));
+        }
 
         var releases = await GetReleases();
 
