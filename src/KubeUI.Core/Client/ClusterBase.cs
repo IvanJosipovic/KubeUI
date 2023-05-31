@@ -217,14 +217,14 @@ public abstract class ClusterBase : INotifyPropertyChanged
         return GetObject<T>(attribute.ApiVersion, attribute.Kind, @namespace, name, attribute.Group);
     }
 
-    public async Task<Assembly?> GenerateCRDAssembly(V1CustomResourceDefinition crd)
+    public Assembly? GenerateCRDAssembly(V1CustomResourceDefinition crd)
     {
         if (ModelCache.CheckIfCRDExists(crd))
         {
             return null;
         }
 
-        var assembly = await CRDGenerator.GenerateAssembly(crd);
+        var assembly = CRDGenerator.GenerateAssembly(crd);
 
         if (assembly.Item1 != null && assembly.Item2 != null)
         {
