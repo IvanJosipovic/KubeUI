@@ -246,6 +246,8 @@ public abstract class ClusterBase : INotifyPropertyChanged
         {
             SelectedNamespaces = namespaces.ToList();
         }
+
+        this.PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedNamespaces)));
     }
 
     public async Task ImportYaml(Stream stream)

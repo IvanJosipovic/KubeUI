@@ -23,6 +23,15 @@ public partial class NavItem<TItem> : IDisposable where TItem : class, IKubernet
         ClusterManager.OnChange += ClusterManager_OnChange;
         CurrentCluster = ClusterManager.GetActiveCluster()!;
         CurrentCluster.OnChange += CurrentCluster_OnChange;
+        CurrentCluster.PropertyChanged += CurrentCluster_PropertyChanged;
+    }
+
+    private async void CurrentCluster_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == "SelectedNamespaces")
+        {
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     private async void CurrentCluster_OnChange(WatchEventType arg1, GroupApiVersionKind arg2, IKubernetesObject<V1ObjectMeta> arg3)
@@ -47,6 +56,7 @@ public partial class NavItem<TItem> : IDisposable where TItem : class, IKubernet
 
     public void Dispose()
     {
+        CurrentCluster.PropertyChanged -= CurrentCluster_PropertyChanged;
         CurrentCluster.OnChange -= CurrentCluster_OnChange;
         ClusterManager.OnChange -= ClusterManager_OnChange;
     }
