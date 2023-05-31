@@ -16,34 +16,38 @@ public partial class NavItem<TItem> : IDisposable where TItem : class, IKubernet
 
     private GroupApiVersionKind GroupApiVersionKind => GroupApiVersionKind.From<TItem>();
 
-    private System.Timers.Timer Timer { get; set; }
+    ICluster CurrentCluster;
 
     protected override void OnInitialized()
     {
         ClusterManager.OnChange += ClusterManager_OnChange;
-
-        Timer = new System.Timers.Timer(TimeSpan.FromSeconds(1));
-        Timer.Elapsed += Timer_Elapsed;
-        Timer.Enabled = true;
-        Timer.AutoReset = true;
+        CurrentCluster = ClusterManager.GetActiveCluster()!;
+        CurrentCluster.OnChange += CurrentCluster_OnChange;
     }
 
-    private async void Timer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
+    private async void CurrentCluster_OnChange(WatchEventType arg1, GroupApiVersionKind arg2, IKubernetesObject<V1ObjectMeta> arg3)
     {
-        await InvokeAsync(StateHasChanged);
+        if (arg2 == GroupApiVersionKind && (arg1 == WatchEventType.Added || arg1 == WatchEventType.Deleted))
+        {
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
-    private void ClusterManager_OnChange(ClusterManagerEvents obj)
+    private async void ClusterManager_OnChange(ClusterManagerEvents obj)
     {
         if (obj == ClusterManagerEvents.ActiveClusterChanged)
         {
-            InvokeAsync(StateHasChanged);
+            CurrentCluster.OnChange -= CurrentCluster_OnChange;
+            CurrentCluster = ClusterManager.GetActiveCluster()!;
+            CurrentCluster.OnChange += CurrentCluster_OnChange;
+
+            await InvokeAsync(StateHasChanged);
         }
     }
 
     public void Dispose()
     {
+        CurrentCluster.OnChange -= CurrentCluster_OnChange;
         ClusterManager.OnChange -= ClusterManager_OnChange;
-        Timer?.Dispose();
     }
 }

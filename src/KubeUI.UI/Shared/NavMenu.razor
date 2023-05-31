@@ -9,7 +9,7 @@
 
         @foreach (var cluster in ClusterManager.GetClusters().ToList())
         {
-            var isDisable = ClusterManager.GetActiveCluster() != null ? ClusterManager.GetActiveCluster().Name.Equals(cluster.Name) : false;
+            var isDisable = CurrentCluster != null ? CurrentCluster.Name.Equals(cluster.Name) : false;
             <MudNavLink OnClick="() => SetActiveCluster(cluster)" Icon="@GetIcon("infrastructure_components/unlabeled/control-plane.svg")" Disabled="isDisable">
                 @cluster.Name
                 @if (isDisable)
@@ -21,7 +21,7 @@
 
     </MudNavGroup>
 
-    @if (ClusterManager.GetActiveCluster() != null)
+    @if (CurrentCluster != null)
     {
         <InputFile id="loadYaml" OnChange="UploadFiles" hidden multiple accept=".yaml, .yml, .zip" />
         <label class="mud-nav-item mud-ripple" for="loadYaml">
@@ -46,7 +46,7 @@
         }
     }
 
-    @if (ClusterManager.GetActiveCluster() != null && ClusterManager.GetActiveCluster().IsConnected)
+    @if (CurrentCluster != null && CurrentCluster.IsConnected)
     {
         <NavItem TItem="V1Node" Icon="infrastructure_components/unlabeled/node.svg"/>
         <NavItem TItem="V1Namespace" Icon="resources/unlabeled/ns.svg"/>
@@ -103,7 +103,7 @@
 
         <CRDNavList @bind-Expanded="CRDExpanded" />
 
-        @if (ClusterManager.GetActiveCluster() is Cluster)
+        @if (CurrentCluster is Cluster)
         {
             <MudNavLink Href="/list/helm.sh/v1/release" Match="NavLinkMatch.Prefix" Icon="@NavMenu.GetIcon("resources/unlabeled/ep.svg")">Helm Releases</MudNavLink>
         }

@@ -15,35 +15,41 @@ public partial class CRDNavList : IDisposable
 
     public Dictionary<string, bool> ExpandedGroups2 { get; set; } = new();
 
-    private System.Timers.Timer Timer { get; set; }
+    ICluster CurrentCluster;
+
+    GroupApiVersionKind crd = GroupApiVersionKind.From<V1CustomResourceDefinition>();
 
     protected override void OnInitialized()
     {
         ClusterManager.OnChange += ClusterManager_OnChange;
 
-        Timer = new System.Timers.Timer(TimeSpan.FromSeconds(1));
-        Timer.Elapsed += Timer_Elapsed;
-        Timer.Enabled = true;
-        Timer.AutoReset = true;
+        CurrentCluster = ClusterManager.GetActiveCluster()!;
+        CurrentCluster.OnChange += ClusterObject_OnChange;
     }
 
-    private async void Timer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
+    private async void ClusterObject_OnChange(WatchEventType arg1, GroupApiVersionKind arg2, IKubernetesObject<V1ObjectMeta> arg3)
     {
-        await InvokeAsync(StateHasChanged);
+        if (arg2 == crd && (arg1 == WatchEventType.Added || arg1 == WatchEventType.Deleted))
+        {
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
-    private void ClusterManager_OnChange(ClusterManagerEvents obj)
+    private async void ClusterManager_OnChange(ClusterManagerEvents obj)
     {
         if (obj == ClusterManagerEvents.ActiveClusterChanged)
         {
-            InvokeAsync(StateHasChanged);
+            CurrentCluster.OnChange -= ClusterObject_OnChange;
+            CurrentCluster = ClusterManager.GetActiveCluster()!;
+            CurrentCluster.OnChange += ClusterObject_OnChange;
+            await InvokeAsync(StateHasChanged);
         }
     }
 
     public void Dispose()
     {
+        CurrentCluster.OnChange -= ClusterObject_OnChange;
         ClusterManager.OnChange -= ClusterManager_OnChange;
-        Timer?.Dispose();
     }
 
     public static string GetSLD(string domain)

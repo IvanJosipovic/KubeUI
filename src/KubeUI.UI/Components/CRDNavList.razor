@@ -1,7 +1,7 @@
 ﻿<MudNavGroup Title="Custom Resource Definitions" Expanded="Expanded" ExpandedChanged="((x) => {Expanded = x; ExpandedChanged.InvokeAsync(x);})" Icon="@NavMenu.GetIcon("resources/unlabeled/crd.svg")">
     <MudNavLink Href=@($"/list/{V1CustomResourceDefinition.KubeGroup}/{V1CustomResourceDefinition.KubeApiVersion}/{V1CustomResourceDefinition.KubeKind}") Match="NavLinkMatch.Prefix">Definitions</MudNavLink>
 
-    @foreach (var sld in ClusterManager.GetActiveCluster().GetObjects<V1CustomResourceDefinition>().GroupBy(x => GetSLD(x.Spec.Group)).OrderBy(x => x.Key).Select(x => x.Key).ToList())
+    @foreach (var sld in CurrentCluster.GetObjects<V1CustomResourceDefinition>().GroupBy(x => GetSLD(x.Spec.Group)).OrderBy(x => x.Key).Select(x => x.Key).ToList())
     {
         if (!ExpandedGroups.ContainsKey(sld))
         {
@@ -10,7 +10,7 @@
 
         <MudNavGroup @key="@sld" Title="@sld" @bind-Expanded="@ExpandedGroups[sld]">
 
-            @foreach (var item2 in ClusterManager.GetActiveCluster().GetObjects<V1CustomResourceDefinition>().GroupBy(x => x.Spec.Group).OrderBy(x => x.Key).Where(x => x.Key.EndsWith(sld)).ToList())
+            @foreach (var item2 in CurrentCluster.GetObjects<V1CustomResourceDefinition>().GroupBy(x => x.Spec.Group).OrderBy(x => x.Key).Where(x => x.Key.EndsWith(sld)).ToList())
             {
                 if (!ExpandedGroups2.ContainsKey(item2.Key))
                 {

@@ -17,18 +17,11 @@ public partial class NavMenu : IDisposable
     [Inject]
     private IFileSystemAccessService FileSystemAccessService { get; set; }
 
-    private System.Timers.Timer Timer { get; set; }
-
     private bool OpenFolderSupported { get; set; }
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         ClusterManager.OnChange += ClusterManager_OnChange;
-
-        Timer = new System.Timers.Timer(TimeSpan.FromSeconds(1));
-        Timer.Elapsed += Timer_Elapsed;
-        Timer.Enabled = true;
-        Timer.AutoReset = true;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -39,16 +32,24 @@ public partial class NavMenu : IDisposable
         }
     }
 
-    private async void Timer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
-    {
-        await InvokeAsync(StateHasChanged);
-    }
+    ICluster? CurrentCluster;
 
     private void ClusterManager_OnChange(ClusterManagerEvents obj)
     {
         if (obj == ClusterManagerEvents.ActiveClusterChanged)
         {
-            InvokeAsync(StateHasChanged);
+            CurrentCluster = ClusterManager.GetActiveCluster()!;
+            CurrentCluster.PropertyChanged += CurrentCluster_PropertyChanged;
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async void CurrentCluster_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ICluster.IsConnected))
+        {
+            await InvokeAsync(StateHasChanged);
         }
     }
 
@@ -69,11 +70,11 @@ public partial class NavMenu : IDisposable
 
                 if (Path.GetExtension(file.Name) == ".zip")
                 {
-                    await ClusterManager.GetActiveCluster().ImportZip(stream);
+                    await CurrentCluster.ImportZip(stream);
                 }
                 else if (Path.GetExtension(file.Name) == ".yaml" || Path.GetExtension(file.Name) == ".yml")
                 {
-                    await ClusterManager.GetActiveCluster().ImportYaml(stream);
+                    await CurrentCluster.ImportYaml(stream);
                 }
             }
             catch (Exception ex)
@@ -115,7 +116,7 @@ public partial class NavMenu : IDisposable
                         await fileStream.CopyToAsync(stream);
                         stream.Position = 0;
 
-                        await ClusterManager.GetActiveCluster().ImportYaml(stream);
+                        await CurrentCluster.ImportYaml(stream);
                     }
                 }
                 else
@@ -161,15 +162,24 @@ public partial class NavMenu : IDisposable
 
     public void Dispose()
     {
+        if (CurrentCluster != null)
+        {
+            CurrentCluster.PropertyChanged += CurrentCluster_PropertyChanged;
+        }
         ClusterManager.OnChange -= ClusterManager_OnChange;
-        Timer.Dispose();
     }
 
     private bool ClustersExpanded { get; set; } = true;
+
     private bool WorkloadsExpanded { get; set; }
+
     private bool ConfigurationExpanded { get; set; }
+
     private bool NetworkExpanded { get; set; }
+
     private bool StorageExpanded { get; set; }
+
     private bool AccessControlExpanded { get; set; }
+
     private bool CRDExpanded { get; set; }
 }
