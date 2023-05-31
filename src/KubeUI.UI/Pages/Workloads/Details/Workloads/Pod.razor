@@ -110,12 +110,12 @@
 
         private bool PreviousLog { get; set; } = false;
 
-        private RenderFragment<(V1Container, IList<V1ContainerStatus>)> containerFragment = context =>
+        private RenderFragment<(V1Container, IList<V1ContainerStatus>?)> containerFragment = context =>
         @<DummyComponent>
             <OverviewSectionItem Title="Container" Value="@(context.Item1.Name)" />
 
             @{
-                var status = context.Item2.FirstOrDefault(x => x.Name == context.Item1.Name);
+                var status = context.Item2?.FirstOrDefault(x => x.Name == context.Item1.Name);
             }
 
             @if (status != null)
