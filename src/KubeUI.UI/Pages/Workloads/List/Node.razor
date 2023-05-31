@@ -2,6 +2,16 @@
 
 <ListGeneric TItem="V1Node" HideNamespace="true" MultiSelection="true" HideNew="true">
     <Columns>
+        <ColumnComponent TItem="V1Node" Name="Request CPU">
+            <DisplayContent>
+                @CalcRequestCPU(context.Item1)c
+            </DisplayContent>
+        </ColumnComponent>
+        <ColumnComponent TItem="V1Node" Name="Request Memory">
+            <DisplayContent>
+                @CalcRequestMemory(context.Item1)Gi
+            </DisplayContent>
+        </ColumnComponent>
         <ColumnComponent TItem="V1Node" Name="Pods">
             <DisplayContent>
                 @(ClusterManager.GetActiveCluster().GetObjects<V1Pod>().Where(x => x.Spec.NodeName == context.Item1.Name()).Count())
@@ -13,4 +23,23 @@
 @code {
     [Inject]
     private ClusterManager ClusterManager { get; set; }
+
+
+    private decimal CalcRequestCPU(V1Node node)
+    {
+        var pods = ClusterManager.GetActiveCluster().GetObjects<V1Pod>().Where(x => x.Spec.NodeName == node.Name());
+
+        var cpuSum = pods.Sum(x => x.Spec.Containers.Where(x => x.Resources != null && x.Resources.Requests != null && x.Resources.Requests.ContainsKey("cpu")).Sum(x => x.Resources.Requests["cpu"].ToDecimal()));
+
+        return cpuSum;
+    }
+
+    private decimal CalcRequestMemory(V1Node node)
+    {
+        var pods = ClusterManager.GetActiveCluster().GetObjects<V1Pod>().Where(x => x.Spec.NodeName == node.Name());
+
+        var memSum = pods.Sum(x => x.Spec.Containers.Where(x => x.Resources != null && x.Resources.Requests != null && x.Resources.Requests.ContainsKey("memory")).Sum(x => x.Resources.Requests["memory"].ToInt64()));
+
+        return memSum / 1048576 / 1024;
+    }
 }
