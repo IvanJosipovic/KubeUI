@@ -12,7 +12,7 @@ namespace KubeUI.Core.Client.Serialization
             _innerTypeInspector = innerTypeInspector;
         }
 
-        public override IEnumerable<IPropertyDescriptor> GetProperties(Type type, object container)
+        public override IEnumerable<IPropertyDescriptor> GetProperties(Type type, object? container)
         {
             return _innerTypeInspector.GetProperties(type, container).OrderBy(x => x.Name);
         }
