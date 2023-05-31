@@ -19,12 +19,14 @@ public class Updater : IDisposable
     {
         var version = Utilities.GetVersion();
 
+        version = version.Substring(0, version.IndexOf('+'));
+
         var releases = await GetReleases();
 
         return releases.FirstOrDefault()?.tag_name.TrimStart('v') != version;
     }
 
-    public async Task<GithubRelease[]> GetReleases(bool showPrerelase = true)
+    public async Task<GithubRelease[]> GetReleases(bool showPrerelease = true)
     {
         if (githubRelease == null || DateTime < DateTime.UtcNow.AddHours(-1))
         {
@@ -33,12 +35,12 @@ public class Updater : IDisposable
             githubRelease = await HttpClient.GetFromJsonAsync<GithubRelease[]>("https://api.github.com/repos/IvanJosipovic/KubeUI/releases");
         }
 
-        if (showPrerelase)
+        if (showPrerelease)
         {
-            return githubRelease.Where(x => x.draft == false).ToArray();
+            return githubRelease.Where(x => !x.draft).ToArray();
         }
 
-        return githubRelease.Where(x => x.prerelease && x.draft == false).ToArray();
+        return githubRelease.Where(x => !x.prerelease && !x.draft).ToArray();
     }
 
     public void Dispose()
