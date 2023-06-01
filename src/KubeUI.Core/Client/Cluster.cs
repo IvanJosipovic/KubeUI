@@ -49,14 +49,14 @@ public class Cluster : ClusterBase, ICluster
         }
     }
 
-    private async void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind type, IKubernetesObject<V1ObjectMeta> item)
+    private void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind type, IKubernetesObject<V1ObjectMeta> item)
     {
         switch (eventType)
         {
             case WatchEventType.Added:
                 if (item is V1CustomResourceDefinition v1CustomResourceDefinition)
                 {
-                    await Task.Run(() => GenerateCRDAssembly(v1CustomResourceDefinition));
+                    Task.Run(() => GenerateCRDAssembly(v1CustomResourceDefinition)).ConfigureAwait(false);
                 }
                 break;
             case WatchEventType.Modified:
