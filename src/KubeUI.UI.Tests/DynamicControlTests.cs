@@ -22,6 +22,8 @@ public class DynamicControlTests : TestContext
         Services.AddSingleton<IScrollManager, MockScrollManager>();
         Services.AddSingleton<IBrowserWindowSizeProvider, MockBrowserWindowSizeProvider>();
         Services.AddSingleton<IMudPopoverService, MockPopoverService>();
+        Services.AddSingleton<IPopoverService, MockPopoverServiceV2>();
+
     }
 
     private class UI1
@@ -282,4 +284,31 @@ public class MockPopoverService : IMudPopoverService
     public Task<bool> Unregister(MudPopoverHandler handler) => Task.FromResult(true);
 
     public ValueTask<int> CountProviders() => ValueTask.FromResult(0);
+}
+
+public class MockPopoverServiceV2 : IPopoverService
+{
+    public PopoverOptions PopoverOptions { get; } = new();
+
+    public IEnumerable<IMudPopoverHolder> ActivePopovers { get; } = Enumerable.Empty<IMudPopoverHolder>();
+
+    public bool IsInitialized => false;
+
+    public void Subscribe(IPopoverObserver observer)
+    {
+    }
+
+    public void Unsubscribe(IPopoverObserver observer)
+    {
+    }
+
+    public Task CreatePopoverAsync(IPopover mudPopover) => Task.CompletedTask;
+
+    public Task<bool> UpdatePopoverAsync(IPopover mudPopover) => Task.FromResult(true);
+
+    public Task<bool> DestroyPopoverAsync(IPopover mudPopover) => Task.FromResult(true);
+
+    public ValueTask<int> GetProviderCountAsync() => ValueTask.FromResult(0);
+
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }
