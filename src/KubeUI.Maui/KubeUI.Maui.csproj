@@ -61,6 +61,6 @@
   </PropertyGroup>
   <!--workaround for https://github.com/dotnet/maui/issues/15287-->
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebView" Version="8.0.0-preview.4.23260.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebView" Version="8.0.0-preview.5.23302.2" />
   </ItemGroup>
 </Project>
