@@ -59,8 +59,5 @@
     <CodesignEntitlements>Platforms/MacCatalyst/Entitlements.Release.plist</CodesignEntitlements>
     <UseHardenedRuntime>true</UseHardenedRuntime>
   </PropertyGroup>
-  <!--workaround for https://github.com/dotnet/maui/issues/15287-->
-  <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebView" Version="8.0.0-preview.4.23260.4" />
-  </ItemGroup>
+
 </Project>
