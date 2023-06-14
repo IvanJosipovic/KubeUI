@@ -22,8 +22,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!--workaround for https://github.com/dotnet/maui/issues/15287-->
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebView" Version="8.0.0-preview.5.23302.2" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Wpf" Version="8.0.0-preview.5.8529" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0-preview.5.23280.8" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0-preview.5.23280.8" />
