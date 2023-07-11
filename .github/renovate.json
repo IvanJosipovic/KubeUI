@@ -15,7 +15,7 @@
       "automerge": true,
       "matchUpdateTypes": ["minor", "patch", "digest"],
       "matchCurrentVersion": "!/^0/",
-      "matchPaths": [
+      "matchFileNames": [
         "src/KubeUI.Core.Tests/KubeUI.Core.Tests.csproj",
         "src/KubeUI.UI.Tests/KubeUI.UI.Tests.csproj"
       ]
