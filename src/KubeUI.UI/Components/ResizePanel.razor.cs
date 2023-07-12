@@ -1,12 +1,10 @@
-using Microsoft.JSInterop;
-using MudBlazor.Services;
 
 namespace KubeUI.UI.Components
 {
-    public partial class ResizePanel : IDisposable
+    public partial class ResizePanel : IAsyncDisposable
     {
         [Inject]
-        private IResizeListenerService ResizeListenerService { get; set; }
+        private IBrowserViewportService BrowserViewportService { get; set; }
 
         [Inject]
         private IJSRuntime JS { get; set; }
@@ -26,36 +24,27 @@ namespace KubeUI.UI.Components
 
         private string? Height { get; set; } = "1px";
 
-        protected override void OnInitialized()
-        {
-            ResizeListenerService.OnResized += ResizeListenerService_OnResized;
-        }
-
-        private void ResizeListenerService_OnResized(object? sender, BrowserWindowSize e)
-        {
-            Update(e.Height);
-        }
-
-        private async void Update(int height)
-        {
-            var elementY = await module.InvokeAsync<decimal>("getElementY", ReferenceToDiv);
-            Height = $"{height - elementY - Offset}px";
-            await InvokeAsync(StateHasChanged);
-        }
+        private Guid _subscriptionId = Guid.NewGuid();
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
             if (firstRender)
             {
                 module = await JS.InvokeAsync<IJSObjectReference>("import", $"./_content/KubeUI.UI/Components/{GetType().Name}.razor.js");
-                var bs = await ResizeListenerService.GetBrowserWindowSize();
-                Update(bs.Height);
+                await BrowserViewportService.SubscribeAsync(_subscriptionId, Resize, new ResizeOptions() { NotifyOnBreakpointOnly = false });
             }
         }
 
-        public void Dispose()
+        private async Task Resize(BrowserViewportEventArgs args)
         {
-            ResizeListenerService.OnResized -= ResizeListenerService_OnResized;
+            var elementY = await module.InvokeAsync<decimal>("getElementY", ReferenceToDiv);
+            Height = $"{args.BrowserWindowSize.Height - elementY - Offset}px";
+            await InvokeAsync(StateHasChanged);
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await BrowserViewportService.UnsubscribeAsync(_subscriptionId);
         }
     }
 }
