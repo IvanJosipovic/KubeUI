@@ -1,13 +1,10 @@
-using Microsoft.AspNetCore.Components.Web;
-using MudBlazor.Services;
 using System.Net.Sockets;
-using System.Net.WebSockets;
 using System.Text;
 using XtermBlazor;
 
 namespace KubeUI.UI.Components;
 
-public partial class PodConsole : IDisposable
+public partial class PodConsole : IAsyncDisposable
 {
     [Parameter]
     public string Namespace { get; set; }
@@ -25,7 +22,7 @@ public partial class PodConsole : IDisposable
     private ClusterManager ClusterManager { get; set; }
 
     [Inject]
-    private IResizeListenerService ResizeListenerService { get; set; }
+    private IBrowserViewportService BrowserViewportService { get; set; }
 
     private Stream Stream;
 
@@ -41,12 +38,17 @@ public partial class PodConsole : IDisposable
         CursorStyle = CursorStyle.Bar,
     };
 
-    protected override void OnInitialized()
+    private Guid _subscriptionId = Guid.NewGuid();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        ResizeListenerService.OnResized += ResizeListenerService_OnResized;
+        if (firstRender)
+        {
+            await BrowserViewportService.SubscribeAsync(_subscriptionId, Resize, new ResizeOptions() { NotifyOnBreakpointOnly = false });
+        }
     }
 
-    private async void ResizeListenerService_OnResized(object? sender, BrowserWindowSize e)
+    private async Task Resize(BrowserViewportEventArgs args)
     {
         try
         {
@@ -66,12 +68,6 @@ public partial class PodConsole : IDisposable
     protected override async Task OnParametersSetAsync()
     {
         await PodExec();
-    }
-
-    public void Dispose()
-    {
-        IsDisposed = true;
-        token.Cancel();
     }
 
     private async Task PodExec()
@@ -136,6 +132,13 @@ public partial class PodConsole : IDisposable
                 Logger.LogError(ex, "Error sending key to console");
             }
         }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        IsDisposed = true;
+        token.Cancel();
+        await BrowserViewportService.UnsubscribeAsync(_subscriptionId);
     }
 
     private string[] _addonIds = new string[]

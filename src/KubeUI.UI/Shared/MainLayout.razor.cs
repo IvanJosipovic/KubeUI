@@ -2,13 +2,13 @@ using System.Runtime.InteropServices;
 
 namespace KubeUI.UI.Shared;
 
-public partial class MainLayout
+public partial class MainLayout : IAsyncDisposable
 {
     [Inject]
     private ILogger<MainLayout> Logger { get; set; }
 
     [Inject]
-    private IResizeListenerService ResizeListenerService { get; set; }
+    private IBrowserViewportService BrowserViewportService { get; set; }
 
     [Inject]
     private Updater Updater { get; set; }
@@ -28,7 +28,7 @@ public partial class MainLayout
 
     private MudTheme Theme = new MudTheme()
     {
-        Palette = new Palette()
+        Palette = new PaletteLight()
         {
             Primary = "#326CE5",
             AppbarBackground = "#326CE5",
@@ -36,16 +36,13 @@ public partial class MainLayout
         }
     };
 
-    protected override async Task OnInitializedAsync()
-    {
-        ResizeListenerService.OnBreakpointChanged += ResizeListenerService_OnBreakpointChanged;
-    }
+    private Guid _subscriptionId = Guid.NewGuid();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            ResizeMenu(await ResizeListenerService.GetBreakpoint());
+            await BrowserViewportService.SubscribeAsync(_subscriptionId, Resize);
 
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")))
             {
@@ -74,14 +71,9 @@ public partial class MainLayout
         }
     }
 
-    private void ResizeListenerService_OnBreakpointChanged(object? sender, Breakpoint e)
+    private async Task Resize(BrowserViewportEventArgs args)
     {
-        ResizeMenu(e);
-    }
-
-    private void ResizeMenu(Breakpoint e)
-    {
-        switch (e)
+        switch (args.Breakpoint)
         {
             case Breakpoint.Xs:
                 MenuWidth = "100%";
@@ -100,7 +92,7 @@ public partial class MainLayout
                 break;
         }
 
-        StateHasChanged();
+        await InvokeAsync(StateHasChanged);
     }
 
     void DrawerToggle()
@@ -124,5 +116,10 @@ public partial class MainLayout
     {
         _drawerOpen2 = false;
         StateHasChanged();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await BrowserViewportService.UnsubscribeAsync(_subscriptionId);
     }
 }

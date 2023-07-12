@@ -2,7 +2,7 @@ using XtermBlazor;
 
 namespace KubeUI.UI.Components;
 
-public partial class PodLogs : IDisposable
+public partial class PodLogs : IAsyncDisposable
 {
     [Parameter]
     public string Namespace { get; set; }
@@ -26,7 +26,7 @@ public partial class PodLogs : IDisposable
     private ClusterManager ClusterManager { get; set; }
 
     [Inject]
-    private IResizeListenerService ResizeListenerService { get; set; }
+    private IBrowserViewportService BrowserViewportService { get; set; }
 
     private bool IsDisposed;
 
@@ -52,12 +52,9 @@ public partial class PodLogs : IDisposable
 
     Task Task;
 
-    protected override void OnInitialized()
-    {
-        ResizeListenerService.OnResized += ResizeListenerService_OnResized;
-    }
+    private Guid _subscriptionId = Guid.NewGuid();
 
-    private async void ResizeListenerService_OnResized(object? sender, BrowserWindowSize e)
+    private async Task Resize(BrowserViewportEventArgs args)
     {
         try
         {
@@ -81,19 +78,16 @@ public partial class PodLogs : IDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (firstRender)
+        {
+            await BrowserViewportService.SubscribeAsync(_subscriptionId, Resize, new ResizeOptions() { NotifyOnBreakpointOnly = false });
+        }
+
         if (!firstRender && shouldClear)
         {
             shouldClear = false;
             await Update();
         }
-    }
-
-    public void Dispose()
-    {
-        IsDisposed = true;
-        token?.Cancel();
-        Stream?.Dispose();
-        StreamReader?.Dispose();
     }
 
     private async Task Update()
@@ -173,6 +167,15 @@ public partial class PodLogs : IDisposable
         }
 
         semaphoreSlim.Release();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        IsDisposed = true;
+        token?.Cancel();
+        Stream?.Dispose();
+        StreamReader?.Dispose();
+        await BrowserViewportService.UnsubscribeAsync(_subscriptionId);
     }
 
     private string[] _addonIds = new string[]
