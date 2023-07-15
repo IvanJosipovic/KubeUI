@@ -9,7 +9,14 @@ public static class Utilities
 {
     public static string? GetVersion()
     {
-        return Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+        var version = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+
+        if (version.Contains('+'))
+        {
+            version = version.Substring(0, version.IndexOf('+'));
+        }
+
+        return version;
     }
 
     public static IEnumerable<T> EnsureNotEmpty<T>(this IEnumerable<T> enumerable)

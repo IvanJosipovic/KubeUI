@@ -19,11 +19,6 @@ public class Updater : IDisposable
     {
         var version = Utilities.GetVersion();
 
-        if (version.Contains('+'))
-        {
-            version = version.Substring(0, version.IndexOf('+'));
-        }
-
         var releases = await GetReleases();
 
         return releases.FirstOrDefault()?.tag_name.TrimStart('v') != version;
