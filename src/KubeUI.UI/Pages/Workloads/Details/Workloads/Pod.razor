@@ -14,12 +14,19 @@
                     {
                         color = Color.Error;
                     }
-                    else if (context.Status?.Phase == "Pending")
+                    else if (context.Status?.Phase == "Pending" || context.Metadata.DeletionTimestamp.HasValue)
                     {
                         color = Color.Warning;
                     }
                 }
-                <MudText Color="color" Typo="Typo.inherit">@context.Status?.Phase</MudText>
+                @if (context.Metadata.DeletionTimestamp.HasValue)
+                {
+                    <MudText Color="color" Typo="Typo.inherit">Terminating</MudText>
+                }
+                else
+                {
+                    <MudText Color="color" Typo="Typo.inherit">@context.Status?.Phase</MudText>
+                }
             </OverviewSectionItem>
             <OverviewSectionItem Title="Node">
                 @context.Spec.NodeName

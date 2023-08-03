@@ -31,12 +31,19 @@
                     {
                         color = Color.Error;
                     }
-                    else if (context.Item1.Status?.Phase == "Pending")
+                    else if (context.Item1.Status?.Phase == "Pending" || context.Item1.Metadata.DeletionTimestamp.HasValue)
                     {
                         color = Color.Warning;
-                    };
+                    }
                 }
-                <MudText Color="color" Typo="Typo.inherit">@context.Item1.Status?.Phase</MudText>
+                @if (context.Item1.Metadata.DeletionTimestamp.HasValue)
+                {
+                    <MudText Color="color" Typo="Typo.inherit">Terminating</MudText>
+                }
+                else
+                {
+                    <MudText Color="color" Typo="Typo.inherit">@context.Item1.Status?.Phase</MudText>
+                }
             </DisplayContent>
         </ColumnComponent>
     </Columns>
