@@ -3,12 +3,8 @@
   "enabled": true,
   "timezone": "America/Vancouver",
   "dependencyDashboard": true,
-  "dependencyDashboardTitle": "Renovate Dashboard",
   "semanticCommits": "enabled",
-  "suppressNotifications": [ "prIgnoreNotification" ],
-  "rebaseWhen": "auto",
   "assignees": [ "@ivanjosipovic" ],
-  "extends": [ "config:base" ],
   "platformAutomerge": true,
   "packageRules": [
     {
