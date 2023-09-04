@@ -1,4 +1,3 @@
-using KubeUI.UI.Components;
 using KubeUI.UI.Components.Dynamic;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
@@ -6,10 +5,6 @@ using Microsoft.JSInterop;
 using Moq;
 using MudBlazor;
 using MudBlazor.Services;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static KubeUI.Core.Client.HelmRelease;
 
 namespace KubeUI.UI.Tests;
 
