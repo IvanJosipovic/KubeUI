@@ -5,6 +5,7 @@
   "dependencyDashboard": true,
   "semanticCommits": "enabled",
   "assignees": [ "@ivanjosipovic" ],
+  "extends": [ "config:recommended" ],
   "platformAutomerge": true,
   "packageRules": [
     {
