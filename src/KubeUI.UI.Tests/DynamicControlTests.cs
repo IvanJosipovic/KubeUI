@@ -23,7 +23,7 @@ public class DynamicControlTests : TestContext
         Services.AddSingleton<IBrowserWindowSizeProvider, MockBrowserWindowSizeProvider>();
         Services.AddSingleton<IMudPopoverService, MockPopoverService>();
         Services.AddSingleton<IPopoverService, MockPopoverServiceV2>();
-
+        Services.AddSingleton(x => Mock.Of<IJsApiService>());
     }
 
     private class UI1
