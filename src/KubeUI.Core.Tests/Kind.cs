@@ -14,7 +14,7 @@ namespace KubeUI.Core.Tests;
 
 public class Kind
 {
-    public string Version = "0.18.0";
+    public string Version = "0.20.0";
 
     public string FileName { get; } = "kind" + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "");
 
