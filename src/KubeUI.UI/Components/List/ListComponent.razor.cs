@@ -205,7 +205,7 @@ public partial class ListComponent<TItem> : ListBase<TItem>, IDisposable where T
     private void New()
     {
         var type = GroupApiVersionKind.From<TItem>();
-        NavigationManager.NavigateTo($"new/{type.Group}/{type.ApiVersion}/{type.Kind}");
+        NavigationManager.NavigateTo($"new/{type.Group}/{type.ApiVersion}/{type.Kind}".Replace("//", "/"));
     }
 
     private async Task Delete()
