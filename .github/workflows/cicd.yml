@@ -91,7 +91,7 @@ jobs:
       run: Compress-Archive -Path bin/publish/wwwroot/* -DestinationPath KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-web.zip
       shell: pwsh
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: KubeUI-web
         path: src/KubeUI.Web/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-web.zip
@@ -125,7 +125,7 @@ jobs:
       working-directory: src/KubeUI.WPF
       run: ../../inst/iscc.exe "/DMyAppVersion=${{ needs.semantic-release.outputs.new_release_version }}" "/DMyOutputBaseFilename=KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-win-x64" .\setup.iss
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: KubeUI-win-x64-setup
         path: src/KubeUI.WPF/Output/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-win-x64.exe
@@ -135,7 +135,7 @@ jobs:
       run: Compress-Archive -Path bin/publish/* -DestinationPath KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-win-x64.zip
       shell: pwsh
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: KubeUI-win-x64
         path: src/KubeUI.WPF/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-win-x64.zip
@@ -167,7 +167,7 @@ jobs:
     - name: Rename
       run: mv src/KubeUI.Maui/bin/Release/net8.0-maccatalyst/publish/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}.pkg src/KubeUI.Maui/bin/Release/net8.0-maccatalyst/publish/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-osx-x64.pkg
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: KubeUI-osx-x64
         path: src/KubeUI.Maui/bin/Release/net8.0-maccatalyst/publish/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-osx-x64.pkg
