@@ -134,13 +134,13 @@ public class ClusterManager : IDisposable
     private void Init()
     {
         var kubeAssemblyXmlDoc = new XmlDocument();
-        kubeAssemblyXmlDoc.Load(typeof(CRDGenerator).Assembly.GetManifestResourceStream("runtime.KubernetesClient.Models.xml"));
+        kubeAssemblyXmlDoc.Load(typeof(CRDGenerator).Assembly.GetManifestResourceStream("runtime.KubernetesClient.xml"));
 
         ModelCache.AddToCache(typeof(V1Deployment).Assembly, kubeAssemblyXmlDoc);
 
         var coreAssembly = typeof(Cluster).Assembly;
 
-        initType(typeof(V2beta1HelmRelease));
+        initType(typeof(V2beta2HelmRelease));
 
         void initType(Type type)
         {
