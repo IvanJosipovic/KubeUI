@@ -31,7 +31,7 @@ public partial class HelmReleaseUpgrade
 
     private IKubernetesObject<V1ObjectMeta> Right { get; set; }
 
-    private V2beta1HelmRelease HelmRelease;
+    private V2beta2HelmRelease HelmRelease;
 
     private V1beta2HelmRepository? HelmRepository;
 
@@ -47,9 +47,9 @@ public partial class HelmReleaseUpgrade
         httpClient.DefaultRequestHeaders.UserAgent.TryParseAdd("KubeUI.com");
 
         // Get Helm Release
-        HelmRelease = ClusterManager.GetActiveCluster().GetObject<V2beta1HelmRelease>(Namespace, Name);
+        HelmRelease = ClusterManager.GetActiveCluster().GetObject<V2beta2HelmRelease>(Namespace, Name);
 
-        HelmRelease = (V2beta1HelmRelease?)ObjectCompare.CleanObject(Utilities.CloneObject(HelmRelease));
+        HelmRelease = (V2beta2HelmRelease?)ObjectCompare.CleanObject(Utilities.CloneObject(HelmRelease));
 
         // Get Source
         var sourceType = HelmRelease.Spec.Chart.Spec.SourceRef.Kind;
