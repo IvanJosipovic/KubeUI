@@ -9,8 +9,8 @@
 	<ItemGroup>
 		<PackageReference Include="JsonPathLINQ" Version="1.0.0-alpha.8" />
 		<PackageReference Include="KubernetesClient" Version="13.0.1" />
-		<PackageReference Include="KubernetesCRDModelGen" Version="1.0.0-alpha.267" />
-		<PackageReference Include="KubernetesCRDModelGen.Models.fluxcd.io" Version="1.0.0-alpha.267" />
+		<PackageReference Include="KubernetesCRDModelGen" Version="1.0.0-alpha.272" />
+		<PackageReference Include="KubernetesCRDModelGen.Models.fluxcd.io" Version="1.0.0-alpha.272" />
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
