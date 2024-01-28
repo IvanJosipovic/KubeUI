@@ -11,6 +11,7 @@
     <PublishSingleFile>true</PublishSingleFile>
     <DebugType>None</DebugType>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
   </PropertyGroup>
 
   <ItemGroup>
