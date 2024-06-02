@@ -1,7 +1,7 @@
 # [KubeUI.com](https://KubeUI.com)
 
-![cicd](https://github.com/IvanJosipovic/KubeUI2/workflows/CICD/badge.svg)
-[![codecov](https://codecov.io/gh/IvanJosipovic/KubeUI2/graph/badge.svg?token=UvGEobxtO1)](https://codecov.io/gh/IvanJosipovic/KubeUI2)
+![cicd](https://github.com/IvanJosipovic/KubeUI/workflows/CICD/badge.svg)
+[![codecov](https://codecov.io/gh/IvanJosipovic/KubeUI/branch/alpha/graph/badge.svg?token=E05HWW1QYR)](https://codecov.io/gh/IvanJosipovic/KubeUI)
 
 ## What is this?
 
@@ -20,11 +20,11 @@ KubeUI is a user interface for Kubernetes.
 
 Go to [Releases](https://github.com/IvanJosipovic/KubeUI/releases) and download the version for your OS.
 
-Supported Platforms:
+Supported Platforms (AMD64 and ARM64):
 
-- Windows
 - Linux
 - Mac
+- Windows
 
 ## Example
 
