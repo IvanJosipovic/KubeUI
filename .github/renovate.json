@@ -7,25 +7,31 @@
   "assignees": [ "@ivanjosipovic" ],
   "extends": [ "config:recommended" ],
   "platformAutomerge": true,
+  "ignorePaths": [
+    "**/docs/**"
+  ],
   "packageRules": [
     {
-      "automerge": true,
-      "matchUpdateTypes": ["minor", "patch", "digest"],
-      "matchCurrentVersion": "!/^0/",
-      "matchFileNames": [
-        "src/KubeUI.Core.Tests/KubeUI.Core.Tests.csproj",
-        "src/KubeUI.UI.Tests/KubeUI.UI.Tests.csproj"
-      ]
-    },
-    {
-      "groupName": "KubernetesCRDModelGen",
+      "groupName": "Avalonia",
       "separateMajorMinor": true,
-      "groupSlug": "kubernetescrdmodelgen",
+      "groupSlug": "avalonia-libs",
       "packageRules": [
         {
           "matchPackagePatterns": [
-            "KubernetesCRDModelGen",
-            "KubernetesCRDModelGen.*"
+            "Avalonia",
+            "Avalonia.*"
+          ]
+        }
+      ]
+    },
+    {
+      "groupName": "Dock",
+      "separateMajorMinor": true,
+      "groupSlug": "dock",
+      "packageRules": [
+        {
+          "matchPackagePatterns": [
+            "Dock.*"
           ]
         }
       ]
