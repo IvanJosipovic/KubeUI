@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using Avalonia;
 
 namespace KubeUI.ViewModels;
 
@@ -16,5 +17,5 @@ public sealed partial class AboutViewModel : ViewModelBase
         return version;
     }
 
-    public string? Version { get; }
+    public string? Version { get; } = GetVersion();
 }

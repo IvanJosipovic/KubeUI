@@ -14,7 +14,7 @@
     <StackPanel>
         <TextBlock Padding="5,0,0,0">Created by Ivan Josipovic</TextBlock>
         <ui:HyperlinkButton NavigateUri="mailto:admin@kubeui.com">admin@KubeUI.com</ui:HyperlinkButton>
-        <TextBlock Padding="5,0,0,0" Text="{ReflectionBinding Version, StringFormat='Version: {0}', FallbackValue='Version: Unknown'}" />
+        <TextBlock Padding="5,0,0,0" Text="{Binding Version, StringFormat='Version: {0}', FallbackValue='Version: Unknown'}" />
         <ui:HyperlinkButton NavigateUri="https://github.com/IvanJosipovic/KubeUI">https://github.com/IvanJosipovic/KubeUI</ui:HyperlinkButton>
     </StackPanel>
 </UserControl>
