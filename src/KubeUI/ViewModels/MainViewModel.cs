@@ -193,7 +193,7 @@ public sealed partial class MainViewModel : ViewModelBase
 
     private void CheckVersion()
     {
-        var sor = new GithubSource("https://github.com/IvanJosipovic/KubeUI2", null, true);
+        var sor = new GithubSource("https://github.com/IvanJosipovic/KubeUI", null, true);
 
         var arch = "x64";
 
