@@ -1,0 +1,57 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Basic.Reference.Assemblies.Net80" Version="1.7.2" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+    <PackageReference Include="KubernetesClient" Version="14.0.2" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
+    <PackageReference Include="Microsoft.OpenApi.Readers" Version="1.6.14" />
+    <PackageReference Include="roslynator.analyzers" Version="4.12.4">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <Target Name="EmbedSourceGenerators" AfterTargets="ResolvePackageAssets">
+    <ItemGroup>
+      <!-- add these assemblies to the list of embedded resources -->
+      <SourceGenFilesToEmbed Include="@(ResolvedAnalyzers)" Condition="('%(ResolvedAnalyzers.Filename)' == 'CommunityToolkit.Mvvm.SourceGenerators')" />
+
+      <EmbeddedResource Include="@(SourceGenFilesToEmbed->'%(RelativeDir)%(FileName).dll'-> Exists())">
+        <LogicalName>sourceGen.%(SourceGenFilesToEmbed.Filename)%(SourceGenFilesToEmbed.Extension)</LogicalName>
+      </EmbeddedResource>
+    </ItemGroup>
+
+    <Message Importance="high" Text="Embedding Source Gen: @(SourceGenFilesToEmbed->'%(Filename)%(Extension)', ', ')" />
+
+  </Target>
+
+  <Target Name="EmbedResolveReferences" AfterTargets="ResolveReferences">
+    <ItemGroup>
+      <!-- add these assemblies to the list of embedded resources -->
+      <FilesToEmbed Include="@(ReferencePath)" Condition="('%(ReferencePath.Filename)' == 'KubernetesClient' OR '%(ReferencePath.Filename)' == 'CommunityToolkit.Mvvm'  OR '%(ReferencePath.Filename)' == 'CommunityToolkit.Mvvm.SourceGenerators')" />
+
+      <EmbeddedResource Include="@(FilesToEmbed->'%(RelativeDir)%(FileName).dll'-> Exists())">
+        <LogicalName>runtime.%(FilesToEmbed.Filename)%(FilesToEmbed.Extension)</LogicalName>
+      </EmbeddedResource>
+
+      <!-- add xml documentation for list of assemblies -->
+      <XmlFilesToEmbed Include="@(FilesToEmbed->'%(RelativeDir)%(FileName).xml'-> Exists())" Condition="('%(FilesToEmbed.Filename)' == 'KubernetesClient')" />
+
+      <EmbeddedResource Include="@(XmlFilesToEmbed)">
+        <LogicalName>runtime.%(XmlFilesToEmbed.Filename)%(XmlFilesToEmbed.Extension)</LogicalName>
+      </EmbeddedResource>
+    </ItemGroup>
+
+    <Message Importance="high" Text="Embedding Dll: @(FilesToEmbed->'%(Filename)%(Extension)', ', ')" />
+    <Message Importance="high" Text="Embedding Xml: @(XmlFilesToEmbed->'%(Filename)%(Extension)', ', ')" />
+
+  </Target>
+
+</Project>

@@ -1,0 +1,51 @@
+<UserControl
+    x:Class="KubeUI.Views.ResourceListView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:client="clr-namespace:KubeUI.Client"
+    xmlns:con="clr-namespace:KubeUI.Converters"
+    xmlns:controls="clr-namespace:KubeUI.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:kube="clr-namespace:k8s.Models"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="clr-namespace:k8s.Models;assembly=KubernetesClient"
+    xmlns:views="clr-namespace:KubeUI.Views"
+    xmlns:vm="clr-namespace:KubeUI.ViewModels"
+    d:DesignHeight="300"
+    d:DesignWidth="600"
+    mc:Ignorable="d">
+    <Design.DataContext>
+        <vm:DemoResourceListViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*">
+        <StackPanel Orientation="Horizontal">
+            <Label
+                Width="200"
+                Content="{ReflectionBinding DataGridObjects.Count, StringFormat='Items: {0}'}"
+                 />
+            <ComboBox
+                Name="Namespaces"
+                Grid.Row="0"
+                Width="200"
+                DisplayMemberBinding="{ReflectionBinding Metadata.Name}"
+                ItemsSource="{ReflectionBinding Path=Namespaces.Values}"
+                PlaceholderText="Select a Namespace"
+                SelectedItem="{ReflectionBinding Path=SelectedNamespaces}" />
+        </StackPanel>
+
+        <DataGrid
+            Name="Grid"
+            Grid.Row="1"
+            CanUserReorderColumns="True"
+            CanUserResizeColumns="True"
+            CanUserSortColumns="True"
+            GridLinesVisibility="All"
+            IsReadOnly="True"
+            ItemsSource="{ReflectionBinding Path=DataGridObjects}"
+            MinColumnWidth="90"
+            RowHeight="32"
+            SelectedItem="{ReflectionBinding SelectedItem}" />
+    </Grid>
+
+</UserControl>

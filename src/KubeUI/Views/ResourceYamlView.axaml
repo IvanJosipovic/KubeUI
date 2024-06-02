@@ -1,0 +1,46 @@
+<UserControl
+    x:Class="KubeUI.Views.ResourceYamlView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:AvalonEdit="using:AvaloniaEdit"
+    xmlns:client="clr-namespace:KubeUI.Client"
+    xmlns:con="clr-namespace:KubeUI.Converters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="clr-namespace:k8s.Models;assembly=KubernetesClient"
+    xmlns:ui="using:FluentAvalonia.UI.Controls"
+    xmlns:views="clr-namespace:KubeUI.Views"
+    xmlns:vm="clr-namespace:KubeUI.ViewModels"
+    d:DesignHeight="300"
+    d:DesignWidth="600"
+    mc:Ignorable="d">
+    <Design.DataContext>
+        <vm:DemoResourceYamlViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*">
+        <ui:CommandBar Grid.Row="0" DefaultLabelPosition="Right">
+            <ui:CommandBar.PrimaryCommands>
+                <ui:CommandBarButton
+                    Command="{ReflectionBinding SaveCommand}"
+                    IconSource="Save"
+                    Label="Save" />
+                <ui:CommandBarButton
+                    Command="{ReflectionBinding UndoCommand}"
+                    IconSource="Undo"
+                    Label="Undo" />
+            </ui:CommandBar.PrimaryCommands>
+        </ui:CommandBar>
+        <AvalonEdit:TextEditor
+            Name="Editor"
+            Grid.Row="1"
+            Document="{ReflectionBinding YamlDocument}"
+            FontFamily="Consolas,Menlo,Monospace"
+            FontSize="14"
+            FontWeight="Normal"
+            HorizontalScrollBarVisibility="Auto"
+            IsReadOnly="False"
+            ShowLineNumbers="True"
+            VerticalScrollBarVisibility="Visible" />
+    </Grid>
+</UserControl>

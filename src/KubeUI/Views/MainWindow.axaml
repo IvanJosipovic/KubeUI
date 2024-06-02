@@ -1,0 +1,29 @@
+<Window
+    x:Class="KubeUI.Views.MainWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:views="clr-namespace:KubeUI.Views"
+    xmlns:vm="using:KubeUI.ViewModels"
+    Title="KubeUI"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    Icon="/Assets/icon.ico"
+    TransparencyLevelHint="AcrylicBlur"
+    UseLayoutRounding="True"
+    mc:Ignorable="d">
+    <Panel>
+        <ExperimentalAcrylicBorder IsHitTestVisible="False">
+            <ExperimentalAcrylicBorder.Material>
+                <ExperimentalAcrylicMaterial
+                    BackgroundSource="Digger"
+                    FallbackColor="{DynamicResource AcrylicFallbackColor}"
+                    MaterialOpacity="0.55"
+                    TintColor="{DynamicResource SystemAltHighColor}"
+                    TintOpacity="1" />
+            </ExperimentalAcrylicBorder.Material>
+        </ExperimentalAcrylicBorder>
+        <views:MainView />
+    </Panel>
+</Window>

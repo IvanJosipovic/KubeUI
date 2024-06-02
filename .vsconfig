@@ -1,0 +1,13 @@
+{
+  "version": "1.0",
+  "components": [
+  ],
+  "extensions": [
+    "https://marketplace.visualstudio.com/items?itemName=TeamXavalon.XAMLStyler2022",
+    "https://marketplace.visualstudio.com/items?itemName=AvaloniaTeam.AvaloniaVS",
+    "https://marketplace.visualstudio.com/items?itemName=AvaloniaTeam.TemplateStudioForAvalonia",
+    "https://marketplace.visualstudio.com/items?itemName=MadsKristensen.TrailingWhitespace64",
+    "https://marketplace.visualstudio.com/items?itemName=EWoodruff.VisualStudioSpellCheckerVS2022andLater",
+    "https://marketplace.visualstudio.com/items?itemName=MadsKristensen.OpenCommandLine64"
+  ]
+}

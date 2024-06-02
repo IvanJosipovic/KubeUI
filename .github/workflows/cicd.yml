@@ -1,0 +1,210 @@
+name: CICD
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'main'
+      - 'alpha'
+      - 'beta'
+      - 'dev'
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+jobs:
+  semantic-release:
+    name: Bump Version
+    runs-on: ubuntu-latest
+    outputs:
+      new_release_published: ${{ steps.semantic.outputs.new_release_published }}
+      new_release_version: ${{ (steps.semantic.outputs.new_release_published && steps.semantic.outputs.new_release_version) || '0.0.1' }}
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Semantic Release
+      uses: cycjimmy/semantic-release-action@v4
+      id: semantic
+      with:
+        dry_run: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v4
+      with:
+        global-json-file: src/global.json
+
+    - name: Test Core
+      working-directory: src/KubeUI.Core.Tests
+      run: dotnet test -c Release --collect:"XPlat Code Coverage"
+
+    - name: Test UI
+      working-directory: src/KubeUI.UI.Tests
+      run: dotnet test -c Release --collect:"XPlat Code Coverage"
+
+    - name: Coverage
+      uses: codecov/codecov-action@v3
+      with:
+        file: coverage.cobertura.xml
+
+  build_web:
+    name: Build & Deploy Web
+    needs: [semantic-release, tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v4
+      with:
+        global-json-file: src/global.json
+
+    - name: Publish
+      working-directory: src/KubeUI.Web
+      run: dotnet publish -c Release -p:Version=${{ needs.semantic-release.outputs.new_release_version }} -o bin/publish
+
+    - name: Deploy
+      run: npx netlify deploy ${{ (github.ref == 'refs/heads/alpha' && '--prod') || '' }} --json -d src/KubeUI.Web/bin/publish/wwwroot
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
+    - name: Purge CDN
+      if: github.ref == 'refs/heads/alpha'
+      run: |
+        curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_SITE_ID }}/purge_cache" \
+          -H "Authorization: ${{ secrets.CLOUDFLARE_AUTH_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          --data '{"purge_everything":true}'
+      shell: bash
+
+    - name: Publish
+      working-directory: src/KubeUI.Web
+      run: Compress-Archive -Path bin/publish/wwwroot/* -DestinationPath KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-web.zip
+      shell: pwsh
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: KubeUI-web
+        path: src/KubeUI.Web/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-web.zip
+
+  build_windows:
+    name: Build Windows
+    needs: [semantic-release, tests]
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v4
+      with:
+        global-json-file: src/global.json
+
+    - name: Download Inno Setup installer
+      run: curl -L -o installer.exe https://jrsoftware.org/download.php/is.exe
+
+    - name: Install Inno Setup
+      run: |
+        ./installer.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /DIR=inst /DOWNLOADISCRYPT=1 | Out-Null
+      shell: pwsh
+
+    - name: Publish
+      working-directory: src/KubeUI.WPF
+      run: dotnet publish -c Release -r win-x64 -p:Version=${{ needs.semantic-release.outputs.new_release_version }} -o bin/publish --self-contained
+
+    - name: Package
+      working-directory: src/KubeUI.WPF
+      run: ../../inst/iscc.exe "/DMyAppVersion=${{ needs.semantic-release.outputs.new_release_version }}" "/DMyOutputBaseFilename=KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-win-x64" .\setup.iss
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: KubeUI-win-x64-setup
+        path: src/KubeUI.WPF/Output/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-win-x64.exe
+
+    - name: Compress
+      working-directory: src/KubeUI.WPF
+      run: Compress-Archive -Path bin/publish/* -DestinationPath KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-win-x64.zip
+      shell: pwsh
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: KubeUI-win-x64
+        path: src/KubeUI.WPF/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-win-x64.zip
+
+  build_mac:
+    name: Build Mac
+    needs: [semantic-release, tests]
+    runs-on: macos-latest
+    timeout-minutes: 25
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v4
+      with:
+        global-json-file: src/global.json
+
+    - name: Install maui-maccatalyst
+      run: dotnet workload install maui-maccatalyst
+
+    - name: Publish
+      working-directory: src/KubeUI.Maui
+      run: dotnet publish -c Release -f:net8.0-maccatalyst -p:Version=${{ needs.semantic-release.outputs.new_release_version }} -p:ApplicationDisplayVersion=${{ needs.semantic-release.outputs.new_release_version }} -p:ApplicationVersion=${{ needs.semantic-release.outputs.new_release_version }}
+
+    - name: Rename
+      run: mv src/KubeUI.Maui/bin/Release/net8.0-maccatalyst/publish/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}.pkg src/KubeUI.Maui/bin/Release/net8.0-maccatalyst/publish/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-osx-x64.pkg
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: KubeUI-osx-x64
+        path: src/KubeUI.Maui/bin/Release/net8.0-maccatalyst/publish/KubeUI-${{ needs.semantic-release.outputs.new_release_version }}-osx-x64.pkg
+
+  release:
+    if: needs.semantic-release.outputs.new_release_published == 'true'
+    name: Create Release
+    needs: [build_web, build_windows, build_mac]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download artifact win-x64
+      uses: actions/download-artifact@v4
+      with:
+        name: KubeUI-win-x64
+        path: dist/
+
+    - name: Download artifact win-x64
+      uses: actions/download-artifact@v4
+      with:
+        name: KubeUI-win-x64-setup
+        path: dist/
+
+    - name: Download artifact web
+      uses: actions/download-artifact@v4
+      with:
+        name: KubeUI-web
+        path: dist/
+
+    - name: Download artifact osx-x64
+      uses: actions/download-artifact@v4
+      with:
+        name: KubeUI-osx-x64
+        path: dist/
+
+    - name: Semantic Release
+      uses: cycjimmy/semantic-release-action@v4
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

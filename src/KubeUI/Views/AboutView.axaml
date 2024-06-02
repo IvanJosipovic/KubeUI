@@ -1,0 +1,20 @@
+<UserControl
+    x:Class="KubeUI.Views.AboutView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="using:FluentAvalonia.UI.Controls"
+    xmlns:views="clr-namespace:KubeUI.Views"
+    xmlns:vm="clr-namespace:KubeUI.ViewModels"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    x:DataType="vm:AboutViewModel"
+    mc:Ignorable="d">
+    <StackPanel>
+        <TextBlock Padding="5,0,0,0">Created by Ivan Josipovic</TextBlock>
+        <ui:HyperlinkButton NavigateUri="mailto:admin@kubeui.com">admin@KubeUI.com</ui:HyperlinkButton>
+        <TextBlock Padding="5,0,0,0" Text="{ReflectionBinding Version, StringFormat='Version: {0}', FallbackValue='Version: Unknown'}" />
+        <ui:HyperlinkButton NavigateUri="https://github.com/IvanJosipovic/KubeUI">https://github.com/IvanJosipovic/KubeUI</ui:HyperlinkButton>
+    </StackPanel>
+</UserControl>
