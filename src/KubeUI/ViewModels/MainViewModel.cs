@@ -243,8 +243,18 @@ public sealed partial class MainViewModel : ViewModelBase
 
                 if (result == ContentDialogResult.Primary)
                 {
+                    ContentDialogSettings updatePrompt = new()
+                    {
+                        Content = "Updating, please wait...",
+                        Title = "Updating",
+                        IsPrimaryButtonEnabled = false,
+                        IsSecondaryButtonEnabled = false
+                    };
+
+                    _ = _dialogService.ShowContentDialogAsync(this, updatePrompt);
+
                     um.DownloadUpdates(update);
-                    um.ApplyUpdatesAndExit(update);
+                    um.ApplyUpdatesAndRestart(update);
                 }
             }
         }
