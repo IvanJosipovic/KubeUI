@@ -44,7 +44,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
         _ = Task.Run(async () =>
         {
-            while (!_isConnected)
+            while (_isConnected)
             {
                 try
                 {
