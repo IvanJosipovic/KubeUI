@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -10,6 +9,10 @@ using KubeUI.Client;
 using Velopack.Sources;
 using Velopack;
 using Microsoft.Extensions.Logging;
+using FluentAvalonia.UI.Controls;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using HanumanInstitute.MvvmDialogs;
+using System.Threading.Tasks;
 
 namespace KubeUI.ViewModels;
 
@@ -28,6 +31,8 @@ public sealed partial class MainViewModel : ViewModelBase
 
         _factory = Application.Current.GetRequiredService<IFactory>();
 
+        _dialogService = Application.Current.GetRequiredService<IDialogService>();
+
         DebugFactoryEvents(_factory);
 
         Layout = _factory?.CreateLayout();
@@ -35,9 +40,13 @@ public sealed partial class MainViewModel : ViewModelBase
         {
             _factory?.InitLayout(Layout);
         }
+
+        Task.Run(CheckForUpdates);
     }
 
     private readonly IFactory? _factory;
+
+    private readonly IDialogService _dialogService;
 
     [ObservableProperty]
     private IRootDock? _layout;
@@ -179,8 +188,6 @@ public sealed partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void OpenAbout()
     {
-        CheckVersion();
-
         var doc = _factory.GetDockable<IDocumentDock>("Documents");
 
         var about = Application.Current.GetRequiredService<AboutViewModel>();
@@ -189,9 +196,11 @@ public sealed partial class MainViewModel : ViewModelBase
 
         _factory?.AddDockable(doc, about);
         _factory?.SetActiveDockable(about);
+
+        Task.Run(CheckForUpdates);
     }
 
-    private void CheckVersion()
+    private async Task CheckForUpdates()
     {
         var sor = new GithubSource("https://github.com/IvanJosipovic/KubeUI", null, true);
 
@@ -221,8 +230,22 @@ public sealed partial class MainViewModel : ViewModelBase
 
             if (update != null)
             {
-                um.DownloadUpdates(update);
-                um.ApplyUpdatesAndExit(update);
+                ContentDialogSettings settings = new()
+                {
+                    Content = "A new update is available. Update and restart now?",
+                    Title = "New Update Available",
+                    PrimaryButtonText = "Yes",
+                    SecondaryButtonText = "No",
+                    DefaultButton = ContentDialogButton.Secondary
+                };
+
+                var result = await _dialogService.ShowContentDialogAsync(this, settings);
+
+                if (result == ContentDialogResult.Primary)
+                {
+                    um.DownloadUpdates(update);
+                    um.ApplyUpdatesAndExit(update);
+                }
             }
         }
     }
