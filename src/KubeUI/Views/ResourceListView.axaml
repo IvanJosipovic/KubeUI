@@ -19,20 +19,34 @@
     </Design.DataContext>
 
     <Grid RowDefinitions="Auto,*">
-        <StackPanel Orientation="Horizontal">
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*">
             <Label
+                Grid.Column="0"
                 Width="200"
-                Content="{ReflectionBinding DataGridObjects.Count, StringFormat='Items: {0}'}"
-                 />
-            <ComboBox
-                Name="Namespaces"
-                Grid.Row="0"
-                Width="200"
-                DisplayMemberBinding="{ReflectionBinding Metadata.Name}"
-                ItemsSource="{ReflectionBinding Path=Namespaces.Values}"
-                PlaceholderText="Select a Namespace"
-                SelectedItem="{ReflectionBinding Path=SelectedNamespaces}" />
-        </StackPanel>
+                Content="{ReflectionBinding DataGridObjects.Count,
+                                            StringFormat='Items: {0}'}" />
+            <Grid
+                Grid.Column="1"
+                HorizontalAlignment="Right"
+                ColumnDefinitions="*,*">
+                <TextBox
+                    Grid.Column="0"
+                    Width="200"
+                    HorizontalAlignment="Right"
+                    IsEnabled="False"
+                    Watermark="Search" />
+                <ComboBox
+                    Name="Namespaces"
+                    Grid.Column="1"
+                    Width="200"
+                    HorizontalAlignment="Right"
+                    DisplayMemberBinding="{ReflectionBinding Metadata.Name,
+                                                             FallbackValue='Select a Namespace'}"
+                    ItemsSource="{ReflectionBinding Path=Namespaces.Values}"
+                    SelectedItem="{ReflectionBinding Path=SelectedNamespaces}" />
+            </Grid>
+
+        </Grid>
 
         <DataGrid
             Name="Grid"
