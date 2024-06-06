@@ -1,10 +1,11 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-using System;
-using System.Diagnostics.CodeAnalysis;
 using k8s;
 using k8s.Models;
+using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 namespace KubeUI.Client.Informer;
 
@@ -21,6 +22,7 @@ public struct NamespacedName : IEquatable<NamespacedName>
     /// </summary>
     /// <param name="namespace">The namespace.</param>
     /// <param name="name">The name.</param>
+    [JsonConstructor]
     public NamespacedName(string @namespace, string name)
     {
         Namespace = @namespace;
@@ -72,9 +74,9 @@ public struct NamespacedName : IEquatable<NamespacedName>
     }
 
     /// <summary>
-    /// Gets key values from the specified metadata.
+    /// Gets key values from the specified resource.
     /// </summary>
-    /// <param name="metadata">The metadata.</param>
+    /// <param name="resource">The resource.</param>
     /// <returns>NamespacedName.</returns>
     public static NamespacedName From(IKubernetesObject<V1ObjectMeta> resource)
     {
@@ -124,6 +126,6 @@ public struct NamespacedName : IEquatable<NamespacedName>
     /// <returns>A <see cref="string" /> that represents this instance.</returns>
     public override string ToString()
     {
-        return $"{Name}.{Namespace}";
+        return $"{Namespace}/{Name}";
     }
 }
