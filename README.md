@@ -15,6 +15,7 @@ KubeUI is a user interface for Kubernetes.
   - View Pod Logs
   - View Pod Console
 - Custom Resource Definition support
+- Automatic updates
 
 ## How to run?
 
