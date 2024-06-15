@@ -66,21 +66,27 @@ jobs:
           - rid: win-x64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
+            icon: --icon ../KubeUI/Assets/icon.ico
           - rid: win-arm64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
+            icon: --icon ../KubeUI/Assets/icon.ico
           - rid: linux-x64
             fileName: KubeUI.Desktop
             runs-on: ubuntu-latest
+            icon: ''
           - rid: linux-arm64
             fileName: KubeUI.Desktop
             runs-on: ubuntu-latest
+            icon: ''
           - rid: osx-x64
             fileName: KubeUI.Desktop
             runs-on: macos-latest
+            icon: --icon ../KubeUI/Assets/icon.icns
           - rid: osx-arm64
             fileName: KubeUI.Desktop
             runs-on: macos-latest
+            icon: --icon ../KubeUI/Assets/icon.icns
     steps:
       - uses: actions/checkout@v4
 
@@ -104,7 +110,7 @@ jobs:
         working-directory: src/KubeUI.Desktop
         run: |
           vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} -c ${{ matrix.rid }} --pre
-          vpk pack --packTitle KubeUI -u KubeUI -v ${{ needs.semantic-release.outputs.new_release_version }} -p bin/publish -c ${{ matrix.rid }} -e ${{ matrix.fileName }} -o packed --icon ../KubeUI/Assets/icon.ico
+          vpk pack --packTitle KubeUI -u KubeUI -v ${{ needs.semantic-release.outputs.new_release_version }} -p bin/publish -c ${{ matrix.rid }} -e ${{ matrix.fileName }} -o packed ${{ matrix.icon }}
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
