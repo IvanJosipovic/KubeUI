@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,6 +11,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Controls;
 using Dock.Model.Core;
+using DynamicData;
+using DynamicData.Binding;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
@@ -26,7 +29,7 @@ namespace KubeUI.ViewModels;
 [EditorBrowsable(EditorBrowsableState.Never)]
 internal class DemoResourceListViewModel : ResourceListViewModel<V1Pod> { public DemoResourceListViewModel() { } }
 
-public partial class ResourceListViewModel<T> : ViewModelBase where T : class, IKubernetesObject<V1ObjectMeta>, new()
+public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     private readonly IDialogService _dialogService;
 
@@ -48,13 +51,15 @@ public partial class ResourceListViewModel<T> : ViewModelBase where T : class, I
     private object _selectedNamespaces;
 
     [ObservableProperty]
-    private DataGridCollectionView _dataGridObjects;
+    private ReadOnlyObservableCollection<KeyValuePair<NamespacedName, T>> _dataGridObjects;
 
     [ObservableProperty]
     private ConcurrentObservableDictionary<NamespacedName, V1Namespace> _namespaces;
 
     [ObservableProperty]
     private string _searchQuery;
+
+    private IDisposable _filter;
 
     public ResourceListViewModel()
     {
@@ -64,7 +69,12 @@ public partial class ResourceListViewModel<T> : ViewModelBase where T : class, I
 
     public void Initialize()
     {
-        DataGridObjects = new DataGridCollectionView(Objects);
+        _filter = Objects.ToObservableChangeSet<ConcurrentObservableDictionary<NamespacedName, T>, KeyValuePair<NamespacedName, T>>()
+            .Bind(out var filteredObjects)
+            .Subscribe();
+
+        DataGridObjects = filteredObjects;
+
         Namespaces = Cluster.GetObjectDictionary<V1Namespace>();
     }
 
@@ -78,7 +88,14 @@ public partial class ResourceListViewModel<T> : ViewModelBase where T : class, I
             }
             else if(SelectedNamespaces is V1Namespace @namespace)
             {
-                DataGridObjects.Filter = item => ((KeyValuePair<NamespacedName, T>)item).Key.Namespace == @namespace.Metadata.Name;
+                _filter.Dispose();
+
+                _filter = Objects.ToObservableChangeSet<ConcurrentObservableDictionary<NamespacedName, T>, KeyValuePair<NamespacedName, T>>()
+                    .Filter(x => x.Key.Namespace == @namespace.Metadata.Name)
+                    .Bind(out var filteredObjects)
+                    .Subscribe();
+
+                DataGridObjects = filteredObjects;
             }
         }
     }
@@ -229,5 +246,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase where T : class, I
     private bool CanViewConsole(object containerName)
     {
         return !string.IsNullOrEmpty(containerName as string);
+    }
+
+    public void Dispose()
+    {
+        _filter.Dispose();
     }
 }
