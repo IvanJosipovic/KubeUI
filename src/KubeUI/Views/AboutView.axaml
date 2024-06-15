@@ -13,8 +13,8 @@
     mc:Ignorable="d">
     <StackPanel>
         <TextBlock Padding="5,0,0,0">Created by Ivan Josipovic</TextBlock>
-        <ui:HyperlinkButton NavigateUri="mailto:admin@kubeui.com">admin@KubeUI.com</ui:HyperlinkButton>
+        <HyperlinkButton NavigateUri="mailto:admin@KubeUI.com">admin@KubeUI.com</HyperlinkButton>
         <TextBlock Padding="5,0,0,0" Text="{Binding Version, StringFormat='Version: {0}', FallbackValue='Version: Unknown'}" />
-        <ui:HyperlinkButton NavigateUri="https://github.com/IvanJosipovic/KubeUI">https://github.com/IvanJosipovic/KubeUI</ui:HyperlinkButton>
+        <HyperlinkButton NavigateUri="https://KubeUI.com">https://KubeUI.com</HyperlinkButton>
     </StackPanel>
 </UserControl>
