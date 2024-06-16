@@ -10,6 +10,8 @@
     <PublishSingleFile>true</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <PackageIcon>..\KubeUI\Assets\icon.ico</PackageIcon>
+    <ApplicationIcon>..\KubeUI\Assets\icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
