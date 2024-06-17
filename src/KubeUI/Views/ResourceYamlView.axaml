@@ -13,33 +13,61 @@
     xmlns:vm="clr-namespace:KubeUI.ViewModels"
     d:DesignHeight="300"
     d:DesignWidth="600"
+    x:DataType="vm:ResourceYamlViewModel"
     mc:Ignorable="d">
     <Design.DataContext>
         <vm:DemoResourceYamlViewModel />
     </Design.DataContext>
 
     <Grid RowDefinitions="Auto,*">
-        <ui:CommandBar Grid.Row="0" DefaultLabelPosition="Right">
+        <!--  In Read Only Mode  -->
+        <ui:CommandBar
+            Grid.Row="0"
+            DefaultLabelPosition="Right"
+            IsVisible="{Binding !EditMode}">
             <ui:CommandBar.PrimaryCommands>
                 <ui:CommandBarButton
-                    Command="{ReflectionBinding SaveCommand}"
+                    Command="{Binding SetEditModeCommand}"
+                    IconSource="Edit"
+                    Label="Edit" />
+                <ui:CommandBarToggleButton
+                    Command="{Binding SetHideNoisyFieldsCommand}"
+                    IconSource="Clear"
+                    IsChecked="{Binding HideNoisyFields, Mode=OneWay}"
+                    Label="Hide Noisy Fields" />
+            </ui:CommandBar.PrimaryCommands>
+        </ui:CommandBar>
+
+        <!--  In Edit Mode  -->
+        <ui:CommandBar
+            Grid.Row="0"
+            DefaultLabelPosition="Right"
+            IsVisible="{Binding EditMode}">
+            <ui:CommandBar.PrimaryCommands>
+                <ui:CommandBarButton
+                    Command="{Binding SaveCommand}"
                     IconSource="Save"
                     Label="Save" />
                 <ui:CommandBarButton
-                    Command="{ReflectionBinding UndoCommand}"
+                    Command="{Binding UndoCommand}"
                     IconSource="Undo"
                     Label="Undo" />
+                <ui:CommandBarButton
+                    Command="{Binding SetEditModeCommand}"
+                    IconSource="Cancel"
+                    Label="Cancel" />
             </ui:CommandBar.PrimaryCommands>
         </ui:CommandBar>
+
         <AvalonEdit:TextEditor
             Name="Editor"
             Grid.Row="1"
-            Document="{ReflectionBinding YamlDocument}"
+            Document="{Binding YamlDocument}"
             FontFamily="Consolas,Menlo,Monospace"
             FontSize="14"
             FontWeight="Normal"
             HorizontalScrollBarVisibility="Auto"
-            IsReadOnly="False"
+            IsReadOnly="{Binding !EditMode}"
             ShowLineNumbers="True"
             VerticalScrollBarVisibility="Visible" />
     </Grid>

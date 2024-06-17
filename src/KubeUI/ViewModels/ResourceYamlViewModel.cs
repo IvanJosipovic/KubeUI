@@ -5,6 +5,7 @@ using System.Text;
 using AvaloniaEdit.Document;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using k8s;
 using k8s.Models;
 using KubeUI.Client;
 
@@ -47,17 +48,43 @@ public partial class ResourceYamlViewModel : ViewModelBase
     private Cluster _cluster;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(YamlDocument))]
     private object _object;
 
+    [ObservableProperty]
     private TextDocument _yamlDocument;
 
-    public TextDocument YamlDocument {
-        get {
-            _yamlDocument ??= new TextDocument(Client.Serialization.KubernetesYaml.Serialize(Object));
-            return _yamlDocument;
+    [ObservableProperty]
+    private bool _editMode;
+
+    [ObservableProperty]
+    private bool _hideNoisyFields = true;
+
+    private void SetYamlDocument()
+    {
+        if (!EditMode && HideNoisyFields)
+        {
+            var ObjectClone = CloneObject(Object);
+
+            ObjectClone.Metadata.ManagedFields = null;
+
+            ObjectClone?.Metadata?.Annotations?.Remove("kubectl.kubernetes.io/last-applied-configuration");
+
+            YamlDocument = new TextDocument(Client.Serialization.KubernetesYaml.Serialize(ObjectClone));
         }
-        set { _yamlDocument = value; }
+        else
+        {
+            YamlDocument = new TextDocument(Client.Serialization.KubernetesYaml.Serialize(Object));
+        }
+    }
+
+    protected override void OnPropertyChanged(PropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+
+        if (e.PropertyName == nameof(Object) || e.PropertyName == nameof(EditMode) || e.PropertyName == nameof(HideNoisyFields))
+        {
+            SetYamlDocument();
+        }
     }
 
     public ResourceYamlViewModel()
@@ -88,5 +115,34 @@ public partial class ResourceYamlViewModel : ViewModelBase
     private bool CanSave()
     {
         return true;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanSetHideNoisyFields))]
+    private void SetHideNoisyFields()
+    {
+        HideNoisyFields = !HideNoisyFields;
+    }
+
+    private bool CanSetHideNoisyFields()
+    {
+        return true;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanSetEditMode))]
+    private void SetEditMode()
+    {
+        EditMode = !EditMode;
+    }
+
+    private bool CanSetEditMode()
+    {
+        return true;
+    }
+
+    public IKubernetesObject<V1ObjectMeta> CloneObject(object obj)
+    {
+        var source = KubernetesYaml.Serialize(obj);
+
+        return Client.Serialization.KubernetesYaml.Deserializer.Deserialize(source, obj.GetType()) as IKubernetesObject<V1ObjectMeta>;
     }
 }
