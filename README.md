@@ -1,4 +1,4 @@
-# [KubeUI.com](https://KubeUI.com)
+# KubeUI
 
 ![cicd](https://github.com/IvanJosipovic/KubeUI/workflows/CICD/badge.svg)
 [![codecov](https://codecov.io/gh/IvanJosipovic/KubeUI/branch/alpha/graph/badge.svg?token=E05HWW1QYR)](https://codecov.io/gh/IvanJosipovic/KubeUI)
