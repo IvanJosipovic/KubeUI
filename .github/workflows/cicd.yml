@@ -57,7 +57,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish-matrix:
-    name: Publish Installer
+    name: Publish Installers
     runs-on: ${{ matrix.runs-on }}
     needs: [semantic-release]
     strategy:
