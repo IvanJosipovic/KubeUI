@@ -10,15 +10,12 @@ using KubeUI.Client.Informer;
 using System.Reflection;
 using Avalonia.Threading;
 using Avalonia.Controls.Templates;
-using KubeUI.Controls;
 using Avalonia;
 using System.ComponentModel;
 using System.Linq;
 using KubeUI.ViewModels;
-using KubeUI.Client;
 using Microsoft.Extensions.Logging;
-using System.Linq.Expressions;
-using System.Collections.ObjectModel;
+using Avalonia.Styling;
 
 namespace KubeUI.Views;
 
@@ -57,7 +54,7 @@ public partial class ResourceListView : UserControl
     {
         var resourceType = typeof(T);
 
-        var definition = GetResourceListViewDefinition<T>();
+        var definition = ((ResourceListViewModel<T>)DataContext!).GetResourceListViewDefinition<T>();
 
         Grid.Columns.Clear();
 
@@ -156,14 +153,11 @@ public partial class ResourceListView : UserControl
 
         if (definition.DefaultMenuItems)
         {
-            Grid.ContextMenu.Items.Add(CreateMenuItem(new () { Header = "View", CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewCommand), CommandParameterPath = "SelectedItems" }));
-            Grid.ContextMenu.Items.Add(CreateMenuItem(new () { Header = "View Yaml", CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewYamlCommand), CommandParameterPath = "SelectedItems" }));
+            Grid.ContextMenu.Items.Add(CreateMenuItem(new () { Header = "View", CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewCommand), CommandParameterPath = "SelectedItem" }));
+            Grid.ContextMenu.Items.Add(CreateMenuItem(new () { Header = "View Yaml", CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewYamlCommand), CommandParameterPath = "SelectedItem" }));
             Grid.ContextMenu.Items.Add(CreateMenuItem(new () { Header = "Delete", CommandPath = nameof(ResourceListViewModel<V1Pod>.DeleteCommand), CommandParameterPath = "SelectedItems" }));
 
-            if (definition.MenuItems?.Count > 0)
-            {
-                Grid.ContextMenu.Items.Add(new Separator());
-            }
+            Grid.ContextMenu.Items.Add(new Separator());
         }
 
         if (definition.MenuItems != null)
@@ -175,558 +169,7 @@ public partial class ResourceListView : UserControl
         }
     }
 
-    private ResourceListViewDefinition<T> GetResourceListViewDefinition<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
-    {
-        var resourceType = typeof(T);
-
-        ResourceListViewDefinition<T> definition = new();
-
-        if (resourceType == typeof(V1Node))
-        {
-            definition.Columns = new()
-            {
-                new ResourceListViewDefinitionColumn<V1Node, string>()
-                {
-                    Name = "Name",
-                    Field = x => x.Metadata.Name,
-                    Sort = SortDirection.Ascending,
-                    Width = "4*",
-                },
-                new ResourceListViewDefinitionColumn<V1Node, string>()
-                {
-                    Name = "CPU",
-                    Field = x => x.Status.Allocatable["cpu"].Value,
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
-                },
-                new ResourceListViewDefinitionColumn<V1Node, string>()
-                {
-                    Name = "Memory",
-                    Field = x => x.Status.Allocatable["memory"].Value,
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
-                },
-                new ResourceListViewDefinitionColumn<V1Node, string>()
-                {
-                    Name = "Disk",
-                    Field = x => x.Status.Allocatable["ephemeral-storage"].Value,
-                    Width = nameof(DataGridLengthUnitType.SizeToCells)
-                },
-                new ResourceListViewDefinitionColumn<V1Node, string>()
-                {
-                    Name = "Taints",
-                    Field = x => x.Metadata.Annotations.TryGetValue("scheduler.alpha.kubernetes.io/taints", out var value) ? value : "",
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
-                },
-                new ResourceListViewDefinitionColumn<V1Node, string>()
-                {
-                    Name = "Roles",
-                    Field = x => x.Metadata.Annotations.Any(x => x.Key.StartsWith("node-role.kubernetes.io/")) ? x.Metadata.Annotations.Where(x => x.Key.StartsWith("node-role.kubernetes.io/")).Select(x => x.Value).Aggregate((x,y) => x + ", " + y) : "",
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
-                },
-                new ResourceListViewDefinitionColumn<V1Node, string>()
-                {
-                    Name = "Version",
-                    Field = x => x.Status.NodeInfo.KubeletVersion,
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
-                },
-                new ResourceListViewDefinitionColumn<V1Node, string>()
-                {
-                    Name = "Status",
-                    Field = x => x.Status.Conditions.FirstOrDefault(x => x.Type == "Ready")?.Reason,
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
-                },
-                new ResourceListViewDefinitionColumn<V1Node, DateTime?>()
-                {
-                    Name = "Age",
-                    CustomControl = typeof(AgeCell),
-                    Field = x => x.Metadata.CreationTimestamp,
-                    Width = "80"
-                }
-            };
-        }
-        else if (resourceType == typeof(V1Namespace))
-        {
-            definition.Columns = new()
-            {
-                new ResourceListViewDefinitionColumn<V1Namespace, string>()
-                {
-                    Name = "Name",
-                    Field = x => x.Metadata.Name,
-                    Sort = SortDirection.Ascending,
-                    Width = "4*",
-                },
-                new ResourceListViewDefinitionColumn<V1Namespace, string>()
-                {
-                    Name = "Labels",
-                    Field = x => x.Metadata.Labels.Select(x => x.Key + "=" + x.Value).Aggregate((x,y) => x + ", " + y),
-                    Width = "2*"
-                },
-                new ResourceListViewDefinitionColumn<V1Namespace, string>()
-                {
-                    Name = "Status",
-                    Field = x => x.Status.Phase,
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
-                },
-                new ResourceListViewDefinitionColumn<V1Namespace, DateTime?>()
-                {
-                    Name = "Age",
-                    CustomControl = typeof(AgeCell),
-                    Field = x => x.Metadata.CreationTimestamp,
-                    Width = "80"
-                }
-            };
-        }
-        else if (resourceType == typeof(V1Pod))
-        {
-            definition.Columns = new()
-            {
-                new ResourceListViewDefinitionColumn<V1Pod, string>()
-                {
-                    Name = "Name",
-                    Field = x => x.Metadata.Name,
-                    Sort = SortDirection.Ascending,
-                    Width = "4*",
-                },
-                new ResourceListViewDefinitionColumn<V1Pod, int>()
-                {
-                    Name = "Containers",
-                    CustomControl = typeof(PodContainerCell),
-                    Field = x => x.Spec.Containers.Count + ((x.Spec.InitContainers?.Count) ?? 0),
-                    Width = nameof(DataGridLengthUnitType.SizeToCells)
-                },
-                new ResourceListViewDefinitionColumn<V1Pod, string>()
-                {
-                    Name = "Namespace",
-                    Field = x => x.Metadata.NamespaceProperty,
-                    Width = "*"
-                },
-                new ResourceListViewDefinitionColumn<V1Pod, int>()
-                {
-                    Name = "Restarts",
-                    Field = x => x.Status.ContainerStatuses.Sum(x => x.RestartCount),
-                    Display = x => x.Status?.ContainerStatuses?.Sum(x => x.RestartCount).ToString(),
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
-                },
-                new ResourceListViewDefinitionColumn<V1Pod, string>()
-                {
-                    Name = "Controlled By",
-                    Field = x => x.Metadata.OwnerReferences.FirstOrDefault()?.Name,
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
-                },
-                new ResourceListViewDefinitionColumn<V1Pod, string>()
-                {
-                    Name = "Node",
-                    Field = x => x.Spec.NodeName,
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
-                },
-                new ResourceListViewDefinitionColumn<V1Pod, string>()
-                {
-                    Name = "QoS",
-                    Field = x => x.Status.QosClass,
-                    Width = nameof(DataGridLengthUnitType.SizeToCells)
-                },
-                new ResourceListViewDefinitionColumn<V1Pod, string>()
-                {
-                    Name = "Status",
-                    Field = x => x.Status.Phase,
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
-                },
-                new ResourceListViewDefinitionColumn<V1Pod, DateTime?>()
-                {
-                    Name = "Age",
-                    CustomControl = typeof(AgeCell),
-                    Field = x => x.Metadata.CreationTimestamp,
-                    Width = "80"
-                }
-            };
-
-            definition.MenuItems = new()
-            {
-                new()
-                {
-                    Header = "View Console",
-                    ItemSourcePath = "SelectedItem.Value.Spec.Containers",
-                    DataTemplate = new FuncDataTemplate<object>((obj, nameScope) => new MenuItem()
-                        {
-                            [!MenuItem.HeaderProperty] = new Binding("Name"),
-                            [!MenuItem.CommandProperty] = new Binding(nameof(ResourceListViewModel<V1Pod>.ViewConsoleCommand)) { Source = DataContext },
-                            [!MenuItem.CommandParameterProperty] = new Binding("Name"),
-                        }
-                    )
-                },
-                new()
-                {
-                    Header = "View Logs",
-                    ItemSourcePath = "SelectedItem.Value.Spec.Containers",
-                    DataTemplate = new FuncDataTemplate<object>((obj, nameScope) => new MenuItem()
-                        {
-                            [!MenuItem.HeaderProperty] = new Binding("Name"),
-                            [!MenuItem.CommandProperty] = new Binding(nameof(ResourceListViewModel<V1Pod>.ViewLogsCommand)) { Source = DataContext },
-                            [!MenuItem.CommandParameterProperty] = new Binding("Name"),
-                        }
-                    )
-                }
-            };
-        }
-        else if (resourceType == typeof(V1Deployment))
-        {
-            definition.Columns = new()
-            {
-                new ResourceListViewDefinitionColumn<V1Deployment, string>()
-                {
-                    Name = "Name",
-                    Field = x => x.Metadata.Name,
-                    Sort = SortDirection.Ascending,
-                    Width = "2*",
-                },
-                new ResourceListViewDefinitionColumn<V1Deployment, string>()
-                {
-                    Name = "Namespace",
-                    Field = x => x.Metadata.NamespaceProperty,
-                    Width = "*",
-                },
-                new ResourceListViewDefinitionColumn<V1Deployment, int>()
-                {
-                    Name = "Pods",
-                    Display = x => $"{x.Status?.AvailableReplicas.GetValueOrDefault()}/{x.Spec?.Replicas}",
-                    Field = x => x.Status.AvailableReplicas.GetValueOrDefault(),
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
-                },
-                new ResourceListViewDefinitionColumn<V1Deployment, int>()
-                {
-                    Name = "Replicas",
-                    Display = x => x.Spec.Replicas.GetValueOrDefault().ToString(),
-                    Field = x => x.Spec.Replicas.GetValueOrDefault(),
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
-                },
-                new ResourceListViewDefinitionColumn<V1Deployment, string>()
-                {
-                    Name = "Available",
-                    Field = x => x.Status.Conditions.FirstOrDefault(x => x.Type == "Available").Status,
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
-                },
-                new ResourceListViewDefinitionColumn<V1Deployment, DateTime?>()
-                {
-                    Name = "Age",
-                    CustomControl = typeof(AgeCell),
-                    Field = x => x.Metadata.CreationTimestamp,
-                    Width = "80"
-                }
-            };
-        }
-        else if (resourceType == typeof(V1CustomResourceDefinition))
-        {
-            definition.Columns = new()
-            {
-                new ResourceListViewDefinitionColumn<V1CustomResourceDefinition, string>()
-                {
-                    Name = "Name",
-                    Field = x => x.Spec.Names.Kind,
-                    Sort = SortDirection.Ascending,
-                    Width = "2*",
-                },
-                new ResourceListViewDefinitionColumn<V1CustomResourceDefinition, string>()
-                {
-                    Name = "Group",
-                    Field = x => x.Spec.Group,
-                    Width = "*",
-                },
-                new ResourceListViewDefinitionColumn<V1CustomResourceDefinition, string>()
-                {
-                    Name = "Version",
-                    Field = x => x.Spec.Versions.First(x => x.Storage).Name,
-                    Width = nameof(DataGridLengthUnitType.SizeToCells)
-                },
-                new ResourceListViewDefinitionColumn<V1CustomResourceDefinition, string>()
-                {
-                    Name = "Scope",
-                    Field = x => x.Spec.Scope,
-                    Width = nameof(DataGridLengthUnitType.SizeToCells)
-                },
-                new ResourceListViewDefinitionColumn<V1CustomResourceDefinition, DateTime?>()
-                {
-                    Name = "Age",
-                    CustomControl = typeof(AgeCell),
-                    Field = x => x.Metadata.CreationTimestamp,
-                    Width = "80"
-                }
-            };
-        }
-        else if (resourceType == typeof(Corev1Event))
-        {
-            definition.Columns = new()
-            {
-                new ResourceListViewDefinitionColumn<Corev1Event, string>()
-                {
-                    Name = "Type",
-                    Field = x => x.Type,
-                    Width = nameof(DataGridLengthUnitType.SizeToCells)
-                },
-                new ResourceListViewDefinitionColumn<Corev1Event, string>()
-                {
-                    Name = "Message",
-                    Field = x => x.Message,
-                    Width = "4*"
-                },
-                new ResourceListViewDefinitionColumn<Corev1Event, string>()
-                {
-                    Name = "Namespace",
-                    Field = x => x.Metadata.NamespaceProperty,
-                    Width = "*"
-                },
-                new ResourceListViewDefinitionColumn<Corev1Event, string>()
-                {
-                    Name = "Involved Object",
-                    Field = x => x.InvolvedObject.Name,
-                    Width = "*"
-                },
-                new ResourceListViewDefinitionColumn<Corev1Event, string>()
-                {
-                    Name = "Source",
-                    Field = x => x.Source.Component,
-                    Width = "*"
-                },
-                new ResourceListViewDefinitionColumn<Corev1Event, int>()
-                {
-                    Name = "Count",
-                    Display = x => (x.Count ?? 0).ToString(),
-                    Field = x => x.Count ?? 0,
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
-                },
-
-                new ResourceListViewDefinitionColumn<Corev1Event, DateTime?>()
-                {
-                    Name = "Last Seen",
-                    CustomControl = typeof(LastSeenCell),
-                    Field = x => x.LastTimestamp,
-                    Sort = SortDirection.Descending,
-                    Width = "80"
-                },
-                new ResourceListViewDefinitionColumn<Corev1Event, DateTime?>()
-                {
-                    Name = "Age",
-                    CustomControl = typeof(AgeCell),
-                    Field = x => x.Metadata.CreationTimestamp,
-                    Width = "80"
-                },
-            };
-        }
-        else
-        {
-            definition.Columns = new();
-
-            // Add Name Column
-            var nameColumn = new ResourceListViewDefinitionColumn<T, string>()
-            {
-                Name = "Name",
-                Field = x => x.Metadata.Name,
-                Sort = SortDirection.Ascending,
-                Width = "2*"
-            };
-
-            definition.Columns.Add(nameColumn);
-
-            // Check if resource type is CRD
-            // TODO: Find a better way to identify CRDs
-            if (resourceType.Namespace.StartsWith("KubeUI.Models"))
-            {
-                // Generate CRD Columns
-                var cluster = ((ResourceListViewModel<T>)DataContext).Cluster;
-
-                var metadata = GroupApiVersionKind.From(resourceType);
-
-                var crd = cluster.GetObject<V1CustomResourceDefinition>(null, metadata.PluralNameGroup);
-
-                var version = crd.Spec.Versions.First(x => x.Storage);
-
-                //Check if its a namespaced crd
-                if (crd.Spec.Scope == "Namespaced")
-                {
-                    // Add Namespace Column
-                    var nsColumn = new ResourceListViewDefinitionColumn<T, string>()
-                    {
-                        Name = "Namespace",
-                        Field = x => x.Metadata.NamespaceProperty,
-                        Width = "*"
-                    };
-
-                    definition.Columns.Add(nsColumn);
-                }
-
-                if (version.AdditionalPrinterColumns != null)
-                {
-                    foreach (var item in version.AdditionalPrinterColumns)
-                    {
-                        try
-                        {
-                            if (item.JsonPath == ".metadata.creationTimestamp")
-                            {
-                                continue;
-                            }
-
-                            if (item.Type == "string")
-                            {
-                                var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<T, string>(item.JsonPath, true);
-
-                                var colDef = new ResourceListViewDefinitionColumn<T, string>()
-                                {
-                                    Name = item.Name,
-                                    Field = exp.Compile(),
-                                    Width = "*"
-                                };
-
-                                definition.Columns.Add(colDef);
-                            }
-                            else if (item.Type == "number")
-                            {
-                                var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<T, int>(item.JsonPath, true);
-
-                                var colDef = new ResourceListViewDefinitionColumn<T, int>()
-                                {
-                                    Name = item.Name,
-                                    Display = TransformToFuncOfString<T>(exp.Body, exp.Parameters).Compile(),
-                                    Field = exp.Compile(),
-                                    Width = "*"
-                                };
-
-                                definition.Columns.Add(colDef);
-                            }
-                            else if (item.Type == "integer" && item.Format == "int64")
-                            {
-                                var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<T, long>(item.JsonPath, true);
-
-                                var colDef = new ResourceListViewDefinitionColumn<T, long>()
-                                {
-                                    Name = item.Name,
-                                    Display = TransformToFuncOfString<T>(exp.Body, exp.Parameters).Compile(),
-                                    Field = exp.Compile(),
-                                    Width = "*"
-                                };
-
-                                definition.Columns.Add(colDef);
-                            }
-                            else if (item.Type == "integer")
-                            {
-                                var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<T, int>(item.JsonPath, true);
-
-                                var colDef = new ResourceListViewDefinitionColumn<T, int>()
-                                {
-                                    Name = item.Name,
-                                    Display = TransformToFuncOfString<T>(exp.Body, exp.Parameters).Compile(),
-                                    Field = exp.Compile(),
-                                    Width = "*"
-                                };
-
-                                definition.Columns.Add(colDef);
-                            }
-                            else if (item.Type == "date")
-                            {
-                                var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<T, DateTime>(item.JsonPath, true);
-
-                                var colDef = new ResourceListViewDefinitionColumn<T, DateTime>()
-                                {
-                                    Name = item.Name,
-                                    Field = exp.Compile(),
-                                    Width = "*"
-                                };
-
-                                definition.Columns.Add(colDef);
-                            }
-                            else if (item.Type == "boolean")
-                            {
-                                var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<T, bool>(item.JsonPath, true);
-
-                                var colDef = new ResourceListViewDefinitionColumn<T, bool>()
-                                {
-                                    Name = item.Name,
-                                    Display = TransformToFuncOfString<T>(exp.Body, exp.Parameters).Compile(),
-                                    Field = exp.Compile(),
-                                    Width = "*"
-                                };
-
-                                definition.Columns.Add(colDef);
-                            }
-                            else
-                            {
-                                _logger.LogWarning("CRD Column Type not supported: {type}", item.Type);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogCritical(ex, "Unable to generate CRD Column: {Name}", item.Name);
-                        }
-                    }
-                }
-            }
-
-            // Add Age Column
-            var ageColumn = new ResourceListViewDefinitionColumn<T, DateTime?>()
-            {
-                Name = "Age",
-                CustomControl = typeof(AgeCell),
-                Field = x => x.Metadata.CreationTimestamp,
-                Width = "80"
-            };
-
-            definition.Columns.Add(ageColumn);
-        }
-
-        return definition;
-    }
-
-    public static Expression<Func<T, string>> TransformToFuncOfString<T>(Expression expression, ReadOnlyCollection<ParameterExpression> parameters)
-    {
-        // Convert the body of the original expression to return a string
-        var bodyAsString = Expression.Call(expression, "ToString", Type.EmptyTypes);
-
-        // Create a new lambda expression
-        return Expression.Lambda<Func<T, string>>(bodyAsString, parameters);
-    }
-
-    public class ResourceListViewDefinitionColumn<T,T2> where T : class, IKubernetesObject<V1ObjectMeta>, new()
-    {
-        public required string Name { get; set; }
-
-        public required Func<T, T2> Field { get; set; }
-
-        public Func<T, string>? Display { get; set; }
-
-        public SortDirection Sort { get; set; }
-
-        public Type? CustomControl { get; set; }
-
-        public string? Width { get; set; }
-    }
-
-    public enum SortDirection
-    {
-        None,
-        Ascending,
-        Descending
-    }
-
-    public class ResourceListViewMenuItem
-    {
-        public required string Header { get; set; }
-
-        public string? CommandPath { get; set; }
-
-        public string? CommandParameterPath { get; set; }
-
-        public string? ItemSourcePath { get; set; }
-
-        public FuncDataTemplate<object>? DataTemplate { get; set; }
-    }
-
-    public class ResourceListViewDefinition<T> where T : class, IKubernetesObject<V1ObjectMeta>, new()
-    {
-        public List<object> Columns { get; set; }
-
-        public List<ResourceListViewMenuItem> MenuItems { get; set; }
-
-        public bool DefaultMenuItems { get; set; } = true;
-    }
-
-    internal readonly struct FuncComparer<T,T2> : IComparer
+    private readonly struct FuncComparer<T,T2> : IComparer
     {
         private readonly Func<T, T2> _cmp;
 
@@ -804,14 +247,20 @@ public partial class ResourceListView : UserControl
 
     private MenuItem CreateMenuItem(ResourceListViewMenuItem menu)
     {
-        var menuItem = new MenuItem
+        var menuItem = new MenuItem();
+
+        if (menu.Header != null)
         {
-            Header = menu.Header
-        };
+            menuItem.Header = menu.Header;
+        }
+        else if (menu.HeaderBinding != null)
+        {
+            menuItem.Bind(MenuItem.HeaderProperty, menu.HeaderBinding);
+        }
 
         if (!string.IsNullOrEmpty(menu.CommandPath))
         {
-            menuItem.Bind(MenuItem.CommandProperty, new Binding(menu.CommandPath));
+            menuItem.Bind(MenuItem.CommandProperty, new Binding(menu.CommandPath) { Source = DataContext });
         }
 
         if (!string.IsNullOrEmpty(menu.CommandParameterPath))
@@ -827,11 +276,70 @@ public partial class ResourceListView : UserControl
             menuItem.Bind(ItemsControl.ItemsSourceProperty, new Binding(menu.ItemSourcePath));
         }
 
-        if (menu.DataTemplate != null)
+        if (menu.MenuItem != null)
         {
-            menuItem.ItemTemplate = menu.DataTemplate;
+            menuItem.Styles.AddRange(GenerateStyles(menu.MenuItem));
         }
 
         return menuItem;
+    }
+
+    private List<Style> GenerateStyles(ResourceListViewMenuItem menu, int level = 0)
+    {
+        var styles = new List<Style>();
+
+        Func<Selector?, Selector>? func = null;
+
+        if (level == 0)
+        {
+            func = x => x.OfType<MenuItem>().Descendant().OfType<MenuItem>();
+        }
+        else if (level == 1)
+        {
+            func = x => x.OfType<MenuItem>().Descendant().OfType<MenuItem>().Descendant().OfType<MenuItem>();
+        }
+        else if (level == 2)
+        {
+            func = x => x.OfType<MenuItem>().Descendant().OfType<MenuItem>().Descendant().OfType<MenuItem>().Descendant().OfType<MenuItem>();
+        }
+        else
+        {
+            throw new NotImplementedException();
+        }
+
+        var style = new Style(func);
+
+        if (menu.Header != null)
+        {
+            style.Add(new Setter(MenuItem.HeaderProperty, menu.Header));
+        }
+        else if (menu.HeaderBinding != null)
+        {
+            style.Add(new Setter(MenuItem.HeaderProperty, menu.HeaderBinding));
+        }
+
+        if (!string.IsNullOrEmpty(menu.CommandPath))
+        {
+            style.Add(new Setter(MenuItem.CommandProperty, new Binding(menu.CommandPath) { Source = DataContext }));
+        }
+
+        if (!string.IsNullOrEmpty(menu.CommandParameterPath))
+        {
+            style.Add(new Setter(MenuItem.CommandParameterProperty, new Binding(menu.CommandParameterPath)));
+        }
+
+        if (!string.IsNullOrEmpty(menu.ItemSourcePath))
+        {
+            style.Add(new Setter(ItemsControl.ItemsSourceProperty, new Binding(menu.ItemSourcePath)));
+        }
+
+        styles.Add(style);
+
+        if (menu.MenuItem != null)
+        {
+            styles.AddRange(GenerateStyles(menu.MenuItem, level + 1));
+        }
+
+        return styles;
     }
 }

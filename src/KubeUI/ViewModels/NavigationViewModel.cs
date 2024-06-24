@@ -68,10 +68,10 @@ public sealed partial class NavigationViewModel : ViewModelBase
         {
             var vm = Application.Current.GetRequiredService(navLink.ControlType) as IDockable;
 
-            vm.Title = navLink.Cluster.Name;
-            vm.Id = navLink.Cluster.Name + "" + navLink.Name;
+            vm.Title = navLink.Name;
+            vm.Id = navLink.Cluster.Name + "-" + navLink.Name;
 
-            navLink.ControlType.GetProperty("Cluster").SetValue(vm, navLink.Cluster);
+            navLink.ControlType.GetProperty("Cluster")?.SetValue(vm, navLink.Cluster);
 
             var existingDock = doc.VisibleDockables.FirstOrDefault(x => x.Id == vm.Id);
 
@@ -95,11 +95,11 @@ public sealed partial class NavigationViewModel : ViewModelBase
 
         var instance = Application.Current.GetRequiredService(constructedType);
 
-        constructedType.GetProperty(nameof(ResourceListViewModel<V1Pod>.Cluster)).SetValue(instance, cluster);
-        constructedType.GetProperty(nameof(ResourceListViewModel<V1Pod>.Objects)).SetValue(instance, list);
-        constructedType.GetProperty(nameof(ResourceListViewModel<V1Pod>.Kind)).SetValue(instance, kind);
+        constructedType.GetProperty(nameof(ResourceListViewModel<V1Pod>.Cluster))?.SetValue(instance, cluster);
+        constructedType.GetProperty(nameof(ResourceListViewModel<V1Pod>.Objects))?.SetValue(instance, list);
+        constructedType.GetProperty(nameof(ResourceListViewModel<V1Pod>.Kind))?.SetValue(instance, kind);
 
-        constructedType.GetMethod("Initialize").Invoke(instance, null);
+        constructedType.GetMethod("Initialize")?.Invoke(instance, null);
 
         return instance;
     }

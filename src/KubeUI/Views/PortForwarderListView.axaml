@@ -1,0 +1,46 @@
+<UserControl
+    x:Class="KubeUI.Views.PortForwarderListView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:views="clr-namespace:KubeUI.Views"
+    xmlns:vm="clr-namespace:KubeUI.ViewModels"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    x:DataType="vm:PortForwarderListViewModel"
+    mc:Ignorable="d">
+    <Grid RowDefinitions="*">
+        <DataGrid
+            Name="Grid"
+            Grid.Row="1"
+            CanUserReorderColumns="True"
+            CanUserResizeColumns="True"
+            GridLinesVisibility="All"
+            IsReadOnly="True"
+            ItemsSource="{Binding Path=Cluster.PortForwarders}"
+            SelectedItem="{Binding SelectedItem}">
+            <DataGrid.Columns>
+                <DataGridTextColumn
+                    Width="*"
+                    Binding="{Binding PodName}"
+                    Header="Pod Name" />
+                <DataGridTextColumn Binding="{Binding Namespace}" Header="Namespace" />
+                <DataGridTextColumn Binding="{Binding ContainerPort}" Header="Container Port" />
+                <DataGridTextColumn Binding="{Binding Status}" Header="Status" />
+            </DataGrid.Columns>
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem
+                        Command="{Binding OpenPortForwardCommand}"
+                        CommandParameter="{Binding SelectedItem}"
+                        Header="Open in Browser" />
+                    <MenuItem
+                        Command="{Binding RemovePortForwardCommand}"
+                        CommandParameter="{Binding SelectedItem}"
+                        Header="Remove" />
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+        </DataGrid>
+    </Grid>
+</UserControl>

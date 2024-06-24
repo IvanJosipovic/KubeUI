@@ -33,6 +33,10 @@ namespace KubeUI.Client;
 [ServiceDescriptor<Cluster>(ServiceLifetime.Transient)]
 public sealed partial class Cluster : ObservableObject
 {
+    private ILoggerFactory _loggerFactory;
+
+    private ILogger<Cluster> _logger;
+
     [ObservableProperty]
     public string _name;
 
@@ -50,10 +54,6 @@ public sealed partial class Cluster : ObservableObject
 
     [ObservableProperty]
     private ObservableCollection<NavigationItem> _navigationItems = [];
-
-    private ILoggerFactory _loggerFactory;
-
-    private ILogger<Cluster> _logger;
 
     [ObservableProperty]
     private ModelCache _modelCache;
@@ -194,7 +194,7 @@ public sealed partial class Cluster : ObservableObject
                 new ResourceNavigationLink() { Name = "Ingresses", ControlType = typeof(V1Ingress), Cluster = this, Icon = "/Assets/kube/resources/unlabeled/ing.svg"  },
                 new ResourceNavigationLink() { Name = "Ingress Classes", ControlType = typeof(V1IngressClass), Cluster = this, Icon = "/Assets/kube/resources/unlabeled/ing.svg"  }, // Needs Icon
                 new ResourceNavigationLink() { Name = "Network Policies", ControlType = typeof(V1NetworkPolicy), Cluster = this, Icon = "/Assets/kube/resources/unlabeled/netpol.svg"  },
-                new NavigationLink() { Name = "Port Forwarding", ControlType = typeof(object), Cluster = this }
+                new NavigationLink() { Name = "Port Forwarding", ControlType = typeof(PortForwarderListViewModel), Cluster = this }
             ]
         });
 

@@ -13,8 +13,9 @@ KubeUI is a user interface for Kubernetes.
 - Not Electron ;) Powered by [Avalonia UI](https://avaloniaui.net/)
 - Create/View/Edit Resources as Yaml
 - Connect to Cluster
-  - View Pod Logs
-  - View Pod Console
+- View Pod Logs
+- View Pod Console
+- Port Forwarding
 - Custom Resource Definition support
 - Automatic updates
 

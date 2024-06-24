@@ -197,6 +197,11 @@ public class DockFactory : Factory
 
     public override void MoveDockable(IDock sourceDock, IDock targetDock, IDockable sourceDockable, IDockable? targetDockable)
     {
+        if (sourceDockable.Id == "Navigation")
+        {
+            return;
+        }
+
         base.MoveDockable(sourceDock, targetDock, sourceDockable, targetDockable);
     }
 
@@ -243,6 +248,11 @@ public class DockFactory : Factory
     public override void InitDockWindow(IDockWindow window, IDockable? owner)
     {
         base.InitDockWindow(window, owner);
+    }
+
+    public override bool OnWindowMoveDragBegin(IDockWindow? window)
+    {
+        return base.OnWindowMoveDragBegin(window);
     }
 
     public override void AddWindow(IRootDock rootDock, IDockWindow window)
