@@ -111,6 +111,8 @@ jobs:
         run: |
           vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} -c ${{ matrix.rid }} --pre
           vpk pack --packTitle KubeUI -u KubeUI -v ${{ needs.semantic-release.outputs.new_release_version }} -p bin/publish -c ${{ matrix.rid }} -e ${{ matrix.fileName }} -o packed ${{ matrix.icon }}
+          rm -f packed/RELEASES-*
+          rm -f packed/assets.*
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
