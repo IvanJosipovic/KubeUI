@@ -99,7 +99,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
         constructedType.GetProperty(nameof(ResourceListViewModel<V1Pod>.Objects))?.SetValue(instance, list);
         constructedType.GetProperty(nameof(ResourceListViewModel<V1Pod>.Kind))?.SetValue(instance, kind);
 
-        constructedType.GetMethod("Initialize")?.Invoke(instance, null);
+        constructedType.GetMethod(nameof(ResourceListViewModel<V1Pod>.Initialize))?.Invoke(instance, null);
 
         return instance;
     }

@@ -33,7 +33,7 @@
                     Grid.Column="0"
                     Width="200"
                     HorizontalAlignment="Right"
-                    IsEnabled="False"
+                    Text="{ReflectionBinding SearchQuery}"
                     Watermark="Search" />
                 <ComboBox
                     Name="Namespaces"

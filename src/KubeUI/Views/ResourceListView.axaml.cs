@@ -54,7 +54,7 @@ public partial class ResourceListView : UserControl
     {
         var resourceType = typeof(T);
 
-        var definition = ((ResourceListViewModel<T>)DataContext!).GetResourceListViewDefinition<T>();
+        var definition = ((ResourceListViewModel<T>)DataContext!).ViewDefinitions;
 
         Grid.Columns.Clear();
 

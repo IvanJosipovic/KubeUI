@@ -64,6 +64,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
     [ObservableProperty]
     private string _searchQuery;
 
+    [ObservableProperty]
+    private ResourceListViewDefinition<T> _viewDefinitions;
+
     private IDisposable _filter;
 
     public ResourceListViewModel()
@@ -82,28 +85,96 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
         DataGridObjects = filteredObjects;
 
         Namespaces = Cluster.GetObjectDictionary<V1Namespace>();
+
+        ViewDefinitions = GetViewDefinition<T>();
     }
 
     private void SetFilter()
     {
+        _filter.Dispose();
+
+        _filter = Objects.ToObservableChangeSet<ConcurrentObservableDictionary<NamespacedName, T>, KeyValuePair<NamespacedName, T>>()
+            .Filter(GenerateFilter())
+            .Bind(out var filteredObjects)
+            .Subscribe();
+
+        DataGridObjects = filteredObjects;
+    }
+
+    private Func<KeyValuePair<NamespacedName, T>, bool> GenerateFilter()
+    {
+        var param = Expression.Parameter(typeof(KeyValuePair<NamespacedName, T>), "p");
+
+        var key = Expression.PropertyOrField(param, "Key");
+
+        var value = Expression.PropertyOrField(param, "Value");
+
+        BinaryExpression? body = null;
+
+        BinaryExpression? namespaceFilter = null;
+
+        BinaryExpression? searchFilter = null;
+
         if (SelectedNamespaces != null)
         {
-            if (SelectedNamespaces is ICollection)
-            {
-                throw new NotImplementedException();
-            }
-            else if(SelectedNamespaces is V1Namespace @namespace)
-            {
-                _filter.Dispose();
+            namespaceFilter = Expression.Equal(
+                    Expression.PropertyOrField(key, "Namespace"),
+                    Expression.Constant(((V1Namespace)SelectedNamespaces).Name())
+               );
+        }
 
-                _filter = Objects.ToObservableChangeSet<ConcurrentObservableDictionary<NamespacedName, T>, KeyValuePair<NamespacedName, T>>()
-                    .Filter(x => x.Key.Namespace == @namespace.Metadata.Name)
-                    .Bind(out var filteredObjects)
-                    .Subscribe();
+        if(!string.IsNullOrEmpty(SearchQuery))
+        {
+            var method = typeof(string).GetMethod(nameof(string.IndexOf), [typeof(string), typeof(StringComparison)]);
 
-                DataGridObjects = filteredObjects;
+            foreach (var query in SearchQuery.Split(' '))
+            {
+                if (string.IsNullOrEmpty(query))
+                {
+                    continue;
+                }
+
+                BinaryExpression? wordFilter = null;
+
+                foreach (var column in ViewDefinitions.Columns)
+                {
+                    var someValue = Expression.Constant(query, typeof(string));
+
+                    var colType = column.GetType();
+
+                    var columnDisplay = (Func<T, string>)colType.GetProperty(nameof(ResourceListViewDefinitionColumn<V1Pod, string>.Display)).GetValue(column);
+
+                    columnDisplay ??= (Func<T, string>)colType.GetProperty(nameof(ResourceListViewDefinitionColumn<V1Pod, string>.Field)).GetValue(column);
+
+                    var funcCall = Expression.Call(Expression.Constant(columnDisplay), columnDisplay.GetType().GetMethod("Invoke"), value);
+
+                    var expression = Expression.GreaterThanOrEqual(Expression.Call(funcCall, method, someValue, Expression.Constant(StringComparison.OrdinalIgnoreCase)), Expression.Constant(0));
+
+                    wordFilter = wordFilter == null ? expression : Expression.OrElse(wordFilter, expression);
+                }
+
+                searchFilter = searchFilter == null ? wordFilter : Expression.AndAlso(searchFilter, wordFilter);
             }
         }
+
+        if (namespaceFilter != null && searchFilter == null)
+        {
+            body = namespaceFilter;
+        }
+        else if (namespaceFilter == null && searchFilter != null)
+        {
+            body = searchFilter;
+        }
+        else if (namespaceFilter != null && searchFilter != null)
+        {
+            body = Expression.AndAlso(namespaceFilter, searchFilter);
+        }
+        else
+        {
+            body = Expression.Equal(Expression.Constant(true), Expression.Constant(true));
+        }
+
+        return Expression.Lambda<Func<KeyValuePair<NamespacedName, T>, bool>>(body, param).Compile();
     }
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
@@ -117,11 +188,11 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
 
         if (e.PropertyName == nameof(SearchQuery))
         {
-            //SetFilter();
+            SetFilter();
         }
     }
 
-    public ResourceListViewDefinition<T> GetResourceListViewDefinition<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    private ResourceListViewDefinition<T> GetViewDefinition<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var resourceType = typeof(T);
 
@@ -177,7 +248,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
                 new ResourceListViewDefinitionColumn<V1Node, string>()
                 {
                     Name = "Status",
-                    Field = x => x.Status.Conditions.FirstOrDefault(x => x.Type == "Ready")?.Reason,
+                    Field = x => x.Status.Conditions.FirstOrDefault(x => x.Type == "Ready")?.Reason ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListViewDefinitionColumn<V1Node, DateTime?>()
@@ -185,6 +256,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
                     Name = "Age",
                     CustomControl = typeof(AgeCell),
                     Field = x => x.Metadata.CreationTimestamp,
+                    Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
                     Width = "80"
                 }
             };
@@ -217,6 +289,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
                     Name = "Age",
                     CustomControl = typeof(AgeCell),
                     Field = x => x.Metadata.CreationTimestamp,
+                    Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss"),
                     Width = "80"
                 }
             };
@@ -237,6 +310,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
                     Name = "Containers",
                     CustomControl = typeof(PodContainerCell),
                     Field = x => x.Spec.Containers.Count + ((x.Spec.InitContainers?.Count) ?? 0),
+                    Display = x => (x.Spec.Containers.Count + ((x.Spec.InitContainers?.Count) ?? 0)).ToString(),
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },
                 new ResourceListViewDefinitionColumn<V1Pod, string>()
@@ -249,13 +323,13 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
                 {
                     Name = "Restarts",
                     Field = x => x.Status.ContainerStatuses.Sum(x => x.RestartCount),
-                    Display = x => x.Status?.ContainerStatuses?.Sum(x => x.RestartCount).ToString(),
+                    Display = x => x.Status.ContainerStatuses?.Sum(x => x.RestartCount).ToString() ?? "0",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListViewDefinitionColumn<V1Pod, string>()
                 {
                     Name = "Controlled By",
-                    Field = x => x.Metadata.OwnerReferences.FirstOrDefault()?.Name,
+                    Field = x => x.Metadata.OwnerReferences.FirstOrDefault()?.Name ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListViewDefinitionColumn<V1Pod, string>()
@@ -281,6 +355,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
                     Name = "Age",
                     CustomControl = typeof(AgeCell),
                     Field = x => x.Metadata.CreationTimestamp,
+                    Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
                     Width = "80"
                 }
             };
@@ -365,7 +440,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
                 new ResourceListViewDefinitionColumn<V1Deployment, string>()
                 {
                     Name = "Available",
-                    Field = x => x.Status.Conditions.FirstOrDefault(x => x.Type == "Available").Status,
+                    Field = x => x.Status.Conditions.FirstOrDefault(x => x.Type == "Available")?.Status ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListViewDefinitionColumn<V1Deployment, DateTime?>()
@@ -373,6 +448,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
                     Name = "Age",
                     CustomControl = typeof(AgeCell),
                     Field = x => x.Metadata.CreationTimestamp,
+                    Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
                     Width = "80"
                 }
             };
@@ -411,6 +487,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
                     Name = "Age",
                     CustomControl = typeof(AgeCell),
                     Field = x => x.Metadata.CreationTimestamp,
+                    Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
                     Width = "80"
                 }
             };
@@ -446,7 +523,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
                 new ResourceListViewDefinitionColumn<Corev1Event, string>()
                 {
                     Name = "Source",
-                    Field = x => x.Source.Component,
+                    Field = x => x.Source.Component ?? "",
                     Width = "*"
                 },
                 new ResourceListViewDefinitionColumn<Corev1Event, int>()
@@ -461,6 +538,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
                     Name = "Last Seen",
                     CustomControl = typeof(LastSeenCell),
                     Field = x => x.LastTimestamp,
+                    Display = x => x.LastTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
                     Sort = SortDirection.Descending,
                     Width = "80"
                 },
@@ -469,6 +547,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
                     Name = "Age",
                     CustomControl = typeof(AgeCell),
                     Field = x => x.Metadata.CreationTimestamp,
+                    Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
                     Width = "80"
                 },
             };
@@ -625,6 +704,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
                 Name = "Age",
                 CustomControl = typeof(AgeCell),
                 Field = x => x.Metadata.CreationTimestamp,
+                Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
                 Width = "80"
             };
 

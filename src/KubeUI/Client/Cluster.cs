@@ -320,7 +320,7 @@ public sealed partial class Cluster : ObservableObject
                         await Dispatcher.UIThread.InvokeAsync(() => items[name] = item);
                         break;
                     case WatchEventType.Deleted:
-                        await Dispatcher.UIThread.InvokeAsync(() => items.TryRemove(name, out var old));
+                        await Dispatcher.UIThread.InvokeAsync(() => items.Remove(name));
                         //todo Check if CRD and remove from menu etc
                         break;
                     case WatchEventType.Error:
