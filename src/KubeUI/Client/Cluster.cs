@@ -63,6 +63,16 @@ public sealed partial class Cluster : ObservableObject
     [ObservableProperty]
     private bool _isExpanded = true;
 
+    public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
+
+    private readonly MethodInfo _seedMethodInfo;
+
+    private readonly SemaphoreSlim _semaphoreSlim = new(1);
+
+    public ConcurrentDictionary<GroupApiVersionKind, ContainerClass> Objects { get; set; } = new();
+
+    private ResourceNavigationLink _crdNavigationLink;
+
     public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ModelCache modelCache, IGenerator generator)
     {
         _loggerFactory = loggerFactory;
@@ -70,15 +80,13 @@ public sealed partial class Cluster : ObservableObject
         _modelCache = modelCache;
         _generator = generator;
 
-        SeedMethodInfo = GetType().GetMethods().First(x => x.Name == nameof(Seed) && x.IsGenericMethod && x.GetParameters().Length == 0);
+        _seedMethodInfo = GetType().GetMethods().First(x => x.Name == nameof(Seed) && x.IsGenericMethod && x.GetParameters().Length == 0);
 
         var kubeAssemblyXmlDoc = new XmlDocument();
         kubeAssemblyXmlDoc.Load(typeof(Generator).Assembly.GetManifestResourceStream("runtime.KubernetesClient.xml"));
 
         _modelCache.AddToCache(typeof(V1Deployment).Assembly, kubeAssemblyXmlDoc);
     }
-
-    protected MethodInfo SeedMethodInfo;
 
     private KubernetesClientConfiguration _getClientConfiguration()
     {
@@ -91,12 +99,6 @@ public sealed partial class Cluster : ObservableObject
             return KubernetesClientConfiguration.BuildConfigFromConfigFile(KubeConfigPath, Name);
         }
     }
-
-    private SemaphoreSlim _semaphoreSlim = new(1);
-
-    public ConcurrentDictionary<GroupApiVersionKind, ContainerClass> Objects { get; set; } = new();
-
-    private ResourceNavigationLink _crdNavigationLink;
 
     public async Task Connect()
     {
@@ -227,7 +229,7 @@ public sealed partial class Cluster : ObservableObject
 
     public void Seed(Type type)
     {
-        var fooRef = SeedMethodInfo.MakeGenericMethod(type);
+        var fooRef = _seedMethodInfo.MakeGenericMethod(type);
         fooRef.Invoke(this, null);
     }
 
@@ -326,7 +328,8 @@ public sealed partial class Cluster : ObservableObject
                     case WatchEventType.Bookmark:
                         break;
                 }
-                //_logger.LogInformation("{type} - {type} - {name}", typeof(V1Pod), x, y.Metadata.Name);
+
+                OnChange?.Invoke(x, type, item);
             }));
 
             _ = Task.Run(() => informer.RunAsync(new CancellationToken()));

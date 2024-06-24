@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Text;
+using Avalonia.Threading;
 using AvaloniaEdit.Document;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -42,16 +44,16 @@ internal class DemoResourceYamlViewModel : ResourceYamlViewModel
     }
 }
 
-public partial class ResourceYamlViewModel : ViewModelBase
+public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 {
     [ObservableProperty]
-    private Cluster _cluster;
+    private Cluster? _cluster;
 
     [ObservableProperty]
-    private object _object;
+    private IKubernetesObject<V1ObjectMeta>? _object;
 
     [ObservableProperty]
-    private TextDocument _yamlDocument;
+    private TextDocument? _yamlDocument;
 
     [ObservableProperty]
     private bool _editMode;
@@ -84,6 +86,23 @@ public partial class ResourceYamlViewModel : ViewModelBase
         if (e.PropertyName == nameof(Object) || e.PropertyName == nameof(EditMode) || e.PropertyName == nameof(HideNoisyFields))
         {
             SetYamlDocument();
+        }
+
+        if (e.PropertyName == nameof(Cluster))
+        {
+            Cluster.OnChange += Cluster_OnChange;
+        }
+    }
+
+    private async void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)
+    {
+        if (Object != null
+            && Object.Kind == resource.Kind
+            && Object.ApiVersion == resource.ApiVersion
+            && Object.Metadata.Name == resource.Metadata.Name
+            && Object.Metadata.NamespaceProperty == resource.Metadata.NamespaceProperty)
+        {
+            await Dispatcher.UIThread.InvokeAsync(() => Object = resource);
         }
     }
 
@@ -143,6 +162,14 @@ public partial class ResourceYamlViewModel : ViewModelBase
     {
         var source = KubernetesYaml.Serialize(obj);
 
-        return Client.Serialization.KubernetesYaml.Deserializer.Deserialize(source, obj.GetType()) as IKubernetesObject<V1ObjectMeta>;
+        return (IKubernetesObject<V1ObjectMeta>)Client.Serialization.KubernetesYaml.Deserializer.Deserialize(source, obj.GetType())!;
+    }
+
+    public void Dispose()
+    {
+        if (Cluster != null)
+        {
+            Cluster.OnChange -= Cluster_OnChange;
+        }
     }
 }
