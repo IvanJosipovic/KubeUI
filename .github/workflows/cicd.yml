@@ -112,6 +112,13 @@ jobs:
           vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} -c ${{ matrix.rid }} --pre
           vpk pack --packTitle KubeUI -u KubeUI -v ${{ needs.semantic-release.outputs.new_release_version }} -p bin/publish -c ${{ matrix.rid }} -e ${{ matrix.fileName }} -o packed ${{ matrix.icon }}
 
+      - name: Remove unnecessary assets
+        working-directory: src/KubeUI.Desktop
+        shell: pwsh
+        run: |
+          Remove-Item -Path packed/assets.*
+          Remove-Item -Path packed/RELEASES-*
+
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
