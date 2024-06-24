@@ -29,6 +29,8 @@
                     <Color x:Key="AcrylicFallbackColor">#1F1F1F</Color>
                     <SolidColorBrush x:Key="DataGridColumnHeaderForegroundBrush" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="DataGridColumnHeaderBackgroundBrush" Color="#1F1F1F" />
+                    <SolidColorBrush x:Key="HyperlinkButtonForeground" Color="#ff0078d4" />
+                    <SolidColorBrush x:Key="HyperlinkButtonForegroundPointerOver" Color="#ff0078d4" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>
