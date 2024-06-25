@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <PackageReference Include="Basic.Reference.Assemblies.Net80" Version="1.7.2" />
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
     <PackageReference Include="KubernetesClient" Version="14.0.2" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.10.0" />
     <PackageReference Include="Microsoft.OpenApi.Readers" Version="1.6.15" />
@@ -18,24 +17,10 @@
     </PackageReference>
   </ItemGroup>
 
-  <Target Name="EmbedSourceGenerators" AfterTargets="ResolvePackageAssets">
-    <ItemGroup>
-      <!-- add these assemblies to the list of embedded resources -->
-      <SourceGenFilesToEmbed Include="@(ResolvedAnalyzers)" Condition="('%(ResolvedAnalyzers.Filename)' == 'CommunityToolkit.Mvvm.SourceGenerators')" />
-
-      <EmbeddedResource Include="@(SourceGenFilesToEmbed->'%(RelativeDir)%(FileName).dll'-> Exists())">
-        <LogicalName>sourceGen.%(SourceGenFilesToEmbed.Filename)%(SourceGenFilesToEmbed.Extension)</LogicalName>
-      </EmbeddedResource>
-    </ItemGroup>
-
-    <Message Importance="high" Text="Embedding Source Gen: @(SourceGenFilesToEmbed->'%(Filename)%(Extension)', ', ')" />
-
-  </Target>
-
   <Target Name="EmbedResolveReferences" AfterTargets="ResolveReferences">
     <ItemGroup>
       <!-- add these assemblies to the list of embedded resources -->
-      <FilesToEmbed Include="@(ReferencePath)" Condition="('%(ReferencePath.Filename)' == 'KubernetesClient' OR '%(ReferencePath.Filename)' == 'CommunityToolkit.Mvvm'  OR '%(ReferencePath.Filename)' == 'CommunityToolkit.Mvvm.SourceGenerators')" />
+      <FilesToEmbed Include="@(ReferencePath)" Condition="('%(ReferencePath.Filename)' == 'KubernetesClient')" />
 
       <EmbeddedResource Include="@(FilesToEmbed->'%(RelativeDir)%(FileName).dll'-> Exists())">
         <LogicalName>runtime.%(FilesToEmbed.Filename)%(FilesToEmbed.Extension)</LogicalName>

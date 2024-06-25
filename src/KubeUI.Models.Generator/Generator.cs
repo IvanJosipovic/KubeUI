@@ -1,8 +1,7 @@
-﻿using System.Collections.Immutable;
+﻿using System.Globalization;
 using System.Reflection;
 using System.Text.Json.Nodes;
 using System.Xml;
-using CommunityToolkit.Mvvm.ComponentModel;
 using k8s;
 using k8s.Models;
 using Microsoft.CodeAnalysis;
@@ -21,10 +20,8 @@ public class Generator : IGenerator
 
     private readonly MetadataReference[] _metadataReferences;
 
-    private readonly List<ISourceGenerator> _sourceGenerators;
-
-    private static readonly List<string> s_keywords = new()
-    {
+    private static readonly List<string> s_keywords =
+    [
         "abstract",
         "as",
         "base",
@@ -102,9 +99,9 @@ public class Generator : IGenerator
         "void",
         "volatile",
         "while"
-    };
+    ];
 
-    private static readonly List<char> s_propertyNameBadChars = new() {
+    private static readonly List<char> s_propertyNameBadChars = [
         '-',
         '$',
         '`',
@@ -123,10 +120,10 @@ public class Generator : IGenerator
         '_',
         '=',
         '.'
-    };
+    ];
 
-    private static readonly List<char> s_namespaceBadChars = new()
-    {
+    private static readonly List<char> s_namespaceBadChars =
+    [
         '-',
         '$',
         '`',
@@ -144,7 +141,7 @@ public class Generator : IGenerator
         '~',
         '_',
         '='
-    };
+    ];
 
     private const string KubePreserveUnkownFields = "x-kubernetes-preserve-unknown-fields";
 
@@ -167,8 +164,6 @@ public class Generator : IGenerator
     public Generator()
     {
         _metadataReferences ??= GetReferences();
-
-        _sourceGenerators ??= GetSourceGenerators();
     }
 
     public CompilationUnitSyntax GenerateCode(V1CustomResourceDefinition crd, string @namespace = ModelNamespace)
@@ -190,9 +185,7 @@ public class Generator : IGenerator
 
         var compilationUnit = SyntaxFactory.CompilationUnit().WithUsings(GenerateUsings());
 
-        compilationUnit = compilationUnit.AddMembers(namespaceDeclaration);
-
-        return compilationUnit;
+        return compilationUnit.AddMembers(namespaceDeclaration);
     }
 
     private static SyntaxList<UsingDirectiveSyntax> GenerateUsings()
@@ -203,10 +196,9 @@ public class Generator : IGenerator
         var using4 = SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System.Text.Json.Nodes"));
         var using5 = SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System.Text.Json.Serialization"));
         var using6 = SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System"));
-        var using7 = SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("CommunityToolkit.Mvvm.ComponentModel"));
-        var using8 = SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System.Collections.Generic"));
+        var using7 = SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System.Collections.Generic"));
 
-        return SyntaxFactory.List([using1, using2, using3, using4, using5, using6, using7, using8]);
+        return SyntaxFactory.List([using1, using2, using3, using4, using5, using6, using7]);
     }
 
     private ClassDeclarationSyntax[] GenerateClass(OpenApiSchema schema, string name, string? version = null, string? kind = null, string? group = null, string? plural = null)
@@ -216,7 +208,6 @@ public class Generator : IGenerator
         var classes = new List<ClassDeclarationSyntax>();
 
         var @class = SyntaxFactory.ClassDeclaration(GetCleanClassName((isRoot ? version : string.Empty) + name))
-                        .AddBaseListTypes(SyntaxFactory.SimpleBaseType(SyntaxFactory.ParseTypeName(nameof(ObservableObject))))
                         .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword), SyntaxFactory.Token(SyntaxKind.PartialKeyword));
 
         if (isRoot)
@@ -259,7 +250,7 @@ public class Generator : IGenerator
                                 .WithInitializer(
                                     SyntaxFactory.EqualsValueClause(
                                         SyntaxFactory.LiteralExpression(
-                                            SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(version)))))))
+                                            SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(version!)))))))
                     .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword), SyntaxFactory.Token(SyntaxKind.ConstKeyword));
 
             var kubeKind = SyntaxFactory.FieldDeclaration(
@@ -271,7 +262,7 @@ public class Generator : IGenerator
                                 .WithInitializer(
                                     SyntaxFactory.EqualsValueClause(
                                         SyntaxFactory.LiteralExpression(
-                                            SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(kind)))))))
+                                            SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(kind!)))))))
                     .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword), SyntaxFactory.Token(SyntaxKind.ConstKeyword));
 
             var kubeGroup = SyntaxFactory.FieldDeclaration(
@@ -283,7 +274,7 @@ public class Generator : IGenerator
                                 .WithInitializer(
                                     SyntaxFactory.EqualsValueClause(
                                         SyntaxFactory.LiteralExpression(
-                                            SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(group)))))))
+                                            SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(group!)))))))
                     .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword), SyntaxFactory.Token(SyntaxKind.ConstKeyword));
 
             var kubePluralName = SyntaxFactory.FieldDeclaration(
@@ -295,17 +286,17 @@ public class Generator : IGenerator
                                 .WithInitializer(
                                     SyntaxFactory.EqualsValueClause(
                                         SyntaxFactory.LiteralExpression(
-                                            SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(plural)))))))
+                                            SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(plural!)))))))
                     .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword), SyntaxFactory.Token(SyntaxKind.ConstKeyword));
 
             // Create a property declaration for ApiVersion
-            var apiVersion = CreateField("string", "apiVersion");
+            var apiVersion = CreateProperty("string", "apiVersion");
 
             // Create a property declaration for Kind
-            var kindProp = CreateField("string", "kind");
+            var kindProp = CreateProperty("string", "kind");
 
             // Create a property declaration for Metadata
-            var metaProp = CreateField("V1ObjectMeta", "metadata");
+            var metaProp = CreateProperty("V1ObjectMeta", "metadata");
 
             @class = @class.AddMembers(kubeApiVersion, kubeKind, kubeGroup, kubePluralName, apiVersion, kindProp, metaProp);
         }
@@ -373,12 +364,12 @@ public class Generator : IGenerator
                 @class = @class.AddBaseListTypes(SyntaxFactory.SimpleBaseType(SyntaxFactory.ParseTypeName($"IStatus<{type}>")));
             }
 
-            @class = @class.AddMembers(CreateField(type, property.Key, property.Value.Description, schema.Required.Contains(property.Key)));
+            @class = @class.AddMembers(CreateProperty(type, property.Key, property.Value.Description, schema.Required.Contains(property.Key)));
         }
 
         classes.Add(@class);
 
-        return classes.ToArray();
+        return [.. classes];
     }
 
     private string GetOrGenerateType(OpenApiSchema schema, List<ClassDeclarationSyntax> classes, string parentClassName, string propertyName)
@@ -409,7 +400,7 @@ public class Generator : IGenerator
 
                         classes.AddRange(nestedClasses);
 
-                        type = nestedClasses.Last().Identifier.Text;
+                        type = nestedClasses[^1].Identifier.Text;
                     }
                 }
 
@@ -439,54 +430,31 @@ public class Generator : IGenerator
         return type;
     }
 
-    private static FieldDeclarationSyntax CreateField(string typeName, string propertyName, string comment = "", bool required = true)
+    private static PropertyDeclarationSyntax CreateProperty(string typeName, string propertyName, string comment = "", bool required = true)
     {
-        // Create the field declaration
-        return SyntaxFactory.FieldDeclaration(
-                SyntaxFactory.VariableDeclaration(
-                    required ? SyntaxFactory.ParseTypeName(typeName) : SyntaxFactory.NullableType(SyntaxFactory.ParseTypeName(typeName))
-                )
-                .WithVariables(
-                    SyntaxFactory.SingletonSeparatedList(
-                        SyntaxFactory.VariableDeclarator(GetCleanPropertyName(propertyName))
-                    )
-                )
-            )
-            .AddModifiers(SyntaxFactory.Token(SyntaxKind.PrivateKeyword))
-            .WithAttributeLists(
-                SyntaxFactory.List(
-                    new[]
-                    {
-                        SyntaxFactory.AttributeList(
-                            SyntaxFactory.SingletonSeparatedList(
-                                SyntaxFactory.Attribute(
-                                    SyntaxFactory.IdentifierName("ObservableProperty")
-                                )
-                            )
-                        ),
-                        SyntaxFactory.AttributeList(
-                            SyntaxFactory.AttributeTargetSpecifier(
-                                        SyntaxFactory.Token(SyntaxKind.PropertyKeyword)),
-                            SyntaxFactory.SingletonSeparatedList(
-                                SyntaxFactory.Attribute(
-                                    SyntaxFactory.ParseName("JsonPropertyName"),
-                                    SyntaxFactory.AttributeArgumentList(
-                                        SyntaxFactory.SingletonSeparatedList(
-                                            SyntaxFactory.AttributeArgument(
-                                                SyntaxFactory.LiteralExpression(
-                                                    SyntaxKind.StringLiteralExpression,
-                                                    SyntaxFactory.Literal(propertyName)
-                                                )
-                                            )
-                                        )
-                                    )
-                                )
-                            )
-                        )
-                    }
-                )
-            )
-            .WithLeadingTrivia(
+        return SyntaxFactory.PropertyDeclaration(required ? SyntaxFactory.ParseTypeName(typeName) : SyntaxFactory.NullableType(SyntaxFactory.ParseTypeName(typeName)), GetCleanPropertyName(propertyName))
+            .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
+            .WithAccessorList(
+                SyntaxFactory.AccessorList(
+                    SyntaxFactory.List<AccessorDeclarationSyntax>(
+                        new AccessorDeclarationSyntax[]{
+                                SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration)
+                                    .WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken)),
+                                SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration)
+                                    .WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken))
+                        })))
+            .AddAttributeLists(
+                SyntaxFactory.AttributeList(
+                    SyntaxFactory.SingletonSeparatedList<AttributeSyntax>(
+                        SyntaxFactory.Attribute(SyntaxFactory.IdentifierName("JsonPropertyName"))
+                            .WithArgumentList(
+                                SyntaxFactory.AttributeArgumentList(
+                                    SyntaxFactory.SingletonSeparatedList<AttributeArgumentSyntax>(
+                                        SyntaxFactory.AttributeArgument(
+                                            SyntaxFactory.LiteralExpression(
+                                                SyntaxKind.StringLiteralExpression,
+                                                SyntaxFactory.Literal(propertyName)))))))))
+                .WithLeadingTrivia(
                     SyntaxFactory.TriviaList(
                         SyntaxFactory.Comment($"/// <summary>{comment}</summary>"),
                         SyntaxFactory.CarriageReturnLineFeed));
@@ -528,7 +496,7 @@ public class Generator : IGenerator
             }
         }
 
-        return "_" + name;
+        return CapitalizeFirstLetter(name);
     }
 
     private static string CapitalizeFirstLetter(string str)
@@ -539,11 +507,11 @@ public class Generator : IGenerator
         }
         else if (str.Length == 1)
         {
-            return char.ToUpper(str[0]).ToString();
+            return char.ToUpper(str[0], CultureInfo.InvariantCulture).ToString();
         }
         else
         {
-            return char.ToUpper(str[0]) + str.Substring(1);
+            return char.ToUpper(str[0], CultureInfo.InvariantCulture) + str[1..];
         }
     }
 
@@ -558,9 +526,6 @@ public class Generator : IGenerator
                 syntaxTrees: new[] { code.SyntaxTree },
                 references: _metadataReferences,
                 options: _options);
-
-            // Run Source Generators
-            compilation = ExecuteSourceGenerators(compilation, _sourceGenerators, out var additionalDiagnostics);
 
             using var peStream = new MemoryStream();
             using var xmlDocumentationStream = new MemoryStream();
@@ -607,62 +572,14 @@ public class Generator : IGenerator
         foreach (var item in assemblies)
         {
             using var stream = assembly.GetManifestResourceStream(item);
-            var ass = MetadataReference.CreateFromStream(stream);
+            var ass = MetadataReference.CreateFromStream(stream!);
             references.Add(ass);
         }
 
-        references.AddRange(Basic.Reference.Assemblies.Net80.References.All);
+        references.Add(Basic.Reference.Assemblies.Net80.References.System);
+        references.Add(Basic.Reference.Assemblies.Net80.References.SystemTextJson);
+        references.Add(Basic.Reference.Assemblies.Net80.References.SystemRuntime);
 
-        return references.ToArray();
-    }
-
-    private List<ISourceGenerator> GetSourceGenerators()
-    {
-        var sourceGens = new List<ISourceGenerator>();
-
-        var assembly = GetType().Assembly;
-
-        var assemblies = assembly.GetManifestResourceNames().Where(x => x.StartsWith("sourceGen.") && x.EndsWith(".dll")).ToList();
-
-        foreach (var item in assemblies)
-        {
-            using var stream = assembly.GetManifestResourceStream(item);
-            var ass = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromStream(stream);
-
-            var generatorTypes = ass.ExportedTypes.Where(p =>
-                    p.IsClass && !p.IsGenericTypeDefinition && !p.IsAbstract
-                    && p.GetCustomAttribute<GeneratorAttribute>() != null);
-
-            foreach (var generatorType in generatorTypes)
-            {
-                switch (Activator.CreateInstance(generatorType))
-                {
-                    case ISourceGenerator sourceGenerator:
-                        sourceGens.Add(sourceGenerator);
-                        break;
-
-                    case IIncrementalGenerator incrementalGenerator:
-                        sourceGens.Add(incrementalGenerator.AsSourceGenerator());
-                        break;
-                }
-            }
-        }
-
-        return sourceGens;
-    }
-
-    private static CSharpCompilation ExecuteSourceGenerators(CSharpCompilation compilation, IReadOnlyList<ISourceGenerator>? generators, out ImmutableArray<Diagnostic> diagnostics, CancellationToken cancellationToken = default)
-    {
-        if (generators is null || generators.Count == 0)
-        {
-            diagnostics = ImmutableArray<Diagnostic>.Empty;
-            return compilation;
-        }
-
-        var driver = CSharpGeneratorDriver.Create(generators);
-
-        driver.RunGeneratorsAndUpdateCompilation(compilation, out var newCompilation, out diagnostics, cancellationToken);
-
-        return (CSharpCompilation)newCompilation;
+        return [.. references];
     }
 }
