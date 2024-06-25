@@ -1,13 +1,20 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Xml.Linq;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Dock.Model.Controls;
+using Dock.Model.Core;
 using k8s;
+using KubeUI.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyModel;
+using Microsoft.Extensions.Logging;
 using Scrutor;
 
 namespace KubeUI.Client;
@@ -17,13 +24,40 @@ public sealed partial class ClusterManager : ObservableObject
 {
     public ObservableCollection<Cluster> Clusters { get; set; } = [];
 
+    private readonly ILogger<ClusterManager> _logger;
+
     private readonly IServiceProvider _serviceProvider;
 
-    public ClusterManager(IServiceProvider serviceProvider)
+    private readonly IFactory _factory;
+
+    public ClusterManager(ILogger<ClusterManager> logger, IServiceProvider serviceProvider, IFactory factory)
     {
+        _logger = logger;
         _serviceProvider = serviceProvider;
+        _factory = factory;
+
+        KubernetesClientConfiguration.ExecStdError += KubernetesClientConfiguration_ExecStdError;
 
         LoadClusters();
+    }
+
+    private async void KubernetesClientConfiguration_ExecStdError(object? sender, DataReceivedEventArgs e)
+    {
+        var doc = _factory.GetDockable<IDocumentDock>("Documents");
+
+        var vm = new ClusterErrorViewModel()
+        {
+            Error = e.Data
+        };
+
+        _logger.LogError("Cluster ExecStdError: {data}", e.Data);
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            _factory.AddDockable(doc, vm);
+            _factory.SetActiveDockable(vm);
+            _factory.SetFocusedDockable(doc, vm);
+        });
     }
 
     [RelayCommand]

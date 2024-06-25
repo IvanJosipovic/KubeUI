@@ -1,16 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using Avalonia;
-using Avalonia.Threading;
 using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm;
 using Dock.Model.Mvvm.Controls;
 using Dock.Model.Mvvm.Core;
-using k8s;
 using KubeUI.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -27,24 +24,6 @@ public class DockFactory : Factory
     {
         _logger = logger;
 
-        KubernetesClientConfiguration.ExecStdError += KubernetesClientConfiguration_ExecStdError;
-    }
-
-    private void KubernetesClientConfiguration_ExecStdError(object? sender, DataReceivedEventArgs e)
-    {
-        var doc = GetDockable<IDocumentDock>("Documents");
-
-        var vm = new ClusterErrorViewModel()
-        {
-            Error = e.Data
-        };
-
-        Dispatcher.UIThread.Invoke(() =>
-        {
-            AddDockable(doc, vm);
-            SetActiveDockable(vm);
-            SetFocusedDockable(doc, vm);
-        });
     }
 
     public IRootDock? RootDock;
