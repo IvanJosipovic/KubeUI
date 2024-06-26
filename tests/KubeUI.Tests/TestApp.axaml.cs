@@ -5,6 +5,7 @@ using KubeUI.Client;
 using KubeUI.Views;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Dock.Model.Core;
 
 namespace KubeUI.Tests;
 
@@ -26,6 +27,7 @@ public class TestApp : Application
         services.AddTransient<Cluster>();
         services.AddTransient<ModelCache>();
         services.AddSingleton<IGenerator, Generator>();
+        services.AddSingleton<IFactory, DockFactory>();
 
         // Windows
         services.AddTransient<MainWindow>();
