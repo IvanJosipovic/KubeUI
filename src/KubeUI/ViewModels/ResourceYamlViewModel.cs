@@ -53,7 +53,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
     private IKubernetesObject<V1ObjectMeta>? _object;
 
     [ObservableProperty]
-    private TextDocument? _yamlDocument;
+    private TextDocument _yamlDocument = new();
 
     [ObservableProperty]
     private bool _editMode;
@@ -71,11 +71,11 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
             ObjectClone?.Metadata?.Annotations?.Remove("kubectl.kubernetes.io/last-applied-configuration");
 
-            YamlDocument = new TextDocument(Client.Serialization.KubernetesYaml.Serialize(ObjectClone));
+            YamlDocument.Text = Client.Serialization.KubernetesYaml.Serialize(ObjectClone);
         }
         else
         {
-            YamlDocument = new TextDocument(Client.Serialization.KubernetesYaml.Serialize(Object));
+            YamlDocument.Text = Client.Serialization.KubernetesYaml.Serialize(Object);
         }
     }
 
