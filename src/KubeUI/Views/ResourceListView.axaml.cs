@@ -16,6 +16,7 @@ using System.Linq;
 using KubeUI.ViewModels;
 using Microsoft.Extensions.Logging;
 using Avalonia.Styling;
+using System.Threading.Tasks;
 
 namespace KubeUI.Views;
 
@@ -50,7 +51,7 @@ public partial class ResourceListView : UserControl
         genericMethod.Invoke(this, null);
     }
 
-    private void GenerateGrid<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    private async Task GenerateGrid<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var resourceType = typeof(T);
 
@@ -134,11 +135,11 @@ public partial class ResourceListView : UserControl
 
                 if (columnSort == SortDirection.Ascending)
                 {
-                    Dispatcher.UIThread.InvokeAsync(() => column.Sort(ListSortDirection.Ascending));
+                    await Dispatcher.UIThread.InvokeAsync(() => column.Sort(ListSortDirection.Ascending));
                 }
                 else if (columnSort == SortDirection.Descending)
                 {
-                    Dispatcher.UIThread.InvokeAsync(() => column.Sort(ListSortDirection.Descending));
+                    await Dispatcher.UIThread.InvokeAsync(() => column.Sort(ListSortDirection.Descending));
                 }
             }
             catch (Exception ex)
