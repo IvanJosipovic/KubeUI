@@ -7,9 +7,11 @@
     xmlns:ia="clr-namespace:Avalonia.Xaml.Interactions.Core;assembly=Avalonia.Xaml.Interactions"
     xmlns:local="clr-namespace:KubeUI.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="clr-namespace:k8s.Models;assembly=KubernetesClient"
     xmlns:vm="clr-namespace:KubeUI.Controls"
     d:DesignHeight="200"
     d:DesignWidth="200"
+    x:DataType="models:V1Pod"
     mc:Ignorable="d">
     <Design.DataContext>
         <vm:DemoPodContainerCell />
@@ -28,7 +30,7 @@
         </Style>
     </UserControl.Styles>
     <StackPanel Margin="10,0,0,0" Orientation="Horizontal">
-        <ItemsControl ItemsSource="{ReflectionBinding $parent.DataContext.Status.ContainerStatuses}">
+        <ItemsControl ItemsSource="{Binding Status.ContainerStatuses}">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <StackPanel Orientation="Horizontal" />
@@ -36,17 +38,17 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <Ellipse Fill="{ReflectionBinding ., Converter={StaticResource StatusToColorConverter}}">
+                    <Ellipse x:DataType="models:V1ContainerStatus" Fill="{Binding, Converter={StaticResource StatusToColorConverter}}">
                         <ToolTip.Tip>
                             <StackPanel>
-                                <TextBlock Text="{ReflectionBinding Name, StringFormat='Name: {0}'}" />
+                                <TextBlock Text="{Binding Name, StringFormat='Name: {0}'}" />
                             </StackPanel>
                         </ToolTip.Tip>
                     </Ellipse>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <ItemsControl ItemsSource="{ReflectionBinding $parent.DataContext.Status.InitContainerStatuses}">
+        <ItemsControl ItemsSource="{Binding Status.InitContainerStatuses}">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <StackPanel Orientation="Horizontal" />
@@ -54,10 +56,10 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <Ellipse Fill="{ReflectionBinding ., Converter={StaticResource StatusToColorConverter}, ConverterParameter=True}">
+                    <Ellipse x:DataType="models:V1ContainerStatus" Fill="{Binding, Converter={StaticResource StatusToColorConverter}, ConverterParameter=True}">
                         <ToolTip.Tip>
                             <StackPanel>
-                                <TextBlock Text="{ReflectionBinding Name, StringFormat='Name: {0}'}" />
+                                <TextBlock Text="{Binding Name, StringFormat='Name: {0}'}" />
                             </StackPanel>
                         </ToolTip.Tip>
                     </Ellipse>
