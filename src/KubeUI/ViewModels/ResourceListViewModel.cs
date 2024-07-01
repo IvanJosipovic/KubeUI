@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reactive.Joins;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Avalonia;
@@ -69,6 +70,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
     private ResourceListViewDefinition<T> _viewDefinition;
 
     private IDisposable _filter;
+
+    [GeneratedRegex("types '(.+)' and '(.+)'", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex TypeErrorRegex();
 
     public ResourceListViewModel()
     {
@@ -616,7 +620,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
                                 continue;
                             }
 
-
                             if (item.Type == "string")
                             {
                                 var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<T, string>(item.JsonPath, true);
@@ -708,7 +711,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
                         {
                             // The type defined in the AdditionalPrinterColumn is not correct
 
-                            var match = Regex.Match(ex.Message, "types '(.+)' and '(.+)'");
+                            var match = TypeErrorRegex().Match(ex.Message);
                             if (match.Success)
                             {
                                 var type = Type.GetType(match.Groups[1].Value);
