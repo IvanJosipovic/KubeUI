@@ -32,30 +32,15 @@ public class ILoggerSink : ILogSink
 
     private static LogLevel GetLogLevel(LogEventLevel level)
     {
-        var logLevel = LogLevel.None;
-
-        switch (level)
+        return level switch
         {
-            case LogEventLevel.Verbose:
-                logLevel = LogLevel.Trace;
-                break;
-            case LogEventLevel.Debug:
-                logLevel = LogLevel.Debug;
-                break;
-            case LogEventLevel.Information:
-                logLevel = LogLevel.Information;
-                break;
-            case LogEventLevel.Warning:
-                logLevel = LogLevel.Warning;
-                break;
-            case LogEventLevel.Error:
-                logLevel = LogLevel.Error;
-                break;
-            case LogEventLevel.Fatal:
-                logLevel = LogLevel.Critical;
-                break;
-        }
-
-        return logLevel;
+            LogEventLevel.Verbose => LogLevel.Trace,
+            LogEventLevel.Debug => LogLevel.Debug,
+            LogEventLevel.Information => LogLevel.Information,
+            LogEventLevel.Warning => LogLevel.Warning,
+            LogEventLevel.Error => LogLevel.Error,
+            LogEventLevel.Fatal => LogLevel.Critical,
+            _ => LogLevel.None,
+        };
     }
 }

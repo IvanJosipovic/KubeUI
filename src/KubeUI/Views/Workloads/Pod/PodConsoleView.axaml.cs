@@ -18,11 +18,7 @@ public partial class PodConsoleView : UserControl
 
         _registryOptions = new RegistryOptions(ThemeName.DarkPlus);
 
-        _textMateInstallation = Editor.InstallTextMate(_registryOptions);
-
-        //Language yamlLanguage = _registryOptions.GetLanguageByExtension(".yaml");
-
-        //_textMateInstallation.SetGrammar(_registryOptions.GetScopeByLanguageId(yamlLanguage.Id));
+        _textMateInstallation = Editor.InstallTextMate(_registryOptions, false);
 
         Editor.TextChanged += Editor_TextChanged;
 

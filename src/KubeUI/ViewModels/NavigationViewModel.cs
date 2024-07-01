@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -111,7 +112,10 @@ public partial class NavigationItem : ObservableObject
     private string _id;
 
     [ObservableProperty]
-    private string _icon;
+    private string? _svgIcon;
+
+    [ObservableProperty]
+    private string? _styleIcon;
 
     [ObservableProperty]
     private string _name;
@@ -136,4 +140,12 @@ public partial class ResourceNavigationLink : NavigationLink
 {
     [ObservableProperty]
     private ICollection _objects;
+}
+
+public class NavigationItemComparer : IComparer<NavigationItem>
+{
+    public int Compare(NavigationItem? x, NavigationItem? y)
+    {
+        return x?.Name.CompareTo(y?.Name) ?? 0;
+    }
 }

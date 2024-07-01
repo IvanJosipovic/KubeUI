@@ -816,11 +816,11 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
 
     private bool CanViewYaml(object item)
     {
-        return true;
+        return item != null;
     }
 
     [RelayCommand(CanExecute = nameof(CanViewLogs))]
-    private async Task ViewLogs(object containerName)
+    private async Task ViewLogs(string containerName)
     {
         var vm = Application.Current.GetRequiredService<PodLogsViewModel>();
         vm.Cluster = Cluster;
@@ -843,18 +843,18 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
         (Factory as DockFactory).AddToDocumentBottom(vm);
     }
 
-    private bool CanViewLogs(object containerName)
+    private bool CanViewLogs(string containerName)
     {
-        return !string.IsNullOrEmpty(containerName as string);
+        return !string.IsNullOrEmpty(containerName);
     }
 
     [RelayCommand(CanExecute = nameof(CanViewConsole))]
-    private async Task ViewConsole(object containerName)
+    private async Task ViewConsole(string containerName)
     {
         var vm = Application.Current.GetRequiredService<PodConsoleViewModel>();
         vm.Cluster = Cluster;
         vm.Object = ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Value;
-        vm.ContainerName = containerName.ToString();
+        vm.ContainerName = containerName;
         vm.Title = "Pod Console";
         vm.Id = "Pod Console";
 
@@ -871,9 +871,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
         (Factory as DockFactory).AddToDocumentBottom(vm);
     }
 
-    private bool CanViewConsole(object containerName)
+    private bool CanViewConsole(string containerName)
     {
-        return !string.IsNullOrEmpty(containerName as string);
+        return !string.IsNullOrEmpty(containerName);
     }
 
     [RelayCommand(CanExecute = nameof(CanPortForward))]

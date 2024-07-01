@@ -23,30 +23,28 @@ public sealed partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     private ClusterManager _clusterManager;
 
+    private readonly IDialogService _dialogService;
+
     public MainViewModel()
     {
         ClusterManager = Application.Current.GetRequiredService<ClusterManager>();
 
         _logger = Application.Current.GetRequiredService<ILogger<MainViewModel>>();
 
-        _factory = Application.Current.GetRequiredService<IFactory>();
+        Factory = Application.Current.GetRequiredService<IFactory>();
 
         _dialogService = Application.Current.GetRequiredService<IDialogService>();
 
-        DebugFactoryEvents(_factory);
+        DebugFactoryEvents(Factory);
 
-        Layout = _factory?.CreateLayout();
+        Layout = Factory?.CreateLayout();
         if (Layout is not null)
         {
-            _factory?.InitLayout(Layout);
+            Factory?.InitLayout(Layout);
         }
 
-        Task.Run(CheckForUpdates);
+        _ = Task.Run(CheckForUpdates);
     }
-
-    private readonly IFactory? _factory;
-
-    private readonly IDialogService _dialogService;
 
     [ObservableProperty]
     private IRootDock? _layout;
@@ -170,11 +168,11 @@ public sealed partial class MainViewModel : ViewModelBase
             }
         }
 
-        var layout = _factory?.CreateLayout();
+        var layout = Factory?.CreateLayout();
         if (layout is not null)
         {
             Layout = layout;
-            _factory?.InitLayout(layout);
+            Factory?.InitLayout(layout);
         }
     }
 
@@ -188,16 +186,16 @@ public sealed partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void OpenAbout()
     {
-        var doc = _factory.GetDockable<IDocumentDock>("Documents");
+        var doc = Factory!.GetDockable<IDocumentDock>("Documents");
 
         var about = Application.Current.GetRequiredService<AboutViewModel>();
         about.Title = "About";
         about.Id = "About";
 
-        _factory?.AddDockable(doc, about);
-        _factory?.SetActiveDockable(about);
+        Factory?.AddDockable(doc, about);
+        Factory?.SetActiveDockable(about);
 
-        Task.Run(CheckForUpdates);
+        _ = Task.Run(CheckForUpdates);
     }
 
     private async Task CheckForUpdates()
@@ -226,7 +224,7 @@ public sealed partial class MainViewModel : ViewModelBase
 
         if (um.IsInstalled)
         {
-            var update = um.CheckForUpdates();
+            var update = await um.CheckForUpdatesAsync();
 
             if (update != null)
             {
@@ -245,7 +243,7 @@ public sealed partial class MainViewModel : ViewModelBase
                 {
                     ContentDialogSettings updatePrompt = new()
                     {
-                        Content = "Updating, please wait...",
+                        Content = "Please wait...",
                         Title = "Updating",
                         IsPrimaryButtonEnabled = false,
                         IsSecondaryButtonEnabled = false
@@ -253,7 +251,7 @@ public sealed partial class MainViewModel : ViewModelBase
 
                     _ = _dialogService.ShowContentDialogAsync(this, updatePrompt);
 
-                    um.DownloadUpdates(update);
+                    await um.DownloadUpdatesAsync(update).ConfigureAwait(false);
                     um.ApplyUpdatesAndRestart(update);
                 }
             }

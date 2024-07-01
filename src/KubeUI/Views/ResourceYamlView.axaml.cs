@@ -15,26 +15,16 @@ public partial class ResourceYamlView : UserControl
     public ResourceYamlView()
     {
         InitializeComponent();
-    }
 
-    protected override void OnDataContextChanged(EventArgs e)
-    {
-        base.OnDataContextChanged(e);
+        _registryOptions = new RegistryOptions(ThemeName.Dark);
 
-        if (DataContext != null)
-        {
-            _registryOptions = new RegistryOptions(ThemeName.Dark);
+        _textMateInstallation = Editor.InstallTextMate(_registryOptions, false);
 
-            _textMateInstallation = Editor.InstallTextMate(_registryOptions, false);
+        _textMateInstallation.SetGrammar(_registryOptions.GetScopeByLanguageId(_registryOptions.GetLanguageByExtension(".yaml").Id));
 
-            var yamlLanguage = _registryOptions.GetLanguageByExtension(".yaml");
-
-            _textMateInstallation.SetGrammar(_registryOptions.GetScopeByLanguageId(yamlLanguage.Id));
-
-            Editor.Options.AllowScrollBelowDocument = false;
-            Editor.Options.ShowBoxForControlCharacters = false;
-            Editor.Options.EnableHyperlinks = false;
-            Editor.Options.EnableEmailHyperlinks = false;
-        }
+        Editor.Options.AllowScrollBelowDocument = false;
+        Editor.Options.ShowBoxForControlCharacters = false;
+        Editor.Options.EnableHyperlinks = false;
+        Editor.Options.EnableEmailHyperlinks = false;
     }
 }

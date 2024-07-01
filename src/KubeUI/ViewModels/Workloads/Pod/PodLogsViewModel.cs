@@ -6,6 +6,7 @@ using k8s.Models;
 using k8s;
 using System.Threading.Tasks;
 using Avalonia.Threading;
+using System.ComponentModel;
 
 namespace KubeUI.ViewModels;
 
@@ -26,6 +27,9 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _previous;
 
+    [ObservableProperty]
+    private bool _timestamps;
+
     private Stream? _stream;
 
     private StreamReader? _streamReader;
@@ -36,7 +40,9 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
     public async Task Connect()
     {
-        _stream = await Cluster!.Client!.CoreV1.ReadNamespacedPodLogAsync(Object.Name(), Object.Namespace(), container: ContainerName, tailLines: _lines, previous: Previous, follow: true, pretty: true);
+        Logs.Text = string.Empty;
+
+        _stream = await Cluster!.Client!.CoreV1.ReadNamespacedPodLogAsync(Object.Name(), Object.Namespace(), container: ContainerName, tailLines: _lines, previous: Previous, follow: true, pretty: true, timestamps: Timestamps);
 
         _streamReader = new StreamReader(_stream);
 
@@ -69,6 +75,16 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
                 }
             }
         });
+    }
+
+    protected override async void OnPropertyChanged(PropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+
+        if(e.PropertyName?.Equals(nameof(Previous), StringComparison.Ordinal) == true || e.PropertyName?.Equals(nameof(Timestamps), StringComparison.Ordinal) == true)
+        {
+            await Connect();
+        }
     }
 
     public void Dispose()

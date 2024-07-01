@@ -16,37 +16,28 @@
     mc:Ignorable="d">
     <Design.DataContext />
 
-    <UserControl.Resources>
-        <con:StringEqualsConverter x:Key="StringEqualsConverter" />
-    </UserControl.Resources>
-
     <Grid
         HorizontalAlignment="Stretch"
         VerticalAlignment="Stretch"
-        ColumnDefinitions="*,3*"
-        RowDefinitions="Auto,Auto,*">
-        <Label
-            Grid.Row="0"
-            Grid.Column="0"
-            Content="Name" />
-        <Label
-            Grid.Row="0"
-            Grid.Column="1"
-            Content="{Binding Object.Metadata.Name}" />
-        <Label
-            Grid.Row="1"
-            Grid.Column="0"
-            Content="Namespace" />
-        <Label
-            Grid.Row="1"
-            Grid.Column="1"
-            Content="{Binding Object.Metadata.NamespaceProperty}" />
+        RowDefinitions="Auto,*">
+
+        <StackPanel Grid.Row="0" Orientation="Horizontal">
+            <Label Margin="0,4,0,0" Content="Pod:" />
+            <Label Margin="0,4,0,0">
+                <Label.Content>
+                    <MultiBinding StringFormat="{}{0}/{1}/{2}">
+                        <Binding Path="Object.Metadata.NamespaceProperty" />
+                        <Binding Path="Object.Metadata.Name" />
+                        <Binding Path="ContainerName" />
+                    </MultiBinding>
+                </Label.Content>
+            </Label>
+        </StackPanel>
+
         <AvalonEdit:TextEditor
-            Background="Black"
             Name="Editor"
-            Grid.Row="2"
-            Grid.Column="0"
-            Grid.ColumnSpan="2"
+            Grid.Row="1"
+            Background="Black"
             Document="{Binding Console}"
             FontFamily="Consolas,Menlo,Monospace"
             FontSize="14"

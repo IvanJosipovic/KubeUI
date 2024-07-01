@@ -8,7 +8,6 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="clr-namespace:k8s.Models;assembly=KubernetesClient"
-    xmlns:ui="using:FluentAvalonia.UI.Controls"
     xmlns:views="clr-namespace:KubeUI.Views"
     xmlns:vm="clr-namespace:KubeUI.ViewModels"
     d:DesignHeight="300"
@@ -19,45 +18,45 @@
         <vm:DemoResourceYamlViewModel />
     </Design.DataContext>
 
-    <Grid RowDefinitions="Auto,*">
+    <Grid
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch"
+        RowDefinitions="Auto,*">
+
         <!--  In Read Only Mode  -->
-        <ui:CommandBar
+        <StackPanel
             Grid.Row="0"
-            DefaultLabelPosition="Right"
-            IsVisible="{Binding !EditMode}">
-            <ui:CommandBar.PrimaryCommands>
-                <ui:CommandBarButton
-                    Command="{Binding SetEditModeCommand}"
-                    IconSource="Edit"
-                    Label="Edit" />
-                <ui:CommandBarToggleButton
-                    Command="{Binding SetHideNoisyFieldsCommand}"
-                    IconSource="Clear"
-                    IsChecked="{Binding HideNoisyFields, Mode=OneWay}"
-                    Label="Hide Noisy Fields" />
-            </ui:CommandBar.PrimaryCommands>
-        </ui:CommandBar>
+            IsVisible="{Binding !EditMode}"
+            Orientation="Horizontal">
+            <Button Command="{Binding SetEditModeCommand}" ToolTip.Tip="Edit">
+                <PathIcon Data="{StaticResource document_edit_regular}" />
+            </Button>
+            <ToggleButton
+                Command="{Binding SetHideNoisyFieldsCommand}"
+                IsChecked="{Binding HideNoisyFields, Mode=OneWay}"
+                ToolTip.Tip="Hide noisy fields">
+                <Panel>
+                    <PathIcon Data="{StaticResource eye_hide_regular}" />
+                </Panel>
+            </ToggleButton>
+        </StackPanel>
 
         <!--  In Edit Mode  -->
-        <ui:CommandBar
+        <StackPanel
             Grid.Row="0"
-            DefaultLabelPosition="Right"
-            IsVisible="{Binding EditMode}">
-            <ui:CommandBar.PrimaryCommands>
-                <ui:CommandBarButton
-                    Command="{Binding SaveCommand}"
-                    IconSource="Save"
-                    Label="Save" />
-                <ui:CommandBarButton
-                    Command="{Binding UndoCommand}"
-                    IconSource="Undo"
-                    Label="Undo" />
-                <ui:CommandBarButton
-                    Command="{Binding SetEditModeCommand}"
-                    IconSource="Cancel"
-                    Label="Cancel" />
-            </ui:CommandBar.PrimaryCommands>
-        </ui:CommandBar>
+            IsVisible="{Binding EditMode}"
+            Orientation="Horizontal"
+            ToolTip.Tip="Edit">
+            <Button Command="{Binding SaveCommand}" ToolTip.Tip="Save">
+                <PathIcon Data="{StaticResource save_regular}" />
+            </Button>
+            <Button Command="{Binding UndoCommand}" ToolTip.Tip="Undo">
+                <PathIcon Data="{StaticResource arrow_undo_regular}" />
+            </Button>
+            <Button Command="{Binding SetEditModeCommand}" ToolTip.Tip="Cancel">
+                <PathIcon Data="{StaticResource dismiss_regular}" />
+            </Button>
+        </StackPanel>
 
         <AvalonEdit:TextEditor
             Name="Editor"
