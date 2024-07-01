@@ -5,9 +5,11 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Dock.Model.Controls;
 using Dock.Model.Core;
+using k8s;
 using k8s.Models;
 using KubeUI.Client;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,13 +34,13 @@ public sealed partial class NavigationViewModel : ViewModelBase
         Factory = factory;
     }
 
-    public void TreeView_SelectionChanged(object? item)
+    public async void TreeView_SelectionChanged(object? item)
     {
         var doc = Factory.GetDockable<IDocumentDock>("Documents");
 
         if (item is Cluster cluster)
         {
-            Task.Run(cluster.Connect);
+            _ = Task.Run(cluster.Connect);
         }
         else if (item is ResourceNavigationLink resourceNavLink)
         {
@@ -67,25 +69,58 @@ public sealed partial class NavigationViewModel : ViewModelBase
         }
         else if (item is NavigationLink navLink)
         {
-            var vm = Application.Current.GetRequiredService(navLink.ControlType) as IDockable;
-
-            vm.Title = navLink.Name;
-            vm.Id = navLink.Cluster.Name + "-" + navLink.Name;
-
-            navLink.ControlType.GetProperty("Cluster")?.SetValue(vm, navLink.Cluster);
-
-            var existingDock = doc.VisibleDockables.FirstOrDefault(x => x.Id == vm.Id);
-
-            if (existingDock == null)
+            if (navLink.Id == "load-yaml")
             {
-                Factory?.AddDockable(doc, vm);
-                Factory?.SetActiveDockable(vm);
-                Factory?.SetFocusedDockable(doc, vm);
+                // Start async operation to open the dialog.
+                var files = await App.TopLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+                {
+                    Title = "Load Yaml",
+                    AllowMultiple = true,
+                    FileTypeFilter = new List<FilePickerFileType>() { new("Yaml") { Patterns = ["*.yaml", ".yml"] } }
+                });
+
+                foreach (var file in files)
+                {
+                    var stream = await file.OpenReadAsync();
+                    navLink.Cluster.ImportYaml(stream);
+                }
+            }
+            else if (navLink.Id == "load-folder")
+            {
+                // Start async operation to open the dialog.
+                var folders = await App.TopLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+                {
+                    Title = "Load Yamls in Folder",
+                    AllowMultiple = false
+                });
+
+                foreach (var file in folders)
+                {
+                    navLink.Cluster.ImportFolder(file.TryGetLocalPath());
+                }
             }
             else
             {
-                Factory?.SetActiveDockable(existingDock);
-                Factory?.SetFocusedDockable(doc, existingDock);
+                var vm = Application.Current.GetRequiredService(navLink.ControlType) as IDockable;
+
+                vm.Title = navLink.Name;
+                vm.Id = navLink.Cluster.Name + "-" + navLink.Name;
+
+                navLink.ControlType.GetProperty("Cluster")?.SetValue(vm, navLink.Cluster);
+
+                var existingDock = doc.VisibleDockables.FirstOrDefault(x => x.Id == vm.Id);
+
+                if (existingDock == null)
+                {
+                    Factory?.AddDockable(doc, vm);
+                    Factory?.SetActiveDockable(vm);
+                    Factory?.SetFocusedDockable(doc, vm);
+                }
+                else
+                {
+                    Factory?.SetActiveDockable(existingDock);
+                    Factory?.SetFocusedDockable(doc, existingDock);
+                }
             }
         }
     }

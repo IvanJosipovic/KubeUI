@@ -24,6 +24,8 @@ public partial class App : Application
     private ILogger<App> logger;
     private IServiceProvider _serviceProvider;
 
+    public static TopLevel TopLevel { get; private set; }
+
     public override void Initialize()
     {
         var configRoot = new ConfigurationBuilder().AddJsonFile("appsettings.json", true, true).Build();
@@ -89,11 +91,13 @@ public partial class App : Application
         {
             desktop.MainWindow = _serviceProvider.GetRequiredService<MainWindow>();
             desktop.MainWindow.DataContext = _serviceProvider.GetRequiredService<MainViewModel>();
+            TopLevel = TopLevel.GetTopLevel(desktop.MainWindow);
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
             singleViewPlatform.MainView = _serviceProvider.GetRequiredService<MainView>();
             singleViewPlatform.MainView.DataContext = _serviceProvider.GetRequiredService<MainViewModel>();
+            TopLevel = TopLevel.GetTopLevel(singleViewPlatform.MainView);
         }
 
         base.OnFrameworkInitializationCompleted();
