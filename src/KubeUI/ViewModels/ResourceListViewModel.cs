@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -65,7 +66,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
     private string _searchQuery;
 
     [ObservableProperty]
-    private ResourceListViewDefinition<T> _viewDefinitions;
+    private ResourceListViewDefinition<T> _viewDefinition;
 
     private IDisposable _filter;
 
@@ -86,7 +87,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
 
         Namespaces = Cluster.GetObjectDictionary<V1Namespace>();
 
-        ViewDefinitions = GetViewDefinition<T>();
+        ViewDefinition = GetViewDefinition<T>();
     }
 
     private void SetFilter()
@@ -136,7 +137,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
 
                 BinaryExpression? wordFilter = null;
 
-                foreach (var column in ViewDefinitions.Columns)
+                foreach (var column in ViewDefinition.Columns)
                 {
                     var someValue = Expression.Constant(query, typeof(string));
 
@@ -200,6 +201,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
 
         if (resourceType == typeof(V1Node))
         {
+            definition.ShowNamespaces = false;
+
             definition.Columns = new()
             {
                 new ResourceListViewDefinitionColumn<V1Node, string>()
@@ -263,6 +266,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
         }
         else if (resourceType == typeof(V1Namespace))
         {
+            definition.ShowNamespaces = false;
+
             definition.Columns = new()
             {
                 new ResourceListViewDefinitionColumn<V1Namespace, string>()
@@ -455,6 +460,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
         }
         else if (resourceType == typeof(V1CustomResourceDefinition))
         {
+            definition.ShowNamespaces = false;
+
             definition.Columns = new()
             {
                 new ResourceListViewDefinitionColumn<V1CustomResourceDefinition, string>()
@@ -591,17 +598,24 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
 
                     definition.Columns.Add(nsColumn);
                 }
+                else
+                {
+                    definition.ShowNamespaces = false;
+                }
 
                 if (version.AdditionalPrinterColumns != null)
                 {
                     foreach (var item in version.AdditionalPrinterColumns)
                     {
+                        start:
+
                         try
                         {
                             if (item.JsonPath == ".metadata.creationTimestamp")
                             {
                                 continue;
                             }
+
 
                             if (item.Type == "string")
                             {
@@ -618,9 +632,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
                             }
                             else if (item.Type == "number")
                             {
-                                var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<T, int>(item.JsonPath, true);
+                                var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<T, double>(item.JsonPath, true);
 
-                                var colDef = new ResourceListViewDefinitionColumn<T, int>()
+                                var colDef = new ResourceListViewDefinitionColumn<T, double>()
                                 {
                                     Name = item.Name,
                                     Display = TransformToFuncOfString<T>(exp.Body, exp.Parameters).Compile(),
@@ -688,6 +702,54 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
                             else
                             {
                                 _logger.LogWarning("CRD Column Type not supported: {type}", item.Type);
+                            }
+                        }
+                        catch (InvalidOperationException ex) when (ex.Message.StartsWith("No coercion operator is defined between types", StringComparison.Ordinal))
+                        {
+                            // The type defined in the AdditionalPrinterColumn is not correct
+
+                            var match = Regex.Match(ex.Message, "types '(.+)' and '(.+)'");
+                            if (match.Success)
+                            {
+                                var type = Type.GetType(match.Groups[1].Value);
+
+                                if (type.IsGenericType)
+                                {
+                                    type = type.GenericTypeArguments[0];
+                                }
+
+                                if (type == typeof(string))
+                                {
+                                    item.Type = "string";
+                                }
+                                else if (type == typeof(double))
+                                {
+                                    item.Type = "number";
+                                }
+                                if (type == typeof(int))
+                                {
+                                    item.Type = "integer";
+                                }
+                                else if (type == typeof(long) )
+                                {
+                                    item.Type = "integer";
+                                    item.Format = "int64";
+                                }
+                                else if (type == typeof(DateTime))
+                                {
+                                    item.Type = "date";
+                                }
+                                else if (type == typeof(bool))
+                                {
+                                    item.Type = "boolean";
+                                }
+                                else
+                                {
+                                    _logger.LogCritical(ex, "Unable to generate CRD Column: {Name} with type {Type}", item.Name, type);
+                                    continue;
+                                }
+
+                                goto start;
                             }
                         }
                         catch (Exception ex)
@@ -956,4 +1018,6 @@ public class ResourceListViewDefinition<T> where T : class, IKubernetesObject<V1
     public List<ResourceListViewMenuItem> MenuItems { get; set; }
 
     public bool DefaultMenuItems { get; set; } = true;
+
+    public bool ShowNamespaces { get; set; } = true;
 }

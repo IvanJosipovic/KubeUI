@@ -42,6 +42,7 @@
                     HorizontalAlignment="Right"
                     DisplayMemberBinding="{ReflectionBinding Metadata.Name,
                                                              FallbackValue='Select a Namespace'}"
+                    IsVisible="{ReflectionBinding ViewDefinition.ShowNamespaces}"
                     ItemsSource="{ReflectionBinding Path=Namespaces.Values}"
                     SelectedItem="{ReflectionBinding Path=SelectedNamespaces}" />
             </Grid>
