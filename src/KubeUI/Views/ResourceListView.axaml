@@ -6,7 +6,6 @@
     xmlns:con="clr-namespace:KubeUI.Converters"
     xmlns:controls="clr-namespace:KubeUI.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:kube="clr-namespace:k8s.Models"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="clr-namespace:k8s.Models;assembly=KubernetesClient"
     xmlns:views="clr-namespace:KubeUI.Views"
