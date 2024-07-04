@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia.Headless.XUnit" Version="11.1.0-rc1" />
+    <PackageReference Include="Avalonia.Headless.XUnit" Version="11.1.0-rc2" />
     <PackageReference Include="CliWrap" Version="3.6.6" />
     <PackageReference Include="coverlet.collector" Version="6.0.2">
       <PrivateAssets>all</PrivateAssets>
