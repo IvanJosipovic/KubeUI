@@ -128,12 +128,20 @@ public sealed partial class Cluster : ObservableObject
 
                     var vm = new ClusterErrorViewModel()
                     {
+                        Id = "cluster-error",
                         Error = ex.Message
                     };
 
-                    factory.AddDockable(doc, vm);
-                    factory.SetActiveDockable(vm);
-                    factory.SetFocusedDockable(doc, vm);
+                    var existingDock = doc.VisibleDockables.FirstOrDefault(x => x.Id == vm.Id);
+
+                    if (existingDock != null)
+                    {
+                        factory?.CloseDockable(existingDock);
+                    }
+
+                    factory?.AddDockable(doc, vm);
+                    factory?.SetActiveDockable(vm);
+                    factory?.SetFocusedDockable(doc, vm);
                 }
             }
         }

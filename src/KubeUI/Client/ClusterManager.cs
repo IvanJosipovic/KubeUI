@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Xml.Linq;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -13,7 +12,6 @@ using Dock.Model.Core;
 using k8s;
 using KubeUI.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyModel;
 using Microsoft.Extensions.Logging;
 using Scrutor;
 
@@ -47,6 +45,7 @@ public sealed partial class ClusterManager : ObservableObject
 
         var vm = new ClusterErrorViewModel()
         {
+            Id = "cluster-error",
             Error = e.Data
         };
 
@@ -54,9 +53,16 @@ public sealed partial class ClusterManager : ObservableObject
 
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
-            _factory.AddDockable(doc, vm);
-            _factory.SetActiveDockable(vm);
-            _factory.SetFocusedDockable(doc, vm);
+            var existingDock = doc.VisibleDockables.FirstOrDefault(x => x.Id == vm.Id);
+
+            if (existingDock != null)
+            {
+                _factory?.CloseDockable(existingDock);
+            }
+
+            _factory?.AddDockable(doc, vm);
+            _factory?.SetActiveDockable(vm);
+            _factory?.SetFocusedDockable(doc, vm);
         });
     }
 
