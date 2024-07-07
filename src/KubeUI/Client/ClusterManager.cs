@@ -41,6 +41,12 @@ public sealed partial class ClusterManager : ObservableObject
 
     private async void KubernetesClientConfiguration_ExecStdError(object? sender, DataReceivedEventArgs e)
     {
+        if (string.IsNullOrEmpty(e.Data))
+        {
+            _logger.LogError("Cluster ExecStdError: no data");
+            return;
+        }
+
         var doc = _factory.GetDockable<IDocumentDock>("Documents");
 
         var vm = new ClusterErrorViewModel()
