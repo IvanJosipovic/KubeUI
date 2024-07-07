@@ -66,12 +66,24 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
                 try
                 {
                     var memory = new Memory<char>(new char[1024]);
-                    await _streamReader.ReadAsync(memory);
-                    var str = memory.ToString().Replace("\0", "").Replace("\a", "").Replace("\b", "");
+                    await _streamReader.ReadAsync(memory).ConfigureAwait(false);
+                    var str = memory.ToString()
+                        .Replace("\0", "", StringComparison.Ordinal)
+                        .Replace("\a", "", StringComparison.Ordinal);
                     str = RemoveAnsiEscapeSequences(str);
                     if (!string.IsNullOrEmpty(str))
                     {
-                       await Dispatcher.UIThread.InvokeAsync(() => Console.Insert(Console.TextLength, str));
+                       await Dispatcher.UIThread.InvokeAsync(() =>
+                       {
+                           if (str.Equals("\b", StringComparison.Ordinal) || str.Equals("\b \b", StringComparison.Ordinal))
+                           {
+                               Console.Remove(Console.TextLength - 1, 1);
+                           }
+                           else
+                           {
+                               Console.Insert(Console.TextLength, str);
+                           }
+                       });
                     }
                 }
                 catch (IOException ex) when (ex.Message.Equals("The request was aborted.")) { break; }
@@ -98,7 +110,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
             {
                 if (!string.IsNullOrEmpty(args.KeySymbol))
                 {
-                    _stream.Write(Encoding.UTF8.GetBytes(args.KeySymbol));
+                    _stream.Write(Encoding.Default.GetBytes(args.KeySymbol));
                 }
             }
             catch (Exception ex)
