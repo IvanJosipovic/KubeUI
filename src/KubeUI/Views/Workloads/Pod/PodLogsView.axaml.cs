@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using AvaloniaEdit.TextMate;
+using KubeUI.ViewModels;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
 
@@ -29,6 +30,7 @@ public partial class PodLogsView : UserControl
 
     private void Editor_TextChanged(object? sender, System.EventArgs e)
     {
-        Editor.ScrollToEnd();
+        if ((DataContext as PodLogsViewModel)?.AutoScrollToBottom == true)
+            Editor.ScrollToEnd();
     }
 }

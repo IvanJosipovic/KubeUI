@@ -42,6 +42,11 @@
                     <PathIcon Data="{StaticResource timer_regular}" />
                 </Panel>
             </ToggleButton>
+            <ToggleButton IsChecked="{Binding AutoScrollToBottom}" ToolTip.Tip="Auto-scroll to bottom">
+                <Panel>
+                    <PathIcon Data="{StaticResource ic_fluent_padding_down_filled}" />
+                </Panel>
+            </ToggleButton>
         </StackPanel>
 
         <AvalonEdit:TextEditor

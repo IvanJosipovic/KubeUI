@@ -30,6 +30,9 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _timestamps;
 
+    [ObservableProperty]
+    private bool _autoScrollToBottom = true;
+
     private Stream? _stream;
 
     private StreamReader? _streamReader;

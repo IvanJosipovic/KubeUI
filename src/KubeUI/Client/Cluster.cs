@@ -204,7 +204,7 @@ public sealed partial class Cluster : ObservableObject
                 new ResourceNavigationLink() { Name = "Ingresses", ControlType = typeof(V1Ingress), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/ing.svg"  },
                 new ResourceNavigationLink() { Name = "Ingress Classes", ControlType = typeof(V1IngressClass), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/ing.svg"  }, // Needs SvgIcon
                 new ResourceNavigationLink() { Name = "Network Policies", ControlType = typeof(V1NetworkPolicy), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/netpol.svg"  },
-                new NavigationLink() { Name = "Port Forwarding", ControlType = typeof(PortForwarderListViewModel), Cluster = this, StyleIcon = "ic_fluent_cloud_flow_24_filled" }
+                new NavigationLink() { Name = "Port Forwarding", ControlType = typeof(PortForwarderListViewModel), Cluster = this, StyleIcon = "ic_fluent_cloud_flow_filled" }
             ]
         });
 
