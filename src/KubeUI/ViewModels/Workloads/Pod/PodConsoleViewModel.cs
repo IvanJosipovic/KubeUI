@@ -110,7 +110,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
             {
                 if (!string.IsNullOrEmpty(args.KeySymbol))
                 {
-                    _stream.Write(Encoding.Default.GetBytes(args.KeySymbol));
+                    _stream.Write(Encoding.UTF8.GetBytes(args.KeySymbol));
                 }
             }
             catch (Exception ex)
