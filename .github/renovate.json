@@ -37,6 +37,18 @@
       ]
     },
     {
+      "matchUpdateTypes": [ "major", "minor", "patch", "digest" ],
+      "automerge": true,
+      "packageRules": [
+        {
+          "matchPackageNames": [
+            "Meziantou.Analyzer",
+            "roslynator.analyzers"
+          ]
+        }
+      ]
+    },
+    {
       "matchUpdateTypes": [ "minor", "patch", "digest" ],
       "automerge": true,
       "matchFileNames": [
@@ -51,18 +63,6 @@
       "matchFileNames": [
         "src/**",
         "global.json"
-      ]
-    },
-    {
-      "matchUpdateTypes": [ "major", "minor", "patch", "digest" ],
-      "automerge": true,
-      "packageRules": [
-        {
-          "matchPackageNames": [
-            "Meziantou.Analyzer",
-            "roslynator.analyzers"
-          ]
-        }
       ]
     }
   ]
