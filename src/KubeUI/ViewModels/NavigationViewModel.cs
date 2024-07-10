@@ -2,9 +2,7 @@
 using Dock.Model.Core;
 using k8s;
 using k8s.Models;
-using KubeUI.Assets;
 using KubeUI.Client;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.ViewModels;
 
@@ -17,13 +15,8 @@ public sealed partial class NavigationViewModel : ViewModelBase
     {
         ClusterManager = Application.Current.GetRequiredService<ClusterManager>();
         Factory = Application.Current.GetRequiredService<IFactory>();
-    }
-
-    [ActivatorUtilitiesConstructor]
-    public NavigationViewModel(ClusterManager clusterManager, IFactory factory)
-    {
-        ClusterManager = clusterManager;
-        Factory = factory;
+        Title = Resources.NavigationViewModel_Title;
+        Id = nameof(NavigationViewModel);
     }
 
     public async void TreeView_SelectionChanged(object? item)
@@ -34,76 +27,80 @@ public sealed partial class NavigationViewModel : ViewModelBase
         }
         else if (item is ResourceNavigationLink resourceNavLink)
         {
-            var kind = GroupApiVersionKind.From(resourceNavLink.ControlType);
-
-            resourceNavLink.Cluster.Seed(resourceNavLink.ControlType);
-            resourceNavLink.Objects = resourceNavLink.Cluster.Objects[kind].Items;
-
-            var vm = GetContext(resourceNavLink.ControlType, resourceNavLink.Objects, kind, resourceNavLink.Cluster) as IDockable;
-            vm.Title = kind.ToString();
-            vm.Id = resourceNavLink.Cluster.Name + "-" + kind.ToString();
-
-            Factory.AddToDocuments(vm);
+            SelectResourceNavigationLink(resourceNavLink);
         }
         else if (item is NavigationLink navLink)
         {
-            if (navLink.Id == "load-yaml")
-            {
-                // Start async operation to open the dialog.
-                var files = await App.TopLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-                {
-                    Title = Resources.NavigationViewModel_LoadYaml,
-                    AllowMultiple = true,
-                    FileTypeFilter = new List<FilePickerFileType>() { new("Yaml") { Patterns = ["*.yaml", ".yml"] } }
-                });
-
-                foreach (var file in files)
-                {
-                    var stream = await file.OpenReadAsync();
-                    navLink.Cluster.ImportYaml(stream);
-                }
-            }
-            else if (navLink.Id == "load-folder")
-            {
-                // Start async operation to open the dialog.
-                var folders = await App.TopLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
-                {
-                    Title = Resources.NavigationViewModel_LoadFolder,
-                    AllowMultiple = false
-                });
-
-                foreach (var file in folders)
-                {
-                    navLink.Cluster.ImportFolder(file.TryGetLocalPath());
-                }
-            }
-            else
-            {
-                var vm = Application.Current.GetRequiredService(navLink.ControlType) as IDockable;
-
-                vm.Title = navLink.Name;
-                vm.Id = navLink.Cluster.Name + "-" + navLink.Name;
-
-                navLink.ControlType.GetProperty(nameof(ResourceListViewModel<V1Pod>.Cluster))?.SetValue(vm, navLink.Cluster);
-
-                Factory.AddToDocuments(vm);
-            }
+            await SelectNavigationLink(navLink);
         }
     }
 
-    private static object GetContext(Type type, object list, GroupApiVersionKind kind, Cluster cluster)
+    private void SelectResourceNavigationLink(ResourceNavigationLink link)
     {
-        var constructedType = typeof(ResourceListViewModel<>).MakeGenericType(type);
+        var kind = GroupApiVersionKind.From(link.ControlType);
 
-        var instance = Application.Current.GetRequiredService(constructedType);
+        link.Cluster.Seed(link.ControlType);
+        link.Objects = link.Cluster.Objects[kind].Items;
 
-        constructedType.GetProperty(nameof(ResourceListViewModel<V1Pod>.Cluster))?.SetValue(instance, cluster);
-        constructedType.GetProperty(nameof(ResourceListViewModel<V1Pod>.Objects))?.SetValue(instance, list);
-        constructedType.GetProperty(nameof(ResourceListViewModel<V1Pod>.Kind))?.SetValue(instance, kind);
+        var resourceListType = typeof(ResourceListViewModel<>).MakeGenericType(link.ControlType);
 
-        constructedType.GetMethod(nameof(ResourceListViewModel<V1Pod>.Initialize))?.Invoke(instance, null);
+        var vm = Application.Current.GetRequiredService(resourceListType) as IDockable;
 
-        return instance;
+        resourceListType.GetProperty(nameof(ResourceListViewModel<V1Pod>.Cluster))?.SetValue(vm, link.Cluster);
+        resourceListType.GetProperty(nameof(ResourceListViewModel<V1Pod>.Objects))?.SetValue(vm, link.Objects);
+        resourceListType.GetProperty(nameof(ResourceListViewModel<V1Pod>.Kind))?.SetValue(vm, kind);
+
+        resourceListType.GetMethod(nameof(ResourceListViewModel<V1Pod>.Initialize))?.Invoke(vm, null);
+
+        vm.Title = kind.Kind;
+        vm.Id = link.Cluster.Name + "-" + kind.Kind;
+
+        Factory.AddToDocuments(vm);
+    }
+
+    private async Task SelectNavigationLink(NavigationLink link)
+    {
+        if (link.Id == "load-yaml")
+        {
+            // Start async operation to open the dialog.
+            var files = await App.TopLevel.StorageProvider.OpenFilePickerAsync(new()
+            {
+                Title = Resources.NavigationViewModel_LoadYaml,
+                AllowMultiple = true,
+                FileTypeFilter = new List<FilePickerFileType>() { new("Yaml") { Patterns = ["*.yaml", ".yml"] } }
+            });
+
+            foreach (var file in files)
+            {
+                var stream = await file.OpenReadAsync();
+                link.Cluster.ImportYaml(stream);
+            }
+        }
+        else if (link.Id == "load-folder")
+        {
+            // Start async operation to open the dialog.
+            var folders = await App.TopLevel.StorageProvider.OpenFolderPickerAsync(new()
+            {
+                Title = Resources.NavigationViewModel_LoadFolder,
+                AllowMultiple = false
+            });
+
+            foreach (var file in folders)
+            {
+                link.Cluster.ImportFolder(file.TryGetLocalPath());
+            }
+        }
+        else
+        {
+            var vm = Application.Current.GetRequiredService(link.ControlType) as IDockable;
+
+            vm.Title = link.Name;
+            vm.Id = link.Cluster.Name + "-" + link.Name;
+
+            link.ControlType.GetProperty(nameof(ResourceListViewModel<V1Pod>.Cluster))?.SetValue(vm, link.Cluster);
+
+            Factory.AddToDocuments(vm);
+        }
     }
 }
 

@@ -4,13 +4,19 @@ namespace KubeUI.ViewModels;
 
 public sealed partial class AboutViewModel : ViewModelBase
 {
+    public AboutViewModel()
+    {
+        Title = Resources.AboutView_Title;
+        Id = nameof(AboutViewModel);
+    }
+
     public static string? GetVersion()
     {
         var version = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
         if (version.Contains('+'))
         {
-            version = version.Substring(0, version.IndexOf('+'));
+            version = version[..version.IndexOf('+')];
         }
 
         return version;

@@ -8,7 +8,6 @@ using Velopack;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using HanumanInstitute.MvvmDialogs;
-using KubeUI.Assets;
 
 namespace KubeUI.ViewModels;
 
@@ -183,8 +182,6 @@ public sealed partial class MainViewModel : ViewModelBase
     private void OpenAbout()
     {
         var about = Application.Current.GetRequiredService<AboutViewModel>();
-        about.Title = Resources.AboutView_Title;
-        about.Id = "About";
 
         Factory?.AddToDocuments(about);
 

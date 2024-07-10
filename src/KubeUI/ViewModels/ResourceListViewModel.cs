@@ -11,7 +11,6 @@ using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
-using KubeUI.Assets;
 using KubeUI.Client;
 using KubeUI.Client.Informer;
 using KubeUI.Controls;
@@ -36,8 +35,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
 
     [ObservableProperty]
     private ConcurrentObservableDictionary<NamespacedName, T> _objects;
-
-    public string TypeName => Kind.ToString();
 
     [ObservableProperty]
     private object _selectedItem;
@@ -571,9 +568,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
             if (resourceType.Namespace.StartsWith("KubeUI.Models"))
             {
                 // Generate CRD Columns
-                var metadata = GroupApiVersionKind.From(resourceType);
-
-                var crd = Cluster.GetObject<V1CustomResourceDefinition>(null, metadata.PluralNameGroup);
+                var crd = Cluster.GetObject<V1CustomResourceDefinition>(null, Kind.PluralNameGroup);
 
                 var version = crd.Spec.Versions.First(x => x.Storage);
 
@@ -826,7 +821,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
 
         if (pinnedDoc != null)
         {
-            Factory.PinDockable(pinnedDoc);
+            Factory.RemoveDockable(pinnedDoc, true);
         }
 
         var doc = Factory.GetDockable<IDock>("RightDock");
@@ -845,13 +840,13 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
         instance.CanFloat = false;
 
         Factory?.InsertDockable(doc, instance, 0);
-        Factory?.SetActiveDockable(instance);
-        Factory?.SetFocusedDockable(doc, instance);
+        Factory?.PinDockable(instance);
+        Factory?.PreviewPinnedDockable(instance);
     }
 
     private bool CanView(object item)
     {
-        return true;
+        return item != null;
     }
 
     [RelayCommand(CanExecute = nameof(CanViewYaml))]

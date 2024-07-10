@@ -1,7 +1,6 @@
 ﻿using AvaloniaEdit.Document;
 using k8s.Models;
 using k8s;
-using KubeUI.Assets;
 
 namespace KubeUI.ViewModels;
 

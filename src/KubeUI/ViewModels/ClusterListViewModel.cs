@@ -10,5 +10,6 @@ public sealed partial class ClusterListViewModel : ViewModelBase
     public ClusterListViewModel()
     {
         _clusterManager = Application.Current.GetRequiredService<ClusterManager>();
+        Title = Resources.ClusterListViewModel_Title;
     }
 }

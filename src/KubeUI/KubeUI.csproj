@@ -14,10 +14,11 @@
     <Using Include="Avalonia.Threading"/>
     <Using Include="CommunityToolkit.Mvvm.ComponentModel"/>
     <Using Include="CommunityToolkit.Mvvm.Input"/>
-    <Using Include="System.ComponentModel"/>
+    <Using Include="KubeUI.Assets"/>
+    <Using Include="Microsoft.Extensions.Logging"/>
     <Using Include="System.Collections"/>
     <Using Include="System.Collections.ObjectModel"/>
-    <Using Include="Microsoft.Extensions.Logging"/>
+    <Using Include="System.ComponentModel"/>
   </ItemGroup>
 
   <ItemGroup>

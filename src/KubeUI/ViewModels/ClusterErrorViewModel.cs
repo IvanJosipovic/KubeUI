@@ -4,9 +4,10 @@ public sealed partial class ClusterErrorViewModel : ViewModelBase
 {
     public ClusterErrorViewModel()
     {
-        Title = "Cluster Error";
+        Title = Resources.ClusterErrorViewModel_Title;
         Id = nameof(ClusterErrorViewModel);
     }
+
     [ObservableProperty]
     private string? _error;
 }

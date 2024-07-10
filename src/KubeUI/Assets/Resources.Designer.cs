@@ -106,11 +106,47 @@ namespace KubeUI.Assets {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Cluster Error.
+        /// </summary>
+        public static string ClusterErrorViewModel_Title {
+            get {
+                return ResourceManager.GetString("ClusterErrorViewModel_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Clusters.
+        /// </summary>
+        public static string ClusterListViewModel_Title {
+            get {
+                return ResourceManager.GetString("ClusterListViewModel_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cluster.
+        /// </summary>
+        public static string ClusterViewModel_Title {
+            get {
+                return ResourceManager.GetString("ClusterViewModel_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Welcome to KubeUI!.
         /// </summary>
         public static string HomeView_Header {
             get {
                 return ResourceManager.GetString("HomeView_Header", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Home.
+        /// </summary>
+        public static string HomeViewModel_Title {
+            get {
+                return ResourceManager.GetString("HomeViewModel_Title", resourceCulture);
             }
         }
         
@@ -237,6 +273,15 @@ namespace KubeUI.Assets {
         public static string NavigationViewModel_LoadYaml {
             get {
                 return ResourceManager.GetString("NavigationViewModel_LoadYaml", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Navigation.
+        /// </summary>
+        public static string NavigationViewModel_Title {
+            get {
+                return ResourceManager.GetString("NavigationViewModel_Title", resourceCulture);
             }
         }
         

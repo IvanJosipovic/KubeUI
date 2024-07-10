@@ -51,7 +51,7 @@ public sealed partial class ClusterManager : ObservableObject
 
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
-            var existingDock = _factory.FindDockableById(vm);
+            var existingDock = _factory.FindDockableById(vm.Id);
 
             if (existingDock != null)
             {

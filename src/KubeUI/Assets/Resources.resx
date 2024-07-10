@@ -238,4 +238,19 @@ Are you sure?</value>
   <data name="ResourceListViewModel_PortForward_Title" xml:space="preserve">
     <value>Port Forward</value>
   </data>
+  <data name="ClusterErrorViewModel_Title" xml:space="preserve">
+    <value>Cluster Error</value>
+  </data>
+  <data name="ClusterListViewModel_Title" xml:space="preserve">
+    <value>Clusters</value>
+  </data>
+  <data name="ClusterViewModel_Title" xml:space="preserve">
+    <value>Cluster</value>
+  </data>
+  <data name="HomeViewModel_Title" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="NavigationViewModel_Title" xml:space="preserve">
+    <value>Navigation</value>
+  </data>
 </root>

@@ -13,6 +13,7 @@ public sealed partial class ClusterViewModel : ViewModelBase
 
     public ClusterViewModel()
     {
+        Title = Resources.ClusterViewModel_Title;
     }
 
     public IEnumerable<ISeries> CPU { get; set; } =

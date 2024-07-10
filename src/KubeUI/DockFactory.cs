@@ -19,66 +19,59 @@ public class DockFactory : Factory
         _logger = logger;
     }
 
-    public IRootDock? RootDock;
-    private IToolDock? LeftDock;
-    private IToolDock? RightDock;
-    public IDocumentDock? DocumentDock;
-
-    public override IDocumentDock CreateDocumentDock() => new CustomDocumentDock();
+    private IRootDock? _rootDock;
+    private IToolDock? _leftDock;
+    private IToolDock? _rightDock;
+    private IDocumentDock? _documentDock;
 
     public override IRootDock CreateLayout()
     {
         var nav = Application.Current.GetRequiredService<NavigationViewModel>();
-        nav.Title = "Navigation";
-        nav.Id = "Navigation";
         nav.CanClose = false;
         nav.CanFloat = false;
 
         var leftDock = new ToolDock
         {
+            Alignment = Alignment.Left,
+            CanClose = false,
+            Dock = DockMode.Left,
             Id = "LeftDock",
-            Title = "LeftDock",
             Proportion = 0.2,
             VisibleDockables = CreateList<IDockable>(nav),
-            Alignment = Alignment.Left,
-            Dock = DockMode.Left,
-            CanClose = false
         };
 
         var rightDock = new ToolDock
         {
+            Alignment = Alignment.Right,
+            CanClose = false,
+            Dock = DockMode.Right,
             Id = "RightDock",
-            Title = "RightDock",
             Proportion = 0.3,
             VisibleDockables = CreateList<IDockable>(),
-            Alignment = Alignment.Right,
-            Dock = DockMode.Right,
-            CanClose = false
         };
 
         var home = Application.Current.GetRequiredService<HomeViewModel>();
-        home.Title = "Home";
-        home.Id = "Home";
 
-        var documentDock = new CustomDocumentDock
+        var documentDock = new DocumentDock
         {
-            Title = "Documents",
+            CanClose = false,
+            CanCreateDocument = false,
+            Dock = DockMode.Center,
             Id = "Documents",
-            VisibleDockables = CreateList<IDockable>(home),
-            CanCreateDocument = true,
             IsCollapsable = false,
-            Dock = DockMode.Center
+            VisibleDockables = CreateList<IDockable>(home),
         };
 
         var mainLayout2 = new ProportionalDock
         {
+            CanClose = false,
             Id = "DocumentPropDock",
+            IsCollapsable = false,
             Orientation = Orientation.Vertical,
             VisibleDockables = CreateList<IDockable>
             (
                 documentDock
             ),
-            CanClose = false
         };
 
         var mainLayout = new ProportionalDock
@@ -92,21 +85,20 @@ public class DockFactory : Factory
                 mainLayout2,
                 new ProportionalDockSplitter() {  CanClose = false },
                 rightDock
-            )
+            ),
         };
 
         var rootDock = CreateRootDock();
-        rootDock.Title = "Root";
         rootDock.Id = "Root";
         rootDock.ActiveDockable = mainLayout;
         rootDock.DefaultDockable = mainLayout;
         rootDock.VisibleDockables = CreateList<IDockable>(mainLayout);
         rootDock.IsCollapsable = false;
 
-        DocumentDock = documentDock;
-        RootDock = rootDock;
-        LeftDock = leftDock;
-        RightDock = rightDock;
+        _documentDock = documentDock;
+        _rootDock = rootDock;
+        _leftDock = leftDock;
+        _rightDock = rightDock;
 
         return rootDock;
     }
@@ -120,10 +112,10 @@ public class DockFactory : Factory
 
         DockableLocator = new Dictionary<string, Func<IDockable?>>()
         {
-            ["Root"] = () => RootDock,
-            ["Documents"] = () => DocumentDock,
-            ["LeftDock"] = () => LeftDock,
-            ["RightDock"] = () => RightDock,
+            ["Root"] = () => _rootDock,
+            ["Documents"] = () => _documentDock,
+            ["LeftDock"] = () => _leftDock,
+            ["RightDock"] = () => _rightDock,
         };
 
         HostWindowLocator = new Dictionary<string, Func<IHostWindow?>>
@@ -135,19 +127,12 @@ public class DockFactory : Factory
     }
 
     /// <summary>
-    /// Fixes Float on ToolDock floating the whole dock.
+    /// Prevents Navigation from being moved
     /// </summary>
-    /// <param name="dockable"></param>
-    public override void FloatDockable(IDockable dockable)
-    {
-        if (dockable is IToolDock tool)
-        {
-            dockable = tool.ActiveDockable;
-        }
-
-        base.FloatDockable(dockable);
-    }
-
+    /// <param name="sourceDock"></param>
+    /// <param name="targetDock"></param>
+    /// <param name="sourceDockable"></param>
+    /// <param name="targetDockable"></param>
     public override void MoveDockable(IDock sourceDock, IDock targetDock, IDockable sourceDockable, IDockable? targetDockable)
     {
         if (sourceDockable.Id == "Navigation")
@@ -158,6 +143,10 @@ public class DockFactory : Factory
         base.MoveDockable(sourceDock, targetDock, sourceDockable, targetDockable);
     }
 
+    /// <summary>
+    /// Runs dispose on closed Dockables
+    /// </summary>
+    /// <param name="dockable"></param>
     public override void CloseDockable(IDockable dockable)
     {
         base.CloseDockable(dockable);
@@ -168,6 +157,11 @@ public class DockFactory : Factory
         }
     }
 
+    /// <summary>
+    /// Prevents closing dockables that shouldn't be closed
+    /// </summary>
+    /// <param name="dockable"></param>
+    /// <param name="collapse"></param>
     public override void RemoveDockable(IDockable dockable, bool collapse)
     {
         if (!dockable.CanClose)
@@ -181,9 +175,9 @@ public class DockFactory : Factory
 
 public static class FactoryExtensions
 {
-    public static IDockable? FindDockableById(this IFactory factory, IDockable dockable)
+    public static IDockable? FindDockableById(this IFactory factory, string id)
     {
-        return factory.Find(x => string.Equals(x.Id, dockable.Id, StringComparison.Ordinal)).FirstOrDefault();
+        return factory.Find(x => string.Equals(x.Id, id, StringComparison.Ordinal)).FirstOrDefault();
     }
 
     public static bool AddToDocuments(this IFactory factory, IDockable vm, bool duplicateCheck = true)
@@ -192,7 +186,7 @@ public static class FactoryExtensions
 
         if (duplicateCheck)
         {
-            var existing = factory.FindDockableById(vm);
+            var existing = factory.FindDockableById(vm.Id);
 
             if (existing != null)
             {
@@ -209,7 +203,6 @@ public static class FactoryExtensions
 
         return true;
     }
-
 
     public static bool AddToBottom(this IFactory factory, IDockable vm, bool duplicateCheck = true)
     {
@@ -237,7 +230,7 @@ public static class FactoryExtensions
 
             if (duplicateCheck)
             {
-                var existing = factory.FindDockableById(vm);
+                var existing = factory.FindDockableById(vm.Id);
 
                 if (existing != null)
                 {

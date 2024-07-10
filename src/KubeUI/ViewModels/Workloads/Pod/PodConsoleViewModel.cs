@@ -6,7 +6,6 @@ using System.Net.WebSockets;
 using Avalonia.Input;
 using System.Text;
 using System.Text.RegularExpressions;
-using KubeUI.Assets;
 
 namespace KubeUI.ViewModels;
 
