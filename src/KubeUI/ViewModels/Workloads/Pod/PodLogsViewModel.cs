@@ -6,6 +6,8 @@ namespace KubeUI.ViewModels;
 
 public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 {
+    private readonly ILogger<PodLogsViewModel> _logger;
+
     [ObservableProperty]
     private Client.Cluster _cluster;
 
@@ -35,48 +37,57 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
     private bool _isConnected;
 
-    public PodLogsViewModel()
+    public PodLogsViewModel(ILogger<PodLogsViewModel> logger)
     {
+        _logger = logger;
         Title = Resources.PodLogsViewModel_Title;
     }
 
     public async Task Connect()
     {
-        Logs.Text = string.Empty;
-
-        _stream = await Cluster!.Client!.CoreV1.ReadNamespacedPodLogAsync(Object.Name(), Object.Namespace(), container: ContainerName, tailLines: _lines, previous: Previous, follow: true, pretty: true, timestamps: Timestamps);
-
-        _streamReader = new StreamReader(_stream);
-
-        _isConnected = true;
-
-        _ = Task.Run(async () =>
+        try
         {
-            while (_isConnected)
-            {
-                try
-                {
-                    var log = await _streamReader.ReadLineAsync();
+            Logs.Text = string.Empty;
 
-                    if (!string.IsNullOrEmpty(log))
+            _stream = await Cluster!.Client!.CoreV1.ReadNamespacedPodLogAsync(Object.Name(), Object.Namespace(), container: ContainerName, tailLines: _lines, previous: Previous, follow: true, pretty: true, timestamps: Timestamps);
+
+            _streamReader = new StreamReader(_stream);
+
+            _isConnected = true;
+
+            _ = Task.Run(async () =>
+            {
+                while (_isConnected)
+                {
+                    try
                     {
-                        await Dispatcher.UIThread.InvokeAsync(() => Logs.Insert(Logs.TextLength, log + Environment.NewLine));
+                        var log = await _streamReader.ReadLineAsync();
+
+                        if (!string.IsNullOrEmpty(log))
+                        {
+                            await Dispatcher.UIThread.InvokeAsync(() => Logs.Insert(Logs.TextLength, log + Environment.NewLine));
+                        }
+                    }
+                    catch (IOException ex) when (ex.Message.Equals("The request was aborted."))
+                    {
+                        _isConnected = false;
+
+                        break;
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        _isConnected = false;
+
+                        break;
                     }
                 }
-                catch (IOException ex) when (ex.Message.Equals("The request was aborted."))
-                {
-                    _isConnected = false;
-
-                    break;
-                }
-                catch (ObjectDisposedException)
-                {
-                    _isConnected = false;
-
-                    break;
-                }
-            }
-        });
+            });
+        }
+        catch (Exception ex)
+        {
+            //to display notification
+            _logger.LogError("Unable to View Logs: ", ex);
+        }
     }
 
     protected override async void OnPropertyChanged(PropertyChangedEventArgs e)
