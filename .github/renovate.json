@@ -43,6 +43,15 @@
         "tests/**",
         "benchmarks/**"
       ]
+    },
+    {
+      "matchUpdateTypes": [ "minor", "patch", "digest" ],
+      "automerge": false,
+      "semanticCommitType": "fix",
+      "matchFileNames": [
+        "src/**",
+        "global.json"
+      ]
     }
   ]
 }
