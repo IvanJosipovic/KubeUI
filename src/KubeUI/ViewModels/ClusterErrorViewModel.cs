@@ -1,6 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-
-namespace KubeUI.ViewModels;
+﻿namespace KubeUI.ViewModels;
 
 public sealed partial class ClusterErrorViewModel : ViewModelBase
 {

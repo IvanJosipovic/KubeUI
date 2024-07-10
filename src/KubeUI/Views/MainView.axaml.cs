@@ -1,6 +1,4 @@
-﻿using Avalonia.Controls;
-
-namespace KubeUI.Views;
+﻿namespace KubeUI.Views;
 
 public partial class MainView : UserControl
 {

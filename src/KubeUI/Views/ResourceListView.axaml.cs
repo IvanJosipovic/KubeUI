@@ -1,22 +1,12 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using Avalonia.Controls;
 using k8s.Models;
 using k8s;
 using Avalonia.Data;
 using Avalonia.Data.Converters;
 using KubeUI.Client.Informer;
 using System.Reflection;
-using Avalonia.Threading;
 using Avalonia.Controls.Templates;
-using Avalonia;
-using System.ComponentModel;
-using System.Linq;
 using KubeUI.ViewModels;
-using Microsoft.Extensions.Logging;
 using Avalonia.Styling;
-using System.Threading.Tasks;
 
 namespace KubeUI.Views;
 

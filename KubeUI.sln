@@ -14,6 +14,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.github\workflows\cicd.yml = .github\workflows\cicd.yml
 		global.json = global.json
 		README.md = README.md
+		.github\renovate.json = .github\renovate.json
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeUI.Models.Generator", "src\KubeUI.Models.Generator\KubeUI.Models.Generator.csproj", "{0FD8EB49-7DE4-42DA-AC49-2713CF1F8701}"

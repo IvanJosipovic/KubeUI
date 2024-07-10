@@ -22,17 +22,12 @@
 
     <UserControl.Styles>
         <Style Selector="TreeViewItem">
-            <Setter Property="IsExpanded" Value="{ReflectionBinding IsExpanded}" />
-        </Style>
-        <Style Selector="TreeViewItem">
             <Setter Property="Background" Value="Transparent" />
+            <Setter Property="IsExpanded" Value="{ReflectionBinding IsExpanded}" />
         </Style>
     </UserControl.Styles>
 
-    <TreeView
-        Name="TreeView"
-        ItemsSource="{Binding Path=ClusterManager.Clusters}"
-        SelectionChanged="TreeView_SelectionChanged">
+    <TreeView ItemsSource="{Binding Path=ClusterManager.Clusters}" SelectionChanged="TreeView_SelectionChanged">
         <TreeView.DataTemplates>
             <TreeDataTemplate DataType="client:Cluster" ItemsSource="{Binding Path=NavigationItems}">
                 <StackPanel Orientation="Horizontal">

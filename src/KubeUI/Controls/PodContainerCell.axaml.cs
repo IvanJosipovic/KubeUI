@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using Avalonia.Controls;
 using Avalonia.Data.Converters;
 using Avalonia.Media;
 using k8s;

@@ -1,18 +1,10 @@
-﻿using System;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
+﻿using System.Diagnostics;
 using System.Text;
-using Avalonia.Threading;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using k8s;
 using KubeUI.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Scrutor;
 
 namespace KubeUI.Client;
@@ -59,7 +51,7 @@ public sealed partial class ClusterManager : ObservableObject
 
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
-            var existingDock = doc.VisibleDockables.FirstOrDefault(x => x.Id == vm.Id);
+            var existingDock = _factory.FindDockableById(vm);
 
             if (existingDock != null)
             {

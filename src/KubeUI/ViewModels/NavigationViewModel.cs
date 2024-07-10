@@ -1,16 +1,8 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Threading.Tasks;
-using Avalonia;
-using Avalonia.Platform.Storage;
-using CommunityToolkit.Mvvm.ComponentModel;
-using Dock.Model.Controls;
+﻿using Avalonia.Platform.Storage;
 using Dock.Model.Core;
 using k8s;
 using k8s.Models;
+using KubeUI.Assets;
 using KubeUI.Client;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -36,8 +28,6 @@ public sealed partial class NavigationViewModel : ViewModelBase
 
     public async void TreeView_SelectionChanged(object? item)
     {
-        var doc = Factory.GetDockable<IDocumentDock>("Documents");
-
         if (item is Cluster cluster)
         {
             _ = Task.Run(cluster.Connect);
@@ -53,19 +43,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
             vm.Title = kind.ToString();
             vm.Id = resourceNavLink.Cluster.Name + "-" + kind.ToString();
 
-            var existingDock = doc.VisibleDockables.FirstOrDefault(x => x.Id == vm.Id);
-
-            if (existingDock == null)
-            {
-                Factory?.AddDockable(doc, vm);
-                Factory?.SetActiveDockable(vm);
-                Factory?.SetFocusedDockable(doc, vm);
-            }
-            else
-            {
-                Factory?.SetActiveDockable(existingDock);
-                Factory?.SetFocusedDockable(doc, existingDock);
-            }
+            Factory.AddToDocuments(vm);
         }
         else if (item is NavigationLink navLink)
         {
@@ -74,7 +52,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
                 // Start async operation to open the dialog.
                 var files = await App.TopLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
                 {
-                    Title = "Load Yaml",
+                    Title = Resources.NavigationViewModel_LoadYaml,
                     AllowMultiple = true,
                     FileTypeFilter = new List<FilePickerFileType>() { new("Yaml") { Patterns = ["*.yaml", ".yml"] } }
                 });
@@ -90,7 +68,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
                 // Start async operation to open the dialog.
                 var folders = await App.TopLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
                 {
-                    Title = "Load Yamls in Folder",
+                    Title = Resources.NavigationViewModel_LoadFolder,
                     AllowMultiple = false
                 });
 
@@ -106,21 +84,9 @@ public sealed partial class NavigationViewModel : ViewModelBase
                 vm.Title = navLink.Name;
                 vm.Id = navLink.Cluster.Name + "-" + navLink.Name;
 
-                navLink.ControlType.GetProperty("Cluster")?.SetValue(vm, navLink.Cluster);
+                navLink.ControlType.GetProperty(nameof(ResourceListViewModel<V1Pod>.Cluster))?.SetValue(vm, navLink.Cluster);
 
-                var existingDock = doc.VisibleDockables.FirstOrDefault(x => x.Id == vm.Id);
-
-                if (existingDock == null)
-                {
-                    Factory?.AddDockable(doc, vm);
-                    Factory?.SetActiveDockable(vm);
-                    Factory?.SetFocusedDockable(doc, vm);
-                }
-                else
-                {
-                    Factory?.SetActiveDockable(existingDock);
-                    Factory?.SetFocusedDockable(doc, existingDock);
-                }
+                Factory.AddToDocuments(vm);
             }
         }
     }

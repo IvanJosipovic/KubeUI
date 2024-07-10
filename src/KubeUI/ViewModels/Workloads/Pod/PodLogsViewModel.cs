@@ -1,12 +1,7 @@
-﻿using System;
-using System.IO;
-using AvaloniaEdit.Document;
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using AvaloniaEdit.Document;
 using k8s.Models;
 using k8s;
-using System.Threading.Tasks;
-using Avalonia.Threading;
-using System.ComponentModel;
+using KubeUI.Assets;
 
 namespace KubeUI.ViewModels;
 
@@ -40,6 +35,11 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     private readonly int _lines = 1000;
 
     private bool _isConnected;
+
+    public PodLogsViewModel()
+    {
+        Title = Resources.PodLogsViewModel_Title;
+    }
 
     public async Task Connect()
     {

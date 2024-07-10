@@ -1,18 +1,6 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Reactive.Joins;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Data;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using DynamicData;
@@ -23,10 +11,10 @@ using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
+using KubeUI.Assets;
 using KubeUI.Client;
 using KubeUI.Client.Informer;
 using KubeUI.Controls;
-using Microsoft.Extensions.Logging;
 using Swordfish.NET.Collections;
 
 namespace KubeUI.ViewModels;
@@ -782,7 +770,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
     private static Expression<Func<T, string>> TransformToFuncOfString<T>(Expression expression, ReadOnlyCollection<ParameterExpression> parameters)
     {
         // Convert the body of the original expression to return a string
-        var bodyAsString = Expression.Call(expression, "ToString", Type.EmptyTypes);
+        var bodyAsString = Expression.Call(expression, nameof(string.ToString), Type.EmptyTypes);
 
         // Create a new lambda expression
         return Expression.Lambda<Func<T, string>>(bodyAsString, parameters);
@@ -795,10 +783,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
     {
         ContentDialogSettings settings = new()
         {
-            Content = $"This will delete {items.Count} items.\n\nAre you sure?",
-            Title = "Warning",
-            PrimaryButtonText = "Yes",
-            SecondaryButtonText = "No",
+            Title = Resources.ResourceListViewModel_Delete_Title,
+            Content = string.Format(Resources.ResourceListViewModel_Delete_Content, items.Count),
+            PrimaryButtonText = Resources.ResourceListViewModel_Delete_Primary,
+            SecondaryButtonText = Resources.ResourceListViewModel_Delete_Secondary,
             DefaultButton = ContentDialogButton.Secondary
         };
 
@@ -835,6 +823,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
     {
         var root = Factory.GetDockable<IRootDock>("Root");
         var pinnedDoc = root.RightPinnedDockables?.FirstOrDefault(x => x.Id == "Properties");
+
         if (pinnedDoc != null)
         {
             Factory.PinDockable(pinnedDoc);
@@ -850,8 +839,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
         }
 
         var instance = Application.Current.GetRequiredService<ResourcePropertiesViewModel<T>>();
-        instance.Title = "Properties";
-        instance.Id = "Properties";
         instance.Cluster = Cluster;
         instance.Object = ((KeyValuePair<NamespacedName, T>)(item)).Value;
         instance.Kind = Kind;
@@ -871,12 +858,11 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
     private void ViewYaml(object item)
     {
         var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
-        vm.Title = "Yaml";
-        vm.Id = "Yaml";
         vm.Cluster = Cluster;
         vm.Object = ((KeyValuePair<NamespacedName, T>)item).Value;
+        vm.Id = $"{nameof(ViewYaml)}-{Cluster.Name}-{((KeyValuePair<NamespacedName, T>)SelectedItem).Key}";
 
-        (Factory as DockFactory).AddToDocumentBottom(vm);
+        Factory.AddToBottom(vm);
     }
 
     private bool CanViewYaml(object item)
@@ -891,9 +877,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
         vm.Cluster = Cluster;
         vm.Object = ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Value;
         vm.ContainerName = containerName.ToString();
-        vm.Title = "Pod Logs";
-        vm.Id = "Pod Logs";
+        vm.Id = $"{nameof(ViewLogs)}-{Cluster.Name}-{((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key}-{containerName}";
 
+        if (Factory.AddToBottom(vm))
+        {
         try
         {
             await vm.Connect();
@@ -903,9 +890,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
             _logger.LogError(ex, "Error viewing logs");
             return;
         }
-
-
-        (Factory as DockFactory).AddToDocumentBottom(vm);
+        }
     }
 
     private bool CanViewLogs(string containerName)
@@ -920,9 +905,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
         vm.Cluster = Cluster;
         vm.Object = ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Value;
         vm.ContainerName = containerName;
-        vm.Title = "Pod Console";
-        vm.Id = "Pod Console";
+        vm.Id = $"{nameof(ViewConsole)}-{Cluster.Name}-{((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key}-{containerName}";
 
+        if (Factory.AddToBottom(vm))
+        {
         try
         {
             await vm.Connect();
@@ -932,8 +918,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
             _logger.LogError(ex, "Error connecting to console");
             return;
         }
-
-        (Factory as DockFactory).AddToDocumentBottom(vm);
+        }
     }
 
     private bool CanViewConsole(string containerName)
@@ -948,10 +933,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
 
         ContentDialogSettings settings = new()
         {
-            Content = $"Port {containerPort} was forwarded to {pf.LocalPort}.",
-            Title = "Port Forward",
-            PrimaryButtonText = "Open in Browser",
-            SecondaryButtonText = "OK",
+            Title = Resources.ResourceListViewModel_PortForward_Title,
+            Content = string.Format(Resources.ResourceListViewModel_PortForward_Content, containerPort, pf.LocalPort),
+            PrimaryButtonText = Resources.ResourceListViewModel_PortForward_Primary,
+            SecondaryButtonText = Resources.ResourceListViewModel_PortForward_Secondary,
             DefaultButton = ContentDialogButton.Secondary
         };
 

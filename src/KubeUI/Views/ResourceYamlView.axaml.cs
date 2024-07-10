@@ -1,5 +1,3 @@
-using System;
-using Avalonia.Controls;
 using AvaloniaEdit.TextMate;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;

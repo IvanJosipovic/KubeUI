@@ -1,4 +1,3 @@
-using Avalonia.Controls;
 using KubeUI.ViewModels;
 
 namespace KubeUI.Views;
@@ -12,9 +11,9 @@ public partial class NavigationView : UserControl
 
     private void TreeView_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (TreeView.SelectedItem != null)
+        if (e.AddedItems.Count == 1 && DataContext is NavigationViewModel model)
         {
-            ((NavigationViewModel)DataContext!).TreeView_SelectionChanged(TreeView.SelectedItem);
+            model.TreeView_SelectionChanged(e.AddedItems[0]);
         }
     }
 }

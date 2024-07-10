@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using CommunityToolkit.Mvvm.ComponentModel;
-using LiveChartsCore.SkiaSharpView.Extensions;
+﻿using LiveChartsCore.SkiaSharpView.Extensions;
 using LiveChartsCore;
 using LiveChartsCore.Defaults;
 using LiveChartsCore.Measure;

@@ -1,8 +1,4 @@
-﻿using System.Collections.ObjectModel;
-using System.Linq;
-using CommunityToolkit.Mvvm.ComponentModel;
-
-namespace KubeUI.Client
+﻿namespace KubeUI.Client
 {
     public partial class Cluster
     {

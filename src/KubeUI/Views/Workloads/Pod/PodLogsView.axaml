@@ -3,6 +3,7 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:AvalonEdit="using:AvaloniaEdit"
+    xmlns:assets="clr-namespace:KubeUI.Assets"
     xmlns:client="clr-namespace:KubeUI.Client"
     xmlns:con="clr-namespace:KubeUI.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -32,17 +33,17 @@
                     </MultiBinding>
                 </Label.Content>
             </Label>
-            <ToggleButton IsChecked="{Binding Previous}" ToolTip.Tip="Show last container">
+            <ToggleButton IsChecked="{Binding Previous}" ToolTip.Tip="{x:Static assets:Resources.PodLogsView_Previous}">
                 <Panel>
                     <PathIcon Data="{StaticResource arrow_undo_regular}" />
                 </Panel>
             </ToggleButton>
-            <ToggleButton IsChecked="{Binding Timestamps}" ToolTip.Tip="Show timestamps">
+            <ToggleButton IsChecked="{Binding Timestamps}" ToolTip.Tip="{x:Static assets:Resources.PodLogsView_Timestamps}">
                 <Panel>
                     <PathIcon Data="{StaticResource timer_regular}" />
                 </Panel>
             </ToggleButton>
-            <ToggleButton IsChecked="{Binding AutoScrollToBottom}" ToolTip.Tip="Auto-scroll to bottom">
+            <ToggleButton IsChecked="{Binding AutoScrollToBottom}" ToolTip.Tip="{x:Static assets:Resources.PodLogsView_AutoScrollToBottom}">
                 <Panel>
                     <PathIcon Data="{StaticResource ic_fluent_padding_down_filled}" />
                 </Panel>

@@ -3,6 +3,7 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:AvalonEdit="using:AvaloniaEdit"
+    xmlns:assets="clr-namespace:KubeUI.Assets"
     xmlns:client="clr-namespace:KubeUI.Client"
     xmlns:con="clr-namespace:KubeUI.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -28,13 +29,13 @@
             Grid.Row="0"
             IsVisible="{Binding !EditMode}"
             Orientation="Horizontal">
-            <Button Command="{Binding SetEditModeCommand}" ToolTip.Tip="Edit">
+            <Button Command="{Binding SetEditModeCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Edit}">
                 <PathIcon Data="{StaticResource document_edit_regular}" />
             </Button>
             <ToggleButton
                 Command="{Binding SetHideNoisyFieldsCommand}"
                 IsChecked="{Binding HideNoisyFields, Mode=OneWay}"
-                ToolTip.Tip="Hide noisy fields">
+                ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_HideNoisyFields}">
                 <Panel>
                     <PathIcon Data="{StaticResource eye_hide_regular}" />
                 </Panel>
@@ -46,14 +47,14 @@
             Grid.Row="0"
             IsVisible="{Binding EditMode}"
             Orientation="Horizontal"
-            ToolTip.Tip="Edit">
-            <Button Command="{Binding SaveCommand}" ToolTip.Tip="Save">
+            ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Edit}">
+            <Button Command="{Binding SaveCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Save}">
                 <PathIcon Data="{StaticResource save_regular}" />
             </Button>
-            <Button Command="{Binding UndoCommand}" ToolTip.Tip="Undo">
+            <Button Command="{Binding UndoCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Undo}">
                 <PathIcon Data="{StaticResource arrow_undo_regular}" />
             </Button>
-            <Button Command="{Binding SetEditModeCommand}" ToolTip.Tip="Cancel">
+            <Button Command="{Binding SetEditModeCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Cancel}">
                 <PathIcon Data="{StaticResource dismiss_regular}" />
             </Button>
         </StackPanel>

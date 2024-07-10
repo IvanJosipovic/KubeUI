@@ -2,6 +2,7 @@
     x:Class="KubeUI.Views.AboutView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="clr-namespace:KubeUI.Assets"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="using:FluentAvalonia.UI.Controls"
@@ -12,9 +13,9 @@
     x:DataType="vm:AboutViewModel"
     mc:Ignorable="d">
     <StackPanel>
-        <TextBlock Padding="5,0,0,0">Created by Ivan Josipovic</TextBlock>
+        <TextBlock Padding="5,0,0,0" Text="{x:Static assets:Resources.AboutView_Header}" />
         <HyperlinkButton NavigateUri="mailto:admin@KubeUI.com">admin@KubeUI.com</HyperlinkButton>
-        <TextBlock Padding="5,0,0,0" Text="{Binding Version, StringFormat='Version: {0}', FallbackValue='Version: Unknown'}" />
+        <TextBlock Padding="5,0,0,0" Text="{Binding Version, StringFormat={x:Static assets:Resources.AboutView_Version_StringFormat}, FallbackValue={x:Static assets:Resources.AboutView_Version_FallbackValue}}" />
         <HyperlinkButton NavigateUri="https://KubeUI.com">https://KubeUI.com</HyperlinkButton>
     </StackPanel>
 </UserControl>

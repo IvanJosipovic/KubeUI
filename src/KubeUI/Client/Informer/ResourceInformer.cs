@@ -1,17 +1,10 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.IO;
-using System.Net.Http;
 using System.Net.Sockets;
-using System.Threading;
-using System.Threading.Tasks;
 using k8s;
 using k8s.Models;
-using Microsoft.Extensions.Logging;
 
 #pragma warning disable CA2213 // Disposable fields should be disposed
 

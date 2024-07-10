@@ -1,16 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Avalonia;
-using Dock.Avalonia.Controls;
+﻿using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm;
 using Dock.Model.Mvvm.Controls;
-using Dock.Model.Mvvm.Core;
 using KubeUI.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Scrutor;
 
 namespace KubeUI;
@@ -23,7 +17,6 @@ public class DockFactory : Factory
     public DockFactory(ILogger<DockFactory> logger)
     {
         _logger = logger;
-
     }
 
     public IRootDock? RootDock;
@@ -76,10 +69,6 @@ public class DockFactory : Factory
             IsCollapsable = false,
             Dock = DockMode.Center
         };
-
-        var tools = CreateToolDock();
-        tools.Alignment = Alignment.Bottom;
-        tools.Proportion = 0;
 
         var mainLayout2 = new ProportionalDock
         {
@@ -159,21 +148,6 @@ public class DockFactory : Factory
         base.FloatDockable(dockable);
     }
 
-    public override IDockWindow? CreateWindowFrom(IDockable dockable)
-    {
-        return base.CreateWindowFrom(dockable);
-    }
-
-    public override IDock CreateSplitLayout(IDock dock, IDockable dockable, DockOperation operation)
-    {
-        return base.CreateSplitLayout(dock, dockable, operation);
-    }
-
-    public override void MoveDockable(IDock dock, IDockable sourceDockable, IDockable targetDockable)
-    {
-        base.MoveDockable(dock, sourceDockable, targetDockable);
-    }
-
     public override void MoveDockable(IDock sourceDock, IDock targetDock, IDockable sourceDockable, IDockable? targetDockable)
     {
         if (sourceDockable.Id == "Navigation")
@@ -182,61 +156,6 @@ public class DockFactory : Factory
         }
 
         base.MoveDockable(sourceDock, targetDock, sourceDockable, targetDockable);
-    }
-
-    public override void OnWindowMoveDragEnd(IDockWindow? window)
-    {
-        base.OnWindowMoveDragEnd(window);
-    }
-
-    public override void OnWindowMoveDrag(IDockWindow? window)
-    {
-        base.OnWindowMoveDrag(window);
-    }
-
-    public override void OnDockableMoved(IDockable? dockable)
-    {
-        base.OnDockableMoved(dockable);
-    }
-
-    public override void SwapDockable(IDock dock, IDockable sourceDockable, IDockable targetDockable)
-    {
-        base.SwapDockable(dock, sourceDockable, targetDockable);
-    }
-
-    public override void SwapDockable(IDock sourceDock, IDock targetDock, IDockable sourceDockable, IDockable targetDockable)
-    {
-        base.SwapDockable(sourceDock, targetDock, sourceDockable, targetDockable);
-    }
-
-    public override void SplitToDock(IDock dock, IDockable dockable, DockOperation operation)
-    {
-        base.SplitToDock(dock, dockable, operation);
-    }
-
-    public override void SplitToWindow(IDock dock, IDockable dockable, double x, double y, double width, double height)
-    {
-        base.SplitToWindow(dock, dockable, x, y, width, height);
-    }
-
-    public override void AddDockable(IDock dock, IDockable dockable)
-    {
-        base.AddDockable(dock, dockable);
-    }
-
-    public override void InitDockWindow(IDockWindow window, IDockable? owner)
-    {
-        base.InitDockWindow(window, owner);
-    }
-
-    public override bool OnWindowMoveDragBegin(IDockWindow? window)
-    {
-        return base.OnWindowMoveDragBegin(window);
-    }
-
-    public override void AddWindow(IRootDock rootDock, IDockWindow window)
-    {
-        base.AddWindow(rootDock, window);
     }
 
     public override void CloseDockable(IDockable dockable)
@@ -258,41 +177,84 @@ public class DockFactory : Factory
 
         base.RemoveDockable(dockable, collapse);
     }
+}
 
-    public void AddToDocumentBottom(IDockable vm)
+public static class FactoryExtensions
+{
+    public static IDockable? FindDockableById(this IFactory factory, IDockable dockable)
     {
-        if (DocumentDock.Owner is ProportionalDock propDock)
+        return factory.Find(x => string.Equals(x.Id, dockable.Id, StringComparison.Ordinal)).FirstOrDefault();
+    }
+
+    public static bool AddToDocuments(this IFactory factory, IDockable vm, bool duplicateCheck = true)
+    {
+        var documents = factory.GetDockable<IDocumentDock>("Documents");
+
+        if (duplicateCheck)
+        {
+            var existing = factory.FindDockableById(vm);
+
+            if (existing != null)
+            {
+                factory.SetActiveDockable(existing);
+                factory.SetFocusedDockable(documents, existing);
+
+                return false;
+            }
+        }
+
+        factory.AddDockable(documents, vm);
+        factory.SetActiveDockable(vm);
+        factory.SetFocusedDockable(documents, vm);
+
+        return true;
+    }
+
+
+    public static bool AddToBottom(this IFactory factory, IDockable vm, bool duplicateCheck = true)
+    {
+        var documents = factory.GetDockable<IDocumentDock>("Documents");
+
+        if (documents.Owner is ProportionalDock propDock)
         {
             var tools = propDock.VisibleDockables.FirstOrDefault(x => x is IToolDock) as IToolDock;
 
             if (tools == null)
             {
-                AddDockable(propDock, CreateProportionalDockSplitter());
+                factory.AddDockable(propDock, factory.CreateProportionalDockSplitter());
 
-                tools = CreateToolDock();
+                tools = factory.CreateToolDock();
                 tools.Alignment = Alignment.Bottom;
 
-                AddDockable(propDock, tools);
+                factory.AddDockable(propDock, tools);
             }
 
-            if (DocumentDock.Proportion == 1)
+            if (documents.Proportion == 1)
             {
-                DocumentDock.Proportion = 0.4;
+                documents.Proportion = 0.4;
                 tools.Proportion = 0.6;
             }
 
-            AddDockable(tools, vm);
-            SetActiveDockable(vm);
-            SetFocusedDockable(tools, vm);
-        }
-        else
-        {
-            throw new NotImplementedException();
-        }
-    }
+            if (duplicateCheck)
+            {
+                var existing = factory.FindDockableById(vm);
 
-    public override IDockWindow CreateDockWindow() => new DockWindow()
-    {
-        Topmost = false
-    };
+                if (existing != null)
+                {
+                    factory.SetActiveDockable(existing);
+                    factory.SetFocusedDockable(tools, existing);
+
+                    return false;
+                }
+            }
+
+            factory.AddDockable(tools, vm);
+            factory.SetActiveDockable(vm);
+            factory.SetFocusedDockable(tools, vm);
+
+            return true;
+        }
+
+        throw new NotImplementedException();
+    }
 }

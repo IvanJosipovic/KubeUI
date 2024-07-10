@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-using System;
-
 #pragma warning disable CS0169 // The field 'Reservation.limit' is never used
 
 namespace KubeUI.Client.Informer;

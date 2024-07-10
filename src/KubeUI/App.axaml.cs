@@ -1,7 +1,4 @@
-﻿using System;
-using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Controls.ApplicationLifetimes;
+﻿using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Logging;
 using Avalonia.Markup.Xaml;
@@ -14,7 +11,6 @@ using KubeUI.ViewModels;
 using KubeUI.Views;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using NReco.Logging.File;
 
 namespace KubeUI;

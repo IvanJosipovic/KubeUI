@@ -1,18 +1,14 @@
 ﻿using System.Runtime.InteropServices;
-using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using KubeUI.Client;
 using Velopack.Sources;
 using Velopack;
-using Microsoft.Extensions.Logging;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using HanumanInstitute.MvvmDialogs;
-using System.Threading.Tasks;
+using KubeUI.Assets;
 
 namespace KubeUI.ViewModels;
 
@@ -186,14 +182,11 @@ public sealed partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void OpenAbout()
     {
-        var doc = Factory!.GetDockable<IDocumentDock>("Documents");
-
         var about = Application.Current.GetRequiredService<AboutViewModel>();
-        about.Title = "About";
+        about.Title = Resources.AboutView_Title;
         about.Id = "About";
 
-        Factory?.AddDockable(doc, about);
-        Factory?.SetActiveDockable(about);
+        Factory?.AddToDocuments(about);
 
         _ = Task.Run(CheckForUpdates);
     }
@@ -230,10 +223,10 @@ public sealed partial class MainViewModel : ViewModelBase
             {
                 ContentDialogSettings settings = new()
                 {
-                    Content = "A new update is available. Update and restart now?",
-                    Title = "New Update Available",
-                    PrimaryButtonText = "Yes",
-                    SecondaryButtonText = "No",
+                    Title = Resources.MainViewModel_CheckForUpdates_Title,
+                    Content = Resources.MainViewModel_CheckForUpdates_Content,
+                    PrimaryButtonText = Resources.MainViewModel_CheckForUpdates_Primary,
+                    SecondaryButtonText = Resources.MainViewModel_CheckForUpdates_Secondary,
                     DefaultButton = ContentDialogButton.Secondary
                 };
 
@@ -243,8 +236,8 @@ public sealed partial class MainViewModel : ViewModelBase
                 {
                     ContentDialogSettings updatePrompt = new()
                     {
-                        Content = "Please wait...",
-                        Title = "Updating",
+                        Title = Resources.MainViewModel_CheckForUpdates_Updating_Title,
+                        Content = Resources.MainViewModel_CheckForUpdates_Updating_Content,
                         IsPrimaryButtonEnabled = false,
                         IsSecondaryButtonEnabled = false
                     };

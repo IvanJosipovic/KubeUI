@@ -1,5 +1,4 @@
 ﻿using System.Reflection;
-using Avalonia;
 
 namespace KubeUI.ViewModels;
 

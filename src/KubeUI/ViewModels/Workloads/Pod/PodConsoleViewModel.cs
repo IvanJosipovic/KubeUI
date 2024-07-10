@@ -1,17 +1,12 @@
-﻿using System;
-using System.IO;
-using AvaloniaEdit.Document;
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using AvaloniaEdit.Document;
 using k8s.Models;
 using k8s;
-using System.Threading.Tasks;
-using Avalonia.Threading;
 using KubeUI.Client;
 using System.Net.WebSockets;
 using Avalonia.Input;
 using System.Text;
-using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
+using KubeUI.Assets;
 
 namespace KubeUI.ViewModels;
 
@@ -22,6 +17,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
     public PodConsoleViewModel(ILogger<PodConsoleViewModel> logger)
     {
         _logger = logger;
+        Title = Resources.PodConsoleViewModel_Title;
     }
 
     [ObservableProperty]
@@ -92,14 +88,16 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
         });
     }
 
+    // ANSI escape sequences pattern
+    [GeneratedRegex(@"\x1B\[[0-?]*[ -/]*[@-~]", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex AnsiEscape();
+
     public static string RemoveAnsiEscapeSequences(string text)
     {
         if (string.IsNullOrEmpty(text))
             return text;
 
-        // ANSI escape sequences pattern
-        var ansiEscapeRegex = new Regex(@"\x1B\[[0-?]*[ -/]*[@-~]");
-        return ansiEscapeRegex.Replace(text, string.Empty);
+        return AnsiEscape().Replace(text, string.Empty);
     }
 
     public void KeyUp(KeyEventArgs args)

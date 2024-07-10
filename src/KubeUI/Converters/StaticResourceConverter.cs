@@ -1,7 +1,4 @@
-﻿using System;
-using System.Globalization;
-using Avalonia;
-using Avalonia.Controls;
+﻿using System.Globalization;
 using Avalonia.Data.Converters;
 
 namespace KubeUI.Converters;

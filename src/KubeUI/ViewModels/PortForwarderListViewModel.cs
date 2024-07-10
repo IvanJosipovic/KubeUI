@@ -1,13 +1,6 @@
-﻿using System;
-using System.Threading.Tasks;
-using Avalonia;
-using Avalonia.Controls;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using FluentAvalonia.UI.Controls;
+﻿using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
-using k8s;
 using KubeUI.Client;
 
 namespace KubeUI.ViewModels;

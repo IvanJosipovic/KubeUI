@@ -1,6 +1,4 @@
-﻿using Avalonia;
-using CommunityToolkit.Mvvm.ComponentModel;
-using KubeUI.Client;
+﻿using KubeUI.Client;
 
 namespace KubeUI.ViewModels;
 

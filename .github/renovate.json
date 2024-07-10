@@ -35,6 +35,14 @@
           ]
         }
       ]
+    },
+    {
+      "matchUpdateTypes": [ "minor", "patch", "digest" ],
+      "automerge": true,
+      "matchFileNames": [
+        "tests/**",
+        "benchmarks/**"
+      ]
     }
   ]
 }

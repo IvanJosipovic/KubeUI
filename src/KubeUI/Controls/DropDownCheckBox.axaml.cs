@@ -1,9 +1,3 @@
-using System.Collections;
-using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Data;
-using Avalonia.Markup.Xaml;
-
 namespace KubeUI.Controls;
 
 public partial class DropDownCheckBox : UserControl

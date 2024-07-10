@@ -1,5 +1,4 @@
-﻿using Avalonia.Controls;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Scrutor;
 
 namespace KubeUI.Views;

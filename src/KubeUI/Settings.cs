@@ -1,5 +1,4 @@
 ﻿using Avalonia.Styling;
-using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace KubeUI;
 

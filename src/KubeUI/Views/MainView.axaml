@@ -2,6 +2,7 @@
     x:Class="KubeUI.Views.MainView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="clr-namespace:KubeUI.Assets"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:doc="using:Dock.Avalonia.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -22,14 +23,14 @@
 
     <Grid Background="Transparent" RowDefinitions="Auto,*">
         <Menu Grid.Row="0" VerticalAlignment="Top">
-            <MenuItem Header="_File">
-                <MenuItem Command="{Binding CloseCommand}" Header="_Exit" />
+            <MenuItem Header="{x:Static assets:Resources.MainView_Menu_File}">
+                <MenuItem Command="{Binding CloseCommand}" Header="{x:Static assets:Resources.MainView_Menu_File_Exit}" />
             </MenuItem>
-            <MenuItem Header="_Window">
-                <MenuItem Command="{Binding ResetLayoutCommand}" Header="_Reset Layout" />
+            <MenuItem Header="{x:Static assets:Resources.MainView_Menu_Window}">
+                <MenuItem Command="{Binding ResetLayoutCommand}" Header="{x:Static assets:Resources.MainView_Menu_Window_ResetLayout}" />
             </MenuItem>
-            <MenuItem Header="_Help">
-                <MenuItem Command="{Binding OpenAboutCommand}" Header="_About" />
+            <MenuItem Header="{x:Static assets:Resources.MainView_Menu_Help}">
+                <MenuItem Command="{Binding OpenAboutCommand}" Header="{x:Static assets:Resources.MainView_Menu_Help_About}" />
             </MenuItem>
         </Menu>
 

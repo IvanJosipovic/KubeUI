@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO;
-using System.Text;
-using Avalonia.Threading;
+﻿using System.Text;
 using AvaloniaEdit.Document;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using k8s;
 using k8s.Models;
+using KubeUI.Assets;
 using KubeUI.Client;
 
 namespace KubeUI.ViewModels;
@@ -61,6 +55,11 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _hideNoisyFields = true;
 
+    public ResourceYamlViewModel()
+    {
+        Title = Resources.ResourceYamlViewModel_Title;
+    }
+
     private void SetYamlDocument()
     {
         if (!EditMode && HideNoisyFields)
@@ -104,12 +103,6 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         {
             await Dispatcher.UIThread.InvokeAsync(() => Object = resource);
         }
-    }
-
-    public ResourceYamlViewModel()
-    {
-        Title = "Yaml";
-        Id = "Yaml";
     }
 
     [RelayCommand(CanExecute = nameof(CanUndo))]

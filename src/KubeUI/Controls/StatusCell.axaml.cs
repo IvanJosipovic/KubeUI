@@ -1,8 +1,4 @@
-using System;
-using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Threading;
 using k8s;
 using k8s.Models;
 

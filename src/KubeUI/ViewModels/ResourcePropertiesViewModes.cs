@@ -1,9 +1,6 @@
-﻿using System;
-using System.ComponentModel;
-using Avalonia.Threading;
-using CommunityToolkit.Mvvm.ComponentModel;
-using k8s;
+﻿using k8s;
 using k8s.Models;
+using KubeUI.Assets;
 using KubeUI.Client;
 
 namespace KubeUI.ViewModels;
@@ -40,7 +37,7 @@ public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable
 
     public ResourcePropertiesViewModel()
     {
-        Title = "Properties";
+        Title = Resources.ResourcePropertiesViewModel_Title;
         Id = "Properties";
     }
 
