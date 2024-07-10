@@ -331,6 +331,15 @@ namespace KubeUI.Assets {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Create a new Resource.
+        /// </summary>
+        public static string ResourceListView_NewResource {
+            get {
+                return ResourceManager.GetString("ResourceListView_NewResource", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to This will delete {0} items.
         ///Are you sure?.
         /// </summary>

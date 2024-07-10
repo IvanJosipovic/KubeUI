@@ -191,9 +191,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
         if (resourceType == typeof(V1Node))
         {
             definition.ShowNamespaces = false;
+            definition.ShowNewResource = false;
 
-            definition.Columns = new()
-            {
+            definition.Columns =
+            [
                 new ResourceListViewDefinitionColumn<V1Node, string>()
                 {
                     Name = "Name",
@@ -251,14 +252,14 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
                     Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
                     Width = "80"
                 }
-            };
+            ];
         }
         else if (resourceType == typeof(V1Namespace))
         {
             definition.ShowNamespaces = false;
 
-            definition.Columns = new()
-            {
+            definition.Columns =
+            [
                 new ResourceListViewDefinitionColumn<V1Namespace, string>()
                 {
                     Name = "Name",
@@ -286,12 +287,12 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
                     Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss"),
                     Width = "80"
                 }
-            };
+            ];
         }
         else if (resourceType == typeof(V1Pod))
         {
-            definition.Columns = new()
-            {
+            definition.Columns =
+            [
                 new ResourceListViewDefinitionColumn<V1Pod, string>()
                 {
                     Name = "Name",
@@ -352,10 +353,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
                     Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
                     Width = "80"
                 }
-            };
+            ];
 
-            definition.MenuItems = new()
-            {
+            definition.MenuItems =
+            [
                 new()
                 {
                     Header = "View Console",
@@ -398,12 +399,12 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
                         }
                     }
                 }
-            };
+            ];
         }
         else if (resourceType == typeof(V1Deployment))
         {
-            definition.Columns = new()
-            {
+            definition.Columns =
+            [
                 new ResourceListViewDefinitionColumn<V1Deployment, string>()
                 {
                     Name = "Name",
@@ -434,7 +435,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
                 new ResourceListViewDefinitionColumn<V1Deployment, string>()
                 {
                     Name = "Available",
-                    Field = x => x.Status.Conditions.FirstOrDefault(x => x.Type == "Available")?.Status ?? "",
+                    Field = x => x.Status.Conditions == null ? "" : x.Status.Conditions.FirstOrDefault(x => x.Type == "Available")?.Status ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListViewDefinitionColumn<V1Deployment, DateTime?>()
@@ -445,14 +446,14 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
                     Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
                     Width = "80"
                 }
-            };
+            ];
         }
         else if (resourceType == typeof(V1CustomResourceDefinition))
         {
             definition.ShowNamespaces = false;
 
-            definition.Columns = new()
-            {
+            definition.Columns =
+            [
                 new ResourceListViewDefinitionColumn<V1CustomResourceDefinition, string>()
                 {
                     Name = "Name",
@@ -486,12 +487,12 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
                     Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
                     Width = "80"
                 }
-            };
+            ];
         }
         else if (resourceType == typeof(Corev1Event))
         {
-            definition.Columns = new()
-            {
+            definition.Columns =
+            [
                 new ResourceListViewDefinitionColumn<Corev1Event, string>()
                 {
                     Name = "Type",
@@ -546,11 +547,11 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
                     Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
                     Width = "80"
                 },
-            };
+            ];
         }
         else
         {
-            definition.Columns = new();
+            definition.Columns = [];
 
             // Add Name Column
             var nameColumn = new ResourceListViewDefinitionColumn<T, string>()
@@ -772,6 +773,26 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
     }
 
     #region Actions
+
+    [RelayCommand]
+    private void NewResource()
+    {
+        var resource = Activator.CreateInstance<T>();
+        resource.Kind = Kind.Kind;
+        resource.ApiVersion = Kind.ApiVersion;
+        resource.Metadata = new()
+        {
+            Name = "temp"
+        };
+
+        var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
+        vm.Cluster = Cluster;
+        vm.Object = resource;
+        vm.Id = $"{nameof(ViewYaml)}-{Cluster.Name}-new";
+        vm.EditMode = true;
+
+        Factory.AddToBottom(vm);
+    }
 
     [RelayCommand(CanExecute = nameof(CanDelete))]
     private async Task Delete(IList items)
@@ -1003,4 +1024,6 @@ public class ResourceListViewDefinition<T> where T : class, IKubernetesObject<V1
     public bool DefaultMenuItems { get; set; } = true;
 
     public bool ShowNamespaces { get; set; } = true;
+
+    public bool ShowNewResource { get; set; } = true;
 }

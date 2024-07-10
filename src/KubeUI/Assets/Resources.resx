@@ -253,4 +253,7 @@ Are you sure?</value>
   <data name="NavigationViewModel_Title" xml:space="preserve">
     <value>Navigation</value>
   </data>
+  <data name="ResourceListView_NewResource" xml:space="preserve">
+    <value>Create a new Resource</value>
+  </data>
 </root>

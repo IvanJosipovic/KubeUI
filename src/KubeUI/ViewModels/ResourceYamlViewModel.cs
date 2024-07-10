@@ -65,7 +65,10 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         {
             var ObjectClone = CloneObject(Object);
 
-            ObjectClone.Metadata.ManagedFields = null;
+            if (ObjectClone.Metadata != null)
+            {
+                ObjectClone.Metadata.ManagedFields = null;
+            }
 
             ObjectClone?.Metadata?.Annotations?.Remove("kubectl.kubernetes.io/last-applied-configuration");
 

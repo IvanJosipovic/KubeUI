@@ -2,6 +2,7 @@
     x:Class="KubeUI.Views.ResourceListView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="clr-namespace:KubeUI.Assets"
     xmlns:client="clr-namespace:KubeUI.Client"
     xmlns:con="clr-namespace:KubeUI.Converters"
     xmlns:controls="clr-namespace:KubeUI.Controls"
@@ -18,14 +19,23 @@
     </Design.DataContext>
 
     <Grid RowDefinitions="Auto,*">
-        <Grid Grid.Row="0" ColumnDefinitions="Auto,*">
-            <Label
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*">
+            <Button
                 Grid.Column="0"
+                Command="{ReflectionBinding NewResourceCommand}"
+                IsVisible="{ReflectionBinding ViewDefinition.ShowNewResource}"
+                ToolTip.Tip="{x:Static assets:Resources.ResourceListView_NewResource}">
+                <Panel>
+                    <PathIcon Data="{StaticResource add_square_regular}" />
+                </Panel>
+            </Button>
+            <Label
+                Grid.Column="1"
                 Width="200"
                 Content="{ReflectionBinding DataGridObjects.Count,
                                             StringFormat='Items: {0}'}" />
             <Grid
-                Grid.Column="1"
+                Grid.Column="2"
                 HorizontalAlignment="Right"
                 ColumnDefinitions="*,*">
                 <TextBox
