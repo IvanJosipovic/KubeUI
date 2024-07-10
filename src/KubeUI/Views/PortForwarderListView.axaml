@@ -27,6 +27,7 @@
                     Header="Pod Name" />
                 <DataGridTextColumn Binding="{Binding Namespace}" Header="Namespace" />
                 <DataGridTextColumn Binding="{Binding ContainerPort}" Header="Container Port" />
+                <DataGridTextColumn Binding="{Binding LocalPort}" Header="Local Port" />
                 <DataGridTextColumn Binding="{Binding Status}" Header="Status" />
             </DataGrid.Columns>
             <DataGrid.ContextMenu>
