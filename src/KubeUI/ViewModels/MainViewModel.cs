@@ -217,7 +217,7 @@ public sealed partial class MainViewModel : ViewModelBase
 
         if (um.IsInstalled)
         {
-            var update = await um.CheckForUpdatesAsync();
+            var update = await um.CheckForUpdatesAsync().ConfigureAwait(true);
 
             if (update != null)
             {
@@ -230,7 +230,7 @@ public sealed partial class MainViewModel : ViewModelBase
                     DefaultButton = ContentDialogButton.Secondary
                 };
 
-                var result = await _dialogService.ShowContentDialogAsync(this, settings);
+                var result = await _dialogService.ShowContentDialogAsync(this, settings).ConfigureAwait(true);
 
                 if (result == ContentDialogResult.Primary)
                 {
