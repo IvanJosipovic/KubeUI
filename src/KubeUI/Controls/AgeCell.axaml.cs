@@ -6,10 +6,18 @@ namespace KubeUI.Controls;
 
 public partial class AgeCell : UserControl
 {
+    private static readonly DispatcherTimer s_timer = new(DispatcherPriority.Default);
+
     public AgeCell()
     {
         InitializeComponent();
-        _timer = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Default, Timer_Tick);
+        if (!s_timer.IsEnabled)
+        {
+            s_timer.Interval = TimeSpan.FromSeconds(1);
+            s_timer.Start();
+        }
+
+        s_timer.Tick += Timer_Tick;
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -89,13 +97,11 @@ public partial class AgeCell : UserControl
         }
     }
 
-    private DispatcherTimer _timer;
 
     protected override void OnUnloaded(RoutedEventArgs e)
     {
         base.OnUnloaded(e);
 
-        _timer.Stop();
-        _timer.Tick -= Timer_Tick;
+        s_timer.Tick -= Timer_Tick;
     }
 }
