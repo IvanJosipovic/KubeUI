@@ -33,11 +33,11 @@
             <DataGrid.ContextMenu>
                 <ContextMenu>
                     <MenuItem
-                        Command="{Binding OpenPortForwardCommand}"
+                        Command="{Binding OpenCommand}"
                         CommandParameter="{Binding SelectedItem}"
                         Header="Open in Browser" />
                     <MenuItem
-                        Command="{Binding RemovePortForwardCommand}"
+                        Command="{Binding RemoveCommand}"
                         CommandParameter="{Binding SelectedItem}"
                         Header="Remove" />
                 </ContextMenu>

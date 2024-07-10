@@ -256,4 +256,17 @@ Are you sure?</value>
   <data name="ResourceListView_NewResource" xml:space="preserve">
     <value>Create a new Resource</value>
   </data>
+  <data name="PortForwarderListViewModel_Remove_Content" xml:space="preserve">
+    <value>Remove the Port Forward for {0}/{1}:{2}?
+Are you sure?</value>
+  </data>
+  <data name="PortForwarderListViewModel_Remove_Primary" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="PortForwarderListViewModel_Remove_Secondary" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="PortForwarderListViewModel_Remove_Title" xml:space="preserve">
+    <value>Warning</value>
+  </data>
 </root>

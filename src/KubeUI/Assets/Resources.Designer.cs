@@ -331,6 +331,43 @@ namespace KubeUI.Assets {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Remove the Port Forward for {0}/{1}:{2}?
+        ///Are you sure?.
+        /// </summary>
+        public static string PortForwarderListViewModel_Remove_Content {
+            get {
+                return ResourceManager.GetString("PortForwarderListViewModel_Remove_Content", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Yes.
+        /// </summary>
+        public static string PortForwarderListViewModel_Remove_Primary {
+            get {
+                return ResourceManager.GetString("PortForwarderListViewModel_Remove_Primary", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No.
+        /// </summary>
+        public static string PortForwarderListViewModel_Remove_Secondary {
+            get {
+                return ResourceManager.GetString("PortForwarderListViewModel_Remove_Secondary", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Warning.
+        /// </summary>
+        public static string PortForwarderListViewModel_Remove_Title {
+            get {
+                return ResourceManager.GetString("PortForwarderListViewModel_Remove_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Create a new Resource.
         /// </summary>
         public static string ResourceListView_NewResource {

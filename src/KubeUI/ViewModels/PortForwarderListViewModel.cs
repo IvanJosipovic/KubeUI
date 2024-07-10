@@ -20,15 +20,15 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase
         _dialogService = Application.Current.GetRequiredService<IDialogService>();
     }
 
-    [RelayCommand(CanExecute = nameof(CanRemovePortForward))]
-    private async Task RemovePortForward(PortForwarder pf)
+    [RelayCommand(CanExecute = nameof(CanRemove))]
+    private async Task Remove(PortForwarder pf)
     {
         ContentDialogSettings settings = new()
         {
-            Content = $"Remove the Port Forward? {pf.Namespace}/{pf.PodName}:{pf.ContainerPort}\n\nAre you sure?",
-            Title = "Warning",
-            PrimaryButtonText = "Yes",
-            SecondaryButtonText = "No",
+            Title = Resources.PortForwarderListViewModel_Remove_Title,
+            Content = string.Format(Resources.PortForwarderListViewModel_Remove_Content, pf.Namespace, pf.PodName, pf.ContainerPort),
+            PrimaryButtonText = Resources.PortForwarderListViewModel_Remove_Primary,
+            SecondaryButtonText = Resources.PortForwarderListViewModel_Remove_Secondary,
             DefaultButton = ContentDialogButton.Secondary
         };
 
@@ -40,19 +40,19 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase
         }
     }
 
-    private bool CanRemovePortForward(PortForwarder pf)
+    private bool CanRemove(PortForwarder pf)
     {
         return pf != null;
     }
 
-    [RelayCommand(CanExecute = nameof(CanOpenPortForward))]
-    private async Task OpenPortForward(PortForwarder pf)
+    [RelayCommand(CanExecute = nameof(CanOpen))]
+    private async Task Open(PortForwarder pf)
     {
         var window = (Window)_dialogService.DialogManager.GetMainWindow()!.RefObj;
         await window!.Launcher.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
     }
 
-    private bool CanOpenPortForward(PortForwarder pf)
+    private bool CanOpen(PortForwarder pf)
     {
         return pf != null;
     }
