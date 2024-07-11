@@ -876,7 +876,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
         var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
         vm.Cluster = Cluster;
         vm.Object = ((KeyValuePair<NamespacedName, T>)item).Value;
-        vm.Id = $"{nameof(ViewYaml)}-{Cluster.Name}-{((KeyValuePair<NamespacedName, T>)SelectedItem).Key}";
+        vm.Id = $"{nameof(ViewYaml)}-{Cluster.Name}-{Kind}-{((KeyValuePair<NamespacedName, T>)SelectedItem).Key}";
 
         Factory.AddToBottom(vm);
     }
