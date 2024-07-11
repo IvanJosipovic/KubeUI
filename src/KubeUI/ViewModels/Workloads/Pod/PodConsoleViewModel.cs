@@ -20,21 +20,21 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
     }
 
     [ObservableProperty]
-    Cluster _cluster;
+    private Cluster _cluster;
 
     [ObservableProperty]
-    V1Pod _object;
+    private V1Pod _object;
 
     [ObservableProperty]
-    string _containerName;
+    private string _containerName;
 
     [ObservableProperty]
-    TextDocument _console = new();
+    private TextDocument _console = new();
 
-    WebSocket? _webSocket;
-    StreamDemuxer? _streamDemuxer;
-    Stream? _stream;
-    StreamReader? _streamReader;
+    private WebSocket? _webSocket;
+    private StreamDemuxer? _streamDemuxer;
+    private Stream? _stream;
+    private StreamReader? _streamReader;
 
     public async Task Connect()
     {
@@ -99,20 +99,43 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
         return AnsiEscape().Replace(text, string.Empty);
     }
 
-    public void KeyUp(KeyEventArgs args)
+    public void Send(string text)
     {
         if (_stream?.CanWrite == true)
         {
             try
             {
-                if (!string.IsNullOrEmpty(args.KeySymbol))
+                if (!string.IsNullOrEmpty(text))
                 {
-                    _stream.Write(Encoding.UTF8.GetBytes(args.KeySymbol));
+                    _stream.Write(Encoding.UTF8.GetBytes(text));
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending key to console: ");
+                _logger.LogError(ex, "Error sending text to console: ");
+            }
+        }
+    }
+
+    [RelayCommand]
+    public async Task Paste()
+    {
+        if (_stream?.CanWrite == true)
+        {
+            try
+            {
+                var clipboard = App.TopLevel.Clipboard;
+
+                var text = await clipboard.GetTextAsync();
+
+                if (!string.IsNullOrEmpty(text))
+                {
+                    _stream.Write(Encoding.UTF8.GetBytes(text));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error pasting text to console: ");
             }
         }
     }

@@ -107,17 +107,6 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         }
     }
 
-    [RelayCommand(CanExecute = nameof(CanUndo))]
-    private void Undo()
-    {
-        _yamlDocument.UndoStack.Undo();
-    }
-
-    private bool CanUndo()
-    {
-        return true;
-    }
-
     [RelayCommand(CanExecute = nameof(CanSave))]
     private void Save()
     {

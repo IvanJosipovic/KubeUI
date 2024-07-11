@@ -147,12 +147,12 @@ public partial class ResourceListView : UserControl
             Grid.ContextMenu.Items.Add(CreateMenuItem(new () { Header = "View", CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewCommand), CommandParameterPath = "SelectedItem" }));
             Grid.ContextMenu.Items.Add(CreateMenuItem(new () { Header = "View Yaml", CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewYamlCommand), CommandParameterPath = "SelectedItem" }));
             Grid.ContextMenu.Items.Add(CreateMenuItem(new () { Header = "Delete", CommandPath = nameof(ResourceListViewModel<V1Pod>.DeleteCommand), CommandParameterPath = "SelectedItems" }));
-
-            Grid.ContextMenu.Items.Add(new Separator());
         }
 
         if (definition.MenuItems != null)
         {
+            Grid.ContextMenu.Items.Add(new Separator());
+
             foreach (var item in definition.MenuItems)
             {
                 Grid.ContextMenu.Items.Add(CreateMenuItem(item));

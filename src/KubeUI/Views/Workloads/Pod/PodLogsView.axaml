@@ -60,7 +60,21 @@
             FontWeight="Normal"
             HorizontalScrollBarVisibility="Auto"
             IsReadOnly="True"
-            VerticalScrollBarVisibility="Visible" />
+            TextChanged="Editor_TextChanged"
+            VerticalScrollBarVisibility="Visible">
+            <AvalonEdit:TextEditor.ContextMenu>
+                <ContextMenu>
+                    <MenuItem
+                        Command="{Binding #Editor.Copy}"
+                        Header="{x:Static assets:Resources.Action_Copy}"
+                        InputGesture="Ctrl+C">
+                        <MenuItem.Icon>
+                            <PathIcon Data="{StaticResource copy_regular}" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                </ContextMenu>
+            </AvalonEdit:TextEditor.ContextMenu>
+        </AvalonEdit:TextEditor>
     </Grid>
 
 </UserControl>

@@ -51,9 +51,6 @@
             <Button Command="{Binding SaveCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Save}">
                 <PathIcon Data="{StaticResource save_regular}" />
             </Button>
-            <Button Command="{Binding UndoCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Undo}">
-                <PathIcon Data="{StaticResource arrow_undo_regular}" />
-            </Button>
             <Button Command="{Binding SetEditModeCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Cancel}">
                 <PathIcon Data="{StaticResource dismiss_regular}" />
             </Button>
@@ -69,6 +66,67 @@
             HorizontalScrollBarVisibility="Auto"
             IsReadOnly="{Binding !EditMode}"
             ShowLineNumbers="True"
-            VerticalScrollBarVisibility="Visible" />
+            VerticalScrollBarVisibility="Visible">
+            <AvalonEdit:TextEditor.ContextMenu>
+                <ContextMenu>
+                    <MenuItem
+                        Command="{Binding #Editor.Cut}"
+                        Header="{x:Static assets:Resources.Action_Cut}"
+                        InputGesture="Ctrl+X"
+                        IsVisible="{Binding EditMode}">
+                        <MenuItem.Icon>
+                            <PathIcon Data="{StaticResource cut_regular}" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem
+                        Command="{Binding #Editor.Copy}"
+                        Header="{x:Static assets:Resources.Action_Copy}"
+                        InputGesture="Ctrl+C">
+                        <MenuItem.Icon>
+                            <PathIcon Data="{StaticResource copy_regular}" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem
+                        Command="{Binding #Editor.Paste}"
+                        Header="{x:Static assets:Resources.Action_Paste}"
+                        InputGesture="Ctrl+V"
+                        IsVisible="{Binding EditMode}">
+                        <MenuItem.Icon>
+                            <PathIcon Data="{StaticResource clipboard_paste_regular}" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem
+                        Command="{Binding #Editor.Delete}"
+                        Header="{x:Static assets:Resources.Action_Delete}"
+                        InputGesture="Back"
+                        IsVisible="{Binding EditMode}">
+                        <MenuItem.Icon>
+                            <PathIcon Data="{StaticResource delete_regular}" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+
+                    <Separator IsVisible="{Binding EditMode}" />
+
+                    <MenuItem
+                        Command="{Binding #Editor.Undo}"
+                        Header="{x:Static assets:Resources.Action_Undo}"
+                        InputGesture="Ctrl+Z"
+                        IsVisible="{Binding EditMode}">
+                        <MenuItem.Icon>
+                            <PathIcon Data="{StaticResource arrow_undo_regular}" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem
+                        Command="{Binding #Editor.Redo}"
+                        Header="{x:Static assets:Resources.Action_Redo}"
+                        InputGesture="Ctrl+Y"
+                        IsVisible="{Binding EditMode}">
+                        <MenuItem.Icon>
+                            <PathIcon Data="{StaticResource arrow_redo_regular}" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                </ContextMenu>
+            </AvalonEdit:TextEditor.ContextMenu>
+        </AvalonEdit:TextEditor>
     </Grid>
 </UserControl>

@@ -1,3 +1,4 @@
+using Avalonia.Input;
 using AvaloniaEdit.TextMate;
 using KubeUI.ViewModels;
 using TextMateSharp.Grammars;
@@ -19,25 +20,30 @@ public partial class PodConsoleView : UserControl
 
         _textMateInstallation = Editor.InstallTextMate(_registryOptions, false);
 
-        Editor.TextChanged += Editor_TextChanged;
-
-        Editor.KeyUp += Editor_KeyUp;
-
         Editor.Options.AllowScrollBelowDocument = false;
         Editor.Options.ShowBoxForControlCharacters = false;
         Editor.Options.EnableHyperlinks = false;
         Editor.Options.EnableEmailHyperlinks = false;
     }
 
-    private void Editor_KeyUp(object? sender, Avalonia.Input.KeyEventArgs e)
+    private async void Editor_KeyUp(object? sender, KeyEventArgs e)
     {
-        if (DataContext is PodConsoleViewModel dc)
+        if (e.KeyModifiers is KeyModifiers.Control)
         {
-            dc.KeyUp(e);
+            if (e.Key == Key.V && DataContext is PodConsoleViewModel dc)
+            {
+                await dc.Paste();
+                return;
+            }
+        }
+
+        if (DataContext is PodConsoleViewModel dc1)
+        {
+            dc1.Send(e.KeySymbol);
         }
     }
 
-    private void Editor_TextChanged(object? sender, System.EventArgs e)
+    private void Editor_TextChanged(object? sender, EventArgs e)
     {
         Editor.ScrollToEnd();
     }

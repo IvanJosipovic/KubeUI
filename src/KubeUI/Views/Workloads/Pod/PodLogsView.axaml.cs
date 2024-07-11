@@ -1,3 +1,4 @@
+using Avalonia.Input;
 using AvaloniaEdit.TextMate;
 using KubeUI.ViewModels;
 using TextMateSharp.Grammars;
@@ -19,15 +20,13 @@ public partial class PodLogsView : UserControl
 
         _textMateInstallation = Editor.InstallTextMate(_registryOptions, false);
 
-        Editor.TextChanged += Editor_TextChanged;
-
         Editor.Options.AllowScrollBelowDocument = false;
         Editor.Options.ShowBoxForControlCharacters = false;
         Editor.Options.EnableHyperlinks = false;
         Editor.Options.EnableEmailHyperlinks = false;
     }
 
-    private void Editor_TextChanged(object? sender, System.EventArgs e)
+    private void Editor_TextChanged(object? sender, EventArgs e)
     {
         if ((DataContext as PodLogsViewModel)?.AutoScrollToBottom == true)
             Editor.ScrollToEnd();

@@ -269,4 +269,22 @@ Are you sure?</value>
   <data name="PortForwarderListViewModel_Remove_Title" xml:space="preserve">
     <value>Warning</value>
   </data>
+  <data name="Action_Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="Action_Cut" xml:space="preserve">
+    <value>Cut</value>
+  </data>
+  <data name="Action_Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Action_Paste" xml:space="preserve">
+    <value>Paste</value>
+  </data>
+  <data name="Action_Redo" xml:space="preserve">
+    <value>Redo</value>
+  </data>
+  <data name="Action_Undo" xml:space="preserve">
+    <value>Undo</value>
+  </data>
 </root>

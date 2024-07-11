@@ -97,6 +97,60 @@ namespace KubeUI.Assets {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Copy.
+        /// </summary>
+        public static string Action_Copy {
+            get {
+                return ResourceManager.GetString("Action_Copy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cut.
+        /// </summary>
+        public static string Action_Cut {
+            get {
+                return ResourceManager.GetString("Action_Cut", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Delete.
+        /// </summary>
+        public static string Action_Delete {
+            get {
+                return ResourceManager.GetString("Action_Delete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Paste.
+        /// </summary>
+        public static string Action_Paste {
+            get {
+                return ResourceManager.GetString("Action_Paste", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Redo.
+        /// </summary>
+        public static string Action_Redo {
+            get {
+                return ResourceManager.GetString("Action_Redo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Undo.
+        /// </summary>
+        public static string Action_Undo {
+            get {
+                return ResourceManager.GetString("Action_Undo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Error connecting to the cluster.
         /// </summary>
         public static string ClusterErrorView_Header {
