@@ -19,6 +19,8 @@ public partial class ResourceListView : UserControl
         _logger = Application.Current.GetRequiredService<ILogger<ResourceListView>>();
 
         InitializeComponent();
+
+        Namespaces.SelectionChanged += SelectionChanged;
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -29,6 +31,8 @@ public partial class ResourceListView : UserControl
         {
             return;
         }
+
+        DataContext.GetType().GetProperty("SelectedNamespaces").SetValue(DataContext, Namespaces.SelectedItems);
 
         var type = DataContext.GetType();
 
@@ -332,5 +336,10 @@ public partial class ResourceListView : UserControl
         }
 
         return styles;
+    }
+
+    private void SelectionChanged(object? sender, Avalonia.Controls.SelectionChangedEventArgs e)
+    {
+
     }
 }

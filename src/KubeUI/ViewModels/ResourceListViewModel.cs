@@ -1,5 +1,7 @@
+using System.Collections.Specialized;
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
+using Avalonia.Collections;
 using Avalonia.Data;
 using Dock.Model.Controls;
 using Dock.Model.Core;
@@ -40,7 +42,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
     private object _selectedItem;
 
     [ObservableProperty]
-    private object _selectedNamespaces;
+    private AvaloniaList<object> _selectedNamespaces;
 
     [ObservableProperty]
     private ReadOnlyObservableCollection<KeyValuePair<NamespacedName, T>> _dataGridObjects;
@@ -107,10 +109,15 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
 
         if (SelectedNamespaces != null)
         {
-            namespaceFilter = Expression.Equal(
-                    Expression.PropertyOrField(key, "Namespace"),
-                    Expression.Constant(((V1Namespace)SelectedNamespaces).Name())
-               );
+            foreach (var item in SelectedNamespaces)
+            {
+                var expression = Expression.Equal(
+                        Expression.PropertyOrField(key, "Namespace"),
+                        Expression.Constant(((V1Namespace)item).Name())
+                   );
+
+                namespaceFilter = namespaceFilter == null ? expression : Expression.OrElse(namespaceFilter, expression);
+            }
         }
 
         if(!string.IsNullOrEmpty(SearchQuery))
@@ -173,13 +180,21 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
 
         if (e.PropertyName == nameof(SelectedNamespaces))
         {
-            SetFilter();
+            if (SelectedNamespaces is INotifyCollectionChanged c)
+            {
+                c.CollectionChanged += SelectedNamespaces_CollectionChanged;
+            }
         }
 
         if (e.PropertyName == nameof(SearchQuery))
         {
             SetFilter();
         }
+    }
+
+    private void SelectedNamespaces_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        SetFilter();
     }
 
     private ResourceListViewDefinition<T> GetViewDefinition<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -975,6 +990,11 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
     public void Dispose()
     {
         _filter.Dispose();
+
+        if (SelectedNamespaces is INotifyCollectionChanged c)
+        {
+            c.CollectionChanged -= SelectedNamespaces_CollectionChanged;
+        }
     }
 }
 
