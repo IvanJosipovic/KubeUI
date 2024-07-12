@@ -42,9 +42,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
     private object _selectedItem;
 
     [ObservableProperty]
-    private AvaloniaList<object> _selectedNamespaces;
-
-    [ObservableProperty]
     private ReadOnlyObservableCollection<KeyValuePair<NamespacedName, T>> _dataGridObjects;
 
     [ObservableProperty]
@@ -56,7 +53,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
     [ObservableProperty]
     private ResourceListViewDefinition<T> _viewDefinition;
 
-    private IDisposable _filter;
+    private IDisposable? _filter;
 
     [GeneratedRegex("types '(.+)' and '(.+)'", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
     private static partial Regex TypeErrorRegex();
@@ -70,11 +67,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
 
     public void Initialize()
     {
-        _filter = Objects.ToObservableChangeSet<ConcurrentObservableDictionary<NamespacedName, T>, KeyValuePair<NamespacedName, T>>()
-            .Bind(out var filteredObjects)
-            .Subscribe();
+        Cluster.SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
 
-        DataGridObjects = filteredObjects;
+        SetFilter();
 
         Namespaces = Cluster.GetObjectDictionary<V1Namespace>();
 
@@ -83,7 +78,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
 
     private void SetFilter()
     {
-        _filter.Dispose();
+        _filter?.Dispose();
 
         _filter = Objects.ToObservableChangeSet<ConcurrentObservableDictionary<NamespacedName, T>, KeyValuePair<NamespacedName, T>>()
             .Filter(GenerateFilter())
@@ -107,13 +102,13 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
 
         BinaryExpression? searchFilter = null;
 
-        if (SelectedNamespaces != null)
+        if (Cluster.SelectedNamespaces != null)
         {
-            foreach (var item in SelectedNamespaces)
+            foreach (var item in Cluster.SelectedNamespaces)
             {
                 var expression = Expression.Equal(
                         Expression.PropertyOrField(key, "Namespace"),
-                        Expression.Constant(((V1Namespace)item).Name())
+                        Expression.Constant(item.Name())
                    );
 
                 namespaceFilter = namespaceFilter == null ? expression : Expression.OrElse(namespaceFilter, expression);
@@ -177,14 +172,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
         base.OnPropertyChanged(e);
-
-        if (e.PropertyName == nameof(SelectedNamespaces))
-        {
-            if (SelectedNamespaces is INotifyCollectionChanged c)
-            {
-                c.CollectionChanged += SelectedNamespaces_CollectionChanged;
-            }
-        }
 
         if (e.PropertyName == nameof(SearchQuery))
         {
@@ -991,10 +978,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
     {
         _filter.Dispose();
 
-        if (SelectedNamespaces is INotifyCollectionChanged c)
-        {
-            c.CollectionChanged -= SelectedNamespaces_CollectionChanged;
-        }
+        Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
     }
 }
 

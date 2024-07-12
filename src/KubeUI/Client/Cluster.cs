@@ -51,6 +51,9 @@ public sealed partial class Cluster : ObservableObject
     [ObservableProperty]
     private bool _isExpanded = true;
 
+    [ObservableProperty]
+    private ObservableCollection<V1Namespace> _selectedNamespaces = [];
+
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
 
     private readonly MethodInfo _seedMethodInfo;

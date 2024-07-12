@@ -32,7 +32,6 @@ public partial class ResourceListView : UserControl
             return;
         }
 
-        DataContext.GetType().GetProperty("SelectedNamespaces").SetValue(DataContext, Namespaces.SelectedItems);
 
         var type = DataContext.GetType();
 

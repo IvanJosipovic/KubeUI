@@ -42,9 +42,10 @@
                 ColumnDefinitions="*,*">
                 <TextBox
                     Grid.Column="0"
-                    Width="200"
+                    Width="300"
                     HorizontalAlignment="Right"
                     VerticalContentAlignment="Center"
+                    Classes="ClearButton"
                     Text="{ReflectionBinding SearchQuery}"
                     Watermark="Search" />
 
@@ -54,28 +55,18 @@
                     Width="300"
                     MaxHeight="20"
                     HorizontalAlignment="Right"
+                    Classes="ClearButton"
                     DisplayMemberBinding="{ReflectionBinding Metadata.Name,
                                                              FallbackValue='Select a Namespace'}"
                     IsVisible="{ReflectionBinding ViewDefinition.ShowNamespaces}"
-                    ItemsSource="{ReflectionBinding Path=Namespaces.Values}">
+                    ItemsSource="{ReflectionBinding Path=Namespaces.Values}"
+                    SelectedItems="{ReflectionBinding Path=Cluster.SelectedNamespaces}">
                     <u:MultiComboBox.SelectedItemTemplate>
                         <DataTemplate>
                             <TextBlock Text="{ReflectionBinding Metadata.Name}" />
                         </DataTemplate>
                     </u:MultiComboBox.SelectedItemTemplate>
                 </u:MultiComboBox>
-
-                <!--
-              <ComboBox
-                    Name="Namespaces"
-                    Grid.Column="1"
-                    Width="200"
-                    HorizontalAlignment="Right"
-                    DisplayMemberBinding="{ReflectionBinding Metadata.Name,
-                                                             FallbackValue='Select a Namespace'}"
-                    IsVisible="{ReflectionBinding ViewDefinition.ShowNamespaces}"
-                    ItemsSource="{ReflectionBinding Path=Namespaces.Values}"
-                    SelectedItem="{ReflectionBinding Path=SelectedNamespaces}" />-->
             </Grid>
 
         </Grid>
