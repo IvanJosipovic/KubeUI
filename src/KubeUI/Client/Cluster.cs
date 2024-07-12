@@ -1,5 +1,4 @@
 ﻿using System.Collections.Concurrent;
-using System.Reflection;
 using System.Text.Json;
 using System.Xml;
 using Dock.Model.Controls;
@@ -59,8 +58,6 @@ public sealed partial class Cluster : ObservableObject
 
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
 
-    private readonly MethodInfo _seedMethodInfo;
-
     private readonly SemaphoreSlim _semaphoreSlim = new(1);
 
     public ConcurrentDictionary<GroupApiVersionKind, ContainerClass> Objects { get; set; } = new();
@@ -73,8 +70,6 @@ public sealed partial class Cluster : ObservableObject
         _logger = logger;
         _modelCache = modelCache;
         _generator = generator;
-
-        _seedMethodInfo = GetType().GetMethods().First(x => x.Name == nameof(Seed) && x.IsGenericMethod && x.GetParameters().Length == 0);
 
         var kubeAssemblyXmlDoc = new XmlDocument();
         kubeAssemblyXmlDoc.Load(typeof(Generator).Assembly.GetManifestResourceStream("runtime.KubernetesClient.xml"));
@@ -236,12 +231,6 @@ public sealed partial class Cluster : ObservableObject
         };
 
         NavigationItems.Add(_crdNavigationLink);
-    }
-
-    public void Seed(Type type)
-    {
-        var fooRef = _seedMethodInfo.MakeGenericMethod(type);
-        fooRef.Invoke(this, null);
     }
 
     public void Seed<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -432,15 +421,6 @@ public sealed partial class Cluster : ObservableObject
         var attribute = GroupApiVersionKind.From<T>();
 
         return ((ConcurrentObservableDictionary<NamespacedName,T>)Objects[attribute].Items)[new NamespacedName(@namespace, name)];
-    }
-
-    public IEnumerable<T> GetObjects<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
-    {
-        Seed<T>();
-
-        var attribute = GroupApiVersionKind.From<T>();
-
-        return ((ConcurrentObservableDictionary<NamespacedName, T>)Objects[attribute].Items).Values;
     }
 
     public ConcurrentObservableDictionary<NamespacedName, T> GetObjectDictionary<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()

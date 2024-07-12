@@ -151,7 +151,7 @@ public class ClusterEndToEndTests
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        var ns = testHarness.Cluster.GetObjects<V1Namespace>();
+        var ns = testHarness.Cluster.GetObjectDictionary<V1Namespace>().Values;
         ns.Count().Should().BeGreaterThan(1);
     }
 
@@ -257,7 +257,7 @@ public class ClusterEndToEndTests
 
         await Task.Delay(TimeSpan.FromSeconds(10));
 
-        testHarness.Cluster.GetObjects<V1Namespace>().All(x => x.Name() != "test").Should().BeTrue();
+        testHarness.Cluster.GetObjectDictionary<V1Namespace>().Values.All(x => x.Name() != "test").Should().BeTrue();
     }
 
     [AvaloniaFact]
@@ -289,7 +289,7 @@ public class ClusterEndToEndTests
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        testHarness.Cluster.GetObjects<V1Secret>().All(x => x.Name() != "test").Should().BeTrue();
+        testHarness.Cluster.GetObjectDictionary<V1Secret>().Values.All(x => x.Name() != "test").Should().BeTrue();
     }
 
     [AvaloniaFact]
@@ -391,7 +391,10 @@ spec:
         testHarness.Cluster.ImportYaml(stream);
         var type = testHarness.Cluster.ModelCache.GetResourceType("kubeui.com", "v1beta1", "Test");
 
-        testHarness.Cluster.Seed(type);
+        var _seedMethodInfo = testHarness.Cluster.GetType().GetMethods().First(x => x.Name == nameof(Cluster.Seed) && x.IsGenericMethod && x.GetParameters().Length == 0);
+
+        var fooRef = _seedMethodInfo.MakeGenericMethod(type);
+        fooRef.Invoke(testHarness.Cluster, null);
 
         await Task.Delay(TimeSpan.FromSeconds(5));
 
