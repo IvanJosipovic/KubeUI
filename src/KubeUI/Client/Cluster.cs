@@ -51,6 +51,12 @@ public sealed partial class Cluster : ObservableObject
     [ObservableProperty]
     private bool _isExpanded = true;
 
+    [ObservableProperty]
+    private ConcurrentObservableDictionary<NamespacedName, V1Namespace> _namespaces = [];
+
+    [ObservableProperty]
+    private ObservableCollection<V1Namespace> _selectedNamespaces = [];
+
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
 
     private readonly MethodInfo _seedMethodInfo;
@@ -105,6 +111,8 @@ public sealed partial class Cluster : ObservableObject
                     AddDefaultNavigation();
 
                     Connected = true;
+
+                    Namespaces = GetObjectDictionary<V1Namespace>();
                 }
                 catch (Exception ex)
                 {

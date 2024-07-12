@@ -1,5 +1,7 @@
+using System.Collections.Specialized;
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
+using Avalonia.Collections;
 using Avalonia.Data;
 using Dock.Model.Controls;
 using Dock.Model.Core;
@@ -40,13 +42,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
     private object _selectedItem;
 
     [ObservableProperty]
-    private object _selectedNamespaces;
-
-    [ObservableProperty]
     private ReadOnlyObservableCollection<KeyValuePair<NamespacedName, T>> _dataGridObjects;
-
-    [ObservableProperty]
-    private ConcurrentObservableDictionary<NamespacedName, V1Namespace> _namespaces;
 
     [ObservableProperty]
     private string _searchQuery;
@@ -54,7 +50,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
     [ObservableProperty]
     private ResourceListViewDefinition<T> _viewDefinition;
 
-    private IDisposable _filter;
+    private IDisposable? _filter;
 
     [GeneratedRegex("types '(.+)' and '(.+)'", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
     private static partial Regex TypeErrorRegex();
@@ -68,20 +64,16 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
 
     public void Initialize()
     {
-        _filter = Objects.ToObservableChangeSet<ConcurrentObservableDictionary<NamespacedName, T>, KeyValuePair<NamespacedName, T>>()
-            .Bind(out var filteredObjects)
-            .Subscribe();
-
-        DataGridObjects = filteredObjects;
-
-        Namespaces = Cluster.GetObjectDictionary<V1Namespace>();
+        Cluster.SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
 
         ViewDefinition = GetViewDefinition<T>();
+
+        SetFilter();
     }
 
     private void SetFilter()
     {
-        _filter.Dispose();
+        _filter?.Dispose();
 
         _filter = Objects.ToObservableChangeSet<ConcurrentObservableDictionary<NamespacedName, T>, KeyValuePair<NamespacedName, T>>()
             .Filter(GenerateFilter())
@@ -105,12 +97,17 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
 
         BinaryExpression? searchFilter = null;
 
-        if (SelectedNamespaces != null)
+        if (Cluster.SelectedNamespaces != null && ViewDefinition.ShowNamespaces)
         {
-            namespaceFilter = Expression.Equal(
-                    Expression.PropertyOrField(key, "Namespace"),
-                    Expression.Constant(((V1Namespace)SelectedNamespaces).Name())
-               );
+            foreach (var item in Cluster.SelectedNamespaces)
+            {
+                var expression = Expression.Equal(
+                        Expression.PropertyOrField(key, "Namespace"),
+                        Expression.Constant(item.Name())
+                   );
+
+                namespaceFilter = namespaceFilter == null ? expression : Expression.OrElse(namespaceFilter, expression);
+            }
         }
 
         if(!string.IsNullOrEmpty(SearchQuery))
@@ -171,15 +168,15 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
     {
         base.OnPropertyChanged(e);
 
-        if (e.PropertyName == nameof(SelectedNamespaces))
-        {
-            SetFilter();
-        }
-
         if (e.PropertyName == nameof(SearchQuery))
         {
             SetFilter();
         }
+    }
+
+    private void SelectedNamespaces_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        SetFilter();
     }
 
     private ResourceListViewDefinition<T> GetViewDefinition<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -975,6 +972,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
     public void Dispose()
     {
         _filter.Dispose();
+
+        Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
     }
 }
 

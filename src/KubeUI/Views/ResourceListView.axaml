@@ -9,6 +9,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="clr-namespace:k8s.Models;assembly=KubernetesClient"
+    xmlns:u="https://irihi.tech/ursa"
     xmlns:views="clr-namespace:KubeUI.Views"
     xmlns:vm="clr-namespace:KubeUI.ViewModels"
     d:DesignHeight="300"
@@ -32,6 +33,7 @@
             <Label
                 Grid.Column="1"
                 Width="200"
+                VerticalContentAlignment="Center"
                 Content="{ReflectionBinding DataGridObjects.Count,
                                             StringFormat='Items: {0}'}" />
             <Grid
@@ -40,20 +42,31 @@
                 ColumnDefinitions="*,*">
                 <TextBox
                     Grid.Column="0"
-                    Width="200"
+                    Width="300"
                     HorizontalAlignment="Right"
+                    VerticalContentAlignment="Center"
+                    Classes="ClearButton"
                     Text="{ReflectionBinding SearchQuery}"
                     Watermark="Search" />
-                <ComboBox
+
+                <u:MultiComboBox
                     Name="Namespaces"
                     Grid.Column="1"
-                    Width="200"
+                    Width="300"
+                    MaxHeight="20"
                     HorizontalAlignment="Right"
+                    Classes="ClearButton"
                     DisplayMemberBinding="{ReflectionBinding Metadata.Name,
                                                              FallbackValue='Select a Namespace'}"
                     IsVisible="{ReflectionBinding ViewDefinition.ShowNamespaces}"
-                    ItemsSource="{ReflectionBinding Path=Namespaces.Values}"
-                    SelectedItem="{ReflectionBinding Path=SelectedNamespaces}" />
+                    ItemsSource="{ReflectionBinding Path=Cluster.Namespaces.Values}"
+                    SelectedItems="{ReflectionBinding Path=Cluster.SelectedNamespaces}">
+                    <u:MultiComboBox.SelectedItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{ReflectionBinding Metadata.Name}" />
+                        </DataTemplate>
+                    </u:MultiComboBox.SelectedItemTemplate>
+                </u:MultiComboBox>
             </Grid>
 
         </Grid>
