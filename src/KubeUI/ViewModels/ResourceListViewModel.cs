@@ -1,7 +1,6 @@
 using System.Collections.Specialized;
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
-using Avalonia.Collections;
 using Avalonia.Data;
 using Dock.Model.Controls;
 using Dock.Model.Core;
@@ -971,7 +970,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
 
     public void Dispose()
     {
-        _filter.Dispose();
+        _filter?.Dispose();
 
         Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
     }
