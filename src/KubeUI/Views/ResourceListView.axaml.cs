@@ -30,15 +30,11 @@ public partial class ResourceListView : UserControl
             return;
         }
 
-        var type = DataContext.GetType();
-
-        var resourceType = type.GenericTypeArguments[0];
+        var resourceType = DataContext.GetType().GenericTypeArguments[0];
 
         var methodInfo = GetType().GetMethod(nameof(GenerateGrid), BindingFlags.NonPublic | BindingFlags.Instance);
 
-        var genericMethod = methodInfo.MakeGenericMethod(resourceType);
-
-        genericMethod.Invoke(this, null);
+        methodInfo.MakeGenericMethod(resourceType).Invoke(this, null);
     }
 
     private async Task GenerateGrid<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -55,17 +51,9 @@ public partial class ResourceListView : UserControl
         {
             try
             {
-                var columnName = columnDefinition.GetType().GetProperty(nameof(ResourceListViewDefinitionColumn<V1Pod, string>.Name)).GetValue(columnDefinition) as string;
-
                 var columnDisplay = columnDefinition.GetType().GetProperty(nameof(ResourceListViewDefinitionColumn<V1Pod, string>.Display)).GetValue(columnDefinition);
 
-                var columnWidth = columnDefinition.GetType().GetProperty(nameof(ResourceListViewDefinitionColumn<V1Pod, string>.Width)).GetValue(columnDefinition) as string;
-
                 var columnField = columnDefinition.GetType().GetProperty(nameof(ResourceListViewDefinitionColumn<V1Pod, string>.Field)).GetValue(columnDefinition);
-
-                var columnControl = columnDefinition.GetType().GetProperty(nameof(ResourceListViewDefinitionColumn<V1Pod, string>.CustomControl)).GetValue(columnDefinition) as Type;
-
-                var columnSort = (SortDirection)columnDefinition.GetType().GetProperty(nameof(ResourceListViewDefinitionColumn<V1Pod, string>.Sort)).GetValue(columnDefinition);
 
                 // Create Sort FuncComparer
                 var colType = columnField.GetType().GenericTypeArguments[1];
@@ -74,20 +62,20 @@ public partial class ResourceListView : UserControl
 
                 DataGridColumn column = null;
 
-                if (columnControl != null)
+                if (columnDefinition.CustomControl != null)
                 {
                     column = new DataGridTemplateColumn()
                     {
-                        Header = columnName,
+                        Header = columnDefinition.Name,
                         SortMemberPath = "Value",
                         CanUserSort = true,
                         CustomSortComparer = sortConverter,
                         CellTemplate = new FuncDataTemplate<KeyValuePair<NamespacedName, T>>((item, _) =>
                         {
-                            var control = Application.Current.GetRequiredService(columnControl) as Control;
+                            var control = Application.Current.GetRequiredService(columnDefinition.CustomControl) as Control;
                             control.DataContext = item.Value;
 
-                            if (columnControl.GetProperty("Cluster") is PropertyInfo prop)
+                            if (columnDefinition.CustomControl.GetProperty("Cluster") is PropertyInfo prop)
                             {
                                 prop.SetValue(control, DataContext.GetType().GetProperty(nameof(ResourceListViewModel<V1Pod>.Cluster)).GetValue(DataContext));
                             }
@@ -109,25 +97,25 @@ public partial class ResourceListView : UserControl
                             Path = "Value",
                             Converter = displayValueConverter,
                         },
-                        Header = columnName,
+                        Header = columnDefinition.Name,
                         SortMemberPath = "Value",
                         CustomSortComparer = sortConverter,
                         CanUserSort = true,
                     };
                 }
 
-                if (!string.IsNullOrEmpty(columnWidth) && converter.ConvertFromString(columnWidth) is DataGridLength width)
+                if (!string.IsNullOrEmpty(columnDefinition.Width) && converter.ConvertFromString(columnDefinition.Width) is DataGridLength width)
                 {
                     column.Width = width;
                 }
 
                 Grid.Columns.Add(column);
 
-                if (columnSort == SortDirection.Ascending)
+                if (columnDefinition.Sort == SortDirection.Ascending)
                 {
                     await Dispatcher.UIThread.InvokeAsync(() => column.Sort(ListSortDirection.Ascending));
                 }
-                else if (columnSort == SortDirection.Descending)
+                else if (columnDefinition.Sort == SortDirection.Descending)
                 {
                     await Dispatcher.UIThread.InvokeAsync(() => column.Sort(ListSortDirection.Descending));
                 }

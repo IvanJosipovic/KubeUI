@@ -23,7 +23,12 @@ namespace KubeUI.ViewModels;
 [EditorBrowsable(EditorBrowsableState.Never)]
 internal class DemoResourceListViewModel : ResourceListViewModel<V1Pod> { public DemoResourceListViewModel() { } }
 
-public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where T : class, IKubernetesObject<V1ObjectMeta>, new()
+public interface IResourceListViewModel : IDockable
+{
+    void Initialize(Client.Cluster cluster);
+}
+
+public partial class ResourceListViewModel<T> : ViewModelBase, IResourceListViewModel, IDisposable where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     private readonly ILogger<ResourceListViewModel<T>> _logger;
     private readonly IDialogService _dialogService;
@@ -61,8 +66,15 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
         _dialogService = Application.Current.GetRequiredService<IDialogService>();
     }
 
-    public void Initialize()
+    public void Initialize(Client.Cluster cluster)
     {
+        Cluster = cluster;
+        Kind = GroupApiVersionKind.From<T>();
+        Title = Kind.Kind;
+        Id = Cluster.Name + "-" + Kind;
+
+        Objects = Cluster.GetObjectDictionary<T>();
+
         Cluster.SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
 
         ViewDefinition = GetViewDefinition<T>();
@@ -484,6 +496,17 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
                     Width = "80"
                 }
             ];
+
+            definition.MenuItems =
+            [
+                new()
+                {
+                    Header = "View Items",
+                    CommandParameterPath = "SelectedItem.Value",
+                    CommandPath = nameof(ResourceListViewModel<V1Pod>.ListCRDCommand)
+                },
+            ];
+
         }
         else if (resourceType == typeof(Corev1Event))
         {
@@ -966,6 +989,26 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
         return containerPort > 0;
     }
 
+    [RelayCommand(CanExecute = nameof(CanListCRD))]
+    private async Task ListCRD(V1CustomResourceDefinition item)
+    {
+        var version = item.Spec.Versions.First(x => x.Served && x.Storage);
+
+        var type = Cluster.ModelCache.GetResourceType(item.Spec.Group, version.Name, item.Spec.Names.Kind);
+        var resourceListType = typeof(ResourceListViewModel<>).MakeGenericType(type);
+
+        var vm = Application.Current.GetRequiredService(resourceListType) as IResourceListViewModel;
+
+        vm.Initialize(Cluster);
+
+        Factory.AddToDocuments(vm);
+    }
+
+    private bool CanListCRD(V1CustomResourceDefinition item)
+    {
+        return item != null;
+    }
+
     #endregion
 
     public void Dispose()
@@ -976,7 +1019,18 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
     }
 }
 
-public class ResourceListViewDefinitionColumn<T, T2> where T : class, IKubernetesObject<V1ObjectMeta>, new()
+public interface IResourceListViewDefinitionColumn
+{
+    string Name { get; set; }
+
+    public SortDirection Sort { get; set; }
+
+    public Type? CustomControl { get; set; }
+
+    public string? Width { get; set; }
+}
+
+public class ResourceListViewDefinitionColumn<T, T2> : IResourceListViewDefinitionColumn where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     public required string Name { get; set; }
 
@@ -1015,9 +1069,9 @@ public class ResourceListViewMenuItem
 
 public class ResourceListViewDefinition<T> where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
-    public List<object> Columns { get; set; }
+    public IList<IResourceListViewDefinitionColumn> Columns { get; set; }
 
-    public List<ResourceListViewMenuItem> MenuItems { get; set; }
+    public IList<ResourceListViewMenuItem> MenuItems { get; set; }
 
     public bool DefaultMenuItems { get; set; } = true;
 

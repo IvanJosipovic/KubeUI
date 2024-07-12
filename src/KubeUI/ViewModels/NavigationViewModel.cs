@@ -39,21 +39,13 @@ public sealed partial class NavigationViewModel : ViewModelBase
     {
         var kind = GroupApiVersionKind.From(link.ControlType);
 
-        link.Cluster.Seed(link.ControlType);
-        link.Objects = link.Cluster.Objects[kind].Items;
-
         var resourceListType = typeof(ResourceListViewModel<>).MakeGenericType(link.ControlType);
 
-        var vm = Application.Current.GetRequiredService(resourceListType) as IDockable;
+        var vm = Application.Current.GetRequiredService(resourceListType) as IResourceListViewModel;
 
-        resourceListType.GetProperty(nameof(ResourceListViewModel<V1Pod>.Cluster))?.SetValue(vm, link.Cluster);
-        resourceListType.GetProperty(nameof(ResourceListViewModel<V1Pod>.Objects))?.SetValue(vm, link.Objects);
-        resourceListType.GetProperty(nameof(ResourceListViewModel<V1Pod>.Kind))?.SetValue(vm, kind);
+        vm.Initialize(link.Cluster);
 
-        resourceListType.GetMethod(nameof(ResourceListViewModel<V1Pod>.Initialize))?.Invoke(vm, null);
-
-        vm.Title = kind.Kind;
-        vm.Id = link.Cluster.Name + "-" + kind.Kind;
+        link.Objects = link.Cluster.Objects[kind].Items;
 
         Factory.AddToDocuments(vm);
     }
