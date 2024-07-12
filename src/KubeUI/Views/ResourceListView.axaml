@@ -59,7 +59,7 @@
                     DisplayMemberBinding="{ReflectionBinding Metadata.Name,
                                                              FallbackValue='Select a Namespace'}"
                     IsVisible="{ReflectionBinding ViewDefinition.ShowNamespaces}"
-                    ItemsSource="{ReflectionBinding Path=Namespaces.Values}"
+                    ItemsSource="{ReflectionBinding Path=Cluster.Namespaces.Values}"
                     SelectedItems="{ReflectionBinding Path=Cluster.SelectedNamespaces}">
                     <u:MultiComboBox.SelectedItemTemplate>
                         <DataTemplate>

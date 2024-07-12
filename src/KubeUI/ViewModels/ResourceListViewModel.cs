@@ -45,9 +45,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
     private ReadOnlyObservableCollection<KeyValuePair<NamespacedName, T>> _dataGridObjects;
 
     [ObservableProperty]
-    private ConcurrentObservableDictionary<NamespacedName, V1Namespace> _namespaces;
-
-    [ObservableProperty]
     private string _searchQuery;
 
     [ObservableProperty]
@@ -69,11 +66,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
     {
         Cluster.SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
 
-        SetFilter();
-
-        Namespaces = Cluster.GetObjectDictionary<V1Namespace>();
-
         ViewDefinition = GetViewDefinition<T>();
+
+        SetFilter();
     }
 
     private void SetFilter()
@@ -102,7 +97,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IDisposable where
 
         BinaryExpression? searchFilter = null;
 
-        if (Cluster.SelectedNamespaces != null)
+        if (Cluster.SelectedNamespaces != null && ViewDefinition.ShowNamespaces)
         {
             foreach (var item in Cluster.SelectedNamespaces)
             {
