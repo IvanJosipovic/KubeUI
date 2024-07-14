@@ -41,9 +41,12 @@ public sealed partial class NavigationViewModel : ViewModelBase
 
         var resourceListType = typeof(ResourceListViewModel<>).MakeGenericType(link.ControlType);
 
-        var vm = Application.Current.GetRequiredService(resourceListType) as IResourceListViewModel;
+        var vm = Application.Current.GetRequiredService(resourceListType) as IDockable;
 
-        vm.Initialize(link.Cluster);
+        if (vm is IInitalizeCluster init)
+        {
+            init.Initialize(link.Cluster);
+        }
 
         link.Objects = link.Cluster.Objects[kind].Items;
 
@@ -86,10 +89,10 @@ public sealed partial class NavigationViewModel : ViewModelBase
         {
             var vm = Application.Current.GetRequiredService(link.ControlType) as IDockable;
 
-            vm.Title = link.Name;
-            vm.Id = link.Cluster.Name + "-" + link.Name;
-
-            link.ControlType.GetProperty(nameof(ResourceListViewModel<V1Pod>.Cluster))?.SetValue(vm, link.Cluster);
+            if (vm is IInitalizeCluster init)
+            {
+                init.Initialize(link.Cluster);
+            }
 
             Factory.AddToDocuments(vm);
         }

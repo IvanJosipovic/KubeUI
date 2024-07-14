@@ -20,27 +20,27 @@
     <UserControl.Resources>
         <con:StringEqualsConverter x:Key="StringEqualsConverter" />
     </UserControl.Resources>
-
-    <Grid
-        VerticalAlignment="Top"
-        ColumnDefinitions="*,3*"
-        RowDefinitions="*,*">
-        <Label
-            Grid.Row="0"
-            Grid.Column="0"
-            Content="Name" />
-        <Label
-            Grid.Row="0"
-            Grid.Column="1"
-            Content="{ReflectionBinding Object.Metadata.Name}" />
-        <Label
-            Grid.Row="1"
-            Grid.Column="0"
-            Content="Namespace" />
-        <Label
-            Grid.Row="1"
-            Grid.Column="1"
-            Content="{ReflectionBinding Object.Metadata.NamespaceProperty}" />
-    </Grid>
+    <StackPanel>
+        <Grid VerticalAlignment="Top" ColumnDefinitions="*,3*">
+            <Label
+                Grid.Row="0"
+                Grid.Column="0"
+                Content="Name" />
+            <Label
+                Grid.Row="0"
+                Grid.Column="1"
+                Content="{ReflectionBinding Object.Metadata.Name}" />
+        </Grid>
+        <Grid VerticalAlignment="Top" ColumnDefinitions="*,3*">
+            <Label
+                Grid.Row="1"
+                Grid.Column="0"
+                Content="Namespace" />
+            <Label
+                Grid.Row="1"
+                Grid.Column="1"
+                Content="{ReflectionBinding Object.Metadata.NamespaceProperty}" />
+        </Grid>
+    </StackPanel>
 
 </UserControl>

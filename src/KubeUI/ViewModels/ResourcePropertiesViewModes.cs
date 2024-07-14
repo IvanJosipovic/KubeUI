@@ -6,17 +6,26 @@ namespace KubeUI.ViewModels;
 
 [Browsable(false)]
 [EditorBrowsable(EditorBrowsableState.Never)]
-internal class DemoResourcePropertiesViewModel : ResourcePropertiesViewModel<V1Pod>
+internal class DemoResourcePropertiesViewModel : ResourcePropertiesViewModel<V1Deployment>
 {
     public DemoResourcePropertiesViewModel()
     {
-        Object = new V1Pod()
+        Object = new V1Deployment()
         {
             Metadata = new()
             {
                 Name = "Demo",
-                NamespaceProperty = "NS"
-            }
+                NamespaceProperty = "NS",
+                Labels = new Dictionary<string,string>()
+                {
+                    { "app", "demo" },
+                },
+                Annotations = new Dictionary<string, string>()
+                {
+                    { "ann1", "demo" },
+                },
+                CreationTimestamp =  DateTime.Now,
+            },
         };
     }
 }
@@ -26,8 +35,7 @@ public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable
     [ObservableProperty]
     private Cluster? _cluster;
 
-    [ObservableProperty]
-    private GroupApiVersionKind? _kind;
+    public GroupApiVersionKind Kind { get; } = GroupApiVersionKind.From<T>();
 
     [ObservableProperty]
     private T? _object;

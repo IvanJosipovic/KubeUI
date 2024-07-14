@@ -13,25 +13,33 @@
     mc:Ignorable="d">
     <Grid ColumnDefinitions="*,*,*" RowDefinitions="*">
         <lvc:PieChart
+            Title="{Binding CPUTitle}"
             Grid.Row="0"
             Grid.Column="0"
             InitialRotation="-90"
             LegendPosition="Bottom"
+            LegendTextPaint="{Binding Color}"
             MaxAngle="270"
-            Series="{Binding CPU}" />
+            Series="{Binding Cpu}" />
         <lvc:PieChart
+            Title="{Binding MemoryTitle}"
             Grid.Row="0"
             Grid.Column="1"
             InitialRotation="-90"
             LegendPosition="Bottom"
+            LegendTextPaint="{Binding Color}"
             MaxAngle="270"
             Series="{Binding Memory}" />
         <lvc:PieChart
+            Title="{Binding PodsTitle}"
             Grid.Row="0"
             Grid.Column="2"
             InitialRotation="-90"
             LegendPosition="Bottom"
+            LegendTextPaint="{Binding Color}"
             MaxAngle="270"
+            MaxValue="{Binding MaxPods}"
+            MinValue="0"
             Series="{Binding Pods}" />
     </Grid>
 </UserControl>

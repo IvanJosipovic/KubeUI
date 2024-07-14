@@ -9,6 +9,8 @@ using KubeUI.Desktop;
 using KubeUI.Models.Generator;
 using KubeUI.ViewModels;
 using KubeUI.Views;
+using LiveChartsCore;
+using LiveChartsCore.SkiaSharpView;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NReco.Logging.File;
@@ -24,7 +26,14 @@ public partial class App : Application
 
     public override void Initialize()
     {
+        AvaloniaXamlLoader.Load(this);
+
         var configRoot = new ConfigurationBuilder().AddJsonFile("appsettings.json", true, true).Build();
+
+        LiveCharts.Configure(config => config
+                                        .AddDarkTheme()
+                                        .AddLightTheme()
+        );
 
         ServiceCollection services = new();
 
@@ -66,8 +75,6 @@ public partial class App : Application
         logger = _serviceProvider.GetRequiredService<ILogger<App>>();
 
         AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
-
-        AvaloniaXamlLoader.Load(this);
 
         logger.LogInformation("App Started");
     }

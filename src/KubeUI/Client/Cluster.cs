@@ -144,7 +144,7 @@ public sealed partial class Cluster : ObservableObject
 
     private void AddDefaultNavigation()
     {
-        NavigationItems.Add(new NavigationLink() { Name = "Cluster", ControlType = typeof(ClusterViewModel), Cluster = this, SvgIcon = "/Assets/kube/infrastructure_components/unlabeled/control-plane.svg" });
+        NavigationItems.Add(new NavigationLink() { Name = Resources.ClusterViewModel_Title, ControlType = typeof(ClusterViewModel), Cluster = this, SvgIcon = "/Assets/kube/infrastructure_components/unlabeled/control-plane.svg" });
         NavigationItems.Add(new NavigationLink() { Name = "Load Yaml", Cluster = this, Id = "load-yaml", StyleIcon = "arrow_upload_regular" });
         NavigationItems.Add(new NavigationLink() { Name = "Load Folder", Cluster = this, Id = "load-folder", StyleIcon = "folder_add_regular" });
 
@@ -195,7 +195,7 @@ public sealed partial class Cluster : ObservableObject
                 new ResourceNavigationLink() { Name = "Ingresses", ControlType = typeof(V1Ingress), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/ing.svg"  },
                 new ResourceNavigationLink() { Name = "Ingress Classes", ControlType = typeof(V1IngressClass), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/ing.svg"  }, // Needs SvgIcon
                 new ResourceNavigationLink() { Name = "Network Policies", ControlType = typeof(V1NetworkPolicy), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/netpol.svg"  },
-                new NavigationLink() { Name = "Port Forwarding", ControlType = typeof(PortForwarderListViewModel), Cluster = this, StyleIcon = "ic_fluent_cloud_flow_filled" }
+                new NavigationLink() { Name = Resources.PortForwarderListViewModel_Title, ControlType = typeof(PortForwarderListViewModel), Cluster = this, StyleIcon = "ic_fluent_cloud_flow_filled" }
             ]
         });
 

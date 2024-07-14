@@ -23,12 +23,7 @@ namespace KubeUI.ViewModels;
 [EditorBrowsable(EditorBrowsableState.Never)]
 internal class DemoResourceListViewModel : ResourceListViewModel<V1Pod> { public DemoResourceListViewModel() { } }
 
-public interface IResourceListViewModel : IDockable
-{
-    void Initialize(Client.Cluster cluster);
-}
-
-public partial class ResourceListViewModel<T> : ViewModelBase, IResourceListViewModel, IDisposable where T : class, IKubernetesObject<V1ObjectMeta>, new()
+public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster, IDisposable where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     private readonly ILogger<ResourceListViewModel<T>> _logger;
     private readonly IDialogService _dialogService;
@@ -876,7 +871,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IResourceListView
         var instance = Application.Current.GetRequiredService<ResourcePropertiesViewModel<T>>();
         instance.Cluster = Cluster;
         instance.Object = ((KeyValuePair<NamespacedName, T>)(item)).Value;
-        instance.Kind = Kind;
         instance.CanFloat = false;
 
         Factory?.InsertDockable(doc, instance, 0);
@@ -997,9 +991,12 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IResourceListView
         var type = Cluster.ModelCache.GetResourceType(item.Spec.Group, version.Name, item.Spec.Names.Kind);
         var resourceListType = typeof(ResourceListViewModel<>).MakeGenericType(type);
 
-        var vm = Application.Current.GetRequiredService(resourceListType) as IResourceListViewModel;
+        var vm = Application.Current.GetRequiredService(resourceListType) as IDockable;
 
-        vm.Initialize(Cluster);
+        if (vm is IInitalizeCluster init)
+        {
+            init.Initialize(Cluster);
+        }
 
         Factory.AddToDocuments(vm);
     }

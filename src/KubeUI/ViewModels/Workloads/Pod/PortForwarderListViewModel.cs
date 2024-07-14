@@ -18,6 +18,7 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase
     public PortForwarderListViewModel()
     {
         _dialogService = Application.Current.GetRequiredService<IDialogService>();
+        Title = Resources.PortForwarderListViewModel_Title;
     }
 
     [RelayCommand(CanExecute = nameof(CanRemove))]

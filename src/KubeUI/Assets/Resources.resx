@@ -287,4 +287,7 @@ Are you sure?</value>
   <data name="Action_Undo" xml:space="preserve">
     <value>Undo</value>
   </data>
+  <data name="PortForwarderListViewModel_Title" xml:space="preserve">
+    <value>Port Forwarding</value>
+  </data>
 </root>

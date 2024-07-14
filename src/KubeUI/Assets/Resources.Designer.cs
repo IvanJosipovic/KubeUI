@@ -422,6 +422,15 @@ namespace KubeUI.Assets {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Port Forwarding.
+        /// </summary>
+        public static string PortForwarderListViewModel_Title {
+            get {
+                return ResourceManager.GetString("PortForwarderListViewModel_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Create a new Resource.
         /// </summary>
         public static string ResourceListView_NewResource {
