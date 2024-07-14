@@ -62,7 +62,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Scrutor" Version="4.2.2" />
-    <PackageReference Include="Semi.Avalonia" Version="11.0.7.4" />
+    <PackageReference Include="Semi.Avalonia" Version="11.1.0-rc2" />
     <PackageReference Include="Swordfish.NET.CollectionsV3" Version="3.3.12" />
     <PackageReference Include="Velopack" Version="0.0.556" />
     <PackageReference Include="YamlDotNet.System.Text.Json" Version="1.4.2" />
