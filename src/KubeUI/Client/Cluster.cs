@@ -54,6 +54,12 @@ public sealed partial class Cluster : ObservableObject
     private ConcurrentObservableDictionary<NamespacedName, V1Namespace> _namespaces = [];
 
     [ObservableProperty]
+    private ConcurrentObservableDictionary<NamespacedName, MyPodMetrics> _podMetrics = [];
+
+    [ObservableProperty]
+    private ConcurrentObservableDictionary<NamespacedName, MyNodeMetrics> _nodeMetrics = [];
+
+    [ObservableProperty]
     private ObservableCollection<V1Namespace> _selectedNamespaces = [];
 
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
@@ -108,6 +114,9 @@ public sealed partial class Cluster : ObservableObject
                     Connected = true;
 
                     Namespaces = GetObjectDictionary<V1Namespace>();
+
+                    PodMetrics = GetObjectDictionary<MyPodMetrics>();
+                    NodeMetrics = GetObjectDictionary<MyNodeMetrics>();
                 }
                 catch (Exception ex)
                 {
