@@ -35,6 +35,7 @@
     <PackageReference Include="Avalonia.AvaloniaEdit" Version="11.0.6" />
     <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.1.0-rc2" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="11.1.0-rc2" />
+    <PackageReference Include="Avalonia.Markup.Declarative" Version="11.0.11" />
     <PackageReference Include="Avalonia.Svg.Skia" Version="11.1.0-rc2" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.1.0-rc2" />
     <PackageReference Include="AvaloniaEdit.TextMate" Version="11.0.6" />
@@ -96,6 +97,9 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Views\ClusterViewtwo.axaml.cs">
+      <DependentUpon>ClusterViewtwo.axaml</DependentUpon>
     </Compile>
   </ItemGroup>
 

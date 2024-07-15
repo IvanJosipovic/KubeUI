@@ -1,133 +1,67 @@
-﻿using LiveChartsCore.SkiaSharpView.Extensions;
-using LiveChartsCore;
+﻿using k8s.Models;
 using LiveChartsCore.Defaults;
-using LiveChartsCore.Measure;
-using LiveChartsCore.SkiaSharpView;
-using LiveChartsCore.SkiaSharpView.Painting;
-using SkiaSharp;
-using LiveChartsCore.SkiaSharpView.VisualElements;
-using k8s.Models;
 
 namespace KubeUI.ViewModels;
 
-public sealed partial class ClusterViewModel : ViewModelBase, IInitalizeCluster, IDisposable
+public sealed partial class ClusterViewModel : ViewModelBase, IInitalizeCluster, INotifyPropertyChanged
 {
     [ObservableProperty]
     private Client.Cluster _cluster;
 
     [ObservableProperty]
-    private SolidColorPaint _color = new(SKColors.White);
-
-    private DispatcherTimer _timer = new DispatcherTimer();
+    private ResourceListViewModel<Corev1Event> _eventsVM;
 
     public ClusterViewModel()
     {
         Title = Resources.ClusterViewModel_Title;
+
+        _eventsVM = Application.Current.GetRequiredService<ResourceListViewModel<Corev1Event>>();
     }
 
     [ObservableProperty]
-    public IEnumerable<ISeries> _cpu =
-    GaugeGenerator.BuildSolidGauge(
-        new GaugeItem(30, series => SetStyle("Usage", series)),
-        new GaugeItem(50, series => SetStyle("Requests", series)),
-        new GaugeItem(80, series => SetStyle("Limits", series)),
-        new GaugeItem(20, series => SetStyle("Allocatable Capacity", series)),
-        new GaugeItem(40, series => SetStyle("Capacity", series)),
-        new GaugeItem(GaugeItem.Background, series =>
-        {
-            series.InnerRadius = 20;
-        }));
+    private ObservableValue _maxPods = new();
 
     [ObservableProperty]
-    private IEnumerable<ISeries> _memory=
-    GaugeGenerator.BuildSolidGauge(
-        new GaugeItem(30, series => SetStyle("Usage", series)),
-        new GaugeItem(50, series => SetStyle("Requests", series)),
-        new GaugeItem(80, series => SetStyle("Limits", series)),
-        new GaugeItem(20, series => SetStyle("Allocatable Capacity", series)),
-        new GaugeItem(40, series => SetStyle("Capacity", series)),
-        new GaugeItem(GaugeItem.Background, series =>
-        {
-            series.InnerRadius = 20;
-        }));
+    private ObservableValue _totalPods = new();
 
     [ObservableProperty]
-    private IEnumerable<ISeries> _pods;
+    private ObservableValue _cpuCapacity = new();
 
     [ObservableProperty]
-    private int _maxPods;
+    private ObservableValue _cpuAllocatable = new();
 
-    public static void SetStyle(string name, PieSeries<ObservableValue> series)
-    {
-        series.Name = name;
-        series.DataLabelsPosition = PolarLabelsPosition.Start;
-        series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue}";
-        series.InnerRadius = 20;
-        series.RelativeOuterRadius = 8;
-        series.RelativeInnerRadius = 8;
-    }
+    [ObservableProperty]
+    private ObservableValue _memoryCapacity = new();
 
-    public LabelVisual CPUTitle { get; set; } =
-    new LabelVisual
-    {
-        Text = "CPU",
-        TextSize = 25,
-        Paint = new SolidColorPaint(SKColors.White)
-    };
+    [ObservableProperty]
+    private ObservableValue _memoryAllocatable = new();
 
-    public LabelVisual MemoryTitle { get; set; } =
-    new LabelVisual
-    {
-        Text = "Memory",
-        TextSize = 25,
-        Paint = new SolidColorPaint(SKColors.White)
-    };
-
-    public LabelVisual PodsTitle { get; set; } =
-    new LabelVisual
-    {
-        Text = "Pods",
-        TextSize = 25,
-        Paint = new SolidColorPaint(SKColors.White)
-    };
-
-    private void PopulateData()
+    public void RefreshData()
     {
         var pods = Cluster.GetObjectDictionary<V1Pod>();
         var nodes = Cluster.GetObjectDictionary<V1Node>();
 
-        var totalPods = pods.Count;
-        MaxPods = nodes.Sum(x => x.Value.Status.Capacity["pods"].ToInt32());
+        TotalPods.Value = pods.Count;
+        MaxPods.Value = nodes.Sum(x => x.Value.Status.Capacity["pods"].ToDouble());
 
-        Pods = GaugeGenerator.BuildSolidGauge(
-        new GaugeItem(totalPods, series => SetStyle("Usage", series)),
-        new GaugeItem(GaugeItem.Background, series =>
-        {
-            series.InnerRadius = 20;
-        }));
+        CpuAllocatable.Value = nodes.Sum(x => x.Value.Status.Allocatable["cpu"].ToDouble());
+        CpuCapacity.Value = nodes.Sum(x => x.Value.Status.Capacity["cpu"].ToDouble());
+
+        MemoryAllocatable.Value = nodes.Sum(x => x.Value.Status.Allocatable["memory"].ToDouble()) / 1048576 / 1024;
+        MemoryCapacity.Value = nodes.Sum(x => x.Value.Status.Capacity["memory"].ToDouble()) / 1048576 / 1024;
     }
 
     public void Initialize(Client.Cluster cluster)
     {
         Cluster = cluster;
-        PopulateData();
 
-        Title = Resources.ClusterViewModel_Title;
         Id = nameof(ClusterViewModel) + "-" + Cluster.Name + "-" + Title;
 
-        _timer.Interval = TimeSpan.FromSeconds(1);
-        _timer.Tick += S_timer_Tick;
-        _timer.Start();
-    }
+        RefreshData();
 
-    private void S_timer_Tick(object? sender, EventArgs e)
-    {
-        PopulateData();
-    }
-
-    public void Dispose()
-    {
-        _timer.Tick -= S_timer_Tick;
-        _timer.Stop();
+        if (_eventsVM is IInitalizeCluster init)
+        {
+            init.Initialize(Cluster);
+        }
     }
 }
