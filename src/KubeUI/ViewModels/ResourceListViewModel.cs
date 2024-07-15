@@ -205,22 +205,25 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
                     Sort = SortDirection.Ascending,
                     Width = "4*",
                 },
-                new ResourceListViewDefinitionColumn<V1Node, string>()
+                new ResourceListViewDefinitionColumn<V1Node, decimal>()
                 {
                     Name = "CPU",
-                    Field = x => x.Status.Allocatable["cpu"].Value,
+                    Field = x => x.Status?.Capacity?.TryGetValue("cpu", out var value) == true ? value.ToDecimal() : 0,
+                    Display = x => x.Status?.Capacity?.TryGetValue("cpu", out var value) == true ? value.ToDecimal().ToString("0.##") + "c" : "0c",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
-                new ResourceListViewDefinitionColumn<V1Node, string>()
+                new ResourceListViewDefinitionColumn<V1Node, decimal>()
                 {
                     Name = "Memory",
-                    Field = x => x.Status.Allocatable["memory"].Value,
+                    Field = x => x.Status?.Capacity?.TryGetValue("memory", out var value) == true ? value.ToDecimal() : 0,
+                    Display = x => x.Status?.Capacity?.TryGetValue("memory", out var value) == true ? (value.ToDecimal() / 1048576 / 1024).ToString("0.##") + "Gi" : "0Gi",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
-                new ResourceListViewDefinitionColumn<V1Node, string>()
+                new ResourceListViewDefinitionColumn<V1Node, decimal>()
                 {
                     Name = "Disk",
-                    Field = x => x.Status.Allocatable["ephemeral-storage"].Value,
+                    Field = x => x.Status?.Capacity?.TryGetValue("ephemeral-storage", out var value) == true ? value.ToDecimal() : 0,
+                    Display = x => x.Status?.Capacity?.TryGetValue("ephemeral-storage", out var value) == true ? (value.ToDecimal() / 1048576 / 1024).ToString("0.##") + "Gi" : "0",
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },
                 new ResourceListViewDefinitionColumn<V1Node, string>()
