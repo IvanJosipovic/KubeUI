@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-namespace KubeUI.ViewModels;
+﻿namespace KubeUI.ViewModels;
 
 internal interface IInitalizeCluster
 {

@@ -1,7 +1,5 @@
 ﻿using Avalonia.Platform.Storage;
 using Dock.Model.Core;
-using k8s;
-using k8s.Models;
 using KubeUI.Client;
 
 namespace KubeUI.ViewModels;

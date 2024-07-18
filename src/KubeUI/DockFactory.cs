@@ -6,6 +6,7 @@ using Dock.Model.Mvvm.Controls;
 using KubeUI.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Scrutor;
+using Orientation = Dock.Model.Core.Orientation;
 
 namespace KubeUI;
 

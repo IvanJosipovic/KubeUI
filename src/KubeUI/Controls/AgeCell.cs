@@ -1,15 +1,17 @@
-using Avalonia.Interactivity;
-using k8s;
+﻿using k8s;
 using k8s.Models;
+using KubeUI.Views;
 
 namespace KubeUI.Controls;
 
-public partial class StatusCell : UserControl
+public partial class AgeCell : MyViewBase<IKubernetesObject<V1ObjectMeta>>
 {
-    public StatusCell()
+    private static readonly DispatcherTimer s_timer = new(DispatcherPriority.Default);
+
+    public AgeCell()
     {
-        InitializeComponent();
-        _timer = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Default, Timer_Tick);
+        s_timer.Tick += Timer_Tick;
+        s_timer.Interval = TimeSpan.FromSeconds(1);
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -19,6 +21,12 @@ public partial class StatusCell : UserControl
         if (DataContext is IKubernetesObject<V1ObjectMeta> date && date.Metadata.CreationTimestamp.HasValue)
         {
             Date = date.Metadata.CreationTimestamp.Value;
+            Convert();
+
+            if (!s_timer.IsEnabled)
+            {
+                s_timer.Start();
+            }
         }
     }
 
@@ -27,8 +35,8 @@ public partial class StatusCell : UserControl
         Convert();
     }
 
-    public static readonly DirectProperty<StatusCell, DateTime> DateProperty =
-    AvaloniaProperty.RegisterDirect<StatusCell, DateTime>(
+    public static readonly DirectProperty<AgeCell, DateTime> DateProperty =
+    AvaloniaProperty.RegisterDirect<AgeCell, DateTime>(
     nameof(Date),
     o => o.Date,
     (o, v) => o.Date = v);
@@ -41,8 +49,8 @@ public partial class StatusCell : UserControl
         set { SetAndRaise(DateProperty, ref _date, value); Convert(); }
     }
 
-    public static readonly DirectProperty<StatusCell, string> PrettyStringProperty =
-    AvaloniaProperty.RegisterDirect<StatusCell, string>(
+    public static readonly DirectProperty<AgeCell, string> PrettyStringProperty =
+    AvaloniaProperty.RegisterDirect<AgeCell, string>(
     nameof(PrettyString),
     o => o.PrettyString,
     (o, v) => o.PrettyString = v);
@@ -89,13 +97,19 @@ public partial class StatusCell : UserControl
         }
     }
 
-    private DispatcherTimer _timer;
+    protected override StyleGroup? BuildStyles() => [];
+
+    protected override object Build(IKubernetesObject<V1ObjectMeta> vm) =>
+        new TextBlock()
+            .Margin(12, 0, 12, 0)
+            .HorizontalAlignment(HorizontalAlignment.Left)
+            .VerticalAlignment(VerticalAlignment.Center)
+            .Text(AgeCell.PrettyStringProperty);
 
     protected override void OnUnloaded(RoutedEventArgs e)
     {
         base.OnUnloaded(e);
 
-        _timer.Stop();
-        _timer.Tick -= Timer_Tick;
+        s_timer.Tick -= Timer_Tick;
     }
 }

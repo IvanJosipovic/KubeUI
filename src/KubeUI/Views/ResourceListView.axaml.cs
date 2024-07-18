@@ -1,6 +1,5 @@
 using k8s.Models;
 using k8s;
-using Avalonia.Data;
 using Avalonia.Data.Converters;
 using KubeUI.Client.Informer;
 using System.Reflection;
@@ -234,7 +233,7 @@ public partial class ResourceListView : UserControl
         }
         else if (menu.HeaderBinding != null)
         {
-            menuItem.Bind(MenuItem.HeaderProperty, menu.HeaderBinding);
+            menuItem.Bind(Avalonia.Controls.Primitives.HeaderedSelectingItemsControl.HeaderProperty, menu.HeaderBinding);
         }
 
         if (!string.IsNullOrEmpty(menu.CommandPath))
@@ -290,11 +289,11 @@ public partial class ResourceListView : UserControl
 
         if (menu.Header != null)
         {
-            style.Add(new Setter(MenuItem.HeaderProperty, menu.Header));
+            style.Add(new Setter(Avalonia.Controls.Primitives.HeaderedSelectingItemsControl.HeaderProperty, menu.Header));
         }
         else if (menu.HeaderBinding != null)
         {
-            style.Add(new Setter(MenuItem.HeaderProperty, menu.HeaderBinding));
+            style.Add(new Setter(Avalonia.Controls.Primitives.HeaderedSelectingItemsControl.HeaderProperty, menu.HeaderBinding));
         }
 
         if (!string.IsNullOrEmpty(menu.CommandPath))

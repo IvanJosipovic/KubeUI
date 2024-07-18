@@ -3,7 +3,6 @@ using k8s.Models;
 using k8s;
 using KubeUI.Client;
 using System.Net.WebSockets;
-using Avalonia.Input;
 using System.Text;
 using System.Text.RegularExpressions;
 

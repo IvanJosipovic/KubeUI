@@ -1,6 +1,4 @@
-﻿using Avalonia.Data;
-using Avalonia.Markup.Declarative;
-using KubeUI.ViewModels;
+﻿using KubeUI.ViewModels;
 using LiveChartsCore.Defaults;
 using LiveChartsCore.Measure;
 using LiveChartsCore.SkiaSharpView;

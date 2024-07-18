@@ -1,23 +1,16 @@
-using Avalonia.Interactivity;
-using k8s.Models;
+﻿using k8s.Models;
+using KubeUI.Views;
 
 namespace KubeUI.Controls;
 
-public partial class LastSeenCell : UserControl
+public partial class LastSeenCell : MyViewBase<Corev1Event>
 {
     private static readonly DispatcherTimer s_timer = new(DispatcherPriority.Default);
 
     public LastSeenCell()
     {
-        InitializeComponent();
-
-        if (!s_timer.IsEnabled)
-        {
-            s_timer.Interval = TimeSpan.FromSeconds(1);
-            s_timer.Start();
-        }
-
         s_timer.Tick += Timer_Tick;
+        s_timer.Interval = TimeSpan.FromSeconds(1);
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -26,7 +19,12 @@ public partial class LastSeenCell : UserControl
 
         if (DataContext is Corev1Event date && date.LastTimestamp.HasValue)
         {
-            Date = date.LastTimestamp.Value;
+            _date = date.LastTimestamp.Value;
+            Convert();
+            if (!s_timer.IsEnabled)
+            {
+                s_timer.Start();
+            }
         }
     }
 
@@ -35,19 +33,7 @@ public partial class LastSeenCell : UserControl
         Convert();
     }
 
-    public static readonly DirectProperty<LastSeenCell, DateTime> DateProperty =
-    AvaloniaProperty.RegisterDirect<LastSeenCell, DateTime>(
-    nameof(Date),
-    o => o.Date,
-    (o, v) => o.Date = v);
-
     private DateTime _date;
-
-    public DateTime Date
-    {
-        get { return _date; }
-        set { SetAndRaise(DateProperty, ref _date, value); Convert(); }
-    }
 
     public static readonly DirectProperty<LastSeenCell, string> PrettyStringProperty =
     AvaloniaProperty.RegisterDirect<LastSeenCell, string>(
@@ -63,7 +49,7 @@ public partial class LastSeenCell : UserControl
 
     private string _prettyString = string.Empty;
 
-    private TimeSpan Delta => DateTime.UtcNow - Date;
+    private TimeSpan Delta => DateTime.UtcNow - _date;
 
     private void Convert()
     {
@@ -96,6 +82,15 @@ public partial class LastSeenCell : UserControl
             PrettyString = (Delta.TotalMilliseconds.ToString("N0")) + "ms";
         }
     }
+
+    protected override StyleGroup? BuildStyles() => [];
+
+    protected override object Build(Corev1Event vm) =>
+        new TextBlock()
+            .Margin(12, 0, 12, 0)
+            .HorizontalAlignment(HorizontalAlignment.Left)
+            .VerticalAlignment(VerticalAlignment.Center)
+            .Text(AgeCell.PrettyStringProperty);
 
     protected override void OnUnloaded(RoutedEventArgs e)
     {

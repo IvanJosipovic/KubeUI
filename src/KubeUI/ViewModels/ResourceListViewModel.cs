@@ -1,7 +1,6 @@
 using System.Collections.Specialized;
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
-using Avalonia.Data;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using DynamicData;
@@ -349,6 +348,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
                 {
                     Name = "Status",
                     Field = x => x.Status.Phase,
+                    CustomControl = typeof(PodStatusCell),
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListViewDefinitionColumn<V1Pod, DateTime?>()
@@ -576,7 +576,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
                 Name = "Name",
                 Field = x => x.Metadata.Name,
                 Sort = SortDirection.Ascending,
-                Width = "2*"
+                Width = "4*"
             };
 
             definition.Columns.Add(nameColumn);
@@ -598,7 +598,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
                     {
                         Name = "Namespace",
                         Field = x => x.Metadata.NamespaceProperty,
-                        Width = "*"
+                        Width = "2*"
                     };
 
                     definition.Columns.Add(nsColumn);
@@ -629,7 +629,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
                                 {
                                     Name = item.Name,
                                     Field = exp.Compile(),
-                                    Width = "*"
+                                    //Width = "*"
                                 };
 
                                 definition.Columns.Add(colDef);
@@ -643,7 +643,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
                                     Name = item.Name,
                                     Display = TransformToFuncOfString<T>(exp.Body, exp.Parameters).Compile(),
                                     Field = exp.Compile(),
-                                    Width = "*"
+                                    //Width = "*"
                                 };
 
                                 definition.Columns.Add(colDef);
@@ -657,7 +657,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
                                     Name = item.Name,
                                     Display = TransformToFuncOfString<T>(exp.Body, exp.Parameters).Compile(),
                                     Field = exp.Compile(),
-                                    Width = "*"
+                                    //Width = "*"
                                 };
 
                                 definition.Columns.Add(colDef);
@@ -671,7 +671,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
                                     Name = item.Name,
                                     Display = TransformToFuncOfString<T>(exp.Body, exp.Parameters).Compile(),
                                     Field = exp.Compile(),
-                                    Width = "*"
+                                    //Width = "*"
                                 };
 
                                 definition.Columns.Add(colDef);
@@ -684,7 +684,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
                                 {
                                     Name = item.Name,
                                     Field = exp.Compile(),
-                                    Width = "*"
+                                    //Width = "*"
                                 };
 
                                 definition.Columns.Add(colDef);
@@ -698,7 +698,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
                                     Name = item.Name,
                                     Display = TransformToFuncOfString<T>(exp.Body, exp.Parameters).Compile(),
                                     Field = exp.Compile(),
-                                    Width = "*"
+                                    //Width = "*"
                                 };
 
                                 definition.Columns.Add(colDef);

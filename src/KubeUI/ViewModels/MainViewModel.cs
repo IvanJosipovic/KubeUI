@@ -1,5 +1,4 @@
 ﻿using System.Runtime.InteropServices;
-using Avalonia.Controls.ApplicationLifetimes;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using KubeUI.Client;

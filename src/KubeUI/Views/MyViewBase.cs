@@ -1,6 +1,4 @@
-﻿using Avalonia.Markup.Declarative;
-
-namespace KubeUI.Views;
+﻿namespace KubeUI.Views;
 
 public abstract class MyViewBase<TViewModel> : ViewBase
 {
