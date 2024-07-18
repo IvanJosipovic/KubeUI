@@ -114,7 +114,6 @@ public class Generator : IGenerator
         '*',
         '(',
         ')',
-        '-',
         '+',
         '~',
         '_',
@@ -136,7 +135,26 @@ public class Generator : IGenerator
         '*',
         '(',
         ')',
+        '+',
+        '~',
+        '_',
+        '='
+    ];
+
+    private static readonly List<char> s_classBadChars =
+    [
         '-',
+        '$',
+        '`',
+        '!',
+        '@',
+        '#',
+        '%',
+        '^',
+        '&',
+        '*',
+        '(',
+        ')',
         '+',
         '~',
         '_',
@@ -483,6 +501,14 @@ public class Generator : IGenerator
 
     private static string GetCleanClassName(string name)
     {
+        foreach (var badChar in s_classBadChars)
+        {
+            if (name.Contains(badChar))
+            {
+                name = name.Replace(badChar.ToString(), string.Empty);
+            }
+        }
+
         return CapitalizeFirstLetter(name);
     }
 

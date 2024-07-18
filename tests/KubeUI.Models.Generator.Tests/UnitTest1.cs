@@ -1463,4 +1463,40 @@ spec:
 
         listType2.Name.Should().Be("V1beta1TestSpecSpec");
     }
+
+    [Fact]
+    public void TestClassNameSpecial()
+    {
+        var yaml = @"
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: tests.kubeui.com
+spec:
+  group: kubeui.com
+  names:
+    plural: tests
+    singular: test
+    kind: Test-Go
+    listKind: TestList
+  scope: Namespaced
+  versions:
+    - name: v1beta1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            metadata:
+              type: object
+            spec:
+              type: object
+";
+        var type = GetTypeYaml(yaml, "Test-Go");
+    }
 }
