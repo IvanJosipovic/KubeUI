@@ -1,11 +1,11 @@
 using Avalonia;
 using Avalonia.Markup.Xaml;
-using KubeUI.Models.Generator;
 using KubeUI.Client;
 using KubeUI.Views;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Dock.Model.Core;
+using KubernetesCRDModelGen;
 
 namespace KubeUI.Tests;
 

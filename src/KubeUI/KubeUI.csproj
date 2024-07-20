@@ -58,6 +58,7 @@
     <PackageReference Include="Irihi.Ursa.Themes.Semi" Version="0.3.0-beta20240708" />
     <PackageReference Include="JsonPathLINQ" Version="1.0.0-alpha.10" />
     <PackageReference Include="KubernetesClient" Version="14.0.2" />
+    <PackageReference Include="KubernetesCRDModelGen" Version="1.0.0-alpha.285" />
     <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.0.0-rc2" />
     <PackageReference Include="Meziantou.Analyzer" Version="2.0.161">
       <PrivateAssets>all</PrivateAssets>
@@ -81,10 +82,6 @@
 
     <!--Resolves version conflict in Avalonia Diagnostics -->
     <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Microsoft.CodeAnalysis.CSharp" Version="4.10.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\KubeUI.Models.Generator\KubeUI.Models.Generator.csproj" />
   </ItemGroup>
 
   <ItemGroup>
