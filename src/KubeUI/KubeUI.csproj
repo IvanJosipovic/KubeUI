@@ -60,7 +60,7 @@
     <PackageReference Include="KubernetesClient" Version="14.0.2" />
     <PackageReference Include="KubernetesCRDModelGen" Version="1.0.0-alpha.285" />
     <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.0.0-rc2" />
-    <PackageReference Include="Meziantou.Analyzer" Version="2.0.161">
+    <PackageReference Include="Meziantou.Analyzer" Version="2.0.163">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
