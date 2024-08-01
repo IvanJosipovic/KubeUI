@@ -42,7 +42,7 @@
       "packageRules": [
         {
           "matchPackageNames": [
-            "Meziantou.Analyzer",
+            "meziantou.analyzer",
             "roslynator.analyzers"
           ]
         }
