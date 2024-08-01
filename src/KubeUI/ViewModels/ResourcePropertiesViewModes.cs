@@ -58,7 +58,7 @@ public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable
         }
     }
 
-    private async void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)
+    private void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)
     {
         if (Object != null
             && Object.Kind == resource.Kind
@@ -66,7 +66,7 @@ public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable
             && Object.Metadata.Name == resource.Metadata.Name
             && Object.Metadata.NamespaceProperty == resource.Metadata.NamespaceProperty)
         {
-            await Dispatcher.UIThread.InvokeAsync(() => Object = (T)resource);
+            Dispatcher.UIThread.Post(() => Object = (T)resource);
         }
     }
 

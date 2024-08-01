@@ -323,13 +323,13 @@ public sealed partial class Cluster : ObservableObject
                             navItem!.NavigationItems.Add(nav);
                         }
 
-                        Dispatcher.UIThread.Invoke(() => items[name] = item);
+                        Dispatcher.UIThread.Post(() => items[name] = item);
                         break;
                     case WatchEventType.Modified:
-                        Dispatcher.UIThread.Invoke(() => items[name] = item);
+                        Dispatcher.UIThread.Post(() => items[name] = item);
                         break;
                     case WatchEventType.Deleted:
-                        Dispatcher.UIThread.Invoke(() => items.Remove(name));
+                        Dispatcher.UIThread.Post(() => items.Remove(name));
                         //todo Check if CRD and remove from menu etc
                         break;
                     case WatchEventType.Error:

@@ -49,7 +49,7 @@ public sealed partial class ClusterManager : ObservableObject
 
         _logger.LogError("Cluster ExecStdError: {data}", e.Data);
 
-        await Dispatcher.UIThread.InvokeAsync(() =>
+        Dispatcher.UIThread.Post(() =>
         {
             var existingDock = _factory.FindDockableById(vm.Id);
 

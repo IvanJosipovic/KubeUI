@@ -103,7 +103,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
             && Object.Metadata.Name == resource.Metadata.Name
             && Object.Metadata.NamespaceProperty == resource.Metadata.NamespaceProperty)
         {
-            await Dispatcher.UIThread.InvokeAsync(() => Object = resource);
+            Dispatcher.UIThread.Post(() => Object = resource);
         }
     }
 

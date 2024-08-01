@@ -1,30 +1,29 @@
-﻿namespace KubeUI.Client
+﻿namespace KubeUI.Client;
+
+public partial class Cluster
 {
-    public partial class Cluster
+    [ObservableProperty]
+    private ObservableCollection<PortForwarder> _portForwarders = [];
+
+    public PortForwarder AddPortForward(string @namespace, string podName, int containerPort)
     {
-        [ObservableProperty]
-        private ObservableCollection<PortForwarder> _portForwarders = [];
+        var pf = new PortForwarder(this.Client, @namespace, podName, containerPort);
 
-        public PortForwarder AddPortForward(string @namespace, string podName, int containerPort)
+        if (PortForwarders.Contains(pf))
         {
-            var pf = new PortForwarder(this.Client, @namespace, podName, containerPort);
-
-            if (PortForwarders.Contains(pf))
-            {
-                return PortForwarders.First(p => p.Equals(pf));
-            }
-
-            PortForwarders.Add(pf);
-
-            pf.Start();
-
-            return pf;
+            return PortForwarders.First(p => p.Equals(pf));
         }
 
-        public void RemovePortForward(PortForwarder pf)
-        {
-            pf.Stop();
-            PortForwarders.Remove(pf);
-        }
+        PortForwarders.Add(pf);
+
+        pf.Start();
+
+        return pf;
+    }
+
+    public void RemovePortForward(PortForwarder pf)
+    {
+        pf.Stop();
+        PortForwarders.Remove(pf);
     }
 }
