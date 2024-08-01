@@ -10,7 +10,7 @@ using SkiaSharp;
 
 namespace KubeUI.Views;
 
-public class ClusterView : MyViewBase<ClusterViewModel>, IDisposable
+public sealed class ClusterView : MyViewBase<ClusterViewModel>
 {
     public ClusterView()
     {
@@ -23,7 +23,7 @@ public class ClusterView : MyViewBase<ClusterViewModel>, IDisposable
     {
         if (ViewModel != null)
         {
-            Dispatcher.UIThread.Invoke(ViewModel.RefreshData);
+            Dispatcher.UIThread.Post(ViewModel.RefreshData);
         }
     }
 
@@ -149,13 +149,15 @@ public class ClusterView : MyViewBase<ClusterViewModel>, IDisposable
                         .FontSize(25),
                     new ResourceListView()
                         .Row(1)
-                        .SetProp(DataContextProperty, vm.EventsVM)
+                        .DataContext(vm.EventsVM)
                 )
 
         );
 
-    public void Dispose()
+    protected override void OnUnloaded(RoutedEventArgs e)
     {
+        base.OnUnloaded(e);
+
         _timer.Stop();
         _timer.Tick -= S_timer_Tick;
     }
