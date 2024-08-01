@@ -54,7 +54,7 @@
     <PackageReference Include="FluentAvaloniaUI" Version="2.1.0-preview6" />
     <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia" Version="2.1.0" />
     <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia.Fluent" Version="2.1.0" />
-    <PackageReference Include="Irihi.Ursa" Version="0.3.0-beta20240708" />
+    <PackageReference Include="Irihi.Ursa" Version="1.0.0" />
     <PackageReference Include="Irihi.Ursa.Themes.Semi" Version="0.3.0-beta20240708" />
     <PackageReference Include="JsonPathLINQ" Version="1.0.0-alpha.10" />
     <PackageReference Include="KubernetesClient" Version="14.0.2" />
