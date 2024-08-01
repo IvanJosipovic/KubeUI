@@ -29,9 +29,6 @@ public class TestApp : Application
         services.AddSingleton<IGenerator, Generator>();
         services.AddSingleton<IFactory, DockFactory>();
 
-        // Windows
-        services.AddTransient<MainWindow>();
-
         var provider = services.BuildServiceProvider();
         Resources[typeof(IServiceProvider)] = provider;
 

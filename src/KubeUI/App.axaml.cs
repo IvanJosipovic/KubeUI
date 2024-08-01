@@ -91,7 +91,7 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = _serviceProvider.GetRequiredService<MainWindow>();
+            desktop.MainWindow = MainWindow.Build();
             desktop.MainWindow.DataContext = _serviceProvider.GetRequiredService<MainViewModel>();
             TopLevel = TopLevel.GetTopLevel(desktop.MainWindow);
         }
