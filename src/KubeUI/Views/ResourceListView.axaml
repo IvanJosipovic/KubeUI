@@ -45,6 +45,7 @@
                     Width="300"
                     HorizontalAlignment="Right"
                     VerticalContentAlignment="Center"
+                    Background="Transparent"
                     Classes="ClearButton"
                     Text="{ReflectionBinding SearchQuery}"
                     Watermark="Search" />

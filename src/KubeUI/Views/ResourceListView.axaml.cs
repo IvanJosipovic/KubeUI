@@ -112,11 +112,11 @@ public partial class ResourceListView : UserControl
 
                 if (columnDefinition.Sort == SortDirection.Ascending)
                 {
-                    await Dispatcher.UIThread.InvokeAsync(() => column.Sort(ListSortDirection.Ascending));
+                    Dispatcher.UIThread.Post(() => column.Sort(ListSortDirection.Ascending));
                 }
                 else if (columnDefinition.Sort == SortDirection.Descending)
                 {
-                    await Dispatcher.UIThread.InvokeAsync(() => column.Sort(ListSortDirection.Descending));
+                    Dispatcher.UIThread.Post(() => column.Sort(ListSortDirection.Descending));
                 }
             }
             catch (Exception ex)
