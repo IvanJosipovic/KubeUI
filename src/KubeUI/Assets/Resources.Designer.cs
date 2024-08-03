@@ -169,6 +169,42 @@ namespace KubeUI.Assets {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Remove Cluster: {0}.
+        /// </summary>
+        public static string ClusterListViewModel_Delete_Content {
+            get {
+                return ResourceManager.GetString("ClusterListViewModel_Delete_Content", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Yes.
+        /// </summary>
+        public static string ClusterListViewModel_Delete_Primary {
+            get {
+                return ResourceManager.GetString("ClusterListViewModel_Delete_Primary", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No.
+        /// </summary>
+        public static string ClusterListViewModel_Delete_Secondary {
+            get {
+                return ResourceManager.GetString("ClusterListViewModel_Delete_Secondary", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Warning.
+        /// </summary>
+        public static string ClusterListViewModel_Delete_Title {
+            get {
+                return ResourceManager.GetString("ClusterListViewModel_Delete_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Clusters.
         /// </summary>
         public static string ClusterListViewModel_Title {
@@ -210,6 +246,15 @@ namespace KubeUI.Assets {
         public static string MainView_Menu_File {
             get {
                 return ResourceManager.GetString("MainView_Menu_File", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Clusters.
+        /// </summary>
+        public static string MainView_Menu_File_Clusters {
+            get {
+                return ResourceManager.GetString("MainView_Menu_File_Clusters", resourceCulture);
             }
         }
         

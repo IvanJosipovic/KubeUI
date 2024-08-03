@@ -1,63 +1,44 @@
-using k8s.Models;
+﻿using k8s.Models;
 using k8s;
 using Avalonia.Data.Converters;
-using KubeUI.Client.Informer;
-using System.Reflection;
+using Ursa.Controls;
 using Avalonia.Controls.Templates;
-using KubeUI.ViewModels;
 using Avalonia.Styling;
+using KubeUI.Client.Informer;
 
 namespace KubeUI.Views;
 
-public partial class ResourceListView : UserControl
+public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
-    private readonly ILogger<ResourceListView> _logger;
+    DataGrid Grid;
+
+    private readonly ILogger<ResourceListView<T>> _logger;
 
     public ResourceListView()
     {
-        _logger = Application.Current.GetRequiredService<ILogger<ResourceListView>>();
-
-        InitializeComponent();
+        _logger = Application.Current.GetRequiredService<ILogger<ResourceListView<T>>>();
     }
 
-    protected override void OnDataContextChanged(EventArgs e)
+    private void GenerateGrid()
     {
-        base.OnDataContextChanged(e);
-
-        if (DataContext == null)
-        {
-            return;
-        }
-
-        var resourceType = DataContext.GetType().GenericTypeArguments[0];
-
-        var methodInfo = GetType().GetMethod(nameof(GenerateGrid), BindingFlags.NonPublic | BindingFlags.Instance);
-
-        methodInfo.MakeGenericMethod(resourceType).Invoke(this, null);
-    }
-
-    private async Task GenerateGrid<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
-    {
-        var resourceType = typeof(T);
-
-        var definition = ((ResourceListViewModel<T>)DataContext!).ViewDefinition;
-
         Grid.Columns.Clear();
+
+        var resourceType = typeof(T);
 
         var converter = new DataGridLengthConverter();
 
-        foreach (var columnDefinition in definition.Columns)
+        foreach (var columnDefinition in ViewModel.ViewDefinition.Columns)
         {
             try
             {
-                var columnDisplay = columnDefinition.GetType().GetProperty(nameof(ResourceListViewDefinitionColumn<V1Pod, string>.Display)).GetValue(columnDefinition);
+                var columnDisplay = (Func<T,string>)columnDefinition.GetType().GetProperty(nameof(ResourceListViewDefinitionColumn<T, string>.Display)).GetValue(columnDefinition);
 
-                var columnField = columnDefinition.GetType().GetProperty(nameof(ResourceListViewDefinitionColumn<V1Pod, string>.Field)).GetValue(columnDefinition);
+                var columnField = columnDefinition.GetType().GetProperty(nameof(ResourceListViewDefinitionColumn<T, string>.Field)).GetValue(columnDefinition);
 
                 // Create Sort FuncComparer
                 var colType = columnField.GetType().GenericTypeArguments[1];
-                var sortConverterType = typeof(FuncComparer<,>).MakeGenericType(typeof(T), colType);
-                var sortConverter = Activator.CreateInstance(sortConverterType, columnField) as IComparer;
+                //var sortConverterType = typeof(FuncComparer<,>).MakeGenericType(resourceType, colType);
+                //var sortConverter = Activator.CreateInstance(sortConverterType, columnField) as IComparer;
 
                 DataGridColumn column = null;
 
@@ -66,17 +47,16 @@ public partial class ResourceListView : UserControl
                     column = new DataGridTemplateColumn()
                     {
                         Header = columnDefinition.Name,
+                        //CustomSortComparer = sortConverter,
                         SortMemberPath = "Value",
-                        CanUserSort = true,
-                        CustomSortComparer = sortConverter,
                         CellTemplate = new FuncDataTemplate<KeyValuePair<NamespacedName, T>>((item, _) =>
                         {
                             var control = Application.Current.GetRequiredService(columnDefinition.CustomControl) as Control;
                             control.DataContext = item.Value;
 
-                            if (columnDefinition.CustomControl.GetProperty("Cluster") is PropertyInfo prop)
+                            if (control is IInitalizeCluster init)
                             {
-                                prop.SetValue(control, DataContext.GetType().GetProperty(nameof(ResourceListViewModel<V1Pod>.Cluster)).GetValue(DataContext));
+                                init.Initialize(ViewModel.Cluster);
                             }
 
                             return control;
@@ -86,20 +66,17 @@ public partial class ResourceListView : UserControl
                 else
                 {
                     // Create Display FuncValueConverter
-                    var converterType = typeof(FuncValueConverter<,>).MakeGenericType(typeof(T), typeof(string));
-                    var displayValueConverter = Activator.CreateInstance(converterType, columnDisplay ?? columnField) as IValueConverter;
-
                     column = new DataGridTextColumn
                     {
                         Binding = new Binding()
                         {
                             Path = "Value",
-                            Converter = displayValueConverter,
+                            Converter = new FuncValueConverter<T, object>(columnDisplay ?? (Func<T, object>)columnField),
+                            Mode = BindingMode.OneWay
                         },
                         Header = columnDefinition.Name,
+                        //CustomSortComparer = sortConverter,
                         SortMemberPath = "Value",
-                        CustomSortComparer = sortConverter,
-                        CanUserSort = true,
                     };
                 }
 
@@ -110,14 +87,7 @@ public partial class ResourceListView : UserControl
 
                 Grid.Columns.Add(column);
 
-                if (columnDefinition.Sort == SortDirection.Ascending)
-                {
-                    Dispatcher.UIThread.Post(() => column.Sort(ListSortDirection.Ascending));
-                }
-                else if (columnDefinition.Sort == SortDirection.Descending)
-                {
-                    Dispatcher.UIThread.Post(() => column.Sort(ListSortDirection.Descending));
-                }
+                Dispatcher.UIThread.Post(() => column.Sort(columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending));
             }
             catch (Exception ex)
             {
@@ -129,25 +99,25 @@ public partial class ResourceListView : UserControl
 
         Grid.ContextMenu.Items.Clear();
 
-        if (definition.DefaultMenuItems)
+        if (ViewModel.ViewDefinition.DefaultMenuItems)
         {
-            Grid.ContextMenu.Items.Add(CreateMenuItem(new () { Header = "View", CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewCommand), CommandParameterPath = "SelectedItem" }));
-            Grid.ContextMenu.Items.Add(CreateMenuItem(new () { Header = "View Yaml", CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewYamlCommand), CommandParameterPath = "SelectedItem" }));
-            Grid.ContextMenu.Items.Add(CreateMenuItem(new () { Header = "Delete", CommandPath = nameof(ResourceListViewModel<V1Pod>.DeleteCommand), CommandParameterPath = "SelectedItems" }));
+            Grid.ContextMenu.Items.Add(CreateMenuItem(new() { Header = "View", CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewCommand), CommandParameterPath = "SelectedItem" }));
+            Grid.ContextMenu.Items.Add(CreateMenuItem(new() { Header = "View Yaml", CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewYamlCommand), CommandParameterPath = "SelectedItem" }));
+            Grid.ContextMenu.Items.Add(CreateMenuItem(new() { Header = "Delete", CommandPath = nameof(ResourceListViewModel<V1Pod>.DeleteCommand), CommandParameterPath = "SelectedItems" }));
         }
 
-        if (definition.MenuItems != null)
+        if (ViewModel.ViewDefinition.MenuItems != null)
         {
             Grid.ContextMenu.Items.Add(new Separator());
 
-            foreach (var item in definition.MenuItems)
+            foreach (var item in ViewModel.ViewDefinition.MenuItems)
             {
                 Grid.ContextMenu.Items.Add(CreateMenuItem(item));
             }
         }
     }
 
-    private readonly struct FuncComparer<T,T2> : IComparer
+    private readonly struct FuncComparer<T, T2> : IComparer
     {
         private readonly Func<T, T2> _cmp;
 
@@ -319,5 +289,75 @@ public partial class ResourceListView : UserControl
         }
 
         return styles;
+    }
+
+    protected override object Build(ResourceListViewModel<T>? vm)
+    {
+        var controls = new Grid()
+            .Rows("Auto,*")
+            .Children([
+                new Grid()
+                    .Row(0)
+                    .Cols("Auto,Auto,*")
+                    .Children([
+                        new Button()
+                            .Col(0)
+                            .Command(vm.NewResourceCommand)
+                            .IsVisible(@vm.ViewDefinition.ShowNewResource)
+                            .ToolTip(Assets.Resources.ResourceListView_NewResource)
+                            .Content(new PathIcon() { Data = (Geometry)Application.Current.FindResource("add_square_regular") }),
+                        new Label()
+                            .Col(1)
+                            .Width(200)
+                            .VerticalContentAlignment(VerticalAlignment.Center)
+                            .Content(@vm.DataGridObjects.Count, null, new FuncValueConverter<int, string>((x) => string.Format("Items: {0}", x))),
+                        new Grid()
+                            .Col(2)
+                            .HorizontalAlignment(HorizontalAlignment.Right)
+                            .Cols("*,*")
+                            .Children([
+                                new TextBox()
+                                    .Col(0)
+                                    .Width(300)
+                                    .HorizontalAlignment(HorizontalAlignment.Right)
+                                    .VerticalAlignment(VerticalAlignment.Center)
+                                    .Background(Brushes.Transparent)
+                                    .Text(@vm.SearchQuery)
+                                    .Watermark("Search"),
+
+                                new MultiComboBox()
+                                    .Ref(out var Namespaces)
+                                    .Col(1)
+                                    .Width(300)
+                                    .MaxHeight(20)
+                                    .HorizontalAlignment(HorizontalAlignment.Right)
+                                    .Classes("ClearButton")
+                                    .IsVisible(@vm.ViewDefinition.ShowNamespaces)
+                                    .ItemsSource(@vm.Cluster.Namespaces.Values)
+                                    .Set(MultiComboBox.SelectedItemsProperty, @vm.Cluster.SelectedNamespaces)
+                                    .Set(MultiComboBox.SelectedItemTemplateProperty, new FuncDataTemplate<V1Namespace?>((x,y) => new TextBlock().Text(@x?.Metadata.Name)))
+                                    .Set(MultiComboBox.ItemTemplateProperty, new FuncDataTemplate<V1Namespace?>((x,y) => new TextBlock().Text(@x?.Metadata.Name)))
+                            ]),
+
+                        ]),
+                new DataGrid()
+                .Ref(out Grid)
+                .Row(1)
+                .Set(DataGrid.ItemsSourceProperty, @vm.DataGridObjects)
+                .Set(DataGrid.SelectedItemProperty, @vm.SelectedItem)
+                .Set(x => {
+                    x.CanUserReorderColumns = true;
+                    x.CanUserResizeColumns = true;
+                    x.GridLinesVisibility = DataGridGridLinesVisibility.All;
+                    x.IsReadOnly = true;
+                    x.MinColumnWidth = 90;
+                    x.RowHeight = 32;
+                    return x;
+                }),
+                ]);
+
+        GenerateGrid();
+
+        return controls;
     }
 }

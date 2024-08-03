@@ -1,4 +1,5 @@
-﻿using KubeUI.ViewModels;
+﻿using k8s.Models;
+using KubeUI.ViewModels;
 using LiveChartsCore.Defaults;
 using LiveChartsCore.Measure;
 using LiveChartsCore.SkiaSharpView;
@@ -66,7 +67,7 @@ public sealed class ClusterView : MyViewBase<ClusterViewModel>
             new PieChart()
                 .Row(0).Col(0)
                 .SetProp(PieChart.TitleProperty, SetTitle("CPU"))
-                ._set(PieChart.MaxValueProperty, new Binding("CpuCapacity.Value"))
+                .Set(PieChart.MaxValueProperty, @vm.CpuCapacity.Value)
                 .SetProp(PieChart.SeriesProperty, GaugeGenerator.BuildSolidGauge(
                     new GaugeItem(vm.CpuCapacity, series => {
                         SetSeries("Capacity", series);
@@ -99,7 +100,7 @@ public sealed class ClusterView : MyViewBase<ClusterViewModel>
             new PieChart()
                 .Row(0).Col(1)
                 .SetProp(PieChart.TitleProperty, SetTitle("Memory"))
-                ._set(PieChart.MaxValueProperty, new Binding("MemoryCapacity.Value"))
+                .Set(PieChart.MaxValueProperty, @vm.MemoryCapacity.Value)
                 .SetProp(PieChart.SeriesProperty, GaugeGenerator.BuildSolidGauge(
                     new GaugeItem(vm.MemoryCapacity, series => {
                         SetSeries("Capacity", series);
@@ -132,7 +133,7 @@ public sealed class ClusterView : MyViewBase<ClusterViewModel>
             new PieChart()
                 .Row(0).Col(2)
                 .SetProp(PieChart.TitleProperty, SetTitle("Pods"))
-                ._set(PieChart.MaxValueProperty, new Binding("MaxPods.Value"))
+                .Set(PieChart.MaxValueProperty, @vm.MaxPods.Value)
                 .SetProp(PieChart.SeriesProperty, GaugeGenerator.BuildSolidGauge(
                     new GaugeItem(vm.MaxPods, series => SetSeries("Capacity", series)),
                     new GaugeItem(vm.TotalPods, series => SetSeries("Count", series))
@@ -147,7 +148,7 @@ public sealed class ClusterView : MyViewBase<ClusterViewModel>
                         .Row(0)
                         .Text("Events")
                         .FontSize(25),
-                    new ResourceListView()
+                    new ResourceListView<Corev1Event>()
                         .Row(1)
                         .DataContext(vm.EventsVM)
                 )

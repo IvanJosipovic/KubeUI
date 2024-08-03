@@ -187,6 +187,14 @@ public sealed partial class MainViewModel : ViewModelBase
         _ = Task.Run(CheckForUpdates);
     }
 
+    [RelayCommand]
+    private void OpenClusters()
+    {
+        var vm = Application.Current.GetRequiredService<ClusterListViewModel>();
+
+        Factory?.AddToDocuments(vm);
+    }
+
     private async Task CheckForUpdates()
     {
         var sor = new GithubSource("https://github.com/IvanJosipovic/KubeUI", null, true);

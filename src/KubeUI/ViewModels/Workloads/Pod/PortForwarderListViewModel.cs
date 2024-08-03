@@ -5,7 +5,7 @@ using KubeUI.Client;
 
 namespace KubeUI.ViewModels;
 
-public sealed partial class PortForwarderListViewModel : ViewModelBase
+public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitalizeCluster
 {
     private readonly IDialogService _dialogService;
 
@@ -56,5 +56,11 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase
     private bool CanOpen(PortForwarder pf)
     {
         return pf != null;
+    }
+
+    public void Initialize(Cluster cluster)
+    {
+        _cluster = cluster;
+        Id = cluster.Name + nameof(PortForwarderListViewModel);
     }
 }

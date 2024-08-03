@@ -24,6 +24,10 @@ public sealed class MainView : MyViewBase<MainViewModel>
                             .Header(Assets.Resources.MainView_Menu_File)
                             .Items([
                                 new MenuItem()
+                                    .Header(Assets.Resources.MainView_Menu_File_Clusters)
+                                    .Command(vm.OpenClustersCommand),
+                                new Separator(),
+                                new MenuItem()
                                     .Header(Assets.Resources.MainView_Menu_File_Exit)
                                     .Command(vm.CloseCommand),
                                 ]),
@@ -45,6 +49,6 @@ public sealed class MainView : MyViewBase<MainViewModel>
                 new DockControl()
                     .Row(1)
                     .Margin(4)
-                    .SetProp(DockControl.LayoutProperty, @vm.Layout)
+                    .Set(DockControl.LayoutProperty, @vm.Layout)
             ]);
 }

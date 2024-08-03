@@ -18,10 +18,6 @@ using Swordfish.NET.Collections;
 
 namespace KubeUI.ViewModels;
 
-[Browsable(false)]
-[EditorBrowsable(EditorBrowsableState.Never)]
-internal class DemoResourceListViewModel : ResourceListViewModel<V1Pod> { public DemoResourceListViewModel() { } }
-
 public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster, IDisposable where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     private readonly ILogger<ResourceListViewModel<T>> _logger;
@@ -855,7 +851,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
     private void View(object item)
     {
         var root = Factory.GetDockable<IRootDock>("Root");
-        var pinnedDoc = root.RightPinnedDockables?.FirstOrDefault(x => x.Id == "Properties");
+        var pinnedDoc = root.RightPinnedDockables?.FirstOrDefault(x => x.Id == nameof(ResourcePropertiesViewModel<T>));
 
         if (pinnedDoc != null)
         {
@@ -864,7 +860,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
 
         var doc = Factory.GetDockable<IDock>("RightDock");
 
-        var existingDock = doc.VisibleDockables.FirstOrDefault(x => x.Id == "Properties");
+        var existingDock = doc.VisibleDockables.FirstOrDefault(x => x.Id == nameof(ResourcePropertiesViewModel<T>));
 
         if (existingDock != null)
         {

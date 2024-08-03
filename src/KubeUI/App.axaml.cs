@@ -51,7 +51,7 @@ public partial class App : Application
         services.Scan(x => x.FromCallingAssembly().AddClasses().UsingAttributes());
 
         services.Scan(scan => scan
-        .FromCallingAssembly()
+            .FromCallingAssembly()
                 .AddClasses(classes => classes.AssignableToAny([typeof(UserControl), typeof(ViewModelBase), typeof(MyViewBase<>)]))
                 .AsSelf()
                 .WithTransientLifetime()

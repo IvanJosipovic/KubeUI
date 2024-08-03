@@ -4,32 +4,6 @@ using KubeUI.Client;
 
 namespace KubeUI.ViewModels;
 
-[Browsable(false)]
-[EditorBrowsable(EditorBrowsableState.Never)]
-internal class DemoResourcePropertiesViewModel : ResourcePropertiesViewModel<V1Deployment>
-{
-    public DemoResourcePropertiesViewModel()
-    {
-        Object = new V1Deployment()
-        {
-            Metadata = new()
-            {
-                Name = "Demo",
-                NamespaceProperty = "NS",
-                Labels = new Dictionary<string,string>()
-                {
-                    { "app", "demo" },
-                },
-                Annotations = new Dictionary<string, string>()
-                {
-                    { "ann1", "demo" },
-                },
-                CreationTimestamp =  DateTime.Now,
-            },
-        };
-    }
-}
-
 public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     [ObservableProperty]
@@ -45,7 +19,7 @@ public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable
     public ResourcePropertiesViewModel()
     {
         Title = Resources.ResourcePropertiesViewModel_Title;
-        Id = "Properties";
+        Id = nameof(ResourcePropertiesViewModel<T>);
     }
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)

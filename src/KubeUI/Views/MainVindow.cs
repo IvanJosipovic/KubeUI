@@ -16,7 +16,7 @@ public static class MainWindow
                                 new ExperimentalAcrylicMaterial()
                                     .BackgroundSource(AcrylicBackgroundSource.Digger)
                                     .FallbackColor("AcrylicFallbackColor".GetDynamicResource())
-                                    .MaterialOpacity(0.55)
+                                    .MaterialOpacity(0.80)
                                     .TintColor("SystemAltHighColor".GetDynamicResource())
                                     .TintOpacity(0.0)
                                 ),

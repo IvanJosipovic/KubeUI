@@ -64,13 +64,11 @@ public sealed partial class ClusterManager : ObservableObject
         });
     }
 
-    [RelayCommand]
     private void LoadClusters()
     {
         LoadFromConfigFromPath(KubernetesClientConfiguration.KubeConfigDefaultLocation);
     }
 
-    [RelayCommand]
     private void LoadFromConfigFromPath(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
@@ -115,5 +113,37 @@ public sealed partial class ClusterManager : ObservableObject
     public Cluster? GetCluster(string name)
     {
         return Clusters.FirstOrDefault(c => c.Name == name);
+    }
+
+    public void RemoveCluster(Cluster cluster)
+    {
+        if (!string.IsNullOrEmpty(cluster.KubeConfigPath))
+        {
+            try
+            {
+                if (File.Exists(cluster.KubeConfigPath))
+                {
+                    var config = KubernetesClientConfiguration.LoadKubeConfig(cluster.KubeConfigPath);
+
+                    var context = config.Contexts.First(x => x.ContextDetails.Cluster == cluster.Name);
+
+                    ((List<k8s.KubeConfigModels.Cluster>)config.Clusters).RemoveAll(c => c.Name == context.ContextDetails.Cluster);
+
+                    ((List<k8s.KubeConfigModels.User>)config.Users).RemoveAll(c => c.Name == context.ContextDetails.User);
+
+                    ((List<k8s.KubeConfigModels.Context>)config.Contexts).Remove(context);
+
+                    var yaml = KubernetesYaml.Serialize(config);
+
+                    File.WriteAllText(cluster.KubeConfigPath, yaml);
+
+                    Clusters.Remove(cluster);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error Removing Cluster from configuration");
+            }
+        }
     }
 }

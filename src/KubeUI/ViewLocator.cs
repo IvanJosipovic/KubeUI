@@ -1,47 +1,64 @@
 using Avalonia.Controls.Templates;
 using Dock.Model.Core;
+using KubeUI.Views;
 
 namespace KubeUI;
 
 public sealed class ViewLocator : IDataTemplate
 {
+    Type[] types;
+
     public Control Build(object? data)
     {
         var modelType = data.GetType();
-        string? name;
+        Type viewType;
+
         if (modelType.IsGenericType)
         {
-            name = modelType.GetGenericTypeDefinition().FullName;
+            types ??= GetType().Assembly.GetExportedTypes();
+
+            var genericModelType = modelType.GetGenericTypeDefinition();
+
+            var name = genericModelType.FullName;
             name = name[..name.IndexOf('`')];
+            name = name.Replace("ViewModel", "View");
+
+            viewType = Type.GetType(name);
+
+            if (viewType == null)
+            {
+                var genericViewType = types.FirstOrDefault(x =>
+                    x.BaseType?.Name.Equals(typeof(MyViewBase<object>).Name) == true &&
+                    (
+                        (x.BaseType.GenericTypeArguments[0].IsGenericType && x.BaseType?.GenericTypeArguments[0].GetGenericTypeDefinition() == genericModelType)
+                        ||
+                        (x.BaseType?.GenericTypeArguments[0] == genericModelType)
+                    )
+                );
+
+                if (genericViewType != null)
+                {
+                    viewType = genericViewType.MakeGenericType(modelType.GenericTypeArguments[0]);
+                }
+            }
         }
         else
         {
-            name = modelType.FullName;
+            viewType = Type.GetType(modelType.FullName.Replace("ViewModel", "View"));
         }
 
-        name = name.Replace("ViewModel", "View");
-
-        if (name is null)
+        if (viewType is { })
         {
-            return new TextBlock { Text = "Invalid Data Type" };
-        }
-        var type = Type.GetType(name);
-        if (type is { })
-        {
-            var instance = Application.Current.GetRequiredService(type);
+            var instance = Application.Current.GetRequiredService(viewType);
             if (instance is { })
             {
                 return (Control)instance;
             }
-            else
-            {
-                return new TextBlock { Text = "Create Instance Failed: " + type.FullName };
-            }
+
+            return new TextBlock { Text = "Create Instance Failed: " + viewType.FullName };
         }
-        else
-        {
-            return new TextBlock { Text = "Type Not Found: " + name };
-        }
+
+        return new TextBlock { Text = "View not found for: " + modelType.FullName };
     }
 
     public bool Match(object? data)

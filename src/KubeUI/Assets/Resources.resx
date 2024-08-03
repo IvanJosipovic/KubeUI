@@ -290,4 +290,19 @@ Are you sure?</value>
   <data name="PortForwarderListViewModel_Title" xml:space="preserve">
     <value>Port Forwarding</value>
   </data>
+  <data name="MainView_Menu_File_Clusters" xml:space="preserve">
+    <value>Clusters</value>
+  </data>
+  <data name="ClusterListViewModel_Delete_Content" xml:space="preserve">
+    <value>Remove Cluster: {0}</value>
+  </data>
+  <data name="ClusterListViewModel_Delete_Primary" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="ClusterListViewModel_Delete_Secondary" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="ClusterListViewModel_Delete_Title" xml:space="preserve">
+    <value>Warning</value>
+  </data>
 </root>
