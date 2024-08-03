@@ -1,3 +1,4 @@
 [submodule "src/Avalonia.Markup.Declarative"]
 	path = src/Avalonia.Markup.Declarative
-	url = https://github.com/AvaloniaUI/Avalonia.Markup.Declarative
+	url = https://github.com/IvanJosipovic/Avalonia.Markup.Declarative
+	branch = dev
