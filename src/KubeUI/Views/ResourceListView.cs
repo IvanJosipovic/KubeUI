@@ -10,7 +10,7 @@ namespace KubeUI.Views;
 
 public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
-    DataGrid Grid;
+    DataGrid _grid;
 
     private readonly ILogger<ResourceListView<T>> _logger;
 
@@ -21,9 +21,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
     private void GenerateGrid()
     {
-        Grid.Columns.Clear();
-
-        var resourceType = typeof(T);
+        _grid.Columns.Clear();
 
         var converter = new DataGridLengthConverter();
 
@@ -37,8 +35,8 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
                 // Create Sort FuncComparer
                 var colType = columnField.GetType().GenericTypeArguments[1];
-                //var sortConverterType = typeof(FuncComparer<,>).MakeGenericType(resourceType, colType);
-                //var sortConverter = Activator.CreateInstance(sortConverterType, columnField) as IComparer;
+                var sortConverterType = typeof(MyFuncComparer<,>).MakeGenericType(typeof(T), colType);
+                var sortConverter = (IComparer)Activator.CreateInstance(sortConverterType, columnField);
 
                 DataGridColumn column = null;
 
@@ -47,8 +45,8 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                     column = new DataGridTemplateColumn()
                     {
                         Header = columnDefinition.Name,
-                        //CustomSortComparer = sortConverter,
-                        SortMemberPath = "Value",
+                        CustomSortComparer = sortConverter,
+                        CanUserSort = true,
                         CellTemplate = new FuncDataTemplate<KeyValuePair<NamespacedName, T>>((item, _) =>
                         {
                             var control = Application.Current.GetRequiredService(columnDefinition.CustomControl) as Control;
@@ -71,12 +69,12 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                         Binding = new Binding()
                         {
                             Path = "Value",
-                            Converter = new FuncValueConverter<T, object>(columnDisplay ?? (Func<T, object>)columnField),
+                            Converter = new FuncValueConverter<T, string>(columnDisplay ?? (Func<T, string>)columnField),
                             Mode = BindingMode.OneWay
                         },
                         Header = columnDefinition.Name,
-                        //CustomSortComparer = sortConverter,
-                        SortMemberPath = "Value",
+                        CanUserSort = true,
+                        CustomSortComparer = sortConverter,
                     };
                 }
 
@@ -85,7 +83,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                     column.Width = width;
                 }
 
-                Grid.Columns.Add(column);
+                _grid.Columns.Add(column);
 
                 Dispatcher.UIThread.Post(() => column.Sort(columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending));
             }
@@ -95,101 +93,25 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
             }
         }
 
-        Grid.ContextMenu ??= new ContextMenu();
+        _grid.ContextMenu ??= new ContextMenu();
 
-        Grid.ContextMenu.Items.Clear();
+        _grid.ContextMenu.Items.Clear();
 
         if (ViewModel.ViewDefinition.DefaultMenuItems)
         {
-            Grid.ContextMenu.Items.Add(CreateMenuItem(new() { Header = "View", CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewCommand), CommandParameterPath = "SelectedItem" }));
-            Grid.ContextMenu.Items.Add(CreateMenuItem(new() { Header = "View Yaml", CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewYamlCommand), CommandParameterPath = "SelectedItem" }));
-            Grid.ContextMenu.Items.Add(CreateMenuItem(new() { Header = "Delete", CommandPath = nameof(ResourceListViewModel<V1Pod>.DeleteCommand), CommandParameterPath = "SelectedItems" }));
+            _grid.ContextMenu.Items.Add(CreateMenuItem(new() { Header = "View", CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewCommand), CommandParameterPath = "SelectedItem" }));
+            _grid.ContextMenu.Items.Add(CreateMenuItem(new() { Header = "View Yaml", CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewYamlCommand), CommandParameterPath = "SelectedItem" }));
+            _grid.ContextMenu.Items.Add(CreateMenuItem(new() { Header = "Delete", CommandPath = nameof(ResourceListViewModel<V1Pod>.DeleteCommand), CommandParameterPath = "SelectedItems" }));
         }
 
         if (ViewModel.ViewDefinition.MenuItems != null)
         {
-            Grid.ContextMenu.Items.Add(new Separator());
+            _grid.ContextMenu.Items.Add(new Separator());
 
             foreach (var item in ViewModel.ViewDefinition.MenuItems)
             {
-                Grid.ContextMenu.Items.Add(CreateMenuItem(item));
+                _grid.ContextMenu.Items.Add(CreateMenuItem(item));
             }
-        }
-    }
-
-    private readonly struct FuncComparer<T, T2> : IComparer
-    {
-        private readonly Func<T, T2> _cmp;
-
-        public FuncComparer(Func<T, T2> cmp)
-        {
-            _cmp = cmp;
-        }
-
-        public int Compare(object? x, object? y)
-        {
-            if (x == null && y == null)
-            {
-                return 0;
-            }
-
-            if (x == null && y != null)
-            {
-                return -1;
-            }
-
-            if (x != null && y == null)
-            {
-                return 1;
-            }
-
-            var sourceItem = ((KeyValuePair<NamespacedName, T>)x).Value;
-            var destItem = ((KeyValuePair<NamespacedName, T>)y).Value;
-
-            var srcProperty = _cmp.Invoke(sourceItem);
-            var destProperty = _cmp.Invoke(destItem);
-
-            if (srcProperty == null && destProperty == null)
-            {
-                return 0;
-            }
-
-            if (srcProperty == null && destProperty != null)
-            {
-                return -1;
-            }
-
-            if (srcProperty != null && destProperty == null)
-            {
-                return 1;
-            }
-
-            if (srcProperty is string src && destProperty is string dest)
-            {
-                return src.CompareTo(dest);
-            }
-            else if (srcProperty is int src2 && destProperty is int dest2)
-            {
-                return src2.CompareTo(dest2);
-            }
-            else if (srcProperty is long src3 && destProperty is long dest3)
-            {
-                return src3.CompareTo(dest3);
-            }
-            else if (srcProperty is DateTime src4 && destProperty is DateTime dest4)
-            {
-                return src4.CompareTo(dest4);
-            }
-            else if (srcProperty is bool src5 && destProperty is bool dest5)
-            {
-                return src5.CompareTo(dest5);
-            }
-            else if (srcProperty is decimal src6 && destProperty is bool dest6)
-            {
-                return src6.CompareTo(dest6);
-            }
-
-            throw new NotImplementedException();
         }
     }
 
@@ -215,7 +137,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
         {
             menuItem.Bind(MenuItem.CommandParameterProperty, new Binding(menu.CommandParameterPath)
             {
-                Source = Grid,
+                Source = _grid,
             });
         }
 
@@ -326,7 +248,6 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                                     .Watermark("Search"),
 
                                 new MultiComboBox()
-                                    .Ref(out var Namespaces)
                                     .Col(1)
                                     .Width(300)
                                     .MaxHeight(20)
@@ -335,29 +256,105 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                                     .IsVisible(@vm.ViewDefinition.ShowNamespaces)
                                     .ItemsSource(@vm.Cluster.Namespaces.Values)
                                     .Set(MultiComboBox.SelectedItemsProperty, @vm.Cluster.SelectedNamespaces)
-                                    .Set(MultiComboBox.SelectedItemTemplateProperty, new FuncDataTemplate<V1Namespace?>((x,y) => new TextBlock().Text(@x?.Metadata.Name)))
-                                    .Set(MultiComboBox.ItemTemplateProperty, new FuncDataTemplate<V1Namespace?>((x,y) => new TextBlock().Text(@x?.Metadata.Name)))
+                                    .Set(MultiComboBox.SelectedItemTemplateProperty, new FuncDataTemplate<V1Namespace?>((x,y) => new Label().Content(@x?.Metadata.Name)))
+                                    .Set(MultiComboBox.ItemTemplateProperty, new FuncDataTemplate<V1Namespace?>((x,y) => new Label().Content(@x?.Metadata.Name)))
                             ]),
-
                         ]),
                 new DataGrid()
-                .Ref(out Grid)
-                .Row(1)
-                .Set(DataGrid.ItemsSourceProperty, @vm.DataGridObjects)
-                .Set(DataGrid.SelectedItemProperty, @vm.SelectedItem)
-                .Set(x => {
-                    x.CanUserReorderColumns = true;
-                    x.CanUserResizeColumns = true;
-                    x.GridLinesVisibility = DataGridGridLinesVisibility.All;
-                    x.IsReadOnly = true;
-                    x.MinColumnWidth = 90;
-                    x.RowHeight = 32;
-                    return x;
-                }),
-                ]);
+                    .Ref(out _grid)
+                    .Row(1)
+                    .Set(DataGrid.ItemsSourceProperty, @vm.DataGridObjects)
+                    .Set(DataGrid.SelectedItemProperty, @vm.SelectedItem)
+                    .Set(x => {
+                        x.CanUserReorderColumns = true;
+                        x.CanUserResizeColumns = true;
+                        x.CanUserSortColumns = true;
+                        x.GridLinesVisibility = DataGridGridLinesVisibility.All;
+                        x.IsReadOnly = true;
+                        x.MinColumnWidth = 90;
+                        x.RowHeight = 32;
+                        return x;
+                    }),
+            ]);
 
         GenerateGrid();
 
         return controls;
+    }
+}
+
+public readonly struct MyFuncComparer<TObj, TPtop> : IComparer
+{
+    private readonly Func<TObj, TPtop> _cmp;
+
+    public MyFuncComparer(Func<TObj, TPtop> cmp)
+    {
+        _cmp = cmp;
+    }
+
+    public int Compare(object? x, object? y)
+    {
+        if (x == null && y == null)
+        {
+            return 0;
+        }
+
+        if (x == null && y != null)
+        {
+            return -1;
+        }
+
+        if (x != null && y == null)
+        {
+            return 1;
+        }
+
+        var sourceItem = ((KeyValuePair<NamespacedName, TObj>)x).Value;
+        var destItem = ((KeyValuePair<NamespacedName, TObj>)y).Value;
+
+        var srcProperty = _cmp.Invoke(sourceItem);
+        var destProperty = _cmp.Invoke(destItem);
+
+        if (srcProperty == null && destProperty == null)
+        {
+            return 0;
+        }
+
+        if (srcProperty == null && destProperty != null)
+        {
+            return -1;
+        }
+
+        if (srcProperty != null && destProperty == null)
+        {
+            return 1;
+        }
+
+        if (srcProperty is string src && destProperty is string dest)
+        {
+            return src.CompareTo(dest);
+        }
+        else if (srcProperty is int src2 && destProperty is int dest2)
+        {
+            return src2.CompareTo(dest2);
+        }
+        else if (srcProperty is long src3 && destProperty is long dest3)
+        {
+            return src3.CompareTo(dest3);
+        }
+        else if (srcProperty is DateTime src4 && destProperty is DateTime dest4)
+        {
+            return src4.CompareTo(dest4);
+        }
+        else if (srcProperty is bool src5 && destProperty is bool dest5)
+        {
+            return src5.CompareTo(dest5);
+        }
+        else if (srcProperty is decimal src6 && destProperty is bool dest6)
+        {
+            return src6.CompareTo(dest6);
+        }
+
+        throw new NotImplementedException();
     }
 }

@@ -20,6 +20,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeUI.Tests", "tests\KubeUI.Tests\KubeUI.Tests.csproj", "{0E12FE2C-C264-4A9F-B895-09952B3ED43E}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Avalonia.Markup.Declarative.SourceGenerator", "src\Avalonia.Markup.Declarative\src\Avalonia.Markup.Declarative.SourceGenerator\Avalonia.Markup.Declarative.SourceGenerator.csproj", "{8BB30994-8C54-41A8-BCCC-2214FE968F37}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Avalonia.Markup.Declarative", "src\Avalonia.Markup.Declarative\src\Avalonia.Markup.Declarative\Avalonia.Markup.Declarative.csproj", "{A16F03CF-146C-4267-BBA4-0BB6FF482630}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,6 +42,14 @@ Global
 		{0E12FE2C-C264-4A9F-B895-09952B3ED43E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0E12FE2C-C264-4A9F-B895-09952B3ED43E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0E12FE2C-C264-4A9F-B895-09952B3ED43E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8BB30994-8C54-41A8-BCCC-2214FE968F37}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8BB30994-8C54-41A8-BCCC-2214FE968F37}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8BB30994-8C54-41A8-BCCC-2214FE968F37}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8BB30994-8C54-41A8-BCCC-2214FE968F37}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A16F03CF-146C-4267-BBA4-0BB6FF482630}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A16F03CF-146C-4267-BBA4-0BB6FF482630}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A16F03CF-146C-4267-BBA4-0BB6FF482630}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A16F03CF-146C-4267-BBA4-0BB6FF482630}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

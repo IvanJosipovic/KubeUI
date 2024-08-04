@@ -281,7 +281,7 @@ public sealed partial class Cluster : ObservableObject
                         {
                             var crd = (item as V1CustomResourceDefinition);
 
-                            var assembly = _generator.GenerateAssembly(crd);
+                            var assembly = _generator.GenerateAssembly(crd, "KubeUI.Models");
 
                             if (assembly.Item1 == null || assembly.Item2 == null)
                             {
