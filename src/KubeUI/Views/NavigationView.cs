@@ -15,14 +15,18 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
         return (Geometry)Application.Current.FindResource(x);
     });
 
-    private static FuncValueConverter<string?, bool> s_stringNullConverter => new((x) =>
-    {
-        return string.IsNullOrEmpty(x);
-    });
-
     protected override StyleGroup? BuildStyles() => [
-        new Style(x => x.Name("PART_PinnedDockGrid").Child().OfType<GridSplitter>().Child().OfType<Border>())
-            .Setter(Border.OpacityProperty, 0.0)
+        new Style(x => x.OfType<TreeViewItem>())
+            .Setter(TreeViewItem.BackgroundProperty, Brushes.Transparent)
+            .Setter(TreeViewItem.IsExpandedProperty, new Binding("IsExpanded")),
+
+        new Style(x => x.OfType<StackPanel>().Descendant().OfType<TreeViewItem>())
+            .Setter(StackPanel.OrientationProperty, Orientation.Horizontal),
+
+        new Style(x => Selectors.Or(x.OfType<Avalonia.Svg.Skia.Svg>(), x.OfType<PathIcon>()))
+            .Setter(Control.HeightProperty, 17.0)
+            .Setter(Control.WidthProperty, 17.0)
+            .Setter(Control.MarginProperty, new Thickness(0,0,4,0))
         ];
 
     protected override object Build(NavigationViewModel vm) =>
@@ -38,7 +42,6 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
             .DataTemplates([
                 new FuncTreeDataTemplate<Cluster>((vm,ns) =>
                     new StackPanel()
-                        .Orientation(Orientation.Horizontal)
                         .Children([
                             new CheckBox()
                                 .MinHeight(10)
@@ -66,20 +69,31 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
 
                 new FuncTreeDataTemplate<ResourceNavigationLink>((vm,ns) =>
                     new StackPanel()
-                        .Orientation(Orientation.Horizontal)
                         .Children([
                             new PathIcon()
-                                .Width(17)
-                                .Height(17)
-                                .Margin(0,0,4,0)
                                 .Data(@vm.StyleIcon, s_resoureConverter)
-                                .IsVisible(@vm.StyleIcon, s_stringNullConverter),
-                            new Avalonia.Svg.Skia.Svg(new Uri("/"))
-                                .Width(17)
-                                .Height(17)
-                                .Margin(0,0,4,0)
+                                .IsVisible(@vm.StyleIcon, Utilities.s_notNullConverter),
+                            new Avalonia.Svg.Skia.Svg(new Uri("avares://KubeUI/"))
                                 .Set(Avalonia.Svg.Skia.Svg.PathProperty, @vm.SvgIcon)
-                                .IsVisible(@vm.SvgIcon, s_stringNullConverter),
+                                .IsVisible(@vm.SvgIcon, Utilities.s_notNullConverter),
+                            new TextBlock()
+                                .Text(@vm.Name),
+                            new TextBlock()
+                                .Text(" "),
+                            new TextBlock()
+                                .Text(new Binding("Objects.Count", BindingMode.OneWay)), //todo fix
+                            ])
+                ,(x) => x.NavigationItems),
+
+                new FuncTreeDataTemplate<NavigationItem>((vm,ns) =>
+                    new StackPanel()
+                        .Children([
+                            new PathIcon()
+                                .Data(@vm.StyleIcon, s_resoureConverter)
+                                .IsVisible(@vm.StyleIcon, Utilities.s_notNullConverter),
+                            new Avalonia.Svg.Skia.Svg(new Uri("avares://KubeUI/"))
+                                .Set(Avalonia.Svg.Skia.Svg.PathProperty, @vm.SvgIcon)
+                                .IsVisible(@vm.SvgIcon, Utilities.s_notNullConverter),
                             new TextBlock()
                                 .Text(@vm.Name)
                             ])

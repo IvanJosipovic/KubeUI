@@ -1,6 +1,5 @@
 ﻿using Avalonia.Data.Converters;
 using System.Runtime.CompilerServices;
-using Avalonia.Markup.Declarative;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI;
@@ -8,6 +7,8 @@ namespace KubeUI;
 public static class Utilities
 {
     public static IValueConverter InverseBooleanConverter { get; } = new FuncValueConverter<bool, bool>(b => !b);
+
+    public static FuncValueConverter<string?, bool> s_notNullConverter => new((x) => x != null);
 
     public static T GetRequiredService<T>(this Application? app)
     {
