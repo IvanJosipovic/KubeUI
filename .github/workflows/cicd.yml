@@ -88,6 +88,8 @@ jobs:
             icon: --icon ../KubeUI/Assets/icon.icns
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: 'true'
 
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v4
