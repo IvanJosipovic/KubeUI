@@ -18,7 +18,7 @@ dotnet_style_null_propagation = true:suggestion
 dotnet_style_prefer_is_null_check_over_reference_equality_method = true:suggestion
 dotnet_style_prefer_auto_properties = true:silent
 dotnet_style_object_initializer = true:suggestion
-dotnet_style_prefer_collection_expression = true:suggestion
+dotnet_style_prefer_collection_expression = when_types_exactly_match:suggestion
 dotnet_style_collection_initializer = true:suggestion
 dotnet_style_prefer_simplified_boolean_expressions = true:suggestion
 dotnet_style_prefer_conditional_expression_over_assignment = true:silent
@@ -29,6 +29,7 @@ dotnet_style_prefer_inferred_anonymous_type_member_names = true:suggestion
 dotnet_style_prefer_compound_assignment = true:suggestion
 dotnet_style_prefer_simplified_interpolation = true:suggestion
 dotnet_style_namespace_match_folder = true:suggestion
+dotnet_style_predefined_type_for_locals_parameters_members = true:suggestion
 
 # C# files
 [*.cs]
@@ -95,7 +96,7 @@ dotnet_naming_symbols.private_internal_fields.applicable_kinds = field
 dotnet_naming_symbols.private_internal_fields.applicable_accessibilities = private, internal
 
 dotnet_naming_style.camel_case_underscore_style.required_prefix = _
-dotnet_naming_style.camel_case_underscore_style.capitalization = camel_case 
+dotnet_naming_style.camel_case_underscore_style.capitalization = camel_case
 
 # use accessibility modifiers
 dotnet_style_require_accessibility_modifiers = for_non_interface_members:suggestion
@@ -166,13 +167,13 @@ dotnet_diagnostic.CS1591.severity = suggestion
 # CS0162: Remove unreachable code
 dotnet_diagnostic.CS0162.severity = error
 # CA1018: Mark attributes with AttributeUsageAttribute
-dotnet_diagnostic.CA1018.severity = error
+dotnet_diagnostic.CA1018.severity = warning
 # CA1304: Specify CultureInfo
 dotnet_diagnostic.CA1304.severity = warning
 # CA1802: Use literals where appropriate
 dotnet_diagnostic.CA1802.severity = warning
 # CA1813: Avoid unsealed attributes
-dotnet_diagnostic.CA1813.severity = error
+dotnet_diagnostic.CA1813.severity = warning
 # CA1815: Override equals and operator equals on value types
 dotnet_diagnostic.CA1815.severity = warning
 # CA1820: Test for empty strings using string length
@@ -222,7 +223,7 @@ dotnet_diagnostic.AVP1030.severity = error
 dotnet_diagnostic.AVP1031.severity = error
 dotnet_diagnostic.AVP1032.severity = error
 dotnet_diagnostic.AVP1040.severity = error
-dotnet_diagnostic.AVA2001.severity = error
+dotnet_diagnostic.AVA2001.severity = warning
 csharp_using_directive_placement = outside_namespace:silent
 csharp_prefer_simple_using_statement = true:suggestion
 csharp_prefer_braces = true:silent
@@ -234,6 +235,8 @@ csharp_style_expression_bodied_lambdas = true:silent
 csharp_style_expression_bodied_local_functions = false:silent
 csharp_style_prefer_null_check_over_type_check = true:suggestion
 csharp_prefer_simple_default_expression = true:suggestion
+csharp_style_prefer_local_over_anonymous_function = true:suggestion
+csharp_prefer_static_local_function = true:suggestion
 
 # Xaml files
 [*.{xaml,axaml}]

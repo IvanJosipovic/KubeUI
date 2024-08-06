@@ -6,7 +6,6 @@ using HanumanInstitute.MvvmDialogs.Avalonia;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubernetesCRDModelGen;
 using KubeUI.Desktop;
-using KubeUI.ViewModels;
 using KubeUI.Views;
 using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
