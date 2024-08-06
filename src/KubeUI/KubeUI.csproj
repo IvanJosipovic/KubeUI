@@ -41,13 +41,13 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.1.1" />
-    <PackageReference Include="Avalonia.AvaloniaEdit" Version="11.0.6" />
+    <PackageReference Include="Avalonia.AvaloniaEdit" Version="11.1.0" />
     <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.1.1" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="11.1.1" />
     <!--<PackageReference Include="Avalonia.Markup.Declarative" Version="11.0.11" />-->
     <PackageReference Include="Avalonia.Svg.Skia" Version="11.1.0" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.1.1" />
-    <PackageReference Include="AvaloniaEdit.TextMate" Version="11.0.6" />
+    <PackageReference Include="AvaloniaEdit.TextMate" Version="11.1.0" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
     <PackageReference Include="Dock.Avalonia" Version="11.1.0.1" />
     <PackageReference Include="Dock.Model.Mvvm" Version="11.1.0.1" />
@@ -73,7 +73,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Scrutor" Version="4.2.2" />
-    <PackageReference Include="Semi.Avalonia" Version="11.1.0" />
+    <PackageReference Include="Semi.Avalonia" Version="11.1.0.1" />
     <PackageReference Include="Swordfish.NET.CollectionsV3" Version="3.3.12" />
     <PackageReference Include="Velopack" Version="0.0.583" />
     <PackageReference Include="YamlDotNet.System.Text.Json" Version="1.4.2" />
