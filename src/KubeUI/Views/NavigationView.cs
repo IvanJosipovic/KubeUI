@@ -20,7 +20,7 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
             .Setter(TreeViewItem.BackgroundProperty, Brushes.Transparent)
             .Setter(TreeViewItem.IsExpandedProperty, new Binding("IsExpanded")),
 
-        new Style(x => x.OfType<StackPanel>().Descendant().OfType<TreeViewItem>())
+        new Style(x => x.OfType<StackPanel>().Class("navigation-view-stack-panel"))
             .Setter(StackPanel.OrientationProperty, Orientation.Horizontal),
 
         new Style(x => Selectors.Or(x.OfType<Avalonia.Svg.Skia.Svg>(), x.OfType<PathIcon>()))
@@ -42,6 +42,7 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
             .DataTemplates([
                 new FuncTreeDataTemplate<Cluster>((vm,ns) =>
                     new StackPanel()
+                        .Classes("navigation-view-stack-panel")
                         .Children([
                             new CheckBox()
                                 .MinHeight(10)
@@ -69,6 +70,7 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
 
                 new FuncTreeDataTemplate<ResourceNavigationLink>((vm,ns) =>
                     new StackPanel()
+                        .Classes("navigation-view-stack-panel")
                         .Children([
                             new PathIcon()
                                 .Data(@vm.StyleIcon, s_resoureConverter)
@@ -87,6 +89,7 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
 
                 new FuncTreeDataTemplate<NavigationItem>((vm,ns) =>
                     new StackPanel()
+                        .Classes("navigation-view-stack-panel")
                         .Children([
                             new PathIcon()
                                 .Data(@vm.StyleIcon, s_resoureConverter)
