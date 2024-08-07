@@ -85,7 +85,10 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
                 _grid.Columns.Add(column);
 
-                Dispatcher.UIThread.Post(() => column.Sort(columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending));
+                if (columnDefinition.Sort != SortDirection.None)
+                {
+                    Dispatcher.UIThread.Post(() => column.Sort(columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending));
+                }
             }
             catch (Exception ex)
             {
