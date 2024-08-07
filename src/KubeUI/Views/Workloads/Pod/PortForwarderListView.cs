@@ -1,5 +1,4 @@
-﻿using Avalonia;
-using KubeUI.ViewModels;
+﻿using KubeUI.Client;
 
 namespace KubeUI.Views;
 
@@ -21,27 +20,27 @@ public sealed class PortForwarderListView : MyViewBase<PortForwarderListViewMode
                         x.Columns([
                             new DataGridTextColumn()
                             {
-                                Binding = new Binding("PodName"),
+                                Binding = new Binding(nameof(PortForwarder.PodName)),
                                 Header = "Pod Name",
                             },
                             new DataGridTextColumn()
                             {
-                                Binding = new Binding("Namespace"),
+                                Binding = new Binding(nameof(PortForwarder.Namespace)),
                                 Header = "Namespace",
                             },
                             new DataGridTextColumn()
                             {
-                                Binding = new Binding("ContainerPort"),
+                                Binding = new Binding(nameof(PortForwarder.ContainerPort)),
                                 Header = "Container Port",
                             },
                             new DataGridTextColumn()
                             {
-                                Binding = new Binding("LocalPort"),
+                                Binding = new Binding(nameof(PortForwarder.LocalPort)),
                                 Header = "Local Port",
                             },
                             new DataGridTextColumn()
                             {
-                                Binding = new Binding("Status"),
+                                Binding = new Binding(nameof(PortForwarder.Status)),
                                 Header = "Status",
                             },
                         ]);

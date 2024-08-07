@@ -6,9 +6,9 @@ namespace KubeUI;
 
 public static class Utilities
 {
-    public static IValueConverter InverseBooleanConverter { get; } = new FuncValueConverter<bool, bool>(b => !b);
+    public static FuncValueConverter<bool, bool> InverseBooleanConverter { get; } = new FuncValueConverter<bool, bool>(b => !b);
 
-    public static FuncValueConverter<string?, bool> s_notNullConverter => new((x) => x != null);
+    public static FuncValueConverter<object, bool> NotNullConverter { get; } = new FuncValueConverter<object, bool>((x) => x != null);
 
     public static T GetRequiredService<T>(this Application? app)
     {

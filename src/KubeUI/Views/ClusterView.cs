@@ -1,5 +1,4 @@
 ﻿using k8s.Models;
-using KubeUI.ViewModels;
 using LiveChartsCore.Defaults;
 using LiveChartsCore.Measure;
 using LiveChartsCore.SkiaSharpView;

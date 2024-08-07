@@ -1,6 +1,4 @@
-﻿using KubeUI.ViewModels;
-
-namespace KubeUI.Views;
+﻿namespace KubeUI.Views;
 
 public sealed class HomeView : MyViewBase<HomeViewModel>
 {

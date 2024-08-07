@@ -67,7 +67,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
                     str = RemoveAnsiEscapeSequences(str);
                     if (!string.IsNullOrEmpty(str))
                     {
-                       await Dispatcher.UIThread.InvokeAsync(() =>
+                       Dispatcher.UIThread.Post(() =>
                        {
                            if (str.Equals("\b", StringComparison.Ordinal) || str.Equals("\b \b", StringComparison.Ordinal))
                            {

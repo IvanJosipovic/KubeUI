@@ -1,6 +1,5 @@
 ﻿using Avalonia.Styling;
 using Dock.Avalonia.Controls;
-using KubeUI.ViewModels;
 
 namespace KubeUI.Views;
 

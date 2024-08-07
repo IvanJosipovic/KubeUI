@@ -3,7 +3,6 @@ using System.Text;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using k8s;
-using KubeUI.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Scrutor;
 

@@ -2,7 +2,6 @@
 using Avalonia.Input;
 using AvaloniaEdit;
 using AvaloniaEdit.TextMate;
-using KubeUI.ViewModels;
 using static AvaloniaEdit.TextMate.TextMate;
 using TextMateSharp.Grammars;
 
@@ -16,7 +15,6 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
     {
         _registryOptions = new RegistryOptions(ThemeName.Dark);
     }
-
 
     protected override object Build(ResourceYamlViewModel? vm)
     {
@@ -71,12 +69,12 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
                             return x;
                         })
                         .Set(TextEditor.DocumentProperty, @vm.YamlDocument, BindingMode.OneWay)
-                        .SetProp(TextEditor.FontFamilyProperty, new FontFamily("Consolas,Menlo,Monospace"))
-                        .SetProp(TextEditor.FontSizeProperty, 14.0)
-                        .SetProp(TextEditor.FontWeightProperty, FontWeight.Normal)
-                        .HorizontalScrollBarVisibility(ScrollBarVisibility.Auto)
+                        .Set(TextEditor.FontFamilyProperty, new FontFamily("Consolas,Menlo,Monospace"))
+                        .Set(TextEditor.FontSizeProperty, 14.0)
+                        .Set(TextEditor.FontWeightProperty, FontWeight.Normal)
                         .Set(TextEditor.IsReadOnlyProperty, @vm.EditMode, converter: Utilities.InverseBooleanConverter)
-                        .SetProp(TextEditor.ShowLineNumbersProperty, true)
+                        .Set(TextEditor.ShowLineNumbersProperty, true)
+                        .HorizontalScrollBarVisibility(ScrollBarVisibility.Auto)
                         .VerticalScrollBarVisibility(ScrollBarVisibility.Visible)
                         .ContextMenu([
                                 new MenuItem()

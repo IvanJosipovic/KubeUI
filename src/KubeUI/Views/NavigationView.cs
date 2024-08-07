@@ -2,7 +2,6 @@
 using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
 using Avalonia.Styling;
-using Avalonia.Svg.Skia;
 using KubeUI.Client;
 
 namespace KubeUI.Views;
@@ -74,10 +73,10 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
                         .Children([
                             new PathIcon()
                                 .Data(@vm.StyleIcon, s_resoureConverter)
-                                .IsVisible(@vm.StyleIcon, Utilities.s_notNullConverter),
+                                .IsVisible(@vm.StyleIcon, Utilities.NotNullConverter),
                             new Avalonia.Svg.Skia.Svg(new Uri("avares://KubeUI/"))
                                 .Set(Avalonia.Svg.Skia.Svg.PathProperty, @vm.SvgIcon)
-                                .IsVisible(@vm.SvgIcon, Utilities.s_notNullConverter),
+                                .IsVisible(@vm.SvgIcon, Utilities.NotNullConverter),
                             new TextBlock()
                                 .Text(@vm.Name),
                             new TextBlock()
@@ -93,10 +92,10 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
                         .Children([
                             new PathIcon()
                                 .Data(@vm.StyleIcon, s_resoureConverter)
-                                .IsVisible(@vm.StyleIcon, Utilities.s_notNullConverter),
+                                .IsVisible(@vm.StyleIcon, Utilities.NotNullConverter),
                             new Avalonia.Svg.Skia.Svg(new Uri("avares://KubeUI/"))
                                 .Set(Avalonia.Svg.Skia.Svg.PathProperty, @vm.SvgIcon)
-                                .IsVisible(@vm.SvgIcon, Utilities.s_notNullConverter),
+                                .IsVisible(@vm.SvgIcon, Utilities.NotNullConverter),
                             new TextBlock()
                                 .Text(@vm.Name)
                             ])
