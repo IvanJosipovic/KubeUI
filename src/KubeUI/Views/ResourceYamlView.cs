@@ -2,7 +2,6 @@
 using Avalonia.Input;
 using AvaloniaEdit;
 using AvaloniaEdit.TextMate;
-using static AvaloniaEdit.TextMate.TextMate;
 using TextMateSharp.Grammars;
 
 namespace KubeUI.Views;

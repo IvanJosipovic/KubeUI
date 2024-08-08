@@ -2,25 +2,34 @@
 using k8s;
 using Avalonia.Controls.Templates;
 using System.Text;
+using Avalonia.Controls.Primitives;
+using Avalonia.Styling;
 
 namespace KubeUI.Views;
 
 public sealed class ResourcePropertiesView<T> : MyViewBase<ResourcePropertiesViewModel<T>> where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
-    protected override StyleGroup? BuildStyles() => [];
+    protected override StyleGroup? BuildStyles() => [
+        new Style(x => x.OfType<PropertyItem>())
+            .Setter(MarginProperty, new Thickness(4,0,0,10))
+        ];
 
     protected override object Build(ResourcePropertiesViewModel<T>? vm)
     {
-        if (vm == null) return new StackPanel();
+        if (vm == null)
+            return new StackPanel();
 
         var sp = new StackPanel()
             .Children([
                 new PropertyItem()
-                    .Key("Name:")
+                    .Key("Name")
                     .Value(@vm.Object.Metadata.Name),
                 new PropertyItem()
-                    .Key("Namespace:")
+                    .Key("Namespace")
                     .Value(@vm.Object.Metadata.NamespaceProperty),
+                new PropertyItem()
+                    .Key("Created")
+                    .Value(vm.Object.Metadata.CreationTimestamp.ToString()),
                 ]);
 
         if (typeof(T) == typeof(V1Secret))
@@ -38,8 +47,9 @@ public sealed class ResourcePropertiesView<T> : MyViewBase<ResourcePropertiesVie
                     ))
             ]);
         }
-        return new Grid()
-            .Children(sp);
+        return new ScrollViewer()
+                .VerticalScrollBarVisibility(ScrollBarVisibility.Auto)
+                .Content(sp);
     }
 }
 
@@ -78,14 +88,20 @@ public partial class PropertyItem : ViewBase
     protected override object Build() =>
         new Grid()
             .DataContext(this)
-            .Cols("*,3*")
+            .Cols("*,2*")
             .VerticalAlignment(VerticalAlignment.Top)
             .Children([
                 new SelectableTextBlock()
                     .Row(0).Col(0)
-                    .Text(@Key),
-                new SelectableTextBlock()
+                    .Text(@Key)
+                    .TextWrapping(TextWrapping.Wrap),
+                new ScrollViewer()
                     .Row(0).Col(1)
-                    .Text(@Value),
+                    .MaxHeight(200)
+                    .VerticalScrollBarVisibility(ScrollBarVisibility.Auto)
+                    .Content(new SelectableTextBlock()
+                        .Text(@Value)
+                        .TextWrapping(TextWrapping.Wrap)
+                    ),
                 ]);
 }
