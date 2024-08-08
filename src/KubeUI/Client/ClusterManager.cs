@@ -30,7 +30,7 @@ public sealed partial class ClusterManager : ObservableObject
         LoadClusters();
     }
 
-    private async void KubernetesClientConfiguration_ExecStdError(object? sender, DataReceivedEventArgs e)
+    private void KubernetesClientConfiguration_ExecStdError(object? sender, DataReceivedEventArgs e)
     {
         if (string.IsNullOrEmpty(e.Data))
         {
