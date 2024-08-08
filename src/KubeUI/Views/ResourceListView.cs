@@ -276,6 +276,12 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                         x.IsReadOnly = true;
                         x.MinColumnWidth = 90;
                         x.RowHeight = 32;
+                        x.DoubleTapped += (s, e) => {
+                            if(vm.ViewCommand.CanExecute(x.SelectedItem))
+                            {
+                                vm.ViewCommand.Execute(x.SelectedItem);
+                            }
+                        };
                         return x;
                     }),
             ]);
