@@ -144,7 +144,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
     public IKubernetesObject<V1ObjectMeta> CloneObject(object obj)
     {
-        var source = KubernetesYaml.Serialize(obj);
+        var source = Client.Serialization.KubernetesYaml.Serialize(obj);
 
         return (IKubernetesObject<V1ObjectMeta>)Client.Serialization.KubernetesYaml.Deserializer.Deserialize(source, obj.GetType())!;
     }

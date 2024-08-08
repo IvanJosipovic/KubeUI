@@ -11,6 +11,7 @@ public sealed class ClusterErrorView : MyViewBase<ClusterErrorViewModel>
                     .Padding(5,0,0,0)
                     .Text(Assets.Resources.ClusterErrorView_Header),
                 new SelectableTextBlock()
+                    .TextWrapping(TextWrapping.Wrap)
                     .Row(1)
                     .Padding(5,0,0,0)
                     .Text(@vm.Error)

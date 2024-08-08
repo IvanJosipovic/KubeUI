@@ -873,8 +873,16 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
         instance.CanFloat = false;
 
         Factory?.InsertDockable(doc, instance, 0);
-        Factory?.PinDockable(instance);
-        Factory?.PreviewPinnedDockable(instance);
+
+        if (existingDock == null)
+        {
+            Factory?.PinDockable(instance);
+            Factory?.PreviewPinnedDockable(instance);
+        }
+        else
+        {
+            Factory?.SetActiveDockable(instance);
+        }
     }
 
     private bool CanView(object item)
