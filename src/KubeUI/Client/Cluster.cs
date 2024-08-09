@@ -367,7 +367,7 @@ public sealed partial class Cluster : ObservableObject
         return fqdnList;
     }
 
-    public async Task Delete<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public async Task<bool> Delete<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var api = GroupApiVersionKind.From<T>();
 
@@ -383,16 +383,15 @@ public sealed partial class Cluster : ObservableObject
             {
                 await client.DeleteNamespacedAsync<T>(item.Namespace(), item.Name());
             }
-        }
-        catch (JsonException ex)
-        {
-            _logger.LogError(ex, "Failed to delete");
+
+            return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to delete");
-            throw;
         }
+
+        return false;
     }
 
     public async Task<bool> CanDelete<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
