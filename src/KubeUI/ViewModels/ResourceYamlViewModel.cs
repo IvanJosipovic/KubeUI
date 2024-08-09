@@ -95,7 +95,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private async void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)
+    private void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)
     {
         if (Object != null
             && Object.Kind == resource.Kind
