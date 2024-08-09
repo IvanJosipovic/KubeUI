@@ -200,12 +200,18 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
                     Sort = SortDirection.Ascending,
                     Width = "4*",
                 },
+                new ResourceListViewDefinitionColumn<V1Node, string>()
+                {
+                    Name = "Instance Type",
+                    Field = x => x.Metadata.Labels.TryGetValue("node.kubernetes.io/instance-type", out var value) ? value : "",
+                    Width = nameof(DataGridLengthUnitType.SizeToCells)
+                },
                 new ResourceListViewDefinitionColumn<V1Node, decimal>()
                 {
                     Name = "CPU",
                     Field = x => x.Status?.Capacity?.TryGetValue("cpu", out var value) == true ? value.ToDecimal() : 0,
                     Display = x => x.Status?.Capacity?.TryGetValue("cpu", out var value) == true ? value.ToDecimal().ToString("0.##") + "c" : "0c",
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                       Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListViewDefinitionColumn<V1Node, decimal>()
                 {
@@ -243,7 +249,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
                 {
                     Name = "Status",
                     Field = x => x.Status.Conditions.FirstOrDefault(x => x.Type == "Ready")?.Reason ?? "",
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                    Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },
                 new ResourceListViewDefinitionColumn<V1Node, DateTime?>()
                 {
@@ -991,7 +997,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
     }
 
     [RelayCommand(CanExecute = nameof(CanListCRD))]
-    private async Task ListCRD(V1CustomResourceDefinition item)
+    private void ListCRD(V1CustomResourceDefinition item)
     {
         var version = item.Spec.Versions.First(x => x.Served && x.Storage);
 
