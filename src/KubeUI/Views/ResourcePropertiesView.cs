@@ -21,36 +21,164 @@ public sealed class ResourcePropertiesView<T> : MyViewBase<ResourcePropertiesVie
 
         var sp = new StackPanel()
             .Children([
-                new PropertyItem()
-                    .Key("Name")
-                    .Value(@vm.Object.Metadata.Name),
-                new PropertyItem()
-                    .Key("Namespace")
-                    .Value(@vm.Object.Metadata.NamespaceProperty),
-                new PropertyItem()
-                    .Key("Created")
-                    .Value(vm.Object.Metadata.CreationTimestamp.ToString()),
-                ]);
+                    new PropertyItem()
+                        .Key("Name")
+                        .Value(@vm.Object.Metadata.Name),
+                    new PropertyItem()
+                        .Key("Namespace")
+                        .Value(@vm.Object.Metadata.NamespaceProperty),
+                    new PropertyItem()
+                        .Key("Created")
+                        .Value(vm.Object.Metadata.CreationTimestamp.ToString()),
+            ]);
 
         if (typeof(T) == typeof(V1Secret))
         {
             var obj = vm.Object as V1Secret;
 
-            sp.Children.AddRange([
-                new Separator(),
-                new ItemsControl()
-                    .ItemsSource(@obj.Data)
-                    .ItemTemplate(new FuncDataTemplate<KeyValuePair<string, byte[]>>((x,_) =>
-                        new PropertyItem()
-                            .Key(x.Key)
-                            .Value(Encoding.UTF8.GetString(x.Value))
-                    ))
-            ]);
+            sp.Children.Add(
+                new ExpandableSection()
+                    .Text("Data")
+                    .IsExpanded(true)
+                    .Controls([
+                        new ItemsControl()
+                            .ItemsSource(@obj.Data)
+                            .ItemTemplate(new FuncDataTemplate<KeyValuePair<string, byte[]>>((x,_) =>
+                                new StackPanel()
+                                    .Children([
+                                        new PropertyItem()
+                                            .Key(@x.Key)
+                                            .Value(Encoding.UTF8.GetString(x.Value)),
+                                        new CertificateItem()
+                                            .Bytes(@x.Value)
+                                        ])
+                            ))
+                    ])
+            );
         }
         return new ScrollViewer()
                 .VerticalScrollBarVisibility(ScrollBarVisibility.Auto)
                 .Content(sp);
     }
+}
+
+public partial class ExpandableSection : ViewBase
+{
+    public static readonly DirectProperty<ExpandableSection, bool> IsExpandedProperty =
+    AvaloniaProperty.RegisterDirect<ExpandableSection, bool>(
+    nameof(IsExpanded),
+    o => o.IsExpanded,
+    (o, v) => o.IsExpanded = v);
+
+    private bool _isExpanded;
+
+    public bool IsExpanded
+    {
+        get { return _isExpanded; }
+        set
+        {
+            SetAndRaise(IsExpandedProperty, ref _isExpanded, value);
+            OnCreatedCore();
+            Initialize();
+        }
+    }
+
+    public static readonly DirectProperty<ExpandableSection, string> TextProperty =
+        AvaloniaProperty.RegisterDirect<ExpandableSection, string>(
+        nameof(Text),
+        o => o.Text,
+        (o, v) => o.Text = v);
+
+    private string _text = string.Empty;
+
+    public string Text
+    {
+        get { return _text; }
+        set
+        {
+            SetAndRaise(TextProperty, ref _text, value);
+            OnCreatedCore();
+            Initialize();
+        }
+    }
+
+    public static readonly DirectProperty<ExpandableSection, Control[]> ControlsProperty =
+        AvaloniaProperty.RegisterDirect<ExpandableSection, Control[]>(
+        nameof(Controls),
+        o => o.Controls,
+        (o, v) => o.Controls = v);
+
+    private Control[] _controls = [];
+
+    public Control[] Controls
+    {
+        get { return _controls; }
+        set
+        {
+            SetAndRaise(ControlsProperty, ref _controls, value);
+            OnCreatedCore();
+            Initialize();
+        }
+    }
+
+    protected override object Build() =>
+        new Expander()
+            .IsExpanded(@IsExpanded)
+            .Header(@Text)
+            .HorizontalAlignment(HorizontalAlignment.Stretch)
+            .Content(new StackPanel().Children(@Controls));
+}
+
+public partial class HeaderItem : ViewBase
+{
+    public static readonly DirectProperty<HeaderItem, string> TextProperty =
+        AvaloniaProperty.RegisterDirect<HeaderItem, string>(
+        nameof(Text),
+        o => o.Text,
+        (o, v) => o.Text = v);
+
+    private string _text = string.Empty;
+
+    public string Text
+    {
+        get { return _text; }
+        set
+        {
+            SetAndRaise(TextProperty, ref _text, value);
+            OnCreatedCore();
+            Initialize();
+        }
+    }
+
+    public static readonly DirectProperty<HeaderItem, Control[]> ControlsProperty =
+        AvaloniaProperty.RegisterDirect<HeaderItem, Control[]>(
+        nameof(Controls),
+        o => o.Controls,
+        (o, v) => o.Controls = v);
+
+    private Control[] _controls = [];
+
+    public Control[] Controls
+    {
+        get { return _controls; }
+        set
+        {
+            SetAndRaise(ControlsProperty, ref _controls, value);
+            OnCreatedCore();
+            Initialize();
+        }
+    }
+
+    protected override object Build() =>
+        new StackPanel()
+            .Children([
+                new TextBlock()
+                    .Foreground(Brushes.White)
+                    .Text(@Text)
+                    .FontSize(20)
+                    .FontWeight(FontWeight.Bold),
+            ])
+            .Children(@Controls);
 }
 
 public partial class PropertyItem : ViewBase
@@ -66,7 +194,12 @@ public partial class PropertyItem : ViewBase
     public string Key
     {
         get { return _key; }
-        set { SetAndRaise(KeyProperty, ref _key, value); }
+        set
+        {
+            SetAndRaise(KeyProperty, ref _key, value);
+            OnCreatedCore();
+            Initialize();
+        }
     }
 
     public static readonly DirectProperty<PropertyItem, string> ValueProperty =
@@ -78,12 +211,15 @@ public partial class PropertyItem : ViewBase
     public string Value
     {
         get { return _value; }
-        set { SetAndRaise(ValueProperty, ref _value, value); }
+        set
+        {
+            SetAndRaise(ValueProperty, ref _value, value);
+            OnCreatedCore();
+            Initialize();
+        }
     }
 
     private string _value = string.Empty;
-
-    protected override StyleGroup? BuildStyles() => [];
 
     protected override object Build() =>
         new Grid()
@@ -103,5 +239,5 @@ public partial class PropertyItem : ViewBase
                         .Text(@Value)
                         .TextWrapping(TextWrapping.Wrap)
                     ),
-                ]);
+            ]);
 }

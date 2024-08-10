@@ -51,7 +51,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
 
     public ResourceListViewModel()
     {
-        Factory = Application.Current.GetRequiredService<IFactory>();
         _logger = Application.Current.GetRequiredService<ILogger<ResourceListViewModel<T>>>();
         _dialogService = Application.Current.GetRequiredService<IDialogService>();
     }

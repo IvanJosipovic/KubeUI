@@ -25,8 +25,6 @@ public sealed partial class MainViewModel : ViewModelBase
 
         _logger = Application.Current.GetRequiredService<ILogger<MainViewModel>>();
 
-        Factory = Application.Current.GetRequiredService<IFactory>();
-
         _dialogService = Application.Current.GetRequiredService<IDialogService>();
 
         DebugFactoryEvents(Factory);
