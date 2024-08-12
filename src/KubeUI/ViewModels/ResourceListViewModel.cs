@@ -879,15 +879,46 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
 
         Factory?.InsertDockable(doc, instance, 0);
 
-        if (existingDock == null)
+        if (pinnedDoc == null)
         {
-            Factory?.PinDockable(instance);
-            Factory?.PreviewPinnedDockable(instance);
+            Factory?.SetActiveDockable(instance);
+            Factory?.SetFocusedDockable(doc, instance);
         }
         else
         {
-            Factory?.SetActiveDockable(instance);
+            Factory?.PinDockable(instance);
         }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanView))]
+    private void ViewForce(object item)
+    {
+        var root = Factory.GetDockable<IRootDock>("Root");
+        var pinnedDoc = root.RightPinnedDockables?.FirstOrDefault(x => x.Id == nameof(ResourcePropertiesViewModel<T>));
+
+        if (pinnedDoc != null)
+        {
+            Factory.RemoveDockable(pinnedDoc, true);
+        }
+
+        var doc = Factory.GetDockable<IDock>("RightDock");
+
+        var existingDock = doc.VisibleDockables.FirstOrDefault(x => x.Id == nameof(ResourcePropertiesViewModel<T>));
+
+        if (existingDock != null)
+        {
+            Factory.RemoveDockable(existingDock, true);
+        }
+
+        var instance = Application.Current.GetRequiredService<ResourcePropertiesViewModel<T>>();
+        instance.Cluster = Cluster;
+        instance.Object = ((KeyValuePair<NamespacedName, T>)(item)).Value;
+        instance.CanFloat = false;
+
+        Factory?.InsertDockable(doc, instance, 0);
+
+        Factory?.SetActiveDockable(instance);
+        Factory?.SetFocusedDockable(doc, instance);
     }
 
     private bool CanView(object item)

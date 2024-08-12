@@ -305,4 +305,7 @@ Are you sure?</value>
   <data name="ClusterListViewModel_Delete_Title" xml:space="preserve">
     <value>Warning</value>
   </data>
+  <data name="MainView_Menu_Window_SwitchTheme" xml:space="preserve">
+    <value>Switch Theme</value>
+  </data>
 </root>

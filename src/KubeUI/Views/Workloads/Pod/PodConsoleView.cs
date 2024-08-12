@@ -50,7 +50,6 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
                     .Set(TextEditor.FontWeightProperty, FontWeight.Normal)
                     .Set(TextEditor.IsReadOnlyProperty, true)
                     .Set(TextEditor.ShowLineNumbersProperty, false)
-                    .Background(Brushes.Black)
                     .HorizontalScrollBarVisibility(ScrollBarVisibility.Auto)
                     .VerticalScrollBarVisibility(ScrollBarVisibility.Visible)
                     .OnKeyUp((e) => {

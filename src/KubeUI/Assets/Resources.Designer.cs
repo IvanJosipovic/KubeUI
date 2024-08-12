@@ -304,6 +304,15 @@ namespace KubeUI.Assets {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Switch Theme.
+        /// </summary>
+        public static string MainView_Menu_Window_SwitchTheme {
+            get {
+                return ResourceManager.GetString("MainView_Menu_Window_SwitchTheme", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to A new update is available. Update and restart now?.
         /// </summary>
         public static string MainViewModel_CheckForUpdates_Content {

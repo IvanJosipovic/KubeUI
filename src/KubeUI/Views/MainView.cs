@@ -36,6 +36,9 @@ public sealed class MainView : MyViewBase<MainViewModel>
                                 new MenuItem()
                                     .Header(Assets.Resources.MainView_Menu_Window_ResetLayout)
                                     .Command(vm.ResetLayoutCommand),
+                                    new MenuItem()
+                                    .Header(Assets.Resources.MainView_Menu_Window_SwitchTheme)
+                                    .Command(vm.SwitchThemeCommand),
                                 ]),
                         new MenuItem()
                             .Header(Assets.Resources.MainView_Menu_Help)

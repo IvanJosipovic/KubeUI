@@ -7,6 +7,7 @@ using Velopack;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using HanumanInstitute.MvvmDialogs;
+using Avalonia.Styling;
 
 namespace KubeUI.ViewModels;
 
@@ -191,6 +192,12 @@ public sealed partial class MainViewModel : ViewModelBase
         var vm = Application.Current.GetRequiredService<ClusterListViewModel>();
 
         Factory?.AddToDocuments(vm);
+    }
+
+    [RelayCommand]
+    private void SwitchTheme()
+    {
+        Application.Current.RequestedThemeVariant = Application.Current.RequestedThemeVariant == ThemeVariant.Dark ? ThemeVariant.Light : ThemeVariant.Dark;
     }
 
     private async Task CheckForUpdates()
