@@ -1,9 +1,17 @@
-﻿using Avalonia.Styling;
+﻿namespace KubeUI;
 
-namespace KubeUI;
+public enum LocalThemeVariant
+{
+    Default,
+    Light,
+    Dark,
+}
 
-public partial class Settings : ObservableObject
+public sealed partial class Settings : ObservableObject
 {
     [ObservableProperty]
-    public ThemeVariant _theme;
+    private LocalThemeVariant _theme;
+
+    [ObservableProperty]
+    private bool _loggingEnabled = true;
 }

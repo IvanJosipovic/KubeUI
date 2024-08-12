@@ -34,6 +34,20 @@ public sealed partial class CertificateItemView : ViewBase
         set { SetAndRaise(BytesProperty, ref _bytes, value); Convert(); }
     }
 
+    public static readonly DirectProperty<CertificateItemView, bool> HasCertProperty =
+        AvaloniaProperty.RegisterDirect<CertificateItemView, bool>(
+        nameof(HasCert),
+        o => o.HasCert,
+        (o, v) => o.HasCert = v);
+
+    private bool _hasCert;
+
+    public bool HasCert
+    {
+        get { return _hasCert; }
+        set { SetAndRaise(HasCertProperty, ref _hasCert, value);}
+    }
+
     private ObservableCollection<X509Certificate2> Certificates = [];
     private ObservableCollection<RSA> Rsa = [];
     private ObservableCollection<ECDsa> Ecdsa = [];
@@ -102,10 +116,13 @@ public sealed partial class CertificateItemView : ViewBase
             }
         }
         catch (CryptographicException) { }
+
+        HasCert = Certificates.Any() || Rsa.Any() || Ecdsa.Any();
     }
 
     protected override object Build() =>
         new HeaderItem()
+            .IsVisible(@HasCert)
             .DataContext(this)
             .Text(@Header)
             .Controls([

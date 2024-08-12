@@ -17,7 +17,7 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
     protected override StyleGroup? BuildStyles() => [
         new Style(x => x.OfType<TreeViewItem>())
             .Setter(TreeViewItem.BackgroundProperty, Brushes.Transparent)
-            .Setter(TreeViewItem.IsExpandedProperty, new Binding("IsExpanded")),
+            .Setter(TreeViewItem.IsExpandedProperty, new Binding(nameof(Cluster.IsExpanded))),
 
         new Style(x => x.OfType<StackPanel>().Class("navigation-view-stack-panel"))
             .Setter(StackPanel.OrientationProperty, Orientation.Horizontal),
@@ -49,9 +49,9 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
                                 .IsChecked(@vm.Connected)
                                 .IsEnabled(false)
                                 .Styles([
-                                    new Style<CheckBox>().Selector(x => x.Class(":checked").Template().OfType<Ellipse>())
+                                    new Style<CheckBox>().Selector(x => x.PropertyEquals(CheckBox.IsCheckedProperty, true).Template().OfType<Ellipse>())
                                         .Setter(Ellipse.FillProperty, Brushes.LimeGreen),
-                                    new Style<CheckBox>().Selector(x => x.Class(":unchecked").Template().OfType<Ellipse>())
+                                     new Style<CheckBox>().Selector(x => x.PropertyEquals(CheckBox.IsCheckedProperty, false).Template().OfType<Ellipse>())
                                         .Setter(Ellipse.FillProperty, Brushes.Red)
                                 ])
                                 .Template(new FuncControlTemplate((_, _) =>
@@ -82,7 +82,7 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
                             new TextBlock()
                                 .Text(" "),
                             new TextBlock()
-                                .Text(new Binding("Objects.Count", BindingMode.OneWay)), //todo fix
+                                .Text(new Binding($"{nameof(ResourceNavigationLink.Objects)}.{nameof(ResourceNavigationLink.Objects.Count)}", BindingMode.OneWay)), //todo fix
                             ])
                 ,(x) => x.NavigationItems),
 

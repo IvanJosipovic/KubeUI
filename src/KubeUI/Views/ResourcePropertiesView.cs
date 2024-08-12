@@ -4,6 +4,7 @@ using Avalonia.Controls.Templates;
 using System.Text;
 using Avalonia.Controls.Primitives;
 using Avalonia.Styling;
+using Avalonia.Data.Converters;
 
 namespace KubeUI.Views;
 
@@ -11,7 +12,7 @@ public sealed class ResourcePropertiesView<T> : MyViewBase<ResourcePropertiesVie
 {
     protected override StyleGroup? BuildStyles() => [
         new Style(x => x.OfType<PropertyItem>())
-            .Setter(MarginProperty, new Thickness(0,0,0,5))
+            .Setter(MarginProperty, new Thickness(0,0,0,15))
         ];
 
     protected override object Build(ResourcePropertiesViewModel<T>? vm)
@@ -32,7 +33,7 @@ public sealed class ResourcePropertiesView<T> : MyViewBase<ResourcePropertiesVie
                     new PropertyItem()
                         .Key("Created")
                         .Margin(4,0,0,20)
-                        .Value(vm.Object.Metadata.CreationTimestamp.GetValueOrDefault().ToLocalTime().ToString()),
+                        .Set2(PropertyItem.ValueProperty, @vm.Object.Metadata.CreationTimestamp, converter: new ((x) => x.HasValue ? x.Value.ToLocalTime().ToString() : "" )),
             ]);
 
         if (typeof(T) == typeof(V1Secret))
@@ -162,12 +163,22 @@ public partial class HeaderItem : ViewBase
 
     protected override object Build() =>
         new StackPanel()
+            .Margin(0, 0, 0, 15)
             .DataContext(this)
             .Children([
-                new TextBlock()
-                    .Text(@Text)
-                    .FontSize(15)
-                    .FontWeight(FontWeight.Bold),
+                //new TextBlock()
+                //    .Text(@Text)
+                //    .FontSize(16)
+                //    .FontWeight(FontWeight.Normal)
+                //    .Margin(0,0,0,10),
+                new PropertyItem()
+                    .Key(@Text)
+                    .Value("")
+                    .Styles([
+                        new Style(x => x.OfType<Border>())
+                            .Setter(Border.BackgroundProperty, Brushes.Black)
+                            .Setter(Border.PaddingProperty, new Thickness(10))
+                        ]),
                 new ItemsControl()
                     .ItemsSource(@Controls)
                 ]);
@@ -204,23 +215,29 @@ public partial class PropertyItem : ViewBase
     private string _value = string.Empty;
 
     protected override object Build() =>
-        new Grid()
-            .DataContext(this)
-            .Cols("*,2*")
-            .VerticalAlignment(VerticalAlignment.Top)
-            .Children([
-                new SelectableTextBlock()
-                    .Row(0).Col(0)
-                    .Text(@Key)
-                    .TextWrapping(TextWrapping.NoWrap)
-                    .ToolTip(@Key),
-                new ScrollViewer()
-                    .Row(0).Col(1)
-                    .MaxHeight(200)
-                    .VerticalScrollBarVisibility(ScrollBarVisibility.Auto)
-                    .Content(new SelectableTextBlock()
-                                .Text(@Value)
-                                .TextWrapping(TextWrapping.Wrap)
-                    ),
-            ]);
+        new Border()
+            .BorderBrush(Brushes.Black)
+            .BorderThickness(0,0,0,0)
+            .Child(
+            new Grid()
+                .DataContext(this)
+                .Cols("*,2*")
+                .VerticalAlignment(VerticalAlignment.Top)
+                .Children([
+                    new SelectableTextBlock()
+                        .Row(0).Col(0)
+                        .Text(@Key)
+                        .TextWrapping(TextWrapping.NoWrap)
+                        .FontWeight(FontWeight.Bold)
+                        .ToolTip(@Key),
+                    new ScrollViewer()
+                        .Row(0).Col(1)
+                        .MaxHeight(200)
+                        .VerticalScrollBarVisibility(ScrollBarVisibility.Auto)
+                        .Content(new SelectableTextBlock()
+                                    .Text(@Value)
+                                    .TextWrapping(TextWrapping.Wrap)
+                        ),
+                ]))
+        ;
 }

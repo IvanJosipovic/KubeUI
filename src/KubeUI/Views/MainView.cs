@@ -25,6 +25,9 @@ public sealed class MainView : MyViewBase<MainViewModel>
                                 new MenuItem()
                                     .Header(Assets.Resources.MainView_Menu_File_Clusters)
                                     .Command(vm.OpenClustersCommand),
+                                new MenuItem()
+                                    .Header(Assets.Resources.MainView_Menu_File_Settings)
+                                    .Command(vm.OpenSettingsCommand),
                                 new Separator(),
                                 new MenuItem()
                                     .Header(Assets.Resources.MainView_Menu_File_Exit)

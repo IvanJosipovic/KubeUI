@@ -23,6 +23,7 @@
     <Using Include="CommunityToolkit.Mvvm.Input" />
     <Using Include="KubeUI.Assets" />
     <Using Include="KubeUI.ViewModels" />
+    <Using Include="Microsoft.Extensions.DependencyInjection" />
     <Using Include="Microsoft.Extensions.Logging" />
     <Using Include="System" />
     <Using Include="System.Collections" />
@@ -83,12 +84,6 @@
 
     <!--Resolves version conflict in Avalonia Diagnostics -->
     <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Microsoft.CodeAnalysis.CSharp" Version="4.10.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="appsettings.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
   <ItemGroup>
