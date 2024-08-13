@@ -268,6 +268,15 @@ namespace KubeUI.Assets {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to _Settings.
+        /// </summary>
+        public static string MainView_Menu_File_Settings {
+            get {
+                return ResourceManager.GetString("MainView_Menu_File_Settings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to _Help.
         /// </summary>
         public static string MainView_Menu_Help {
@@ -300,6 +309,15 @@ namespace KubeUI.Assets {
         public static string MainView_Menu_Window_ResetLayout {
             get {
                 return ResourceManager.GetString("MainView_Menu_Window_ResetLayout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Switch Theme.
+        /// </summary>
+        public static string MainView_Menu_Window_SwitchTheme {
+            get {
+                return ResourceManager.GetString("MainView_Menu_Window_SwitchTheme", resourceCulture);
             }
         }
         
@@ -617,6 +635,15 @@ namespace KubeUI.Assets {
         public static string ResourceYamlViewModel_Title {
             get {
                 return ResourceManager.GetString("ResourceYamlViewModel_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Settings.
+        /// </summary>
+        public static string SettingsView_Title {
+            get {
+                return ResourceManager.GetString("SettingsView_Title", resourceCulture);
             }
         }
     }

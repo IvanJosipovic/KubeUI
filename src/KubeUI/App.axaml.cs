@@ -9,8 +9,6 @@ using KubeUI.Desktop;
 using KubeUI.Views;
 using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using NReco.Logging.File;
 
 namespace KubeUI;
@@ -26,8 +24,6 @@ public partial class App : Application
     {
         AvaloniaXamlLoader.Load(this);
 
-        var configRoot = new ConfigurationBuilder().AddJsonFile("appsettings.json", true, true).Build();
-
         LiveCharts.Configure(config => config
                                         .AddDarkTheme()
                                         .AddLightTheme()
@@ -35,17 +31,26 @@ public partial class App : Application
 
         ServiceCollection services = new();
 
-        services.AddSingleton<IConfiguration>(configRoot);
-
-        services.AddLogging(loggingBuilder =>
+        if (!Design.IsDesignMode && SettingsService.GetSettings().LoggingEnabled)
         {
-            loggingBuilder.SetMinimumLevel(LogLevel.Trace);
-
-            if (!Design.IsDesignMode)
+            services.AddLogging(loggingBuilder =>
             {
-                loggingBuilder.AddFile(configRoot.GetSection("Logging"));
-            }
-        });
+                loggingBuilder.AddFilter("Default", LogLevel.Information);
+                loggingBuilder.AddFilter("System", LogLevel.Warning);
+                loggingBuilder.AddFilter("Microsoft", LogLevel.Warning);
+
+                if (SettingsService.EnsureSettingDirExists())
+                {
+                    loggingBuilder.AddFile(Path.Combine(SettingsService.GetSettingsPath(), "app.log"), x =>
+                    {
+                        x.Append = false;
+                        x.FileSizeLimitBytes = 10_73_741_824;
+                        x.MinLevel = LogLevel.Information;
+                        x.MaxRollingFiles = 2;
+                    });
+                }
+            });
+        }
 
         services.Scan(x => x.FromCallingAssembly().AddClasses().UsingAttributes());
 
@@ -73,6 +78,10 @@ public partial class App : Application
         logger = _serviceProvider.GetRequiredService<ILogger<App>>();
 
         AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+
+        var settings = _serviceProvider.GetRequiredService<SettingsService>();
+
+        settings.LoadSettings();
 
         logger.LogInformation("App Started");
     }

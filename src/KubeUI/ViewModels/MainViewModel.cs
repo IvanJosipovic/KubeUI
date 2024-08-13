@@ -7,12 +7,15 @@ using Velopack;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using HanumanInstitute.MvvmDialogs;
+using Avalonia.Styling;
 
 namespace KubeUI.ViewModels;
 
 public sealed partial class MainViewModel : ViewModelBase
 {
     private readonly ILogger<MainViewModel> _logger;
+
+    private readonly SettingsService _settingsService;
 
     [ObservableProperty]
     private ClusterManager _clusterManager;
@@ -21,11 +24,11 @@ public sealed partial class MainViewModel : ViewModelBase
 
     public MainViewModel()
     {
-        ClusterManager = Application.Current.GetRequiredService<ClusterManager>();
-
         _logger = Application.Current.GetRequiredService<ILogger<MainViewModel>>();
 
-        Factory = Application.Current.GetRequiredService<IFactory>();
+        _settingsService = Application.Current.GetRequiredService<SettingsService>();
+
+        ClusterManager = Application.Current.GetRequiredService<ClusterManager>();
 
         _dialogService = Application.Current.GetRequiredService<IDialogService>();
 
@@ -173,18 +176,24 @@ public sealed partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void Close()
     {
-        var app = Application.Current.GetRequiredService<IControlledApplicationLifetime>();
-        app.Shutdown();
     }
 
     [RelayCommand]
     private void OpenAbout()
     {
-        var about = Application.Current.GetRequiredService<AboutViewModel>();
+        var vm = Application.Current.GetRequiredService<AboutViewModel>();
 
-        Factory?.AddToDocuments(about);
+        Factory?.AddToDocuments(vm);
 
         _ = Task.Run(CheckForUpdates);
+    }
+
+    [RelayCommand]
+    private void OpenSettings()
+    {
+        var vm = Application.Current.GetRequiredService<SettingsViewModel>();
+
+        Factory?.AddToDocuments(vm);
     }
 
     [RelayCommand]
@@ -193,6 +202,13 @@ public sealed partial class MainViewModel : ViewModelBase
         var vm = Application.Current.GetRequiredService<ClusterListViewModel>();
 
         Factory?.AddToDocuments(vm);
+    }
+
+    [RelayCommand]
+    private void SwitchTheme()
+    {
+        _settingsService.Settings.Theme = _settingsService.Settings.Theme == LocalThemeVariant.Light ? LocalThemeVariant.Dark : LocalThemeVariant.Light;
+        _settingsService.SaveSettings();
     }
 
     private async Task CheckForUpdates()

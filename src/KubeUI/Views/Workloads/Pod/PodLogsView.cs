@@ -1,7 +1,9 @@
 ﻿using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Styling;
 using AvaloniaEdit;
 using TextMateSharp.Grammars;
+using TextMateSharp.Themes;
 using static AvaloniaEdit.TextMate.TextMate;
 
 namespace KubeUI.Views;
@@ -11,6 +13,25 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
     private Installation _textMateInstallation;
 
     private RegistryOptions _registryOptions;
+
+    public PodLogsView()
+    {
+        _registryOptions = new RegistryOptions(Application.Current.ActualThemeVariant == ThemeVariant.Light ? ThemeName.Light : ThemeName.DarkPlus);
+
+        Application.Current.ActualThemeVariantChanged += Current_ActualThemeVariantChanged;
+    }
+
+    private void Current_ActualThemeVariantChanged(object? sender, EventArgs e)
+    {
+        if (Application.Current.ActualThemeVariant == ThemeVariant.Light)
+        {
+            _textMateInstallation.SetTheme(_registryOptions.LoadTheme(ThemeName.Light));
+        }
+        else if (Application.Current.ActualThemeVariant == ThemeVariant.Dark)
+        {
+            _textMateInstallation.SetTheme(_registryOptions.LoadTheme(ThemeName.DarkPlus));
+        }
+    }
 
     protected override object Build(PodLogsViewModel? vm)
     {
@@ -53,7 +74,6 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
                     .Ref(out var editor)
                     .Row(1)
                     .Set(x => {
-                        _registryOptions = new RegistryOptions(ThemeName.DarkPlus);
                         _textMateInstallation = editor.InstallTextMate(_registryOptions, false);
 
                         x.Options.AllowScrollBelowDocument = false;
@@ -62,7 +82,7 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
                         x.Options.EnableEmailHyperlinks = false;
 
                         x.TextChanged += (sender, e) => {
-                            if (ViewModel.AutoScrollToBottom)
+                            if (ViewModel?.AutoScrollToBottom == true)
                                 editor.ScrollToEnd();
                         };
                         return x;
@@ -84,5 +104,12 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
                                 .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("copy_regular") }),
                         ]),
             ]);
+    }
+
+    protected override void OnUnloaded(RoutedEventArgs e)
+    {
+        base.OnUnloaded(e);
+
+        Application.Current.ActualThemeVariantChanged -= Current_ActualThemeVariantChanged;
     }
 }

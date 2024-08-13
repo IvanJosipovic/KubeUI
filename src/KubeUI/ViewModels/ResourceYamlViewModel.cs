@@ -95,7 +95,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private async void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)
+    private void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)
     {
         if (Object != null
             && Object.Kind == resource.Kind
@@ -144,7 +144,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
     public IKubernetesObject<V1ObjectMeta> CloneObject(object obj)
     {
-        var source = KubernetesYaml.Serialize(obj);
+        var source = Client.Serialization.KubernetesYaml.Serialize(obj);
 
         return (IKubernetesObject<V1ObjectMeta>)Client.Serialization.KubernetesYaml.Deserializer.Deserialize(source, obj.GetType())!;
     }

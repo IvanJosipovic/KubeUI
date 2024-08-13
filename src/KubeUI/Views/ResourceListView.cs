@@ -102,7 +102,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
         if (ViewModel.ViewDefinition.DefaultMenuItems)
         {
-            _grid.ContextMenu.Items.Add(CreateMenuItem(new() { Header = "View", CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewCommand), CommandParameterPath = "SelectedItem" }));
+            _grid.ContextMenu.Items.Add(CreateMenuItem(new() { Header = "View", CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewForceCommand), CommandParameterPath = "SelectedItem" }));
             _grid.ContextMenu.Items.Add(CreateMenuItem(new() { Header = "View Yaml", CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewYamlCommand), CommandParameterPath = "SelectedItem" }));
             _grid.ContextMenu.Items.Add(CreateMenuItem(new() { Header = "Delete", CommandPath = nameof(ResourceListViewModel<V1Pod>.DeleteCommand), CommandParameterPath = "SelectedItems" }));
         }
@@ -246,7 +246,6 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                                     .Width(300)
                                     .HorizontalAlignment(HorizontalAlignment.Right)
                                     .VerticalAlignment(VerticalAlignment.Center)
-                                    .Background(Brushes.Transparent)
                                     .Text(@vm.SearchQuery)
                                     .Watermark("Search"),
 
@@ -276,6 +275,12 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                         x.IsReadOnly = true;
                         x.MinColumnWidth = 90;
                         x.RowHeight = 32;
+                        x.Tapped += (s, e) => {
+                            if(vm.ViewCommand.CanExecute(x.SelectedItem))
+                            {
+                                vm.ViewCommand.Execute(x.SelectedItem);
+                            }
+                        };
                         return x;
                     }),
             ]);

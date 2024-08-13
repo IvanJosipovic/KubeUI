@@ -17,5 +17,5 @@ public sealed class AboutView : MyViewBase<AboutViewModel>
                 new HyperlinkButton()
                     .NavigateUri(new Uri("https://KubeUI.com"))
                     .Content("https://KubeUI.com"),
-                ]);
+        ]);
 }

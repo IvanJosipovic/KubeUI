@@ -18,8 +18,6 @@ public class TestApp : Application
 
         var services = new ServiceCollection();
 
-        services.AddSingleton<IConfiguration>(root);
-
         services.AddLogging();
 
         // Services

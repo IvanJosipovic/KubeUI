@@ -11,13 +11,15 @@
                     <SolidColorBrush x:Key="TextForegroundColor">#212121</SolidColorBrush>
                     <SolidColorBrush x:Key="TextControlBorderBrush">#33323232</SolidColorBrush>
                     <SolidColorBrush x:Key="TextControlBorderBrushPointerOver">#33323232</SolidColorBrush>
-                    -->
+
                     <SolidColorBrush x:Key="DockThemeBackgroundBrush">#FFFFFF</SolidColorBrush>
                     <Color x:Key="RegionColor">#1F1F1F</Color>
                     <Color x:Key="AcrylicFallbackColor">#1F1F1F</Color>
+                    -->
                 </ResourceDictionary>
 
                 <ResourceDictionary x:Key="Dark">
+                    <!--
                     <SolidColorBrush x:Key="TextControlBackground">#2F2F2F</SolidColorBrush>
                     <SolidColorBrush x:Key="TextControlBackgroundFocused">#2F2F2F</SolidColorBrush>
                     <SolidColorBrush x:Key="TextControlBackgroundPointerOver">#2F2F2F</SolidColorBrush>
@@ -28,9 +30,8 @@
                     <Color x:Key="RegionColor">#1F1F1F</Color>
                     <Color x:Key="AcrylicFallbackColor">#1F1F1F</Color>
                     <SolidColorBrush x:Key="DataGridColumnHeaderForegroundBrush" Color="#FFFFFF" />
-                    <SolidColorBrush x:Key="DataGridColumnHeaderBackgroundBrush" Color="#1F1F1F" />
-                    <SolidColorBrush x:Key="HyperlinkButtonForeground" Color="#ff0078d4" />
-                    <SolidColorBrush x:Key="HyperlinkButtonForegroundPointerOver" Color="#ff0078d4" />
+                    <SolidColorBrush x:Key="DataGridColumnHeaderBackgroundBrush2" Color="#1F1F1F" />
+                    -->
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>

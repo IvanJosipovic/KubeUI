@@ -12,7 +12,6 @@ public sealed partial class NavigationViewModel : ViewModelBase
     public NavigationViewModel()
     {
         ClusterManager = Application.Current.GetRequiredService<ClusterManager>();
-        Factory = Application.Current.GetRequiredService<IFactory>();
         Title = Resources.NavigationViewModel_Title;
         Id = nameof(NavigationViewModel);
     }

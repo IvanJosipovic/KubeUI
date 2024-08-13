@@ -51,7 +51,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
 
     public ResourceListViewModel()
     {
-        Factory = Application.Current.GetRequiredService<IFactory>();
         _logger = Application.Current.GetRequiredService<ILogger<ResourceListViewModel<T>>>();
         _dialogService = Application.Current.GetRequiredService<IDialogService>();
     }
@@ -200,12 +199,18 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
                     Sort = SortDirection.Ascending,
                     Width = "4*",
                 },
+                new ResourceListViewDefinitionColumn<V1Node, string>()
+                {
+                    Name = "Instance Type",
+                    Field = x => x.Metadata.Labels.TryGetValue("node.kubernetes.io/instance-type", out var value) ? value : "",
+                    Width = nameof(DataGridLengthUnitType.SizeToCells)
+                },
                 new ResourceListViewDefinitionColumn<V1Node, decimal>()
                 {
                     Name = "CPU",
                     Field = x => x.Status?.Capacity?.TryGetValue("cpu", out var value) == true ? value.ToDecimal() : 0,
                     Display = x => x.Status?.Capacity?.TryGetValue("cpu", out var value) == true ? value.ToDecimal().ToString("0.##") + "c" : "0c",
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                       Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListViewDefinitionColumn<V1Node, decimal>()
                 {
@@ -243,7 +248,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
                 {
                     Name = "Status",
                     Field = x => x.Status.Conditions.FirstOrDefault(x => x.Type == "Ready")?.Reason ?? "",
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                    Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },
                 new ResourceListViewDefinitionColumn<V1Node, DateTime?>()
                 {
@@ -873,8 +878,47 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
         instance.CanFloat = false;
 
         Factory?.InsertDockable(doc, instance, 0);
-        Factory?.PinDockable(instance);
-        Factory?.PreviewPinnedDockable(instance);
+
+        if (pinnedDoc == null)
+        {
+            Factory?.SetActiveDockable(instance);
+            Factory?.SetFocusedDockable(doc, instance);
+        }
+        else
+        {
+            Factory?.PinDockable(instance);
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanView))]
+    private void ViewForce(object item)
+    {
+        var root = Factory.GetDockable<IRootDock>("Root");
+        var pinnedDoc = root.RightPinnedDockables?.FirstOrDefault(x => x.Id == nameof(ResourcePropertiesViewModel<T>));
+
+        if (pinnedDoc != null)
+        {
+            Factory.RemoveDockable(pinnedDoc, true);
+        }
+
+        var doc = Factory.GetDockable<IDock>("RightDock");
+
+        var existingDock = doc.VisibleDockables.FirstOrDefault(x => x.Id == nameof(ResourcePropertiesViewModel<T>));
+
+        if (existingDock != null)
+        {
+            Factory.RemoveDockable(existingDock, true);
+        }
+
+        var instance = Application.Current.GetRequiredService<ResourcePropertiesViewModel<T>>();
+        instance.Cluster = Cluster;
+        instance.Object = ((KeyValuePair<NamespacedName, T>)(item)).Value;
+        instance.CanFloat = false;
+
+        Factory?.InsertDockable(doc, instance, 0);
+
+        Factory?.SetActiveDockable(instance);
+        Factory?.SetFocusedDockable(doc, instance);
     }
 
     private bool CanView(object item)
@@ -983,7 +1027,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
     }
 
     [RelayCommand(CanExecute = nameof(CanListCRD))]
-    private async Task ListCRD(V1CustomResourceDefinition item)
+    private void ListCRD(V1CustomResourceDefinition item)
     {
         var version = item.Spec.Versions.First(x => x.Served && x.Storage);
 

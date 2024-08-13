@@ -1,19 +1,36 @@
 ﻿using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Styling;
 using AvaloniaEdit;
 using AvaloniaEdit.TextMate;
-using static AvaloniaEdit.TextMate.TextMate;
 using TextMateSharp.Grammars;
+using static AvaloniaEdit.TextMate.TextMate;
 
 namespace KubeUI.Views;
 
 public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
 {
+    private Installation _textMateInstallation;
+
     private RegistryOptions _registryOptions;
 
     public ResourceYamlView()
     {
-        _registryOptions = new RegistryOptions(ThemeName.Dark);
+        _registryOptions = new RegistryOptions(Application.Current.ActualThemeVariant == ThemeVariant.Light ? ThemeName.Light : ThemeName.DarkPlus);
+
+        Application.Current.ActualThemeVariantChanged += Current_ActualThemeVariantChanged;
+    }
+
+    private void Current_ActualThemeVariantChanged(object? sender, EventArgs e)
+    {
+        if (Application.Current.ActualThemeVariant == ThemeVariant.Light)
+        {
+            _textMateInstallation.SetTheme(_registryOptions.LoadTheme(ThemeName.Light));
+        }
+        else if (Application.Current.ActualThemeVariant == ThemeVariant.Dark)
+        {
+            _textMateInstallation.SetTheme(_registryOptions.LoadTheme(ThemeName.DarkPlus));
+        }
     }
 
     protected override object Build(ResourceYamlViewModel? vm)
@@ -60,7 +77,8 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
                         .Ref(out var editor)
                         .Row(1)
                         .Set(x => {
-                            x.InstallTextMate(_registryOptions, false).SetGrammar(_registryOptions.GetScopeByLanguageId(_registryOptions.GetLanguageByExtension(".yaml").Id));
+                            _textMateInstallation = x.InstallTextMate(_registryOptions, false);
+                            _textMateInstallation.SetGrammar(_registryOptions.GetScopeByLanguageId(_registryOptions.GetLanguageByExtension(".yaml").Id));
 
                             x.Options.AllowScrollBelowDocument = false;
                             x.Options.ShowBoxForControlCharacters = false;
@@ -118,5 +136,12 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
                                     .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("arrow_redo_regular") }),
                             ]),
                 ]);
+    }
+
+    protected override void OnUnloaded(RoutedEventArgs e)
+    {
+        base.OnUnloaded(e);
+
+        Application.Current.ActualThemeVariantChanged -= Current_ActualThemeVariantChanged;
     }
 }

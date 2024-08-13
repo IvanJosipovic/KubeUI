@@ -53,19 +53,15 @@ public sealed partial class Cluster : ObservableObject
     private ConcurrentObservableDictionary<NamespacedName, V1Namespace> _namespaces = [];
 
     [ObservableProperty]
-    private ConcurrentObservableDictionary<NamespacedName, MyPodMetrics> _podMetrics = [];
-
-    [ObservableProperty]
-    private ConcurrentObservableDictionary<NamespacedName, MyNodeMetrics> _nodeMetrics = [];
-
-    [ObservableProperty]
     private ObservableCollection<V1Namespace> _selectedNamespaces = [];
+
+    public V1APIGroupList APIGroups { get; private set; }
 
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
 
     private readonly SemaphoreSlim _semaphoreSlim = new(1);
 
-    public ConcurrentDictionary<GroupApiVersionKind, ContainerClass> Objects { get; set; } = new();
+    public ConcurrentDictionary<GroupApiVersionKind, ContainerClass> Objects { get; } = new();
 
     private ResourceNavigationLink _crdNavigationLink;
 
@@ -106,7 +102,7 @@ public sealed partial class Cluster : ObservableObject
                 {
                     Client = new Kubernetes(_getClientConfiguration());
 
-                    await Client.Version.GetCodeAsync();
+                    APIGroups = await Client.Apis.GetAPIVersionsAsync();
 
                     AddDefaultNavigation();
 
@@ -114,8 +110,11 @@ public sealed partial class Cluster : ObservableObject
 
                     Namespaces = GetObjectDictionary<V1Namespace>();
 
-                    PodMetrics = GetObjectDictionary<MyPodMetrics>();
-                    NodeMetrics = GetObjectDictionary<MyNodeMetrics>();
+                    if (IsMetricsAvailable)
+                    {
+                        _metricsRefreshTimer =  new(TimeSpan.FromSeconds(30), DispatcherPriority.Background, SyncData);
+                        _metricsRefreshTimer.Start();
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -367,7 +366,7 @@ public sealed partial class Cluster : ObservableObject
         return fqdnList;
     }
 
-    public async Task Delete<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public async Task<bool> Delete<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var api = GroupApiVersionKind.From<T>();
 
@@ -383,16 +382,15 @@ public sealed partial class Cluster : ObservableObject
             {
                 await client.DeleteNamespacedAsync<T>(item.Namespace(), item.Name());
             }
-        }
-        catch (JsonException ex)
-        {
-            _logger.LogError(ex, "Failed to delete");
+
+            return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to delete");
-            throw;
         }
+
+        return false;
     }
 
     public async Task<bool> CanDelete<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
