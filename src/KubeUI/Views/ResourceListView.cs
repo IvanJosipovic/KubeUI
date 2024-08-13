@@ -246,7 +246,6 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                                     .Width(300)
                                     .HorizontalAlignment(HorizontalAlignment.Right)
                                     .VerticalAlignment(VerticalAlignment.Center)
-                                    .Background(Brushes.Transparent)
                                     .Text(@vm.SearchQuery)
                                     .Watermark("Search"),
 

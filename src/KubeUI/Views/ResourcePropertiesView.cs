@@ -4,7 +4,6 @@ using Avalonia.Controls.Templates;
 using System.Text;
 using Avalonia.Controls.Primitives;
 using Avalonia.Styling;
-using Avalonia.Data.Converters;
 
 namespace KubeUI.Views;
 
@@ -12,7 +11,7 @@ public sealed class ResourcePropertiesView<T> : MyViewBase<ResourcePropertiesVie
 {
     protected override StyleGroup? BuildStyles() => [
         new Style(x => x.OfType<PropertyItem>())
-            .Setter(MarginProperty, new Thickness(0,0,0,15))
+            //.Setter(MarginProperty, new Thickness(0,0,0,15))
         ];
 
     protected override object Build(ResourcePropertiesViewModel<T>? vm)
@@ -24,15 +23,12 @@ public sealed class ResourcePropertiesView<T> : MyViewBase<ResourcePropertiesVie
             .Children([
                     new PropertyItem()
                         .Key("Name")
-                        .Margin(4,0,0,5)
                         .Value(@vm.Object.Metadata.Name),
                     new PropertyItem()
                         .Key("Namespace")
-                        .Margin(4,0,0,5)
                         .Value(@vm.Object.Metadata.NamespaceProperty),
                     new PropertyItem()
                         .Key("Created")
-                        .Margin(4,0,0,20)
                         .Set2(PropertyItem.ValueProperty, @vm.Object.Metadata.CreationTimestamp, converter: new ((x) => x.HasValue ? x.Value.ToLocalTime().ToString() : "" )),
             ]);
 
@@ -122,6 +118,12 @@ public partial class ExpandableSection : ViewBase
 
     protected override object Build() =>
         new Expander()
+            .Padding(5)
+            .MinHeight(20)
+            .Styles([
+                new Style(x => x.OfType<ToggleButton>())
+                    .Setter(PaddingProperty, new Thickness(8))
+                ])
             .DataContext(this)
             .IsExpanded(@IsExpanded)
             .Header(@Text)
@@ -163,21 +165,15 @@ public partial class HeaderItem : ViewBase
 
     protected override object Build() =>
         new StackPanel()
-            .Margin(0, 0, 0, 15)
             .DataContext(this)
             .Children([
-                //new TextBlock()
-                //    .Text(@Text)
-                //    .FontSize(16)
-                //    .FontWeight(FontWeight.Normal)
-                //    .Margin(0,0,0,10),
                 new PropertyItem()
                     .Key(@Text)
                     .Value("")
                     .Styles([
-                        new Style(x => x.OfType<Border>())
-                            .Setter(Border.BackgroundProperty, Brushes.Black)
-                            .Setter(Border.PaddingProperty, new Thickness(10))
+                        new Style(x => x.OfType<SelectableTextBlock>())
+                            .Setter(Border.BackgroundProperty, "SystemAltHighColor".GetDynamicResource())
+                            .Setter(Border.PaddingProperty, new Thickness(8))
                         ]),
                 new ItemsControl()
                     .ItemsSource(@Controls)
@@ -214,30 +210,30 @@ public partial class PropertyItem : ViewBase
 
     private string _value = string.Empty;
 
+    protected override StyleGroup? BuildStyles() => [
+        new Style(x => x.OfType<SelectableTextBlock>())
+            .Setter(PaddingProperty, new Thickness(5))
+        ];
+
     protected override object Build() =>
-        new Border()
-            .BorderBrush(Brushes.Black)
-            .BorderThickness(0,0,0,0)
-            .Child(
-            new Grid()
-                .DataContext(this)
-                .Cols("*,2*")
-                .VerticalAlignment(VerticalAlignment.Top)
-                .Children([
-                    new SelectableTextBlock()
-                        .Row(0).Col(0)
-                        .Text(@Key)
-                        .TextWrapping(TextWrapping.NoWrap)
-                        .FontWeight(FontWeight.Bold)
-                        .ToolTip(@Key),
-                    new ScrollViewer()
-                        .Row(0).Col(1)
-                        .MaxHeight(200)
-                        .VerticalScrollBarVisibility(ScrollBarVisibility.Auto)
-                        .Content(new SelectableTextBlock()
-                                    .Text(@Value)
-                                    .TextWrapping(TextWrapping.Wrap)
-                        ),
-                ]))
+        new Grid()
+            .DataContext(this)
+            .Cols("*,2*")
+            .VerticalAlignment(VerticalAlignment.Top)
+            .Children([
+                new SelectableTextBlock()
+                    .Row(0).Col(0)
+                    .Text(@Key)
+                    .TextWrapping(TextWrapping.NoWrap)
+                    .Set(ToolTip.TipProperty, @Key),
+                new ScrollViewer()
+                    .Row(0).Col(1)
+                    .MaxHeight(200)
+                    .VerticalScrollBarVisibility(ScrollBarVisibility.Auto)
+                    .Content(new SelectableTextBlock()
+                                .Text(@Value)
+                                .TextWrapping(TextWrapping.Wrap)
+                    ),
+            ])
         ;
 }

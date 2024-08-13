@@ -16,7 +16,6 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
 
     protected override StyleGroup? BuildStyles() => [
         new Style(x => x.OfType<TreeViewItem>())
-            .Setter(TreeViewItem.BackgroundProperty, Brushes.Transparent)
             .Setter(TreeViewItem.IsExpandedProperty, new Binding(nameof(Cluster.IsExpanded))),
 
         new Style(x => x.OfType<StackPanel>().Class("navigation-view-stack-panel"))

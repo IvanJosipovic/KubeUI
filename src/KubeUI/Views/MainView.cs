@@ -1,19 +1,12 @@
-﻿using Avalonia.Styling;
-using Dock.Avalonia.Controls;
+﻿using Dock.Avalonia.Controls;
 
 namespace KubeUI.Views;
 
 public sealed class MainView : MyViewBase<MainViewModel>
 {
-    protected override StyleGroup? BuildStyles() => [
-        new Style(x => x.Name("PART_PinnedDockGrid").Child().OfType<GridSplitter>().Child().OfType<Border>())
-            .Setter(Border.OpacityProperty, 0.0)
-        ];
-
     protected override object Build(MainViewModel vm) =>
         new Grid()
             .Rows("Auto,*")
-            .Background(Brushes.Transparent)
             .Children([
                 new Menu()
                     .Row(0)
@@ -28,7 +21,9 @@ public sealed class MainView : MyViewBase<MainViewModel>
                                 new MenuItem()
                                     .Header(Assets.Resources.MainView_Menu_File_Settings)
                                     .Command(vm.OpenSettingsCommand),
+
                                 new Separator(),
+
                                 new MenuItem()
                                     .Header(Assets.Resources.MainView_Menu_File_Exit)
                                     .Command(vm.CloseCommand),
