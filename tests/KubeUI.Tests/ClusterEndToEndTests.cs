@@ -152,7 +152,7 @@ public class ClusterEndToEndTests
         await Task.Delay(TimeSpan.FromSeconds(2));
 
         var ns = testHarness.Cluster.GetObjectDictionary<V1Namespace>().Values;
-        ns.Count().Should().BeGreaterThan(1);
+        ns.Count.Should().BeGreaterThan(1);
     }
 
     [AvaloniaFact]
