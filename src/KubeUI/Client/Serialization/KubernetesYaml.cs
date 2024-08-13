@@ -62,7 +62,7 @@ public static class KubernetesYaml
             return type == typeof(byte[]);
         }
 
-        public object ReadYaml(IParser parser, Type type)
+        public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
         {
             if (parser?.Current is Scalar scalar)
             {
@@ -84,7 +84,7 @@ public static class KubernetesYaml
             throw new InvalidOperationException(parser.Current?.ToString());
         }
 
-        public void WriteYaml(IEmitter emitter, object? value, Type type)
+        public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
         {
             var obj = (byte[])value;
             emitter?.Emit(new Scalar(Encoding.UTF8.GetString(obj)));
