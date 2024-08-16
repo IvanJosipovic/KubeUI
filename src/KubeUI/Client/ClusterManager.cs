@@ -3,21 +3,32 @@ using System.Text;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using k8s;
-using Microsoft.Extensions.DependencyInjection;
 using Scrutor;
+using Swordfish.NET.Collections;
+using Swordfish.NET.Collections.Auxiliary;
 
 namespace KubeUI.Client;
 
-[ServiceDescriptor<ClusterManager>(ServiceLifetime.Singleton)]
-public sealed partial class ClusterManager : ObservableObject
+public class ClusterComparer : IComparer<Cluster>
 {
-    public ObservableCollection<Cluster> Clusters { get; set; } = [];
+    public int Compare(Cluster? x, Cluster? y)
+    {
+        return x?.Name.CompareTo(y?.Name) ?? 0;
+    }
+}
+
+[ServiceDescriptor<ClusterManager>(ServiceLifetime.Singleton)]
+public sealed partial class ClusterManager : ObservableObject, IDisposable
+{
+    public ObservableSortedCollection<Cluster> Clusters { get; set; } = new(new ClusterComparer());
 
     private readonly ILogger<ClusterManager> _logger;
 
     private readonly IServiceProvider _serviceProvider;
 
     private readonly IFactory _factory;
+
+    private IDictionary<string, FileSystemWatcher> _fileWatchers = new Dictionary<string, FileSystemWatcher>();
 
     public ClusterManager(ILogger<ClusterManager> logger, IServiceProvider serviceProvider, IFactory factory)
     {
@@ -63,6 +74,34 @@ public sealed partial class ClusterManager : ObservableObject
         });
     }
 
+    private void WatchKubeConfig(string path)
+    {
+        if (_fileWatchers.ContainsKey(path))
+        {
+            return;
+        }
+
+        var dir = Path.GetDirectoryName(path);
+        var filename = Path.GetFileName(path);
+
+        var watcher = new FileSystemWatcher
+        {
+            Path = dir,
+            NotifyFilter =  NotifyFilters.LastWrite,
+            Filter = filename,
+            EnableRaisingEvents = true,
+        };
+
+        watcher.Changed += Watcher_Changed;
+
+        _fileWatchers.Add(path, watcher);
+    }
+
+    private void Watcher_Changed(object sender, FileSystemEventArgs e)
+    {
+        Dispatcher.UIThread.Post(() => LoadFromConfigFromPath(e.FullPath));
+    }
+
     private void LoadClusters()
     {
         LoadFromConfigFromPath(KubernetesClientConfiguration.KubeConfigDefaultLocation);
@@ -74,18 +113,47 @@ public sealed partial class ClusterManager : ObservableObject
 
         if (File.Exists(path))
         {
-            var config = KubernetesClientConfiguration.LoadKubeConfig(path);
-
-            foreach (var item in config.Contexts)
+            try
             {
-                var cluster = _serviceProvider.GetRequiredService<Cluster>();
-
-                cluster.Name = item.Name;
-
-                cluster.KubeConfigPath = config.FileName;
-
-                Clusters.Add(cluster);
+                WatchKubeConfig(path);
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unable to watch Kube Config {0}", path);
+            }
+
+            var count = 0;
+
+            do
+            {
+                try
+                {
+                    var config = KubernetesClientConfiguration.LoadKubeConfig(path);
+
+                    foreach (var item in config.Contexts)
+                    {
+                        var cluster = _serviceProvider.GetRequiredService<Cluster>();
+
+                        cluster.Name = item.Name;
+
+                        cluster.KubeConfigPath = config.FileName;
+
+                        if (!Clusters.Any(x => x.Name == cluster.Name && x.KubeConfigPath == cluster.KubeConfigPath))
+                        {
+                            Clusters.Add(cluster);
+                        }
+                    }
+                    //todo remove all clusters which are no longer in the config
+
+                    return;
+                }
+                catch (IOException ex)
+                {
+                    _logger.LogError(ex, "Unable to open Kube Config {0}", path);
+                    Task.Delay(1000).GetAwaiter().GetResult();
+                    count++;
+                }
+            } while (count <= 5);
         }
     }
 
@@ -144,5 +212,10 @@ public sealed partial class ClusterManager : ObservableObject
                 _logger.LogError(ex, "Error Removing Cluster from configuration");
             }
         }
+    }
+
+    public void Dispose()
+    {
+        _fileWatchers.ForEach(x => x.Value.Dispose());
     }
 }
