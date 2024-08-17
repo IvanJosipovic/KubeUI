@@ -18,5 +18,9 @@ public static Style<T> RightContent<T>(this Style<T> style, System.Object value)
 => style._addSetter(Ursa.Controls.TitleBar.RightContentProperty, value);
 public static Style<T> RightContent<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.TitleBar
 => style._addSetter(Ursa.Controls.TitleBar.RightContentProperty, binding);
+public static Style<T> IsTitleVisible<T>(this Style<T> style, System.Boolean value) where T : Ursa.Controls.TitleBar
+=> style._addSetter(Ursa.Controls.TitleBar.IsTitleVisibleProperty, value);
+public static Style<T> IsTitleVisible<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.TitleBar
+=> style._addSetter(Ursa.Controls.TitleBar.IsTitleVisibleProperty, binding);
 }
 
