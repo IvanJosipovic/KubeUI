@@ -34,7 +34,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: coverage.cobertura.xml
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
 
   semantic-release:
