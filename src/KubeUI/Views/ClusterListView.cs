@@ -32,7 +32,6 @@ public sealed class ClusterListView : MyViewBase<ClusterListViewModel>
                                 ]);
 
                                 Dispatcher.UIThread.Post(() => x.Columns[0].Sort(ListSortDirection.Ascending));
-                                return x;
                             }),
                         ]);
     }

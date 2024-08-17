@@ -34,9 +34,11 @@ public static class Utilities
         }
     }
 
-    public static T Set<T>(this T control, Func<T,T> func) where T : Control
+    public static T Set<T>(this T control, Action<T> func) where T : Control
     {
-        return func.Invoke(control);
+        func.Invoke(control);
+
+        return control;
     }
 
     public static TDataGrid Columns<TDataGrid>(this TDataGrid container, params DataGridColumn[] items) where TDataGrid : DataGrid

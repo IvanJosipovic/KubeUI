@@ -85,7 +85,6 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
                             if (ViewModel?.AutoScrollToBottom == true)
                                 editor.ScrollToEnd();
                         };
-                        return x;
                     })
                     .Document(@vm.Logs, BindingMode.OneWay)
                     .FontFamily(new FontFamily("Consolas,Menlo,Monospace"))

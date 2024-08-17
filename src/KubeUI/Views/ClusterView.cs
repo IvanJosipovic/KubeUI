@@ -1,4 +1,5 @@
 ﻿using Avalonia.Markup.Declarative;
+using Avalonia.Styling;
 using k8s.Models;
 using LiveChartsCore.Defaults;
 using LiveChartsCore.Measure;
@@ -28,7 +29,14 @@ public sealed class ClusterView : MyViewBase<ClusterViewModel>
         }
     }
 
-    private static SolidColorPaint _color = new(SKColors.White);
+    private static SolidColorPaint GetColor()
+    {
+        if (Application.Current.ActualThemeVariant ==  ThemeVariant.Dark)
+        {
+            return new(SKColors.White);
+        }
+        return new(SKColors.Black);
+    }
 
     private DispatcherTimer _timer = new();
 
@@ -37,7 +45,7 @@ public sealed class ClusterView : MyViewBase<ClusterViewModel>
         series.Name = name;
         series.DataLabelsPosition = PolarLabelsPosition.Start;
         series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue}";
-        series.DataLabelsPaint = _color;
+        series.DataLabelsPaint = GetColor();
         series.InnerRadius = 20;
         series.RelativeOuterRadius = 8;
         series.RelativeInnerRadius = 8;
@@ -46,7 +54,7 @@ public sealed class ClusterView : MyViewBase<ClusterViewModel>
 
     public static LabelVisual SetTitle(string name) => new LabelVisual()
     {
-        Paint = _color,
+        Paint = GetColor(),
         Text = name,
         TextSize = 25,
     };
@@ -56,7 +64,7 @@ public sealed class ClusterView : MyViewBase<ClusterViewModel>
         new Style<PieChart>()
             .Setter(PieChart.InitialRotationProperty, -90.0)
             .Setter(PieChart.LegendPositionProperty, LegendPosition.Bottom)
-            .Setter(PieChart.LegendTextPaintProperty, _color)
+            .Setter(PieChart.LegendTextPaintProperty, GetColor())
             .Setter(PieChart.MaxAngleProperty, 270.0)
     ];
 

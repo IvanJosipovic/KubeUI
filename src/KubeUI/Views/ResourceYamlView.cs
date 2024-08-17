@@ -84,7 +84,6 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
                             x.Options.ShowBoxForControlCharacters = false;
                             x.Options.EnableHyperlinks = false;
                             x.Options.EnableEmailHyperlinks = false;
-                            return x;
                         })
                         .Document(@vm.YamlDocument, BindingMode.OneWay)
                         .FontFamily(new FontFamily("Consolas,Menlo,Monospace"))

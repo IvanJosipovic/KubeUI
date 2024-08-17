@@ -58,7 +58,6 @@ public sealed class PortForwarderListView : MyViewBase<PortForwarderListViewMode
                         );
 
                         Dispatcher.UIThread.Post(() => x.Columns[0].Sort(ListSortDirection.Ascending));
-                        return x;
                     }),
                 ]);
     }
