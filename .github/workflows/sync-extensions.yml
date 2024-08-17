@@ -10,7 +10,7 @@ on:
 
 jobs:
   sync-extensions:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
 
       - name: Check out code
