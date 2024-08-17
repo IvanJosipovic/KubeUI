@@ -1,0 +1,34 @@
+name: sync-extensions
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  sync-crds:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Clean Extension
+        run: rm -rf ./src/KubeUI/ControlExtensions.Generated/*
+
+      - name: Install Tool
+        run: dotnet tool install --global AvaloniaExtensionGenerator --prerelease
+
+      - name: Run Generator
+        working-directory: src/KubeUI
+        run: avalonia-amd-gen
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: sync-extensions
+          commit-message: "feat: Update Extension"
+          title: "feat: Update Extension"
+          body: "Automated Extension Sync"
