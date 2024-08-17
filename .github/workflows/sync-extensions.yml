@@ -8,7 +8,7 @@ on:
 
 jobs:
   sync-extensions:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
 
       - name: Check out code
@@ -19,8 +19,9 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Clean Extension
-        run: rm -rf ./src/KubeUI/ControlExtensions.Generated/*
+      - name: Clean Extensions
+        shell: pwsh
+        run: Remove-Item "src/KubeUI/ControlExtensions.Generated/*"  -Force -Recurse
 
       - name: Install Tool
         run: dotnet tool install --global AvaloniaExtensionGenerator --prerelease
@@ -34,6 +35,6 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: sync-extensions
-          commit-message: "feat: Update Extension"
-          title: "feat: Update Extension"
+          commit-message: "chore: Update Extensions"
+          title: "chore: Update Extensions"
           body: "Automated Extension Sync"
