@@ -8,7 +8,7 @@ on:
 
 jobs:
   sync-extensions:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
 
       - name: Check out code
@@ -20,7 +20,8 @@ jobs:
           global-json-file: global.json
 
       - name: Clean Extension
-        run: rm -rf ./src/KubeUI/ControlExtensions.Generated
+        shell: pwsh
+        run: Remove-Item "src/KubeUI/ControlExtensions.Generated" -Force -Recurserm
 
       - name: Install Tool
         run: dotnet tool install --global AvaloniaExtensionGenerator --prerelease
