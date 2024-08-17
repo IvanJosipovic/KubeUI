@@ -3,7 +3,7 @@ name: sync-extensions
 on:
   push:
     branches:
-      - main
+      - alpha
   workflow_dispatch:
 
 jobs:
