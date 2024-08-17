@@ -7,12 +7,17 @@ on:
   workflow_dispatch:
 
 jobs:
-  sync-crds:
+  sync-extensions:
     runs-on: ubuntu-latest
     steps:
 
       - name: Check out code
         uses: actions/checkout@v4
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
 
       - name: Clean Extension
         run: rm -rf ./src/KubeUI/ControlExtensions.Generated/*
