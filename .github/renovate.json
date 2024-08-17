@@ -17,7 +17,7 @@
       "groupSlug": "avalonia-libs",
       "packageRules": [
         {
-          "matchPackagePatterns": [
+          "matchPackageNames": [
             "Avalonia",
             "Avalonia.*"
           ]
@@ -30,7 +30,7 @@
       "groupSlug": "dock",
       "packageRules": [
         {
-          "matchPackagePatterns": [
+          "matchPackageNames": [
             "Dock.*"
           ]
         }
