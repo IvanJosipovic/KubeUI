@@ -49,5 +49,9 @@ public static Style<T> ShowQuickJump<T>(this Style<T> style, System.Boolean valu
 => style._addSetter(Ursa.Controls.Pagination.ShowQuickJumpProperty, value);
 public static Style<T> ShowQuickJump<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.Pagination
 => style._addSetter(Ursa.Controls.Pagination.ShowQuickJumpProperty, binding);
+public static Style<T> DisplayCurrentPageInQuickJumper<T>(this Style<T> style, System.Boolean value) where T : Ursa.Controls.Pagination
+=> style._addSetter(Ursa.Controls.Pagination.DisplayCurrentPageInQuickJumperProperty, value);
+public static Style<T> DisplayCurrentPageInQuickJumper<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.Pagination
+=> style._addSetter(Ursa.Controls.Pagination.DisplayCurrentPageInQuickJumperProperty, binding);
 }
 
