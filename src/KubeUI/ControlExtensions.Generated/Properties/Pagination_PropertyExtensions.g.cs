@@ -104,5 +104,15 @@ public static T ShowQuickJump<T>(this T control, System.Boolean value, BindingMo
 => control._setEx(Ursa.Controls.Pagination.ShowQuickJumpProperty, ps, () => control.ShowQuickJump = value, bindingMode, converter, bindingSource);
 public static T ShowQuickJump<T,TValue>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Pagination
 => control._setEx(Ursa.Controls.Pagination.ShowQuickJumpProperty, ps, () => control.ShowQuickJump = converter.TryConvert(value), bindingMode, converter, bindingSource);
+public static T DisplayCurrentPageInQuickJumper<T>(this T control, IBinding binding) where T : Ursa.Controls.Pagination
+   => control._set(Ursa.Controls.Pagination.DisplayCurrentPageInQuickJumperProperty, binding);
+public static T DisplayCurrentPageInQuickJumper<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Ursa.Controls.Pagination
+   => control._set(Ursa.Controls.Pagination.DisplayCurrentPageInQuickJumperProperty, avaloniaProperty, bindingMode, converter, overrideView);
+public static T DisplayCurrentPageInQuickJumper<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.Pagination
+   => control._set(Ursa.Controls.Pagination.DisplayCurrentPageInQuickJumperProperty, func, onChanged, expression);
+public static T DisplayCurrentPageInQuickJumper<T>(this T control, System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Pagination
+=> control._setEx(Ursa.Controls.Pagination.DisplayCurrentPageInQuickJumperProperty, ps, () => control.DisplayCurrentPageInQuickJumper = value, bindingMode, converter, bindingSource);
+public static T DisplayCurrentPageInQuickJumper<T,TValue>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Pagination
+=> control._setEx(Ursa.Controls.Pagination.DisplayCurrentPageInQuickJumperProperty, ps, () => control.DisplayCurrentPageInQuickJumper = converter.TryConvert(value), bindingMode, converter, bindingSource);
 }
 
