@@ -1,4 +1,5 @@
-﻿using k8s.Models;
+﻿using Avalonia.Markup.Declarative;
+using k8s.Models;
 using LiveChartsCore.Defaults;
 using LiveChartsCore.Measure;
 using LiveChartsCore.SkiaSharpView;
@@ -65,78 +66,78 @@ public sealed class ClusterView : MyViewBase<ClusterViewModel>
         .Children(
             new PieChart()
                 .Row(0).Col(0)
-                .SetProp(PieChart.TitleProperty, SetTitle("CPU"))
-                .Set(PieChart.MaxValueProperty, @vm.CpuCapacity.Value)
-                .SetProp(PieChart.SeriesProperty, GaugeGenerator.BuildSolidGauge(
-                    new GaugeItem(vm.CpuCapacity, series => {
-                        SetSeries("Capacity", series);
-                        series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
-                        series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
-                    }),
-                    new GaugeItem(vm.CpuAllocatable, series => {
-                        SetSeries("Allocatable", series);
-                        series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
-                        series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
-                    }),
-                    new GaugeItem(vm.CpuLimits, series => {
-                        SetSeries("Limits", series);
-                        series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
-                        series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
-                    }),
-                    new GaugeItem(vm.CpuRequests, series => {
-                        SetSeries("Requests", series);
-                        series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
-                        series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
-                    }),
-                    new GaugeItem(vm.CpuUsage, series => {
-                        SetSeries("Usage", series);
-                        series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
-                        series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
-                    })
-                    )
+                .Title(SetTitle("CPU"))
+                .MaxValue(@vm.CpuCapacity.Value)
+                .Series(GaugeGenerator.BuildSolidGauge(
+                            new GaugeItem(vm.CpuCapacity, series => {
+                                SetSeries("Capacity", series);
+                                series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
+                                series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
+                            }),
+                            new GaugeItem(vm.CpuAllocatable, series => {
+                                SetSeries("Allocatable", series);
+                                series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
+                                series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
+                            }),
+                            new GaugeItem(vm.CpuLimits, series => {
+                                SetSeries("Limits", series);
+                                series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
+                                series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
+                            }),
+                            new GaugeItem(vm.CpuRequests, series => {
+                                SetSeries("Requests", series);
+                                series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
+                                series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
+                            }),
+                            new GaugeItem(vm.CpuUsage, series => {
+                                SetSeries("Usage", series);
+                                series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
+                                series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
+                            })
+                        )
                 ),
 
             new PieChart()
                 .Row(0).Col(1)
-                .SetProp(PieChart.TitleProperty, SetTitle("Memory"))
-                .Set(PieChart.MaxValueProperty, @vm.MemoryCapacity.Value)
-                .SetProp(PieChart.SeriesProperty, GaugeGenerator.BuildSolidGauge(
-                    new GaugeItem(vm.MemoryCapacity, series => {
-                        SetSeries("Capacity", series);
-                        series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F1}Gi";
-                        series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F1}Gi";
-                    }),
-                    new GaugeItem(vm.MemoryAllocatable, series => {
-                        SetSeries("Allocatable", series);
-                        series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F1}Gi";
-                        series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F1}Gi";
-                    }),
-                    new GaugeItem(vm.MemoryLimits, series => {
-                        SetSeries("Limits", series);
-                        series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F2}Gi";
-                        series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F1}Gi";
-                    }),
-                    new GaugeItem(vm.MemoryRequests, series => {
-                        SetSeries("Requests", series);
-                        series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F2}Gi";
-                        series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F1}Gi";
-                    }),
-                    new GaugeItem(vm.MemoryUsage, series => {
-                        SetSeries("Usage", series);
-                        series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F2}Gi";
-                        series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F1}Gi";
-                    })
-                    )
+                .Title(SetTitle("Memory"))
+                .MaxValue(@vm.MemoryCapacity.Value)
+                .Series(GaugeGenerator.BuildSolidGauge(
+                            new GaugeItem(vm.MemoryCapacity, series => {
+                                SetSeries("Capacity", series);
+                                series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F1}Gi";
+                                series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F1}Gi";
+                            }),
+                            new GaugeItem(vm.MemoryAllocatable, series => {
+                                SetSeries("Allocatable", series);
+                                series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F1}Gi";
+                                series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F1}Gi";
+                            }),
+                            new GaugeItem(vm.MemoryLimits, series => {
+                                SetSeries("Limits", series);
+                                series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F2}Gi";
+                                series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F1}Gi";
+                            }),
+                            new GaugeItem(vm.MemoryRequests, series => {
+                                SetSeries("Requests", series);
+                                series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F2}Gi";
+                                series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F1}Gi";
+                            }),
+                            new GaugeItem(vm.MemoryUsage, series => {
+                                SetSeries("Usage", series);
+                                series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F2}Gi";
+                                series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F1}Gi";
+                            })
+                        )
                 ),
 
             new PieChart()
                 .Row(0).Col(2)
-                .SetProp(PieChart.TitleProperty, SetTitle("Pods"))
-                .Set(PieChart.MaxValueProperty, @vm.MaxPods.Value)
-                .SetProp(PieChart.SeriesProperty, GaugeGenerator.BuildSolidGauge(
-                    new GaugeItem(vm.MaxPods, series => SetSeries("Capacity", series)),
-                    new GaugeItem(vm.TotalPods, series => SetSeries("Count", series))
-                    )
+                .Title(SetTitle("Pods"))
+                .MaxValue(@vm.MaxPods.Value)
+                .Series(GaugeGenerator.BuildSolidGauge(
+                            new GaugeItem(vm.MaxPods, series => SetSeries("Capacity", series)),
+                            new GaugeItem(vm.TotalPods, series => SetSeries("Count", series))
+                        )
                 ),
 
             new Grid()

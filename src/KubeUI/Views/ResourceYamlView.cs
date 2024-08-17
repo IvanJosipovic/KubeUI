@@ -51,8 +51,8 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
                                     .ToolTip(Assets.Resources.ResourceYamlViewer_Edit)
                                     .Content(new PathIcon() { Data = (Geometry)Application.Current.FindResource("document_edit_regular") }),
                                 new ToggleButton()
+                                    .IsChecked(@vm.HideNoisyFields, BindingMode.OneWay)
                                     .Command(@vm.SetHideNoisyFieldsCommand)
-                                    .Set(ToggleButton.IsCheckedProperty, @vm.HideNoisyFields, BindingMode.OneWay)
                                     .ToolTip(Assets.Resources.ResourceYamlViewer_HideNoisyFields)
                                     .Content(new PathIcon() { Data = (Geometry)Application.Current.FindResource("eye_hide_regular") }),
                             ]),
@@ -86,55 +86,57 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
                             x.Options.EnableEmailHyperlinks = false;
                             return x;
                         })
-                        .Set(TextEditor.DocumentProperty, @vm.YamlDocument, BindingMode.OneWay)
-                        .Set(TextEditor.FontFamilyProperty, new FontFamily("Consolas,Menlo,Monospace"))
-                        .Set(TextEditor.FontSizeProperty, 14.0)
-                        .Set(TextEditor.FontWeightProperty, FontWeight.Normal)
-                        .Set(TextEditor.IsReadOnlyProperty, @vm.EditMode, converter: Utilities.InverseBooleanConverter)
-                        .Set(TextEditor.ShowLineNumbersProperty, true)
+                        .Document(@vm.YamlDocument, BindingMode.OneWay)
+                        .FontFamily(new FontFamily("Consolas,Menlo,Monospace"))
+                        .FontSize(14.0)
+                        .FontWeight(FontWeight.Normal)
+                        .IsReadOnly(@vm.EditMode, converter: Utilities.InverseBooleanConverter)
+                        .ShowLineNumbers(true)
                         .HorizontalScrollBarVisibility(ScrollBarVisibility.Auto)
                         .VerticalScrollBarVisibility(ScrollBarVisibility.Visible)
-                        .ContextMenu([
-                                new MenuItem()
-                                    .OnClick((x) => editor.Cut())
-                                    .Header(Assets.Resources.Action_Cut)
-                                    .InputGesture(new KeyGesture(Key.X, KeyModifiers.Control))
-                                    .IsVisible(@vm.EditMode)
-                                    .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("cut_regular") }),
-                                new MenuItem()
-                                    .OnClick((x) => editor.Copy())
-                                    .Header(Assets.Resources.Action_Copy)
-                                    .InputGesture(new KeyGesture(Key.C, KeyModifiers.Control))
-                                    .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("copy_regular") }),
-                                new MenuItem()
-                                    .OnClick((x) => editor.Paste())
-                                    .Header(Assets.Resources.Action_Paste)
-                                    .InputGesture(new KeyGesture(Key.V, KeyModifiers.Control))
-                                    .IsVisible(@vm.EditMode)
-                                    .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("clipboard_paste_regular") }),
-                                new MenuItem()
-                                    .OnClick((x) => editor.Delete())
-                                    .Header(Assets.Resources.Action_Delete)
-                                    .InputGesture(new KeyGesture(Key.Back))
-                                    .IsVisible(@vm.EditMode)
-                                    .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("delete_regular") }),
+                        .ContextMenu(new ContextMenu()
+                                        .Items([
+                                            new MenuItem()
+                                                .OnClick((x) => editor.Cut())
+                                                .Header(Assets.Resources.Action_Cut)
+                                                .InputGesture(new KeyGesture(Key.X, KeyModifiers.Control))
+                                                .IsVisible(@vm.EditMode)
+                                                .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("cut_regular") }),
+                                            new MenuItem()
+                                                .OnClick((x) => editor.Copy())
+                                                .Header(Assets.Resources.Action_Copy)
+                                                .InputGesture(new KeyGesture(Key.C, KeyModifiers.Control))
+                                                .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("copy_regular") }),
+                                            new MenuItem()
+                                                .OnClick((x) => editor.Paste())
+                                                .Header(Assets.Resources.Action_Paste)
+                                                .InputGesture(new KeyGesture(Key.V, KeyModifiers.Control))
+                                                .IsVisible(@vm.EditMode)
+                                                .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("clipboard_paste_regular") }),
+                                            new MenuItem()
+                                                .OnClick((x) => editor.Delete())
+                                                .Header(Assets.Resources.Action_Delete)
+                                                .InputGesture(new KeyGesture(Key.Back))
+                                                .IsVisible(@vm.EditMode)
+                                                .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("delete_regular") }),
 
-                                new Separator()
-                                    .IsVisible(@vm.EditMode),
+                                            new Separator()
+                                                .IsVisible(@vm.EditMode),
 
-                                new MenuItem()
-                                    .OnClick((x) => editor.Undo())
-                                    .Header(Assets.Resources.Action_Undo)
-                                    .InputGesture(new KeyGesture(Key.Z, KeyModifiers.Control))
-                                    .IsVisible(@vm.EditMode)
-                                    .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("arrow_undo_regular") }),
-                                new MenuItem()
-                                    .OnClick((x) => editor.Redo())
-                                    .Header(Assets.Resources.Action_Redo)
-                                    .InputGesture(new KeyGesture(Key.Y, KeyModifiers.Control))
-                                    .IsVisible(@vm.EditMode)
-                                    .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("arrow_redo_regular") }),
-                            ]),
+                                            new MenuItem()
+                                                .OnClick((x) => editor.Undo())
+                                                .Header(Assets.Resources.Action_Undo)
+                                                .InputGesture(new KeyGesture(Key.Z, KeyModifiers.Control))
+                                                .IsVisible(@vm.EditMode)
+                                                .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("arrow_undo_regular") }),
+                                            new MenuItem()
+                                                .OnClick((x) => editor.Redo())
+                                                .Header(Assets.Resources.Action_Redo)
+                                                .InputGesture(new KeyGesture(Key.Y, KeyModifiers.Control))
+                                                .IsVisible(@vm.EditMode)
+                                                .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("arrow_redo_regular") }),
+                                        ])
+                        ),
                 ]);
     }
 

@@ -53,24 +53,19 @@ public static class Utilities
         return container;
     }
 
-    public static TControl ContextMenu<TControl>(this TControl container, params Control[] items) where TControl : Control
-    {
-        container.ContextMenu ??= new ContextMenu();
+    //public static TControl ContextMenu<TControl>(this TControl container, params Control[] items) where TControl : Control
+    //{
+    //    container.ContextMenu ??= new ContextMenu();
 
-        foreach (var item in items)
-        {
-            container.ContextMenu.Items.Add(item);
-        }
+    //    foreach (var item in items)
+    //    {
+    //        container.ContextMenu.Items.Add(item);
+    //    }
 
-        return container;
-    }
+    //    return container;
+    //}
 
-    public static TControl Set<TControl>(this TControl control, AvaloniaProperty property, Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where TControl : Control
-    {
-        return control._setEx(property, ps, () => control[property] = value, bindingMode, converter, bindingSource);
-    }
-
-    public static TControl Set2<TControl,TValue>(this TControl control, AvaloniaProperty property, TValue value, FuncValueConverter<TValue, object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where TControl : Control
+    public static TControl Set<TControl,TValue>(this TControl control, AvaloniaProperty property, TValue value, FuncValueConverter<TValue, object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where TControl : Control
     {
         return control._setEx(property, ps, () => control[property] = converter.TryConvert(value), bindingMode, converter, bindingSource);
     }

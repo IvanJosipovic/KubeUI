@@ -5,35 +5,35 @@ public sealed class ClusterListView : MyViewBase<ClusterListViewModel>
     protected override object Build(ClusterListViewModel? vm)
     {
         return new Grid()
-            .Children([
-                new DataGrid()
-                    .Set(x => {
-                        x.CanUserReorderColumns = true;
-                        x.CanUserResizeColumns = true;
-                        x.GridLinesVisibility = DataGridGridLinesVisibility.All;
-                        x.ItemsSource = vm.ClusterManager.Clusters;
-                        x.IsReadOnly = true;
-                        x.Set(DataGrid.SelectedItemProperty, @vm.SelectedItem);
+                    .Children([
+                        new DataGrid()
+                            .SelectedItem(@vm.SelectedItem)
+                            .CanUserReorderColumns(true)
+                            .CanUserResizeColumns(true)
+                            .GridLinesVisibility(DataGridGridLinesVisibility.All)
+                            .ItemsSource(@vm.ClusterManager.Clusters)
+                            .IsReadOnly(true)
+                            .ContextMenu(new ContextMenu()
+                                            .Items([
+                                                new MenuItem()
+                                                    .Command(vm.DeleteCommand)
+                                                    .CommandParameter(@vm.SelectedItem)
+                                                    .Header("Delete")
+                                                    .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("delete_regular") })
+                                            ])
+                            )
+                            .Set(x => {
+                                x.Columns([
+                                    new DataGridTextColumn()
+                                    {
+                                        Binding = new Binding("Name"),
+                                        Header = "Name",
+                                    },
+                                ]);
 
-                        x.Columns([
-                            new DataGridTextColumn()
-                            {
-                                Binding = new Binding("Name"),
-                                Header = "Name",
-                            }
-                            ]);
-
-                        x.ContextMenu([
-                            new MenuItem()
-                                .Command(vm.DeleteCommand)
-                                .CommandParameter(@vm.SelectedItem)
-                                .Header("Delete")
-                                .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("delete_regular") }),
-                            ]);
-
-                        Dispatcher.UIThread.Post(() => x.Columns[0].Sort(ListSortDirection.Ascending));
-                        return x;
-                    }),
-                ]);
+                                Dispatcher.UIThread.Post(() => x.Columns[0].Sort(ListSortDirection.Ascending));
+                                return x;
+                            }),
+                        ]);
     }
 }

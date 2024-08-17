@@ -74,7 +74,7 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
                                 .Data(@vm.StyleIcon, s_resoureConverter)
                                 .IsVisible(@vm.StyleIcon, Utilities.NotNullConverter),
                             new Avalonia.Svg.Skia.Svg(new Uri("avares://KubeUI/"))
-                                .Set(Avalonia.Svg.Skia.Svg.PathProperty, @vm.SvgIcon)
+                                .Path(@vm.SvgIcon)
                                 .IsVisible(@vm.SvgIcon, Utilities.NotNullConverter),
                             new TextBlock()
                                 .Text(@vm.Name),
@@ -93,7 +93,7 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
                                 .Data(@vm.StyleIcon, s_resoureConverter)
                                 .IsVisible(@vm.StyleIcon, Utilities.NotNullConverter),
                             new Avalonia.Svg.Skia.Svg(new Uri("avares://KubeUI/"))
-                                .Set(Avalonia.Svg.Skia.Svg.PathProperty, @vm.SvgIcon)
+                                .Path(@vm.SvgIcon)
                                 .IsVisible(@vm.SvgIcon, Utilities.NotNullConverter),
                             new TextBlock()
                                 .Text(@vm.Name)

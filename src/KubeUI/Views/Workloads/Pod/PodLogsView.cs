@@ -87,22 +87,24 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
                         };
                         return x;
                     })
-                    .Set(TextEditor.DocumentProperty, @vm.Logs, BindingMode.OneWay)
-                    .Set(TextEditor.FontFamilyProperty, new FontFamily("Consolas,Menlo,Monospace"))
-                    .Set(TextEditor.FontSizeProperty, 14.0)
-                    .Set(TextEditor.FontWeightProperty, FontWeight.Normal)
-                    .Set(TextEditor.IsReadOnlyProperty, true)
-                    .Set(TextEditor.ShowLineNumbersProperty, false)
+                    .Document(@vm.Logs, BindingMode.OneWay)
+                    .FontFamily(new FontFamily("Consolas,Menlo,Monospace"))
+                    .FontSize(14.0)
+                    .FontWeight(FontWeight.Normal)
+                    .IsReadOnly(true)
+                    .ShowLineNumbers(false)
                     .Background(Brushes.Black)
                     .HorizontalScrollBarVisibility(ScrollBarVisibility.Auto)
                     .VerticalScrollBarVisibility(ScrollBarVisibility.Visible)
-                    .ContextMenu([
-                            new MenuItem()
-                                .OnClick((_) => editor.Copy())
-                                .Header(Assets.Resources.Action_Copy)
-                                .InputGesture(new KeyGesture(Key.C, KeyModifiers.Control))
-                                .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("copy_regular") }),
-                        ]),
+                    .ContextMenu(new ContextMenu()
+                                    .Items([
+                                        new MenuItem()
+                                            .OnClick((_) => editor.Copy())
+                                            .Header(Assets.Resources.Action_Copy)
+                                            .InputGesture(new KeyGesture(Key.C, KeyModifiers.Control))
+                                            .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("copy_regular") }),
+                                    ])
+                    ),
             ]);
     }
 

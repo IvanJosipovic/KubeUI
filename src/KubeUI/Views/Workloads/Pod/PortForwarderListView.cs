@@ -9,14 +9,13 @@ public sealed class PortForwarderListView : MyViewBase<PortForwarderListViewMode
         return new Grid()
             .Children([
                 new DataGrid()
+                    .SelectedItem(@vm.SelectedItem)
+                    .CanUserReorderColumns(true)
+                    .CanUserResizeColumns(true)
+                    .GridLinesVisibility(DataGridGridLinesVisibility.All)
+                    .ItemsSource(@vm.Cluster.PortForwarders)
+                    .IsReadOnly(true)
                     .Set(x => {
-                        x.CanUserReorderColumns = true;
-                        x.CanUserResizeColumns = true;
-                        x.GridLinesVisibility = DataGridGridLinesVisibility.All;
-                        x.IsReadOnly = true;
-                        x.ItemsSource = @vm.Cluster.PortForwarders;
-                        x._set(DataGrid.SelectedItemProperty, new Binding(nameof(vm.SelectedItem)));
-
                         x.Columns([
                             new DataGridTextColumn()
                             {
@@ -45,16 +44,18 @@ public sealed class PortForwarderListView : MyViewBase<PortForwarderListViewMode
                             },
                         ]);
 
-                        x.ContextMenu([
-                            new MenuItem()
-                                .Command(vm.OpenCommand)
-                                .CommandParameter(new Binding(nameof(vm.SelectedItem)))
-                                .Header("Open in Browser"),
-                            new MenuItem()
-                                .Command(vm.RemoveCommand)
-                                .CommandParameter(new Binding(nameof(vm.SelectedItem)))
-                                .Header("Remove"),
-                        ]);
+                        x.ContextMenu(new ContextMenu()
+                                        .Items([
+                                            new MenuItem()
+                                                .Command(vm.OpenCommand)
+                                                .CommandParameter(new Binding(nameof(vm.SelectedItem)))
+                                                .Header("Open in Browser"),
+                                            new MenuItem()
+                                                .Command(vm.RemoveCommand)
+                                                .CommandParameter(new Binding(nameof(vm.SelectedItem)))
+                                                .Header("Remove"),
+                                        ])
+                        );
 
                         Dispatcher.UIThread.Post(() => x.Columns[0].Sort(ListSortDirection.Ascending));
                         return x;

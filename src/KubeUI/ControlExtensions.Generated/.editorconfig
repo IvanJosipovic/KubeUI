@@ -1,0 +1,7 @@
+# editorconfig.org
+
+# top-most EditorConfig file
+root = true
+
+[*]
+generated_code = true

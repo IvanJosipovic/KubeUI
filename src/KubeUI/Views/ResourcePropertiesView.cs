@@ -29,7 +29,7 @@ public sealed class ResourcePropertiesView<T> : MyViewBase<ResourcePropertiesVie
                         .Value(@vm.Object.Metadata.NamespaceProperty),
                     new PropertyItem()
                         .Key("Created")
-                        .Set2(PropertyItem.ValueProperty, @vm.Object.Metadata.CreationTimestamp, converter: new ((x) => x.HasValue ? x.Value.ToLocalTime().ToString() : "" )),
+                        .Set(PropertyItem.ValueProperty, @vm.Object.Metadata.CreationTimestamp, converter: new ((x) => x.HasValue ? x.Value.ToLocalTime().ToString() : "" )),
             ]);
 
         if (typeof(T) == typeof(V1Secret))
@@ -225,7 +225,7 @@ public partial class PropertyItem : ViewBase
                     .Row(0).Col(0)
                     .Text(@Key)
                     .TextWrapping(TextWrapping.NoWrap)
-                    .Set(ToolTip.TipProperty, @Key),
+                    .ToolTip(@Key),
                 new ScrollViewer()
                     .Row(0).Col(1)
                     .MaxHeight(200)

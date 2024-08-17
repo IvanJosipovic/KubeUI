@@ -257,31 +257,28 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                                     .Classes("ClearButton")
                                     .IsVisible(@vm.ViewDefinition.ShowNamespaces)
                                     .ItemsSource(@vm.Cluster.Namespaces.Values)
-                                    .Set(MultiComboBox.SelectedItemsProperty, @vm.Cluster.SelectedNamespaces)
-                                    .Set(MultiComboBox.SelectedItemTemplateProperty, new FuncDataTemplate<V1Namespace?>((x,y) => new Label().Content(@x?.Metadata.Name)))
-                                    .Set(MultiComboBox.ItemTemplateProperty, new FuncDataTemplate<V1Namespace?>((x,y) => new Label().Content(@x?.Metadata.Name)))
+                                    .SelectedItems(@vm.Cluster.SelectedNamespaces)
+                                    .SelectedItemTemplate(new FuncDataTemplate<V1Namespace?>((x,y) => new Label().Content(@x?.Metadata.Name)))
+                                    .ItemTemplate(new FuncDataTemplate<V1Namespace?>((x,y) => new Label().Content(@x?.Metadata.Name)))
                             ]),
                         ]),
                 new DataGrid()
                     .Ref(out _grid)
                     .Row(1)
-                    .Set(DataGrid.ItemsSourceProperty, @vm.DataGridObjects)
-                    .Set(DataGrid.SelectedItemProperty, @vm.SelectedItem)
-                    .Set(x => {
-                        x.CanUserReorderColumns = true;
-                        x.CanUserResizeColumns = true;
-                        x.CanUserSortColumns = true;
-                        x.GridLinesVisibility = DataGridGridLinesVisibility.All;
-                        x.IsReadOnly = true;
-                        x.MinColumnWidth = 90;
-                        x.RowHeight = 32;
-                        x.Tapped += (s, e) => {
-                            if(vm.ViewCommand.CanExecute(x.SelectedItem))
-                            {
-                                vm.ViewCommand.Execute(x.SelectedItem);
-                            }
-                        };
-                        return x;
+                    .ItemsSource(@vm.DataGridObjects)
+                    .SelectedItem(@vm.SelectedItem)
+                    .CanUserReorderColumns(true)
+                    .CanUserResizeColumns(true)
+                    .GridLinesVisibility(DataGridGridLinesVisibility.All)
+                    .IsReadOnly(true)
+                    .MinColumnWidth(90)
+                    .RowHeight(32)
+                    .OnTapped((x) =>
+                    {
+                        if(vm.ViewCommand.CanExecute(_grid.SelectedItem))
+                        {
+                            vm.ViewCommand.Execute(_grid.SelectedItem);
+                        }
                     }),
             ]);
 
