@@ -20,13 +20,13 @@ jobs:
           global-json-file: global.json
 
       - name: Clean Extension
-        run: rm -rf ./src/KubeUI/ControlExtensions.Generated/*
+        run: rm -rf ./src/KubeUI/ControlExtensions.Generated
 
       - name: Install Tool
         run: dotnet tool install --global AvaloniaExtensionGenerator --prerelease
 
       - name: Run Generator
-        working-directory: src/KubeUI
+        working-directory: src/KubeUI/
         run: avalonia-amd-gen
 
       - name: Create Pull Request
@@ -34,6 +34,6 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: sync-extensions
-          commit-message: "feat: Update Extension"
-          title: "feat: Update Extension"
+          commit-message: "chore: Update Extensions"
+          title: "chore: Update Extensions"
           body: "Automated Extension Sync"
