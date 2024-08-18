@@ -24,6 +24,10 @@ public partial class App : Application
     {
         AvaloniaXamlLoader.Load(this);
 
+#if DEBUG
+        this.AttachDevTools();
+#endif
+
         LiveCharts.Configure(config => config
                                         .AddDarkTheme()
                                         .AddLightTheme()
