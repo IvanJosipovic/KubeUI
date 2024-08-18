@@ -3,7 +3,7 @@ using LiveChartsCore.Defaults;
 
 namespace KubeUI.ViewModels;
 
-public sealed partial class ClusterViewModel : ViewModelBase, IInitalizeCluster, INotifyPropertyChanged
+public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster, INotifyPropertyChanged
 {
     [ObservableProperty]
     private Client.Cluster _cluster;
@@ -83,7 +83,7 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitalizeCluster,
 
         RefreshData();
 
-        if (EventsVM is IInitalizeCluster init)
+        if (EventsVM is IInitializeCluster init)
         {
             init.Initialize(Cluster);
         }

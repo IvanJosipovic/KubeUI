@@ -5,7 +5,7 @@ using KubeUI.Client;
 
 namespace KubeUI.ViewModels;
 
-public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitalizeCluster
+public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitializeCluster
 {
     private readonly IDialogService _dialogService;
 

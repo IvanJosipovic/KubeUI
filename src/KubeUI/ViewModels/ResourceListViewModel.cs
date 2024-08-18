@@ -18,7 +18,7 @@ using Swordfish.NET.Collections;
 
 namespace KubeUI.ViewModels;
 
-public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster, IDisposable where T : class, IKubernetesObject<V1ObjectMeta>, new()
+public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluster, IDisposable where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     private readonly ILogger<ResourceListViewModel<T>> _logger;
     private readonly IDialogService _dialogService;
@@ -210,7 +210,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
                     Name = "CPU",
                     Field = x => x.Status?.Capacity?.TryGetValue("cpu", out var value) == true ? value.ToDecimal() : 0,
                     Display = x => x.Status?.Capacity?.TryGetValue("cpu", out var value) == true ? value.ToDecimal().ToString("0.##") + "c" : "0c",
-                       Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListViewDefinitionColumn<V1Node, decimal>()
                 {
@@ -293,6 +293,66 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
                     Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss"),
                     Width = "80"
                 }
+            ];
+        }
+        else if (resourceType == typeof(Corev1Event))
+        {
+            definition.Columns =
+            [
+                new ResourceListViewDefinitionColumn<Corev1Event, string>()
+                {
+                    Name = "Type",
+                    Field = x => x.Type,
+                    Width = nameof(DataGridLengthUnitType.SizeToCells)
+                },
+                new ResourceListViewDefinitionColumn<Corev1Event, string>()
+                {
+                    Name = "Message",
+                    Field = x => x.Message,
+                    Width = "4*"
+                },
+                new ResourceListViewDefinitionColumn<Corev1Event, string>()
+                {
+                    Name = "Namespace",
+                    Field = x => x.Metadata.NamespaceProperty,
+                    Width = "*"
+                },
+                new ResourceListViewDefinitionColumn<Corev1Event, string>()
+                {
+                    Name = "Involved Object",
+                    Field = x => x.InvolvedObject.Name,
+                    Width = "*"
+                },
+                new ResourceListViewDefinitionColumn<Corev1Event, string>()
+                {
+                    Name = "Source",
+                    Field = x => x.Source.Component ?? "",
+                    Width = "*"
+                },
+                new ResourceListViewDefinitionColumn<Corev1Event, int>()
+                {
+                    Name = "Count",
+                    Display = x => (x.Count ?? 0).ToString(),
+                    Field = x => x.Count ?? 0,
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+                new ResourceListViewDefinitionColumn<Corev1Event, DateTime?>()
+                {
+                    Name = "Last Seen",
+                    CustomControl = typeof(LastSeenCell),
+                    Field = x => x.LastTimestamp,
+                    Display = x => x.LastTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
+                    Sort = SortDirection.Descending,
+                    Width = "80"
+                },
+                new ResourceListViewDefinitionColumn<Corev1Event, DateTime?>()
+                {
+                    Name = "Age",
+                    CustomControl = typeof(AgeCell),
+                    Field = x => x.Metadata.CreationTimestamp,
+                    Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
+                    Width = "80"
+                },
             ];
         }
         else if (resourceType == typeof(V1Pod))
@@ -455,6 +515,81 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
                 }
             ];
         }
+        else if (resourceType == typeof(V1DaemonSet))
+        {
+            definition.Columns =
+            [
+                new ResourceListViewDefinitionColumn<V1DaemonSet, string>()
+                {
+                    Name = "Name",
+                    Field = x => x.Metadata.Name,
+                    Sort = SortDirection.Ascending,
+                    Width = "2*",
+                },
+                new ResourceListViewDefinitionColumn<V1DaemonSet, string>()
+                {
+                    Name = "Namespace",
+                    Field = x => x.Metadata.NamespaceProperty,
+                    Width = "*",
+                },
+                new ResourceListViewDefinitionColumn<V1DaemonSet, int>()
+                {
+                    Name = "Pods",
+                    Display = x => x.Status.NumberReady.ToString(),
+                    Field = x => x.Status.NumberReady,
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+                new ResourceListViewDefinitionColumn<V1DaemonSet, string>()
+                {
+                    Name = "Node Selector",
+                    Display = x => x.Spec.Selector.MatchLabels.Select(z => z.Key + "=" + z.Value).Aggregate((x,y) => x + ", " + y),
+                    Field = x => x.Spec.Selector.MatchLabels.Select(z => z.Key + "=" + z.Value).Aggregate((x,y) => x + ", " + y),
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+                new ResourceListViewDefinitionColumn<V1DaemonSet, DateTime?>()
+                {
+                    Name = "Age",
+                    CustomControl = typeof(AgeCell),
+                    Field = x => x.Metadata.CreationTimestamp,
+                    Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
+                    Width = "80"
+                }
+            ];
+        }
+        else if (resourceType == typeof(V1StatefulSet))
+        {
+            definition.Columns =
+            [
+                new ResourceListViewDefinitionColumn<V1StatefulSet, string>()
+                {
+                    Name = "Name",
+                    Field = x => x.Metadata.Name,
+                    Sort = SortDirection.Ascending,
+                    Width = "2*",
+                },
+                new ResourceListViewDefinitionColumn<V1StatefulSet, string>()
+                {
+                    Name = "Namespace",
+                    Field = x => x.Metadata.NamespaceProperty,
+                    Width = "*",
+                },
+                new ResourceListViewDefinitionColumn<V1StatefulSet, int>()
+                {
+                    Name = "Replicas",
+                    Display = x => x.Status.Replicas.ToString(),
+                    Field = x => x.Status.Replicas,
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+                new ResourceListViewDefinitionColumn<V1StatefulSet, DateTime?>()
+                {
+                    Name = "Age",
+                    CustomControl = typeof(AgeCell),
+                    Field = x => x.Metadata.CreationTimestamp,
+                    Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
+                    Width = "80"
+                }
+            ];
+        }
         else if (resourceType == typeof(V1CustomResourceDefinition))
         {
             definition.ShowNamespaces = false;
@@ -506,66 +641,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
                 },
             ];
 
-        }
-        else if (resourceType == typeof(Corev1Event))
-        {
-            definition.Columns =
-            [
-                new ResourceListViewDefinitionColumn<Corev1Event, string>()
-                {
-                    Name = "Type",
-                    Field = x => x.Type,
-                    Width = nameof(DataGridLengthUnitType.SizeToCells)
-                },
-                new ResourceListViewDefinitionColumn<Corev1Event, string>()
-                {
-                    Name = "Message",
-                    Field = x => x.Message,
-                    Width = "4*"
-                },
-                new ResourceListViewDefinitionColumn<Corev1Event, string>()
-                {
-                    Name = "Namespace",
-                    Field = x => x.Metadata.NamespaceProperty,
-                    Width = "*"
-                },
-                new ResourceListViewDefinitionColumn<Corev1Event, string>()
-                {
-                    Name = "Involved Object",
-                    Field = x => x.InvolvedObject.Name,
-                    Width = "*"
-                },
-                new ResourceListViewDefinitionColumn<Corev1Event, string>()
-                {
-                    Name = "Source",
-                    Field = x => x.Source.Component ?? "",
-                    Width = "*"
-                },
-                new ResourceListViewDefinitionColumn<Corev1Event, int>()
-                {
-                    Name = "Count",
-                    Display = x => (x.Count ?? 0).ToString(),
-                    Field = x => x.Count ?? 0,
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
-                },
-                new ResourceListViewDefinitionColumn<Corev1Event, DateTime?>()
-                {
-                    Name = "Last Seen",
-                    CustomControl = typeof(LastSeenCell),
-                    Field = x => x.LastTimestamp,
-                    Display = x => x.LastTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
-                    Sort = SortDirection.Descending,
-                    Width = "80"
-                },
-                new ResourceListViewDefinitionColumn<Corev1Event, DateTime?>()
-                {
-                    Name = "Age",
-                    CustomControl = typeof(AgeCell),
-                    Field = x => x.Metadata.CreationTimestamp,
-                    Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
-                    Width = "80"
-                },
-            ];
         }
         else
         {
@@ -1036,7 +1111,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitalizeCluster
 
         var vm = Application.Current.GetRequiredService(resourceListType) as IDockable;
 
-        if (vm is IInitalizeCluster init)
+        if (vm is IInitializeCluster init)
         {
             init.Initialize(Cluster);
         }

@@ -52,7 +52,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                             var control = Application.Current.GetRequiredService(columnDefinition.CustomControl) as Control;
                             control.DataContext = item.Value;
 
-                            if (control is IInitalizeCluster init)
+                            if (control is IInitializeCluster init)
                             {
                                 init.Initialize(ViewModel.Cluster);
                             }

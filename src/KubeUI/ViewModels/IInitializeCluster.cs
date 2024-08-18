@@ -1,6 +1,6 @@
 ﻿namespace KubeUI.ViewModels;
 
-internal interface IInitalizeCluster
+internal interface IInitializeCluster
 {
     void Initialize(Client.Cluster cluster);
 }

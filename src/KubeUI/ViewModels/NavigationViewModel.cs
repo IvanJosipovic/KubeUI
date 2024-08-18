@@ -40,7 +40,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
 
         var vm = Application.Current.GetRequiredService(resourceListType) as IDockable;
 
-        if (vm is IInitalizeCluster init)
+        if (vm is IInitializeCluster init)
         {
             init.Initialize(link.Cluster);
         }
@@ -86,7 +86,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
         {
             var vm = Application.Current.GetRequiredService(link.ControlType) as IDockable;
 
-            if (vm is IInitalizeCluster init)
+            if (vm is IInitializeCluster init)
             {
                 init.Initialize(link.Cluster);
             }
