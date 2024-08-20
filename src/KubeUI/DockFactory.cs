@@ -180,21 +180,18 @@ public static class FactoryExtensions
         return factory.Find(x => string.Equals(x.Id, id, StringComparison.Ordinal)).FirstOrDefault();
     }
 
-    public static bool AddToDocuments(this IFactory factory, IDockable vm, bool duplicateCheck = true)
+    public static bool AddToDocuments(this IFactory factory, IDockable vm)
     {
         var documents = factory.GetDockable<IDocumentDock>("Documents");
 
-        if (duplicateCheck)
+        var existing = factory.FindDockableById(vm.Id);
+
+        if (existing != null)
         {
-            var existing = factory.FindDockableById(vm.Id);
+            factory.SetActiveDockable(existing);
+            factory.SetFocusedDockable(documents, existing);
 
-            if (existing != null)
-            {
-                factory.SetActiveDockable(existing);
-                factory.SetFocusedDockable(documents, existing);
-
-                return false;
-            }
+            return false;
         }
 
         factory.AddDockable(documents, vm);
@@ -204,7 +201,7 @@ public static class FactoryExtensions
         return true;
     }
 
-    public static bool AddToBottom(this IFactory factory, IDockable vm, bool duplicateCheck = true)
+    public static bool AddToBottom(this IFactory factory, IDockable vm)
     {
         var documents = factory.GetDockable<IDocumentDock>("Documents");
 
@@ -228,17 +225,14 @@ public static class FactoryExtensions
                 tools.Proportion = 0.6;
             }
 
-            if (duplicateCheck)
+            var existing = factory.FindDockableById(vm.Id);
+
+            if (existing != null)
             {
-                var existing = factory.FindDockableById(vm.Id);
+                factory.SetActiveDockable(existing);
+                factory.SetFocusedDockable(tools, existing);
 
-                if (existing != null)
-                {
-                    factory.SetActiveDockable(existing);
-                    factory.SetFocusedDockable(tools, existing);
-
-                    return false;
-                }
+                return false;
             }
 
             factory.AddDockable(tools, vm);
@@ -249,5 +243,35 @@ public static class FactoryExtensions
         }
 
         throw new NotImplementedException();
+    }
+
+    public static bool AddToRight(this IFactory factory, IDockable vm)
+    {
+        var @new = true;
+
+        var doc = factory.GetDockable<IDock>("RightDock");
+
+        var root = factory.GetDockable<IRootDock>("Root");
+        var pinnedDoc = root.RightPinnedDockables?.FirstOrDefault(x => x.Id == vm.Id);
+
+        if (pinnedDoc != null)
+        {
+            factory.RemoveDockable(pinnedDoc, true);
+            @new = false;
+        }
+
+        var existingDock = doc.VisibleDockables.FirstOrDefault(x => x.Id == vm.Id);
+
+        if (existingDock != null)
+        {
+            factory.RemoveDockable(existingDock, true);
+            @new = false;
+        }
+
+        factory?.InsertDockable(doc, vm, 0);
+        factory?.SetActiveDockable(vm);
+        factory?.SetFocusedDockable(doc, vm);
+
+        return @new;
     }
 }

@@ -1,6 +1,5 @@
 ﻿using Avalonia.Data.Converters;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI;
 
@@ -66,6 +65,20 @@ public static class Utilities
 
     //    return container;
     //}
+
+    public static TControl ContextFlyout<TControl>(this TControl container, params Control[] items) where TControl : Control
+    {
+        container.ContextFlyout ??= new MenuFlyout();
+
+        var menu = (MenuFlyout)container.ContextFlyout;
+
+        foreach (var item in items)
+        {
+            menu.Items.Add(item);
+        }
+
+        return container;
+    }
 
     public static TControl Set<TControl,TValue>(this TControl control, AvaloniaProperty property, TValue value, FuncValueConverter<TValue, object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where TControl : Control
     {

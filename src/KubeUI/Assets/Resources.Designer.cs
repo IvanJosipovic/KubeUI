@@ -646,5 +646,14 @@ namespace KubeUI.Assets {
                 return ResourceManager.GetString("SettingsView_Title", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Visualization.
+        /// </summary>
+        public static string VisualizationViewModel_Title {
+            get {
+                return ResourceManager.GetString("VisualizationViewModel_Title", resourceCulture);
+            }
+        }
     }
 }

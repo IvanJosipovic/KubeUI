@@ -14,12 +14,16 @@ public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable
     [ObservableProperty]
     private T? _object;
 
-    public string TypeName => Kind.ToString();
-
     public ResourcePropertiesViewModel()
     {
         Title = Resources.ResourcePropertiesViewModel_Title;
         Id = nameof(ResourcePropertiesViewModel<T>);
+    }
+
+    public void Initialize(Cluster cluster, T resource)
+    {
+        Cluster = cluster;
+        Object = resource;
     }
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
