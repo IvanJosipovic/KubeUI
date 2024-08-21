@@ -27,7 +27,7 @@ jobs:
           global-json-file: global.json
 
       - name: Test
-        run: dotnet test -c Release --collect:"XPlat Code Coverage" /p:ExcludeByFile=**/ControlExtensions.Generated/**
+        run: dotnet test -c Release --collect:"XPlat Code Coverage" /p:ExcludeByFile="**/ControlExtensions.Generated/**"
 
       - name: Coverage
         uses: codecov/codecov-action@v4
