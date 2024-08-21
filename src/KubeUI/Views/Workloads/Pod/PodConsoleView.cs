@@ -68,7 +68,7 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
                         x.Options.EnableHyperlinks = false;
                         x.Options.EnableEmailHyperlinks = false;
                     })
-                    .OnTextChanged((sender, e) => {
+                    .OnTextChanged((e) => {
                         editor.ScrollToEnd();
                     })
                     .Document(@vm.Console, BindingMode.OneWay)
