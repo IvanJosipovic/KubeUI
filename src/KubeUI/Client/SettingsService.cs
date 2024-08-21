@@ -1,6 +1,5 @@
 ﻿using System.Text.Json;
 using Avalonia.Styling;
-using Microsoft.Extensions.Configuration;
 using Scrutor;
 
 namespace KubeUI;

@@ -8,7 +8,6 @@ using k8s.KubeConfigModels;
 using k8s.Models;
 using KubernetesCRDModelGen;
 using KubeUI.Client.Informer;
-using Microsoft.Extensions.DependencyInjection;
 using Scrutor;
 using Swordfish.NET.Collections;
 using YamlDotNet.Core;

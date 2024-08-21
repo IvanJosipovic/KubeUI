@@ -1,7 +1,6 @@
 using System.Collections.Specialized;
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
-using Dock.Model.Controls;
 using Dock.Model.Core;
 using DynamicData;
 using DynamicData.Binding;

@@ -1,5 +1,4 @@
 ﻿using Avalonia.Logging;
-using Microsoft.Extensions.DependencyInjection;
 using Scrutor;
 
 namespace KubeUI.Desktop;

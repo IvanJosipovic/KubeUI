@@ -3,7 +3,6 @@ using Avalonia.Input;
 using Avalonia.Styling;
 using AvaloniaEdit;
 using TextMateSharp.Grammars;
-using TextMateSharp.Themes;
 using static AvaloniaEdit.TextMate.TextMate;
 
 namespace KubeUI.Views;
@@ -103,8 +102,8 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
                                             .InputGesture(new KeyGesture(Key.C, KeyModifiers.Control))
                                             .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("copy_regular") }),
                                     ])
-                    ),
-            ]);
+                    )
+                ]);
     }
 
     protected override void OnUnloaded(RoutedEventArgs e)
