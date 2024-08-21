@@ -35,7 +35,7 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_PAT }}
           branch: sync-extensions
           commit-message: "chore: Update Extensions"
           title: "chore: Update Extensions"
