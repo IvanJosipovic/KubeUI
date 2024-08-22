@@ -120,7 +120,7 @@ public partial class NavigationItem : ObservableObject
 public partial class NavigationLink : NavigationItem
 {
     [ObservableProperty]
-    private Cluster _cluster;
+    private ICluster _cluster;
 
     [ObservableProperty]
     private Type _controlType;

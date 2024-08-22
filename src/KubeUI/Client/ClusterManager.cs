@@ -9,9 +9,9 @@ using Swordfish.NET.Collections.Auxiliary;
 
 namespace KubeUI.Client;
 
-public class ClusterComparer : IComparer<Cluster>
+public class ClusterComparer : IComparer<ICluster>
 {
-    public int Compare(Cluster? x, Cluster? y)
+    public int Compare(ICluster? x, ICluster? y)
     {
         return x?.Name.CompareTo(y?.Name) ?? 0;
     }
@@ -20,7 +20,7 @@ public class ClusterComparer : IComparer<Cluster>
 [ServiceDescriptor<ClusterManager>(ServiceLifetime.Singleton)]
 public sealed partial class ClusterManager : ObservableObject, IDisposable
 {
-    public ObservableSortedCollection<Cluster> Clusters { get; set; } = new(new ClusterComparer());
+    public ObservableSortedCollection<ICluster> Clusters { get; set; } = new(new ClusterComparer());
 
     private readonly ILogger<ClusterManager> _logger;
 
@@ -177,12 +177,12 @@ public sealed partial class ClusterManager : ObservableObject, IDisposable
         }
     }
 
-    public Cluster? GetCluster(string name)
+    public ICluster? GetCluster(string name)
     {
         return Clusters.FirstOrDefault(c => c.Name == name);
     }
 
-    public void RemoveCluster(Cluster cluster)
+    public void RemoveCluster(ICluster cluster)
     {
         if (!string.IsNullOrEmpty(cluster.KubeConfigPath))
         {

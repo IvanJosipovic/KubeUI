@@ -8,14 +8,14 @@ namespace KubeUI.ViewModels;
 public sealed partial class VisualizationResourceViewModel : ObservableObject
 {
     [ObservableProperty]
-    private Cluster _cluster;
+    private ICluster _cluster;
 
     [ObservableProperty]
     private IKubernetesObject<V1ObjectMeta> _object;
 
     public new IFactory Factory { get; set; } = Application.Current.GetRequiredService<IFactory>();
 
-    public void Initialize(Cluster cluster, IKubernetesObject<V1ObjectMeta> @object)
+    public void Initialize(ICluster cluster, IKubernetesObject<V1ObjectMeta> @object)
     {
         Cluster = cluster;
         Object = @object;

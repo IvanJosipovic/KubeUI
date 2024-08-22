@@ -38,7 +38,7 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
                 }
             })
             .DataTemplates([
-                new FuncTreeDataTemplate<Cluster>((vm,ns) =>
+                new FuncTreeDataTemplate<ICluster>((vm,ns) =>
                     new StackPanel()
                         .Classes("navigation-view-stack-panel")
                         .Children([

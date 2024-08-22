@@ -1,4 +1,5 @@
-﻿using Avalonia.Controls.Templates;
+﻿using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
 using Avalonia.Styling;
 using k8s.Models;
@@ -23,6 +24,10 @@ public sealed class VisualizationView : MyViewBase<VisualizationViewModel>
                     .Orientation(Orientation.Horizontal)
                     .HorizontalAlignment(HorizontalAlignment.Left)
                     .Children([
+                        new ToggleButton()
+                            .IsChecked(@vm.HideNoise)
+                            .ToolTip("Hide noisy resources like inactive Replica Sets")
+                            .Content(new PathIcon() { Data = (Geometry)Application.Current.FindResource("eye_hide_regular") }),
                         new Label()
                             .Col(1)
                             .Width(200)

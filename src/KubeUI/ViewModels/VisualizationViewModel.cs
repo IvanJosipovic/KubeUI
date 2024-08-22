@@ -13,19 +13,34 @@ namespace KubeUI.ViewModels;
 public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeCluster, IDisposable
 {
     [ObservableProperty]
-    private Cluster? _cluster;
+    private ICluster? _cluster;
 
     [ObservableProperty]
     private DrawingNodeViewModel _drawing = CreateDrawing();
 
-    private int _resourceSize = 60;
+    [ObservableProperty]
+    private bool _hideNoise = true;
+
+    private readonly int _resourceSize = 60;
+
+    private int _resourceSpacing => _resourceSize * 2;
 
     public VisualizationViewModel()
     {
         Title = Resources.VisualizationViewModel_Title;
     }
 
-    public void Initialize(Cluster cluster)
+    protected override void OnPropertyChanged(PropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+
+        if (e.PropertyName == nameof(HideNoise))
+        {
+            Run();
+        }
+    }
+
+    public void Initialize(ICluster cluster)
     {
         Cluster = cluster;
 
@@ -52,7 +67,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         Run();
     }
 
-    public void Run()
+    private void Run()
     {
         if (Cluster.SelectedNamespaces.Count == 0)
         {
@@ -66,6 +81,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         LinkIngress();
         LinkEndpoints();
         LinkEndpointSlice();
+
         LinkConfigMap();
         LinkSecret();
 
@@ -99,6 +115,12 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     continue;
                 }
 
+                // Remove inactive ReplicaSets
+                if (HideNoise && value is V1ReplicaSet replicaSet && replicaSet.Status.Replicas == 0)
+                {
+                    continue;
+                }
+
                 var rectangle0 = CreateResource(value, kind.Key);
                 rectangle0.Parent = Drawing;
                 Drawing.Nodes.Add(rectangle0);
@@ -115,8 +137,8 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         {
             foreach (var item in group)
             {
-                item.X = (_resourceSize + (_resourceSize / 2)) * x;
-                item.Y = (_resourceSize + (_resourceSize / 2)) * y;
+                item.X = (_resourceSize + (_resourceSpacing)) * x;
+                item.Y = (_resourceSize + (_resourceSpacing)) * y;
                 y++;
             }
 
@@ -140,8 +162,8 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         {
             foreach (var item in group)
             {
-                item.X = (_resourceSize + (_resourceSize / 2)) * x;
-                item.Y = (_resourceSize + (_resourceSize / 2)) * y;
+                item.X = (_resourceSize + (_resourceSpacing)) * x;
+                item.Y = (_resourceSize + (_resourceSpacing)) * y;
                 y++;
             }
 
@@ -162,7 +184,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
                     if (ownerObject != null)
                     {
-                        var connector = new ConnectorViewModel
+                        var connector = new MyConnectorViewModel
                         {
                             Start = ownerObject.Pins[1],
                             End = destination.Pins[0],
@@ -190,7 +212,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                         {
                             if (service.Metadata.Name == serviceBackend.Name && service.Metadata.NamespaceProperty == ingress.Metadata.NamespaceProperty)
                             {
-                                var connector = new ConnectorViewModel
+                                var connector = new MyConnectorViewModel
                                 {
                                     Start = source.Pins[1],
                                     End = destination2.Pins[0],
@@ -239,7 +261,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (pod.Metadata.Uid == address.TargetRef.Uid)
                                 {
-                                    var connector = new ConnectorViewModel
+                                    var connector = new MyConnectorViewModel
                                     {
                                         Start = source.Pins[1],
                                         End = destination.Pins[0],
@@ -280,7 +302,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                         {
                             if (pod.Metadata.Uid == endpoint.TargetRef.Uid)
                             {
-                                var connector = new ConnectorViewModel
+                                var connector = new MyConnectorViewModel
                                 {
                                     Start = source.Pins[1],
                                     End = destination.Pins[0],
@@ -318,7 +340,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                         {
                                             if (configMap.Metadata.Name == env.ValueFrom.ConfigMapKeyRef.Name && configMap.Metadata.NamespaceProperty == deployment.Metadata.NamespaceProperty)
                                             {
-                                                var connector = new ConnectorViewModel
+                                                var connector = new MyConnectorViewModel
                                                 {
                                                     Start = source.Pins[1],
                                                     End = destination.Pins[0],
@@ -345,7 +367,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                         {
                                             if (configMap.Metadata.Name == envFrom.ConfigMapRef.Name && configMap.Metadata.NamespaceProperty == deployment.Metadata.NamespaceProperty)
                                             {
-                                                var connector = new ConnectorViewModel
+                                                var connector = new MyConnectorViewModel
                                                 {
                                                     Start = source.Pins[1],
                                                     End = destination.Pins[0],
@@ -374,7 +396,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                 {
                                     if (configMap.Metadata.Name == volume.ConfigMap.Name && configMap.Metadata.NamespaceProperty == deployment.Metadata.NamespaceProperty)
                                     {
-                                        var connector = new ConnectorViewModel
+                                        var connector = new MyConnectorViewModel
                                         {
                                             Start = source.Pins[1],
                                             End = destination.Pins[0],
@@ -408,7 +430,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                         {
                                             if (configMap.Metadata.Name == env.ValueFrom.ConfigMapKeyRef.Name && configMap.Metadata.NamespaceProperty == replicaSet.Metadata.NamespaceProperty)
                                             {
-                                                var connector = new ConnectorViewModel
+                                                var connector = new MyConnectorViewModel
                                                 {
                                                     Start = source.Pins[1],
                                                     End = destination.Pins[0],
@@ -435,7 +457,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                         {
                                             if (configMap.Metadata.Name == envFrom.ConfigMapRef.Name && configMap.Metadata.NamespaceProperty == replicaSet.Metadata.NamespaceProperty)
                                             {
-                                                var connector = new ConnectorViewModel
+                                                var connector = new MyConnectorViewModel
                                                 {
                                                     Start = source.Pins[1],
                                                     End = destination.Pins[0],
@@ -464,7 +486,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                 {
                                     if (configMap.Metadata.Name == volume.ConfigMap.Name && configMap.Metadata.NamespaceProperty == replicaSet.Metadata.NamespaceProperty)
                                     {
-                                        var connector = new ConnectorViewModel
+                                        var connector = new MyConnectorViewModel
                                         {
                                             Start = source.Pins[1],
                                             End = destination.Pins[0],
@@ -498,7 +520,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                         {
                                             if (configMap.Metadata.Name == env.ValueFrom.ConfigMapKeyRef.Name && configMap.Metadata.NamespaceProperty == statefulSet.Metadata.NamespaceProperty)
                                             {
-                                                var connector = new ConnectorViewModel
+                                                var connector = new MyConnectorViewModel
                                                 {
                                                     Start = source.Pins[1],
                                                     End = destination.Pins[0],
@@ -525,7 +547,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                         {
                                             if (configMap.Metadata.Name == envFrom.ConfigMapRef.Name && configMap.Metadata.NamespaceProperty == statefulSet.Metadata.NamespaceProperty)
                                             {
-                                                var connector = new ConnectorViewModel
+                                                var connector = new MyConnectorViewModel
                                                 {
                                                     Start = source.Pins[1],
                                                     End = destination.Pins[0],
@@ -554,7 +576,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                 {
                                     if (configMap.Metadata.Name == volume.ConfigMap.Name && configMap.Metadata.NamespaceProperty == statefulSet.Metadata.NamespaceProperty)
                                     {
-                                        var connector = new ConnectorViewModel
+                                        var connector = new MyConnectorViewModel
                                         {
                                             Start = source.Pins[1],
                                             End = destination.Pins[0],
@@ -588,7 +610,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                         {
                                             if (configMap.Metadata.Name == env.ValueFrom.ConfigMapKeyRef.Name && configMap.Metadata.NamespaceProperty == daemonSet.Metadata.NamespaceProperty)
                                             {
-                                                var connector = new ConnectorViewModel
+                                                var connector = new MyConnectorViewModel
                                                 {
                                                     Start = source.Pins[1],
                                                     End = destination.Pins[0],
@@ -615,7 +637,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                         {
                                             if (configMap.Metadata.Name == envFrom.ConfigMapRef.Name && configMap.Metadata.NamespaceProperty == daemonSet.Metadata.NamespaceProperty)
                                             {
-                                                var connector = new ConnectorViewModel
+                                                var connector = new MyConnectorViewModel
                                                 {
                                                     Start = source.Pins[1],
                                                     End = destination.Pins[0],
@@ -644,7 +666,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                 {
                                     if (configMap.Metadata.Name == volume.ConfigMap.Name && configMap.Metadata.NamespaceProperty == daemonSet.Metadata.NamespaceProperty)
                                     {
-                                        var connector = new ConnectorViewModel
+                                        var connector = new MyConnectorViewModel
                                         {
                                             Start = source.Pins[1],
                                             End = destination.Pins[0],
@@ -684,7 +706,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                         {
                                             if (secret.Metadata.Name == env.ValueFrom.SecretKeyRef.Name && secret.Metadata.NamespaceProperty == deployment.Metadata.NamespaceProperty)
                                             {
-                                                var connector = new ConnectorViewModel
+                                                var connector = new MyConnectorViewModel
                                                 {
                                                     Start = source.Pins[1],
                                                     End = destination.Pins[0],
@@ -711,7 +733,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                         {
                                             if (secret.Metadata.Name == envFrom.SecretRef.Name && secret.Metadata.NamespaceProperty == deployment.Metadata.NamespaceProperty)
                                             {
-                                                var connector = new ConnectorViewModel
+                                                var connector = new MyConnectorViewModel
                                                 {
                                                     Start = source.Pins[1],
                                                     End = destination.Pins[0],
@@ -740,7 +762,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                 {
                                     if (secret.Metadata.Name == volume.Secret.SecretName && secret.Metadata.NamespaceProperty == deployment.Metadata.NamespaceProperty)
                                     {
-                                        var connector = new ConnectorViewModel
+                                        var connector = new MyConnectorViewModel
                                         {
                                             Start = source.Pins[1],
                                             End = destination.Pins[0],
@@ -774,7 +796,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                         {
                                             if (secret.Metadata.Name == env.ValueFrom.SecretKeyRef.Name && secret.Metadata.NamespaceProperty == replicaSet.Metadata.NamespaceProperty)
                                             {
-                                                var connector = new ConnectorViewModel
+                                                var connector = new MyConnectorViewModel
                                                 {
                                                     Start = source.Pins[1],
                                                     End = destination.Pins[0],
@@ -801,7 +823,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                         {
                                             if (secret.Metadata.Name == envFrom.SecretRef.Name && secret.Metadata.NamespaceProperty == replicaSet.Metadata.NamespaceProperty)
                                             {
-                                                var connector = new ConnectorViewModel
+                                                var connector = new MyConnectorViewModel
                                                 {
                                                     Start = source.Pins[1],
                                                     End = destination.Pins[0],
@@ -830,7 +852,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                 {
                                     if (secret.Metadata.Name == volume.Secret.SecretName && secret.Metadata.NamespaceProperty == replicaSet.Metadata.NamespaceProperty)
                                     {
-                                        var connector = new ConnectorViewModel
+                                        var connector = new MyConnectorViewModel
                                         {
                                             Start = source.Pins[1],
                                             End = destination.Pins[0],
@@ -864,7 +886,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                         {
                                             if (secret.Metadata.Name == env.ValueFrom.SecretKeyRef.Name && secret.Metadata.NamespaceProperty == statefulSet.Metadata.NamespaceProperty)
                                             {
-                                                var connector = new ConnectorViewModel
+                                                var connector = new MyConnectorViewModel
                                                 {
                                                     Start = source.Pins[1],
                                                     End = destination.Pins[0],
@@ -891,7 +913,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                         {
                                             if (secret.Metadata.Name == envFrom.SecretRef.Name && secret.Metadata.NamespaceProperty == statefulSet.Metadata.NamespaceProperty)
                                             {
-                                                var connector = new ConnectorViewModel
+                                                var connector = new MyConnectorViewModel
                                                 {
                                                     Start = source.Pins[1],
                                                     End = destination.Pins[0],
@@ -920,7 +942,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                 {
                                     if (secret.Metadata.Name == volume.Secret.SecretName && secret.Metadata.NamespaceProperty == statefulSet.Metadata.NamespaceProperty)
                                     {
-                                        var connector = new ConnectorViewModel
+                                        var connector = new MyConnectorViewModel
                                         {
                                             Start = source.Pins[1],
                                             End = destination.Pins[0],
@@ -954,7 +976,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                         {
                                             if (secret.Metadata.Name == env.ValueFrom.SecretKeyRef.Name && secret.Metadata.NamespaceProperty == daemonSet.Metadata.NamespaceProperty)
                                             {
-                                                var connector = new ConnectorViewModel
+                                                var connector = new MyConnectorViewModel
                                                 {
                                                     Start = source.Pins[1],
                                                     End = destination.Pins[0],
@@ -981,7 +1003,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                         {
                                             if (secret.Metadata.Name == envFrom.SecretRef.Name && secret.Metadata.NamespaceProperty == daemonSet.Metadata.NamespaceProperty)
                                             {
-                                                var connector = new ConnectorViewModel
+                                                var connector = new MyConnectorViewModel
                                                 {
                                                     Start = source.Pins[1],
                                                     End = destination.Pins[0],
@@ -1010,7 +1032,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                 {
                                     if (secret.Metadata.Name == volume.Secret.SecretName && secret.Metadata.NamespaceProperty == daemonSet.Metadata.NamespaceProperty)
                                     {
-                                        var connector = new ConnectorViewModel
+                                        var connector = new MyConnectorViewModel
                                         {
                                             Start = source.Pins[1],
                                             End = destination.Pins[0],
@@ -1028,7 +1050,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
     }
 
-    public static DrawingNodeViewModel CreateDrawing(string? name = null)
+    private static DrawingNodeViewModel CreateDrawing(string? name = null)
     {
         return new DrawingNodeViewModel
         {
@@ -1063,7 +1085,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             Content = view,
         };
 
-        node.Pins.Add(new ReadOnlyPin()
+        node.Pins.Add(new MyPin()
         {
             X = 0,
             Y = _resourceSize / 2,
@@ -1074,7 +1096,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             Parent = node
         });
 
-        node.Pins.Add(new ReadOnlyPin()
+        node.Pins.Add(new MyPin()
         {
             X = _resourceSize,
             Y = _resourceSize / 2,
@@ -1085,7 +1107,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             Parent = node
         });
 
-        node.Pins.Add(new ReadOnlyPin()
+        node.Pins.Add(new MyPin()
         {
             X = _resourceSize / 2,
             Y = 0,
@@ -1096,7 +1118,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             Parent = node
         });
 
-        node.Pins.Add(new ReadOnlyPin()
+        node.Pins.Add(new MyPin()
         {
             X = _resourceSize / 2,
             Y = _resourceSize,
@@ -1149,7 +1171,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
     }
 
-    public sealed class ReadOnlyPin: PinViewModel, IPin
+    public sealed class MyPin: PinViewModel, IPin
     {
         public new bool CanConnect()
         {
@@ -1157,6 +1179,24 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
 
         public new bool CanDisconnect()
+        {
+            return false;
+        }
+
+        public new void OnSelected()
+        {
+
+        }
+    }
+
+    public sealed class MyConnectorViewModel : ConnectorViewModel, IConnector
+    {
+        public new bool CanSelect()
+        {
+            return false;
+        }
+
+        public new bool CanRemove()
         {
             return false;
         }

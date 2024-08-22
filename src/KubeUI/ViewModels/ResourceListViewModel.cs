@@ -23,7 +23,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     private readonly IDialogService _dialogService;
 
     [ObservableProperty]
-    private Client.Cluster _cluster;
+    private ICluster _cluster;
 
     [ObservableProperty]
     private GroupApiVersionKind _kind;
@@ -54,7 +54,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _dialogService = Application.Current.GetRequiredService<IDialogService>();
     }
 
-    public void Initialize(Client.Cluster cluster)
+    public void Initialize(ICluster cluster)
     {
         Cluster = cluster;
         Kind = GroupApiVersionKind.From<T>();

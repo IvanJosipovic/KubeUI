@@ -24,10 +24,10 @@ public sealed partial class ClusterListViewModel : ViewModelBase
     }
 
     [ObservableProperty]
-    private Cluster _selectedItem;
+    private ICluster _selectedItem;
 
     [RelayCommand(CanExecute = nameof(CanDelete))]
-    private async Task Delete(Cluster cluster)
+    private async Task Delete(ICluster cluster)
     {
         ContentDialogSettings settings = new()
         {
@@ -46,7 +46,7 @@ public sealed partial class ClusterListViewModel : ViewModelBase
         }
     }
 
-    private bool CanDelete(Cluster cluster)
+    private bool CanDelete(ICluster cluster)
     {
         return cluster != null;
     }

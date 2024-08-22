@@ -7,7 +7,7 @@ namespace KubeUI.ViewModels;
 public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     [ObservableProperty]
-    private Cluster? _cluster;
+    private ICluster? _cluster;
 
     public GroupApiVersionKind Kind { get; } = GroupApiVersionKind.From<T>();
 
@@ -20,7 +20,7 @@ public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable
         Id = nameof(ResourcePropertiesViewModel<T>);
     }
 
-    public void Initialize(Cluster cluster, T resource)
+    public void Initialize(ICluster cluster, T resource)
     {
         Cluster = cluster;
         Object = resource;

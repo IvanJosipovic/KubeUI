@@ -9,7 +9,7 @@ namespace KubeUI.ViewModels;
 public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 {
     [ObservableProperty]
-    private Cluster? _cluster;
+    private ICluster? _cluster;
 
     [ObservableProperty]
     private IKubernetesObject<V1ObjectMeta>? _object;
@@ -28,7 +28,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         Title = Resources.ResourceYamlViewModel_Title;
     }
 
-    public void Initialize(Cluster cluster, IKubernetesObject<V1ObjectMeta> @object)
+    public void Initialize(ICluster cluster, IKubernetesObject<V1ObjectMeta> @object)
     {
         Cluster = cluster;
         Object = @object;
