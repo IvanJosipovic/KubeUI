@@ -390,7 +390,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 new ResourceListViewDefinitionColumn<V1Pod, string>()
                 {
                     Name = "Controlled By",
-                    Field = x => x.Metadata.OwnerReferences.FirstOrDefault()?.Name ?? "",
+                    Field = x => x.Metadata.OwnerReferences?.FirstOrDefault()?.Name ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListViewDefinitionColumn<V1Pod, string>()
