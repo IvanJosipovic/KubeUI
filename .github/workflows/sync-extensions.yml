@@ -26,7 +26,7 @@ jobs:
         run: Remove-Item "src/KubeUI/ControlExtensions.Generated/*"  -Force -Recurse
 
       - name: Install Tool
-        run: dotnet tool install --global AvaloniaExtensionGenerator --prerelease
+        run: dotnet tool install --global AvaloniaExtensionGenerator
 
       - name: Run Generator
         working-directory: src/KubeUI
