@@ -50,16 +50,13 @@ public class VisualizatonTests
                     {
                         Name = "my-config",
                         NamespaceProperty = "default",
-                        OwnerReferences = [
+                        OwnerReferences =
+                        [
                             new()
                             {
                                 Uid = "test123"
                             }
                         ]
-                    },
-                    Data = new Dictionary<string, string>()
-                    {
-                        { "config.json", "{ \"key\": \"value\" }" }
                     }
                 }
             }
@@ -84,8 +81,6 @@ public class VisualizatonTests
                         Template = new()
                         {
                             Spec = new()
-                            {
-                            }
                         }
                     }
                 }
@@ -119,10 +114,6 @@ public class VisualizatonTests
                     {
                         Name = "my-config",
                         NamespaceProperty = "default"
-                    },
-                    Data = new Dictionary<string, string>()
-                    {
-                        { "config.json", "{ \"key\": \"value\" }" }
                     }
                 }
             }
@@ -147,18 +138,18 @@ public class VisualizatonTests
                         {
                             Spec = new()
                             {
-                                Containers = [
+                                Containers =
+                                [
                                     new()
                                     {
-                                        Env = [
+                                        Env =
+                                        [
                                             new()
                                             {
-                                                Name = "MY_CONFIG",
                                                 ValueFrom = new()
                                                 {
                                                     ConfigMapKeyRef = new()
                                                     {
-                                                        Key = "config.json",
                                                         Name = "my-config"
                                                     }
                                                 }
@@ -198,10 +189,6 @@ public class VisualizatonTests
                     {
                         Name = "my-config",
                         NamespaceProperty = "default"
-                    },
-                    Data = new Dictionary<string, string>()
-                    {
-                        { "config.json", "{ \"key\": \"value\" }" }
                     }
                 }
             }
@@ -226,7 +213,8 @@ public class VisualizatonTests
                         {
                             Spec = new()
                             {
-                                Containers = [
+                                Containers =
+                                [
                                     new()
                                     {
                                          EnvFrom =
@@ -273,10 +261,6 @@ public class VisualizatonTests
                     {
                         Name = "my-config",
                         NamespaceProperty = "default"
-                    },
-                    Data = new Dictionary<string, string>()
-                    {
-                        { "config.json", "{ \"key\": \"value\" }" }
                     }
                 }
             }
@@ -308,8 +292,7 @@ public class VisualizatonTests
                                         ConfigMap = new()
                                         {
                                             Name = "my-config"
-                                        },
-                                        Name = "config-volume"
+                                        }
                                     }
                                 ]
                             }
@@ -345,10 +328,6 @@ public class VisualizatonTests
                     {
                         Name = "my-config",
                         NamespaceProperty = "default"
-                    },
-                    Data = new Dictionary<string, string>()
-                    {
-                        { "config.json", "{ \"key\": \"value\" }" }
                     }
                 }
             }
@@ -373,18 +352,18 @@ public class VisualizatonTests
                         {
                             Spec = new()
                             {
-                                Containers = [
+                                Containers =
+                                [
                                     new()
                                     {
-                                        Env = [
+                                        Env =
+                                        [
                                             new()
                                             {
-                                                Name = "MY_CONFIG",
                                                 ValueFrom = new()
                                                 {
                                                     ConfigMapKeyRef = new()
                                                     {
-                                                        Key = "config.json",
                                                         Name = "my-config"
                                                     }
                                                 }
@@ -424,10 +403,6 @@ public class VisualizatonTests
                     {
                         Name = "my-config",
                         NamespaceProperty = "default"
-                    },
-                    Data = new Dictionary<string, string>()
-                    {
-                        { "config.json", "{ \"key\": \"value\" }" }
                     }
                 }
             }
@@ -452,7 +427,8 @@ public class VisualizatonTests
                         {
                             Spec = new()
                             {
-                                Containers = [
+                                Containers =
+                                [
                                     new()
                                     {
                                          EnvFrom =
@@ -499,10 +475,6 @@ public class VisualizatonTests
                     {
                         Name = "my-config",
                         NamespaceProperty = "default"
-                    },
-                    Data = new Dictionary<string, string>()
-                    {
-                        { "config.json", "{ \"key\": \"value\" }" }
                     }
                 }
             }
@@ -534,8 +506,7 @@ public class VisualizatonTests
                                         ConfigMap = new()
                                         {
                                             Name = "my-config"
-                                        },
-                                        Name = "config-volume"
+                                        }
                                     }
                                 ]
                             }
@@ -571,10 +542,6 @@ public class VisualizatonTests
                     {
                         Name = "my-config",
                         NamespaceProperty = "default"
-                    },
-                    Data = new Dictionary<string, string>()
-                    {
-                        { "config.json", "{ \"key\": \"value\" }" }
                     }
                 }
             }
@@ -599,18 +566,18 @@ public class VisualizatonTests
                         {
                             Spec = new()
                             {
-                                Containers = [
+                                Containers =
+                                [
                                     new()
                                     {
-                                        Env = [
+                                        Env =
+                                        [
                                             new()
                                             {
-                                                Name = "MY_CONFIG",
                                                 ValueFrom = new()
                                                 {
                                                     ConfigMapKeyRef = new()
                                                     {
-                                                        Key = "config.json",
                                                         Name = "my-config"
                                                     }
                                                 }
@@ -650,10 +617,6 @@ public class VisualizatonTests
                     {
                         Name = "my-config",
                         NamespaceProperty = "default"
-                    },
-                    Data = new Dictionary<string, string>()
-                    {
-                        { "config.json", "{ \"key\": \"value\" }" }
                     }
                 }
             }
@@ -678,7 +641,8 @@ public class VisualizatonTests
                         {
                             Spec = new()
                             {
-                                Containers = [
+                                Containers =
+                                [
                                     new()
                                     {
                                          EnvFrom =
@@ -725,10 +689,6 @@ public class VisualizatonTests
                     {
                         Name = "my-config",
                         NamespaceProperty = "default"
-                    },
-                    Data = new Dictionary<string, string>()
-                    {
-                        { "config.json", "{ \"key\": \"value\" }" }
                     }
                 }
             }
@@ -760,8 +720,7 @@ public class VisualizatonTests
                                         ConfigMap = new()
                                         {
                                             Name = "my-config"
-                                        },
-                                        Name = "config-volume"
+                                        }
                                     }
                                 ]
                             }
@@ -798,10 +757,6 @@ public class VisualizatonTests
                     {
                         Name = "my-config",
                         NamespaceProperty = "default"
-                    },
-                    Data = new Dictionary<string, string>()
-                    {
-                        { "config.json", "{ \"key\": \"value\" }" }
                     }
                 }
             }
@@ -826,18 +781,18 @@ public class VisualizatonTests
                         {
                             Spec = new()
                             {
-                                Containers = [
+                                Containers =
+                                [
                                     new()
                                     {
-                                        Env = [
+                                        Env =
+                                        [
                                             new()
                                             {
-                                                Name = "MY_CONFIG",
                                                 ValueFrom = new()
                                                 {
                                                     ConfigMapKeyRef = new()
                                                     {
-                                                        Key = "config.json",
                                                         Name = "my-config"
                                                     }
                                                 }
@@ -881,10 +836,6 @@ public class VisualizatonTests
                     {
                         Name = "my-config",
                         NamespaceProperty = "default"
-                    },
-                    Data = new Dictionary<string, string>()
-                    {
-                        { "config.json", "{ \"key\": \"value\" }" }
                     }
                 }
             }
@@ -909,7 +860,8 @@ public class VisualizatonTests
                         {
                             Spec = new()
                             {
-                                Containers = [
+                                Containers =
+                                [
                                     new()
                                     {
                                          EnvFrom =
@@ -960,10 +912,6 @@ public class VisualizatonTests
                     {
                         Name = "my-config",
                         NamespaceProperty = "default"
-                    },
-                    Data = new Dictionary<string, string>()
-                    {
-                        { "config.json", "{ \"key\": \"value\" }" }
                     }
                 }
             }
@@ -995,8 +943,7 @@ public class VisualizatonTests
                                         ConfigMap = new()
                                         {
                                             Name = "my-config"
-                                        },
-                                        Name = "config-volume"
+                                        }
                                     }
                                 ]
                             }
@@ -1018,6 +965,940 @@ public class VisualizatonTests
         vm.Drawing.Connectors.Count.Should().Be(1);
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
         vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
+    }
+
+    #endregion
+
+    #region Secret
+
+    [AvaloniaFact]
+    public void LinkSecretInDeploymentEnv()
+    {
+        var (mock, resources) = GetMock();
+
+        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = configMaps });
+
+        var deployments = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                Containers =
+                                [
+                                    new()
+                                    {
+                                        Env =
+                                        [
+                                            new()
+                                            {
+                                                ValueFrom = new()
+                                                {
+                                                    SecretKeyRef = new()
+                                                    {
+                                                        Name = "my-config"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = deployments });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
+    public void LinkSecretInDeploymentEnvFrom()
+    {
+        var (mock, resources) = GetMock();
+
+        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = configMaps });
+
+        var deployments = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                Containers =
+                                [
+                                    new()
+                                    {
+                                         EnvFrom =
+                                         [
+                                            new()
+                                            {
+                                                SecretRef = new()
+                                                {
+                                                    Name = "my-config"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = deployments });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
+    public void LinkSecretInDeploymentVolume()
+    {
+        var (mock, resources) = GetMock();
+
+        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = configMaps });
+
+        var deployments = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                Volumes =
+                                [
+                                    new()
+                                    {
+                                        Secret = new()
+                                        {
+                                            SecretName = "my-config"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = deployments });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
+    public void LinkSecretInDaemonSetEnv()
+    {
+        var (mock, resources) = GetMock();
+
+        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = configMaps });
+
+        var daemonsets = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                Containers =
+                                [
+                                    new()
+                                    {
+                                        Env =
+                                        [
+                                            new()
+                                            {
+                                                ValueFrom = new()
+                                                {
+                                                    SecretKeyRef = new()
+                                                    {
+                                                        Name = "my-config"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = daemonsets });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1DaemonSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
+    public void LinkSecretInDaemonSetEnvFrom()
+    {
+        var (mock, resources) = GetMock();
+
+        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = configMaps });
+
+        var daemonsets = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                Containers =
+                                [
+                                    new()
+                                    {
+                                         EnvFrom =
+                                         [
+                                            new()
+                                            {
+                                                SecretRef = new()
+                                                {
+                                                    Name = "my-config"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = daemonsets });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1DaemonSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
+    public void LinkSecretInDaemonSetVolume()
+    {
+        var (mock, resources) = GetMock();
+
+        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = configMaps });
+
+        var daemonsets = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                Volumes =
+                                [
+                                    new()
+                                    {
+                                        Secret = new()
+                                        {
+                                            SecretName = "my-config"
+                                        },
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = daemonsets });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1DaemonSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+
+    [AvaloniaFact]
+    public void LinkSecretInStatefulSetEnv()
+    {
+        var (mock, resources) = GetMock();
+
+        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = configMaps });
+
+        var statefulsets = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                Containers =
+                                [
+                                    new()
+                                    {
+                                        Env =
+                                        [
+                                            new()
+                                            {
+                                                ValueFrom = new()
+                                                {
+                                                    SecretKeyRef = new()
+                                                    {
+                                                        Name = "my-config"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = statefulsets });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1StatefulSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
+    public void LinkSecretInStatefulSetEnvFrom()
+    {
+        var (mock, resources) = GetMock();
+
+        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = configMaps });
+
+        var statefulsets = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                Containers =
+                                [
+                                    new()
+                                    {
+                                         EnvFrom =
+                                         [
+                                            new()
+                                            {
+                                                SecretRef = new()
+                                                {
+                                                    Name = "my-config"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = statefulsets });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1StatefulSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
+    public void LinkSecretInStatefulSetVolume()
+    {
+        var (mock, resources) = GetMock();
+
+        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = configMaps });
+
+        var statefulsets = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                Volumes =
+                                [
+                                    new()
+                                    {
+                                        Secret = new()
+                                        {
+                                            SecretName = "my-config"
+                                        },
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = statefulsets });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1StatefulSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    //todo add test for hidenoise and ReplicaSet = 1/0
+
+    [AvaloniaFact]
+    public void LinkSecretInReplicaSetEnv()
+    {
+        var (mock, resources) = GetMock();
+
+        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = configMaps });
+
+        var replicasets = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                Containers =
+                                [
+                                    new()
+                                    {
+                                        Env =
+                                        [
+                                            new()
+                                            {
+                                                ValueFrom = new()
+                                                {
+                                                    SecretKeyRef = new()
+                                                    {
+                                                        Name = "my-config"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    Status = new()
+                    {
+                        Replicas = 1
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = replicasets });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
+    public void LinkSecretInReplicaSetEnvFrom()
+    {
+        var (mock, resources) = GetMock();
+
+        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = configMaps });
+
+        var replicasets = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                Containers =
+                                [
+                                    new()
+                                    {
+                                         EnvFrom =
+                                         [
+                                            new()
+                                            {
+                                                SecretRef = new()
+                                                {
+                                                    Name = "my-config"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    Status = new()
+                    {
+                        Replicas = 1
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = replicasets });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
+    public void LinkSecretInReplicaSetVolume()
+    {
+        var (mock, resources) = GetMock();
+
+        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = configMaps });
+
+        var replicasets = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                Volumes =
+                                [
+                                    new()
+                                    {
+                                        Secret = new()
+                                        {
+                                            SecretName = "my-config"
+                                        },
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    Status = new()
+                    {
+                        Replicas = 1
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = replicasets });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    #endregion
+
+    #region Even
+
+    [AvaloniaFact]
+    public void LinkEvent()
+    {
+        var (mock, resources) = GetMock();
+
+        var configMaps = new ConcurrentObservableDictionary<NamespacedName, Corev1Event>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    },
+                    InvolvedObject = new()
+                    {
+                        Uid = "123"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<Corev1Event>(), new() { Items = configMaps });
+
+        var deployments = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default",
+                        Uid = "123"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                        }
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = deployments });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<Corev1Event>();
     }
 
     #endregion

@@ -50,19 +50,28 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         cluster.Seed<V1Node>();
 
+        // Workloads
         cluster.Seed<V1Pod>();
         cluster.Seed<V1ReplicaSet>();
         cluster.Seed<V1Deployment>();
         cluster.Seed<V1StatefulSet>();
         cluster.Seed<V1DaemonSet>();
+        cluster.Seed<V1CronJob>();
+        cluster.Seed<V1Job>();
 
+        // Configuration
+        cluster.Seed<V1Secret>();
+        cluster.Seed<V1ConfigMap>();
+
+        // Network
         cluster.Seed<V1Service>();
         cluster.Seed<V1EndpointSlice>();
         cluster.Seed<V1Ingress>();
+        cluster.Seed<V1IngressClass>();
 
+        // Storage
+        cluster.Seed<V1PersistentVolumeClaim>();
         cluster.Seed<V1PersistentVolume>();
-        cluster.Seed<V1Secret>();
-        cluster.Seed<V1ConfigMap>();
 
         Run();
     }
@@ -78,6 +87,8 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         PopulateAllResources();
 
         LinkOwners();
+        LinkEvent();
+
         LinkIngress();
         LinkEndpoints();
         LinkEndpointSlice();
@@ -172,6 +183,8 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
     }
 
+    #region Links
+
     private void LinkOwners()
     {
         foreach (var destination in Drawing.Nodes.OfType<ResourceNodeViewModel>())
@@ -206,16 +219,16 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             {
                 foreach (var serviceBackend in ingress.Spec.Rules.SelectMany(x => x.Http.Paths.Select(y => y.Backend.Service)))
                 {
-                    foreach (var destination2 in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+                    foreach (var destination in Drawing.Nodes.OfType<ResourceNodeViewModel>())
                     {
-                        if (destination2.Resource is V1Service service)
+                        if (destination.Resource is V1Service service)
                         {
                             if (service.Metadata.Name == serviceBackend.Name && service.Metadata.NamespaceProperty == ingress.Metadata.NamespaceProperty)
                             {
                                 var connector = new MyConnectorViewModel
                                 {
                                     Start = source.Pins[1],
-                                    End = destination2.Pins[0],
+                                    End = destination.Pins[0],
                                     Parent = Drawing
                                 };
 
@@ -1049,6 +1062,32 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             }
         }
     }
+
+    private void LinkEvent()
+    {
+        foreach (var destination in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+        {
+            if (destination.Resource is Corev1Event @event)
+            {
+                foreach (var source in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+                {
+                    if (source.Resource.Metadata.Uid == @event.InvolvedObject.Uid && source.Resource.Metadata.NamespaceProperty == @event.Metadata.NamespaceProperty)
+                    {
+                        var connector = new MyConnectorViewModel
+                        {
+                            Start = source.Pins[1],
+                            End = destination.Pins[0],
+                            Parent = Drawing
+                        };
+
+                        Drawing.Connectors.Add(connector);
+                    }
+                }
+            }
+        }
+    }
+
+    #endregion
 
     private static DrawingNodeViewModel CreateDrawing(string? name = null)
     {
