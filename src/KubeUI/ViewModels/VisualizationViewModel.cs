@@ -1109,7 +1109,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                         {
                             if (end.Resource is V1Secret secret)
                             {
-                                if (secret.Metadata.Name == secretReference.Name && end.Resource.Metadata.NamespaceProperty == serviceAccount.Metadata.NamespaceProperty)
+                                if (secret.Metadata.Uid == secretReference.Uid && end.Resource.Metadata.NamespaceProperty == serviceAccount.Metadata.NamespaceProperty)
                                 {
                                     var connector = new MyConnectorViewModel
                                     {

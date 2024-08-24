@@ -1838,6 +1838,61 @@ public class VisualizatonTests
         vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
     }
 
+    [AvaloniaFact]
+    public void LinkSecretInServiceAccount()
+    {
+        var (mock, resources) = GetMock();
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default",
+                        Uid = "123"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1ServiceAccount>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Secrets =
+                    [
+                        new ()
+                        {
+                            Uid = "123"
+                        }
+                    ]
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1ServiceAccount>(), new() { Items = start });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ServiceAccount>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
     #endregion
 
     [AvaloniaFact]
@@ -2162,6 +2217,8 @@ public class VisualizatonTests
         vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Service>();
     }
 
+    #region ServiceAccount
+
     [AvaloniaFact]
     public void LinkServiceAccountInDeployment()
     {
@@ -2397,4 +2454,6 @@ public class VisualizatonTests
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
         vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ServiceAccount>();
     }
+
+    #endregion
 }
