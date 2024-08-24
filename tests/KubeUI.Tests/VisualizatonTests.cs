@@ -36,11 +36,11 @@ public class VisualizatonTests
     }
 
     [AvaloniaFact]
-    public void LinkOwnersTest()
+    public void LinkOwners()
     {
         var (mock, resources) = GetMock();
 
-        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -62,9 +62,9 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = configMaps });
+        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var deployments = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
         {
             {
                 new("default", "my-deployment"),
@@ -87,7 +87,7 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = deployments });
+        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(mock.Object);
@@ -104,7 +104,7 @@ public class VisualizatonTests
     {
         var (mock, resources) = GetMock();
 
-        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -119,9 +119,9 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = configMaps });
+        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var deployments = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
         {
             {
                 new("default", "my-deployment"),
@@ -164,7 +164,7 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = deployments });
+        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(mock.Object);
@@ -179,7 +179,7 @@ public class VisualizatonTests
     {
         var (mock, resources) = GetMock();
 
-        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -194,9 +194,9 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = configMaps });
+        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var deployments = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
         {
             {
                 new("default", "my-deployment"),
@@ -236,7 +236,7 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = deployments });
+        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(mock.Object);
@@ -251,7 +251,7 @@ public class VisualizatonTests
     {
         var (mock, resources) = GetMock();
 
-        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -266,9 +266,9 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = configMaps });
+        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var deployments = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
         {
             {
                 new("default", "my-deployment"),
@@ -302,7 +302,7 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() {  Items = deployments });
+        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() {  Items = start });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(mock.Object);
@@ -318,7 +318,7 @@ public class VisualizatonTests
     {
         var (mock, resources) = GetMock();
 
-        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -333,9 +333,9 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = configMaps });
+        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var daemonsets = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
         {
             {
                 new("default", "my-deployment"),
@@ -378,7 +378,7 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = daemonsets });
+        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = start });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(mock.Object);
@@ -393,7 +393,7 @@ public class VisualizatonTests
     {
         var (mock, resources) = GetMock();
 
-        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -408,9 +408,9 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = configMaps });
+        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var daemonsets = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
         {
             {
                 new("default", "my-deployment"),
@@ -450,7 +450,7 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = daemonsets });
+        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = start });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(mock.Object);
@@ -465,7 +465,7 @@ public class VisualizatonTests
     {
         var (mock, resources) = GetMock();
 
-        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -480,9 +480,9 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = configMaps });
+        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var daemonsets = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
         {
             {
                 new("default", "my-deployment"),
@@ -516,7 +516,7 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = daemonsets });
+        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = start });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(mock.Object);
@@ -532,7 +532,7 @@ public class VisualizatonTests
     {
         var (mock, resources) = GetMock();
 
-        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -547,9 +547,9 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = configMaps });
+        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var statefulsets = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
         {
             {
                 new("default", "my-deployment"),
@@ -592,7 +592,7 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = statefulsets });
+        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = start });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(mock.Object);
@@ -607,7 +607,7 @@ public class VisualizatonTests
     {
         var (mock, resources) = GetMock();
 
-        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -622,9 +622,9 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = configMaps });
+        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var statefulsets = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
         {
             {
                 new("default", "my-deployment"),
@@ -664,7 +664,7 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = statefulsets });
+        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = start });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(mock.Object);
@@ -679,7 +679,7 @@ public class VisualizatonTests
     {
         var (mock, resources) = GetMock();
 
-        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -694,9 +694,9 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = configMaps });
+        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var statefulsets = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
         {
             {
                 new("default", "my-deployment"),
@@ -730,7 +730,7 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = statefulsets });
+        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = start });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(mock.Object);
@@ -747,7 +747,7 @@ public class VisualizatonTests
     {
         var (mock, resources) = GetMock();
 
-        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -762,9 +762,9 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = configMaps });
+        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var replicasets = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
         {
             {
                 new("default", "my-deployment"),
@@ -811,7 +811,7 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = replicasets });
+        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = start });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(mock.Object);
@@ -826,7 +826,7 @@ public class VisualizatonTests
     {
         var (mock, resources) = GetMock();
 
-        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -841,9 +841,9 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = configMaps });
+        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var replicasets = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
         {
             {
                 new("default", "my-deployment"),
@@ -887,7 +887,7 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = replicasets });
+        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = start });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(mock.Object);
@@ -902,7 +902,7 @@ public class VisualizatonTests
     {
         var (mock, resources) = GetMock();
 
-        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -917,9 +917,9 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = configMaps });
+        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var replicasets = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
         {
             {
                 new("default", "my-deployment"),
@@ -957,7 +957,7 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = replicasets });
+        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = start });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(mock.Object);
@@ -976,7 +976,7 @@ public class VisualizatonTests
     {
         var (mock, resources) = GetMock();
 
-        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -991,9 +991,9 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = configMaps });
+        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var deployments = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
         {
             {
                 new("default", "my-deployment"),
@@ -1036,7 +1036,7 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = deployments });
+        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(mock.Object);
@@ -1051,7 +1051,7 @@ public class VisualizatonTests
     {
         var (mock, resources) = GetMock();
 
-        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -1066,9 +1066,9 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = configMaps });
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var deployments = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
         {
             {
                 new("default", "my-deployment"),
@@ -1108,7 +1108,7 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = deployments });
+        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(mock.Object);
@@ -1123,7 +1123,7 @@ public class VisualizatonTests
     {
         var (mock, resources) = GetMock();
 
-        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -1138,9 +1138,9 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = configMaps });
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var deployments = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
         {
             {
                 new("default", "my-deployment"),
@@ -1174,7 +1174,7 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = deployments });
+        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(mock.Object);
@@ -1189,7 +1189,7 @@ public class VisualizatonTests
     {
         var (mock, resources) = GetMock();
 
-        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -1204,9 +1204,9 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = configMaps });
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var daemonsets = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
         {
             {
                 new("default", "my-deployment"),
@@ -1249,7 +1249,7 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = daemonsets });
+        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = start });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(mock.Object);
@@ -1264,7 +1264,7 @@ public class VisualizatonTests
     {
         var (mock, resources) = GetMock();
 
-        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -1279,9 +1279,9 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = configMaps });
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var daemonsets = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
         {
             {
                 new("default", "my-deployment"),
@@ -1321,7 +1321,7 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = daemonsets });
+        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = start });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(mock.Object);
@@ -1336,7 +1336,7 @@ public class VisualizatonTests
     {
         var (mock, resources) = GetMock();
 
-        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -1351,9 +1351,9 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = configMaps });
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var daemonsets = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
         {
             {
                 new("default", "my-deployment"),
@@ -1387,7 +1387,7 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = daemonsets });
+        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = start });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(mock.Object);
@@ -1403,7 +1403,7 @@ public class VisualizatonTests
     {
         var (mock, resources) = GetMock();
 
-        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -1418,9 +1418,9 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = configMaps });
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var statefulsets = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
         {
             {
                 new("default", "my-deployment"),
@@ -1463,7 +1463,7 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = statefulsets });
+        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = start });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(mock.Object);
@@ -1478,7 +1478,7 @@ public class VisualizatonTests
     {
         var (mock, resources) = GetMock();
 
-        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -1493,9 +1493,9 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = configMaps });
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var statefulsets = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
         {
             {
                 new("default", "my-deployment"),
@@ -1535,7 +1535,7 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = statefulsets });
+        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = start });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(mock.Object);
@@ -1550,7 +1550,7 @@ public class VisualizatonTests
     {
         var (mock, resources) = GetMock();
 
-        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -1565,9 +1565,9 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = configMaps });
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var statefulsets = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
         {
             {
                 new("default", "my-deployment"),
@@ -1601,7 +1601,7 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = statefulsets });
+        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = start });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(mock.Object);
@@ -1618,7 +1618,7 @@ public class VisualizatonTests
     {
         var (mock, resources) = GetMock();
 
-        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -1633,9 +1633,9 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = configMaps });
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var replicasets = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
         {
             {
                 new("default", "my-deployment"),
@@ -1682,7 +1682,7 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = replicasets });
+        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = start });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(mock.Object);
@@ -1697,7 +1697,7 @@ public class VisualizatonTests
     {
         var (mock, resources) = GetMock();
 
-        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -1712,9 +1712,9 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = configMaps });
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var replicasets = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
         {
             {
                 new("default", "my-deployment"),
@@ -1758,7 +1758,7 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = replicasets });
+        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = start });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(mock.Object);
@@ -1773,7 +1773,7 @@ public class VisualizatonTests
     {
         var (mock, resources) = GetMock();
 
-        var configMaps = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -1788,9 +1788,9 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = configMaps });
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var replicasets = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
         {
             {
                 new("default", "my-deployment"),
@@ -1828,7 +1828,7 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = replicasets });
+        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = start });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(mock.Object);
@@ -1840,14 +1840,12 @@ public class VisualizatonTests
 
     #endregion
 
-    #region Even
-
     [AvaloniaFact]
     public void LinkEvent()
     {
         var (mock, resources) = GetMock();
 
-        var configMaps = new ConcurrentObservableDictionary<NamespacedName, Corev1Event>
+        var end = new ConcurrentObservableDictionary<NamespacedName, Corev1Event>
         {
             {
                 new("default", "my-config"),
@@ -1866,9 +1864,9 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<Corev1Event>(), new() { Items = configMaps });
+        resources.TryAdd(GroupApiVersionKind.From<Corev1Event>(), new() { Items = end });
 
-        var deployments = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
         {
             {
                 new("default", "my-deployment"),
@@ -1891,7 +1889,7 @@ public class VisualizatonTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = deployments });
+        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(mock.Object);
@@ -1901,5 +1899,502 @@ public class VisualizatonTests
         vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<Corev1Event>();
     }
 
-    #endregion
+    [AvaloniaFact]
+    public void LinkEndpointSlice()
+    {
+        var (mock, resources) = GetMock();
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1EndpointSlice>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    },
+                    Endpoints =
+                    [
+                        new()
+                        {
+                            TargetRef = new()
+                            {
+                                Uid = "123"
+                            }
+                        }
+                    ]
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1EndpointSlice>(), new() { Items = start });
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1Pod>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default",
+                        Uid = "123"
+                    },
+                    Spec = new()
+                    {
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Pod>(), new() { Items = end });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1EndpointSlice>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Pod>();
+    }
+
+    [AvaloniaFact]
+    public void LinkEndpoints()
+    {
+        var (mock, resources) = GetMock();
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1Endpoints>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    },
+                    Subsets =
+                    [
+                        new()
+                        {
+                            Addresses =
+                            [
+                                new()
+                                {
+                                    TargetRef = new()
+                                    {
+                                        Uid = "123"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Endpoints>(), new() { Items = start });
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1Pod>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default",
+                        Uid = "123"
+                    },
+                    Spec = new()
+                    {
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Pod>(), new() { Items = end });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Endpoints>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Pod>();
+    }
+
+    [AvaloniaFact]
+    public void LinkIngress()
+    {
+        var (mock, resources) = GetMock();
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1Ingress>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Rules =
+                        [
+                            new()
+                            {
+                                Http = new()
+                                {
+                                    Paths =
+                                    [
+                                        new()
+                                        {
+                                            Backend = new()
+                                            {
+                                                Service = new()
+                                                {
+                                                    Name = "my-service"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Ingress>(), new() { Items = start });
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1Service>
+        {
+            {
+                new("default", "my-service"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-service",
+                        NamespaceProperty = "default",
+                    },
+                    Spec = new()
+                    {
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Pod>(), new() { Items = end });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Ingress>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Service>();
+    }
+
+    [AvaloniaFact]
+    public void LinkIngressDefaultBackend()
+    {
+        var (mock, resources) = GetMock();
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1Ingress>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        DefaultBackend = new()
+                        {
+                            Service = new()
+                            {
+                                Name = "my-service"
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Ingress>(), new() { Items = start });
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1Service>
+        {
+            {
+                new("default", "my-service"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-service",
+                        NamespaceProperty = "default",
+                    },
+                    Spec = new()
+                    {
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Pod>(), new() { Items = end });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Ingress>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Service>();
+    }
+
+    [AvaloniaFact]
+    public void LinkServiceAccountInDeployment()
+    {
+        var (mock, resources) = GetMock();
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1ServiceAccount>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1ServiceAccount>(), new() { Items = end });
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                Containers = [],
+                                ServiceAccountName = "my-config"
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ServiceAccount>();
+    }
+
+    [AvaloniaFact]
+    public void LinkServiceAccountInStatefulSet()
+    {
+        var (mock, resources) = GetMock();
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1ServiceAccount>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1ServiceAccount>(), new() { Items = end });
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                Containers = [],
+                                ServiceAccountName = "my-config"
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1StatefulSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ServiceAccount>();
+    }
+
+    [AvaloniaFact]
+    public void LinkServiceAccountInDaemonSet()
+    {
+        var (mock, resources) = GetMock();
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1ServiceAccount>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1ServiceAccount>(), new() { Items = end });
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                Containers = [],
+                                ServiceAccountName = "my-config"
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = start });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1DaemonSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ServiceAccount>();
+    }
+
+    [AvaloniaFact]
+    public void LinkServiceAccountInReplicaSet()
+    {
+        var (mock, resources) = GetMock();
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1ServiceAccount>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1ServiceAccount>(), new() { Items = end });
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                Containers = [],
+                                ServiceAccountName = "my-config"
+                            }
+                        }
+                    },
+                    Status = new()
+                    {
+                        Replicas = 1
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = start });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ServiceAccount>();
+    }
 }

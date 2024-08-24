@@ -73,6 +73,9 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         cluster.Seed<V1PersistentVolumeClaim>();
         cluster.Seed<V1PersistentVolume>();
 
+        // Access Control
+        cluster.Seed<V1ServiceAccount>();
+
         Run();
     }
 
@@ -95,6 +98,10 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         LinkConfigMap();
         LinkSecret();
+
+        LinkServiceAccount();
+
+        //Lo
 
         OrderResourcesByConnections();
     }
@@ -163,11 +170,11 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         var x = 0;
         var y = 0;
 
-        var items = Drawing.Nodes.OfType<ResourceNodeViewModel>().OrderByDescending(x => x.Pins.Count(y => y.Alignment == PinAlignment.Left));
+        var items = Drawing.Nodes.OfType<ResourceNodeViewModel>();
 
         var groups = items.GroupBy(x => x.Kind);
 
-        var order = groups.OrderBy(x => x.Count());
+        var order = groups.OrderBy(x => x.Sum(y => y.Pins.Count(y => y.Alignment == PinAlignment.Left)));
 
         foreach (var group in order)
         {
@@ -187,20 +194,20 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     private void LinkOwners()
     {
-        foreach (var destination in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+        foreach (var end in Drawing.Nodes.OfType<ResourceNodeViewModel>())
         {
-            if (destination.Resource.Metadata.OwnerReferences != null)
+            if (end.Resource.Metadata.OwnerReferences != null)
             {
-                foreach (var ownerReference in destination.Resource.Metadata.OwnerReferences)
+                foreach (var ownerReference in end.Resource.Metadata.OwnerReferences)
                 {
-                    var ownerObject = Drawing.Nodes.OfType<ResourceNodeViewModel>().FirstOrDefault(x => x.Resource.Metadata.Uid == ownerReference.Uid);
+                    var start = Drawing.Nodes.OfType<ResourceNodeViewModel>().FirstOrDefault(x => x.Resource.Metadata.Uid == ownerReference.Uid);
 
-                    if (ownerObject != null)
+                    if (start != null)
                     {
                         var connector = new MyConnectorViewModel
                         {
-                            Start = ownerObject.Pins[1],
-                            End = destination.Pins[0],
+                            Start = start.Pins[1],
+                            End = end.Pins[0],
                             Parent = Drawing
                         };
 
@@ -213,29 +220,60 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     private void LinkIngress()
     {
-        foreach (var source in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+        foreach (var start in Drawing.Nodes.OfType<ResourceNodeViewModel>())
         {
-            if (source.Resource is V1Ingress ingress)
+            if (start.Resource is V1Ingress ingress)
             {
-                foreach (var serviceBackend in ingress.Spec.Rules.SelectMany(x => x.Http.Paths.Select(y => y.Backend.Service)))
+                if (ingress.Spec.Rules != null)
                 {
-                    foreach (var destination in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+                    foreach (var serviceBackend in ingress.Spec.Rules
+                                                    .SelectMany(x => x.Http.Paths.Where(y => y.Backend != null && y.Backend.Service != null)
+                                                    .Select(y => y.Backend.Service)))
                     {
-                        if (destination.Resource is V1Service service)
+                        foreach (var end in Drawing.Nodes.OfType<ResourceNodeViewModel>())
                         {
-                            if (service.Metadata.Name == serviceBackend.Name && service.Metadata.NamespaceProperty == ingress.Metadata.NamespaceProperty)
+                            if (end.Resource is V1Service service)
                             {
-                                var connector = new MyConnectorViewModel
+                                if (service.Metadata.Name == serviceBackend.Name && service.Metadata.NamespaceProperty == ingress.Metadata.NamespaceProperty)
                                 {
-                                    Start = source.Pins[1],
-                                    End = destination.Pins[0],
-                                    Parent = Drawing
-                                };
+                                    var connector = new MyConnectorViewModel
+                                    {
+                                        Start = start.Pins[1],
+                                        End = end.Pins[0],
+                                        Parent = Drawing
+                                    };
 
-                                Drawing.Connectors.Add(connector);
+                                    Drawing.Connectors.Add(connector);
+                                }
                             }
                         }
                     }
+                }
+
+                if (ingress.Spec.DefaultBackend != null)
+                {
+                    if (ingress.Spec.DefaultBackend.Service != null)
+                    {
+                        foreach (var end in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+                        {
+                            if (end.Resource is V1Service service)
+                            {
+                                if (service.Metadata.Name == ingress.Spec.DefaultBackend.Service.Name && service.Metadata.NamespaceProperty == ingress.Metadata.NamespaceProperty)
+                                {
+                                    var connector = new MyConnectorViewModel
+                                    {
+                                        Start = start.Pins[1],
+                                        End = end.Pins[0],
+                                        Parent = Drawing
+                                    };
+
+                                    Drawing.Connectors.Add(connector);
+                                }
+                            }
+                        }
+                    }
+
+                    //todo DefaultBackend.Resource
                 }
 
                 //todo Backend.Resource
@@ -245,9 +283,9 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     private void LinkEndpoints()
     {
-        foreach (var destination in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+        foreach (var start in Drawing.Nodes.OfType<ResourceNodeViewModel>())
         {
-            if (destination.Resource is V1Endpoints endpoint)
+            if (start.Resource is V1Endpoints endpoint)
             {
                 if (endpoint.Subsets == null)
                 {
@@ -268,16 +306,16 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             continue;
                         }
 
-                        foreach (var source in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+                        foreach (var end in Drawing.Nodes.OfType<ResourceNodeViewModel>())
                         {
-                            if (source.Resource is V1Pod pod)
+                            if (end.Resource is V1Pod pod)
                             {
                                 if (pod.Metadata.Uid == address.TargetRef.Uid)
                                 {
                                     var connector = new MyConnectorViewModel
                                     {
-                                        Start = source.Pins[1],
-                                        End = destination.Pins[0],
+                                        Start = start.Pins[1],
+                                        End = end.Pins[0],
                                         Parent = Drawing
                                     };
 
@@ -293,9 +331,9 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     private void LinkEndpointSlice()
     {
-        foreach (var source in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+        foreach (var start in Drawing.Nodes.OfType<ResourceNodeViewModel>())
         {
-            if (source.Resource is V1EndpointSlice endpointSlice)
+            if (start.Resource is V1EndpointSlice endpointSlice)
             {
                 if (endpointSlice.Endpoints == null)
                 {
@@ -309,16 +347,16 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                         continue;
                     }
 
-                    foreach (var destination in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+                    foreach (var end in Drawing.Nodes.OfType<ResourceNodeViewModel>())
                     {
-                        if (destination.Resource is V1Pod pod)
+                        if (end.Resource is V1Pod pod)
                         {
                             if (pod.Metadata.Uid == endpoint.TargetRef.Uid)
                             {
                                 var connector = new MyConnectorViewModel
                                 {
-                                    Start = source.Pins[1],
-                                    End = destination.Pins[0],
+                                    Start = start.Pins[1],
+                                    End = end.Pins[0],
                                     Parent = Drawing
                                 };
 
@@ -333,9 +371,9 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     private void LinkConfigMap()
     {
-        foreach (var source in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+        foreach (var start in Drawing.Nodes.OfType<ResourceNodeViewModel>())
         {
-            if (source.Resource is V1Deployment deployment)
+            if (start.Resource is V1Deployment deployment)
             {
                 if (deployment.Spec.Template.Spec.Containers != null)
                 {
@@ -347,16 +385,16 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (env.ValueFrom != null && env.ValueFrom.ConfigMapKeyRef != null)
                                 {
-                                    foreach (var destination in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+                                    foreach (var end in Drawing.Nodes.OfType<ResourceNodeViewModel>())
                                     {
-                                        if (destination.Resource is V1ConfigMap configMap)
+                                        if (end.Resource is V1ConfigMap configMap)
                                         {
                                             if (configMap.Metadata.Name == env.ValueFrom.ConfigMapKeyRef.Name && configMap.Metadata.NamespaceProperty == deployment.Metadata.NamespaceProperty)
                                             {
                                                 var connector = new MyConnectorViewModel
                                                 {
-                                                    Start = source.Pins[1],
-                                                    End = destination.Pins[0],
+                                                    Start = start.Pins[1],
+                                                    End = end.Pins[0],
                                                     Parent = Drawing
                                                 };
 
@@ -382,7 +420,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                             {
                                                 var connector = new MyConnectorViewModel
                                                 {
-                                                    Start = source.Pins[1],
+                                                    Start = start.Pins[1],
                                                     End = destination.Pins[0],
                                                     Parent = Drawing
                                                 };
@@ -411,7 +449,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                     {
                                         var connector = new MyConnectorViewModel
                                         {
-                                            Start = source.Pins[1],
+                                            Start = start.Pins[1],
                                             End = destination.Pins[0],
                                             Parent = Drawing
                                         };
@@ -425,7 +463,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 }
             }
 
-            if (source.Resource is V1ReplicaSet replicaSet)
+            if (start.Resource is V1ReplicaSet replicaSet)
             {
                 if (replicaSet.Spec.Template.Spec.Containers != null)
                 {
@@ -445,7 +483,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                             {
                                                 var connector = new MyConnectorViewModel
                                                 {
-                                                    Start = source.Pins[1],
+                                                    Start = start.Pins[1],
                                                     End = destination.Pins[0],
                                                     Parent = Drawing
                                                 };
@@ -472,7 +510,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                             {
                                                 var connector = new MyConnectorViewModel
                                                 {
-                                                    Start = source.Pins[1],
+                                                    Start = start.Pins[1],
                                                     End = destination.Pins[0],
                                                     Parent = Drawing
                                                 };
@@ -501,7 +539,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                     {
                                         var connector = new MyConnectorViewModel
                                         {
-                                            Start = source.Pins[1],
+                                            Start = start.Pins[1],
                                             End = destination.Pins[0],
                                             Parent = Drawing
                                         };
@@ -515,7 +553,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 }
             }
 
-            if (source.Resource is V1StatefulSet statefulSet)
+            if (start.Resource is V1StatefulSet statefulSet)
             {
                 if (statefulSet.Spec.Template.Spec.Containers != null)
                 {
@@ -535,7 +573,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                             {
                                                 var connector = new MyConnectorViewModel
                                                 {
-                                                    Start = source.Pins[1],
+                                                    Start = start.Pins[1],
                                                     End = destination.Pins[0],
                                                     Parent = Drawing
                                                 };
@@ -562,7 +600,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                             {
                                                 var connector = new MyConnectorViewModel
                                                 {
-                                                    Start = source.Pins[1],
+                                                    Start = start.Pins[1],
                                                     End = destination.Pins[0],
                                                     Parent = Drawing
                                                 };
@@ -591,7 +629,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                     {
                                         var connector = new MyConnectorViewModel
                                         {
-                                            Start = source.Pins[1],
+                                            Start = start.Pins[1],
                                             End = destination.Pins[0],
                                             Parent = Drawing
                                         };
@@ -605,7 +643,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 }
             }
 
-            if (source.Resource is V1DaemonSet daemonSet)
+            if (start.Resource is V1DaemonSet daemonSet)
             {
                 if (daemonSet.Spec.Template.Spec.Containers != null)
                 {
@@ -625,7 +663,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                             {
                                                 var connector = new MyConnectorViewModel
                                                 {
-                                                    Start = source.Pins[1],
+                                                    Start = start.Pins[1],
                                                     End = destination.Pins[0],
                                                     Parent = Drawing
                                                 };
@@ -652,7 +690,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                             {
                                                 var connector = new MyConnectorViewModel
                                                 {
-                                                    Start = source.Pins[1],
+                                                    Start = start.Pins[1],
                                                     End = destination.Pins[0],
                                                     Parent = Drawing
                                                 };
@@ -681,7 +719,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                     {
                                         var connector = new MyConnectorViewModel
                                         {
-                                            Start = source.Pins[1],
+                                            Start = start.Pins[1],
                                             End = destination.Pins[0],
                                             Parent = Drawing
                                         };
@@ -699,9 +737,9 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     private void LinkSecret()
     {
-        foreach (var source in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+        foreach (var start in Drawing.Nodes.OfType<ResourceNodeViewModel>())
         {
-            if (source.Resource is V1Deployment deployment)
+            if (start.Resource is V1Deployment deployment)
             {
                 if (deployment.Spec.Template.Spec.Containers != null)
                 {
@@ -713,16 +751,16 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (env.ValueFrom != null && env.ValueFrom.SecretKeyRef != null)
                                 {
-                                    foreach (var destination in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+                                    foreach (var end in Drawing.Nodes.OfType<ResourceNodeViewModel>())
                                     {
-                                        if (destination.Resource is V1Secret secret)
+                                        if (end.Resource is V1Secret secret)
                                         {
                                             if (secret.Metadata.Name == env.ValueFrom.SecretKeyRef.Name && secret.Metadata.NamespaceProperty == deployment.Metadata.NamespaceProperty)
                                             {
                                                 var connector = new MyConnectorViewModel
                                                 {
-                                                    Start = source.Pins[1],
-                                                    End = destination.Pins[0],
+                                                    Start = start.Pins[1],
+                                                    End = end.Pins[0],
                                                     Parent = Drawing
                                                 };
 
@@ -748,7 +786,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                             {
                                                 var connector = new MyConnectorViewModel
                                                 {
-                                                    Start = source.Pins[1],
+                                                    Start = start.Pins[1],
                                                     End = destination.Pins[0],
                                                     Parent = Drawing
                                                 };
@@ -777,7 +815,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                     {
                                         var connector = new MyConnectorViewModel
                                         {
-                                            Start = source.Pins[1],
+                                            Start = start.Pins[1],
                                             End = destination.Pins[0],
                                             Parent = Drawing
                                         };
@@ -791,7 +829,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 }
             }
 
-            if (source.Resource is V1ReplicaSet replicaSet)
+            if (start.Resource is V1ReplicaSet replicaSet)
             {
                 if (replicaSet.Spec.Template.Spec.Containers != null)
                 {
@@ -811,7 +849,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                             {
                                                 var connector = new MyConnectorViewModel
                                                 {
-                                                    Start = source.Pins[1],
+                                                    Start = start.Pins[1],
                                                     End = destination.Pins[0],
                                                     Parent = Drawing
                                                 };
@@ -838,7 +876,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                             {
                                                 var connector = new MyConnectorViewModel
                                                 {
-                                                    Start = source.Pins[1],
+                                                    Start = start.Pins[1],
                                                     End = destination.Pins[0],
                                                     Parent = Drawing
                                                 };
@@ -867,7 +905,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                     {
                                         var connector = new MyConnectorViewModel
                                         {
-                                            Start = source.Pins[1],
+                                            Start = start.Pins[1],
                                             End = destination.Pins[0],
                                             Parent = Drawing
                                         };
@@ -881,7 +919,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 }
             }
 
-            if (source.Resource is V1StatefulSet statefulSet)
+            if (start.Resource is V1StatefulSet statefulSet)
             {
                 if (statefulSet.Spec.Template.Spec.Containers != null)
                 {
@@ -901,7 +939,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                             {
                                                 var connector = new MyConnectorViewModel
                                                 {
-                                                    Start = source.Pins[1],
+                                                    Start = start.Pins[1],
                                                     End = destination.Pins[0],
                                                     Parent = Drawing
                                                 };
@@ -928,7 +966,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                             {
                                                 var connector = new MyConnectorViewModel
                                                 {
-                                                    Start = source.Pins[1],
+                                                    Start = start.Pins[1],
                                                     End = destination.Pins[0],
                                                     Parent = Drawing
                                                 };
@@ -957,7 +995,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                     {
                                         var connector = new MyConnectorViewModel
                                         {
-                                            Start = source.Pins[1],
+                                            Start = start.Pins[1],
                                             End = destination.Pins[0],
                                             Parent = Drawing
                                         };
@@ -971,7 +1009,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 }
             }
 
-            if (source.Resource is V1DaemonSet daemonSet)
+            if (start.Resource is V1DaemonSet daemonSet)
             {
                 if (daemonSet.Spec.Template.Spec.Containers != null)
                 {
@@ -991,7 +1029,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                             {
                                                 var connector = new MyConnectorViewModel
                                                 {
-                                                    Start = source.Pins[1],
+                                                    Start = start.Pins[1],
                                                     End = destination.Pins[0],
                                                     Parent = Drawing
                                                 };
@@ -1018,7 +1056,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                             {
                                                 var connector = new MyConnectorViewModel
                                                 {
-                                                    Start = source.Pins[1],
+                                                    Start = start.Pins[1],
                                                     End = destination.Pins[0],
                                                     Parent = Drawing
                                                 };
@@ -1047,7 +1085,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                     {
                                         var connector = new MyConnectorViewModel
                                         {
-                                            Start = source.Pins[1],
+                                            Start = start.Pins[1],
                                             End = destination.Pins[0],
                                             Parent = Drawing
                                         };
@@ -1060,27 +1098,144 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     }
                 }
             }
+
+            if (start.Resource is V1ServiceAccount serviceAccount)
+            {
+                if (serviceAccount.Secrets != null)
+                {
+                    foreach (var secretReference in serviceAccount.Secrets)
+                    {
+                        foreach (var end in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+                        {
+                            if (end.Resource is V1Secret secret)
+                            {
+                                if (secret.Metadata.Name == secretReference.Name && end.Resource.Metadata.NamespaceProperty == serviceAccount.Metadata.NamespaceProperty)
+                                {
+                                    var connector = new MyConnectorViewModel
+                                    {
+                                        Start = start.Pins[1],
+                                        End = end.Pins[0],
+                                        Parent = Drawing
+                                    };
+
+                                    Drawing.Connectors.Add(connector);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
     private void LinkEvent()
     {
-        foreach (var destination in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+        foreach (var end in Drawing.Nodes.OfType<ResourceNodeViewModel>())
         {
-            if (destination.Resource is Corev1Event @event)
+            if (end.Resource is Corev1Event @event)
             {
-                foreach (var source in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+                foreach (var start in Drawing.Nodes.OfType<ResourceNodeViewModel>())
                 {
-                    if (source.Resource.Metadata.Uid == @event.InvolvedObject.Uid && source.Resource.Metadata.NamespaceProperty == @event.Metadata.NamespaceProperty)
+                    if (start.Resource.Metadata.Uid == @event.InvolvedObject.Uid && start.Resource.Metadata.NamespaceProperty == @event.Metadata.NamespaceProperty)
                     {
                         var connector = new MyConnectorViewModel
                         {
-                            Start = source.Pins[1],
-                            End = destination.Pins[0],
+                            Start = start.Pins[1],
+                            End = end.Pins[0],
                             Parent = Drawing
                         };
 
                         Drawing.Connectors.Add(connector);
+                    }
+                }
+            }
+        }
+    }
+
+    private void LinkServiceAccount()
+    {
+        foreach (var start in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+        {
+            if (start.Resource is V1Deployment deployment)
+            {
+                foreach (var end in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+                {
+                    if (end.Resource is V1ServiceAccount serviceAccount)
+                    {
+                        if (serviceAccount.Metadata.Name == deployment.Spec.Template.Spec.ServiceAccountName && end.Resource.Metadata.NamespaceProperty == deployment.Metadata.NamespaceProperty)
+                        {
+                            var connector = new MyConnectorViewModel
+                            {
+                                Start = start.Pins[1],
+                                End = end.Pins[0],
+                                Parent = Drawing
+                            };
+
+                            Drawing.Connectors.Add(connector);
+                        }
+                    }
+                }
+            }
+
+            if (start.Resource is V1ReplicaSet replicaSet)
+            {
+                foreach (var end in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+                {
+                    if (end.Resource is V1ServiceAccount serviceAccount)
+                    {
+                        if (serviceAccount.Metadata.Name == replicaSet.Spec.Template.Spec.ServiceAccountName && end.Resource.Metadata.NamespaceProperty == replicaSet.Metadata.NamespaceProperty)
+                        {
+                            var connector = new MyConnectorViewModel
+                            {
+                                Start = start.Pins[1],
+                                End = end.Pins[0],
+                                Parent = Drawing
+                            };
+
+                            Drawing.Connectors.Add(connector);
+                        }
+                    }
+                }
+            }
+
+            if (start.Resource is V1DaemonSet daemonSet)
+            {
+                foreach (var end in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+                {
+                    if (end.Resource is V1ServiceAccount serviceAccount)
+                    {
+                        if (serviceAccount.Metadata.Name == daemonSet.Spec.Template.Spec.ServiceAccountName && end.Resource.Metadata.NamespaceProperty == daemonSet.Metadata.NamespaceProperty)
+                        {
+                            var connector = new MyConnectorViewModel
+                            {
+                                Start = start.Pins[1],
+                                End = end.Pins[0],
+                                Parent = Drawing
+                            };
+
+                            Drawing.Connectors.Add(connector);
+                        }
+                    }
+                }
+            }
+
+            if (start.Resource is V1StatefulSet statefulSet)
+            {
+                foreach (var end in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+                {
+                    if (end.Resource is V1ServiceAccount serviceAccount)
+                    {
+                        if (serviceAccount.Metadata.Name == statefulSet.Spec.Template.Spec.ServiceAccountName && end.Resource.Metadata.NamespaceProperty == statefulSet.Metadata.NamespaceProperty)
+                        {
+                            var connector = new MyConnectorViewModel
+                            {
+                                Start = start.Pins[1],
+                                End = end.Pins[0],
+                                Parent = Drawing
+                            };
+
+                            Drawing.Connectors.Add(connector);
+                        }
                     }
                 }
             }
