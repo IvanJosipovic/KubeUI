@@ -2,6 +2,8 @@
 using Avalonia.Input;
 using Avalonia.Styling;
 using AvaloniaEdit;
+using AvaloniaEdit.Document;
+using AvaloniaEdit.Folding;
 using AvaloniaEdit.TextMate;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
@@ -13,6 +15,8 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
     private Installation _textMateInstallation;
 
     private RegistryOptions _registryOptions;
+
+    private FoldingManager _foldingManager;
 
     public ResourceYamlView()
     {
@@ -76,16 +80,20 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
                     new TextEditor()
                         .Ref(out var editor)
                         .Row(1)
+                        .Document(@vm.YamlDocument, BindingMode.OneWay)
                         .Set(x => {
-                            _textMateInstallation = x.InstallTextMate(_registryOptions, false);
+                            _textMateInstallation = x.InstallTextMate(_registryOptions, true);
                             _textMateInstallation.SetGrammar(_registryOptions.GetScopeByLanguageId(_registryOptions.GetLanguageByExtension(".yaml").Id));
-
+                            _foldingManager = FoldingManager.Install(editor.TextArea);
+                            new YamlFoldingStrategy().UpdateFoldings(_foldingManager, editor.Document);
                             x.Options.AllowScrollBelowDocument = false;
                             x.Options.ShowBoxForControlCharacters = false;
                             x.Options.EnableHyperlinks = false;
                             x.Options.EnableEmailHyperlinks = false;
                         })
-                        .Document(@vm.YamlDocument, BindingMode.OneWay)
+                        .OnTextChanged((x) => {
+                            new YamlFoldingStrategy().UpdateFoldings(_foldingManager, editor.Document);
+                        })
                         .FontFamily(new FontFamily("Consolas,Menlo,Monospace"))
                         .FontSize(14.0)
                         .FontWeight(FontWeight.Normal)
@@ -144,5 +152,102 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
         base.OnUnloaded(e);
 
         Application.Current.ActualThemeVariantChanged -= Current_ActualThemeVariantChanged;
+    }
+}
+
+file class YamlFoldingStrategy
+{
+    /// <summary>
+    /// Create <see cref="NewFolding" />s for the specified document and updates the folding manager with them.
+    /// </summary>
+    public void UpdateFoldings(FoldingManager manager, TextDocument document)
+    {
+        var newFoldings = CreateNewFoldings(document, out var firstErrorOffset);
+        manager.UpdateFoldings(newFoldings, firstErrorOffset);
+    }
+
+    /// <summary>
+    /// Create <see cref="NewFolding" />s for the specified document.
+    /// </summary>
+    public IEnumerable<NewFolding> CreateNewFoldings(TextDocument document, out int firstErrorOffset)
+    {
+        try
+        {
+            if (document == null)
+            {
+                firstErrorOffset = 0;
+                return [];
+            }
+
+            var foldMarkers = new List<NewFolding>();
+            var lines = document.Text.Split('\n');
+
+            for (int i = 0; i < lines.Length; i++)
+            {
+                var currentLine = lines[i];
+                var currentLineIndent = CountIndents(currentLine);
+                var lineCount = i;
+                NewFolding? fold = null;
+
+                while (IsNextLineNested(lines, lineCount, currentLineIndent))
+                {
+                    fold ??= new NewFolding
+                    {
+                        StartOffset = document.GetOffset(i + 1, 1),
+                        Name = currentLine,
+                    };
+
+                    lineCount++;
+                }
+
+                if (fold != null)
+                {
+                    fold.EndOffset = document.GetOffset(lineCount + 1, lines[lineCount].Length + 1);
+
+                    foldMarkers.Add(fold);
+                    fold = null;
+                }
+            }
+
+            firstErrorOffset = -1;
+            foldMarkers.Sort((a, b) => a.StartOffset.CompareTo(b.StartOffset));
+            return foldMarkers;
+        }
+        catch
+        {
+            firstErrorOffset = 0;
+            return [];
+        }
+    }
+
+    private bool IsNextLineNested(string[] lines, int i, int currentIndent)
+    {
+        var nextLine = i + 1 < lines.Length ? lines[i + 1] : null;
+        var nextLineIndents = CountIndents(nextLine);
+
+        return nextLine != null && nextLineIndents > currentIndent;
+    }
+
+    private static int CountIndents(string line)
+    {
+        if (line == null)
+        {
+            return 0;
+        }
+
+        int indentLevel = 0;
+
+        foreach (var ch in line)
+        {
+            if (ch == ' ')
+            {
+                indentLevel++;
+            }
+            else
+            {
+                break;
+            }
+        }
+        return indentLevel;
     }
 }

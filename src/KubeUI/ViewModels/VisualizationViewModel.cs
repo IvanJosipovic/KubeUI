@@ -16,7 +16,15 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     private ICluster? _cluster;
 
     [ObservableProperty]
-    private DrawingNodeViewModel _drawing;
+    private DrawingNodeViewModel _drawing = new()
+    {
+        Nodes = new ObservableCollection<INode>(),
+        Connectors = new ObservableCollection<IConnector>(),
+        EnableMultiplePinConnections = true,
+        EnableSnap = true,
+        SnapX = 10.0,
+        SnapY = 10.0,
+    };
 
     [ObservableProperty]
     private bool _hideNoise = true;
@@ -31,28 +39,6 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     public VisualizationViewModel()
     {
         Title = Resources.VisualizationViewModel_Title;
-
-        Drawing = new DrawingNodeViewModel
-        {
-            Nodes = new ObservableCollection<INode>(),
-            Connectors = new ObservableCollection<IConnector>(),
-            EnableMultiplePinConnections = true,
-            EnableSnap = true,
-            SnapX = 10.0,
-            SnapY = 10.0,
-        };
-
-        Drawing.SelectionChanged += Drawing_SelectionChanged;
-
-        Drawing.Selected += Drawing_Selected;
-    }
-
-    private void Drawing_Selected(object? sender, NodeSelectedEventArgs e)
-    {
-    }
-
-    private void Drawing_SelectionChanged(object? sender, EventArgs e)
-    {
     }
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
@@ -164,29 +150,10 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     continue;
                 }
 
-                var rectangle0 = CreateResource(value, kind.Key);
-                rectangle0.Parent = Drawing;
-                Drawing.Nodes.Add(rectangle0);
+                var resource = CreateResource(value, kind.Key);
+                resource.Parent = Drawing;
+                Drawing.Nodes.Add(resource);
             }
-        }
-    }
-
-    private void OrderResources()
-    {
-        var x = 0;
-        var y = 0;
-
-        foreach (var group in Drawing.Nodes.OfType<ResourceNodeViewModel>().GroupBy(x => x.Kind))
-        {
-            foreach (var item in group)
-            {
-                item.X = (_resourceSize + (_resourceSpacing)) * x;
-                item.Y = (_resourceSize + (_resourceSpacing)) * y;
-                y++;
-            }
-
-            y = 0;
-            x++;
         }
     }
 
@@ -1765,6 +1732,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             Resource = resource,
             Kind = kind,
             Content = view,
+            Parent = Drawing
         };
 
         node.Pins.Add(new MyPin()

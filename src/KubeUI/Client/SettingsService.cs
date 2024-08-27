@@ -65,7 +65,7 @@ public sealed partial class SettingsService : ObservableObject
 
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return false;
         }

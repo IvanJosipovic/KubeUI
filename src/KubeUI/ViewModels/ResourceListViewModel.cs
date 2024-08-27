@@ -786,11 +786,18 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                         catch (InvalidOperationException ex) when (ex.Message.StartsWith("No coercion operator is defined between types", StringComparison.Ordinal))
                         {
                             // The type defined in the AdditionalPrinterColumn is not correct
-
                             var match = TypeErrorRegex().Match(ex.Message);
                             if (match.Success)
                             {
+                                var typeString = match.Groups[1].Value;
                                 var type = Type.GetType(match.Groups[1].Value);
+
+                                // todo fix loading Enums
+                                if (type == null)
+                                {
+                                    _logger.LogError(ex, "Unable to load type for column: {Name}", typeString);
+                                    continue;
+                                }
 
                                 if (type.IsGenericType)
                                 {
