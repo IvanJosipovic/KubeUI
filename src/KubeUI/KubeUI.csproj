@@ -80,7 +80,7 @@
     <PackageReference Include="Swordfish.NET.CollectionsV3" Version="3.3.12" />
     <PackageReference Include="TextMateSharp" Version="1.0.63" />
     <PackageReference Include="TextMateSharp.Grammars" Version="1.0.63" />
-    <PackageReference Include="Velopack" Version="0.0.583" />
+    <PackageReference Include="Velopack" Version="0.0.594" />
     <PackageReference Include="YamlDotNet.System.Text.Json" Version="1.5.0" />
 
     <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
