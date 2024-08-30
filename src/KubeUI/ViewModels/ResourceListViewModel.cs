@@ -808,7 +808,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                                     type = type.GenericTypeArguments[0];
                                 }
 
-                                else if (type == typeof(string) || type.IsEnum)
+                                if (type == typeof(string) || type.IsEnum)
                                 {
                                     item.Type = "string";
                                 }
