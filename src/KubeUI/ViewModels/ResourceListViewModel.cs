@@ -808,11 +808,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                                     type = type.GenericTypeArguments[0];
                                 }
 
-                                if (type.IsEnum)
-                                {
-                                    item.Type = "string";
-                                }
-                                else if (type == typeof(string))
+                                else if (type == typeof(string) || type.IsEnum)
                                 {
                                     item.Type = "string";
                                 }
@@ -824,7 +820,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                                 {
                                     item.Type = "integer";
                                 }
-                                else if (type == typeof(long) )
+                                else if (type == typeof(long))
                                 {
                                     item.Type = "integer";
                                     item.Format = "int64";

@@ -2,7 +2,7 @@ using FluentAssertions;
 using k8s.Models;
 using KubeUI.Client;
 
-namespace TestProject1;
+namespace KubeUI.Tests;
 
 public class UnitTest1
 {

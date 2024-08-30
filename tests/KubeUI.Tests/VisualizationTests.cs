@@ -13,7 +13,7 @@ using static KubeUI.ViewModels.VisualizationViewModel;
 
 namespace KubeUI.Tests;
 
-public class VisualizatonTests
+public class VisualizationTests
 {
     private (Mock<ICluster>, ConcurrentDictionary<GroupApiVersionKind, ContainerClass>) GetMock()
     {
@@ -175,6 +175,81 @@ public class VisualizatonTests
     }
 
     [AvaloniaFact]
+    public void LinkConfigMapInDeploymentInitEnv()
+    {
+        var (mock, resources) = GetMock();
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                InitContainers =
+                                [
+                                    new()
+                                    {
+                                        Env =
+                                        [
+                                            new()
+                                            {
+                                                ValueFrom = new()
+                                                {
+                                                    ConfigMapKeyRef = new()
+                                                    {
+                                                        Name = "my-config"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
+    }
+
+    [AvaloniaFact]
     public void LinkConfigMapInDeploymentEnvFrom()
     {
         var (mock, resources) = GetMock();
@@ -214,6 +289,78 @@ public class VisualizatonTests
                             Spec = new()
                             {
                                 Containers =
+                                [
+                                    new()
+                                    {
+                                         EnvFrom =
+                                         [
+                                            new()
+                                            {
+                                                ConfigMapRef = new()
+                                                {
+                                                    Name = "my-config"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
+    }
+
+    [AvaloniaFact]
+    public void LinkConfigMapInDeploymentInitEnvFrom()
+    {
+        var (mock, resources) = GetMock();
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                InitContainers =
                                 [
                                     new()
                                     {
@@ -389,6 +536,81 @@ public class VisualizatonTests
     }
 
     [AvaloniaFact]
+    public void LinkConfigMapInDaemonSetInitEnv()
+    {
+        var (mock, resources) = GetMock();
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                InitContainers =
+                                [
+                                    new()
+                                    {
+                                        Env =
+                                        [
+                                            new()
+                                            {
+                                                ValueFrom = new()
+                                                {
+                                                    ConfigMapKeyRef = new()
+                                                    {
+                                                        Name = "my-config"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = start });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1DaemonSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
+    }
+
+    [AvaloniaFact]
     public void LinkConfigMapInDaemonSetEnvFrom()
     {
         var (mock, resources) = GetMock();
@@ -428,6 +650,78 @@ public class VisualizatonTests
                             Spec = new()
                             {
                                 Containers =
+                                [
+                                    new()
+                                    {
+                                         EnvFrom =
+                                         [
+                                            new()
+                                            {
+                                                ConfigMapRef = new()
+                                                {
+                                                    Name = "my-config"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = start });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1DaemonSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
+    }
+
+    [AvaloniaFact]
+    public void LinkConfigMapInDaemonSetInitEnvFrom()
+    {
+        var (mock, resources) = GetMock();
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                InitContainers =
                                 [
                                     new()
                                     {
@@ -603,6 +897,81 @@ public class VisualizatonTests
     }
 
     [AvaloniaFact]
+    public void LinkConfigMapInStatefulSetInitEnv()
+    {
+        var (mock, resources) = GetMock();
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                InitContainers =
+                                [
+                                    new()
+                                    {
+                                        Env =
+                                        [
+                                            new()
+                                            {
+                                                ValueFrom = new()
+                                                {
+                                                    ConfigMapKeyRef = new()
+                                                    {
+                                                        Name = "my-config"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = start });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1StatefulSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
+    }
+
+    [AvaloniaFact]
     public void LinkConfigMapInStatefulSetEnvFrom()
     {
         var (mock, resources) = GetMock();
@@ -642,6 +1011,78 @@ public class VisualizatonTests
                             Spec = new()
                             {
                                 Containers =
+                                [
+                                    new()
+                                    {
+                                         EnvFrom =
+                                         [
+                                            new()
+                                            {
+                                                ConfigMapRef = new()
+                                                {
+                                                    Name = "my-config"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = start });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1StatefulSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
+    }
+
+    [AvaloniaFact]
+    public void LinkConfigMapInStatefulSetInitEnvFrom()
+    {
+        var (mock, resources) = GetMock();
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                InitContainers =
                                 [
                                     new()
                                     {
@@ -822,6 +1263,85 @@ public class VisualizatonTests
     }
 
     [AvaloniaFact]
+    public void LinkConfigMapInReplicaSetInitEnv()
+    {
+        var (mock, resources) = GetMock();
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                InitContainers =
+                                [
+                                    new()
+                                    {
+                                        Env =
+                                        [
+                                            new()
+                                            {
+                                                ValueFrom = new()
+                                                {
+                                                    ConfigMapKeyRef = new()
+                                                    {
+                                                        Name = "my-config"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    Status = new()
+                    {
+                        Replicas = 1
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = start });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
+    }
+
+    [AvaloniaFact]
     public void LinkConfigMapInReplicaSetEnvFrom()
     {
         var (mock, resources) = GetMock();
@@ -861,6 +1381,82 @@ public class VisualizatonTests
                             Spec = new()
                             {
                                 Containers =
+                                [
+                                    new()
+                                    {
+                                         EnvFrom =
+                                         [
+                                            new()
+                                            {
+                                                ConfigMapRef = new()
+                                                {
+                                                    Name = "my-config"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    Status = new()
+                    {
+                        Replicas = 1
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = start });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
+    }
+
+    [AvaloniaFact]
+    public void LinkConfigMapInReplicaSetInitEnvFrom()
+    {
+        var (mock, resources) = GetMock();
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                InitContainers =
                                 [
                                     new()
                                     {
@@ -1047,6 +1643,81 @@ public class VisualizatonTests
     }
 
     [AvaloniaFact]
+    public void LinkSecretInDeploymentInitEnv()
+    {
+        var (mock, resources) = GetMock();
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                InitContainers =
+                                [
+                                    new()
+                                    {
+                                        Env =
+                                        [
+                                            new()
+                                            {
+                                                ValueFrom = new()
+                                                {
+                                                    SecretKeyRef = new()
+                                                    {
+                                                        Name = "my-config"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
     public void LinkSecretInDeploymentEnvFrom()
     {
         var (mock, resources) = GetMock();
@@ -1086,6 +1757,78 @@ public class VisualizatonTests
                             Spec = new()
                             {
                                 Containers =
+                                [
+                                    new()
+                                    {
+                                         EnvFrom =
+                                         [
+                                            new()
+                                            {
+                                                SecretRef = new()
+                                                {
+                                                    Name = "my-config"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
+    public void LinkSecretInDeploymentInitEnvFrom()
+    {
+        var (mock, resources) = GetMock();
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                InitContainers =
                                 [
                                     new()
                                     {
@@ -1184,6 +1927,7 @@ public class VisualizatonTests
         vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
     }
 
+
     [AvaloniaFact]
     public void LinkSecretInDaemonSetEnv()
     {
@@ -1260,6 +2004,81 @@ public class VisualizatonTests
     }
 
     [AvaloniaFact]
+    public void LinkSecretInDaemonSetInitEnv()
+    {
+        var (mock, resources) = GetMock();
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                InitContainers =
+                                [
+                                    new()
+                                    {
+                                        Env =
+                                        [
+                                            new()
+                                            {
+                                                ValueFrom = new()
+                                                {
+                                                    SecretKeyRef = new()
+                                                    {
+                                                        Name = "my-config"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = start });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1DaemonSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
     public void LinkSecretInDaemonSetEnvFrom()
     {
         var (mock, resources) = GetMock();
@@ -1299,6 +2118,78 @@ public class VisualizatonTests
                             Spec = new()
                             {
                                 Containers =
+                                [
+                                    new()
+                                    {
+                                         EnvFrom =
+                                         [
+                                            new()
+                                            {
+                                                SecretRef = new()
+                                                {
+                                                    Name = "my-config"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = start });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1DaemonSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
+    public void LinkSecretInDaemonSetInitEnvFrom()
+    {
+        var (mock, resources) = GetMock();
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                InitContainers =
                                 [
                                     new()
                                     {
@@ -1474,6 +2365,81 @@ public class VisualizatonTests
     }
 
     [AvaloniaFact]
+    public void LinkSecretInStatefulSetInitEnv()
+    {
+        var (mock, resources) = GetMock();
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                InitContainers =
+                                [
+                                    new()
+                                    {
+                                        Env =
+                                        [
+                                            new()
+                                            {
+                                                ValueFrom = new()
+                                                {
+                                                    SecretKeyRef = new()
+                                                    {
+                                                        Name = "my-config"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = start });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1StatefulSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
     public void LinkSecretInStatefulSetEnvFrom()
     {
         var (mock, resources) = GetMock();
@@ -1513,6 +2479,78 @@ public class VisualizatonTests
                             Spec = new()
                             {
                                 Containers =
+                                [
+                                    new()
+                                    {
+                                         EnvFrom =
+                                         [
+                                            new()
+                                            {
+                                                SecretRef = new()
+                                                {
+                                                    Name = "my-config"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = start });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1StatefulSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
+    public void LinkSecretInStatefulSetInitEnvFrom()
+    {
+        var (mock, resources) = GetMock();
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                InitContainers =
                                 [
                                     new()
                                     {
@@ -1693,6 +2731,85 @@ public class VisualizatonTests
     }
 
     [AvaloniaFact]
+    public void LinkSecretInReplicaSetInitEnv()
+    {
+        var (mock, resources) = GetMock();
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                InitContainers =
+                                [
+                                    new()
+                                    {
+                                        Env =
+                                        [
+                                            new()
+                                            {
+                                                ValueFrom = new()
+                                                {
+                                                    SecretKeyRef = new()
+                                                    {
+                                                        Name = "my-config"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    Status = new()
+                    {
+                        Replicas = 1
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = start });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
     public void LinkSecretInReplicaSetEnvFrom()
     {
         var (mock, resources) = GetMock();
@@ -1732,6 +2849,82 @@ public class VisualizatonTests
                             Spec = new()
                             {
                                 Containers =
+                                [
+                                    new()
+                                    {
+                                         EnvFrom =
+                                         [
+                                            new()
+                                            {
+                                                SecretRef = new()
+                                                {
+                                                    Name = "my-config"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    Status = new()
+                    {
+                        Replicas = 1
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = start });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
+    public void LinkSecretInReplicaSetInitEnvFrom()
+    {
+        var (mock, resources) = GetMock();
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Template = new()
+                        {
+                            Spec = new()
+                            {
+                                InitContainers =
                                 [
                                     new()
                                     {
@@ -1837,6 +3030,7 @@ public class VisualizatonTests
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
         vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
     }
+
 
     [AvaloniaFact]
     public void LinkSecretInServiceAccount()
