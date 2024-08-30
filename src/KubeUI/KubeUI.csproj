@@ -76,7 +76,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Scrutor" Version="4.2.2" />
-    <PackageReference Include="Semi.Avalonia" Version="11.1.0.2" />
+    <PackageReference Include="Semi.Avalonia" Version="11.1.0.3" />
     <PackageReference Include="Swordfish.NET.CollectionsV3" Version="3.3.12" />
     <PackageReference Include="TextMateSharp" Version="1.0.63" />
     <PackageReference Include="TextMateSharp.Grammars" Version="1.0.63" />
