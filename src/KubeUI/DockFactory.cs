@@ -248,7 +248,7 @@ public static class FactoryExtensions
     {
         var @new = true;
 
-        var doc = factory.GetDockable<IDock>("RightDock");
+        var rightDock = factory.GetDockable<IDock>("RightDock");
 
         var root = factory.GetDockable<IRootDock>("Root");
         var pinnedDoc = root.RightPinnedDockables?.FirstOrDefault(x => x.Id == vm.Id);
@@ -259,7 +259,7 @@ public static class FactoryExtensions
             @new = false;
         }
 
-        var existingDock = doc.VisibleDockables.FirstOrDefault(x => x.Id == vm.Id);
+        var existingDock = rightDock.VisibleDockables.FirstOrDefault(x => x.Id == vm.Id);
 
         if (existingDock != null)
         {
@@ -267,9 +267,16 @@ public static class FactoryExtensions
             @new = false;
         }
 
-        factory?.InsertDockable(doc, vm, 0);
+        factory?.InsertDockable(rightDock, vm, 0);
         factory?.SetActiveDockable(vm);
-        factory?.SetFocusedDockable(doc, vm);
+        factory?.SetFocusedDockable(rightDock, vm);
+
+        var leftDock = factory.GetDockable<IDock>("LeftDock");
+
+        if (leftDock.Proportion == 0.2)
+        {
+            leftDock.Proportion = 0.3;
+        }
 
         return @new;
     }

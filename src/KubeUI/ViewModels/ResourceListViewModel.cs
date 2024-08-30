@@ -792,11 +792,15 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                                 var typeString = match.Groups[1].Value;
                                 var type = Type.GetType(match.Groups[1].Value);
 
-                                // todo fix loading Enums
                                 if (type == null)
                                 {
-                                    _logger.LogError(ex, "Unable to load type for column: {Name}", typeString);
-                                    continue;
+                                    type = resourceType.Assembly.GetType(typeString);
+
+                                    if (type == null)
+                                    {
+                                        _logger.LogError(ex, "Unable to load type for column: {Name}", typeString);
+                                        continue;
+                                    }
                                 }
 
                                 if (type.IsGenericType)
@@ -804,7 +808,11 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                                     type = type.GenericTypeArguments[0];
                                 }
 
-                                if (type == typeof(string))
+                                if (type.IsEnum)
+                                {
+                                    item.Type = "string";
+                                }
+                                else if (type == typeof(string))
                                 {
                                     item.Type = "string";
                                 }
@@ -812,7 +820,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                                 {
                                     item.Type = "number";
                                 }
-                                if (type == typeof(int))
+                                else if (type == typeof(int))
                                 {
                                     item.Type = "integer";
                                 }
@@ -831,7 +839,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                                 }
                                 else
                                 {
-                                    _logger.LogCritical(ex, "Unable to generate CRD Column: {Name} with type {Type}", item.Name, type);
+                                    _logger.LogError(ex, "Unable to generate CRD Column: {Name} with type {Type}", item.Name, type);
                                     continue;
                                 }
 
