@@ -225,6 +225,11 @@ file class YamlFoldingStrategy
         var nextLine = i + 1 < lines.Length ? lines[i + 1] : null;
         var nextLineIndents = CountIndents(nextLine);
 
+        if (nextLine == "\n" || nextLine == "\r")
+        {
+            return true;
+        }
+
         return nextLine != null && nextLineIndents > currentIndent;
     }
 
