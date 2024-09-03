@@ -60,7 +60,7 @@
     <PackageReference Include="Irihi.Ursa.Themes.Semi" Version="1.1.0" />
     <PackageReference Include="JsonPathLINQ" Version="1.0.0-alpha.10" />
     <PackageReference Include="KubernetesClient" Version="14.0.9" />
-    <PackageReference Include="KubernetesCRDModelGen" Version="1.0.0-alpha.312" />
+    <PackageReference Include="KubernetesCRDModelGen" Version="1.0.0-alpha.318" />
     <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.0.0-rc2" />
     <PackageReference Include="Meziantou.Analyzer" Version="2.0.163">
       <PrivateAssets>all</PrivateAssets>
