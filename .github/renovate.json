@@ -37,6 +37,18 @@
       ]
     },
     {
+      "groupName": "Irihi",
+      "separateMajorMinor": true,
+      "groupSlug": "irihi",
+      "packageRules": [
+        {
+          "matchPackageNames": [
+            "Irihi.*"
+          ]
+        }
+      ]
+    },
+    {
       "matchUpdateTypes": [ "major", "minor", "patch", "digest" ],
       "automerge": true,
       "packageRules": [
