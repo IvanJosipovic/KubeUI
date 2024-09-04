@@ -369,6 +369,66 @@ public class VisualizationTests
         vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
     }
 
+    [AvaloniaFact]
+    public void LinkConfigMapInPodVolume()
+    {
+        var (mock, resources) = GetMock();
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1Pod>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Volumes =
+                        [
+                            new()
+                            {
+                                ConfigMap = new()
+                                {
+                                    Name = "my-config"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Pod>(), new() { Items = start });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Pod>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
+    }
+
 
     [AvaloniaFact]
     public void LinkConfigMapInDeploymentEnv()
@@ -2125,6 +2185,67 @@ public class VisualizationTests
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Pod>();
         vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
     }
+
+    [AvaloniaFact]
+    public void LinkSecretInPodVolume()
+    {
+        var (mock, resources) = GetMock();
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1Pod>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Volumes =
+                        [
+                            new()
+                            {
+                                Secret = new()
+                                {
+                                    SecretName = "my-config"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Pod>(), new() { Items = start });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Pod>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
 
     [AvaloniaFact]
     public void LinkSecretInDeploymentEnv()
