@@ -34,7 +34,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     private readonly int _resourceSize = 60;
 
-    private int _resourceSpacing => _resourceSize * 2;
+    private readonly int _resourceSpacing = 120;
 
     public VisualizationViewModel()
     {
@@ -112,9 +112,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         LinkServiceAccount();
 
-        //Lo
-
-        OrderResourcesByConnections();
+        AlignResources();
     }
 
     private void SelectedNamespaces_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -157,18 +155,12 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
     }
 
-    private void OrderResourcesByConnections()
+    private void AlignResources()
     {
         var x = 0;
         var y = 0;
 
-        var items = Drawing.Nodes.OfType<ResourceNodeViewModel>();
-
-        var groups = items.GroupBy(x => x.Kind);
-
-        var order = groups.OrderBy(x => x.Sum(y => y.Pins.Count(y => y.Alignment == PinAlignment.Left)));
-
-        foreach (var group in order)
+        foreach (var group in Drawing.Nodes.OfType<ResourceNodeViewModel>().GroupBy(x => x.Kind).OrderBy(x => x.Count()))
         {
             foreach (var item in group)
             {
@@ -200,7 +192,8 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                         {
                             Start = start.Pins[1],
                             End = end.Pins[0],
-                            Parent = Drawing
+                            Parent = Drawing,
+                            Name = "Owner"
                         };
 
                         Drawing.Connectors.Add(connector);
@@ -964,6 +957,156 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     }
                 }
             }
+
+            if (start.Resource is V1Pod pod)
+            {
+                if (pod.Spec.Containers != null)
+                {
+                    foreach (var container in pod.Spec.Containers)
+                    {
+                        if (container.Env != null)
+                        {
+                            foreach (var env in container.Env)
+                            {
+                                if (env.ValueFrom != null && env.ValueFrom.ConfigMapKeyRef != null)
+                                {
+                                    foreach (var destination in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+                                    {
+                                        if (destination.Resource is V1ConfigMap configMap)
+                                        {
+                                            if (configMap.Metadata.Name == env.ValueFrom.ConfigMapKeyRef.Name && configMap.Metadata.NamespaceProperty == pod.Metadata.NamespaceProperty)
+                                            {
+                                                var connector = new MyConnectorViewModel
+                                                {
+                                                    Start = start.Pins[1],
+                                                    End = destination.Pins[0],
+                                                    Parent = Drawing
+                                                };
+
+                                                Drawing.Connectors.Add(connector);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (container.EnvFrom != null)
+                        {
+                            foreach (var envFrom in container.EnvFrom)
+                            {
+                                if (envFrom.ConfigMapRef != null)
+                                {
+                                    foreach (var destination in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+                                    {
+                                        if (destination.Resource is V1ConfigMap configMap)
+                                        {
+                                            if (configMap.Metadata.Name == envFrom.ConfigMapRef.Name && configMap.Metadata.NamespaceProperty == pod.Metadata.NamespaceProperty)
+                                            {
+                                                var connector = new MyConnectorViewModel
+                                                {
+                                                    Start = start.Pins[1],
+                                                    End = destination.Pins[0],
+                                                    Parent = Drawing
+                                                };
+
+                                                Drawing.Connectors.Add(connector);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (pod.Spec.InitContainers != null)
+                {
+                    foreach (var container in pod.Spec.InitContainers)
+                    {
+                        if (container.Env != null)
+                        {
+                            foreach (var env in container.Env)
+                            {
+                                if (env.ValueFrom != null && env.ValueFrom.ConfigMapKeyRef != null)
+                                {
+                                    foreach (var end in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+                                    {
+                                        if (end.Resource is V1ConfigMap configMap)
+                                        {
+                                            if (configMap.Metadata.Name == env.ValueFrom.ConfigMapKeyRef.Name && configMap.Metadata.NamespaceProperty == pod.Metadata.NamespaceProperty)
+                                            {
+                                                var connector = new MyConnectorViewModel
+                                                {
+                                                    Start = start.Pins[1],
+                                                    End = end.Pins[0],
+                                                    Parent = Drawing
+                                                };
+
+                                                Drawing.Connectors.Add(connector);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (container.EnvFrom != null)
+                        {
+                            foreach (var envFrom in container.EnvFrom)
+                            {
+                                if (envFrom.ConfigMapRef != null)
+                                {
+                                    foreach (var destination in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+                                    {
+                                        if (destination.Resource is V1ConfigMap configMap)
+                                        {
+                                            if (configMap.Metadata.Name == envFrom.ConfigMapRef.Name && configMap.Metadata.NamespaceProperty == pod.Metadata.NamespaceProperty)
+                                            {
+                                                var connector = new MyConnectorViewModel
+                                                {
+                                                    Start = start.Pins[1],
+                                                    End = destination.Pins[0],
+                                                    Parent = Drawing
+                                                };
+
+                                                Drawing.Connectors.Add(connector);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (pod.Spec.Volumes != null)
+                {
+                    foreach (var volume in pod.Spec.Volumes)
+                    {
+                        if (volume.ConfigMap != null)
+                        {
+                            foreach (var destination in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+                            {
+                                if (destination.Resource is V1ConfigMap configMap)
+                                {
+                                    if (configMap.Metadata.Name == volume.ConfigMap.Name && configMap.Metadata.NamespaceProperty == pod.Metadata.NamespaceProperty)
+                                    {
+                                        var connector = new MyConnectorViewModel
+                                        {
+                                            Start = start.Pins[1],
+                                            End = destination.Pins[0],
+                                            Parent = Drawing
+                                        };
+
+                                        Drawing.Connectors.Add(connector);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -1571,6 +1714,156 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 }
             }
 
+            if (start.Resource is V1Pod pod)
+            {
+                if (pod.Spec.Containers != null)
+                {
+                    foreach (var container in pod.Spec.Containers)
+                    {
+                        if (container.Env != null)
+                        {
+                            foreach (var env in container.Env)
+                            {
+                                if (env.ValueFrom != null && env.ValueFrom.SecretKeyRef != null)
+                                {
+                                    foreach (var destination in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+                                    {
+                                        if (destination.Resource is V1Secret secret)
+                                        {
+                                            if (secret.Metadata.Name == env.ValueFrom.SecretKeyRef.Name && secret.Metadata.NamespaceProperty == pod.Metadata.NamespaceProperty)
+                                            {
+                                                var connector = new MyConnectorViewModel
+                                                {
+                                                    Start = start.Pins[1],
+                                                    End = destination.Pins[0],
+                                                    Parent = Drawing
+                                                };
+
+                                                Drawing.Connectors.Add(connector);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (container.EnvFrom != null)
+                        {
+                            foreach (var envFrom in container.EnvFrom)
+                            {
+                                if (envFrom.SecretRef != null)
+                                {
+                                    foreach (var destination in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+                                    {
+                                        if (destination.Resource is V1Secret secret)
+                                        {
+                                            if (secret.Metadata.Name == envFrom.SecretRef.Name && secret.Metadata.NamespaceProperty == pod.Metadata.NamespaceProperty)
+                                            {
+                                                var connector = new MyConnectorViewModel
+                                                {
+                                                    Start = start.Pins[1],
+                                                    End = destination.Pins[0],
+                                                    Parent = Drawing
+                                                };
+
+                                                Drawing.Connectors.Add(connector);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (pod.Spec.InitContainers != null)
+                {
+                    foreach (var container in pod.Spec.InitContainers)
+                    {
+                        if (container.Env != null)
+                        {
+                            foreach (var env in container.Env)
+                            {
+                                if (env.ValueFrom != null && env.ValueFrom.SecretKeyRef != null)
+                                {
+                                    foreach (var destination in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+                                    {
+                                        if (destination.Resource is V1Secret secret)
+                                        {
+                                            if (secret.Metadata.Name == env.ValueFrom.SecretKeyRef.Name && secret.Metadata.NamespaceProperty == pod.Metadata.NamespaceProperty)
+                                            {
+                                                var connector = new MyConnectorViewModel
+                                                {
+                                                    Start = start.Pins[1],
+                                                    End = destination.Pins[0],
+                                                    Parent = Drawing
+                                                };
+
+                                                Drawing.Connectors.Add(connector);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (container.EnvFrom != null)
+                        {
+                            foreach (var envFrom in container.EnvFrom)
+                            {
+                                if (envFrom.SecretRef != null)
+                                {
+                                    foreach (var destination in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+                                    {
+                                        if (destination.Resource is V1Secret secret)
+                                        {
+                                            if (secret.Metadata.Name == envFrom.SecretRef.Name && secret.Metadata.NamespaceProperty == pod.Metadata.NamespaceProperty)
+                                            {
+                                                var connector = new MyConnectorViewModel
+                                                {
+                                                    Start = start.Pins[1],
+                                                    End = destination.Pins[0],
+                                                    Parent = Drawing
+                                                };
+
+                                                Drawing.Connectors.Add(connector);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (pod.Spec.Volumes != null)
+                {
+                    foreach (var volume in pod.Spec.Volumes)
+                    {
+                        if (volume.Secret != null)
+                        {
+                            foreach (var destination in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+                            {
+                                if (destination.Resource is V1Secret secret)
+                                {
+                                    if (secret.Metadata.Name == volume.Secret.SecretName && secret.Metadata.NamespaceProperty == pod.Metadata.NamespaceProperty)
+                                    {
+                                        var connector = new MyConnectorViewModel
+                                        {
+                                            Start = start.Pins[1],
+                                            End = destination.Pins[0],
+                                            Parent = Drawing
+                                        };
+
+                                        Drawing.Connectors.Add(connector);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             if (start.Resource is V1ServiceAccount serviceAccount)
             {
                 if (serviceAccount.Secrets != null)
@@ -1711,6 +2004,27 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     }
                 }
             }
+
+            if (start.Resource is V1Pod pod)
+            {
+                foreach (var end in Drawing.Nodes.OfType<ResourceNodeViewModel>())
+                {
+                    if (end.Resource is V1ServiceAccount serviceAccount)
+                    {
+                        if (serviceAccount.Metadata.Name == pod.Spec.ServiceAccountName && end.Resource.Metadata.NamespaceProperty == pod.Metadata.NamespaceProperty)
+                        {
+                            var connector = new MyConnectorViewModel
+                            {
+                                Start = start.Pins[1],
+                                End = end.Pins[0],
+                                Parent = Drawing
+                            };
+
+                            Drawing.Connectors.Add(connector);
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -1757,27 +2071,27 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             Parent = node
         });
 
-        node.Pins.Add(new MyPin()
-        {
-            X = _resourceSize / 2,
-            Y = 0,
-            Width = pinSize,
-            Height = pinSize,
-            Alignment = PinAlignment.Top,
-            Name = "T",
-            Parent = node
-        });
+        //node.Pins.Add(new MyPin()
+        //{
+        //    X = _resourceSize / 2,
+        //    Y = 0,
+        //    Width = pinSize,
+        //    Height = pinSize,
+        //    Alignment = PinAlignment.Top,
+        //    Name = "T",
+        //    Parent = node
+        //});
 
-        node.Pins.Add(new MyPin()
-        {
-            X = _resourceSize / 2,
-            Y = _resourceSize,
-            Width = pinSize,
-            Height = pinSize,
-            Alignment = PinAlignment.Bottom,
-            Name = "B",
-            Parent = node
-        });
+        //node.Pins.Add(new MyPin()
+        //{
+        //    X = _resourceSize / 2,
+        //    Y = _resourceSize,
+        //    Width = pinSize,
+        //    Height = pinSize,
+        //    Alignment = PinAlignment.Bottom,
+        //    Name = "B",
+        //    Parent = node
+        //});
 
         return node;
     }

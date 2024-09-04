@@ -21,7 +21,7 @@ public sealed class VisualizationResourceView : MyViewBase<VisualizationResource
             .ToolTip(vm.Object.ApiGroupAndVersion() + "/" + vm.Object.Kind + " " + vm.Object.Name())
             .Children([
                 new Avalonia.Svg.Skia.Svg(new Uri("avares://KubeUI/"))
-                    .Path("/Assets/kube/resources/unlabeled/pod.svg"),
+                    .Path(@vm.IconPath),
                 new TextBlock()
                     .Margin(0, 5, 0, 0)
                     .Width(120)

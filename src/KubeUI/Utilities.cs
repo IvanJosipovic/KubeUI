@@ -1,4 +1,5 @@
 ﻿using Avalonia.Data.Converters;
+using k8s.Models;
 using System.Runtime.CompilerServices;
 
 namespace KubeUI;
@@ -83,5 +84,164 @@ public static class Utilities
     public static TControl Set<TControl,TValue>(this TControl control, AvaloniaProperty property, TValue value, FuncValueConverter<TValue, object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where TControl : Control
     {
         return control._setEx(property, ps, () => control[property] = converter.TryConvert(value), bindingMode, converter, bindingSource);
+    }
+
+    public static string GetKubeAssetPath(Type type)
+    {
+        const string infrastructure_componentsBasePath = "/Assets/kube/infrastructure_components/unlabeled/";
+
+        if (type == typeof(V1Node))
+        {
+            return infrastructure_componentsBasePath + "node.svg";
+        }
+
+        if (type == typeof(Corev1Event))
+        {
+            return infrastructure_componentsBasePath + "etcd.svg";
+        }
+
+        const string resourceBasePath = "/Assets/kube/resources/unlabeled/";
+
+        if (type == typeof(V1ConfigMap))
+        {
+            return resourceBasePath + "cm.svg";
+        }
+
+        if (type == typeof(V1ClusterRoleBinding))
+        {
+            return resourceBasePath + "crb.svg";
+        }
+
+        if (type == typeof(V1CustomResourceDefinition))
+        {
+            return resourceBasePath + "crd.svg";
+        }
+
+        if (type == typeof(V1ClusterRole))
+        {
+            return resourceBasePath + "c-role.svg";
+        }
+
+        if (type == typeof(V1CronJob))
+        {
+            return resourceBasePath + "cronjob.svg";
+        }
+
+        if (type == typeof(V1Deployment))
+        {
+            return resourceBasePath + "deploy.svg";
+        }
+
+        if (type == typeof(V1DaemonSet))
+        {
+            return resourceBasePath + "ds.svg";
+        }
+
+        if (type == typeof(V1Endpoints) || type == typeof(V1EndpointSlice))
+        {
+            return resourceBasePath + "ep.svg";
+        }
+
+        if (type == typeof(V1APIGroup)) // unsure on this one
+        {
+            return resourceBasePath + "group.svg";
+        }
+
+        if (type == typeof(V1HorizontalPodAutoscaler))
+        {
+            return resourceBasePath + "hpa.svg";
+        }
+
+        if (type == typeof(V1Ingress))
+        {
+            return resourceBasePath + "ing.svg";
+        }
+
+        if (type == typeof(V1Job))
+        {
+            return resourceBasePath + "job.svg";
+        }
+
+        if (type == typeof(V1LimitRange))
+        {
+            return resourceBasePath + "limits.svg";
+        }
+
+        if (type == typeof(V1NetworkPolicy))
+        {
+            return resourceBasePath + "netpol.svg";
+        }
+
+        if (type == typeof(V1Namespace))
+        {
+            return resourceBasePath + "ns.svg";
+        }
+
+        if (type == typeof(V1Pod))
+        {
+            return resourceBasePath + "pod.svg";
+        }
+
+        if (type == typeof(V1PersistentVolume))
+        {
+            return resourceBasePath + "pv.svg";
+        }
+
+        if (type == typeof(V1PersistentVolumeClaim))
+        {
+            return resourceBasePath + "pvc.svg";
+        }
+
+        if (type == typeof(V1ResourceQuota))
+        {
+            return resourceBasePath + "quota.svg";
+        }
+
+        if (type == typeof(V1RoleBinding))
+        {
+            return resourceBasePath + "rb.svg";
+        }
+
+        if (type == typeof(V1Role))
+        {
+            return resourceBasePath + "role.svg";
+        }
+
+        if (type == typeof(V1ReplicaSet))
+        {
+            return resourceBasePath + "rs.svg";
+        }
+
+        if (type == typeof(V1ServiceAccount))
+        {
+            return resourceBasePath + "sa.svg";
+        }
+
+        if (type == typeof(V1StorageClass))
+        {
+            return resourceBasePath + "sc.svg";
+        }
+
+        if (type == typeof(V1Secret))
+        {
+            return resourceBasePath + "secret.svg";
+        }
+
+        if (type == typeof(V1StatefulSet))
+        {
+            return resourceBasePath + "sts.svg";
+        }
+
+        if (type == typeof(V1Service))
+        {
+            return resourceBasePath + "svc.svg";
+        }
+
+        if (type == typeof(V1UserSubject)) // unsure on this one
+        {
+            return resourceBasePath + "user.svg";
+        }
+
+        return "/Assets/kube/blank.svg";
     }
 }

@@ -130,6 +130,8 @@ public partial class ResourceNavigationLink : NavigationLink
 {
     [ObservableProperty]
     private ICollection _objects;
+
+    public string IconPath => Utilities.GetKubeAssetPath(ControlType);
 }
 
 public class NavigationItemComparer : IComparer<NavigationItem>

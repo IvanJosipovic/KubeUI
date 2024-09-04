@@ -778,6 +778,20 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
                                 definition.Columns.Add(colDef);
                             }
+                            else if(item.Type == "enum")
+                            {
+                                var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<T, Enum>(item.JsonPath, true);
+
+                                var colDef = new ResourceListViewDefinitionColumn<T, Enum>()
+                                {
+                                    Name = item.Name,
+                                    Display = TransformToFuncOfString<T>(exp.Body, exp.Parameters).Compile(),
+                                    Field = exp.Compile(),
+                                    //Width = "*"
+                                };
+
+                                definition.Columns.Add(colDef);
+                            }
                             else
                             {
                                 _logger.LogWarning("CRD Column Type not supported: {type}", item.Type);
@@ -808,7 +822,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                                     type = type.GenericTypeArguments[0];
                                 }
 
-                                if (type == typeof(string) || type.IsEnum)
+                                if (type == typeof(string))
                                 {
                                     item.Type = "string";
                                 }
@@ -832,6 +846,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                                 else if (type == typeof(bool))
                                 {
                                     item.Type = "boolean";
+                                }
+                                else if (type.IsEnum)
+                                {
+                                    item.Type = "enum";
                                 }
                                 else
                                 {

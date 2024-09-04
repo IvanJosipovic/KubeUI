@@ -13,12 +13,16 @@ public sealed partial class VisualizationResourceViewModel : ObservableObject
     [ObservableProperty]
     private IKubernetesObject<V1ObjectMeta> _object;
 
+    [ObservableProperty]
+    private string _iconPath;
+
     public new IFactory Factory { get; set; } = Application.Current.GetRequiredService<IFactory>();
 
     public void Initialize(ICluster cluster, IKubernetesObject<V1ObjectMeta> @object)
     {
         Cluster = cluster;
         Object = @object;
+        IconPath = Utilities.GetKubeAssetPath(@object.GetType());
     }
 
     [RelayCommand]
