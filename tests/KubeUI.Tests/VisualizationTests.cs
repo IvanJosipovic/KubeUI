@@ -4082,6 +4082,58 @@ public class VisualizationTests
     #region ServiceAccount
 
     [AvaloniaFact]
+    public void LinkServiceAccountInPod()
+    {
+        var (mock, resources) = GetMock();
+
+        var end = new ConcurrentObservableDictionary<NamespacedName, V1ServiceAccount>
+        {
+            {
+                new("default", "my-config"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-config",
+                        NamespaceProperty = "default"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1ServiceAccount>(), new() { Items = end });
+
+        var start = new ConcurrentObservableDictionary<NamespacedName, V1Pod>
+        {
+            {
+                new("default", "my-deployment"),
+                new()
+                {
+                    Metadata = new()
+                    {
+                        Name = "my-deployment",
+                        NamespaceProperty = "default"
+                    },
+                    Spec = new()
+                    {
+                        Containers = [],
+                        ServiceAccountName = "my-config"
+                    }
+                }
+            }
+        };
+
+        resources.TryAdd(GroupApiVersionKind.From<V1Pod>(), new() { Items = start });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(mock.Object);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Pod>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ServiceAccount>();
+    }
+
+    [AvaloniaFact]
     public void LinkServiceAccountInDeployment()
     {
         var (mock, resources) = GetMock();
