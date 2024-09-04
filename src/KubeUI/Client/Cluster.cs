@@ -8,7 +8,6 @@ using k8s.KubeConfigModels;
 using k8s.Models;
 using KubernetesCRDModelGen;
 using KubeUI.Client.Informer;
-using Microsoft.Extensions.DependencyInjection;
 using Scrutor;
 using Swordfish.NET.Collections;
 using YamlDotNet.Core;
@@ -16,15 +15,15 @@ using YamlDotNet.Core.Events;
 
 namespace KubeUI.Client;
 
-[ServiceDescriptor<Cluster>(ServiceLifetime.Transient)]
-public sealed partial class Cluster : ObservableObject
+[ServiceDescriptor<ICluster>(ServiceLifetime.Transient)]
+public sealed partial class Cluster : ObservableObject, ICluster
 {
     private ILoggerFactory _loggerFactory;
 
     private ILogger<Cluster> _logger;
 
     [ObservableProperty]
-    public string _name;
+    private string _name;
 
     [ObservableProperty]
     private string _kubeConfigPath;
@@ -152,25 +151,25 @@ public sealed partial class Cluster : ObservableObject
     private void AddDefaultNavigation()
     {
         NavigationItems.Add(new NavigationLink() { Name = Resources.ClusterViewModel_Title, ControlType = typeof(ClusterViewModel), Cluster = this, SvgIcon = "/Assets/kube/infrastructure_components/unlabeled/control-plane.svg" });
+        NavigationItems.Add(new NavigationLink() { Name = Resources.VisualizationViewModel_Title, ControlType = typeof(VisualizationViewModel), Cluster = this, StyleIcon = "ic_fluent_search_visual_24_filled" });
         NavigationItems.Add(new NavigationLink() { Name = "Load Yaml", Cluster = this, Id = "load-yaml", StyleIcon = "arrow_upload_regular" });
         NavigationItems.Add(new NavigationLink() { Name = "Load Folder", Cluster = this, Id = "load-folder", StyleIcon = "folder_add_regular" });
 
-        NavigationItems.Add(new ResourceNavigationLink() { Name = "Nodes", ControlType = typeof(V1Node), Cluster = this, SvgIcon = "/Assets/kube/infrastructure_components/unlabeled/node.svg" });
-        NavigationItems.Add(new ResourceNavigationLink() { Name = "Namespaces", ControlType = typeof(V1Namespace), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/ns.svg" });
-        NavigationItems.Add(new ResourceNavigationLink() { Name = "Events", ControlType = typeof(Corev1Event), Cluster = this, SvgIcon = "/Assets/kube/infrastructure_components/unlabeled/etcd.svg" });
+        NavigationItems.Add(new ResourceNavigationLink() { Name = "Nodes", ControlType = typeof(V1Node), Cluster = this });
+        NavigationItems.Add(new ResourceNavigationLink() { Name = "Namespaces", ControlType = typeof(V1Namespace), Cluster = this });
+        NavigationItems.Add(new ResourceNavigationLink() { Name = "Events", ControlType = typeof(Corev1Event), Cluster = this });
 
         NavigationItems.Add(new NavigationItem()
         {
             Name = "Workloads",
             NavigationItems = [
-                new ResourceNavigationLink() { Name = "Pods", ControlType = typeof(V1Pod), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/pod.svg" },
-                new ResourceNavigationLink() { Name = "Deployments", ControlType = typeof(V1Deployment), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/deploy.svg" },
-                new ResourceNavigationLink() { Name = "Daemon Sets", ControlType = typeof(V1DaemonSet), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/ds.svg" },
-                new ResourceNavigationLink() { Name = "Stateful Sets", ControlType = typeof(V1StatefulSet), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/sts.svg" },
-                new ResourceNavigationLink() { Name = "Replica Sets", ControlType = typeof(V1ReplicaSet), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/rs.svg" },
-                new ResourceNavigationLink() { Name = "Replication Controllers", ControlType = typeof(V1ReplicationController), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/rs.svg" }, // Needs SvgIcon
-                new ResourceNavigationLink() { Name = "Jobs", ControlType = typeof(V1Job), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/job.svg" },
-                new ResourceNavigationLink() { Name = "Cron Jobs", ControlType = typeof(V1CronJob), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/cronjob.svg" },
+                new ResourceNavigationLink() { Name = "Pods", ControlType = typeof(V1Pod), Cluster = this },
+                new ResourceNavigationLink() { Name = "Deployments", ControlType = typeof(V1Deployment), Cluster = this },
+                new ResourceNavigationLink() { Name = "Daemon Sets", ControlType = typeof(V1DaemonSet), Cluster = this },
+                new ResourceNavigationLink() { Name = "Stateful Sets", ControlType = typeof(V1StatefulSet), Cluster = this },
+                new ResourceNavigationLink() { Name = "Replica Sets", ControlType = typeof(V1ReplicaSet), Cluster = this },
+                new ResourceNavigationLink() { Name = "Jobs", ControlType = typeof(V1Job), Cluster = this },
+                new ResourceNavigationLink() { Name = "Cron Jobs", ControlType = typeof(V1CronJob), Cluster = this },
             ]
         });
 
@@ -178,17 +177,17 @@ public sealed partial class Cluster : ObservableObject
         {
             Name = "Configuration",
             NavigationItems = [
-                new ResourceNavigationLink() { Name = "Config Maps", ControlType = typeof(V1ConfigMap), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/cm.svg" },
-                new ResourceNavigationLink() { Name = "Secrets", ControlType = typeof(V1Secret), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/secret.svg" },
-                new ResourceNavigationLink() { Name = "Resource Quotas", ControlType = typeof(V1ResourceQuota), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/quota.svg" },
-                new ResourceNavigationLink() { Name = "Limit Ranges", ControlType = typeof(V1LimitRange), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/limits.svg" },
-                new ResourceNavigationLink() { Name = "Horizontal Pod Auto Scalers", ControlType = typeof(V1HorizontalPodAutoscaler), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/hpa.svg" },
-                new ResourceNavigationLink() { Name = "Pod Disruption Budget", ControlType = typeof(V1PodDisruptionBudget), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/job.svg" }, // Needs SvgIcon
-                new ResourceNavigationLink() { Name = "Priority Classes", ControlType = typeof(V1PriorityClass), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/job.svg" }, // Needs SvgIcon
-                new ResourceNavigationLink() { Name = "Runtime Classes", ControlType = typeof(V1RuntimeClass), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/job.svg" }, // Needs SvgIcon
-                new ResourceNavigationLink() { Name = "Leases", ControlType = typeof(V1Lease), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/job.svg" }, // Needs SvgIcon
-                new ResourceNavigationLink() { Name = "Mutating Webhook Configs", ControlType = typeof(V1MutatingWebhookConfiguration), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/netpol.svg" }, // Needs SvgIcon
-                new ResourceNavigationLink() { Name = "Validating Webhook Configs", ControlType = typeof(V1ValidatingWebhookConfiguration), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/netpol.svg" }, // Needs SvgIcon
+                new ResourceNavigationLink() { Name = "Config Maps", ControlType = typeof(V1ConfigMap), Cluster = this },
+                new ResourceNavigationLink() { Name = "Secrets", ControlType = typeof(V1Secret), Cluster = this },
+                new ResourceNavigationLink() { Name = "Resource Quotas", ControlType = typeof(V1ResourceQuota), Cluster = this },
+                new ResourceNavigationLink() { Name = "Limit Ranges", ControlType = typeof(V1LimitRange), Cluster = this },
+                new ResourceNavigationLink() { Name = "Horizontal Pod Auto Scalers", ControlType = typeof(V1HorizontalPodAutoscaler), Cluster = this },
+                new ResourceNavigationLink() { Name = "Pod Disruption Budget", ControlType = typeof(V1PodDisruptionBudget), Cluster = this }, // Needs SvgIcon
+                new ResourceNavigationLink() { Name = "Priority Classes", ControlType = typeof(V1PriorityClass), Cluster = this }, // Needs SvgIcon
+                new ResourceNavigationLink() { Name = "Runtime Classes", ControlType = typeof(V1RuntimeClass), Cluster = this }, // Needs SvgIcon
+                new ResourceNavigationLink() { Name = "Leases", ControlType = typeof(V1Lease), Cluster = this }, // Needs SvgIcon
+                new ResourceNavigationLink() { Name = "Mutating Webhook Configs", ControlType = typeof(V1MutatingWebhookConfiguration), Cluster = this }, // Needs SvgIcon
+                new ResourceNavigationLink() { Name = "Validating Webhook Configs", ControlType = typeof(V1ValidatingWebhookConfiguration), Cluster = this }, // Needs SvgIcon
             ]
         });
 
@@ -196,12 +195,12 @@ public sealed partial class Cluster : ObservableObject
         {
             Name = "Network",
             NavigationItems = [
-                new ResourceNavigationLink() { Name = "Services", ControlType = typeof(V1Service), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/sc.svg" },
-                new ResourceNavigationLink() { Name = "Endpoints", ControlType = typeof(V1Endpoints), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/ep.svg"  },
-                new ResourceNavigationLink() { Name = "Endpoint Slices", ControlType = typeof(V1EndpointSlice), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/ep.svg"  },
-                new ResourceNavigationLink() { Name = "Ingresses", ControlType = typeof(V1Ingress), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/ing.svg"  },
-                new ResourceNavigationLink() { Name = "Ingress Classes", ControlType = typeof(V1IngressClass), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/ing.svg"  }, // Needs SvgIcon
-                new ResourceNavigationLink() { Name = "Network Policies", ControlType = typeof(V1NetworkPolicy), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/netpol.svg"  },
+                new ResourceNavigationLink() { Name = "Services", ControlType = typeof(V1Service), Cluster = this },
+                new ResourceNavigationLink() { Name = "Endpoints", ControlType = typeof(V1Endpoints), Cluster = this  },
+                new ResourceNavigationLink() { Name = "Endpoint Slices", ControlType = typeof(V1EndpointSlice), Cluster = this  },
+                new ResourceNavigationLink() { Name = "Ingresses", ControlType = typeof(V1Ingress), Cluster = this  },
+                new ResourceNavigationLink() { Name = "Ingress Classes", ControlType = typeof(V1IngressClass), Cluster = this  }, // Needs SvgIcon
+                new ResourceNavigationLink() { Name = "Network Policies", ControlType = typeof(V1NetworkPolicy), Cluster = this  },
                 new NavigationLink() { Name = Resources.PortForwarderListViewModel_Title, ControlType = typeof(PortForwarderListViewModel), Cluster = this, StyleIcon = "ic_fluent_cloud_flow_filled" }
             ]
         });
@@ -210,9 +209,9 @@ public sealed partial class Cluster : ObservableObject
         {
             Name = "Storage",
             NavigationItems = [
-                new ResourceNavigationLink() { Name = "Persistent Volume Claims", ControlType = typeof(V1PersistentVolumeClaim), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/pvc.svg" },
-                new ResourceNavigationLink() { Name = "Persistent Volumes", ControlType = typeof(V1PersistentVolume), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/pv.svg" },
-                new ResourceNavigationLink() { Name = "Storage Classes", ControlType = typeof(V1StorageClass), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/sc.svg" },
+                new ResourceNavigationLink() { Name = "Persistent Volume Claims", ControlType = typeof(V1PersistentVolumeClaim), Cluster = this },
+                new ResourceNavigationLink() { Name = "Persistent Volumes", ControlType = typeof(V1PersistentVolume), Cluster = this },
+                new ResourceNavigationLink() { Name = "Storage Classes", ControlType = typeof(V1StorageClass), Cluster = this },
             ]
         });
 
@@ -220,11 +219,11 @@ public sealed partial class Cluster : ObservableObject
         {
             Name = "Access Control",
             NavigationItems = [
-                new ResourceNavigationLink() { Name = "Service Accounts", ControlType = typeof(V1ServiceAccount), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/sa.svg" },
-                new ResourceNavigationLink() { Name = "Cluster Roles", ControlType = typeof(V1ClusterRole), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/c-role.svg" },
-                new ResourceNavigationLink() { Name = "Roles", ControlType = typeof(V1Role), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/role.svg" },
-                new ResourceNavigationLink() { Name = "Cluster Role Bindings", ControlType = typeof(V1ClusterRoleBinding), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/crb.svg" },
-                new ResourceNavigationLink() { Name = "Role Bindings", ControlType = typeof(V1RoleBinding), Cluster = this, SvgIcon = "/Assets/kube/resources/unlabeled/rb.svg" },
+                new ResourceNavigationLink() { Name = "Service Accounts", ControlType = typeof(V1ServiceAccount), Cluster = this},
+                new ResourceNavigationLink() { Name = "Cluster Roles", ControlType = typeof(V1ClusterRole), Cluster = this },
+                new ResourceNavigationLink() { Name = "Roles", ControlType = typeof(V1Role), Cluster = this },
+                new ResourceNavigationLink() { Name = "Cluster Role Bindings", ControlType = typeof(V1ClusterRoleBinding), Cluster = this },
+                new ResourceNavigationLink() { Name = "Role Bindings", ControlType = typeof(V1RoleBinding), Cluster = this },
             ]
         });
 
@@ -233,7 +232,6 @@ public sealed partial class Cluster : ObservableObject
             Name = "Custom Resource Definitions",
             ControlType = typeof(V1CustomResourceDefinition),
             Cluster = this,
-            SvgIcon = "/Assets/kube/resources/unlabeled/crd.svg",
             NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemComparer())
         };
 
@@ -294,7 +292,7 @@ public sealed partial class Cluster : ObservableObject
 
                             var type = ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
 
-                            var nav = new ResourceNavigationLink() { Name = crd.Spec.Names.Kind, ControlType = type, Cluster = this, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemComparer()), SvgIcon = "/Assets/kube/resources/unlabeled/crd.svg" };
+                            var nav = new ResourceNavigationLink() { Name = crd.Spec.Names.Kind, ControlType = type, Cluster = this, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemComparer())};
 
                             var group = crd.Spec.Group;
 

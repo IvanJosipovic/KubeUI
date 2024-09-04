@@ -35,32 +35,30 @@ public partial class App : Application
 
         ServiceCollection services = new();
 
-        if (!Design.IsDesignMode && SettingsService.GetSettings().LoggingEnabled)
+        services.AddLogging(loggingBuilder =>
         {
-            services.AddLogging(loggingBuilder =>
-            {
-                loggingBuilder.AddFilter("Default", LogLevel.Information);
-                loggingBuilder.AddFilter("System", LogLevel.Warning);
-                loggingBuilder.AddFilter("Microsoft", LogLevel.Warning);
+            loggingBuilder.AddFilter("Default", LogLevel.Information);
+            loggingBuilder.AddFilter("System", LogLevel.Warning);
+            loggingBuilder.AddFilter("Microsoft", LogLevel.Warning);
 
-                if (SettingsService.EnsureSettingDirExists())
+            if (!Design.IsDesignMode && SettingsService.GetSettings().LoggingEnabled
+                && SettingsService.EnsureSettingDirExists())
+            {
+                loggingBuilder.AddFile(Path.Combine(SettingsService.GetSettingsPath(), "app.log"), x =>
                 {
-                    loggingBuilder.AddFile(Path.Combine(SettingsService.GetSettingsPath(), "app.log"), x =>
-                    {
-                        x.Append = false;
-                        x.FileSizeLimitBytes = 10_73_741_824;
-                        x.MinLevel = LogLevel.Information;
-                        x.MaxRollingFiles = 2;
-                    });
-                }
-            });
-        }
+                    x.Append = false;
+                    x.FileSizeLimitBytes = 10_73_741_824;
+                    x.MinLevel = LogLevel.Information;
+                    x.MaxRollingFiles = 2;
+                });
+            }
+        });
 
         services.Scan(x => x.FromCallingAssembly().AddClasses().UsingAttributes());
 
         services.Scan(scan => scan
             .FromCallingAssembly()
-                .AddClasses(classes => classes.AssignableToAny([typeof(UserControl), typeof(ViewModelBase), typeof(MyViewBase<>)]))
+                .AddClasses(classes => classes.AssignableToAny([typeof(UserControl), typeof(ObservableObject), typeof(ViewModelBase), typeof(MyViewBase<>)]))
                 .AsSelf()
                 .WithTransientLifetime()
         );

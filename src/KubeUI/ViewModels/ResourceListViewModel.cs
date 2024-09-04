@@ -1,7 +1,6 @@
 using System.Collections.Specialized;
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
-using Dock.Model.Controls;
 using Dock.Model.Core;
 using DynamicData;
 using DynamicData.Binding;
@@ -24,7 +23,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     private readonly IDialogService _dialogService;
 
     [ObservableProperty]
-    private Client.Cluster _cluster;
+    private ICluster _cluster;
 
     [ObservableProperty]
     private GroupApiVersionKind _kind;
@@ -55,7 +54,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _dialogService = Application.Current.GetRequiredService<IDialogService>();
     }
 
-    public void Initialize(Client.Cluster cluster)
+    public void Initialize(ICluster cluster)
     {
         Cluster = cluster;
         Kind = GroupApiVersionKind.From<T>();
@@ -779,6 +778,20 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
                                 definition.Columns.Add(colDef);
                             }
+                            else if(item.Type == "enum")
+                            {
+                                var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<T, Enum>(item.JsonPath, true);
+
+                                var colDef = new ResourceListViewDefinitionColumn<T, Enum>()
+                                {
+                                    Name = item.Name,
+                                    Display = TransformToFuncOfString<T>(exp.Body, exp.Parameters).Compile(),
+                                    Field = exp.Compile(),
+                                    //Width = "*"
+                                };
+
+                                definition.Columns.Add(colDef);
+                            }
                             else
                             {
                                 _logger.LogWarning("CRD Column Type not supported: {type}", item.Type);
@@ -787,11 +800,22 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                         catch (InvalidOperationException ex) when (ex.Message.StartsWith("No coercion operator is defined between types", StringComparison.Ordinal))
                         {
                             // The type defined in the AdditionalPrinterColumn is not correct
-
                             var match = TypeErrorRegex().Match(ex.Message);
                             if (match.Success)
                             {
+                                var typeString = match.Groups[1].Value;
                                 var type = Type.GetType(match.Groups[1].Value);
+
+                                if (type == null)
+                                {
+                                    type = resourceType.Assembly.GetType(typeString);
+
+                                    if (type == null)
+                                    {
+                                        _logger.LogError(ex, "Unable to load type for column: {Name}", typeString);
+                                        continue;
+                                    }
+                                }
 
                                 if (type.IsGenericType)
                                 {
@@ -806,11 +830,11 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                                 {
                                     item.Type = "number";
                                 }
-                                if (type == typeof(int))
+                                else if (type == typeof(int))
                                 {
                                     item.Type = "integer";
                                 }
-                                else if (type == typeof(long) )
+                                else if (type == typeof(long))
                                 {
                                     item.Type = "integer";
                                     item.Format = "int64";
@@ -823,9 +847,13 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                                 {
                                     item.Type = "boolean";
                                 }
+                                else if (type.IsEnum)
+                                {
+                                    item.Type = "enum";
+                                }
                                 else
                                 {
-                                    _logger.LogCritical(ex, "Unable to generate CRD Column: {Name} with type {Type}", item.Name, type);
+                                    _logger.LogError(ex, "Unable to generate CRD Column: {Name} with type {Type}", item.Name, type);
                                     continue;
                                 }
 
@@ -930,70 +958,11 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     [RelayCommand(CanExecute = nameof(CanView))]
     private void View(object item)
     {
-        var root = Factory.GetDockable<IRootDock>("Root");
-        var pinnedDoc = root.RightPinnedDockables?.FirstOrDefault(x => x.Id == nameof(ResourcePropertiesViewModel<T>));
-
-        if (pinnedDoc != null)
-        {
-            Factory.RemoveDockable(pinnedDoc, true);
-        }
-
-        var doc = Factory.GetDockable<IDock>("RightDock");
-
-        var existingDock = doc.VisibleDockables.FirstOrDefault(x => x.Id == nameof(ResourcePropertiesViewModel<T>));
-
-        if (existingDock != null)
-        {
-            Factory.RemoveDockable(existingDock, true);
-        }
-
         var instance = Application.Current.GetRequiredService<ResourcePropertiesViewModel<T>>();
-        instance.Cluster = Cluster;
-        instance.Object = ((KeyValuePair<NamespacedName, T>)(item)).Value;
+        instance.Initialize(Cluster, ((KeyValuePair<NamespacedName, T>)(item)).Value);
         instance.CanFloat = false;
 
-        Factory?.InsertDockable(doc, instance, 0);
-
-        if (pinnedDoc == null)
-        {
-            Factory?.SetActiveDockable(instance);
-            Factory?.SetFocusedDockable(doc, instance);
-        }
-        else
-        {
-            Factory?.PinDockable(instance);
-        }
-    }
-
-    [RelayCommand(CanExecute = nameof(CanView))]
-    private void ViewForce(object item)
-    {
-        var root = Factory.GetDockable<IRootDock>("Root");
-        var pinnedDoc = root.RightPinnedDockables?.FirstOrDefault(x => x.Id == nameof(ResourcePropertiesViewModel<T>));
-
-        if (pinnedDoc != null)
-        {
-            Factory.RemoveDockable(pinnedDoc, true);
-        }
-
-        var doc = Factory.GetDockable<IDock>("RightDock");
-
-        var existingDock = doc.VisibleDockables.FirstOrDefault(x => x.Id == nameof(ResourcePropertiesViewModel<T>));
-
-        if (existingDock != null)
-        {
-            Factory.RemoveDockable(existingDock, true);
-        }
-
-        var instance = Application.Current.GetRequiredService<ResourcePropertiesViewModel<T>>();
-        instance.Cluster = Cluster;
-        instance.Object = ((KeyValuePair<NamespacedName, T>)(item)).Value;
-        instance.CanFloat = false;
-
-        Factory?.InsertDockable(doc, instance, 0);
-
-        Factory?.SetActiveDockable(instance);
-        Factory?.SetFocusedDockable(doc, instance);
+        Factory?.AddToRight(instance);
     }
 
     private bool CanView(object item)
@@ -1005,9 +974,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     private void ViewYaml(object item)
     {
         var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
-        vm.Cluster = Cluster;
-        vm.Object = ((KeyValuePair<NamespacedName, T>)item).Value;
-        vm.Id = $"{nameof(ViewYaml)}-{Cluster.Name}-{Kind}-{((KeyValuePair<NamespacedName, T>)SelectedItem).Key}";
+
+        vm.Initialize(Cluster, ((KeyValuePair<NamespacedName, T>)item).Value);
 
         Factory.AddToBottom(vm);
     }

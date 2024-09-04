@@ -38,7 +38,7 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
                 }
             })
             .DataTemplates([
-                new FuncTreeDataTemplate<Cluster>((vm,ns) =>
+                new FuncTreeDataTemplate<ICluster>((vm,ns) =>
                     new StackPanel()
                         .Classes("navigation-view-stack-panel")
                         .Children([
@@ -70,12 +70,8 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
                     new StackPanel()
                         .Classes("navigation-view-stack-panel")
                         .Children([
-                            new PathIcon()
-                                .Data(@vm.StyleIcon, s_resoureConverter)
-                                .IsVisible(@vm.StyleIcon, Utilities.NotNullConverter),
                             new Avalonia.Svg.Skia.Svg(new Uri("avares://KubeUI/"))
-                                .Path(@vm.SvgIcon)
-                                .IsVisible(@vm.SvgIcon, Utilities.NotNullConverter),
+                                .Path(@vm.IconPath),
                             new TextBlock()
                                 .Text(@vm.Name),
                             new TextBlock()

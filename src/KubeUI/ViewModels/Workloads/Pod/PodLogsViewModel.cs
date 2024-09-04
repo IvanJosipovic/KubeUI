@@ -1,6 +1,7 @@
 ﻿using AvaloniaEdit.Document;
 using k8s.Models;
 using k8s;
+using KubeUI.Client;
 
 namespace KubeUI.ViewModels;
 
@@ -9,7 +10,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     private readonly ILogger<PodLogsViewModel> _logger;
 
     [ObservableProperty]
-    private Client.Cluster _cluster;
+    private ICluster _cluster;
 
     [ObservableProperty]
     private V1Pod _object;

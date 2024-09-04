@@ -120,7 +120,7 @@ public partial class NavigationItem : ObservableObject
 public partial class NavigationLink : NavigationItem
 {
     [ObservableProperty]
-    private Cluster _cluster;
+    private ICluster _cluster;
 
     [ObservableProperty]
     private Type _controlType;
@@ -130,6 +130,8 @@ public partial class ResourceNavigationLink : NavigationLink
 {
     [ObservableProperty]
     private ICollection _objects;
+
+    public string IconPath => Utilities.GetKubeAssetPath(ControlType);
 }
 
 public class NavigationItemComparer : IComparer<NavigationItem>

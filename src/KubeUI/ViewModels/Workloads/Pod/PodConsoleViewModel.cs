@@ -19,7 +19,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
     }
 
     [ObservableProperty]
-    private Cluster _cluster;
+    private ICluster _cluster;
 
     [ObservableProperty]
     private V1Pod _object;

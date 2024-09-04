@@ -1,6 +1,5 @@
 ﻿using System.Text.Json;
 using Avalonia.Styling;
-using Microsoft.Extensions.Configuration;
 using Scrutor;
 
 namespace KubeUI;
@@ -66,7 +65,7 @@ public sealed partial class SettingsService : ObservableObject
 
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return false;
         }

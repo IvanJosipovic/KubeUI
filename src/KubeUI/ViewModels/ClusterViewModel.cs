@@ -1,4 +1,5 @@
 ﻿using k8s.Models;
+using KubeUI.Client;
 using LiveChartsCore.Defaults;
 
 namespace KubeUI.ViewModels;
@@ -6,7 +7,7 @@ namespace KubeUI.ViewModels;
 public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster, INotifyPropertyChanged
 {
     [ObservableProperty]
-    private Client.Cluster _cluster;
+    private ICluster _cluster;
 
     [ObservableProperty]
     private ResourceListViewModel<Corev1Event> _eventsVM;
@@ -75,7 +76,7 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
         MemoryUsage.Value = Cluster.PodMetrics.Sum(x => x.Containers.Sum(y => y.Usage?.TryGetValue("memory", out var value) == true ? value.ToDouble() : 0)) / 1048576 / 1024;
     }
 
-    public void Initialize(Client.Cluster cluster)
+    public void Initialize(ICluster cluster)
     {
         Cluster = cluster;
 

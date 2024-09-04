@@ -8,9 +8,7 @@ public class TestHarness : IDisposable
 {
     public string Name { get; set; } = Guid.NewGuid().ToString();
 
-    public string Version { get; set; } = "kindest/node:v1.30.0";
-
-    public Cluster Cluster { get; set; }
+    public ICluster Cluster { get; set; }
 
     public Kubernetes Kubernetes { get; set; }
 

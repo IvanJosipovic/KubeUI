@@ -6,41 +6,10 @@ using KubeUI.Client;
 
 namespace KubeUI.ViewModels;
 
-[Browsable(false)]
-[EditorBrowsable(EditorBrowsableState.Never)]
-internal class DemoResourceYamlViewModel : ResourceYamlViewModel
-{
-    public DemoResourceYamlViewModel()
-    {
-        Object = new V1Pod()
-        {
-            Metadata = new()
-            {
-                Name = "Demo",
-                NamespaceProperty = "NS"
-            },
-            Spec = new()
-            {
-                Containers = new List<V1Container>()
-                {
-                    new()
-                    {
-                        Image = "test"
-                    },
-                    new()
-                    {
-                        Image = "test2"
-                    }
-                }
-            }
-        };
-    }
-}
-
 public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 {
     [ObservableProperty]
-    private Cluster? _cluster;
+    private ICluster? _cluster;
 
     [ObservableProperty]
     private IKubernetesObject<V1ObjectMeta>? _object;
@@ -57,6 +26,14 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
     public ResourceYamlViewModel()
     {
         Title = Resources.ResourceYamlViewModel_Title;
+    }
+
+    public void Initialize(ICluster cluster, IKubernetesObject<V1ObjectMeta> @object)
+    {
+        Cluster = cluster;
+        Object = @object;
+
+        Id = $"{nameof(ResourceYamlViewModel)}-{Cluster.Name}-{Object.ApiVersion}/{Object.Kind}-{Object.Metadata.Name}";
     }
 
     private void SetYamlDocument()

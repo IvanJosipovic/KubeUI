@@ -10,7 +10,7 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
     private readonly IDialogService _dialogService;
 
     [ObservableProperty]
-    private Cluster _cluster;
+    private ICluster _cluster;
 
     [ObservableProperty]
     private PortForwarder? _selectedItem;
@@ -58,7 +58,7 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
         return pf != null;
     }
 
-    public void Initialize(Cluster cluster)
+    public void Initialize(ICluster cluster)
     {
         _cluster = cluster;
         Id = cluster.Name + nameof(PortForwarderListViewModel);

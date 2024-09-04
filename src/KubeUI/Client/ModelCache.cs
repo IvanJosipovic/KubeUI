@@ -2,7 +2,6 @@
 using System.Reflection;
 using System.Xml;
 using k8s.Models;
-using Microsoft.Extensions.DependencyInjection;
 using Scrutor;
 using Swordfish.NET.Collections.Auxiliary;
 

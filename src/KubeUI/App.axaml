@@ -78,6 +78,7 @@
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
         <DockFluentTheme />
+        <StyleInclude Source="avares://NodeEditorAvalonia/Themes/NodeEditorTheme.axaml" />
         <StyleInclude Source="avares://KubeUI/Styles/Fluent.axaml" />
         <StyleInclude Source="avares://KubeUI/Styles/Icons.axaml" />
     </Application.Styles>

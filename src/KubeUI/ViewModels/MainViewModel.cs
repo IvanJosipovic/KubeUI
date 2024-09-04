@@ -7,7 +7,6 @@ using Velopack;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using HanumanInstitute.MvvmDialogs;
-using Avalonia.Styling;
 
 namespace KubeUI.ViewModels;
 
