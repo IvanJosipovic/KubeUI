@@ -58,6 +58,29 @@ public static T CommandBinding<T,TValue>(this T control, TValue value, FuncValue
 => control._setEx(Ursa.Controls.Breadcrumb.CommandBindingProperty, ps, () => control.CommandBinding = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
+ // CommandParameterBindingProperty
+
+/*BindFromExpressionSetterGenerator*/
+public static T CommandParameterBinding<T>(this T control, Func<Avalonia.Data.IBinding> func, Action<Avalonia.Data.IBinding>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.Breadcrumb
+   => control._set(Ursa.Controls.Breadcrumb.CommandParameterBindingProperty, func, onChanged, expression);
+
+/*MagicalSetterGenerator*/
+public static T CommandParameterBinding<T>(this T control, Avalonia.Data.IBinding value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Breadcrumb
+=> control._setEx(Ursa.Controls.Breadcrumb.CommandParameterBindingProperty, ps, () => control.CommandParameterBinding = value, bindingMode, converter, bindingSource);
+
+/*BindSetterGenerator*/
+public static T CommandParameterBinding<T>(this T control, IBinding binding) where T : Ursa.Controls.Breadcrumb
+   => control._set(Ursa.Controls.Breadcrumb.CommandParameterBindingProperty, binding);
+
+/*AvaloniaPropertyBindSetterGenerator*/
+public static T CommandParameterBinding<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Ursa.Controls.Breadcrumb
+   => control._set(Ursa.Controls.Breadcrumb.CommandParameterBindingProperty, avaloniaProperty, bindingMode, converter, overrideView);
+
+/*MagicalSetterWithConverterGenerator*/
+public static T CommandParameterBinding<T,TValue>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Data.IBinding> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Breadcrumb
+=> control._setEx(Ursa.Controls.Breadcrumb.CommandParameterBindingProperty, ps, () => control.CommandParameterBinding = converter.TryConvert(value), bindingMode, converter, bindingSource);
+
+
  // SeparatorProperty
 
 /*BindFromExpressionSetterGenerator*/
@@ -126,6 +149,16 @@ public static Style<T> CommandBinding<T>(this Style<T> style, Avalonia.Data.IBin
 
 /*BindingStyleSetterGenerator*/
 //Skipped CommandBinding because already exist in value setters
+
+
+ // CommandParameterBindingProperty
+
+/*ValueStyleSetterGenerator*/
+public static Style<T> CommandParameterBinding<T>(this Style<T> style, Avalonia.Data.IBinding value) where T : Ursa.Controls.Breadcrumb
+=> style._addSetter(Ursa.Controls.Breadcrumb.CommandParameterBindingProperty, value);
+
+/*BindingStyleSetterGenerator*/
+//Skipped CommandParameterBinding because already exist in value setters
 
 
  // SeparatorProperty

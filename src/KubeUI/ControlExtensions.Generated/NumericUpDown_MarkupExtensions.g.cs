@@ -104,6 +104,29 @@ public static T InnerLeftContent<T,TValue>(this T control, TValue value, FuncVal
 => control._setEx(Ursa.Controls.NumericUpDown.InnerLeftContentProperty, ps, () => control.InnerLeftContent = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
+ // InnerRightContentProperty
+
+/*BindFromExpressionSetterGenerator*/
+public static T InnerRightContent<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.NumericUpDown
+   => control._set(Ursa.Controls.NumericUpDown.InnerRightContentProperty, func, onChanged, expression);
+
+/*MagicalSetterGenerator*/
+public static T InnerRightContent<T>(this T control, System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.NumericUpDown
+=> control._setEx(Ursa.Controls.NumericUpDown.InnerRightContentProperty, ps, () => control.InnerRightContent = value, bindingMode, converter, bindingSource);
+
+/*BindSetterGenerator*/
+public static T InnerRightContent<T>(this T control, IBinding binding) where T : Ursa.Controls.NumericUpDown
+   => control._set(Ursa.Controls.NumericUpDown.InnerRightContentProperty, binding);
+
+/*AvaloniaPropertyBindSetterGenerator*/
+public static T InnerRightContent<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Ursa.Controls.NumericUpDown
+   => control._set(Ursa.Controls.NumericUpDown.InnerRightContentProperty, avaloniaProperty, bindingMode, converter, overrideView);
+
+/*MagicalSetterWithConverterGenerator*/
+public static T InnerRightContent<T,TValue>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.NumericUpDown
+=> control._setEx(Ursa.Controls.NumericUpDown.InnerRightContentProperty, ps, () => control.InnerRightContent = converter.TryConvert(value), bindingMode, converter, bindingSource);
+
+
  // WatermarkProperty
 
 /*BindFromExpressionSetterGenerator*/
@@ -318,6 +341,17 @@ public static Style<T> InnerLeftContent<T>(this Style<T> style, System.Object va
 /*BindingStyleSetterGenerator*/
 public static Style<T> InnerLeftContent<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.NumericUpDown
 => style._addSetter(Ursa.Controls.NumericUpDown.InnerLeftContentProperty, binding);
+
+
+ // InnerRightContentProperty
+
+/*ValueStyleSetterGenerator*/
+public static Style<T> InnerRightContent<T>(this Style<T> style, System.Object value) where T : Ursa.Controls.NumericUpDown
+=> style._addSetter(Ursa.Controls.NumericUpDown.InnerRightContentProperty, value);
+
+/*BindingStyleSetterGenerator*/
+public static Style<T> InnerRightContent<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.NumericUpDown
+=> style._addSetter(Ursa.Controls.NumericUpDown.InnerRightContentProperty, binding);
 
 
  // WatermarkProperty
