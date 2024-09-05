@@ -173,6 +173,75 @@ public static T SelectedItemTemplate<T,TValue>(this T control, TValue value, Fun
 => control._setEx(Ursa.Controls.MultiComboBox.SelectedItemTemplateProperty, ps, () => control.SelectedItemTemplate = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
+ // WatermarkProperty
+
+/*BindFromExpressionSetterGenerator*/
+public static T Watermark<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.MultiComboBox
+   => control._set(Ursa.Controls.MultiComboBox.WatermarkProperty, func, onChanged, expression);
+
+/*MagicalSetterGenerator*/
+public static T Watermark<T>(this T control, System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.MultiComboBox
+=> control._setEx(Ursa.Controls.MultiComboBox.WatermarkProperty, ps, () => control.Watermark = value, bindingMode, converter, bindingSource);
+
+/*BindSetterGenerator*/
+public static T Watermark<T>(this T control, IBinding binding) where T : Ursa.Controls.MultiComboBox
+   => control._set(Ursa.Controls.MultiComboBox.WatermarkProperty, binding);
+
+/*AvaloniaPropertyBindSetterGenerator*/
+public static T Watermark<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Ursa.Controls.MultiComboBox
+   => control._set(Ursa.Controls.MultiComboBox.WatermarkProperty, avaloniaProperty, bindingMode, converter, overrideView);
+
+/*MagicalSetterWithConverterGenerator*/
+public static T Watermark<T,TValue>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.MultiComboBox
+=> control._setEx(Ursa.Controls.MultiComboBox.WatermarkProperty, ps, () => control.Watermark = converter.TryConvert(value), bindingMode, converter, bindingSource);
+
+
+ // PopupInnerTopContentProperty
+
+/*BindFromExpressionSetterGenerator*/
+public static T PopupInnerTopContent<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.MultiComboBox
+   => control._set(Ursa.Controls.MultiComboBox.PopupInnerTopContentProperty, func, onChanged, expression);
+
+/*MagicalSetterGenerator*/
+public static T PopupInnerTopContent<T>(this T control, System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.MultiComboBox
+=> control._setEx(Ursa.Controls.MultiComboBox.PopupInnerTopContentProperty, ps, () => control.PopupInnerTopContent = value, bindingMode, converter, bindingSource);
+
+/*BindSetterGenerator*/
+public static T PopupInnerTopContent<T>(this T control, IBinding binding) where T : Ursa.Controls.MultiComboBox
+   => control._set(Ursa.Controls.MultiComboBox.PopupInnerTopContentProperty, binding);
+
+/*AvaloniaPropertyBindSetterGenerator*/
+public static T PopupInnerTopContent<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Ursa.Controls.MultiComboBox
+   => control._set(Ursa.Controls.MultiComboBox.PopupInnerTopContentProperty, avaloniaProperty, bindingMode, converter, overrideView);
+
+/*MagicalSetterWithConverterGenerator*/
+public static T PopupInnerTopContent<T,TValue>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.MultiComboBox
+=> control._setEx(Ursa.Controls.MultiComboBox.PopupInnerTopContentProperty, ps, () => control.PopupInnerTopContent = converter.TryConvert(value), bindingMode, converter, bindingSource);
+
+
+ // PopupInnerBottomContentProperty
+
+/*BindFromExpressionSetterGenerator*/
+public static T PopupInnerBottomContent<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.MultiComboBox
+   => control._set(Ursa.Controls.MultiComboBox.PopupInnerBottomContentProperty, func, onChanged, expression);
+
+/*MagicalSetterGenerator*/
+public static T PopupInnerBottomContent<T>(this T control, System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.MultiComboBox
+=> control._setEx(Ursa.Controls.MultiComboBox.PopupInnerBottomContentProperty, ps, () => control.PopupInnerBottomContent = value, bindingMode, converter, bindingSource);
+
+/*BindSetterGenerator*/
+public static T PopupInnerBottomContent<T>(this T control, IBinding binding) where T : Ursa.Controls.MultiComboBox
+   => control._set(Ursa.Controls.MultiComboBox.PopupInnerBottomContentProperty, binding);
+
+/*AvaloniaPropertyBindSetterGenerator*/
+public static T PopupInnerBottomContent<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Ursa.Controls.MultiComboBox
+   => control._set(Ursa.Controls.MultiComboBox.PopupInnerBottomContentProperty, avaloniaProperty, bindingMode, converter, overrideView);
+
+/*MagicalSetterWithConverterGenerator*/
+public static T PopupInnerBottomContent<T,TValue>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.MultiComboBox
+=> control._setEx(Ursa.Controls.MultiComboBox.PopupInnerBottomContentProperty, ps, () => control.PopupInnerBottomContent = converter.TryConvert(value), bindingMode, converter, bindingSource);
+
+
 
 //================= Events ======================//
 
@@ -252,6 +321,39 @@ public static Style<T> SelectedItemTemplate<T>(this Style<T> style, Avalonia.Con
 /*BindingStyleSetterGenerator*/
 public static Style<T> SelectedItemTemplate<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.MultiComboBox
 => style._addSetter(Ursa.Controls.MultiComboBox.SelectedItemTemplateProperty, binding);
+
+
+ // WatermarkProperty
+
+/*ValueStyleSetterGenerator*/
+public static Style<T> Watermark<T>(this Style<T> style, System.String value) where T : Ursa.Controls.MultiComboBox
+=> style._addSetter(Ursa.Controls.MultiComboBox.WatermarkProperty, value);
+
+/*BindingStyleSetterGenerator*/
+public static Style<T> Watermark<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.MultiComboBox
+=> style._addSetter(Ursa.Controls.MultiComboBox.WatermarkProperty, binding);
+
+
+ // PopupInnerTopContentProperty
+
+/*ValueStyleSetterGenerator*/
+public static Style<T> PopupInnerTopContent<T>(this Style<T> style, System.Object value) where T : Ursa.Controls.MultiComboBox
+=> style._addSetter(Ursa.Controls.MultiComboBox.PopupInnerTopContentProperty, value);
+
+/*BindingStyleSetterGenerator*/
+public static Style<T> PopupInnerTopContent<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.MultiComboBox
+=> style._addSetter(Ursa.Controls.MultiComboBox.PopupInnerTopContentProperty, binding);
+
+
+ // PopupInnerBottomContentProperty
+
+/*ValueStyleSetterGenerator*/
+public static Style<T> PopupInnerBottomContent<T>(this Style<T> style, System.Object value) where T : Ursa.Controls.MultiComboBox
+=> style._addSetter(Ursa.Controls.MultiComboBox.PopupInnerBottomContentProperty, value);
+
+/*BindingStyleSetterGenerator*/
+public static Style<T> PopupInnerBottomContent<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.MultiComboBox
+=> style._addSetter(Ursa.Controls.MultiComboBox.PopupInnerBottomContentProperty, binding);
 
 
 

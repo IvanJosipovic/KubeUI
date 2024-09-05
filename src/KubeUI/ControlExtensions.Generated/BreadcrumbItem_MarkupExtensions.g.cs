@@ -81,6 +81,29 @@ public static T Command<T,TValue>(this T control, TValue value, FuncValueConvert
 => control._setEx(Ursa.Controls.BreadcrumbItem.CommandProperty, ps, () => control.Command = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
+ // CommandParameterProperty
+
+/*BindFromExpressionSetterGenerator*/
+public static T CommandParameter<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.BreadcrumbItem
+   => control._set(Ursa.Controls.BreadcrumbItem.CommandParameterProperty, func, onChanged, expression);
+
+/*MagicalSetterGenerator*/
+public static T CommandParameter<T>(this T control, System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.BreadcrumbItem
+=> control._setEx(Ursa.Controls.BreadcrumbItem.CommandParameterProperty, ps, () => control.CommandParameter = value, bindingMode, converter, bindingSource);
+
+/*BindSetterGenerator*/
+public static T CommandParameter<T>(this T control, IBinding binding) where T : Ursa.Controls.BreadcrumbItem
+   => control._set(Ursa.Controls.BreadcrumbItem.CommandParameterProperty, binding);
+
+/*AvaloniaPropertyBindSetterGenerator*/
+public static T CommandParameter<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Ursa.Controls.BreadcrumbItem
+   => control._set(Ursa.Controls.BreadcrumbItem.CommandParameterProperty, avaloniaProperty, bindingMode, converter, overrideView);
+
+/*MagicalSetterWithConverterGenerator*/
+public static T CommandParameter<T,TValue>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.BreadcrumbItem
+=> control._setEx(Ursa.Controls.BreadcrumbItem.CommandParameterProperty, ps, () => control.CommandParameter = converter.TryConvert(value), bindingMode, converter, bindingSource);
+
+
  // IconTemplateProperty
 
 /*BindFromExpressionSetterGenerator*/
@@ -162,6 +185,17 @@ public static Style<T> Command<T>(this Style<T> style, System.Windows.Input.ICom
 /*BindingStyleSetterGenerator*/
 public static Style<T> Command<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.BreadcrumbItem
 => style._addSetter(Ursa.Controls.BreadcrumbItem.CommandProperty, binding);
+
+
+ // CommandParameterProperty
+
+/*ValueStyleSetterGenerator*/
+public static Style<T> CommandParameter<T>(this Style<T> style, System.Object value) where T : Ursa.Controls.BreadcrumbItem
+=> style._addSetter(Ursa.Controls.BreadcrumbItem.CommandParameterProperty, value);
+
+/*BindingStyleSetterGenerator*/
+public static Style<T> CommandParameter<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.BreadcrumbItem
+=> style._addSetter(Ursa.Controls.BreadcrumbItem.CommandParameterProperty, binding);
 
 
  // IconTemplateProperty
