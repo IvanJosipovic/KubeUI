@@ -34,6 +34,16 @@ public sealed class SettingsView : MyViewBase<SettingsViewModel>
                                     .OnTapped((x) => {vm.SettingsService.Settings.Theme = LocalThemeVariant.Dark;})
                                     .IsChecked(@vm.SettingsService.Settings.Theme, converter: new FuncValueConverter<LocalThemeVariant, bool?>((x) => x == LocalThemeVariant.Dark)),
                                 ])
-                        ])
+                        ]),
+                new Grid()
+                    .Cols("*,2*")
+                    .Children([
+                        new Label()
+                            .Col(0)
+                            .Content("Enable Logging (Restart Required)"),
+                        new CheckBox()
+                            .Col(1)
+                            .IsChecked(@vm.SettingsService.Settings.LoggingEnabled)
+                        ]),
         ]);
 }
