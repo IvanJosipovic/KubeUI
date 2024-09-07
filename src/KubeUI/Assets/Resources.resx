@@ -317,4 +317,7 @@ Are you sure?</value>
   <data name="VisualizationViewModel_Title" xml:space="preserve">
     <value>Visualization</value>
   </data>
+  <data name="ResourceListView_SelectNamespace" xml:space="preserve">
+    <value>Filter Namespace(s)</value>
+  </data>
 </root>

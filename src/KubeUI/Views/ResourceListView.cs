@@ -244,8 +244,10 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                                 new TextBox()
                                     .Col(0)
                                     .Width(300)
+                                    .Background(Brushes.Transparent)
                                     .HorizontalAlignment(HorizontalAlignment.Right)
-                                    .VerticalAlignment(VerticalAlignment.Center)
+                                    .VerticalAlignment(VerticalAlignment.Stretch)
+                                    .VerticalContentAlignment(VerticalAlignment.Center)
                                     .Text(@vm.SearchQuery)
                                     .Watermark("Search"),
 
@@ -260,6 +262,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                                     .SelectedItems(@vm.Cluster.SelectedNamespaces)
                                     .SelectedItemTemplate(new FuncDataTemplate<V1Namespace?>((x,y) => new Label().Content(@x?.Metadata.Name)))
                                     .ItemTemplate(new FuncDataTemplate<V1Namespace?>((x,y) => new Label().Content(@x?.Metadata.Name)))
+                                    .Watermark(Assets.Resources.ResourceListView_SelectNamespace)
                             ]),
                         ]),
                 new DataGrid()

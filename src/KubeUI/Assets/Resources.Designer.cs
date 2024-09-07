@@ -503,6 +503,15 @@ namespace KubeUI.Assets {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Select Namespace(s).
+        /// </summary>
+        public static string ResourceListView_SelectNamespace {
+            get {
+                return ResourceManager.GetString("ResourceListView_SelectNamespace", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to This will delete {0} items.
         ///Are you sure?.
         /// </summary>
