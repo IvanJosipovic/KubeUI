@@ -91,7 +91,7 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
                     .FontWeight(FontWeight.Normal)
                     .IsReadOnly(true)
                     .ShowLineNumbers(false)
-                    .Background(Brushes.Black)
+                    //.Background(Brushes.Black)
                     .HorizontalScrollBarVisibility(ScrollBarVisibility.Auto)
                     .VerticalScrollBarVisibility(ScrollBarVisibility.Visible)
                     .ContextMenu(new ContextMenu()
