@@ -1,4 +1,5 @@
-﻿using Dock.Avalonia.Controls;
+﻿using System.Runtime.InteropServices;
+using Dock.Avalonia.Controls;
 
 namespace KubeUI.Views;
 
@@ -45,7 +46,8 @@ public sealed class MainView : MyViewBase<MainViewModel>
                                     .Header(Assets.Resources.MainView_Menu_Help_About)
                                     .Command(vm.OpenAboutCommand),
                                 ])
-                        ]),
+                        ])
+                    .IsVisible(() => !RuntimeInformation.IsOSPlatform(OSPlatform.OSX)),
                 new DockControl()
                     .Row(1)
                     .Margin(4)

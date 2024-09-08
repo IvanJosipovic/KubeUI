@@ -101,8 +101,10 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = MainWindow.Build();
-            desktop.MainWindow.DataContext = _serviceProvider.GetRequiredService<MainViewModel>();
+            var vm = _serviceProvider.GetRequiredService<MainViewModel>();
+
+            desktop.MainWindow = MainWindow.Build(vm);
+            desktop.MainWindow.DataContext = vm;
             TopLevel = TopLevel.GetTopLevel(desktop.MainWindow);
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
