@@ -26,7 +26,7 @@ Go to [Releases](https://github.com/IvanJosipovic/KubeUI/releases) and download 
 Supported Platforms (AMD64 and ARM64):
 
 - Linux
-- Mac
+- Mac ([*Note Issue](https://github.com/IvanJosipovic/KubeUI/issues/688))
 - Windows
 
 ## Example
