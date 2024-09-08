@@ -22,10 +22,6 @@
     <string>NSApplication</string>
     <key>NSHighResolutionCapable</key>
     <true />
-    <key>NSAppleEventsUsageDescription</key>
-    <string>This app requires access to execute external binaries.</string>
-    <key>NSFileAccessUsageDescription</key>
-    <string>This app requires access to execute external binaries.</string>
     <key>LSApplicationCategoryType</key>
     <string>public.app-category.developer-tools</string>
     <key>LSEnvironment</key>
