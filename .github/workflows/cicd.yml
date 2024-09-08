@@ -111,7 +111,7 @@ jobs:
         if: matrix.runs-on == 'macos-latest'
         uses: richardrigutins/replace-in-files@v2
         with:
-          files: 'info.plist'
+          files: 'src/KubeUI.Desktop/info.plist'
           search-text: '{{version}}'
           replacement-text: ${{ needs.semantic-release.outputs.new_release_version }}
 
