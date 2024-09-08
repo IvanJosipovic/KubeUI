@@ -65,27 +65,27 @@ jobs:
           - rid: win-x64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
-            icon: --icon ../KubeUI/Assets/icon.ico
+            packParam: --icon ../KubeUI/Assets/icon.ico
           - rid: win-arm64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
-            icon: --icon ../KubeUI/Assets/icon.ico
+            packParam: --icon ../KubeUI/Assets/icon.ico
           - rid: linux-x64
             fileName: KubeUI.Desktop
             runs-on: ubuntu-latest
-            icon: ''
+            packParam: ''
           - rid: linux-arm64
             fileName: KubeUI.Desktop
             runs-on: ubuntu-latest
-            icon: ''
+            packParam: ''
           - rid: osx-x64
             fileName: KubeUI.Desktop
             runs-on: macos-latest
-            icon: --icon ../KubeUI/Assets/icon.icns
+            packParam: --icon ../KubeUI/Assets/icon.icns --plist info.plist
           - rid: osx-arm64
             fileName: KubeUI.Desktop
             runs-on: macos-latest
-            icon: --icon ../KubeUI/Assets/icon.icns
+            packParam: --icon ../KubeUI/Assets/icon.icns --plist info.plist
     steps:
       - uses: actions/checkout@v4
         with:
@@ -111,7 +111,7 @@ jobs:
         working-directory: src/KubeUI.Desktop
         run: |
           vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} -c ${{ matrix.rid }} --pre
-          vpk pack --packTitle KubeUI -u KubeUI -v ${{ needs.semantic-release.outputs.new_release_version }} -p bin/publish -c ${{ matrix.rid }} -e ${{ matrix.fileName }} -o packed ${{ matrix.icon }}
+          vpk pack --packTitle KubeUI -u KubeUI -v ${{ needs.semantic-release.outputs.new_release_version }} -p bin/publish -c ${{ matrix.rid }} -e ${{ matrix.fileName }} -o packed ${{ matrix.packParam }}
 
       - name: Remove unnecessary assets
         working-directory: src/KubeUI.Desktop
