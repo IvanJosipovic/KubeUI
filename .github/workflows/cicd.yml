@@ -107,13 +107,13 @@ jobs:
         working-directory: src/KubeUI.Desktop
         run: dotnet publish -c Release -r ${{ matrix.rid }} -o bin/publish -p:Version=${{ needs.semantic-release.outputs.new_release_version }}
 
-      - name: Set version in info.plist
+      - name: Replace single file
         if: matrix.runs-on == 'macos-latest'
-        uses: jacobtomlinson/gha-find-replace@v3
+        uses: richardrigutins/replace-in-files@v2
         with:
-          find: "{{version}}"
-          replace: ${{ needs.semantic-release.outputs.new_release_version }}
-          include: "**info.plist"
+          files: 'info.plist'
+          search-text: '{{version}}'
+          replacement-text: ${{ needs.semantic-release.outputs.new_release_version }}
 
       - name: Create Release
         working-directory: src/KubeUI.Desktop
