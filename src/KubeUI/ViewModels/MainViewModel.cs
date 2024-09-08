@@ -175,6 +175,8 @@ public sealed partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void Close()
     {
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime lifetime)
+            lifetime.Shutdown();
     }
 
     [RelayCommand]
