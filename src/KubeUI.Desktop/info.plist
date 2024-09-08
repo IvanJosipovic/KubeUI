@@ -28,5 +28,10 @@
     <string>This app requires access to execute external binaries.</string>
     <key>LSApplicationCategoryType</key>
     <string>public.app-category.developer-tools</string>
+    <key>LSEnvironment</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:</string>
+    </dict>
   </dict>
 </plist>
