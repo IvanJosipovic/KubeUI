@@ -5,6 +5,7 @@
     xmlns:local="using:KubeUI"
     xmlns:styling="using:FluentAvalonia.Styling"
     xmlns:u-semi="https://irihi.tech/ursa/themes/semi"
+    Name="KubeUI"
     RequestedThemeVariant="Default">
     <!--  "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options.  -->
 
@@ -13,8 +14,8 @@
         <u-semi:SemiTheme Locale="en-US" />
         <styling:FluentAvaloniaTheme />
         <!--
-          https://theme.xaml.live/
-          https://github.com/AvaloniaUI/Avalonia/blob/master/src/Avalonia.Themes.Fluent/Accents/BaseColorsPalette.xaml
+            https://theme.xaml.live/
+            https://github.com/AvaloniaUI/Avalonia/blob/master/src/Avalonia.Themes.Fluent/Accents/BaseColorsPalette.xaml
         -->
         <FluentTheme DensityStyle="Compact">
             <FluentTheme.Palettes>
