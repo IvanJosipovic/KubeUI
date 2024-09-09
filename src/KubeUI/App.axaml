@@ -12,7 +12,10 @@
         <StyleInclude Source="avares://Semi.Avalonia/Themes/Index.axaml" />
         <u-semi:SemiTheme Locale="en-US" />
         <styling:FluentAvaloniaTheme />
-        <!--  https://github.com/AvaloniaUI/Avalonia/blob/master/src/Avalonia.Themes.Fluent/Accents/BaseColorsPalette.xaml  -->
+        <!--
+          https://theme.xaml.live/
+          https://github.com/AvaloniaUI/Avalonia/blob/master/src/Avalonia.Themes.Fluent/Accents/BaseColorsPalette.xaml
+        -->
         <FluentTheme DensityStyle="Compact">
             <FluentTheme.Palettes>
                 <ColorPaletteResources

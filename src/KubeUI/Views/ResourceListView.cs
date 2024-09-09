@@ -29,7 +29,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
         {
             try
             {
-                var columnDisplay = (Func<T,string>)columnDefinition.GetType().GetProperty(nameof(ResourceListViewDefinitionColumn<T, string>.Display)).GetValue(columnDefinition);
+                var columnDisplay = (Func<T, string>)columnDefinition.GetType().GetProperty(nameof(ResourceListViewDefinitionColumn<T, string>.Display)).GetValue(columnDefinition);
 
                 var columnField = columnDefinition.GetType().GetProperty(nameof(ResourceListViewDefinitionColumn<T, string>.Field)).GetValue(columnDefinition);
 
@@ -214,6 +214,11 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
         }
 
         return styles;
+    }
+
+    protected override StyleGroup? BuildStyles()
+    {
+        return ViewModel.ViewDefinition.SetStyle.Invoke();
     }
 
     protected override object Build(ResourceListViewModel<T>? vm)

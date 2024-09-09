@@ -1,6 +1,8 @@
 using System.Collections.Specialized;
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
+using Avalonia.Data.Converters;
+using Avalonia.Styling;
 using Dock.Model.Core;
 using DynamicData;
 using DynamicData.Binding;
@@ -353,6 +355,27 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                     Width = "80"
                 },
             ];
+
+            definition.SetStyle = () => [
+                new Style<DataGridRow>()
+                    .Setter(DataGridRow.ForegroundProperty, new Binding("Value.Type")
+                    {
+                        Converter = new FuncValueConverter<string, IBrush>(x =>
+                        {
+                            if (string.Equals(x, "Warning", StringComparison.Ordinal))
+                            {
+                                return Brushes.Red;
+                            }
+
+                            if (Application.Current.ActualThemeVariant == ThemeVariant.Light)
+                            {
+                                return Brushes.Black; //todo reference style
+                            }
+
+                            return Brushes.White; //todo reference style
+                        }),
+                    }),
+                ];
         }
         else if (resourceType == typeof(V1Pod))
         {
@@ -1161,4 +1184,6 @@ public class ResourceListViewDefinition<T> where T : class, IKubernetesObject<V1
     public bool ShowNamespaces { get; set; } = true;
 
     public bool ShowNewResource { get; set; } = true;
+
+    public Func<StyleGroup>? SetStyle { get; set; } = () => [];
 }
