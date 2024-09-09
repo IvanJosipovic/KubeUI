@@ -62,8 +62,10 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
                     var memory = new Memory<char>(new char[1024]);
                     await _streamReader.ReadAsync(memory).ConfigureAwait(false);
                     var str = memory.ToString()
-                        .Replace("\0", "", StringComparison.Ordinal)
-                        .Replace("\a", "", StringComparison.Ordinal);
+                        .Replace("\0", "", StringComparison.Ordinal) // null character
+                        .Replace("\a", "", StringComparison.Ordinal) // bell or alert
+                        .Replace("\b", "", StringComparison.Ordinal) // moves the cursor two positions to the left.
+                        ;
                     str = RemoveAnsiEscapeSequences(str);
                     if (!string.IsNullOrEmpty(str))
                     {

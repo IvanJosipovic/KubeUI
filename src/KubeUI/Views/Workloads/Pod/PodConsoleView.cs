@@ -9,12 +9,15 @@ namespace KubeUI.Views;
 
 public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
 {
+    private readonly ILogger<PodConsoleView> _logger;
+
     private Installation _textMateInstallation;
 
     private RegistryOptions _registryOptions;
 
-    public PodConsoleView()
+    public PodConsoleView(ILogger<PodConsoleView> logger)
     {
+        _logger = logger;
         _registryOptions = new RegistryOptions(Application.Current.ActualThemeVariant == ThemeVariant.Light ? ThemeName.Light : ThemeName.DarkPlus);
 
         Application.Current.ActualThemeVariantChanged += Current_ActualThemeVariantChanged;
@@ -96,7 +99,30 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
                                 }
                             }
 
-                            dc1.Send(e.KeySymbol);
+                            if (e.KeySymbol != null)
+                            {
+                                dc1.Send(e.KeySymbol);
+                            }
+                            else if (e.Key == Key.Up)
+                            {
+                                dc1.Send("\x1b[A");
+                            }
+                            else if (e.Key == Key.Down)
+                            {
+                                dc1.Send("\x1b[B");
+                            }
+                            else if (e.Key == Key.Left)
+                            {
+                                dc1.Send("\x1b[D");
+                            }
+                            else if (e.Key == Key.Right)
+                            {
+                                dc1.Send("\x1b[C");
+                            }
+                            else
+                            {
+                               _logger.LogWarning("Unmapped key: {0}", e.Key);
+                            }
                         }
                     })
                     .ContextMenu(new ContextMenu()
