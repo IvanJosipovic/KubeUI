@@ -214,7 +214,7 @@ public sealed partial class MainViewModel : ViewModelBase
 
     private async Task CheckForUpdates()
     {
-        var sor = new GithubSource("https://github.com/IvanJosipovic/KubeUI", null, true);
+        var sor = new GithubSource("https://github.com/IvanJosipovic/KubeUI", null, _settingsService.Settings.PreReleaseChannel);
 
         var arch = "x64";
 

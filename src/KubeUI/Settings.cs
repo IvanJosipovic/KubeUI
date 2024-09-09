@@ -14,4 +14,7 @@ public sealed partial class Settings : ObservableObject
 
     [ObservableProperty]
     private bool _loggingEnabled = true;
+
+    [ObservableProperty]
+    private bool preReleaseChannel = true;
 }

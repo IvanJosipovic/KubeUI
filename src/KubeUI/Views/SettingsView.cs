@@ -4,8 +4,6 @@ namespace KubeUI.Views;
 
 public sealed class SettingsView : MyViewBase<SettingsViewModel>
 {
-    private FuncValueConverter<LocalThemeVariant, bool?> _valueConverter => new FuncValueConverter<LocalThemeVariant, bool?>((x) => x == LocalThemeVariant.Default);
-
     protected override object Build(SettingsViewModel vm) =>
         new StackPanel()
             .Children([
@@ -33,7 +31,7 @@ public sealed class SettingsView : MyViewBase<SettingsViewModel>
                                     .Content("Dark")
                                     .OnTapped((x) => {vm.SettingsService.Settings.Theme = LocalThemeVariant.Dark;})
                                     .IsChecked(@vm.SettingsService.Settings.Theme, converter: new FuncValueConverter<LocalThemeVariant, bool?>((x) => x == LocalThemeVariant.Dark)),
-                                ])
+                                ]),
                         ]),
                 new Grid()
                     .Cols("*,2*")
@@ -43,7 +41,17 @@ public sealed class SettingsView : MyViewBase<SettingsViewModel>
                             .Content("Enable Logging (Restart Required)"),
                         new CheckBox()
                             .Col(1)
-                            .IsChecked(@vm.SettingsService.Settings.LoggingEnabled)
+                            .IsChecked(@vm.SettingsService.Settings.LoggingEnabled),
+                        ]),
+                new Grid()
+                    .Cols("*,2*")
+                    .Children([
+                        new Label()
+                            .Col(0)
+                            .Content("Pre Release Channel"),
+                        new CheckBox()
+                            .Col(1)
+                            .IsChecked(@vm.SettingsService.Settings.PreReleaseChannel),
                         ]),
         ]);
 }
