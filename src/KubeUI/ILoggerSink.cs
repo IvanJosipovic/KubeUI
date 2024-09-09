@@ -15,7 +15,9 @@ public class ILoggerSink : ILogSink
 
     public bool IsEnabled(LogEventLevel level, string area)
     {
-        return _logger.IsEnabled(GetLogLevel(level));
+        var logLevel = GetLogLevel(level);
+
+        return logLevel > LogLevel.Information;
     }
 
     public void Log(LogEventLevel level, string area, object? source, string messageTemplate)
