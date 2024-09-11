@@ -147,7 +147,7 @@ public static class Utilities
             return resourceBasePath + "group.svg";
         }
 
-        if (type == typeof(V1HorizontalPodAutoscaler))
+        if (type == typeof(V1HorizontalPodAutoscaler) || type == typeof(V2HorizontalPodAutoscaler))
         {
             return resourceBasePath + "hpa.svg";
         }

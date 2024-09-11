@@ -10,7 +10,6 @@ using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
-using k8s.KubeConfigModels;
 using k8s.Models;
 using KubeUI.Client;
 using KubeUI.Client.Informer;
@@ -193,13 +192,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
             definition.Columns =
             [
-                new ResourceListViewDefinitionColumn<V1Node, string>()
-                {
-                    Name = "Name",
-                    Field = x => x.Metadata.Name,
-                    Sort = SortDirection.Ascending,
-                    Width = "4*",
-                },
+                NameColumn(SortDirection.Ascending),
                 new ResourceListViewDefinitionColumn<V1Node, string>()
                 {
                     Name = "Instance Type",
@@ -251,14 +244,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                     Field = x => x.Status.Conditions.FirstOrDefault(x => x.Type == "Ready")?.Reason ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },
-                new ResourceListViewDefinitionColumn<V1Node, DateTime?>()
-                {
-                    Name = "Age",
-                    CustomControl = typeof(AgeCell),
-                    Field = x => x.Metadata.CreationTimestamp,
-                    Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
-                    Width = "80"
-                }
+                AgeColumn(),
             ];
         }
         else if (resourceType == typeof(V1Namespace))
@@ -267,13 +253,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
             definition.Columns =
             [
-                new ResourceListViewDefinitionColumn<V1Namespace, string>()
-                {
-                    Name = "Name",
-                    Field = x => x.Metadata.Name,
-                    Sort = SortDirection.Ascending,
-                    Width = "4*",
-                },
+                NameColumn(SortDirection.Ascending),
                 new ResourceListViewDefinitionColumn<V1Namespace, string>()
                 {
                     Name = "Labels",
@@ -286,14 +266,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                     Field = x => x.Status.Phase,
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
-                new ResourceListViewDefinitionColumn<V1Namespace, DateTime?>()
-                {
-                    Name = "Age",
-                    CustomControl = typeof(AgeCell),
-                    Field = x => x.Metadata.CreationTimestamp,
-                    Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss"),
-                    Width = "80"
-                }
+                AgeColumn(),
             ];
         }
         else if (resourceType == typeof(Corev1Event))
@@ -312,12 +285,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                     Field = x => x.Message,
                     Width = "4*"
                 },
-                new ResourceListViewDefinitionColumn<Corev1Event, string>()
-                {
-                    Name = "Namespace",
-                    Field = x => x.Metadata.NamespaceProperty,
-                    Width = "*"
-                },
+                NamespaceColumn(),
                 new ResourceListViewDefinitionColumn<Corev1Event, string>()
                 {
                     Name = "Involved Object",
@@ -346,14 +314,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                     Sort = SortDirection.Descending,
                     Width = "80"
                 },
-                new ResourceListViewDefinitionColumn<Corev1Event, DateTime?>()
-                {
-                    Name = "Age",
-                    CustomControl = typeof(AgeCell),
-                    Field = x => x.Metadata.CreationTimestamp,
-                    Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
-                    Width = "80"
-                },
+                AgeColumn(),
             ];
 
             definition.SetStyle = () => [
@@ -381,13 +342,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         {
             definition.Columns =
             [
-                new ResourceListViewDefinitionColumn<V1Pod, string>()
-                {
-                    Name = "Name",
-                    Field = x => x.Metadata.Name,
-                    Sort = SortDirection.Ascending,
-                    Width = "4*",
-                },
+                NameColumn(SortDirection.Ascending),
                 new ResourceListViewDefinitionColumn<V1Pod, int>()
                 {
                     Name = "Containers",
@@ -396,12 +351,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                     Display = x => (x.Spec.Containers.Count + ((x.Spec.InitContainers?.Count) ?? 0)).ToString(),
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },
-                new ResourceListViewDefinitionColumn<V1Pod, string>()
-                {
-                    Name = "Namespace",
-                    Field = x => x.Metadata.NamespaceProperty,
-                    Width = "*"
-                },
+                NamespaceColumn(),
                 new ResourceListViewDefinitionColumn<V1Pod, int>()
                 {
                     Name = "Restarts",
@@ -427,6 +377,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                     Field = x => x.Status.QosClass,
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },
+                AgeColumn(),
                 new ResourceListViewDefinitionColumn<V1Pod, string>()
                 {
                     Name = "Status",
@@ -434,14 +385,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                     CustomControl = typeof(PodStatusCell),
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
-                new ResourceListViewDefinitionColumn<V1Pod, DateTime?>()
-                {
-                    Name = "Age",
-                    CustomControl = typeof(AgeCell),
-                    Field = x => x.Metadata.CreationTimestamp,
-                    Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
-                    Width = "80"
-                }
             ];
 
             definition.MenuItems =
@@ -494,19 +437,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         {
             definition.Columns =
             [
-                new ResourceListViewDefinitionColumn<V1Deployment, string>()
-                {
-                    Name = "Name",
-                    Field = x => x.Metadata.Name,
-                    Sort = SortDirection.Ascending,
-                    Width = "2*",
-                },
-                new ResourceListViewDefinitionColumn<V1Deployment, string>()
-                {
-                    Name = "Namespace",
-                    Field = x => x.Metadata.NamespaceProperty,
-                    Width = "*",
-                },
+                NameColumn(SortDirection.Ascending),
+                NamespaceColumn(),
                 new ResourceListViewDefinitionColumn<V1Deployment, int>()
                 {
                     Name = "Pods",
@@ -527,33 +459,15 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                     Field = x => x.Status.Conditions == null ? "" : x.Status.Conditions.FirstOrDefault(x => x.Type == "Available")?.Status ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
-                new ResourceListViewDefinitionColumn<V1Deployment, DateTime?>()
-                {
-                    Name = "Age",
-                    CustomControl = typeof(AgeCell),
-                    Field = x => x.Metadata.CreationTimestamp,
-                    Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
-                    Width = "80"
-                }
+                AgeColumn(),
             ];
         }
         else if (resourceType == typeof(V1DaemonSet))
         {
             definition.Columns =
             [
-                new ResourceListViewDefinitionColumn<V1DaemonSet, string>()
-                {
-                    Name = "Name",
-                    Field = x => x.Metadata.Name,
-                    Sort = SortDirection.Ascending,
-                    Width = "2*",
-                },
-                new ResourceListViewDefinitionColumn<V1DaemonSet, string>()
-                {
-                    Name = "Namespace",
-                    Field = x => x.Metadata.NamespaceProperty,
-                    Width = "*",
-                },
+                NameColumn(SortDirection.Ascending),
+                NamespaceColumn(),
                 new ResourceListViewDefinitionColumn<V1DaemonSet, int>()
                 {
                     Name = "Pods",
@@ -568,33 +482,15 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                     Field = x => x.Spec.Selector.MatchLabels.Select(z => z.Key + "=" + z.Value).Aggregate((x,y) => x + ", " + y),
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
-                new ResourceListViewDefinitionColumn<V1DaemonSet, DateTime?>()
-                {
-                    Name = "Age",
-                    CustomControl = typeof(AgeCell),
-                    Field = x => x.Metadata.CreationTimestamp,
-                    Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
-                    Width = "80"
-                }
+                AgeColumn(),
             ];
         }
         else if (resourceType == typeof(V1StatefulSet))
         {
             definition.Columns =
             [
-                new ResourceListViewDefinitionColumn<V1StatefulSet, string>()
-                {
-                    Name = "Name",
-                    Field = x => x.Metadata.Name,
-                    Sort = SortDirection.Ascending,
-                    Width = "2*",
-                },
-                new ResourceListViewDefinitionColumn<V1StatefulSet, string>()
-                {
-                    Name = "Namespace",
-                    Field = x => x.Metadata.NamespaceProperty,
-                    Width = "*",
-                },
+                NameColumn(SortDirection.Ascending),
+                NamespaceColumn(),
                 new ResourceListViewDefinitionColumn<V1StatefulSet, int>()
                 {
                     Name = "Replicas",
@@ -602,16 +498,576 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                     Field = x => x.Status.Replicas,
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
-                new ResourceListViewDefinitionColumn<V1StatefulSet, DateTime?>()
-                {
-                    Name = "Age",
-                    CustomControl = typeof(AgeCell),
-                    Field = x => x.Metadata.CreationTimestamp,
-                    Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
-                    Width = "80"
-                }
+                AgeColumn(),
             ];
         }
+        else if (resourceType == typeof(V1ReplicaSet))
+        {
+            definition.Columns =
+            [
+                NameColumn(SortDirection.Ascending),
+                NamespaceColumn(),
+                new ResourceListViewDefinitionColumn<V1ReplicaSet, int>()
+                {
+                    Name = "Desired",
+                    Display = x => (x.Spec.Replicas ?? 0).ToString(),
+                    Field = x => x.Spec.Replicas ?? 0,
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+                new ResourceListViewDefinitionColumn<V1ReplicaSet, int>()
+                {
+                    Name = "Current",
+                    Display = x => x.Status.Replicas.ToString(),
+                    Field = x => x.Status.Replicas,
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+                new ResourceListViewDefinitionColumn<V1ReplicaSet, int>()
+                {
+                    Name = "Ready",
+                    Display = x => x.Status.Replicas.ToString(),
+                    Field = x => x.Status.ReadyReplicas ?? 0,
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+                AgeColumn(),
+            ];
+        }
+        else if (resourceType == typeof(V1Job))
+        {
+            definition.Columns =
+            [
+                NameColumn(SortDirection.Ascending),
+                NamespaceColumn(),
+                new ResourceListViewDefinitionColumn<V1Job, int>()
+                {
+                    Name = "Completions",
+                    Display = x => $"{x.Status.Succeeded ?? 0}/{x.Spec.Completions ?? 0}",
+                    Field = x => x.Spec.Completions ?? 0,
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+                AgeColumn(),
+                new ResourceListViewDefinitionColumn<V1Job, string>()
+                {
+                    Name = "Conditions",
+                    Display = x => x.Status.Conditions.FirstOrDefault(y => y.Status == "True").Type,
+                    Field = x => x.Status.Conditions.First(y => y.Status == "True").Type,
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+            ];
+        }
+        else if (resourceType == typeof(V1CronJob))
+        {
+            definition.Columns =
+            [
+                NameColumn(SortDirection.Ascending),
+                NamespaceColumn(),
+                new ResourceListViewDefinitionColumn<V1CronJob, string>()
+                {
+                    Name = "Schedule",
+                    Display = x => x.Spec.Schedule,
+                    Field = x => x.Spec.Schedule,
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+                new ResourceListViewDefinitionColumn<V1CronJob, bool>()
+                {
+                    Name = "Suspend",
+                    Display = x => (x.Spec.Suspend ?? false).ToString(),
+                    Field = x => x.Spec.Suspend ?? false,
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+                new ResourceListViewDefinitionColumn<V1CronJob, int>()
+                {
+                    Name = "Active",
+                    Display = x => x.Status.Active.Count.ToString(),
+                    Field = x => x.Status.Active.Count,
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+                new ResourceListViewDefinitionColumn<V1CronJob, DateTime?>()
+                {
+                    Name = "Last Schedule",
+                    Display = x => x.Status.LastScheduleTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
+                    Field = x => x.Status.LastScheduleTime,
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+                AgeColumn(),
+            ];
+        }
+        else if (resourceType == typeof(V1ConfigMap))
+        {
+            definition.Columns =
+            [
+                NameColumn(SortDirection.Ascending),
+                NamespaceColumn(),
+                new ResourceListViewDefinitionColumn<V1ConfigMap, string>()
+                {
+                    Name = "Keys",
+                    Display = x => x.Data != null && x.Data.Keys.Count > 0 ? x.Data.Keys.Aggregate((a,b) => a + ", " + b) : "",
+                    Field = x => x.Data.Keys.FirstOrDefault() ?? "",
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+                AgeColumn(),
+            ];
+        }
+        else if (resourceType == typeof(V1Secret))
+        {
+            definition.Columns =
+            [
+                NameColumn(SortDirection.Ascending),
+                NamespaceColumn(),
+                new ResourceListViewDefinitionColumn<V1Secret, string>()
+                {
+                    Name = "Labels",
+                    Display = x => x.Metadata.Labels != null ? x.Metadata.Labels.Keys.Aggregate((a,b) => a + ", " + b) : "",
+                    Field = x => x.Metadata.Labels.Keys.FirstOrDefault() ?? "",
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+                new ResourceListViewDefinitionColumn<V1Secret, string>()
+                {
+                    Name = "Keys",
+                    Display = x => x.Data != null ? x.Data.Keys.Aggregate((a,b) => a + ", " + b) : "",
+                    Field = x => x.Data.Keys.FirstOrDefault() ?? "",
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+                new ResourceListViewDefinitionColumn<V1Secret, string>()
+                {
+                    Name = "Type",
+                    Field = x => x.Type,
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+                AgeColumn(),
+            ];
+        }
+        else if (resourceType == typeof(V2HorizontalPodAutoscaler))
+        {
+            definition.Columns =
+            [
+                NameColumn(SortDirection.Ascending),
+                NamespaceColumn(),
+                new ResourceListViewDefinitionColumn<V2HorizontalPodAutoscaler, int?>()
+                {
+                    Name = "Min Pods",
+                    Display = x => (x.Spec.MinReplicas ?? 0).ToString(),
+                    Field = x => x.Spec.MinReplicas,
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+                new ResourceListViewDefinitionColumn<V2HorizontalPodAutoscaler, int>()
+                {
+                    Name = "Max Pods",
+                    Display = x => x.Spec.MaxReplicas.ToString(),
+                    Field = x => x.Spec.MaxReplicas,
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+                new ResourceListViewDefinitionColumn<V2HorizontalPodAutoscaler, int>()
+                {
+                    Name = "Replica",
+                    Field = x => x.Status.CurrentReplicas ?? 0,
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+                AgeColumn(),
+                new ResourceListViewDefinitionColumn<V2HorizontalPodAutoscaler, string>()
+                {
+                    Name = "Conditions",
+                    Display = x => x.Status.Conditions.FirstOrDefault(y => y.Status == "True").Type,
+                    Field = x => x.Status.Conditions.First(y => y.Status == "True").Type,
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+            ];
+        }
+        else if (resourceType == typeof(V1PodDisruptionBudget))
+        {
+            definition.Columns =
+            [
+                NameColumn(SortDirection.Ascending),
+                NamespaceColumn(),
+                new ResourceListViewDefinitionColumn<V1PodDisruptionBudget, IntstrIntOrString>()
+                {
+                    Name = "Min Avalilable",
+                    Display = x => x.Spec.MinAvailable.Value,
+                    Field = x => x.Spec.MinAvailable,
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+                new ResourceListViewDefinitionColumn<V1PodDisruptionBudget, IntstrIntOrString>()
+                {
+                    Name = "Max Unavailable",
+                    Display = x => x.Spec.MaxUnavailable.Value,
+                    Field = x => x.Spec.MaxUnavailable,
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+                new ResourceListViewDefinitionColumn<V1PodDisruptionBudget, int>()
+                {
+                    Name = "Current Healthy",
+                    Display = x => x.Status.CurrentHealthy.ToString(),
+                    Field = x => x.Status.CurrentHealthy,
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+                new ResourceListViewDefinitionColumn<V1PodDisruptionBudget, int>()
+                {
+                    Name = "Desired Healthy",
+                    Display = x => x.Status.DesiredHealthy.ToString(),
+                    Field = x => x.Status.DesiredHealthy,
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+                AgeColumn(),
+            ];
+        }
+        else if (resourceType == typeof(V1PriorityClass))
+        {
+            definition.ShowNamespaces = false;
+
+            definition.Columns =
+            [
+                NameColumn(SortDirection.Ascending),
+                new ResourceListViewDefinitionColumn<V1PriorityClass, int>()
+                {
+                    Name = "Value",
+                    Display = x => x.Value.ToString(),
+                    Field = x => x.Value,
+                    Width = nameof(DataGridLengthUnitType.SizeToCells)
+                },
+                new ResourceListViewDefinitionColumn<V1PriorityClass, bool?>()
+                {
+                    Name = "Global Default",
+                    Display = x => (x.GlobalDefault ?? false).ToString(),
+                    Field = x => x.GlobalDefault ?? false,
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+                AgeColumn(),
+            ];
+        }
+        else if (resourceType == typeof(V1RuntimeClass))
+        {
+            definition.ShowNamespaces = false;
+
+            definition.Columns =
+            [
+                NameColumn(SortDirection.Ascending),
+                new ResourceListViewDefinitionColumn<V1RuntimeClass, string>()
+                {
+                    Name = "Handler",
+                    Display = x => x.Handler,
+                    Field = x => x.Handler,
+                    Width = nameof(DataGridLengthUnitType.SizeToCells)
+                },
+                AgeColumn(),
+            ];
+        }
+        else if (resourceType == typeof(V1Lease))
+        {
+            definition.Columns =
+            [
+                NameColumn(SortDirection.Ascending),
+                NamespaceColumn(),
+                new ResourceListViewDefinitionColumn<V1Lease, string>()
+                {
+                    Name = "Holder",
+                    Display = x => x.Spec.HolderIdentity,
+                    Field = x => x.Spec.HolderIdentity,
+                    Width = nameof(DataGridLengthUnitType.SizeToCells)
+                },
+                AgeColumn(),
+            ];
+        }
+        else if (resourceType == typeof(V1MutatingWebhookConfiguration))
+        {
+            definition.ShowNamespaces = false;
+
+            definition.Columns =
+            [
+                NameColumn(SortDirection.Ascending),
+                new ResourceListViewDefinitionColumn<V1MutatingWebhookConfiguration, int>()
+                {
+                    Name = "Webhooks",
+                    Display = x => x.Webhooks.Count.ToString(),
+                    Field = x => x.Webhooks.Count,
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+                AgeColumn(),
+            ];
+        }
+        else if (resourceType == typeof(V1ValidatingWebhookConfiguration))
+        {
+            definition.ShowNamespaces = false;
+
+            definition.Columns =
+            [
+                NameColumn(SortDirection.Ascending),
+                new ResourceListViewDefinitionColumn<V1ValidatingWebhookConfiguration, int>()
+                {
+                    Name = "Webhooks",
+                    Display = x => x.Webhooks.Count.ToString(),
+                    Field = x => x.Webhooks.Count,
+                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                },
+                AgeColumn(),
+            ];
+        }
+        else if (resourceType == typeof(V1Service))
+        {
+            definition.Columns =
+            [
+                NameColumn(SortDirection.Ascending),
+                NamespaceColumn(),
+                new ResourceListViewDefinitionColumn<V1Service, string>()
+                {
+                    Name = "Type",
+                    Display = x => x.Spec.Type,
+                    Field = x => x.Spec.Type,
+                    Width = nameof(DataGridLengthUnitType.SizeToCells)
+                },
+                new ResourceListViewDefinitionColumn<V1Service, string>()
+                {
+                    Name = "Cluster IP",
+                    Display = x => x.Spec.ClusterIP,
+                    Field = x => x.Spec.ClusterIP,
+                    Width = nameof(DataGridLengthUnitType.SizeToCells)
+                },
+                new ResourceListViewDefinitionColumn<V1Service, int>()
+                {
+                    Name = "Ports",
+                    Display = x => x.Spec.Ports.Select((a) => $"{a.Port}{(string.IsNullOrEmpty(a.Name) ? "" : ":" + a.Name)}/{a.Protocol}").Aggregate((a,b) => a + ", " + b),
+                    Field = x => x.Spec.Ports.FirstOrDefault().Port,
+                    Width = nameof(DataGridLengthUnitType.SizeToCells)
+                },
+                AgeColumn(),
+            ];
+        }
+        else if (resourceType == typeof(V1Endpoints))
+        {
+            definition.Columns =
+            [
+                NameColumn(SortDirection.Ascending),
+                NamespaceColumn(),
+                new ResourceListViewDefinitionColumn<V1Endpoints, int>()
+                {
+                    Name = "Endpoints",
+                    Display = x => x.Subsets != null ? x.Subsets.SelectMany(y => y.Ports.Select(z => y.Addresses[0].Ip + ":" + z.Port)).Aggregate((a,b) => a + ", " + b) : "",
+                    Field = x => x.Subsets != null ? x.Subsets[0].Ports[0].Port : 0,
+                    Width = nameof(DataGridLengthUnitType.SizeToCells)
+                },
+                AgeColumn(),
+            ];
+        }
+        else if (resourceType == typeof(V1EndpointSlice))
+        {
+            definition.Columns =
+            [
+                NameColumn(SortDirection.Ascending),
+                NamespaceColumn(),
+                AgeColumn(),
+            ];
+        }
+        else if (resourceType == typeof(V1Ingress))
+        {
+            definition.Columns =
+            [
+                NameColumn(SortDirection.Ascending),
+                NamespaceColumn(),
+                new ResourceListViewDefinitionColumn<V1Ingress, string>()
+                {
+                    Name = "Load Balancers",
+                    Display = x => x.Status.LoadBalancer.Ingress.Select(x => x.Ip).Aggregate((a,b) => a + ", " + b),
+                    Field = x => x.Status.LoadBalancer.Ingress.Count > 0 ? x.Status.LoadBalancer.Ingress[0].Ip : "",
+                    Width = "*",
+                },
+                new ResourceListViewDefinitionColumn<V1Ingress, string>()
+                {
+                    Name = "Rules",
+                    Display = x => x.Spec.Rules.Select(z => $"http://{z.Host}{z.Http.Paths[0].Path}").Aggregate((a,b) => a + ", " + b),
+                    Field = x => x.Spec.Rules.Count > 0 ? x.Spec.Rules[0].Host : "",
+                    Width = nameof(DataGridLengthUnitType.SizeToCells)
+                },
+                AgeColumn(),
+            ];
+        }
+        else if (resourceType == typeof(V1IngressClass))
+        {
+            definition.ShowNamespaces = false;
+
+            definition.Columns =
+            [
+                NameColumn(SortDirection.Ascending),
+                new ResourceListViewDefinitionColumn<V1IngressClass, string>()
+                {
+                    Name = "Controller",
+                    Field = x => x.Spec.Controller,
+                    Width = "*",
+                },
+                new ResourceListViewDefinitionColumn<V1IngressClass, string>()
+                {
+                    Name = "API Group",
+                    Field = x => x.Spec.Parameters != null ? x.Spec.Parameters.ApiGroup : "",
+                    Width = "*",
+                },
+                new ResourceListViewDefinitionColumn<V1IngressClass, string>()
+                {
+                    Name = "Scope",
+                    Field = x => x.Spec.Parameters != null ? x.Spec.Parameters.Scope : "",
+                    Width = "*",
+                },
+                new ResourceListViewDefinitionColumn<V1IngressClass, string>()
+                {
+                    Name = "Kind",
+                    Field = x => x.Spec.Parameters != null ? x.Spec.Parameters.Kind : "",
+                    Width = "*",
+                },
+                AgeColumn(),
+            ];
+        }
+        else if (resourceType == typeof(V1NetworkPolicy))
+        {
+            definition.Columns =
+            [
+                NameColumn(SortDirection.Ascending),
+                NamespaceColumn(),
+                new ResourceListViewDefinitionColumn<V1NetworkPolicy, string>()
+                {
+                    Name = "Policy Types",
+                    Display = x => x.Spec.PolicyTypes.Aggregate((a,b) => a + ", " + b),
+                    Field = x => x.Spec.PolicyTypes.Count > 0 ? x.Spec.PolicyTypes[0] : "",
+                    Width = "*",
+                },
+                AgeColumn(),
+            ];
+        }
+        else if (resourceType == typeof(V1PersistentVolumeClaim))
+        {
+            definition.Columns =
+            [
+                NameColumn(SortDirection.Ascending),
+                NamespaceColumn(),
+                new ResourceListViewDefinitionColumn<V1PersistentVolumeClaim, string>()
+                {
+                    Name = "Storage Class",
+                    Field = x => x.Spec.StorageClassName,
+                    Width = "*",
+                },
+                new ResourceListViewDefinitionColumn<V1PersistentVolumeClaim, string>()
+                {
+                    Name = "Size",
+                    Field = x => x.Spec.Resources.Requests["storage"].Value,
+                    Width = nameof(DataGridLengthUnitType.SizeToCells)
+                },
+                AgeColumn(),
+                new ResourceListViewDefinitionColumn<V1PersistentVolumeClaim, string>()
+                {
+                    Name = "Status",
+                    Field = x => x.Status.Phase,
+                    Width = nameof(DataGridLengthUnitType.SizeToCells)
+                },
+            ];
+        }
+        else if (resourceType == typeof(V1PersistentVolume))
+        {
+            definition.ShowNamespaces = false;
+
+            definition.Columns =
+            [
+                NameColumn(SortDirection.Ascending),
+                new ResourceListViewDefinitionColumn<V1PersistentVolume, string>()
+                {
+                    Name = "Storage Class",
+                    Field = x => x.Spec.StorageClassName,
+                    Width = "*",
+                },
+                new ResourceListViewDefinitionColumn<V1PersistentVolume, string>()
+                {
+                    Name = "Size",
+                    Field = x => x.Spec.Capacity["storage"].Value,
+                    Width = nameof(DataGridLengthUnitType.SizeToCells)
+                },
+                new ResourceListViewDefinitionColumn<V1PersistentVolume, string>()
+                {
+                    Name = "Claim",
+                    Field = x => x.Spec.ClaimRef.Name,
+                    Width = "*",
+                },
+                AgeColumn(),
+                new ResourceListViewDefinitionColumn<V1PersistentVolume, string>()
+                {
+                    Name = "Status",
+                    Field = x => x.Status.Phase,
+                    Width = nameof(DataGridLengthUnitType.SizeToCells)
+                },
+            ];
+        }
+        else if (resourceType == typeof(V1StorageClass))
+        {
+            definition.ShowNamespaces = false;
+
+            definition.Columns =
+            [
+                NameColumn(SortDirection.Ascending),
+                new ResourceListViewDefinitionColumn<V1StorageClass, string>()
+                {
+                    Name = "Provisioner",
+                    Field = x => x.Provisioner,
+                    Width = "*",
+                },
+                new ResourceListViewDefinitionColumn<V1StorageClass, string>()
+                {
+                    Name = "Reclaim Policy",
+                    Field = x => x.ReclaimPolicy,
+                    Width = nameof(DataGridLengthUnitType.SizeToCells)
+                },
+                new ResourceListViewDefinitionColumn<V1StorageClass, string>()
+                {
+                    Name = "Default", // "storageclass.kubernetes.io/is-default-class":"true"
+                    Field = x => x.Metadata.Annotations.ContainsKey("storageclass.kubernetes.io/is-default-class") ?
+                                    x.Metadata.Annotations["storageclass.kubernetes.io/is-default-class"] : "false",
+                    Width = nameof(DataGridLengthUnitType.SizeToCells)
+                },
+                AgeColumn(),
+            ];
+        }
+        else if (resourceType == typeof(V1ServiceAccount))
+        {
+            definition.Columns =
+            [
+                NameColumn(SortDirection.Ascending),
+                NamespaceColumn(),
+                AgeColumn(),
+            ];
+        }
+        else if (resourceType == typeof(V1Role))
+        {
+            definition.Columns =
+            [
+                NameColumn(SortDirection.Ascending),
+                NamespaceColumn(),
+                AgeColumn(),
+            ];
+        }
+        else if (resourceType == typeof(V1ClusterRoleBinding))
+        {
+            definition.ShowNamespaces = false;
+
+            definition.Columns =
+            [
+                NameColumn(SortDirection.Ascending),
+                new ResourceListViewDefinitionColumn<V1ClusterRoleBinding, string>()
+                {
+                    Name = "Bindings",
+                    Field = x => x.Subjects.Select(y => y.Name).Aggregate((a,b) => a + ", " + b),
+                    Width = "*",
+                },
+                AgeColumn()
+            ];
+        }
+        else if (resourceType == typeof(V1RoleBinding))
+        {
+            definition.Columns =
+            [
+                NameColumn(SortDirection.Ascending),
+                NamespaceColumn(),
+                new ResourceListViewDefinitionColumn<V1RoleBinding, string>()
+                {
+                    Name = "Bindings",
+                    Field = x => x.Subjects.Select(y => y.Name).Aggregate((a,b) => a + ", " + b),
+                    Width = "*",
+                },
+                AgeColumn()
+            ];
+        }
+
         else if (resourceType == typeof(V1CustomResourceDefinition))
         {
             definition.ShowNamespaces = false;
@@ -643,14 +1099,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                     Field = x => x.Spec.Scope,
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },
-                new ResourceListViewDefinitionColumn<V1CustomResourceDefinition, DateTime?>()
-                {
-                    Name = "Age",
-                    CustomControl = typeof(AgeCell),
-                    Field = x => x.Metadata.CreationTimestamp,
-                    Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
-                    Width = "80"
-                }
+                AgeColumn(),
             ];
 
             definition.MenuItems =
@@ -669,13 +1118,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             definition.Columns = [];
 
             // Add Name Column
-            var nameColumn = new ResourceListViewDefinitionColumn<T, string>()
-            {
-                Name = "Name",
-                Field = x => x.Metadata.Name,
-                Sort = SortDirection.Ascending,
-                Width = "4*"
-            };
+            var nameColumn = NameColumn(SortDirection.Ascending);
 
             definition.Columns.Add(nameColumn);
 
@@ -692,12 +1135,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 if (crd.Spec.Scope == "Namespaced")
                 {
                     // Add Namespace Column
-                    var nsColumn = new ResourceListViewDefinitionColumn<T, string>()
-                    {
-                        Name = "Namespace",
-                        Field = x => x.Metadata.NamespaceProperty,
-                        Width = "2*"
-                    };
+                    var nsColumn = NamespaceColumn();
 
                     definition.Columns.Add(nsColumn);
                 }
@@ -1122,6 +1560,39 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _filter?.Dispose();
 
         Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
+    }
+
+    private ResourceListViewDefinitionColumn<T, string> NameColumn(SortDirection sort = SortDirection.None)
+    {
+        return new ResourceListViewDefinitionColumn<T, string>()
+        {
+            Name = "Name",
+            Field = x => x.Metadata.Name,
+            Width = "2*",
+            Sort = sort,
+        };
+    }
+
+    private ResourceListViewDefinitionColumn<T, string> NamespaceColumn()
+    {
+        return new ResourceListViewDefinitionColumn<T, string>()
+        {
+            Name = "Namespace",
+            Field = x => x.Metadata.NamespaceProperty,
+            Width = "*",
+        };
+    }
+
+    private ResourceListViewDefinitionColumn<T, DateTime?> AgeColumn()
+    {
+        return new ResourceListViewDefinitionColumn<T, DateTime?>()
+        {
+            Name = "Age",
+            CustomControl = typeof(AgeCell),
+            Field = x => x.Metadata.CreationTimestamp,
+            Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
+            Width = "80"
+        };
     }
 }
 

@@ -181,7 +181,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 new ResourceNavigationLink() { Name = "Secrets", ControlType = typeof(V1Secret), Cluster = this },
                 new ResourceNavigationLink() { Name = "Resource Quotas", ControlType = typeof(V1ResourceQuota), Cluster = this },
                 new ResourceNavigationLink() { Name = "Limit Ranges", ControlType = typeof(V1LimitRange), Cluster = this },
-                new ResourceNavigationLink() { Name = "Horizontal Pod Auto Scalers", ControlType = typeof(V1HorizontalPodAutoscaler), Cluster = this },
+                new ResourceNavigationLink() { Name = "Horizontal Pod Auto Scalers", ControlType = typeof(V2HorizontalPodAutoscaler), Cluster = this },
                 new ResourceNavigationLink() { Name = "Pod Disruption Budget", ControlType = typeof(V1PodDisruptionBudget), Cluster = this }, // Needs SvgIcon
                 new ResourceNavigationLink() { Name = "Priority Classes", ControlType = typeof(V1PriorityClass), Cluster = this }, // Needs SvgIcon
                 new ResourceNavigationLink() { Name = "Runtime Classes", ControlType = typeof(V1RuntimeClass), Cluster = this }, // Needs SvgIcon
