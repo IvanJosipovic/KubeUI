@@ -85,14 +85,14 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
                             _textMateInstallation = x.InstallTextMate(_registryOptions, true);
                             _textMateInstallation.SetGrammar(_registryOptions.GetScopeByLanguageId(_registryOptions.GetLanguageByExtension(".yaml").Id));
                             _foldingManager = FoldingManager.Install(editor.TextArea);
-                            new YamlFoldingStrategy().UpdateFoldings(_foldingManager, editor.Document);
+                            YamlFoldingStrategy.UpdateFoldings(_foldingManager, editor.Document);
                             x.Options.AllowScrollBelowDocument = false;
                             x.Options.ShowBoxForControlCharacters = false;
                             x.Options.EnableHyperlinks = false;
                             x.Options.EnableEmailHyperlinks = false;
                         })
                         .OnTextChanged((x) => {
-                            new YamlFoldingStrategy().UpdateFoldings(_foldingManager, editor.Document);
+                            YamlFoldingStrategy.UpdateFoldings(_foldingManager, editor.Document);
                         })
                         .FontFamily(new FontFamily("Consolas,Menlo,Monospace"))
                         .FontSize(14.0)
@@ -155,21 +155,22 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
     }
 }
 
-file class YamlFoldingStrategy
+file static class YamlFoldingStrategy
 {
     /// <summary>
     /// Create <see cref="NewFolding" />s for the specified document and updates the folding manager with them.
     /// </summary>
-    public void UpdateFoldings(FoldingManager manager, TextDocument document)
+    public static void UpdateFoldings(FoldingManager manager, TextDocument document)
     {
         var newFoldings = CreateNewFoldings(document, out var firstErrorOffset);
+        manager.Clear();
         manager.UpdateFoldings(newFoldings, firstErrorOffset);
     }
 
     /// <summary>
     /// Create <see cref="NewFolding" />s for the specified document.
     /// </summary>
-    public IEnumerable<NewFolding> CreateNewFoldings(TextDocument document, out int firstErrorOffset)
+    public static IEnumerable<NewFolding> CreateNewFoldings(TextDocument document, out int firstErrorOffset)
     {
         try
         {
@@ -220,7 +221,7 @@ file class YamlFoldingStrategy
         }
     }
 
-    private bool IsNextLineNested(string[] lines, int i, int currentIndent)
+    private static bool IsNextLineNested(string[] lines, int i, int currentIndent)
     {
         var nextLine = i + 1 < lines.Length ? lines[i + 1] : null;
         var nextLineIndents = CountIndents(nextLine);
