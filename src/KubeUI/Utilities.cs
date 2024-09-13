@@ -1,6 +1,9 @@
 ﻿using Avalonia.Data.Converters;
+using k8s;
 using k8s.Models;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 
 namespace KubeUI;
 
@@ -243,5 +246,21 @@ public static class Utilities
         }
 
         return "/Assets/kube/blank.svg";
+    }
+
+    public static IKubernetesObject<V1ObjectMeta> CloneObject(object obj)
+    {
+        var json = KubernetesJson.Serialize(obj);
+
+        return (IKubernetesObject<V1ObjectMeta>)DeserializeKubeJson(json, obj.GetType());
+    }
+
+    private static readonly MethodInfo _deserializeJson = typeof(KubernetesJson).GetMethod(nameof(KubernetesJson.Deserialize), BindingFlags.Static | BindingFlags.Public, [typeof(string), typeof(JsonSerializerOptions)]);
+
+    public static object DeserializeKubeJson(string json, Type type)
+    {
+        var fooRef = _deserializeJson.MakeGenericMethod(type);
+
+        return fooRef.Invoke(null, [json, null]);
     }
 }
