@@ -40,7 +40,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
     {
         if (!EditMode && HideNoisyFields)
         {
-            var ObjectClone = CloneObject(Object);
+            var ObjectClone = Utilities.CloneObject(Object);
 
             if (ObjectClone.Metadata != null)
             {
@@ -117,13 +117,6 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
     private bool CanSetEditMode()
     {
         return true;
-    }
-
-    public IKubernetesObject<V1ObjectMeta> CloneObject(object obj)
-    {
-        var source = Client.Serialization.KubernetesYaml.Serialize(obj);
-
-        return (IKubernetesObject<V1ObjectMeta>)Client.Serialization.KubernetesYaml.Deserializer.Deserialize(source, obj.GetType())!;
     }
 
     public void Dispose()
