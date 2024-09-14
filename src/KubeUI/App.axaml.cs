@@ -1,4 +1,6 @@
-﻿using Avalonia.Data.Core.Plugins;
+﻿using System.Reflection;
+using System.Runtime.InteropServices;
+using Avalonia.Data.Core.Plugins;
 using Avalonia.Logging;
 using Avalonia.Markup.Xaml;
 using HanumanInstitute.MvvmDialogs;
@@ -10,6 +12,10 @@ using KubeUI.Views;
 using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
 using NReco.Logging.File;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 namespace KubeUI;
 
@@ -22,8 +28,6 @@ public partial class App : Application
 
     public override void Initialize()
     {
-        AvaloniaXamlLoader.Load(this);
-
 #if DEBUG
         this.AttachDevTools();
 #endif
@@ -54,38 +58,80 @@ public partial class App : Application
             }
         });
 
-        services.Scan(x => x.FromCallingAssembly().AddClasses().UsingAttributes());
+        if (SettingsService.GetSettings().TelemetryEnabled)
+        {
+            const string otelUrl = "https://otelcollector.kubeui.com";
 
-        services.Scan(scan => scan
-            .FromCallingAssembly()
-                .AddClasses(classes => classes.AssignableToAny([typeof(UserControl), typeof(ObservableObject), typeof(ViewModelBase), typeof(MyViewBase<>)]))
-                .AsSelf()
-                .WithTransientLifetime()
-        );
+            var version = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
-        // Services
-        services.AddSingleton<IGenerator, Generator>();
+            services.AddMetrics();
 
-        // Dialog
-        services.AddSingleton<IDialogFactory, FluentDialogFactory>(x => (FluentDialogFactory)new DialogFactory().AddFluent());
-        services.AddSingleton<IDialogManager, MyDialogManager>(x => new MyDialogManager(dialogFactory: x.GetRequiredService<IDialogFactory>(), logger: x.GetRequiredService<ILogger<DialogManager>>()));
-        services.AddSingleton<IDialogService, DialogService>(x => new DialogService(x.GetRequiredService<IDialogManager>()));
+            services.AddOpenTelemetry()
+                .ConfigureResource(resource => resource
+                    .AddService("Desktop", "com.KubeUI.Desktop", serviceVersion: version)
+                    .AddAttributes(new Dictionary<string, object>(StringComparer.Ordinal)
+                    {
+    #if DEBUG
+                        { "deployment.environment", "Development" },
+    #else
+                        { "deployment.environment", "Production" },
+    #endif
+                        { "host.type", RuntimeInformation.OSArchitecture.ToString() },
+                        { "host.os", RuntimeInformation.OSDescription },
+                    })
+                )
+                .WithLogging(loggingProvider =>
+                {
+                    //loggingProvider.AddOtlpExporter(exporter => exporter.Endpoint = new Uri(otelUrl));
+                },
+                opt =>
+                {
+                    opt.IncludeFormattedMessage = true;
+                    opt.IncludeScopes = true;
+                })
+                .WithMetrics(meterProvider =>
+                {
+                    meterProvider.AddOtlpExporter(exporter => exporter.Endpoint = new Uri(otelUrl));
+                    meterProvider.AddMeter(
+                        "kubeui"
+                    );
+                });
 
-        _serviceProvider = services.BuildServiceProvider();
+            services.Scan(x => x.FromCallingAssembly().AddClasses().UsingAttributes());
 
-        Resources[typeof(IServiceProvider)] = _serviceProvider;
+            services.Scan(scan => scan
+                .FromCallingAssembly()
+                    .AddClasses(classes => classes.AssignableToAny([typeof(UserControl), typeof(ObservableObject), typeof(ViewModelBase), typeof(MyViewBase<>)]))
+                    .AsSelf()
+                    .WithTransientLifetime()
+            );
 
-        Logger.Sink = _serviceProvider.GetRequiredService<ILoggerSink>();
+            // Services
+            services.AddSingleton<IGenerator, Generator>();
 
-        logger = _serviceProvider.GetRequiredService<ILogger<App>>();
+            // Dialog
+            services.AddSingleton<IDialogFactory, FluentDialogFactory>(x => (FluentDialogFactory)new DialogFactory().AddFluent());
+            services.AddSingleton<IDialogManager, MyDialogManager>(x => new MyDialogManager(dialogFactory: x.GetRequiredService<IDialogFactory>(), logger: x.GetRequiredService<ILogger<DialogManager>>()));
+            services.AddSingleton<IDialogService, DialogService>(x => new DialogService(x.GetRequiredService<IDialogManager>()));
 
-        AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+            _serviceProvider = services.BuildServiceProvider();
 
-        var settings = _serviceProvider.GetRequiredService<SettingsService>();
+            Resources[typeof(IServiceProvider)] = _serviceProvider;
 
-        settings.LoadSettings();
+            Logger.Sink = _serviceProvider.GetRequiredService<ILoggerSink>();
 
-        logger.LogInformation("App Started");
+            logger = _serviceProvider.GetRequiredService<ILogger<App>>();
+
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+
+            var settings = _serviceProvider.GetRequiredService<SettingsService>();
+
+            settings.LoadSettings();
+
+            AvaloniaXamlLoader.Load(this);
+
+            logger.LogInformation("App Started");
+        }
     }
 
     private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
