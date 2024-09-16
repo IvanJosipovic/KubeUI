@@ -3,6 +3,7 @@
 ![cicd](https://github.com/IvanJosipovic/KubeUI/workflows/CICD/badge.svg)
 [![codecov](https://codecov.io/gh/IvanJosipovic/KubeUI/branch/alpha/graph/badge.svg?token=E05HWW1QYR)](https://codecov.io/gh/IvanJosipovic/KubeUI)
 ![GitHub all releases](https://img.shields.io/github/downloads/IvanJosipovic/KubeUI/total)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FIvanJosipovic%2FKubeUI.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FIvanJosipovic%2FKubeUI?ref=badge_shield)
 
 ## What is this?
 
@@ -42,3 +43,7 @@ Supported Platforms (AMD64 and ARM64):
 ## Stats
 
 ![Alt](https://repobeats.axiom.co/api/embed/db926eb668f71f8de3314f03022de6bb35797d5d.svg "Repobeats analytics image")
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FIvanJosipovic%2FKubeUI.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FIvanJosipovic%2FKubeUI?ref=badge_large)
