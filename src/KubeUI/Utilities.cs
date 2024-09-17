@@ -15,26 +15,12 @@ public static class Utilities
 
     public static T GetRequiredService<T>(this Application? app)
     {
-        if (app.TryFindResource(typeof(IServiceProvider), out var service))
-        {
-            return ((IServiceProvider)service).GetRequiredService<T>();
-        }
-        else
-        {
-            throw new Exception($"Cant find {typeof(IServiceProvider).Name}");
-        }
+        return App.Host.Services.GetRequiredService<T>();
     }
 
     public static object GetRequiredService(this Application? app, Type type)
     {
-        if (app.TryFindResource(typeof(IServiceProvider), out var service))
-        {
-            return ((IServiceProvider)service!).GetRequiredService(type);
-        }
-        else
-        {
-            throw new Exception($"Cant find {typeof(IServiceProvider).Name}");
-        }
+        return App.Host.Services.GetRequiredService(type);
     }
 
     public static T Set<T>(this T control, Action<T> func) where T : Control

@@ -1,23 +1,33 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.Metrics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Diagnostics.Metrics;
+using System.Reflection;
 using Scrutor;
 
 namespace KubeUI.Client;
 
 [ServiceDescriptor<Instrumentation>(ServiceLifetime.Singleton)]
-public class Instrumentation
+public class Instrumentation : IDisposable
 {
+    public static string MeterName { get; set; } = "kubeui";
+
+    public Counter<long> AppOpened { get; private set; }
+
     public Counter<long> ViewOpened { get; private set; }
 
-    public Instrumentation(IMeterFactory meterFactory)
-    {
-        const string prefix = "kubeui";
-        var meter = meterFactory.Create(prefix);
+    private readonly Meter _meter;
 
-        ViewOpened = meter.CreateCounter<long>(prefix + "_view_opened", description: "View Opened");
+    public Instrumentation()
+    {
+        var version = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+
+        _meter = new Meter(MeterName, version);
+
+        AppOpened = _meter.CreateCounter<long>(MeterName + "_app_opened", description: "App Opened");
+
+        ViewOpened = _meter.CreateCounter<long>(MeterName + "_view_opened", description: "View Opened");
+    }
+
+    public void Dispose()
+    {
+        _meter.Dispose();
     }
 }

@@ -681,14 +681,14 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 new ResourceListViewDefinitionColumn<V1PodDisruptionBudget, IntstrIntOrString>()
                 {
                     Name = "Min Avalilable",
-                    Display = x => x.Spec.MinAvailable.Value,
+                    Display = x => x.Spec.MinAvailable != null ? x.Spec.MinAvailable.Value : "",
                     Field = x => x.Spec.MinAvailable,
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListViewDefinitionColumn<V1PodDisruptionBudget, IntstrIntOrString>()
                 {
                     Name = "Max Unavailable",
-                    Display = x => x.Spec.MaxUnavailable.Value,
+                    Display = x => x.Spec.MaxUnavailable != null ? x.Spec.MaxUnavailable.Value : "",
                     Field = x => x.Spec.MaxUnavailable,
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },

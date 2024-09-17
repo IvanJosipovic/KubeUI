@@ -6,9 +6,9 @@ namespace KubeUI.Desktop;
 [ServiceDescriptor(typeof(ILoggerSink), ServiceLifetime.Singleton)]
 public class ILoggerSink : ILogSink
 {
-    private readonly ILogger<App> _logger;
+    private readonly ILogger<Application> _logger;
 
-    public ILoggerSink(ILogger<App> logger)
+    public ILoggerSink(ILogger<Application> logger)
     {
         _logger = logger;
     }
