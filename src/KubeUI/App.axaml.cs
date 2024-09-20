@@ -3,7 +3,6 @@ using System.Runtime.InteropServices;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Logging;
 using Avalonia.Markup.Xaml;
-using DynamicData.Tests;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
@@ -16,6 +15,7 @@ using LiveChartsCore.SkiaSharpView;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using NReco.Logging.File;
+using OpenTelemetry.Exporter;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -55,7 +55,7 @@ public partial class App : Application
 
             loggingBuilder.AddFilter("System", LogLevel.Warning);
             loggingBuilder.AddFilter("Microsoft", LogLevel.Warning);
-            loggingBuilder.AddFilter<OpenTelemetryLoggerProvider>("*", LogLevel.Information);
+            loggingBuilder.AddFilter<OpenTelemetryLoggerProvider>("*", LogLevel.Warning);
             loggingBuilder.AddFilter<FileLoggerProvider>("*", LogLevel.Warning);
 
             if (!Design.IsDesignMode && SettingsService.GetSettings().LoggingEnabled
@@ -93,14 +93,14 @@ public partial class App : Application
                 {
                     loggingProvider.AddOtlpExporter((e) =>
                     {
-                        e.Endpoint = new Uri("https://otel.kubeui.com");
+                        e.Endpoint = new Uri("https://otel.kubeui.com/v1/logs");
+                        e.Protocol = OtlpExportProtocol.HttpProtobuf;
                     });
                 },
                 opt =>
                 {
                     opt.IncludeFormattedMessage = true;
                     opt.IncludeScopes = true;
-
                 })
                 .WithMetrics(meterProvider =>
                 {
@@ -110,7 +110,8 @@ public partial class App : Application
                     .AddMeter(Instrumentation.MeterName)
                     .AddOtlpExporter((e, b) =>
                     {
-                        e.Endpoint = new Uri("https://otel.kubeui.com");
+                        e.Endpoint = new Uri("https://otel.kubeui.com/v1/metrics");
+                        e.Protocol = OtlpExportProtocol.HttpProtobuf;
                         b.PeriodicExportingMetricReaderOptions.ExportIntervalMilliseconds = 60 * 1000; // 1 min
                     });
                 });
@@ -139,7 +140,7 @@ public partial class App : Application
 
         AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
 
-        Logger.Sink = Host.Services.GetRequiredService<ILoggerSink>();
+        //Logger.Sink = Host.Services.GetRequiredService<ILoggerSink>();
 
         logger = Host.Services.GetRequiredService<ILogger<App>>();
 

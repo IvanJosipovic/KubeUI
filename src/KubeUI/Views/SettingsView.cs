@@ -64,6 +64,7 @@ public sealed class SettingsView : MyViewBase<SettingsViewModel>
                             .Content("Pre Release Channel"),
                         new CheckBox()
                             .Col(1)
+                            .IsEnabled(false)
                             .IsChecked(@vm.SettingsService.Settings.PreReleaseChannel),
                         ]),
         ]);

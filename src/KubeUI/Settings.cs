@@ -13,7 +13,7 @@ public sealed partial class Settings : ObservableObject
     private LocalThemeVariant _theme;
 
     [ObservableProperty]
-    private bool _loggingEnabled = true;
+    private bool _loggingEnabled = false;
 
     [ObservableProperty]
     private bool _telemetryEnabled = true;
