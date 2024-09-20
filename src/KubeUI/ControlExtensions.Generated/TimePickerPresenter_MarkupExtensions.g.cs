@@ -132,8 +132,8 @@ public static T PanelFormat<T,TValue>(this T control, TValue value, FuncValueCon
  // SelectedTimeChanged
 
 /*ActionToEventGenerator*/
-    public static T OnSelectedTimeChanged<T>(this T control, Action<Avalonia.Controls.TimePickerSelectedValueChangedEventArgs> action) where T : Ursa.Controls.TimePickerPresenter => 
-        control._setEvent((System.EventHandler<Avalonia.Controls.TimePickerSelectedValueChangedEventArgs>) ((arg0, arg1) => action(arg1)), h => control.SelectedTimeChanged += h);
+    public static T OnSelectedTimeChanged<T>(this T control, Action<Ursa.Controls.TimeChangedEventArgs> action) where T : Ursa.Controls.TimePickerPresenter => 
+        control._setEvent((System.EventHandler<Ursa.Controls.TimeChangedEventArgs>) ((arg0, arg1) => action(arg1)), h => control.SelectedTimeChanged += h);
 
 
 
