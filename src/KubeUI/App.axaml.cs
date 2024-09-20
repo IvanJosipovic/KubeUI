@@ -73,6 +73,7 @@ public partial class App : Application
 
         if (SettingsService.GetSettings().TelemetryEnabled)
         {
+            const string key = "ff9c67da-5f13-46e9-9450-7e1dda139c08";
             var version = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
             builder.Services.AddOpenTelemetry()
@@ -94,6 +95,7 @@ public partial class App : Application
                     loggingProvider.AddOtlpExporter((e) =>
                     {
                         e.Endpoint = new Uri("https://otel.kubeui.com/v1/logs");
+                        e.Headers = $"key={key}";
                         e.Protocol = OtlpExportProtocol.HttpProtobuf;
                     });
                 },
@@ -110,9 +112,10 @@ public partial class App : Application
                     .AddMeter(Instrumentation.MeterName)
                     .AddOtlpExporter((e, b) =>
                     {
-                        e.Endpoint = new Uri("https://otel.kubeui.com/v1/metrics");
-                        e.Protocol = OtlpExportProtocol.HttpProtobuf;
                         b.PeriodicExportingMetricReaderOptions.ExportIntervalMilliseconds = 60 * 1000; // 1 min
+                        e.Endpoint = new Uri("https://otel.kubeui.com/v1/metrics");
+                        e.Headers = $"key={key}";
+                        e.Protocol = OtlpExportProtocol.HttpProtobuf;
                     });
                 });
         }
