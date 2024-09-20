@@ -134,6 +134,7 @@ public partial class App : Application
         builder.Services.AddSingleton<IDialogService, DialogService>(x => new DialogService(x.GetRequiredService<IDialogManager>()));
 
         Host = builder.Build();
+        Resources[typeof(IServiceProvider)] = Host.Services;
         _ = Host.RunAsync();
 
         AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
