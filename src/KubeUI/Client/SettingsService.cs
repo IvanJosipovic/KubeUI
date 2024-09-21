@@ -9,7 +9,7 @@ public sealed partial class SettingsService : ObservableObject
 {
     private readonly ILogger<SettingsService> _logger;
 
-    public Settings Settings { get; private set; } = new Settings();
+    public Settings Settings { get; set; }
 
     public SettingsService()
     {

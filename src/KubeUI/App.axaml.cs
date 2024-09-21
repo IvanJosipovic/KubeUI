@@ -120,14 +120,14 @@ public partial class App : Application
                 });
         }
 
-        builder.Services.Scan(x => x.FromCallingAssembly().AddClasses().UsingAttributes());
-
         builder.Services.Scan(scan => scan
             .FromCallingAssembly()
                 .AddClasses(classes => classes.AssignableToAny([typeof(UserControl), typeof(ObservableObject), typeof(ViewModelBase), typeof(MyViewBase<>)]))
                 .AsSelf()
                 .WithTransientLifetime()
         );
+
+        builder.Services.Scan(x => x.FromCallingAssembly().AddClasses().UsingAttributes());
 
         // Services
         builder.Services.AddSingleton<IGenerator, Generator>();
