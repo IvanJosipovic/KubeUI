@@ -42,7 +42,7 @@ Telemetry can be disabled in File > Settings.
 Example of data collected:
  - Metrics
     - Application Opened/Closed
-    - View Name Opened/Closed
+    - View Type Name Opened/Closed
     - Action Name Performed
     - Runtime Information
       - CPU Usage

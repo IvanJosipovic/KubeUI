@@ -642,11 +642,11 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             [
                 NameColumn(SortDirection.Ascending),
                 NamespaceColumn(),
-                new ResourceListViewDefinitionColumn<V2HorizontalPodAutoscaler, int?>()
+                new ResourceListViewDefinitionColumn<V2HorizontalPodAutoscaler, int>()
                 {
                     Name = "Min Pods",
                     Display = x => (x.Spec.MinReplicas ?? 0).ToString(),
-                    Field = x => x.Spec.MinReplicas,
+                    Field = x => x.Spec.MinReplicas ?? 0,
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListViewDefinitionColumn<V2HorizontalPodAutoscaler, int>()
@@ -659,6 +659,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 new ResourceListViewDefinitionColumn<V2HorizontalPodAutoscaler, int>()
                 {
                     Name = "Replica",
+                    Display = x => (x.Status.CurrentReplicas ?? 0).ToString(),
                     Field = x => x.Status.CurrentReplicas ?? 0,
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
@@ -1273,7 +1274,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
                                     if (type == null)
                                     {
-                                        _logger.LogError(ex, "Unable to load type for column: {Name}", typeString);
+                                        _logger.LogError(ex, "Unable to load type for column: {Name} in type {type}", typeString, crd.Name());
                                         continue;
                                     }
                                 }
@@ -1323,7 +1324,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogCritical(ex, "Unable to generate CRD Column: {Name}", item.Name);
+                            _logger.LogCritical(ex, "Unable to generate CRD Column: {Name} in {crd}", item.Name, crd.Name());
                         }
                     }
                 }

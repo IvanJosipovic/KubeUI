@@ -4,7 +4,7 @@ namespace KubeUI.Views;
 
 public sealed class SettingsView : MyViewBase<SettingsViewModel>
 {
-    protected override object Build(SettingsViewModel vm) =>
+    protected override object Build(SettingsViewModel? vm) =>
         new StackPanel()
             .Children([
                 new Grid()

@@ -194,8 +194,8 @@ public partial class App : Application
 
     private static void GracefulShutdown()
     {
-        Host.Services.GetRequiredService<LoggerProvider>().ForceFlush();
-        Host.Services.GetRequiredService<MeterProvider>().ForceFlush();
+        Host.Services.GetService<LoggerProvider>()?.ForceFlush();
+        Host.Services.GetService<MeterProvider>()?.ForceFlush();
         Host.Services.GetRequiredService<IHostApplicationLifetime>().StopApplication();
     }
 }

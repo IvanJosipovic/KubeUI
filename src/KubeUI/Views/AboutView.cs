@@ -2,7 +2,7 @@
 
 public sealed class AboutView : MyViewBase<AboutViewModel>
 {
-    protected override object Build(AboutViewModel vm) =>
+    protected override object Build(AboutViewModel? vm) =>
         new StackPanel()
             .Children([
                 new TextBlock()

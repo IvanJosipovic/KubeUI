@@ -59,7 +59,7 @@ public sealed class ViewLocator : IDataTemplate
             {
                 _instrumentation.ViewOpened.Add(1, new TagList()
                 {
-                    { "view", viewType.Name }
+                    { "view", GetPrettyName(instance.GetType()) },
                 });
                 return (Control)instance;
             }
@@ -68,6 +68,27 @@ public sealed class ViewLocator : IDataTemplate
         _logger.LogCritical("Unable to load View for ViewModel: {view}", modelType.FullName);
 
         return new TextBlock { Text = "Unable to load View for ViewModel: " + modelType.FullName };
+    }
+
+    private string GetPrettyName(Type type)
+    {
+        var prettyName = type.Name;
+
+        if (type.IsGenericType)
+        {
+            var genericArguments = type.GetGenericArguments();
+            var genericTypeName = type.GetGenericTypeDefinition().Name;
+            var genericTypeIndex = genericTypeName.IndexOf('`');
+            if (genericTypeIndex >= 0)
+            {
+                genericTypeName = genericTypeName.Substring(0, genericTypeIndex);
+            }
+
+            var argumentNames = genericArguments.Select(arg => GetPrettyName(arg)).ToArray();
+            prettyName = $"{genericTypeName}<{string.Join(", ", argumentNames)}>";
+        }
+
+        return prettyName;
     }
 
     public bool Match(object? data)
