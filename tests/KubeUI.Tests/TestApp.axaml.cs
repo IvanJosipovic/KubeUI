@@ -9,36 +9,42 @@ using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using KubeUI.ViewModels;
 using KubeUI.Views;
+using Microsoft.Extensions.Hosting;
 
 namespace KubeUI.Tests;
 
 public class TestApp : Application
 {
+    public static IHost Host { get; private set; }
+
     public override void Initialize()
     {
-        var builder = new ConfigurationBuilder();
-        var root = builder.Build();
+        var builder = Microsoft.Extensions.Hosting.Host.CreateEmptyApplicationBuilder(new()
+        {
+            ApplicationName = "KubeUI.Desktop",
+            Configuration = new ConfigurationManager(),
+            ContentRootPath = Directory.GetCurrentDirectory(),
+        });
 
-        var services = new ServiceCollection();
-
-        services.AddLogging();
+        builder.Services.AddLogging();
 
         // Services
-        services.AddSingleton<ClusterManager>();
-        services.AddTransient<ICluster, Cluster>();
-        services.AddTransient<ModelCache>();
-        services.AddSingleton<IGenerator, Generator>();
-        services.AddSingleton<IFactory, DockFactory>();
+        builder.Services.AddSingleton<ClusterManager>();
+        builder.Services.AddTransient<ICluster, Cluster>();
+        builder.Services.AddTransient<ModelCache>();
+        builder.Services.AddSingleton<IGenerator, Generator>();
+        builder.Services.AddSingleton<IFactory, DockFactory>();
 
-        services.Scan(scan => scan
+        builder.Services.Scan(scan => scan
             .FromAssemblyOf<App>()
             .AddClasses(classes => classes.AssignableToAny([typeof(UserControl), typeof(ObservableObject), typeof(ViewModelBase), typeof(MyViewBase<>)]))
             .AsSelf()
             .WithTransientLifetime()
         );
 
-        var provider = services.BuildServiceProvider();
-        Resources[typeof(IServiceProvider)] = provider;
+        Host = builder.Build();
+        Resources[typeof(IServiceProvider)] = Host.Services;
+        _ = Host.RunAsync();
 
         AvaloniaXamlLoader.Load(this);
     }

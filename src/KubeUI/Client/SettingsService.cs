@@ -2,14 +2,14 @@
 using Avalonia.Styling;
 using Scrutor;
 
-namespace KubeUI;
+namespace KubeUI.Client;
 
 [ServiceDescriptor<SettingsService>(ServiceLifetime.Singleton)]
 public sealed partial class SettingsService : ObservableObject
 {
     private readonly ILogger<SettingsService> _logger;
 
-    public Settings Settings { get; private set; } = new Settings();
+    public Settings Settings { get; set; }
 
     public SettingsService()
     {
@@ -83,7 +83,7 @@ public sealed partial class SettingsService : ObservableObject
                 {
                     JsonSerializer.Serialize(fs, Settings, new JsonSerializerOptions(JsonSerializerDefaults.General)
                     {
-                        WriteIndented = true
+                        WriteIndented = true,
                     });
                 }
             }
@@ -100,7 +100,7 @@ public sealed partial class SettingsService : ObservableObject
         ApplySettings();
     }
 
-    public void ApplySettings()
+    private void ApplySettings()
     {
         switch (Settings.Theme)
         {

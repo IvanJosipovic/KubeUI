@@ -13,8 +13,11 @@ public sealed partial class Settings : ObservableObject
     private LocalThemeVariant _theme;
 
     [ObservableProperty]
-    private bool _loggingEnabled = true;
+    private bool _loggingEnabled;
 
     [ObservableProperty]
-    private bool preReleaseChannel = true;
+    private bool _telemetryEnabled = true;
+
+    [ObservableProperty]
+    private bool _preReleaseChannel = true;
 }

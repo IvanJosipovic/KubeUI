@@ -1,11 +1,16 @@
+using System.Diagnostics;
 using Avalonia.Controls.Templates;
 using Dock.Model.Core;
+using KubeUI.Client;
 using KubeUI.Views;
 
 namespace KubeUI;
 
 public sealed class ViewLocator : IDataTemplate
 {
+    private readonly ILogger<ViewLocator> _logger = Application.Current.GetRequiredService<ILogger<ViewLocator>>();
+    private readonly Instrumentation _instrumentation = Application.Current.GetRequiredService<Instrumentation>();
+
     Type[] types;
 
     public Control Build(object? data)
@@ -52,13 +57,38 @@ public sealed class ViewLocator : IDataTemplate
             var instance = Application.Current.GetRequiredService(viewType);
             if (instance is { })
             {
+                _instrumentation.ViewOpened.Add(1, new TagList()
+                {
+                    { "view", GetPrettyName(instance.GetType()) },
+                });
                 return (Control)instance;
             }
-
-            return new TextBlock { Text = "Create Instance Failed: " + viewType.FullName };
         }
 
-        return new TextBlock { Text = "View not found for: " + modelType.FullName };
+        _logger.LogCritical("Unable to load View for ViewModel: {view}", modelType.FullName);
+
+        return new TextBlock { Text = "Unable to load View for ViewModel: " + modelType.FullName };
+    }
+
+    private string GetPrettyName(Type type)
+    {
+        var prettyName = type.Name;
+
+        if (type.IsGenericType)
+        {
+            var genericArguments = type.GetGenericArguments();
+            var genericTypeName = type.GetGenericTypeDefinition().Name;
+            var genericTypeIndex = genericTypeName.IndexOf('`');
+            if (genericTypeIndex >= 0)
+            {
+                genericTypeName = genericTypeName.Substring(0, genericTypeIndex);
+            }
+
+            var argumentNames = genericArguments.Select(arg => GetPrettyName(arg)).ToArray();
+            prettyName = $"{genericTypeName}<{string.Join(", ", argumentNames)}>";
+        }
+
+        return prettyName;
     }
 
     public bool Match(object? data)

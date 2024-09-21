@@ -1,29 +1,37 @@
-﻿using Avalonia.Data.Core.Plugins;
+﻿using System.Reflection;
+using System.Runtime.InteropServices;
+using Avalonia.Data.Core.Plugins;
 using Avalonia.Logging;
 using Avalonia.Markup.Xaml;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubernetesCRDModelGen;
+using KubeUI.Client;
 using KubeUI.Desktop;
 using KubeUI.Views;
 using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using NReco.Logging.File;
+using OpenTelemetry.Exporter;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 
 namespace KubeUI;
 
 public partial class App : Application
 {
-    private ILogger<App> logger;
-    private IServiceProvider _serviceProvider;
+    public static IHost Host { get; private set; }
 
     public static TopLevel TopLevel { get; private set; }
 
+    private ILogger<App> logger;
+
     public override void Initialize()
     {
-        AvaloniaXamlLoader.Load(this);
-
 #if DEBUG
         this.AttachDevTools();
 #endif
@@ -33,13 +41,22 @@ public partial class App : Application
                                         .AddLightTheme()
         );
 
-        ServiceCollection services = new();
-
-        services.AddLogging(loggingBuilder =>
+        var builder = Microsoft.Extensions.Hosting.Host.CreateEmptyApplicationBuilder(new()
         {
-            loggingBuilder.AddFilter("Default", LogLevel.Information);
+            ApplicationName = "KubeUI.Desktop",
+            Configuration = new ConfigurationManager(),
+            ContentRootPath = Directory.GetCurrentDirectory(),
+        });
+
+        builder.Services.AddLogging(loggingBuilder =>
+        {
+            loggingBuilder.ClearProviders();
+            loggingBuilder.SetMinimumLevel(LogLevel.Trace);
+
             loggingBuilder.AddFilter("System", LogLevel.Warning);
             loggingBuilder.AddFilter("Microsoft", LogLevel.Warning);
+            loggingBuilder.AddFilter<OpenTelemetryLoggerProvider>("*", LogLevel.Warning);
+            loggingBuilder.AddFilter<FileLoggerProvider>("*", LogLevel.Information);
 
             if (!Design.IsDesignMode && SettingsService.GetSettings().LoggingEnabled
                 && SettingsService.EnsureSettingDirExists())
@@ -48,49 +65,102 @@ public partial class App : Application
                 {
                     x.Append = false;
                     x.FileSizeLimitBytes = 10_73_741_824;
-                    x.MinLevel = LogLevel.Information;
+                    x.MinLevel = LogLevel.Trace;
                     x.MaxRollingFiles = 2;
                 });
             }
         });
 
-        services.Scan(x => x.FromCallingAssembly().AddClasses().UsingAttributes());
+        if (SettingsService.GetSettings().TelemetryEnabled)
+        {
+            const string key = "ff9c67da-5f13-46e9-9450-7e1dda139c08";
+            var version = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
-        services.Scan(scan => scan
+            builder.Services.AddOpenTelemetry()
+                .ConfigureResource(resource => resource
+                    .AddService("Desktop", "com.KubeUI.Desktop", serviceVersion: version)
+                    .AddAttributes(new Dictionary<string, object>(StringComparer.Ordinal)
+                    {
+                    #if DEBUG
+                        { "deployment.environment", "Development" },
+                    #else
+                        { "deployment.environment", "Production" },
+                    #endif
+                        { "host.type", RuntimeInformation.OSArchitecture.ToString() },
+                        { "host.os", RuntimeInformation.OSDescription },
+                    })
+                )
+                .WithLogging(loggingProvider =>
+                {
+                    loggingProvider.AddOtlpExporter((e) =>
+                    {
+                        e.Endpoint = new Uri("https://otel.kubeui.com/v1/logs");
+                        e.Headers = $"key={key}";
+                        e.Protocol = OtlpExportProtocol.HttpProtobuf;
+                    });
+                },
+                opt =>
+                {
+                    opt.IncludeFormattedMessage = true;
+                    opt.IncludeScopes = true;
+                })
+                .WithMetrics(meterProvider =>
+                {
+                    meterProvider
+                    .AddProcessInstrumentation()
+                    .AddRuntimeInstrumentation()
+                    .AddMeter(Instrumentation.MeterName)
+                    .AddOtlpExporter((e, b) =>
+                    {
+                        b.PeriodicExportingMetricReaderOptions.ExportIntervalMilliseconds = 60 * 1000; // 1 min
+                        e.Endpoint = new Uri("https://otel.kubeui.com/v1/metrics");
+                        e.Headers = $"key={key}";
+                        e.Protocol = OtlpExportProtocol.HttpProtobuf;
+                    });
+                });
+        }
+
+        builder.Services.Scan(scan => scan
             .FromCallingAssembly()
                 .AddClasses(classes => classes.AssignableToAny([typeof(UserControl), typeof(ObservableObject), typeof(ViewModelBase), typeof(MyViewBase<>)]))
                 .AsSelf()
                 .WithTransientLifetime()
         );
 
+        builder.Services.Scan(x => x.FromCallingAssembly().AddClasses().UsingAttributes());
+
         // Services
-        services.AddSingleton<IGenerator, Generator>();
+        builder.Services.AddSingleton<IGenerator, Generator>();
 
         // Dialog
-        services.AddSingleton<IDialogFactory, FluentDialogFactory>(x => (FluentDialogFactory)new DialogFactory().AddFluent());
-        services.AddSingleton<IDialogManager, MyDialogManager>(x => new MyDialogManager(dialogFactory: x.GetRequiredService<IDialogFactory>(), logger: x.GetRequiredService<ILogger<DialogManager>>()));
-        services.AddSingleton<IDialogService, DialogService>(x => new DialogService(x.GetRequiredService<IDialogManager>()));
+        builder.Services.AddSingleton<IDialogFactory, FluentDialogFactory>(x => (FluentDialogFactory)new DialogFactory().AddFluent());
+        builder.Services.AddSingleton<IDialogManager, MyDialogManager>(x => new MyDialogManager(dialogFactory: x.GetRequiredService<IDialogFactory>(), logger: x.GetRequiredService<ILogger<DialogManager>>()));
+        builder.Services.AddSingleton<IDialogService, DialogService>(x => new DialogService(x.GetRequiredService<IDialogManager>()));
 
-        _serviceProvider = services.BuildServiceProvider();
-
-        Resources[typeof(IServiceProvider)] = _serviceProvider;
-
-        Logger.Sink = _serviceProvider.GetRequiredService<ILoggerSink>();
-
-        logger = _serviceProvider.GetRequiredService<ILogger<App>>();
+        Host = builder.Build();
+        Resources[typeof(IServiceProvider)] = Host.Services;
+        _ = Host.RunAsync();
 
         AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
 
-        var settings = _serviceProvider.GetRequiredService<SettingsService>();
+        //Logger.Sink = Host.Services.GetRequiredService<ILoggerSink>();
+
+        logger = Host.Services.GetRequiredService<ILogger<App>>();
+
+        var settings = Host.Services.GetRequiredService<SettingsService>();
 
         settings.LoadSettings();
+        AvaloniaXamlLoader.Load(this);
 
-        logger.LogInformation("App Started");
+        logger.LogInformation("Application Started");
+
+        Host.Services.GetRequiredService<Instrumentation>().AppOpened.Add(1);
     }
 
     private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
         logger.LogCritical(e.ExceptionObject as Exception, "Unhandled Exception");
+        GracefulShutdown();
     }
 
     public override void OnFrameworkInitializationCompleted()
@@ -101,19 +171,31 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var vm = _serviceProvider.GetRequiredService<MainViewModel>();
+            var vm = Host.Services.GetRequiredService<MainViewModel>();
 
             desktop.MainWindow = MainWindow.Build(vm);
             desktop.MainWindow.DataContext = vm;
             TopLevel = TopLevel.GetTopLevel(desktop.MainWindow);
+
+            desktop.ShutdownRequested += (sender, e) =>
+            {
+                GracefulShutdown();
+            };
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
-            singleViewPlatform.MainView = _serviceProvider.GetRequiredService<MainView>();
-            singleViewPlatform.MainView.DataContext = _serviceProvider.GetRequiredService<MainViewModel>();
+            singleViewPlatform.MainView = Host.Services.GetRequiredService<MainView>();
+            singleViewPlatform.MainView.DataContext = Host.Services.GetRequiredService<MainViewModel>();
             TopLevel = TopLevel.GetTopLevel(singleViewPlatform.MainView);
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private static void GracefulShutdown()
+    {
+        Host.Services.GetService<LoggerProvider>()?.ForceFlush();
+        Host.Services.GetService<MeterProvider>()?.ForceFlush();
+        Host.Services.GetRequiredService<IHostApplicationLifetime>().StopApplication();
     }
 }
