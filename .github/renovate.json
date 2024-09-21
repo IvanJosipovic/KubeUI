@@ -15,49 +15,33 @@
       "groupName": "Avalonia",
       "separateMajorMinor": true,
       "groupSlug": "avalonia-libs",
-      "packageRules": [
-        {
-          "matchPackageNames": [
-            "Avalonia",
-            "Avalonia.*"
-          ]
-        }
+      "matchPackageNames": [
+        "Avalonia",
+        "Avalonia.*"
       ]
     },
     {
       "groupName": "Dock",
       "separateMajorMinor": true,
       "groupSlug": "dock",
-      "packageRules": [
-        {
-          "matchPackageNames": [
-            "Dock.*"
-          ]
-        }
+      "matchPackageNames": [
+        "Dock.*"
       ]
     },
     {
       "groupName": "Irihi",
       "separateMajorMinor": true,
       "groupSlug": "irihi",
-      "packageRules": [
-        {
-          "matchPackageNames": [
-            "Irihi.*"
-          ]
-        }
+      "matchPackageNames": [
+        "Irihi.*"
       ]
     },
     {
       "matchUpdateTypes": [ "major", "minor", "patch", "digest" ],
       "automerge": true,
-      "packageRules": [
-        {
-          "matchPackageNames": [
-            "meziantou.analyzer",
-            "roslynator.analyzers"
-          ]
-        }
+      "matchPackageNames": [
+        "meziantou.analyzer",
+        "roslynator.analyzers"
       ]
     },
     {
