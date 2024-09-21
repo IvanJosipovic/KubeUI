@@ -56,7 +56,7 @@ public partial class App : Application
             loggingBuilder.AddFilter("System", LogLevel.Warning);
             loggingBuilder.AddFilter("Microsoft", LogLevel.Warning);
             loggingBuilder.AddFilter<OpenTelemetryLoggerProvider>("*", LogLevel.Warning);
-            loggingBuilder.AddFilter<FileLoggerProvider>("*", LogLevel.Warning);
+            loggingBuilder.AddFilter<FileLoggerProvider>("*", LogLevel.Information);
 
             if (!Design.IsDesignMode && SettingsService.GetSettings().LoggingEnabled
                 && SettingsService.EnsureSettingDirExists())
