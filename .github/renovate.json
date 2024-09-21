@@ -12,6 +12,23 @@
   ],
   "packageRules": [
     {
+      "matchUpdateTypes": [ "minor", "patch", "digest" ],
+      "automerge": true,
+      "matchFileNames": [
+        "tests/**",
+        "benchmarks/**"
+      ]
+    },
+    {
+      "matchUpdateTypes": [ "minor", "patch", "digest" ],
+      "automerge": false,
+      "semanticCommitType": "fix",
+      "matchFileNames": [
+        "src/**",
+        "global.json"
+      ]
+    },
+    {
       "groupName": "Avalonia",
       "separateMajorMinor": true,
       "groupSlug": "avalonia-libs",
@@ -42,23 +59,6 @@
       "matchPackageNames": [
         "meziantou.analyzer",
         "roslynator.analyzers"
-      ]
-    },
-    {
-      "matchUpdateTypes": [ "minor", "patch", "digest" ],
-      "automerge": true,
-      "matchFileNames": [
-        "tests/**",
-        "benchmarks/**"
-      ]
-    },
-    {
-      "matchUpdateTypes": [ "minor", "patch", "digest" ],
-      "automerge": false,
-      "semanticCommitType": "fix",
-      "matchFileNames": [
-        "src/**",
-        "global.json"
       ]
     }
   ]
