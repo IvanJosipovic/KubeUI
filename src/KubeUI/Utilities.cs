@@ -1,4 +1,5 @@
 ﻿using Avalonia.Data.Converters;
+using Avalonia.Input;
 using k8s;
 using k8s.Models;
 using System.Reflection;
@@ -83,6 +84,13 @@ public static class Utilities
     public static TControl Set<TControl,TValue>(this TControl control, AvaloniaProperty property, TValue value, FuncValueConverter<TValue, object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where TControl : Control
     {
         return control._setEx(property, ps, () => control[property] = converter.TryConvert(value), bindingMode, converter, bindingSource);
+    }
+
+    public static TControl KeyBindings<TControl>(this TControl container, params KeyBinding[] items) where TControl : Control
+    {
+        container.KeyBindings.AddRange(items);
+
+        return container;
     }
 
     public static string GetKubeAssetPath(Type type)
