@@ -41,7 +41,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
         {
             "sh",
             "-c",
-            "clear; (bash || ash || sh)"
+            "clear; (bash || ash || sh || echo 'No Shell Found!')"
         };
 
         _webSocket = await Cluster.Client.WebSocketNamespacedPodExecAsync(Object.Name(), Object.Namespace(), command, ContainerName);

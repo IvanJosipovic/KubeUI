@@ -87,7 +87,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         catch (Exception ex)
         {
             //to display notification
-            _logger.LogError("Unable to View Logs: ", ex);
+            _logger.LogError(ex, "Unable to View Logs");
         }
     }
 

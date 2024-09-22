@@ -117,7 +117,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError("Error connecting to {name} - {ex}", Name, ex);
+                    _logger.LogError(ex, "Error connecting to {name}", Name);
 
                     var factory = Application.Current.GetRequiredService<IFactory>();
 
