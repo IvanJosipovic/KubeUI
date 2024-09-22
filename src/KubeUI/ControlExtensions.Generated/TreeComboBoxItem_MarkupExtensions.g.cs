@@ -58,6 +58,29 @@ public static T IsExpanded<T,TValue>(this T control, TValue value, FuncValueConv
 => control._setEx(Ursa.Controls.TreeComboBoxItem.IsExpandedProperty, ps, () => control.IsExpanded = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
+ // IsSelectableProperty
+
+/*BindFromExpressionSetterGenerator*/
+public static T IsSelectable<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.TreeComboBoxItem
+   => control._set(Ursa.Controls.TreeComboBoxItem.IsSelectableProperty, func, onChanged, expression);
+
+/*MagicalSetterGenerator*/
+public static T IsSelectable<T>(this T control, System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.TreeComboBoxItem
+=> control._setEx(Ursa.Controls.TreeComboBoxItem.IsSelectableProperty, ps, () => control.IsSelectable = value, bindingMode, converter, bindingSource);
+
+/*BindSetterGenerator*/
+public static T IsSelectable<T>(this T control, IBinding binding) where T : Ursa.Controls.TreeComboBoxItem
+   => control._set(Ursa.Controls.TreeComboBoxItem.IsSelectableProperty, binding);
+
+/*AvaloniaPropertyBindSetterGenerator*/
+public static T IsSelectable<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Ursa.Controls.TreeComboBoxItem
+   => control._set(Ursa.Controls.TreeComboBoxItem.IsSelectableProperty, avaloniaProperty, bindingMode, converter, overrideView);
+
+/*MagicalSetterWithConverterGenerator*/
+public static T IsSelectable<T,TValue>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.TreeComboBoxItem
+=> control._setEx(Ursa.Controls.TreeComboBoxItem.IsSelectableProperty, ps, () => control.IsSelectable = converter.TryConvert(value), bindingMode, converter, bindingSource);
+
+
 
 //================= Events ======================//
 
@@ -82,6 +105,17 @@ public static Style<T> IsExpanded<T>(this Style<T> style, System.Boolean value) 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsExpanded<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.TreeComboBoxItem
 => style._addSetter(Ursa.Controls.TreeComboBoxItem.IsExpandedProperty, binding);
+
+
+ // IsSelectableProperty
+
+/*ValueStyleSetterGenerator*/
+public static Style<T> IsSelectable<T>(this Style<T> style, System.Boolean value) where T : Ursa.Controls.TreeComboBoxItem
+=> style._addSetter(Ursa.Controls.TreeComboBoxItem.IsSelectableProperty, value);
+
+/*BindingStyleSetterGenerator*/
+public static Style<T> IsSelectable<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.TreeComboBoxItem
+=> style._addSetter(Ursa.Controls.TreeComboBoxItem.IsSelectableProperty, binding);
 
 
 

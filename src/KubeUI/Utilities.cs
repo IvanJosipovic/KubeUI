@@ -19,10 +19,8 @@ public static class Utilities
         {
             return ((IServiceProvider)service).GetRequiredService<T>();
         }
-        else
-        {
-            throw new Exception($"Cant find {typeof(IServiceProvider).Name}");
-        }
+
+        throw new Exception($"Cant find {typeof(IServiceProvider).Name}");
     }
 
     public static object GetRequiredService(this Application? app, Type type)
@@ -31,10 +29,8 @@ public static class Utilities
         {
             return ((IServiceProvider)service!).GetRequiredService(type);
         }
-        else
-        {
-            throw new Exception($"Cant find {typeof(IServiceProvider).Name}");
-        }
+
+        throw new Exception($"Cant find {typeof(IServiceProvider).Name}");
     }
 
     public static T Set<T>(this T control, Action<T> func) where T : Control

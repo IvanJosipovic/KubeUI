@@ -310,7 +310,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                                 }
                                 else
                                 {
-                                    navItem = new NavigationItem() { Name = fqdn };
+                                    navItem = new NavigationItem() { Name = fqdn, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemComparer()) };
                                     list.Add(navItem);
                                     list = navItem.NavigationItems;
                                 }

@@ -12,55 +12,6 @@
   ],
   "packageRules": [
     {
-      "groupName": "Avalonia",
-      "separateMajorMinor": true,
-      "groupSlug": "avalonia-libs",
-      "packageRules": [
-        {
-          "matchPackageNames": [
-            "Avalonia",
-            "Avalonia.*"
-          ]
-        }
-      ]
-    },
-    {
-      "groupName": "Dock",
-      "separateMajorMinor": true,
-      "groupSlug": "dock",
-      "packageRules": [
-        {
-          "matchPackageNames": [
-            "Dock.*"
-          ]
-        }
-      ]
-    },
-    {
-      "groupName": "Irihi",
-      "separateMajorMinor": true,
-      "groupSlug": "irihi",
-      "packageRules": [
-        {
-          "matchPackageNames": [
-            "Irihi.*"
-          ]
-        }
-      ]
-    },
-    {
-      "matchUpdateTypes": [ "major", "minor", "patch", "digest" ],
-      "automerge": true,
-      "packageRules": [
-        {
-          "matchPackageNames": [
-            "meziantou.analyzer",
-            "roslynator.analyzers"
-          ]
-        }
-      ]
-    },
-    {
       "matchUpdateTypes": [ "minor", "patch", "digest" ],
       "automerge": true,
       "matchFileNames": [
@@ -75,6 +26,40 @@
       "matchFileNames": [
         "src/**",
         "global.json"
+      ]
+    },
+    {
+      "groupName": "Avalonia",
+      "separateMajorMinor": true,
+      "groupSlug": "avalonia-libs",
+      "matchPackageNames": [
+        "Avalonia",
+        "Avalonia.*"
+      ]
+    },
+    {
+      "groupName": "Dock",
+      "separateMajorMinor": true,
+      "groupSlug": "dock",
+      "matchPackageNames": [
+        "Dock.*"
+      ]
+    },
+    {
+      "groupName": "Irihi",
+      "separateMajorMinor": true,
+      "groupSlug": "irihi",
+      "matchPackageNames": [
+        "Irihi.*"
+      ]
+    },
+    {
+      "matchUpdateTypes": [ "major", "minor", "patch", "digest" ],
+      "automerge": true,
+      "semanticCommitType": "chore",
+      "matchPackageNames": [
+        "meziantou.analyzer",
+        "roslynator.analyzers"
       ]
     }
   ]
