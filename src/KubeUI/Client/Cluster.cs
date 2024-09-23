@@ -113,6 +113,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     {
                         _metricsRefreshTimer =  new(TimeSpan.FromSeconds(30), DispatcherPriority.Background, SyncData);
                         _metricsRefreshTimer.Start();
+                        SyncData(null, null);
                     }
                 }
                 catch (Exception ex)

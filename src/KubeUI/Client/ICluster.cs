@@ -28,6 +28,8 @@ public interface ICluster
     Task Connect();
     Task<bool> Delete<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     V1APIGroupList APIGroups { get; }
+    bool IsMetricsAvailable { get; }
+
     void ImportFolder(string path);
     void ImportYaml(Stream stream);
     void RemovePortForward(PortForwarder pf);

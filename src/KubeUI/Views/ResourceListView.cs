@@ -372,7 +372,7 @@ public readonly struct MyFuncComparer<TObj, TPtop> : IComparer
         {
             return src5.CompareTo(dest5);
         }
-        else if (srcProperty is decimal src6 && destProperty is bool dest6)
+        else if (srcProperty is decimal src6 && destProperty is decimal dest6)
         {
             return src6.CompareTo(dest6);
         }
