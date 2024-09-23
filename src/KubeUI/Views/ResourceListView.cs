@@ -118,7 +118,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
         }
     }
 
-    private MenuItem CreateMenuItem(ResourceListViewMenuItem menu)
+    private MenuItem CreateMenuItem(ResourceListViewMenuItem menu, int level = 0)
     {
         var menuItem = new MenuItem();
 
@@ -149,9 +149,22 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
             menuItem.Bind(ItemsControl.ItemsSourceProperty, new Binding(menu.ItemSourcePath));
         }
 
-        if (menu.MenuItem != null)
+        if (menu.ItemSourceBinding != null)
         {
-            menuItem.Styles.AddRange(GenerateStyles(menu.MenuItem));
+            menuItem.Bind(ItemsControl.ItemsSourceProperty, menu.ItemSourceBinding);
+        }
+
+        if (menu.ItemTemplate != null)
+        {
+            menuItem.Styles.AddRange(GenerateStyles(menu.ItemTemplate, level));
+        }
+
+        if (menu.MenuItems != null)
+        {
+            foreach (var item in menu.MenuItems)
+            {
+                menuItem.Items.Add(CreateMenuItem(item, level + 1));
+            }
         }
 
         return menuItem;
@@ -163,22 +176,17 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
         Func<Selector?, Selector>? func = null;
 
-        if (level == 0)
+        func = x =>
         {
-            func = x => x.OfType<MenuItem>().Descendant().OfType<MenuItem>();
-        }
-        else if (level == 1)
-        {
-            func = x => x.OfType<MenuItem>().Descendant().OfType<MenuItem>().Descendant().OfType<MenuItem>();
-        }
-        else if (level == 2)
-        {
-            func = x => x.OfType<MenuItem>().Descendant().OfType<MenuItem>().Descendant().OfType<MenuItem>().Descendant().OfType<MenuItem>();
-        }
-        else
-        {
-            throw new NotImplementedException();
-        }
+            var selector = x.OfType<MenuItem>().Descendant().OfType<MenuItem>();
+
+            for (int i = 0; i < level; i++)
+            {
+                selector = selector.Descendant().OfType<MenuItem>();
+            }
+
+            return selector;
+        };
 
         var style = new Style(func);
 
@@ -208,9 +216,9 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
         styles.Add(style);
 
-        if (menu.MenuItem != null)
+        if (menu.ItemTemplate != null)
         {
-            styles.AddRange(GenerateStyles(menu.MenuItem, level + 1));
+            styles.AddRange(GenerateStyles(menu.ItemTemplate, level + 1));
         }
 
         return styles;
@@ -364,7 +372,7 @@ public readonly struct MyFuncComparer<TObj, TPtop> : IComparer
         {
             return src5.CompareTo(dest5);
         }
-        else if (srcProperty is decimal src6 && destProperty is bool dest6)
+        else if (srcProperty is decimal src6 && destProperty is decimal dest6)
         {
             return src6.CompareTo(dest6);
         }

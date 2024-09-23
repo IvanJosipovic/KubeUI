@@ -91,6 +91,12 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
                             x.Options.EnableHyperlinks = false;
                             x.Options.EnableEmailHyperlinks = false;
                         })
+                        .KeyBindings([
+                            new () {
+                                Gesture = new KeyGesture(Key.Z, KeyModifiers.Control),
+                                Command = vm.UndoCommand,
+                            }
+                        ])
                         .OnTextChanged((x) => {
                             YamlFoldingStrategy.UpdateFoldings(_foldingManager, editor.Document);
                         })

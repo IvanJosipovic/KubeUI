@@ -119,6 +119,20 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         return true;
     }
 
+    [RelayCommand(CanExecute = nameof(CanUndo))]
+    private void Undo()
+    {
+        if (EditMode)
+        {
+            YamlDocument.UndoStack.Undo();
+        }
+    }
+
+    private bool CanUndo()
+    {
+        return YamlDocument?.UndoStack.CanUndo == true;
+    }
+
     public void Dispose()
     {
         if (Cluster != null)

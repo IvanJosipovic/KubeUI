@@ -9,6 +9,7 @@ using DynamicData.Binding;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using Humanizer;
 using k8s;
 using k8s.Models;
 using KubeUI.Client;
@@ -59,7 +60,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     {
         Cluster = cluster;
         Kind = GroupApiVersionKind.From<T>();
-        Title = Kind.Kind;
+        Title = Kind.Kind.Humanize(LetterCasing.Title);
         Id = Cluster.Name + "-" + Kind;
 
         Objects = Cluster.GetObjectDictionary<T>();
@@ -387,47 +388,105 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 },
             ];
 
+
+            if (Cluster.IsMetricsAvailable)
+            {
+                definition.Columns.Insert(3, new ResourceListViewDefinitionColumn<V1Pod, decimal>()
+                {
+                    Name = "CPU",
+                    CustomControl = typeof(PodMetricCPUCell),
+                    Field = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
+                    Width = "80"
+                });
+                definition.Columns.Insert(4, new ResourceListViewDefinitionColumn<V1Pod, decimal>()
+                {
+                    Name = "Memory",
+                    CustomControl = typeof(PodMetricMemoryCell),
+                    Field = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
+                    Width = "80"
+                });
+            }
+
             definition.MenuItems =
             [
                 new()
                 {
                     Header = "View Console",
-                    ItemSourcePath = "SelectedItem.Value.Spec.Containers",
-                    MenuItem = new()
-                    {
-                        HeaderBinding = new Binding(nameof(V1Container.Name)),
-                        CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewConsoleCommand),
-                        CommandParameterPath = nameof(V1Container.Name),
-                    }
+                    MenuItems =
+                    [
+                        new()
+                        {
+                            Header = "Init",
+                            ItemSourcePath = "SelectedItem.Value.Spec.InitContainers",
+                            ItemTemplate = new()
+                            {
+                                HeaderBinding = new Binding(nameof(V1Container.Name)),
+                                CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewConsoleCommand),
+                                CommandParameterPath = ".",
+                            }
+                        },
+                        new()
+                        {
+                            Header = "Normal",
+                            ItemSourcePath = "SelectedItem.Value.Spec.Containers",
+                            ItemTemplate = new()
+                            {
+                                HeaderBinding = new Binding(nameof(V1Container.Name)),
+                                CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewConsoleCommand),
+                                CommandParameterPath = ".",
+                            }
+                        },
+                    ]
                 },
                 new()
                 {
                     Header = "View Logs",
-                    ItemSourcePath = "SelectedItem.Value.Spec.Containers",
-                    MenuItem = new()
-                    {
-                        HeaderBinding = new Binding(nameof(V1Container.Name)),
-                        CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewLogsCommand),
-                        CommandParameterPath = nameof(V1Container.Name),
-                    }
+                    MenuItems = [
+                        new()
+                        {
+                            Header = "Init",
+                            ItemSourcePath = "SelectedItem.Value.Spec.InitContainers",
+                            ItemTemplate = new()
+                            {
+                                HeaderBinding = new Binding(nameof(V1Container.Name)),
+                                CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewLogsCommand),
+                                CommandParameterPath = ".",
+                            }
+                        },
+                        new()
+                        {
+                            Header = "Normal",
+                            ItemSourcePath = "SelectedItem.Value.Spec.Containers",
+                            ItemTemplate = new()
+                            {
+                                HeaderBinding = new Binding(nameof(V1Container.Name)),
+                                CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewLogsCommand),
+                                CommandParameterPath = ".",
+                            }
+                        },
+                    ],
                 },
                 new()
                 {
                     Header = "Port Forwarding",
                     ItemSourcePath = "SelectedItem.Value.Spec.Containers",
-                    MenuItem = new()
+                    ItemTemplate = new()
                     {
                         HeaderBinding = new Binding(nameof(V1Container.Name)),
                         ItemSourcePath = nameof(V1Container.Ports),
-                        MenuItem = new()
+                        ItemTemplate = new()
                         {
                             HeaderBinding = new MultiBinding()
                             {
-                                Bindings = [ new Binding(nameof(V1ContainerPort.Name)), new Binding(nameof(V1ContainerPort.ContainerPort)) ],
+                                Bindings =
+                                [
+                                    new Binding(nameof(V1ContainerPort.Name)),
+                                    new Binding(nameof(V1ContainerPort.ContainerPort))
+                                ],
                                 StringFormat = "{0} - {1}"
                             },
                             CommandPath = nameof(ResourceListViewModel<V1Pod>.PortForwardCommand),
-                            CommandParameterPath = nameof(V1ContainerPort.ContainerPort),
+                            CommandParameterPath = ".",
                         }
                     }
                 }
@@ -1078,6 +1137,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 new ResourceListViewDefinitionColumn<V1CustomResourceDefinition, string>()
                 {
                     Name = "Name",
+                    Display = x => x.Spec.Names.Kind.Humanize(LetterCasing.Title),
                     Field = x => x.Spec.Names.Kind,
                     Sort = SortDirection.Ascending,
                     Width = "2*",
@@ -1448,13 +1508,13 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     }
 
     [RelayCommand(CanExecute = nameof(CanViewLogs))]
-    private async Task ViewLogs(string containerName)
+    private async Task ViewLogs(V1Container container)
     {
         var vm = Application.Current.GetRequiredService<PodLogsViewModel>();
         vm.Cluster = Cluster;
         vm.Object = ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Value;
-        vm.ContainerName = containerName.ToString();
-        vm.Id = $"{nameof(ViewLogs)}-{Cluster.Name}-{((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key}-{containerName}";
+        vm.ContainerName = container.Name;
+        vm.Id = $"{nameof(ViewLogs)}-{Cluster.Name}-{((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key}-{container.Name}";
 
         if (Factory.AddToBottom(vm))
         {
@@ -1470,19 +1530,19 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         }
     }
 
-    private bool CanViewLogs(string containerName)
+    private bool CanViewLogs(V1Container? container)
     {
-        return !string.IsNullOrEmpty(containerName);
+        return container != null;
     }
 
     [RelayCommand(CanExecute = nameof(CanViewConsole))]
-    private async Task ViewConsole(string containerName)
+    private async Task ViewConsole(V1Container container)
     {
         var vm = Application.Current.GetRequiredService<PodConsoleViewModel>();
         vm.Cluster = Cluster;
         vm.Object = ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Value;
-        vm.ContainerName = containerName;
-        vm.Id = $"{nameof(ViewConsole)}-{Cluster.Name}-{((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key}-{containerName}";
+        vm.ContainerName = container.Name;
+        vm.Id = $"{nameof(ViewConsole)}-{Cluster.Name}-{((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key}-{container.Name}";
 
         if (Factory.AddToBottom(vm))
         {
@@ -1498,20 +1558,20 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         }
     }
 
-    private bool CanViewConsole(string containerName)
+    private bool CanViewConsole(V1Container? container)
     {
-        return !string.IsNullOrEmpty(containerName);
+        return container != null;
     }
 
     [RelayCommand(CanExecute = nameof(CanPortForward))]
-    private async Task PortForward(int containerPort)
+    private async Task PortForward(V1ContainerPort containerPort)
     {
-        var pf = Cluster.AddPortForward(((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key.Namespace, ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key.Name, containerPort);
+        var pf = Cluster.AddPortForward(((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key.Namespace, ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key.Name, containerPort.ContainerPort);
 
         ContentDialogSettings settings = new()
         {
             Title = Resources.ResourceListViewModel_PortForward_Title,
-            Content = string.Format(Resources.ResourceListViewModel_PortForward_Content, containerPort, pf.LocalPort),
+            Content = string.Format(Resources.ResourceListViewModel_PortForward_Content, containerPort.ContainerPort, pf.LocalPort),
             PrimaryButtonText = Resources.ResourceListViewModel_PortForward_Primary,
             SecondaryButtonText = Resources.ResourceListViewModel_PortForward_Secondary,
             DefaultButton = ContentDialogButton.Secondary
@@ -1526,9 +1586,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         }
     }
 
-    private bool CanPortForward(int containerPort)
+    private bool CanPortForward(V1ContainerPort? containerPort)
     {
-        return containerPort > 0;
+        return containerPort?.ContainerPort > 0 && containerPort.Protocol == "TCP";
     }
 
     [RelayCommand(CanExecute = nameof(CanListCRD))]
@@ -1549,7 +1609,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         Factory.AddToDocuments(vm);
     }
 
-    private bool CanListCRD(V1CustomResourceDefinition item)
+    private bool CanListCRD(V1CustomResourceDefinition? item)
     {
         return item != null;
     }
@@ -1642,7 +1702,11 @@ public class ResourceListViewMenuItem
 
     public string? ItemSourcePath { get; set; }
 
-    public ResourceListViewMenuItem? MenuItem { get; set; }
+    public IBinding? ItemSourceBinding { get; set; }
+
+    public ResourceListViewMenuItem? ItemTemplate { get; set; }
+
+    public IList<ResourceListViewMenuItem> MenuItems { get; set; }
 }
 
 public class ResourceListViewDefinition<T> where T : class, IKubernetesObject<V1ObjectMeta>, new()

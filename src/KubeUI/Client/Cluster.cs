@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Xml;
 using Dock.Model.Controls;
 using Dock.Model.Core;
+using Humanizer;
 using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
@@ -113,11 +114,12 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     {
                         _metricsRefreshTimer =  new(TimeSpan.FromSeconds(30), DispatcherPriority.Background, SyncData);
                         _metricsRefreshTimer.Start();
+                        SyncData(null, null);
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError("Error connecting to {name} - {ex}", Name, ex);
+                    _logger.LogError(ex, "Error connecting to {name}", Name);
 
                     var factory = Application.Current.GetRequiredService<IFactory>();
 
@@ -292,7 +294,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                             var type = ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
 
-                            var nav = new ResourceNavigationLink() { Name = crd.Spec.Names.Kind, ControlType = type, Cluster = this, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemComparer())};
+                            var nav = new ResourceNavigationLink() { Name = crd.Spec.Names.Kind.Humanize(LetterCasing.Title), ControlType = type, Cluster = this, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemComparer())};
 
                             var group = crd.Spec.Group;
 

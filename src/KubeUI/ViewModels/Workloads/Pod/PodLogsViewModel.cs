@@ -34,7 +34,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
     private StreamReader? _streamReader;
 
-    private readonly int _lines = 1000;
+    private readonly int _lines = 100;
 
     private bool _isConnected;
 
@@ -87,7 +87,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         catch (Exception ex)
         {
             //to display notification
-            _logger.LogError("Unable to View Logs: ", ex);
+            _logger.LogError(ex, "Unable to View Logs");
         }
     }
 
