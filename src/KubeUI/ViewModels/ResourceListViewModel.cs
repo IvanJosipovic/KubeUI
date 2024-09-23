@@ -86,83 +86,92 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private Func<KeyValuePair<NamespacedName, T>, bool> GenerateFilter()
     {
-        var param = Expression.Parameter(typeof(KeyValuePair<NamespacedName, T>), "p");
-
-        var key = Expression.PropertyOrField(param, "Key");
-
-        var value = Expression.PropertyOrField(param, "Value");
-
-        BinaryExpression? body = null;
-
-        BinaryExpression? namespaceFilter = null;
-
-        BinaryExpression? searchFilter = null;
-
-        if (Cluster.SelectedNamespaces != null && ViewDefinition.ShowNamespaces)
+        try
         {
-            foreach (var item in Cluster.SelectedNamespaces)
+            var param = Expression.Parameter(typeof(KeyValuePair<NamespacedName, T>), "p");
+
+            var key = Expression.PropertyOrField(param, "Key");
+
+            var value = Expression.PropertyOrField(param, "Value");
+
+            BinaryExpression? body = null;
+
+            BinaryExpression? namespaceFilter = null;
+
+            BinaryExpression? searchFilter = null;
+
+            if (Cluster.SelectedNamespaces != null && ViewDefinition.ShowNamespaces)
             {
-                var expression = Expression.Equal(
-                        Expression.PropertyOrField(key, "Namespace"),
-                        Expression.Constant(item.Name())
-                   );
+                foreach (var item in Cluster.SelectedNamespaces)
+                {
+                    var expression = Expression.Equal(
+                            Expression.PropertyOrField(key, "Namespace"),
+                            Expression.Constant(item.Name())
+                       );
 
-                namespaceFilter = namespaceFilter == null ? expression : Expression.OrElse(namespaceFilter, expression);
+                    namespaceFilter = namespaceFilter == null ? expression : Expression.OrElse(namespaceFilter, expression);
+                }
             }
-        }
 
-        if(!string.IsNullOrEmpty(SearchQuery))
-        {
-            var method = typeof(string).GetMethod(nameof(string.IndexOf), [typeof(string), typeof(StringComparison)]);
-
-            foreach (var query in SearchQuery.Split(' '))
+            if (!string.IsNullOrEmpty(SearchQuery))
             {
-                if (string.IsNullOrEmpty(query))
+                var method = typeof(string).GetMethod(nameof(string.IndexOf), [typeof(string), typeof(StringComparison)]);
+
+                foreach (var query in SearchQuery.Split(' '))
                 {
-                    continue;
+                    if (string.IsNullOrEmpty(query))
+                    {
+                        continue;
+                    }
+
+                    BinaryExpression? wordFilter = null;
+
+                    foreach (var column in ViewDefinition.Columns)
+                    {
+                        var someValue = Expression.Constant(query, typeof(string));
+
+                        var colType = column.GetType();
+
+                        var columnDisplay = (Func<T, string>)colType.GetProperty(nameof(ResourceListViewDefinitionColumn<V1Pod, string>.Display)).GetValue(column);
+
+                        columnDisplay ??= (Func<T, string>)colType.GetProperty(nameof(ResourceListViewDefinitionColumn<V1Pod, string>.Field)).GetValue(column);
+
+                        var funcCall = Expression.Call(Expression.Constant(columnDisplay), columnDisplay.GetType().GetMethod("Invoke"), value);
+
+                        var expression = Expression.GreaterThanOrEqual(Expression.Call(funcCall, method, someValue, Expression.Constant(StringComparison.OrdinalIgnoreCase)), Expression.Constant(0));
+
+                        wordFilter = wordFilter == null ? expression : Expression.OrElse(wordFilter, expression);
+                    }
+
+                    searchFilter = searchFilter == null ? wordFilter : Expression.AndAlso(searchFilter, wordFilter);
                 }
-
-                BinaryExpression? wordFilter = null;
-
-                foreach (var column in ViewDefinition.Columns)
-                {
-                    var someValue = Expression.Constant(query, typeof(string));
-
-                    var colType = column.GetType();
-
-                    var columnDisplay = (Func<T, string>)colType.GetProperty(nameof(ResourceListViewDefinitionColumn<V1Pod, string>.Display)).GetValue(column);
-
-                    columnDisplay ??= (Func<T, string>)colType.GetProperty(nameof(ResourceListViewDefinitionColumn<V1Pod, string>.Field)).GetValue(column);
-
-                    var funcCall = Expression.Call(Expression.Constant(columnDisplay), columnDisplay.GetType().GetMethod("Invoke"), value);
-
-                    var expression = Expression.GreaterThanOrEqual(Expression.Call(funcCall, method, someValue, Expression.Constant(StringComparison.OrdinalIgnoreCase)), Expression.Constant(0));
-
-                    wordFilter = wordFilter == null ? expression : Expression.OrElse(wordFilter, expression);
-                }
-
-                searchFilter = searchFilter == null ? wordFilter : Expression.AndAlso(searchFilter, wordFilter);
             }
-        }
 
-        if (namespaceFilter != null && searchFilter == null)
-        {
-            body = namespaceFilter;
-        }
-        else if (namespaceFilter == null && searchFilter != null)
-        {
-            body = searchFilter;
-        }
-        else if (namespaceFilter != null && searchFilter != null)
-        {
-            body = Expression.AndAlso(namespaceFilter, searchFilter);
-        }
-        else
-        {
-            body = Expression.Equal(Expression.Constant(true), Expression.Constant(true));
-        }
+            if (namespaceFilter != null && searchFilter == null)
+            {
+                body = namespaceFilter;
+            }
+            else if (namespaceFilter == null && searchFilter != null)
+            {
+                body = searchFilter;
+            }
+            else if (namespaceFilter != null && searchFilter != null)
+            {
+                body = Expression.AndAlso(namespaceFilter, searchFilter);
+            }
+            else
+            {
+                body = Expression.Equal(Expression.Constant(true), Expression.Constant(true));
+            }
 
-        return Expression.Lambda<Func<KeyValuePair<NamespacedName, T>, bool>>(body, param).Compile();
+            return Expression.Lambda<Func<KeyValuePair<NamespacedName, T>, bool>>(body, param).Compile();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error Generating Namespace Filter Expression");
+
+            throw new Exception("Error Generating Namespace Filter Expression", ex);
+        }
     }
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
