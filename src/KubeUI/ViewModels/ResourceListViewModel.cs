@@ -1087,6 +1087,17 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 AgeColumn(),
             ];
         }
+        else if (resourceType == typeof(V1ClusterRole))
+        {
+            definition.ShowNamespaces = false;
+
+            definition.Columns =
+            [
+                NameColumn(SortDirection.Ascending),
+                NamespaceColumn(),
+                AgeColumn(),
+            ];
+        }
         else if (resourceType == typeof(V1Role))
         {
             definition.Columns =
