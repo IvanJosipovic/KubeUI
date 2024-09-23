@@ -9,6 +9,7 @@ using DynamicData.Binding;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using Humanizer;
 using k8s;
 using k8s.Models;
 using KubeUI.Client;
@@ -59,7 +60,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     {
         Cluster = cluster;
         Kind = GroupApiVersionKind.From<T>();
-        Title = Kind.Kind;
+        Title = Kind.Kind.Humanize(LetterCasing.Title);
         Id = Cluster.Name + "-" + Kind;
 
         Objects = Cluster.GetObjectDictionary<T>();
@@ -1136,6 +1137,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 new ResourceListViewDefinitionColumn<V1CustomResourceDefinition, string>()
                 {
                     Name = "Name",
+                    Display = x => x.Spec.Names.Kind.Humanize(LetterCasing.Title),
                     Field = x => x.Spec.Names.Kind,
                     Sort = SortDirection.Ascending,
                     Width = "2*",
