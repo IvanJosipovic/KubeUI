@@ -70,6 +70,8 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
                         x.Options.ShowBoxForControlCharacters = false;
                         x.Options.EnableHyperlinks = false;
                         x.Options.EnableEmailHyperlinks = false;
+                        x.TextArea.Caret.CaretBrush = Brushes.Transparent;
+                        x.TextArea.Caret.Hide();
                     })
                     .OnTextChanged((e) => {
                         editor.ScrollToEnd();
@@ -121,8 +123,10 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
                             }
                             else
                             {
-                               _logger.LogWarning("Unmapped key: {0}", e.Key);
+                               _logger.LogInformation("Unmapped key: {0}", e.Key);
                             }
+
+                            e.Handled = true;
                         }
                     })
                     .ContextMenu(new ContextMenu()
