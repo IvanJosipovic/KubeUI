@@ -79,7 +79,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _filter = Objects.ToObservableChangeSet<ConcurrentObservableDictionary<NamespacedName, T>, KeyValuePair<NamespacedName, T>>()
             .Filter(GenerateFilter())
             .Bind(out var filteredObjects)
-            .Subscribe();
+            .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Set Namespace Filter"));
 
         DataGridObjects = filteredObjects;
     }
