@@ -378,20 +378,20 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 new ResourceListViewDefinitionColumn<V1Pod, string>()
                 {
                     Name = "Node",
-                    Field = x => x.Spec.NodeName,
+                    Field = x => x.Spec.NodeName ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListViewDefinitionColumn<V1Pod, string>()
                 {
                     Name = "QoS",
-                    Field = x => x.Status.QosClass,
+                    Field = x => x.Status.QosClass ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },
                 AgeColumn(),
                 new ResourceListViewDefinitionColumn<V1Pod, string>()
                 {
                     Name = "Status",
-                    Field = x => x.Status.Phase,
+                    Field = x => x.Status.Phase ?? "",
                     CustomControl = typeof(PodStatusCell),
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
