@@ -1411,7 +1411,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             }
             else
             {
-                _logger.LogError($"Unexpected CRD namespace {res}", resourceType.Namespace)
+                _logger.LogError("Unexpected CRD namespace {res}", resourceType.Namespace);
             }
 
             // Add Age Column
