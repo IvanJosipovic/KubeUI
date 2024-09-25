@@ -831,8 +831,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 new ResourceListViewDefinitionColumn<V1Lease, string>()
                 {
                     Name = "Holder",
-                    Display = x => x.Spec.HolderIdentity,
-                    Field = x => x.Spec.HolderIdentity,
+                    Display = x => x.Spec.HolderIdentity ?? "",
+                    Field = x => x.Spec.HolderIdentity ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },
                 AgeColumn(),
@@ -848,8 +848,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 new ResourceListViewDefinitionColumn<V1MutatingWebhookConfiguration, int>()
                 {
                     Name = "Webhooks",
-                    Display = x => x.Webhooks.Count.ToString(),
-                    Field = x => x.Webhooks.Count,
+                    Display = x => x.Webhooks?.Count.ToString() ?? "",
+                    Field = x => x.Webhooks?.Count ?? 0,
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 AgeColumn(),
