@@ -1,5 +1,7 @@
 using System.Collections.Specialized;
 using System.Linq.Expressions;
+using System.Reflection;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Avalonia.Data.Converters;
 using Avalonia.Styling;
@@ -1323,11 +1325,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                             {
                                 var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<T, Enum>(item.JsonPath, true);
 
-                                var colDef = new ResourceListViewDefinitionColumn<T, Enum>()
+                                var colDef = new ResourceListViewDefinitionColumn<T, string>()
                                 {
                                     Name = item.Name,
-                                    Display = TransformToFuncOfString<T>(exp.Body, exp.Parameters).Compile(),
-                                    Field = exp.Compile(),
+                                    Field = TransformToFuncOfString<T>(exp.Body, exp.Parameters).Compile(),
                                     //Width = "*"
                                 };
 
@@ -1346,7 +1347,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                             {
                                 var typeString = match.Groups[1].Value;
                                 typeString = typeString.TrimStart("System.Nullable`1[").TrimEnd("]");
-                                var type = Type.GetType(match.Groups[1].Value);
+                                var type = Type.GetType(typeString);
 
                                 if (type == null)
                                 {
@@ -1432,11 +1433,45 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private static Expression<Func<T, string>> TransformToFuncOfString<T>(Expression expression, ReadOnlyCollection<ParameterExpression> parameters)
     {
-        // Convert the body of the original expression to return a string
-        var bodyAsString = Expression.Call(expression, nameof(string.ToString), Type.EmptyTypes);
+        // Check if the expression type is an enum
+        if (expression.Type == typeof(Enum))
+        {
+            // Create a method to get the enum member name from the JsonStringEnumMemberNameAttribute
+            var getEnumMemberNameMethod = typeof(ResourceListViewModel<V1Pod>).GetMethod(nameof(GetEnumMemberName), BindingFlags.NonPublic | BindingFlags.Static)
+                .MakeGenericMethod(expression.Type);
 
-        // Create a new lambda expression
-        return Expression.Lambda<Func<T, string>>(bodyAsString, parameters);
+            // Call the method to get the enum member name
+            var bodyAsString = Expression.Call(getEnumMemberNameMethod, expression);
+
+            // Create a new lambda expression
+            return Expression.Lambda<Func<T, string>>(bodyAsString, parameters);
+        }
+        else
+        {
+            // Convert the body of the original expression to return a string
+            var bodyAsString = Expression.Condition(
+                Expression.Equal(expression, Expression.Constant(null, expression.Type)),
+                Expression.Constant(string.Empty),
+                Expression.Call(expression, nameof(object.ToString), Type.EmptyTypes)
+            );
+
+            // Create a new lambda expression
+            return Expression.Lambda<Func<T, string>>(bodyAsString, parameters);
+        }
+    }
+
+    private static string GetEnumMemberName<TEnum>(TEnum enumValue) where TEnum : Enum
+    {
+        var memberInfo = typeof(TEnum).GetMember(enumValue.ToString()).FirstOrDefault();
+        if (memberInfo != null)
+        {
+            var attribute = memberInfo.GetCustomAttribute<JsonStringEnumMemberNameAttribute>();
+            if (attribute != null)
+            {
+                return attribute.Name;
+            }
+        }
+        return enumValue.ToString();
     }
 
     #region Actions
