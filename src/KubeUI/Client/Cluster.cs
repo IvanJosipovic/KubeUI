@@ -47,7 +47,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
     private IGenerator _generator;
 
     [ObservableProperty]
-    private bool _isExpanded = true;
+    private bool _isExpanded;
 
     [ObservableProperty]
     private ConcurrentObservableDictionary<NamespacedName, V1Namespace> _namespaces = [];
