@@ -1345,6 +1345,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                             if (match.Success)
                             {
                                 var typeString = match.Groups[1].Value;
+                                typeString = typeString.TrimStart("System.Nullable`1[").TrimEnd("]");
                                 var type = Type.GetType(match.Groups[1].Value);
 
                                 if (type == null)
@@ -1407,6 +1408,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                         }
                     }
                 }
+            }
+            else
+            {
+                _logger.LogError("Unexpected CRD namespace {res}", resourceType.Namespace);
             }
 
             // Add Age Column
