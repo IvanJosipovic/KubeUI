@@ -21,6 +21,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
         if (item is Cluster cluster)
         {
             _ = Task.Run(cluster.Connect);
+            cluster.IsExpanded = !cluster.IsExpanded;
         }
         else if (item is ResourceNavigationLink resourceNavLink)
         {
@@ -29,6 +30,11 @@ public sealed partial class NavigationViewModel : ViewModelBase
         else if (item is NavigationLink navLink)
         {
             await SelectNavigationLink(navLink);
+        }
+
+        if (item is NavigationItem nav)
+        {
+            nav.IsExpanded = !nav.IsExpanded;
         }
     }
 
