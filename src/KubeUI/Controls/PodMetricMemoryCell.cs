@@ -16,18 +16,7 @@ public sealed class PodMetricMemoryCell : MyViewBase<V1Pod>, IInitializeCluster
     {
         s_timer.Tick += Timer_Tick;
         s_timer.Interval = TimeSpan.FromSeconds(1);
-    }
-
-    protected override void OnDataContextChanged(EventArgs e)
-    {
-        base.OnDataContextChanged(e);
-
-        Update();
-
-        if (!s_timer.IsEnabled)
-        {
-            s_timer.Start();
-        }
+        s_timer.Start();
     }
 
     private void Timer_Tick(object? sender, EventArgs e)
@@ -81,5 +70,6 @@ public sealed class PodMetricMemoryCell : MyViewBase<V1Pod>, IInitializeCluster
     public void Initialize(ICluster cluster)
     {
         Cluster = cluster;
+        Update();
     }
 }
