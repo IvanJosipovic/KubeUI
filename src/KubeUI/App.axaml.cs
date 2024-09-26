@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Logging;
@@ -112,7 +113,7 @@ public partial class App : Application
                     .AddMeter(Instrumentation.MeterName)
                     .AddOtlpExporter((e, b) =>
                     {
-                        b.PeriodicExportingMetricReaderOptions.ExportIntervalMilliseconds = 60 * 1000; // 1 min
+                        b.PeriodicExportingMetricReaderOptions.ExportIntervalMilliseconds = (int)TimeSpan.FromMinutes(1).TotalMilliseconds;
                         e.Endpoint = new Uri("https://otel.kubeui.com/v1/metrics");
                         e.Headers = $"key={key}";
                         e.Protocol = OtlpExportProtocol.HttpProtobuf;
