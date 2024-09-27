@@ -33,7 +33,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         Cluster = cluster;
         Object = @object;
 
-        Id = $"{nameof(ResourceYamlViewModel)}-{Cluster.Name}-{Object.ApiVersion}/{Object.Kind}-{Object.Metadata.Name}";
+        Id = $"{nameof(ResourceYamlViewModel)}-{Cluster.Name}-{Object.ApiVersion}/{Object.Kind}/{Object.Metadata.NamespaceProperty}/{Object.Metadata.Name}";
     }
 
     private void SetYamlDocument()
