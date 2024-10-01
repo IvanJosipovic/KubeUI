@@ -583,7 +583,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     public ConcurrentObservableDictionary<NamespacedName, T> GetObjectDictionary<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        _ = Seed<T>();
+        _ = Task.Run(Seed<T>);
 
         var attribute = GroupApiVersionKind.From<T>();
 
