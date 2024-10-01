@@ -46,6 +46,15 @@
       ]
     },
     {
+      "groupName": "NodeEditorAvalonia",
+      "separateMajorMinor": true,
+      "groupSlug": "nodeeditoravalonia",
+      "matchPackageNames": [
+        "NodeEditorAvalonia",
+        "NodeEditorAvalonia.*"
+      ]
+    },
+    {
       "groupName": "Irihi",
       "separateMajorMinor": true,
       "groupSlug": "irihi",
