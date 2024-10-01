@@ -18,6 +18,7 @@ using KubeUI.Client;
 using KubeUI.Client.Informer;
 using KubeUI.Controls;
 using Swordfish.NET.Collections;
+using static KubeUI.Client.Cluster;
 
 namespace KubeUI.ViewModels;
 
@@ -1476,7 +1477,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     #region Actions
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanNewResource))]
     private void NewResource()
     {
         var resource = Activator.CreateInstance<T>();
@@ -1494,6 +1495,12 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         vm.EditMode = true;
 
         Factory.AddToBottom(vm);
+    }
+
+    private bool CanNewResource()
+    {
+        return true;
+        //return Cluster.CanI<T>(Verb.Create);
     }
 
     [RelayCommand(CanExecute = nameof(CanDelete))]
@@ -1521,19 +1528,12 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private bool CanDelete(IList items)
     {
-        return items.Count != 0;
-        //var coll = items as IEnumerable;
+        if (items.Count == 0)
+        {
+            return false;
+        }
 
-        //foreach (var item in coll)
-        //{
-        //    var i = item as T;
-        //    var cani = Cluster.CanDelete<T>(i).Result;
-
-        //    if (!cani)
-        //    {
-        //        return false;
-        //    }
-        //}
+        return true;
     }
 
     [RelayCommand(CanExecute = nameof(CanView))]
@@ -1670,7 +1670,16 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private bool CanListCRD(V1CustomResourceDefinition? item)
     {
-        return item != null;
+        if (item == null)
+        {
+            return false;
+        }
+
+        var version = item.Spec.Versions.First(x => x.Served && x.Storage);
+
+        var type = Cluster.ModelCache.GetResourceType(item.Spec.Group, version.Name, item.Spec.Names.Kind);
+
+        return Cluster.CanI(type, Verb.List) && Cluster.CanI(type, Verb.Watch);
     }
 
     #endregion

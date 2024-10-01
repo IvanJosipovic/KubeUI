@@ -20,14 +20,15 @@ namespace KubeUI.Client.Informer;
 /// <seealso cref="IDisposable" />
 public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDisposable where TResource : class, IKubernetesObject<V1ObjectMeta>, new()
 {
-    private readonly object _sync = new object();
+    private readonly object _sync = new();
     private readonly IKubernetes _client;
     private readonly GroupApiVersionKind _names;
     private readonly SemaphoreSlim _ready = new SemaphoreSlim(0);
-    private ImmutableList<Registration> _registrations = ImmutableList<Registration>.Empty;
+    private ImmutableList<Registration> _registrations = [];
     private IDictionary<NamespacedName, IList<V1OwnerReference>> _cache = new Dictionary<NamespacedName, IList<V1OwnerReference>>();
     private string _lastResourceVersion;
-    readonly ILogger<ResourceInformer<TResource>> Logger;
+    readonly ILogger<ResourceInformer<TResource>> _logger;
+    private readonly string? _namespace;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ResourceInformer{TResource}" /> class.
@@ -38,14 +39,15 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
     {
         _names = GroupApiVersionKind.From<TResource>();
         _client = client;
-        Logger = logger;
+        _logger = logger;
     }
 
-    public ResourceInformer(ILogger<ResourceInformer<TResource>> logger, IKubernetes client, GroupApiVersionKind groupApiVersionKind)
+    public ResourceInformer(ILogger<ResourceInformer<TResource>> logger, IKubernetes client, string @namespace)
     {
-        _names = groupApiVersionKind;
+        _names = GroupApiVersionKind.From<TResource>();
+        _namespace = @namespace;
         _client = client;
-        Logger = logger;
+        _logger = logger;
     }
 
     private enum EventType
@@ -108,14 +110,9 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
         var limiter = new Limiter(new Limit(0.2), 3);
         var firstSync = true;
 
-        while (true)
+        while (!cancellationToken.IsCancellationRequested)
         {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return;
-            }
-
-            Logger.LogInformation(
+            _logger.LogInformation(
                 EventId(EventType.WatchingResource),
                 "Starting Informer on {ResourceType}",
                 typeof(TResource).Name);
@@ -140,7 +137,7 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
             }
             catch (IOException ex) when (ex.InnerException is SocketException)
             {
-                Logger.LogDebug(
+                _logger.LogDebug(
                     EventId(EventType.ReceivedError),
                     "Received error watching {ResourceType}: {ErrorMessage}",
                     typeof(TResource).Name,
@@ -148,7 +145,7 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
             }
             catch (KubernetesException ex)
             {
-                Logger.LogDebug(
+                _logger.LogDebug(
                     EventId(EventType.ReceivedError),
                     "Received error watching {ResourceType}: {ErrorMessage}",
                     typeof(TResource).Name,
@@ -166,7 +163,7 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
             }
             catch (Exception error)
             {
-                Logger.LogError(
+                _logger.LogError(
                     EventId(EventType.WatchingComplete),
                     error,
                     "No longer watching {ResourceType} resources from API server.",
@@ -184,7 +181,7 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
         var previousCache = _cache;
         _cache = new Dictionary<NamespacedName, IList<V1OwnerReference>>();
 
-        Logger.LogInformation(
+        _logger.LogInformation(
             EventId(EventType.SynchronizeStarted),
             "Started synchronizing {ResourceType} resources from API server.",
             typeof(TResource).Name);
@@ -195,59 +192,77 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
             cancellationToken.ThrowIfCancellationRequested();
 
             // request next page of items
-            using var listWithHttpMessage = await _client.CustomObjects.ListClusterCustomObjectWithHttpMessagesAsync(
+            k8s.Autorest.HttpOperationResponse<object>? listWithHttpMessage = null;
+
+            if (string.IsNullOrEmpty(_namespace))
+            {
+                listWithHttpMessage = await _client.CustomObjects.ListClusterCustomObjectWithHttpMessagesAsync(
                 _names.Group,
                 _names.ApiVersion,
                 _names.PluralName,
                 continueParameter: continueParameter,
                 cancellationToken: cancellationToken);
-
-            var list = KubernetesJson.Deserialize<KubernetesList<TResource>>(listWithHttpMessage.Body.ToString());
-
-            foreach (var item in list.Items)
+            }
+            else
             {
-                // These properties are not already set on items while listing
-                // assigned here for consistency
-                item.ApiVersion = _names.GroupApiVersion;
-                item.Kind = _names.Kind;
+                listWithHttpMessage = await _client.CustomObjects.ListNamespacedCustomObjectWithHttpMessagesAsync(
+                _names.Group,
+                _names.ApiVersion,
+                _namespace,
+                _names.PluralName,
+                continueParameter: continueParameter,
+                cancellationToken: cancellationToken);
+            }
 
-                var key = NamespacedName.From(item);
-                _cache[key] = item?.Metadata?.OwnerReferences;
+            using (listWithHttpMessage)
+            {
+                var list = KubernetesJson.Deserialize<KubernetesList<TResource>>(listWithHttpMessage.Body.ToString());
 
-                var watchEventType = WatchEventType.Added;
-                if (previousCache.Remove(key))
+                foreach (var item in list.Items)
                 {
-                    // an already-known key is provided as a modification for re-sync purposes
-                    watchEventType = WatchEventType.Modified;
+                    // These properties are not already set on items while listing
+                    // assigned here for consistency
+                    item.ApiVersion = _names.GroupApiVersion;
+                    item.Kind = _names.Kind;
+
+                    var key = NamespacedName.From(item);
+                    _cache[key] = item?.Metadata?.OwnerReferences;
+
+                    var watchEventType = WatchEventType.Added;
+                    if (previousCache.Remove(key))
+                    {
+                        // an already-known key is provided as a modification for re-sync purposes
+                        watchEventType = WatchEventType.Modified;
+                    }
+
+                    InvokeRegistrationCallbacks(watchEventType, item);
                 }
 
-                InvokeRegistrationCallbacks(watchEventType, item);
-            }
-
-            foreach (var (key, value) in previousCache)
-            {
-                // for anything which was previously known but not part of list
-                // send a deleted notification to clear any observer caches
-                var item = new TResource()
+                foreach (var (key, value) in previousCache)
                 {
-                    ApiVersion = _names.GroupApiVersion,
-                    Kind = _names.Kind,
-                    Metadata = new V1ObjectMeta(
-                        name: key.Name,
-                        namespaceProperty: key.Namespace,
-                        ownerReferences: value),
-                };
+                    // for anything which was previously known but not part of list
+                    // send a deleted notification to clear any observer caches
+                    var item = new TResource()
+                    {
+                        ApiVersion = _names.GroupApiVersion,
+                        Kind = _names.Kind,
+                        Metadata = new V1ObjectMeta(
+                            name: key.Name,
+                            namespaceProperty: key.Namespace,
+                            ownerReferences: value),
+                    };
 
-                InvokeRegistrationCallbacks(WatchEventType.Deleted, item);
+                    InvokeRegistrationCallbacks(WatchEventType.Deleted, item);
+                }
+
+                // keep track of values needed for next page and to start watching
+                _lastResourceVersion = list.ResourceVersion();
+                continueParameter = list.Continue();
             }
-
-            // keep track of values needed for next page and to start watching
-            _lastResourceVersion = list.ResourceVersion();
-            continueParameter = list.Continue();
         }
         while (!string.IsNullOrEmpty(continueParameter));
 
-        Logger.LogInformation(
+        _logger.LogInformation(
             EventId(EventType.SynchronizeComplete),
             "Completed synchronizing {ResourceType} resources from API server.",
             typeof(TResource).Name);
@@ -255,7 +270,7 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
 
     private async Task WatchAsync(CancellationToken cancellationToken)
     {
-        Logger.LogInformation(
+        _logger.LogInformation(
             EventId(EventType.WatchingResource),
             "Watching {ResourceType} starting from resource version {ResourceVersion}.",
             typeof(TResource).Name,
@@ -265,17 +280,33 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
         var watcherCompletionSource = new TaskCompletionSource<int>();
 
         // begin watching where list left off
-        var watchWithHttpMessage = _client.CustomObjects.ListClusterCustomObjectWithHttpMessagesAsync(
+        Task<k8s.Autorest.HttpOperationResponse<object>> watchWithHttpMessage = null;
+
+        if (string.IsNullOrEmpty(_namespace))
+        {
+            watchWithHttpMessage = _client.CustomObjects.ListClusterCustomObjectWithHttpMessagesAsync(
             _names.Group,
             _names.ApiVersion,
             _names.PluralName,
             watch: true,
             resourceVersion: _lastResourceVersion,
             cancellationToken: cancellationToken);
+        }
+        else
+        {
+            watchWithHttpMessage = _client.CustomObjects.ListNamespacedCustomObjectWithHttpMessagesAsync(
+            _names.Group,
+            _names.ApiVersion,
+            _namespace,
+            _names.PluralName,
+            watch: true,
+            resourceVersion: _lastResourceVersion,
+            cancellationToken: cancellationToken);
+        }
 
         var lastEventUtc = DateTime.UtcNow;
 
-        var watcher = watchWithHttpMessage.Watch<TResource, object>(
+        using var watcher = watchWithHttpMessage.Watch<TResource, object>(
             (watchEventType, item) =>
             {
                 if (!watcherCompletionSource.Task.IsCompleted)
@@ -303,7 +334,7 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
                     throw error;
                 }
 
-                Logger.LogDebug(
+                _logger.LogDebug(
                     EventId(EventType.IgnoringError),
                     "Ignoring error {ErrorType}: {ErrorMessage}",
                     error.GetType().Name,
@@ -322,7 +353,7 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
                 if (lastEvent > TimeSpan.FromMinutes(9.5))
                 {
                     lastEventUtc = DateTime.MaxValue;
-                    Logger.LogDebug(
+                    _logger.LogDebug(
                         EventId(EventType.DisposingToReconnect),
                         "Disposing watcher for {ResourceType} to cause reconnect.",
                         typeof(TResource).Name);
@@ -349,7 +380,7 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
     {
         if (watchEventType != WatchEventType.Modified)
         {
-            Logger.LogDebug(
+            _logger.LogDebug(
                 EventId(EventType.InformerWatchEvent),
                 "Informer {ResourceType} received {WatchEventType} notification for {ItemKind}/{ItemName}.{ItemNamespace} at resource version {ResourceVersion}",
                 typeof(TResource).Name,
@@ -418,7 +449,6 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
 
     public void Dispose()
     {
-        throw new NotImplementedException();
     }
 
     internal class Registration : IResourceInformerRegistration

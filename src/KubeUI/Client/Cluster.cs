@@ -104,18 +104,25 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                     APIGroups = await Client.Apis.GetAPIVersionsAsync();
 
-                    AddDefaultNavigation();
-
                     Connected = true;
 
-                    Namespaces = GetObjectDictionary<V1Namespace>();
+                    await GetPermissions();
 
-                    if (IsMetricsAvailable)
+                    if (!_listNamspaces)
                     {
-                        _metricsRefreshTimer =  new(TimeSpan.FromSeconds(30), DispatcherPriority.Background, SyncData);
-                        _metricsRefreshTimer.Start();
-                        SyncData(null, null);
+                        throw new Exception("List/Watch Namespaces permissions is required");
                     }
+
+                    Namespaces = await GetObjectDictionaryAsync<V1Namespace>();
+
+                    while (Namespaces.Count == 0)
+                    {
+                        await Task.Delay(100);
+                    }
+
+                    await AddDefaultNavigation();
+
+                    await InitMetrics();
                 }
                 catch (Exception ex)
                 {
@@ -150,151 +157,314 @@ public sealed partial class Cluster : ObservableObject, ICluster
         }
     }
 
-    private void AddDefaultNavigation()
+    private async Task AddDefaultNavigation()
     {
         NavigationItems.Add(new NavigationLink() { Name = Resources.ClusterViewModel_Title, ControlType = typeof(ClusterViewModel), Cluster = this, SvgIcon = "/Assets/kube/infrastructure_components/unlabeled/control-plane.svg" });
         NavigationItems.Add(new NavigationLink() { Name = Resources.VisualizationViewModel_Title, ControlType = typeof(VisualizationViewModel), Cluster = this, StyleIcon = "ic_fluent_search_visual_24_filled" });
         NavigationItems.Add(new NavigationLink() { Name = "Load Yaml", Cluster = this, Id = "load-yaml", StyleIcon = "arrow_upload_regular" });
         NavigationItems.Add(new NavigationLink() { Name = "Load Folder", Cluster = this, Id = "load-folder", StyleIcon = "folder_add_regular" });
 
-        NavigationItems.Add(new ResourceNavigationLink() { Name = "Nodes", ControlType = typeof(V1Node), Cluster = this });
-        NavigationItems.Add(new ResourceNavigationLink() { Name = "Namespaces", ControlType = typeof(V1Namespace), Cluster = this });
-        NavigationItems.Add(new ResourceNavigationLink() { Name = "Events", ControlType = typeof(Corev1Event), Cluster = this });
-
-        NavigationItems.Add(new NavigationItem()
+        if (await CanListWatch<V1Node>())
         {
-            Name = "Workloads",
-            NavigationItems = [
-                new ResourceNavigationLink() { Name = "Pods", ControlType = typeof(V1Pod), Cluster = this },
-                new ResourceNavigationLink() { Name = "Deployments", ControlType = typeof(V1Deployment), Cluster = this },
-                new ResourceNavigationLink() { Name = "Daemon Sets", ControlType = typeof(V1DaemonSet), Cluster = this },
-                new ResourceNavigationLink() { Name = "Stateful Sets", ControlType = typeof(V1StatefulSet), Cluster = this },
-                new ResourceNavigationLink() { Name = "Replica Sets", ControlType = typeof(V1ReplicaSet), Cluster = this },
-                new ResourceNavigationLink() { Name = "Jobs", ControlType = typeof(V1Job), Cluster = this },
-                new ResourceNavigationLink() { Name = "Cron Jobs", ControlType = typeof(V1CronJob), Cluster = this },
-            ]
-        });
-
-        NavigationItems.Add(new NavigationItem()
+            NavigationItems.Add(new ResourceNavigationLink() { Name = "Nodes", ControlType = typeof(V1Node), Cluster = this });
+        }
+        if (_listNamspaces)
         {
-            Name = "Configuration",
-            NavigationItems = [
-                new ResourceNavigationLink() { Name = "Config Maps", ControlType = typeof(V1ConfigMap), Cluster = this },
-                new ResourceNavigationLink() { Name = "Secrets", ControlType = typeof(V1Secret), Cluster = this },
-                new ResourceNavigationLink() { Name = "Resource Quotas", ControlType = typeof(V1ResourceQuota), Cluster = this },
-                new ResourceNavigationLink() { Name = "Limit Ranges", ControlType = typeof(V1LimitRange), Cluster = this },
-                new ResourceNavigationLink() { Name = "Horizontal Pod Auto Scalers", ControlType = typeof(V2HorizontalPodAutoscaler), Cluster = this },
-                new ResourceNavigationLink() { Name = "Pod Disruption Budget", ControlType = typeof(V1PodDisruptionBudget), Cluster = this }, // Needs SvgIcon
-                new ResourceNavigationLink() { Name = "Priority Classes", ControlType = typeof(V1PriorityClass), Cluster = this }, // Needs SvgIcon
-                new ResourceNavigationLink() { Name = "Runtime Classes", ControlType = typeof(V1RuntimeClass), Cluster = this }, // Needs SvgIcon
-                new ResourceNavigationLink() { Name = "Leases", ControlType = typeof(V1Lease), Cluster = this }, // Needs SvgIcon
-                new ResourceNavigationLink() { Name = "Mutating Webhook Configs", ControlType = typeof(V1MutatingWebhookConfiguration), Cluster = this }, // Needs SvgIcon
-                new ResourceNavigationLink() { Name = "Validating Webhook Configs", ControlType = typeof(V1ValidatingWebhookConfiguration), Cluster = this }, // Needs SvgIcon
-            ]
-        });
-
-        NavigationItems.Add(new NavigationItem()
+            NavigationItems.Add(new ResourceNavigationLink() { Name = "Namespaces", ControlType = typeof(V1Namespace), Cluster = this });
+        }
+        if (await CanListWatch<Corev1Event>())
         {
-            Name = "Network",
-            NavigationItems = [
-                new ResourceNavigationLink() { Name = "Services", ControlType = typeof(V1Service), Cluster = this },
-                new ResourceNavigationLink() { Name = "Endpoints", ControlType = typeof(V1Endpoints), Cluster = this  },
-                new ResourceNavigationLink() { Name = "Endpoint Slices", ControlType = typeof(V1EndpointSlice), Cluster = this  },
-                new ResourceNavigationLink() { Name = "Ingresses", ControlType = typeof(V1Ingress), Cluster = this  },
-                new ResourceNavigationLink() { Name = "Ingress Classes", ControlType = typeof(V1IngressClass), Cluster = this  }, // Needs SvgIcon
-                new ResourceNavigationLink() { Name = "Network Policies", ControlType = typeof(V1NetworkPolicy), Cluster = this  },
-                new NavigationLink() { Name = Resources.PortForwarderListViewModel_Title, ControlType = typeof(PortForwarderListViewModel), Cluster = this, StyleIcon = "ic_fluent_cloud_flow_filled" }
-            ]
-        });
-
-        NavigationItems.Add(new NavigationItem()
-        {
-            Name = "Storage",
-            NavigationItems = [
-                new ResourceNavigationLink() { Name = "Persistent Volume Claims", ControlType = typeof(V1PersistentVolumeClaim), Cluster = this },
-                new ResourceNavigationLink() { Name = "Persistent Volumes", ControlType = typeof(V1PersistentVolume), Cluster = this },
-                new ResourceNavigationLink() { Name = "Storage Classes", ControlType = typeof(V1StorageClass), Cluster = this },
-            ]
-        });
-
-        NavigationItems.Add(new NavigationItem()
-        {
-            Name = "Access Control",
-            NavigationItems = [
-                new ResourceNavigationLink() { Name = "Service Accounts", ControlType = typeof(V1ServiceAccount), Cluster = this},
-                new ResourceNavigationLink() { Name = "Cluster Roles", ControlType = typeof(V1ClusterRole), Cluster = this },
-                new ResourceNavigationLink() { Name = "Roles", ControlType = typeof(V1Role), Cluster = this },
-                new ResourceNavigationLink() { Name = "Cluster Role Bindings", ControlType = typeof(V1ClusterRoleBinding), Cluster = this },
-                new ResourceNavigationLink() { Name = "Role Bindings", ControlType = typeof(V1RoleBinding), Cluster = this },
-            ]
-        });
-
-        _crdNavigationLink = new ResourceNavigationLink
-        {
-            Name = "Custom Resource Definitions",
-            ControlType = typeof(V1CustomResourceDefinition),
-            Cluster = this,
-            NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemComparer())
-        };
-
-        NavigationItems.Add(_crdNavigationLink);
-    }
-
-    public void Seed<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
-    {
-        if (!Connected)
-        {
-            Task.Run(Connect).GetAwaiter().GetResult();
+            NavigationItems.Add(new ResourceNavigationLink() { Name = "Events", ControlType = typeof(Corev1Event), Cluster = this });
         }
 
-        var type = GroupApiVersionKind.From<T>();
+        var workloads = new NavigationItem()
+        {
+            Name = "Workloads",
+        };
+        NavigationItems.Add(workloads);
 
-        if (!Objects.TryGetValue(type, out var container))
+        if (await CanListWatch<V1Pod>())
+        {
+            workloads.NavigationItems.Add(new ResourceNavigationLink() { Name = "Pods", ControlType = typeof(V1Pod), Cluster = this });
+            _ = GetSelfSubjectAccessReview<V1Pod>(Verb.Create, "log");
+            _ = GetSelfSubjectAccessReview<V1Pod>(Verb.Create, "exec");
+            _ = GetSelfSubjectAccessReview<V1Pod>(Verb.Create, "portforward");
+        }
+        if (await CanListWatch<V1Deployment>())
+        {
+            workloads.NavigationItems.Add(new ResourceNavigationLink() { Name = "Deployments", ControlType = typeof(V1Deployment), Cluster = this });
+        }
+        if (await CanListWatch<V1DaemonSet>())
+        {
+            workloads.NavigationItems.Add(new ResourceNavigationLink() { Name = "Daemon Sets", ControlType = typeof(V1DaemonSet), Cluster = this });
+        }
+        if (await CanListWatch<V1StatefulSet>())
+        {
+            workloads.NavigationItems.Add(new ResourceNavigationLink() { Name = "Stateful Sets", ControlType = typeof(V1StatefulSet), Cluster = this });
+        }
+        if (await CanListWatch<V1ReplicaSet>())
+        {
+            workloads.NavigationItems.Add(new ResourceNavigationLink() { Name = "Replica Sets", ControlType = typeof(V1ReplicaSet), Cluster = this });
+        }
+        if (await CanListWatch<V1Job>())
+        {
+            workloads.NavigationItems.Add(new ResourceNavigationLink() { Name = "Jobs", ControlType = typeof(V1Job), Cluster = this });
+        }
+        if (await CanListWatch<V1CronJob>())
+        {
+            workloads.NavigationItems.Add(new ResourceNavigationLink() { Name = "Cron Jobs", ControlType = typeof(V1CronJob), Cluster = this });
+        }
+
+        var configuration = new NavigationItem()
+        {
+            Name = "Configuration"
+        };
+        NavigationItems.Add(configuration);
+
+        if (await CanListWatch<V1ConfigMap>())
+        {
+            configuration.NavigationItems.Add(new ResourceNavigationLink() { Name = "Config Maps", ControlType = typeof(V1ConfigMap), Cluster = this });
+        }
+        if (await CanListWatch<V1Secret>())
+        {
+            configuration.NavigationItems.Add(new ResourceNavigationLink() { Name = "Secrets", ControlType = typeof(V1Secret), Cluster = this });
+        }
+        if (await CanListWatch<V1ResourceQuota>())
+        {
+            configuration.NavigationItems.Add(new ResourceNavigationLink() { Name = "Resource Quotas", ControlType = typeof(V1ResourceQuota), Cluster = this });
+        }
+        if (await CanListWatch<V1LimitRange>())
+        {
+            configuration.NavigationItems.Add(new ResourceNavigationLink() { Name = "Limit Ranges", ControlType = typeof(V1LimitRange), Cluster = this });
+        }
+        if (await CanListWatch<V2HorizontalPodAutoscaler>())
+        {
+            configuration.NavigationItems.Add(new ResourceNavigationLink() { Name = "Horizontal Pod Auto Scalers", ControlType = typeof(V2HorizontalPodAutoscaler), Cluster = this });
+        }
+        if (await CanListWatch<V1PodDisruptionBudget>())
+        {
+            configuration.NavigationItems.Add(new ResourceNavigationLink() { Name = "Pod Disruption Budget", ControlType = typeof(V1PodDisruptionBudget), Cluster = this }); // Needs SvgIcon
+        }
+        if (await CanListWatch<V1PriorityClass>())
+        {
+            configuration.NavigationItems.Add(new ResourceNavigationLink() { Name = "Priority Classes", ControlType = typeof(V1PriorityClass), Cluster = this }); // Needs SvgIcon
+        }
+        if (await CanListWatch<V1RuntimeClass>())
+        {
+            configuration.NavigationItems.Add(new ResourceNavigationLink() { Name = "Runtime Classes", ControlType = typeof(V1RuntimeClass), Cluster = this }); // Needs SvgIcon
+        }
+        if (await CanListWatch<V1Lease>())
+        {
+            configuration.NavigationItems.Add(new ResourceNavigationLink() { Name = "Leases", ControlType = typeof(V1Lease), Cluster = this });  // Needs SvgIcon
+        }
+        if (await CanListWatch<V1MutatingWebhookConfiguration>())
+        {
+            configuration.NavigationItems.Add(new ResourceNavigationLink() { Name = "Mutating Webhook Configs", ControlType = typeof(V1MutatingWebhookConfiguration), Cluster = this }); // Needs SvgIcon
+        }
+        if (await CanListWatch<V1ValidatingWebhookConfiguration>())
+        {
+            configuration.NavigationItems.Add(new ResourceNavigationLink() { Name = "Validating Webhook Configs", ControlType = typeof(V1ValidatingWebhookConfiguration), Cluster = this }); // Needs SvgIcon
+        }
+
+        var network = new NavigationItem()
+        {
+            Name = "Network"
+        };
+        NavigationItems.Add(network);
+        if (await CanListWatch<V1Service>())
+        {
+            network.NavigationItems.Add(new ResourceNavigationLink() { Name = "Services", ControlType = typeof(V1Service), Cluster = this });
+        }
+        if (await CanListWatch<V1Endpoints>())
+        {
+            network.NavigationItems.Add(new ResourceNavigationLink() { Name = "Endpoints", ControlType = typeof(V1Endpoints), Cluster = this });
+        }
+        if (await CanListWatch<V1EndpointSlice>())
+        {
+            network.NavigationItems.Add(new ResourceNavigationLink() { Name = "Endpoint Slices", ControlType = typeof(V1EndpointSlice), Cluster = this });
+        }
+        if (await CanListWatch<V1Ingress>())
+        {
+            network.NavigationItems.Add(new ResourceNavigationLink() { Name = "Ingresses", ControlType = typeof(V1Ingress), Cluster = this });
+        }
+        if (await CanListWatch<V1IngressClass>())
+        {
+            network.NavigationItems.Add(new ResourceNavigationLink() { Name = "Ingress Classes", ControlType = typeof(V1IngressClass), Cluster = this }); // Needs SvgIcon
+        }
+        if (await CanListWatch<V1NetworkPolicy>())
+        {
+            network.NavigationItems.Add(new ResourceNavigationLink() { Name = "Network Policies", ControlType = typeof(V1NetworkPolicy), Cluster = this });
+        }
+        if (await CanListWatch<V1Pod>() && CanI<V1Pod>(Verb.Create, "portforward"))
+        {
+            network.NavigationItems.Add(new NavigationLink() { Name = Resources.PortForwarderListViewModel_Title, ControlType = typeof(PortForwarderListViewModel), Cluster = this, StyleIcon = "ic_fluent_cloud_flow_filled" });
+        }
+
+        var storage = new NavigationItem()
+        {
+            Name = "Storage"
+        };
+        NavigationItems.Add(network);
+
+        if (await CanListWatch<V1PersistentVolumeClaim>())
+        {
+            storage.NavigationItems.Add(new ResourceNavigationLink() { Name = "Persistent Volume Claims", ControlType = typeof(V1PersistentVolumeClaim), Cluster = this });
+        }
+        if (await CanListWatch<V1PersistentVolume>())
+        {
+            storage.NavigationItems.Add(new ResourceNavigationLink() { Name = "Persistent Volumes", ControlType = typeof(V1PersistentVolume), Cluster = this });
+        }
+        if (await CanListWatch<V1StorageClass>())
+        {
+            storage.NavigationItems.Add(new ResourceNavigationLink() { Name = "Storage Classes", ControlType = typeof(V1StorageClass), Cluster = this });
+        }
+
+        var accessControl = new NavigationItem()
+        {
+            Name = "Access Control"
+        };
+        NavigationItems.Add(accessControl);
+
+        if (await CanListWatch<V1ServiceAccount>())
+        {
+            accessControl.NavigationItems.Add(new ResourceNavigationLink() { Name = "Service Accounts", ControlType = typeof(V1ServiceAccount), Cluster = this });
+        }
+        if (await CanListWatch<V1ClusterRole>())
+        {
+            accessControl.NavigationItems.Add(new ResourceNavigationLink() { Name = "Cluster Roles", ControlType = typeof(V1ClusterRole), Cluster = this });
+        }
+        if (await CanListWatch<V1Role>())
+        {
+            accessControl.NavigationItems.Add(new ResourceNavigationLink() { Name = "Roles", ControlType = typeof(V1Role), Cluster = this });
+        }
+        if (await CanListWatch<V1ClusterRoleBinding>())
+        {
+            accessControl.NavigationItems.Add(new ResourceNavigationLink() { Name = "Cluster Role Bindings", ControlType = typeof(V1ClusterRoleBinding), Cluster = this });
+        }
+        if (await CanListWatch<V1RoleBinding>())
+        {
+            accessControl.NavigationItems.Add(new ResourceNavigationLink() { Name = "Role Bindings", ControlType = typeof(V1RoleBinding), Cluster = this });
+        }
+
+        if (await CanListWatch<V1CustomResourceDefinition>())
+        {
+            _crdNavigationLink = new ResourceNavigationLink
+            {
+                Name = "Custom Resource Definitions",
+                ControlType = typeof(V1CustomResourceDefinition),
+                Cluster = this,
+                NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemComparer())
+            };
+
+            NavigationItems.Add(_crdNavigationLink);
+        }
+    }
+
+    public async Task Seed<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        var type = typeof(T);
+        var kind = GroupApiVersionKind.From<T>();
+
+        if (!Objects.TryGetValue(kind, out var container))
         {
             container = new ContainerClass
             {
-                Type = typeof(T),
+                Type = type,
                 Items = new ConcurrentObservableDictionary<NamespacedName, T>()
             };
 
-            Objects.TryAdd(type, container);
+            Objects.TryAdd(kind, container);
         }
 
-        if (container.Informer == null)
+        if (!Connected)
         {
-            var informer = new ResourceInformer<T>(_loggerFactory.CreateLogger<ResourceInformer<T>>(), Client);
+           await Connect();
+        }
 
-            container.Informer = informer;
+        if (container.Informers.Count == 0)
+        {
+            Task.WaitAll(GetSelfSubjectAccessReview(type, Verb.Create), GetSelfSubjectAccessReview(type, Verb.Update), GetSelfSubjectAccessReview(type, Verb.Delete));
 
-            informer.Register(new ResourceInformerCallback<T>((x, item) =>
+            var listCluster = await CanListWatch<T>(false);
+
+            if (listCluster)
             {
-                var items = (ConcurrentObservableDictionary<NamespacedName, T>)(Objects[type].Items);
+                var informer = new ResourceInformer<T>(_loggerFactory.CreateLogger<ResourceInformer<T>>(), Client);
 
-                var name = new NamespacedName(item.Namespace(), item.Name());
+                container.Informers.Add(informer);
 
-                switch (x)
+                var inf = informer.Register(GetResourceInformerCallback<T>());
+
+                _ = Task.Run(() => informer.RunAsync(new CancellationToken()));
+
+                await inf.ReadyAsync(new CancellationToken());
+            }
+            else
+            {
+                foreach (var item in GetObjectDictionary<V1Namespace>())
                 {
-                    case WatchEventType.Added:
-                        if (typeof(T) == typeof(V1CustomResourceDefinition))
+                    await Task.WhenAll(
+                        GetSelfSubjectAccessReview(type, Verb.List, item.Value.Name()),
+                        GetSelfSubjectAccessReview(type, Verb.Watch, item.Value.Name()),
+                        GetSelfSubjectAccessReview(type, Verb.Create, item.Value.Name()),
+                        GetSelfSubjectAccessReview(type, Verb.Update, item.Value.Name()),
+                        GetSelfSubjectAccessReview(type, Verb.Delete, item.Value.Name())
+                        );
+
+                    if (CanI(type, Verb.List, item.Value.Name()) && CanI(type, Verb.Watch, item.Value.Name()))
+                    {
+                        var informer = new ResourceInformer<T>(_loggerFactory.CreateLogger<ResourceInformer<T>>(), Client, item.Value.Name());
+
+                        container.Informers.Add(informer);
+
+                        var inf = informer.Register(GetResourceInformerCallback<T>());
+
+                        _ = Task.Run(() => informer.RunAsync(new CancellationToken()));
+
+                        await inf.ReadyAsync(new CancellationToken());
+                    }
+                }
+            }
+        }
+    }
+
+    private ResourceInformerCallback<T> GetResourceInformerCallback<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        return new ResourceInformerCallback<T>((x, item) =>
+        {
+            var kind = GroupApiVersionKind.From<T>();
+
+            var items = (ConcurrentObservableDictionary<NamespacedName, T>)Objects[kind].Items;
+
+            var name = new NamespacedName(item.Namespace(), item.Name());
+
+            switch (x)
+            {
+                case WatchEventType.Added:
+                    if (typeof(T) == typeof(V1CustomResourceDefinition))
+                    {
+                        var crd = (item as V1CustomResourceDefinition);
+
+                        var assembly = _generator.GenerateAssembly(crd, "KubeUI.Models");
+
+                        if (assembly.Item1 == null || assembly.Item2 == null)
                         {
-                            var crd = (item as V1CustomResourceDefinition);
+                            _logger.LogWarning("Unable to generate CRD for {name}", name);
 
-                            var assembly = _generator.GenerateAssembly(crd, "KubeUI.Models");
+                            return;
+                        }
 
-                            if (assembly.Item1 == null || assembly.Item2 == null)
-                            {
-                                _logger.LogWarning("Unable to generate CRD for {name}", name);
+                        ModelCache.AddToCache(assembly.Item1, assembly.Item2);
 
-                                return;
-                            }
+                        var version = crd.Spec.Versions.First(x => x.Served && x.Storage);
 
-                            ModelCache.AddToCache(assembly.Item1, assembly.Item2);
+                        var type = ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
 
-                            var version = crd.Spec.Versions.First(x => x.Served && x.Storage);
+                        var task = CanListWatch(type);
 
-                            var type = ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
-
-                            var nav = new ResourceNavigationLink() { Name = crd.Spec.Names.Kind.Humanize(LetterCasing.Title), ControlType = type, Cluster = this, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemComparer())};
+                        if (task.GetAwaiter().GetResult())
+                        {
+                            var nav = new ResourceNavigationLink() { Name = crd.Spec.Names.Kind.Humanize(LetterCasing.Title), ControlType = type, Cluster = this, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemComparer()) };
 
                             var group = crd.Spec.Group;
 
@@ -320,27 +490,25 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                             navItem!.NavigationItems.Add(nav);
                         }
+                    }
 
-                        Dispatcher.UIThread.Post(() => items[name] = item);
-                        break;
-                    case WatchEventType.Modified:
-                        Dispatcher.UIThread.Post(() => items[name] = item);
-                        break;
-                    case WatchEventType.Deleted:
-                        Dispatcher.UIThread.Post(() => items.Remove(name));
-                        //todo Check if CRD and remove from menu etc
-                        break;
-                    case WatchEventType.Error:
-                        break;
-                    case WatchEventType.Bookmark:
-                        break;
-                }
+                    Dispatcher.UIThread.Post(() => items[name] = item);
+                    break;
+                case WatchEventType.Modified:
+                    Dispatcher.UIThread.Post(() => items[name] = item);
+                    break;
+                case WatchEventType.Deleted:
+                    Dispatcher.UIThread.Post(() => items.Remove(name));
+                    //todo Check if CRD and remove from menu etc
+                    break;
+                case WatchEventType.Error:
+                    break;
+                case WatchEventType.Bookmark:
+                    break;
+            }
 
-                OnChange?.Invoke(x, type, item);
-            }));
-
-            _ = Task.Run(() => informer.RunAsync(new CancellationToken()));
-        }
+            OnChange?.Invoke(x, kind, item);
+        });
     }
 
     private static List<string> ConstructFQDNList(string domain)
@@ -393,47 +561,62 @@ public sealed partial class Cluster : ObservableObject, ICluster
         return false;
     }
 
-    public async Task<bool> CanDelete<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
-    {
-        var kind = GroupApiVersionKind.From<T>();
-
-        var model = new V1SelfSubjectAccessReview()
-        {
-            ApiVersion = kind.GroupApiVersion,
-            Kind = V1SelfSubjectAccessReview.KubeKind,
-            Spec = new()
-            {
-                ResourceAttributes = new()
-                {
-                    Group = kind.Group,
-                    NamespaceProperty = item.Namespace(),
-                    Resource = kind.PluralName,
-                    Verb = "delete"
-                }
-            }
-        };
-
-        var kube = Client as Kubernetes;
-
-        var resp = await kube.CreateSelfSubjectAccessReviewAsync(model);
-
-        return resp.Status.Allowed;
-    }
-
     public T? GetObject<T>(string @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        Seed<T>();
+        _ = Seed<T>();
 
         var attribute = GroupApiVersionKind.From<T>();
+
+        if (!Objects.TryGetValue(attribute, out var container))
+        {
+            container = new ContainerClass
+            {
+                Type = typeof(T),
+                Items = new ConcurrentObservableDictionary<NamespacedName, T>()
+            };
+
+            Objects.TryAdd(attribute, container);
+        }
 
         return ((ConcurrentObservableDictionary<NamespacedName,T>)Objects[attribute].Items)[new NamespacedName(@namespace, name)];
     }
 
     public ConcurrentObservableDictionary<NamespacedName, T> GetObjectDictionary<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        Seed<T>();
+        _ = Seed<T>();
 
         var attribute = GroupApiVersionKind.From<T>();
+
+        if (!Objects.TryGetValue(attribute, out var container))
+        {
+            container = new ContainerClass
+            {
+                Type = typeof(T),
+                Items = new ConcurrentObservableDictionary<NamespacedName, T>()
+            };
+
+            Objects.TryAdd(attribute, container);
+        }
+
+        return (ConcurrentObservableDictionary<NamespacedName, T>)Objects[attribute].Items;
+    }
+
+    public async Task<ConcurrentObservableDictionary<NamespacedName, T>> GetObjectDictionaryAsync<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        await Seed<T>();
+
+        var attribute = GroupApiVersionKind.From<T>();
+
+        if (!Objects.TryGetValue(attribute, out var container))
+        {
+            container = new ContainerClass
+            {
+                Type = typeof(T),
+                Items = new ConcurrentObservableDictionary<NamespacedName, T>()
+            };
+
+            Objects.TryAdd(attribute, container);
+        }
 
         return (ConcurrentObservableDictionary<NamespacedName, T>)Objects[attribute].Items;
     }
@@ -554,7 +737,7 @@ public partial class ContainerClass : ObservableObject
     private Type _type;
 
     [ObservableProperty]
-    private IResourceInformer _informer;
+    private List<IResourceInformer> _informers = [];
 
     [ObservableProperty]
     private ICollection _items;

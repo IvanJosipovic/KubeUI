@@ -11,7 +11,7 @@ public partial class Cluster
     [ObservableProperty]
     private ObservableCollection<NodeMetrics> _nodeMetrics = [];
 
-    public bool IsMetricsAvailable => APIGroups.Groups.Any(g => g.Name == "metrics.k8s.io");
+    public bool IsMetricsAvailable { get; private set; }
 
     private DispatcherTimer _metricsRefreshTimer;
 
@@ -36,6 +36,55 @@ public partial class Cluster
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating Metrics");
+        }
+    }
+
+    private async Task InitMetrics()
+    {
+        var group = APIGroups.Groups.Any(g => g.Name == "metrics.k8s.io");
+        var kube = Client as Kubernetes;
+
+        var model = new V1SelfSubjectAccessReview()
+        {
+            ApiVersion = V1SelfSubjectAccessReview.KubeGroup + "/" + V1SelfSubjectAccessReview.KubeApiVersion,
+            Kind = V1SelfSubjectAccessReview.KubeKind,
+            Spec = new()
+            {
+                ResourceAttributes = new()
+                {
+                    Group = "metrics.k8s.io",
+                    Resource = "pods",
+                    Verb = "list"
+                }
+            }
+        };
+
+        var resp = await kube.CreateSelfSubjectAccessReviewAsync(model);
+
+        var model2 = new V1SelfSubjectAccessReview()
+        {
+            ApiVersion = V1SelfSubjectAccessReview.KubeGroup + "/" + V1SelfSubjectAccessReview.KubeApiVersion,
+            Kind = V1SelfSubjectAccessReview.KubeKind,
+            Spec = new()
+            {
+                ResourceAttributes = new()
+                {
+                    Group = "metrics.k8s.io",
+                    Resource = "nodes",
+                    Verb = "list"
+                }
+            }
+        };
+
+        var resp2 = await kube.CreateSelfSubjectAccessReviewAsync(model);
+
+        IsMetricsAvailable = group && resp.Status.Allowed && resp2.Status.Allowed;
+
+        if (IsMetricsAvailable)
+        {
+            _metricsRefreshTimer = new(TimeSpan.FromSeconds(30), DispatcherPriority.Background, SyncData);
+            _metricsRefreshTimer.Start();
+            SyncData(null, null);
         }
     }
 }
