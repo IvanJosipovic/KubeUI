@@ -1,5 +1,6 @@
 ﻿using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Styling;
 using AvaloniaEdit;
 using AvaloniaEdit.Document;
@@ -105,6 +106,7 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
                         .FontWeight(FontWeight.Normal)
                         .IsReadOnly(@vm.EditMode, converter: Utilities.InverseBooleanConverter)
                         .ShowLineNumbers(true)
+                        .Background(new DynamicResourceExtension("SystemAltHighColor"))
                         .HorizontalScrollBarVisibility(ScrollBarVisibility.Auto)
                         .VerticalScrollBarVisibility(ScrollBarVisibility.Visible)
                         .ContextMenu(new ContextMenu()

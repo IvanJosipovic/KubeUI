@@ -1,5 +1,6 @@
 ﻿using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Styling;
 using AvaloniaEdit;
 using TextMateSharp.Grammars;
@@ -91,7 +92,7 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
                     .FontWeight(FontWeight.Normal)
                     .IsReadOnly(true)
                     .ShowLineNumbers(false)
-                    //.Background(Brushes.Black)
+                    .Background(new DynamicResourceExtension("SystemAltHighColor"))
                     .HorizontalScrollBarVisibility(ScrollBarVisibility.Auto)
                     .VerticalScrollBarVisibility(ScrollBarVisibility.Visible)
                     .ContextMenu(new ContextMenu()
