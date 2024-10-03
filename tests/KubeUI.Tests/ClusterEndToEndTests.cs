@@ -391,10 +391,10 @@ spec:
         testHarness.Cluster.ImportYaml(stream);
         var type = testHarness.Cluster.ModelCache.GetResourceType("kubeui.com", "v1beta1", "Test");
 
-        var _seedMethodInfo = testHarness.Cluster.GetType().GetMethods().First(x => x.Name == nameof(Cluster.Seed) && x.IsGenericMethod && x.GetParameters().Length == 0);
+        var _seedMethodInfo = testHarness.Cluster.GetType().GetMethod(nameof(Cluster.Seed), [typeof(bool)]);
 
         var fooRef = _seedMethodInfo.MakeGenericMethod(type);
-        fooRef.Invoke(testHarness.Cluster, null);
+        fooRef.Invoke(testHarness.Cluster, [false]);
 
         await Task.Delay(TimeSpan.FromSeconds(5));
 
