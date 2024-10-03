@@ -399,7 +399,10 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                 _ = Task.Run(() => informer.RunAsync(new CancellationToken()));
 
-                await inf.ReadyAsync(new CancellationToken());
+                if (waitForReady)
+                {
+                    await inf.ReadyAsync(new CancellationToken());
+                }
             }
             else
             {
