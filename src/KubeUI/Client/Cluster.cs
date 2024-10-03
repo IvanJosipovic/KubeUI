@@ -588,7 +588,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     public ConcurrentObservableDictionary<NamespacedName, T> GetObjectDictionary<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        _ = Task.Run(Seed<T>);
+        _ = Task.Run(() => Seed<T>());
 
         var attribute = GroupApiVersionKind.From<T>();
 
@@ -608,7 +608,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     public async Task<ConcurrentObservableDictionary<NamespacedName, T>> GetObjectDictionaryAsync<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        await Seed<T>();
+        _ = Task.Run(() => Seed<T>());
 
         var attribute = GroupApiVersionKind.From<T>();
 
