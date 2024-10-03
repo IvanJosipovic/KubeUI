@@ -102,12 +102,12 @@ public partial class Cluster
         return CanI(typeof(T), verb, subresource);
     }
 
-    private async Task<bool> CanListWatch<T>(bool checkNamespace = true) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    private async Task<bool> CanListWatch<T>(bool checkNamespace = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         return await CanListWatch(typeof(T), checkNamespace);
     }
 
-    private async Task<bool> CanListWatch(Type type, bool checkNamespace = true)
+    private async Task<bool> CanListWatch(Type type, bool checkNamespace = false)
     {
         await Task.WhenAll(GetSelfSubjectAccessReview(type, Verb.List), GetSelfSubjectAccessReview(type, Verb.Watch));
 
