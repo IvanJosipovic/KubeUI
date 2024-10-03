@@ -59,33 +59,33 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         Id = nameof(VisualizationViewModel) + "-" + cluster;
 
-        cluster.Seed<V1Node>();
+        _ = cluster.Seed<V1Node>();
 
         // Workloads
-        cluster.Seed<V1Pod>();
-        cluster.Seed<V1ReplicaSet>();
-        cluster.Seed<V1Deployment>();
-        cluster.Seed<V1StatefulSet>();
-        cluster.Seed<V1DaemonSet>();
-        cluster.Seed<V1CronJob>();
-        cluster.Seed<V1Job>();
+        _ = cluster.Seed<V1Pod>();
+        _ = cluster.Seed<V1ReplicaSet>();
+        _ = cluster.Seed<V1Deployment>();
+        _ = cluster.Seed<V1StatefulSet>();
+        _ = cluster.Seed<V1DaemonSet>();
+        _ = cluster.Seed<V1CronJob>();
+        _ = cluster.Seed<V1Job>();
 
         // Configuration
-        cluster.Seed<V1Secret>();
-        cluster.Seed<V1ConfigMap>();
+        _ = cluster.Seed<V1Secret>();
+        _ = cluster.Seed<V1ConfigMap>();
 
         // Network
-        cluster.Seed<V1Service>();
-        cluster.Seed<V1EndpointSlice>();
-        cluster.Seed<V1Ingress>();
-        cluster.Seed<V1IngressClass>();
+        _ = cluster.Seed<V1Service>();
+        _ = cluster.Seed<V1EndpointSlice>();
+        _ = cluster.Seed<V1Ingress>();
+        _ = cluster.Seed<V1IngressClass>();
 
         // Storage
-        cluster.Seed<V1PersistentVolumeClaim>();
-        cluster.Seed<V1PersistentVolume>();
+        _ = cluster.Seed<V1PersistentVolumeClaim>();
+        _ = cluster.Seed<V1PersistentVolume>();
 
         // Access Control
-        cluster.Seed<V1ServiceAccount>();
+        _ = cluster.Seed<V1ServiceAccount>();
 
         Run();
     }

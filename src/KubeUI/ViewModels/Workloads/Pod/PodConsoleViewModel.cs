@@ -64,13 +64,13 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
                     var str = memory.ToString()
                         .Replace("\0", "", StringComparison.Ordinal) // null character
                         .Replace("\a", "", StringComparison.Ordinal) // bell or alert
-                        .Replace("\b", "", StringComparison.Ordinal) // moves the cursor two positions to the left.
                         ;
                     str = RemoveAnsiEscapeSequences(str);
                     if (!string.IsNullOrEmpty(str))
                     {
                        Dispatcher.UIThread.Post(() =>
                        {
+                           // backspace
                            if (str.Equals("\b", StringComparison.Ordinal) || str.Equals("\b \b", StringComparison.Ordinal))
                            {
                                Console.Remove(Console.TextLength - 1, 1);
