@@ -33,7 +33,7 @@ public interface ICluster
     void ImportFolder(string path);
     void ImportYaml(Stream stream);
     void RemovePortForward(PortForwarder pf);
-    Task Seed<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    Task Seed<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     bool CanI<T>(Verb verb, string @namespace = "", string subresource = "") where T : class, IKubernetesObject<V1ObjectMeta>, new();
     bool CanI(Type type, Verb verb, string @namespace = "", string subresource = "");
     Task<ConcurrentObservableDictionary<NamespacedName, T>> GetObjectDictionaryAsync<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();

@@ -113,6 +113,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
                         throw new Exception("List/Watch Namespaces permissions is required");
                     }
 
+                    await Seed<V1Namespace>(true);
+
                     Namespaces = await GetObjectDictionaryAsync<V1Namespace>();
 
                     while (Namespaces.Count == 0)
@@ -360,7 +362,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         }
     }
 
-    public async Task Seed<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public async Task Seed<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var type = typeof(T);
         var kind = GroupApiVersionKind.From<T>();
@@ -421,7 +423,10 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                         _ = Task.Run(() => informer.RunAsync(new CancellationToken()));
 
-                        await inf.ReadyAsync(new CancellationToken());
+                        if (waitForReady)
+                        {
+                            await inf.ReadyAsync(new CancellationToken());
+                        }
                     }
                 }
             }
