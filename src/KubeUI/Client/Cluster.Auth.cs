@@ -12,7 +12,7 @@ public partial class Cluster
 
     private async Task GetPermissions()
     {
-        _listNamspaces = await CanListWatch<V1Namespace>();
+        _listNamspaces = await CanIListWatchAsync<V1Namespace>();
     }
 
     public enum Verb
@@ -102,14 +102,47 @@ public partial class Cluster
         return CanI(typeof(T), verb, subresource);
     }
 
-    private async Task<bool> CanListWatch<T>(bool checkNamespace = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public async Task<bool> CanIAsync(Type type, Verb verb, string subresource = "", bool checkNamespace = false)
     {
-        return await CanListWatch(typeof(T), checkNamespace);
+        await GetSelfSubjectAccessReview(type, Verb.List, subresource: subresource);
+
+        if (CanI(type, verb, subresource))
+        {
+            return true;
+        }
+
+        if (checkNamespace)
+        {
+            foreach (var item in await GetObjectDictionaryAsync<V1Namespace>())
+            {
+                await GetSelfSubjectAccessReview(type, verb, subresource, item.Value.Name());
+
+                if (CanI(type, verb, subresource, item.Value.Name()))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
-    private async Task<bool> CanListWatch(Type type, bool checkNamespace = false)
+    public async Task<bool> CanIAsync<T>(Verb verb, string subresource = "", bool checkNamespace = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        await Task.WhenAll(GetSelfSubjectAccessReview(type, Verb.List), GetSelfSubjectAccessReview(type, Verb.Watch));
+        return await CanIAsync(typeof(T), verb, subresource, checkNamespace);
+    }
+
+    private async Task<bool> CanIListWatchAsync<T>(bool checkNamespace = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        return await CanListWatchAsync(typeof(T), checkNamespace);
+    }
+
+    private async Task<bool> CanListWatchAsync(Type type, bool checkNamespace = false)
+    {
+        await Task.WhenAll(
+            GetSelfSubjectAccessReview(type, Verb.List),
+            GetSelfSubjectAccessReview(type, Verb.Watch)
+        );
 
         if (CanI(type, Verb.List) && CanI(type, Verb.Watch))
         {
@@ -118,9 +151,12 @@ public partial class Cluster
 
         if (checkNamespace)
         {
-            foreach (var item in GetObjectDictionary<V1Namespace>())
+            foreach (var item in await GetObjectDictionaryAsync<V1Namespace>())
             {
-                await Task.WhenAll(GetSelfSubjectAccessReview(type, Verb.List, item.Value.Name()), GetSelfSubjectAccessReview(type, Verb.Watch, item.Value.Name()));
+                await Task.WhenAll(
+                    GetSelfSubjectAccessReview(type, Verb.List, item.Value.Name()),
+                    GetSelfSubjectAccessReview(type, Verb.Watch, item.Value.Name())
+                    );
 
                 if (CanI(type, Verb.List, item.Value.Name()) && CanI(type, Verb.Watch, item.Value.Name()))
                 {

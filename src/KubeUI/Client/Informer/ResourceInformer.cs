@@ -27,7 +27,7 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
     private ImmutableList<Registration> _registrations = [];
     private IDictionary<NamespacedName, IList<V1OwnerReference>> _cache = new Dictionary<NamespacedName, IList<V1OwnerReference>>();
     private string _lastResourceVersion;
-    readonly ILogger<ResourceInformer<TResource>> _logger;
+    private readonly ILogger<ResourceInformer<TResource>> _logger;
     private readonly string? _namespace;
 
     /// <summary>
