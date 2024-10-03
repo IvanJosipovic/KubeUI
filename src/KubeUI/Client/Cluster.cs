@@ -306,7 +306,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         {
             Name = "Storage"
         };
-        NavigationItems.Add(network);
+        NavigationItems.Add(storage);
 
         if (await CanListWatch<V1PersistentVolumeClaim>())
         {
