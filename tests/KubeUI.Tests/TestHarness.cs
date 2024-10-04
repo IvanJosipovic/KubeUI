@@ -10,6 +10,8 @@ public class TestHarness : IDisposable
 
     public ICluster Cluster { get; set; }
 
+    public ClusterManager ClusterManager { get; set; }
+
     public Kubernetes Kubernetes { get; set; }
 
     private Kind Kind { get; set; }
@@ -22,11 +24,11 @@ public class TestHarness : IDisposable
 
         var kc = await Kind.GetKubeConfig(Name);
 
-        var cm = Application.Current.GetRequiredService<ClusterManager>();
+        ClusterManager = Application.Current.GetRequiredService<ClusterManager>();
 
-        cm.LoadFromConfig(kc);
+        ClusterManager.LoadFromConfig(kc);
 
-        Cluster = cm.GetCluster($"kind-{Name}")!;
+        Cluster = ClusterManager.GetCluster($"kind-{Name}")!;
 
         Kubernetes = await Kind.GetKubernetesClient(Name);
 
