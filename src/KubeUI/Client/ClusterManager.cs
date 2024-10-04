@@ -3,6 +3,7 @@ using System.Text;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using k8s;
+using k8s.KubeConfigModels;
 using Scrutor;
 using Swordfish.NET.Collections;
 using Swordfish.NET.Collections.Auxiliary;
@@ -157,24 +158,31 @@ public sealed partial class ClusterManager : ObservableObject, IDisposable
         }
     }
 
+    public void LoadFromConfig(K8SConfiguration kubeConfig)
+    {
+        ArgumentNullException.ThrowIfNull(kubeConfig);
+
+        foreach (var item in kubeConfig.Contexts)
+        {
+            var cluster = _serviceProvider.GetRequiredService<Cluster>();
+
+            cluster.Name = item.Name;
+
+            cluster.KubeConfigPath = kubeConfig.FileName;
+
+            cluster.KubeConfig = (K8SConfiguration?)kubeConfig;
+
+            Clusters.Add(cluster);
+        }
+    }
+
     public void LoadFromConfig(string kubeConfig)
     {
         ArgumentNullException.ThrowIfNull(kubeConfig);
 
         var config = KubernetesClientConfiguration.LoadKubeConfig(new MemoryStream(Encoding.UTF8.GetBytes(kubeConfig)));
 
-        foreach (var item in config.Contexts)
-        {
-            var cluster = _serviceProvider.GetRequiredService<Cluster>();
-
-            cluster.Name = item.Name;
-
-            cluster.KubeConfigPath = config.FileName;
-
-            cluster.KubeConfig = config;
-
-            Clusters.Add(cluster);
-        }
+        LoadFromConfig(config);
     }
 
     public ICluster? GetCluster(string name)

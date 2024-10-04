@@ -2,6 +2,7 @@ using System.Text;
 using Avalonia.Headless.XUnit;
 using FluentAssertions;
 using k8s;
+using k8s.KubeConfigModels;
 using k8s.Models;
 using KubeUI.Client.Informer;
 using KubeUI.Core.Tests;
@@ -417,7 +418,6 @@ spec:
         }
     }
 
-
     #region Limited Access
 
     private string yamlLimitedRbac = @"
@@ -482,20 +482,6 @@ kind: RoleBinding
 metadata:
   name: my-serviceaccount-developer
   namespace: my-app
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: developer
-subjects:
-- kind: ServiceAccount
-  name: my-serviceaccount
-  namespace: my-app
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: my-serviceaccount-developer
-  namespace: argocd
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -627,7 +613,48 @@ rules:
 
         testHarness.Cluster.ImportYaml(stream);
 
+        var secret = await testHarness.Kubernetes.CoreV1.ReadNamespacedSecretAsync("my-serviceaccount", "my-app");
+
         // Test is prepped, generate KubeConfig
+
+        var config = KubernetesYaml.Deserialize<K8SConfiguration>(KubernetesYaml.Serialize(testHarness.KubeConfig));
+
+        var name = "test1";
+
+        config.Clusters.First().Name = name;
+        var context = config.Contexts.First();
+
+        context.Name = name;
+        context.ContextDetails.Cluster = name;
+        context.ContextDetails.User = name;
+
+        var user = config.Users.First();
+
+        user.UserCredentials = new()
+        {
+            Token = Encoding.UTF8.GetString(secret.Data["token"])
+        };
+        user.Name = name;
+
+        var yaml = KubernetesYaml.Serialize(config);
+
+        testHarness.ClusterManager.LoadFromConfig(config);
+
+        var cluster = testHarness.ClusterManager.GetCluster(name);
+
+        await cluster.Connect();
+
+        await cluster.Seed<V1Node>(true);
+
+        await cluster.Seed<V1Secret>(true);
+
+        var nodes = await cluster.GetObjectDictionaryAsync<V1Node>();
+        nodes.Count.Should().Be(1);
+
+        var secrets = await cluster.GetObjectDictionaryAsync<V1Secret>();
+        secrets.Count.Should().Be(1);
+        secrets.Values.First().Namespace().Should().Be("my-app");
+        secrets.Values.First().Name().Should().Be("my-serviceaccount");
     }
 
     #endregion

@@ -1,5 +1,6 @@
 ﻿using Avalonia;
 using k8s;
+using k8s.KubeConfigModels;
 using KubeUI.Client;
 
 namespace KubeUI.Core.Tests;
@@ -16,17 +17,19 @@ public class TestHarness : IDisposable
 
     private Kind Kind { get; set; }
 
+    public K8SConfiguration KubeConfig { get; set; }
+
     public async Task Initialize()
     {
         Kind = new Kind();
         await Kind.DownloadClient();
         await Kind.CreateCluster(Name);
 
-        var kc = await Kind.GetKubeConfig(Name);
+        KubeConfig = await Kind.GetK8SConfiguration(Name);
 
         ClusterManager = Application.Current.GetRequiredService<ClusterManager>();
 
-        ClusterManager.LoadFromConfig(kc);
+        ClusterManager.LoadFromConfig(KubeConfig);
 
         Cluster = ClusterManager.GetCluster($"kind-{Name}")!;
 
