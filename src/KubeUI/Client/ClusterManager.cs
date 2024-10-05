@@ -170,8 +170,6 @@ public sealed partial class ClusterManager : ObservableObject, IDisposable
 
             cluster.KubeConfigPath = kubeConfig.FileName;
 
-            cluster.KubeConfig = (K8SConfiguration?)kubeConfig;
-
             Clusters.Add(cluster);
         }
     }

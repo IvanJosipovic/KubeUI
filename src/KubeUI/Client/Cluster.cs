@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Xml;
 using Dock.Model.Controls;
 using Dock.Model.Core;
+using Dock.Model.Mvvm;
 using Humanizer;
 using k8s;
 using k8s.KubeConfigModels;
@@ -28,9 +29,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     [ObservableProperty]
     private string _kubeConfigPath;
-
-    [ObservableProperty]
-    private K8SConfiguration _kubeConfig;
 
     [ObservableProperty]
     private bool _connected;
@@ -78,18 +76,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
         _modelCache.AddToCache(typeof(V1Deployment).Assembly, kubeAssemblyXmlDoc);
     }
 
-    private KubernetesClientConfiguration _getClientConfiguration()
-    {
-        if (KubeConfig != null)
-        {
-            return KubernetesClientConfiguration.BuildConfigFromConfigObject(KubeConfig, Name);
-        }
-        else
-        {
-            return KubernetesClientConfiguration.BuildConfigFromConfigFile(KubeConfigPath, Name);
-        }
-    }
-
     public async Task Connect()
     {
         await _semaphoreSlim.WaitAsync();
@@ -100,7 +86,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
             {
                 try
                 {
-                    Client = new Kubernetes(_getClientConfiguration());
+                    Client = new Kubernetes(KubernetesClientConfiguration.BuildConfigFromConfigFile(KubeConfigPath, Name));
 
                     APIGroups = await Client.Apis.GetAPIVersionsAsync();
 
@@ -110,7 +96,16 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                     if (!_listNamspaces)
                     {
-                        throw new Exception("List/Watch Namespaces permissions is required");
+                        var vm = Application.Current.GetRequiredService<ClusterSettingsViewModel>();
+
+                        if (vm is IInitializeCluster init)
+                        {
+                            init.Initialize(this);
+                        }
+
+                        Dispatcher.UIThread.Post(() => Application.Current.GetRequiredService<IFactory>().AddToDocuments(vm));
+
+                        return;
                     }
 
                     await Seed<V1Namespace>(true);

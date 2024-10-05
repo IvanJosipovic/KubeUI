@@ -20,4 +20,13 @@ public sealed partial class Settings : ObservableObject
 
     [ObservableProperty]
     private bool _preReleaseChannel = true;
+
+    [ObservableProperty]
+    private Dictionary<string, ClusterSettings> _clusterSettings = [];
+}
+
+public sealed partial class ClusterSettings : ObservableObject
+{
+    [ObservableProperty]
+    private ObservableCollection<string>? _namespaces;
 }
