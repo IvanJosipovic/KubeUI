@@ -15,6 +15,9 @@ KubeUI is a user interface for Kubernetes.
 - Create/View/Edit Resources as Yaml
 - Custom Resource Definition support
 - Multi Monitor Support
+- Limited Permission Support
+  - No access to List/Watch Namespaces
+  - Namespace specific Resource Permissions
 
 ### Resource Specific Features
 - Pod
