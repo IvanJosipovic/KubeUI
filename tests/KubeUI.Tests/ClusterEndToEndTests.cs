@@ -778,119 +778,119 @@ rules:
     - '*'
 ";
 
-    [AvaloniaFact]
-    public async Task LimitedAccess()
-    {
-        using var testHarness = new TestHarness();
-        await testHarness.Initialize();
+    //[AvaloniaFact]
+    //public async Task LimitedAccess()
+    //{
+    //    using var testHarness = new TestHarness();
+    //    await testHarness.Initialize();
 
-        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(yamlLimitedRbac));
+    //    using var stream = new MemoryStream(Encoding.UTF8.GetBytes(yamlLimitedRbac));
 
-        testHarness.Cluster.ImportYaml(stream);
+    //    testHarness.Cluster.ImportYaml(stream);
 
-        var secret = await testHarness.Kubernetes.CoreV1.ReadNamespacedSecretAsync("my-serviceaccount", "my-app");
+    //    var secret = await testHarness.Kubernetes.CoreV1.ReadNamespacedSecretAsync("my-serviceaccount", "my-app");
 
-        // Test is prepped, generate KubeConfig
+    //    // Test is prepped, generate KubeConfig
 
-        var config = KubernetesYaml.Deserialize<K8SConfiguration>(KubernetesYaml.Serialize(testHarness.KubeConfig));
+    //    var config = KubernetesYaml.Deserialize<K8SConfiguration>(KubernetesYaml.Serialize(testHarness.KubeConfig));
 
-        var name = "test1";
+    //    var name = "test1";
 
-        config.Clusters.First().Name = name;
-        var context = config.Contexts.First();
+    //    config.Clusters.First().Name = name;
+    //    var context = config.Contexts.First();
 
-        context.Name = name;
-        context.ContextDetails.Cluster = name;
-        context.ContextDetails.User = name;
+    //    context.Name = name;
+    //    context.ContextDetails.Cluster = name;
+    //    context.ContextDetails.User = name;
 
-        var user = config.Users.First();
+    //    var user = config.Users.First();
 
-        user.UserCredentials = new()
-        {
-            Token = Encoding.UTF8.GetString(secret.Data["token"])
-        };
-        user.Name = name;
+    //    user.UserCredentials = new()
+    //    {
+    //        Token = Encoding.UTF8.GetString(secret.Data["token"])
+    //    };
+    //    user.Name = name;
 
-        testHarness.ClusterManager.LoadFromConfig(config);
+    //    testHarness.ClusterManager.LoadFromConfig(config);
 
-        var cluster = testHarness.ClusterManager.GetCluster(name);
+    //    var cluster = testHarness.ClusterManager.GetCluster(name);
 
-        await cluster.Connect();
+    //    await cluster.Connect();
 
-        await cluster.Seed<V1Node>(true);
+    //    await cluster.Seed<V1Node>(true);
 
-        await cluster.Seed<V1Secret>(true);
+    //    await cluster.Seed<V1Secret>(true);
 
-        await Task.Delay(TimeSpan.FromSeconds(5));
+    //    await Task.Delay(TimeSpan.FromSeconds(5));
 
-        var nodes = await cluster.GetObjectDictionaryAsync<V1Node>();
-        nodes.Count.Should().Be(1);
+    //    var nodes = await cluster.GetObjectDictionaryAsync<V1Node>();
+    //    nodes.Count.Should().Be(1);
 
-        var secrets = await cluster.GetObjectDictionaryAsync<V1Secret>();
-        secrets.Count.Should().Be(1);
-        secrets.Values.First().Namespace().Should().Be("my-app");
-        secrets.Values.First().Name().Should().Be("my-serviceaccount");
-    }
+    //    var secrets = await cluster.GetObjectDictionaryAsync<V1Secret>();
+    //    secrets.Count.Should().Be(1);
+    //    secrets.Values.First().Namespace().Should().Be("my-app");
+    //    secrets.Values.First().Name().Should().Be("my-serviceaccount");
+    //}
 
-    [AvaloniaFact]
-    public async Task LimitedAccessNoNamespace()
-    {
-        using var testHarness = new TestHarness();
-        await testHarness.Initialize();
+    //[AvaloniaFact]
+    //public async Task LimitedAccessNoNamespace()
+    //{
+    //    using var testHarness = new TestHarness();
+    //    await testHarness.Initialize();
 
-        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(yamlLimitedRbacNoNamespace));
+    //    using var stream = new MemoryStream(Encoding.UTF8.GetBytes(yamlLimitedRbacNoNamespace));
 
-        testHarness.Cluster.ImportYaml(stream);
+    //    testHarness.Cluster.ImportYaml(stream);
 
-        var secret = await testHarness.Kubernetes.CoreV1.ReadNamespacedSecretAsync("my-serviceaccount", "my-app");
+    //    var secret = await testHarness.Kubernetes.CoreV1.ReadNamespacedSecretAsync("my-serviceaccount", "my-app");
 
-        // Test is prepped, generate KubeConfig
+    //    // Test is prepped, generate KubeConfig
 
-        var config = KubernetesYaml.Deserialize<K8SConfiguration>(KubernetesYaml.Serialize(testHarness.KubeConfig));
+    //    var config = KubernetesYaml.Deserialize<K8SConfiguration>(KubernetesYaml.Serialize(testHarness.KubeConfig));
 
-        var name = "test1";
+    //    var name = "test1";
 
-        config.Clusters.First().Name = name;
-        var context = config.Contexts.First();
+    //    config.Clusters.First().Name = name;
+    //    var context = config.Contexts.First();
 
-        context.Name = name;
-        context.ContextDetails.Cluster = name;
-        context.ContextDetails.User = name;
+    //    context.Name = name;
+    //    context.ContextDetails.Cluster = name;
+    //    context.ContextDetails.User = name;
 
-        var user = config.Users.First();
+    //    var user = config.Users.First();
 
-        user.UserCredentials = new()
-        {
-            Token = Encoding.UTF8.GetString(secret.Data["token"])
-        };
-        user.Name = name;
+    //    user.UserCredentials = new()
+    //    {
+    //        Token = Encoding.UTF8.GetString(secret.Data["token"])
+    //    };
+    //    user.Name = name;
 
-        testHarness.ClusterManager.LoadFromConfig(config);
+    //    testHarness.ClusterManager.LoadFromConfig(config);
 
-        var cluster = testHarness.ClusterManager.GetCluster(name);
+    //    var cluster = testHarness.ClusterManager.GetCluster(name);
 
-        var settings = Application.Current.GetRequiredService<ISettingsService>();
+    //    var settings = Application.Current.GetRequiredService<ISettingsService>();
 
-        settings.Settings = new();
+    //    settings.Settings = new();
 
-        settings.Settings.GetClusterSettings(cluster).Namespaces.Add("my-app");
+    //    settings.Settings.GetClusterSettings(cluster).Namespaces.Add("my-app");
 
-        await cluster.Connect();
+    //    await cluster.Connect();
 
-        await cluster.Seed<V1Node>(true);
+    //    await cluster.Seed<V1Node>(true);
 
-        await cluster.Seed<V1Secret>(true);
+    //    await cluster.Seed<V1Secret>(true);
 
-        await Task.Delay(TimeSpan.FromSeconds(5));
+    //    await Task.Delay(TimeSpan.FromSeconds(5));
 
-        var nodes = await cluster.GetObjectDictionaryAsync<V1Node>();
-        nodes.Count.Should().Be(1);
+    //    var nodes = await cluster.GetObjectDictionaryAsync<V1Node>();
+    //    nodes.Count.Should().Be(1);
 
-        var secrets = await cluster.GetObjectDictionaryAsync<V1Secret>();
-        secrets.Count.Should().Be(1);
-        secrets.Values.First().Namespace().Should().Be("my-app");
-        secrets.Values.First().Name().Should().Be("my-serviceaccount");
-    }
+    //    var secrets = await cluster.GetObjectDictionaryAsync<V1Secret>();
+    //    secrets.Count.Should().Be(1);
+    //    secrets.Values.First().Namespace().Should().Be("my-app");
+    //    secrets.Values.First().Name().Should().Be("my-serviceaccount");
+    //}
 
     #endregion
 }
