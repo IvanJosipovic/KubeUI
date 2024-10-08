@@ -34,7 +34,6 @@ public class TestApp : Application
         builder.Services.AddTransient<ModelCache>();
         builder.Services.AddSingleton<IGenerator, Generator>();
         builder.Services.AddSingleton<IFactory, DockFactory>();
-        builder.Services.AddSingleton<ISettingsService, SettingsService>();
 
         builder.Services.Scan(scan => scan
             .FromAssemblyOf<App>()
@@ -43,7 +42,7 @@ public class TestApp : Application
             .WithTransientLifetime()
         );
 
-        //builder.Services.Scan(x => x.FromAssemblyOf<App>().AddClasses().UsingAttributes());
+        builder.Services.Scan(x => x.FromAssemblyOf<App>().AddClasses().UsingAttributes());
 
         Host = builder.Build();
         Resources[typeof(IServiceProvider)] = Host.Services;
