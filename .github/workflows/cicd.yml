@@ -26,6 +26,9 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: Build
+        run: dotnet build -c Release
+
       - name: Test
         run: dotnet test -c Release --collect:"XPlat Code Coverage"
 
