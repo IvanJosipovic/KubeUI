@@ -821,6 +821,8 @@ rules:
 
         await cluster.Seed<V1Secret>(true);
 
+        await Task.Delay(TimeSpan.FromSeconds(5));
+
         var nodes = await cluster.GetObjectDictionaryAsync<V1Node>();
         nodes.Count.Should().Be(1);
 
@@ -878,6 +880,8 @@ rules:
         await cluster.Seed<V1Node>(true);
 
         await cluster.Seed<V1Secret>(true);
+
+        await Task.Delay(TimeSpan.FromSeconds(5));
 
         var nodes = await cluster.GetObjectDictionaryAsync<V1Node>();
         nodes.Count.Should().Be(1);
