@@ -19,7 +19,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        await testHarness.Cluster.Seed<V1Namespace>();
+        testHarness.Cluster.Seed<V1Namespace>();
 
         var ns = new V1Namespace()
         {
@@ -50,7 +50,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        await testHarness.Cluster.Seed<V1Secret>();
+        testHarness.Cluster.Seed<V1Secret>();
 
         var secret = new V1Secret()
         {
@@ -87,7 +87,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        await testHarness.Cluster.Seed<V1Namespace>();
+        testHarness.Cluster.Seed<V1Namespace>();
 
         var ns = new V1Namespace()
         {
@@ -115,7 +115,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        await testHarness.Cluster.Seed<V1Secret>();
+        testHarness.Cluster.Seed<V1Secret>();
 
         var secret = new V1Secret()
         {
@@ -149,7 +149,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        await testHarness.Cluster.Seed<V1Namespace>();
+        testHarness.Cluster.Seed<V1Namespace>();
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
@@ -163,7 +163,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        await testHarness.Cluster.Seed<V1Namespace>();
+        testHarness.Cluster.Seed<V1Namespace>();
 
         var ns = new V1Namespace()
         {
@@ -197,7 +197,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        await testHarness.Cluster.Seed<V1Secret>();
+        testHarness.Cluster.Seed<V1Secret>();
 
         var secret = new V1Secret()
         {
@@ -237,7 +237,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        await testHarness.Cluster.Seed<V1Namespace>();
+        testHarness.Cluster.Seed<V1Namespace>();
 
         var ns = new V1Namespace()
         {
@@ -268,7 +268,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        await testHarness.Cluster.Seed<V1Secret>();
+        testHarness.Cluster.Seed<V1Secret>();
 
         var secret = new V1Secret()
         {
@@ -300,7 +300,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        await testHarness.Cluster.Seed<V1Namespace>();
+        testHarness.Cluster.Seed<V1Namespace>();
 
         var ns = new V1Namespace()
         {
@@ -371,7 +371,7 @@ spec:
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        await testHarness.Cluster.Seed<V1CustomResourceDefinition>();
+        testHarness.Cluster.Seed<V1CustomResourceDefinition>();
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 

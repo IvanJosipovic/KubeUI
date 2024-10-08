@@ -30,7 +30,7 @@ jobs:
         run: dotnet build -c Release
 
       - name: Test
-        run: dotnet test -c Release --collect:"XPlat Code Coverage" --no-build --verbosity d
+        run: dotnet test -c Release --collect:"XPlat Code Coverage" --no-build --verbosity n
 
       - name: Coverage
         uses: codecov/codecov-action@v4
