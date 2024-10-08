@@ -31,9 +31,9 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
     [RelayCommand]
     private void AddNamespace()
     {
-        if (!string.IsNullOrEmpty(_namespace) && !ClusterSettings.Namespaces.Contains(_namespace))
+        if (!string.IsNullOrEmpty(Namespace) && !ClusterSettings.Namespaces.Contains(Namespace))
         {
-            ClusterSettings.Namespaces.Add(_namespace);
+            ClusterSettings.Namespaces.Add(Namespace);
 
             SettingsService.SaveSettings();
         }

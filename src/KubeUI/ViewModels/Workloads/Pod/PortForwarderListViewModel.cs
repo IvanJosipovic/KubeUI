@@ -60,7 +60,7 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
 
     public void Initialize(ICluster cluster)
     {
-        _cluster = cluster;
+        Cluster = cluster;
         Id = cluster.Name + nameof(PortForwarderListViewModel);
     }
 }

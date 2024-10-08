@@ -238,6 +238,7 @@ csharp_prefer_system_threading_lock = true:suggestion
 dotnet_diagnostic.MA0006.severity = silent
 dotnet_diagnostic.MA0011.severity = silent
 dotnet_diagnostic.MA0004.severity = silent
+dotnet_diagnostic.MVVMTK0034.severity = error
 
 # Xaml files
 [*.{xaml,axaml}]

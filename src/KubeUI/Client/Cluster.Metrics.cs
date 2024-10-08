@@ -19,14 +19,14 @@ public partial class Cluster
     {
         try
         {
-            var nodeMetricslist = await _client.GetKubernetesNodesMetricsAsync();
+            var nodeMetricslist = await Client.GetKubernetesNodesMetricsAsync();
             NodeMetrics.Clear();
             foreach (var item in nodeMetricslist.Items)
             {
                 NodeMetrics.Add(item);
             }
 
-            var podMetricsList = await _client.GetKubernetesPodsMetricsAsync();
+            var podMetricsList = await Client.GetKubernetesPodsMetricsAsync();
             PodMetrics.Clear();
             foreach (var item in podMetricsList.Items)
             {

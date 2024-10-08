@@ -30,14 +30,14 @@ public sealed partial class Settings : ObservableObject
     {
         var _key = cluster.KubeConfigPath + " " + cluster.Name;
 
-        if (ClusterSettings.ContainsKey(_key))
+        if (ClusterSettings.TryGetValue(_key, out var value))
         {
-            return _clusterSettings[_key];
+            return value;
         }
 
         var settings = new ClusterSettings();
 
-        _clusterSettings[_key] = settings;
+        ClusterSettings[_key] = settings;
 
         return settings;
     }

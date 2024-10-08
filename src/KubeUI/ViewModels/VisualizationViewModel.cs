@@ -2034,7 +2034,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     {
         var vm = Application.Current.GetRequiredService<VisualizationResourceViewModel>();
 
-        vm.Initialize(_cluster, resource);
+        vm.Initialize(Cluster, resource);
 
         var view = Application.Current.GetRequiredService<VisualizationResourceView>();
         view.DataContext = vm;

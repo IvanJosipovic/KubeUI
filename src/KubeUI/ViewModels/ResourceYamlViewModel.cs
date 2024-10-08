@@ -87,7 +87,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
     [RelayCommand(CanExecute = nameof(CanSave))]
     private void Save()
     {
-        byte[] byteArray = Encoding.UTF8.GetBytes(_yamlDocument.Text);
+        byte[] byteArray = Encoding.UTF8.GetBytes(YamlDocument.Text);
         using MemoryStream stream = new MemoryStream(byteArray);
         Cluster.ImportYaml(stream);
     }
