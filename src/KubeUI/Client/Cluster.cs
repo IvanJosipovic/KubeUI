@@ -7,6 +7,7 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using Humanizer;
 using k8s;
+using k8s.KubeConfigModels;
 using k8s.Models;
 using KubernetesCRDModelGen;
 using KubeUI.Client.Informer;
@@ -31,6 +32,9 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     [ObservableProperty]
     private string _kubeConfigPath;
+
+    [ObservableProperty]
+    private K8SConfiguration _kubeConfig;
 
     [ObservableProperty]
     private bool _connected;
@@ -91,7 +95,18 @@ public sealed partial class Cluster : ObservableObject, ICluster
             {
                 try
                 {
-                    Client = new Kubernetes(KubernetesClientConfiguration.BuildConfigFromConfigFile(KubeConfigPath, Name));
+                    KubernetesClientConfiguration config;
+
+                    if (string.IsNullOrEmpty(KubeConfigPath))
+                    {
+                        config =  KubernetesClientConfiguration.BuildConfigFromConfigObject(KubeConfig, Name);
+                    }
+                    else
+                    {
+                        config = KubernetesClientConfiguration.BuildConfigFromConfigFile(KubeConfigPath, Name);
+                    }
+
+                    Client = new Kubernetes(config);
 
                     NativeAPIGroupDiscoveryList = await GetAPIGroupDiscoveryList();
 
@@ -150,22 +165,25 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                     var doc = factory.GetDockable<IDocumentDock>("Documents");
 
-                    var vm = new ClusterErrorViewModel()
+                    if (doc != null)
                     {
-                        Id = "cluster-error",
-                        Error = ex.Message
-                    };
+                        var vm = new ClusterErrorViewModel()
+                        {
+                            Id = "cluster-error",
+                            Error = ex.Message
+                        };
 
-                    var existingDock = doc.VisibleDockables.FirstOrDefault(x => x.Id == vm.Id);
+                        var existingDock = doc.VisibleDockables.FirstOrDefault(x => x.Id == vm.Id);
 
-                    if (existingDock != null)
-                    {
-                        factory?.CloseDockable(existingDock);
+                        if (existingDock != null)
+                        {
+                            factory?.CloseDockable(existingDock);
+                        }
+
+                        factory?.AddDockable(doc, vm);
+                        factory?.SetActiveDockable(vm);
+                        factory?.SetFocusedDockable(doc, vm);
                     }
-
-                    factory?.AddDockable(doc, vm);
-                    factory?.SetActiveDockable(vm);
-                    factory?.SetFocusedDockable(doc, vm);
                 }
             }
         }

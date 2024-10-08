@@ -168,6 +168,8 @@ public sealed partial class ClusterManager : ObservableObject, IDisposable
 
             cluster.Name = item.Name;
 
+            cluster.KubeConfig = kubeConfig;
+
             cluster.KubeConfigPath = kubeConfig.FileName;
 
             Clusters.Add(cluster);
