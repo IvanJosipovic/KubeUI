@@ -107,7 +107,7 @@ public partial class Cluster
     {
         await GetSelfSubjectAccessReview(type, Verb.List, subresource: subresource);
 
-        if (CanI(type, verb, "", subresource))
+        if (CanI(type, verb, subresource: subresource))
         {
             return true;
         }
