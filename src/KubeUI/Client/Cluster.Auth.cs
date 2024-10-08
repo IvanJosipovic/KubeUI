@@ -100,14 +100,14 @@ public partial class Cluster
 
     public bool CanI<T>(Verb verb, string @namespace = "", string subresource = "") where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        return CanI(typeof(T), verb, subresource);
+        return CanI(typeof(T), verb, @namespace, subresource);
     }
 
     public async Task<bool> CanIAsync(Type type, Verb verb, string subresource = "", bool checkNamespace = false)
     {
         await GetSelfSubjectAccessReview(type, Verb.List, subresource: subresource);
 
-        if (CanI(type, verb, subresource))
+        if (CanI(type, verb, "", subresource))
         {
             return true;
         }
@@ -116,9 +116,9 @@ public partial class Cluster
         {
             foreach (var item in await GetObjectDictionaryAsync<V1Namespace>())
             {
-                await GetSelfSubjectAccessReview(type, verb, subresource, item.Value.Name());
+                await GetSelfSubjectAccessReview(type, verb, item.Value.Name(), subresource);
 
-                if (CanI(type, verb, subresource, item.Value.Name()))
+                if (CanI(type, verb, item.Value.Name(), subresource))
                 {
                     return true;
                 }

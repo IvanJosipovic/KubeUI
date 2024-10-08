@@ -308,6 +308,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
             Name = "Network"
         };
         NavigationItems.Add(network);
+
         if (await CanIListWatchAsync<V1Service>(true))
         {
             network.NavigationItems.Add(new ResourceNavigationLink() { Name = "Services", ControlType = typeof(V1Service), Cluster = this });
