@@ -14,7 +14,7 @@ public sealed partial class MainViewModel : ViewModelBase
 {
     private readonly ILogger<MainViewModel> _logger;
 
-    private readonly SettingsService _settingsService;
+    private readonly ISettingsService _settingsService;
 
     [ObservableProperty]
     private ClusterManager _clusterManager;
@@ -25,7 +25,7 @@ public sealed partial class MainViewModel : ViewModelBase
     {
         _logger = Application.Current.GetRequiredService<ILogger<MainViewModel>>();
 
-        _settingsService = Application.Current.GetRequiredService<SettingsService>();
+        _settingsService = Application.Current.GetRequiredService<ISettingsService>();
 
         ClusterManager = Application.Current.GetRequiredService<ClusterManager>();
 

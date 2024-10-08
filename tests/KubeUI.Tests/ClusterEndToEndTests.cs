@@ -1,4 +1,5 @@
 using System.Text;
+using Avalonia;
 using Avalonia.Headless.XUnit;
 using FluentAssertions;
 using k8s;
@@ -18,7 +19,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        testHarness.Cluster.Seed<V1Namespace>();
+        await testHarness.Cluster.Seed<V1Namespace>();
 
         var ns = new V1Namespace()
         {
@@ -49,7 +50,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        testHarness.Cluster.Seed<V1Secret>();
+        await testHarness.Cluster.Seed<V1Secret>();
 
         var secret = new V1Secret()
         {
@@ -86,7 +87,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        testHarness.Cluster.Seed<V1Namespace>();
+        await testHarness.Cluster.Seed<V1Namespace>();
 
         var ns = new V1Namespace()
         {
@@ -114,7 +115,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        testHarness.Cluster.Seed<V1Secret>();
+        await testHarness.Cluster.Seed<V1Secret>();
 
         var secret = new V1Secret()
         {
@@ -148,7 +149,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        testHarness.Cluster.Seed<V1Namespace>();
+        await testHarness.Cluster.Seed<V1Namespace>();
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
@@ -162,7 +163,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        testHarness.Cluster.Seed<V1Namespace>();
+        await testHarness.Cluster.Seed<V1Namespace>();
 
         var ns = new V1Namespace()
         {
@@ -196,7 +197,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        testHarness.Cluster.Seed<V1Secret>();
+        await testHarness.Cluster.Seed<V1Secret>();
 
         var secret = new V1Secret()
         {
@@ -236,7 +237,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        testHarness.Cluster.Seed<V1Namespace>();
+        await testHarness.Cluster.Seed<V1Namespace>();
 
         var ns = new V1Namespace()
         {
@@ -267,7 +268,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        testHarness.Cluster.Seed<V1Secret>();
+        await testHarness.Cluster.Seed<V1Secret>();
 
         var secret = new V1Secret()
         {
@@ -299,7 +300,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        testHarness.Cluster.Seed<V1Namespace>();
+        await testHarness.Cluster.Seed<V1Namespace>();
 
         var ns = new V1Namespace()
         {
@@ -370,7 +371,7 @@ spec:
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        testHarness.Cluster.Seed<V1CustomResourceDefinition>();
+        await testHarness.Cluster.Seed<V1CustomResourceDefinition>();
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
@@ -603,6 +604,180 @@ rules:
     - '*'
 ";
 
+    private string yamlLimitedRbacNoNamespace = @"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: my-app
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: my-serviceaccount
+  namespace: my-app
+secrets:
+  - name: my-serviceaccount
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-serviceaccount
+  namespace: my-app
+  annotations:
+    kubernetes.io/service-account.name: my-serviceaccount
+type: kubernetes.io/service-account-token
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: my-serviceaccount
+  namespace: my-app
+rules: []
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: my-serviceaccount-additional
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name:  my-serviceaccount
+subjects:
+- kind: ServiceAccount
+  name: my-serviceaccount
+  namespace: my-app
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: my-serviceaccount-viewer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: viewer
+subjects:
+- kind: ServiceAccount
+  name: my-serviceaccount
+  namespace: my-app
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: my-serviceaccount-developer
+  namespace: my-app
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: developer
+subjects:
+- kind: ServiceAccount
+  name: my-serviceaccount
+  namespace: my-app
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: developer
+rules:
+- verbs:
+    - get
+    - list
+    - watch
+  apiGroups:
+    - '*'
+  resources:
+    - '*'
+
+- verbs:
+    - create
+  apiGroups:
+    - ''
+  resources:
+    - pods/attach
+    - pods/exec
+    - pods/portforward
+    - pods/proxy
+
+- verbs:
+    - create
+  apiGroups:
+    - 'batch'
+  resources:
+    - job
+
+- verbs:
+    - create
+  apiGroups:
+    - ''
+  resources:
+    - service/proxy
+
+- verbs:
+    - delete
+  apiGroups:
+    - ''
+  resources:
+    - pods
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: viewer
+rules:
+- apiGroups:
+    - ''
+  resources:
+    - nodes
+  verbs:
+    - get
+    - list
+    - watch
+
+- apiGroups:
+    - apiextensions.k8s.io
+  resources:
+    - customresourcedefinitions
+  verbs:
+    - get
+    - list
+    - watch
+
+- apiGroups:
+    - storage.k8s.io
+  resources:
+    - storageclasses
+  verbs:
+    - get
+    - list
+    - watch
+
+- apiGroups:
+    - ''
+  resources:
+    - persistentvolumes
+  verbs:
+    - get
+    - list
+    - watch
+
+- apiGroups:
+    - 'metrics.k8s.io'
+  resources:
+    - nodes
+    - pods
+  verbs:
+    - get
+    - list
+
+- verbs:
+    - get
+    - list
+    - watch
+  nonResourceURLs:
+    - '*'
+";
+
     [AvaloniaFact]
     public async Task LimitedAccess()
     {
@@ -636,11 +811,67 @@ rules:
         };
         user.Name = name;
 
-        var yaml = KubernetesYaml.Serialize(config);
+        testHarness.ClusterManager.LoadFromConfig(config);
+
+        var cluster = testHarness.ClusterManager.GetCluster(name);
+
+        await cluster.Connect();
+
+        await cluster.Seed<V1Node>(true);
+
+        await cluster.Seed<V1Secret>(true);
+
+        var nodes = await cluster.GetObjectDictionaryAsync<V1Node>();
+        nodes.Count.Should().Be(1);
+
+        var secrets = await cluster.GetObjectDictionaryAsync<V1Secret>();
+        secrets.Count.Should().Be(1);
+        secrets.Values.First().Namespace().Should().Be("my-app");
+        secrets.Values.First().Name().Should().Be("my-serviceaccount");
+    }
+
+    [AvaloniaFact]
+    public async Task LimitedAccessNoNamespace()
+    {
+        using var testHarness = new TestHarness();
+        await testHarness.Initialize();
+
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(yamlLimitedRbacNoNamespace));
+
+        testHarness.Cluster.ImportYaml(stream);
+
+        var secret = await testHarness.Kubernetes.CoreV1.ReadNamespacedSecretAsync("my-serviceaccount", "my-app");
+
+        // Test is prepped, generate KubeConfig
+
+        var config = KubernetesYaml.Deserialize<K8SConfiguration>(KubernetesYaml.Serialize(testHarness.KubeConfig));
+
+        var name = "test1";
+
+        config.Clusters.First().Name = name;
+        var context = config.Contexts.First();
+
+        context.Name = name;
+        context.ContextDetails.Cluster = name;
+        context.ContextDetails.User = name;
+
+        var user = config.Users.First();
+
+        user.UserCredentials = new()
+        {
+            Token = Encoding.UTF8.GetString(secret.Data["token"])
+        };
+        user.Name = name;
 
         testHarness.ClusterManager.LoadFromConfig(config);
 
         var cluster = testHarness.ClusterManager.GetCluster(name);
+
+        var settings = Application.Current.GetRequiredService<ISettingsService>();
+
+        settings.Settings = new();
+
+        settings.Settings.GetClusterSettings(cluster).Namespaces.Add("my-app");
 
         await cluster.Connect();
 

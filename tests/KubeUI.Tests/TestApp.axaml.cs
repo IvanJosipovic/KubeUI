@@ -42,6 +42,8 @@ public class TestApp : Application
             .WithTransientLifetime()
         );
 
+        builder.Services.Scan(x => x.FromAssemblyOf<App>().AddClasses().UsingAttributes());
+
         Host = builder.Build();
         Resources[typeof(IServiceProvider)] = Host.Services;
         _ = Host.RunAsync();

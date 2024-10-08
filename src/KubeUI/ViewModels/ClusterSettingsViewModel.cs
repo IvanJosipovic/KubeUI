@@ -4,7 +4,7 @@ namespace KubeUI.ViewModels;
 
 public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializeCluster
 {
-    public SettingsService SettingsService { get; }
+    public ISettingsService SettingsService { get; }
 
     public ICluster? Cluster { get; set; }
 
@@ -12,7 +12,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
     {
         Title = Resources.ClusterSettingsViewModel_Title;
 
-        SettingsService = Application.Current.GetRequiredService<SettingsService>();
+        SettingsService = Application.Current.GetRequiredService<ISettingsService>();
     }
 
     public void Initialize(ICluster cluster)

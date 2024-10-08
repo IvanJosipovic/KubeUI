@@ -4,8 +4,8 @@ using Scrutor;
 
 namespace KubeUI.Client;
 
-[ServiceDescriptor<SettingsService>(ServiceLifetime.Singleton)]
-public sealed partial class SettingsService : ObservableObject
+[ServiceDescriptor<ISettingsService>(ServiceLifetime.Singleton)]
+public sealed partial class SettingsService : ObservableObject, ISettingsService
 {
     private readonly ILogger<SettingsService> _logger;
 
@@ -49,7 +49,7 @@ public sealed partial class SettingsService : ObservableObject
                 }
             }
         }
-        catch (Exception){}
+        catch (Exception) { }
 
         return new Settings();
     }

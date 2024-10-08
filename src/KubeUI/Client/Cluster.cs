@@ -25,7 +25,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private ILogger<Cluster> _logger;
 
-    private SettingsService _settingsService;
+    private ISettingsService _settingsService;
 
     [ObservableProperty]
     private string _name;
@@ -71,7 +71,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private ResourceNavigationLink _crdNavigationLink;
 
-    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ModelCache modelCache, IGenerator generator, SettingsService settingsService)
+    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ModelCache modelCache, IGenerator generator, ISettingsService settingsService)
     {
         _loggerFactory = loggerFactory;
         _logger = logger;

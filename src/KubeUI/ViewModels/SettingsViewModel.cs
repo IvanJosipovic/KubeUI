@@ -5,14 +5,14 @@ namespace KubeUI.ViewModels;
 
 public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 {
-    public SettingsService SettingsService { get; }
+    public ISettingsService SettingsService { get; }
 
     public SettingsViewModel()
     {
         Title = Resources.SettingsView_Title;
         Id = nameof(SettingsViewModel);
 
-        SettingsService = Application.Current.GetRequiredService<SettingsService>();
+        SettingsService = Application.Current.GetRequiredService<ISettingsService>();
 
         SettingsService.Settings.PropertyChanged += Settings_PropertyChanged;
     }

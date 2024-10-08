@@ -148,7 +148,7 @@ public partial class App : Application
 
         logger = Host.Services.GetRequiredService<ILogger<App>>();
 
-        var settings = Host.Services.GetRequiredService<SettingsService>();
+        var settings = Host.Services.GetRequiredService<ISettingsService>();
 
         settings.LoadSettings();
         AvaloniaXamlLoader.Load(this);
