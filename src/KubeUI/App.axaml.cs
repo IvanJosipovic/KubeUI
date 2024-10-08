@@ -59,7 +59,7 @@ public partial class App : Application
             loggingBuilder.AddFilter<OpenTelemetryLoggerProvider>("*", LogLevel.Warning);
             loggingBuilder.AddFilter<FileLoggerProvider>("*", LogLevel.Information);
 
-            if (!Design.IsDesignMode && SettingsService.GetSettings().LoggingEnabled
+            if (!Design.IsDesignMode && SettingsService.LoadSettingsFromFile().LoggingEnabled
                 && SettingsService.EnsureSettingDirExists())
             {
                 loggingBuilder.AddFile(Path.Combine(SettingsService.GetSettingsPath(), "app.log"), x =>
@@ -72,7 +72,7 @@ public partial class App : Application
             }
         });
 
-        if (SettingsService.GetSettings().TelemetryEnabled)
+        if (SettingsService.LoadSettingsFromFile().TelemetryEnabled)
         {
             const string key = "ff9c67da-5f13-46e9-9450-7e1dda139c08";
             var version = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;

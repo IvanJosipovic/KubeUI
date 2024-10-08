@@ -214,6 +214,15 @@ namespace KubeUI.Assets {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Cluster Settings.
+        /// </summary>
+        public static string ClusterSettingsViewModel_Title {
+            get {
+                return ResourceManager.GetString("ClusterSettingsViewModel_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Cluster.
         /// </summary>
         public static string ClusterViewModel_Title {
@@ -503,7 +512,7 @@ namespace KubeUI.Assets {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Select Namespace(s).
+        ///   Looks up a localized string similar to Filter Namespace(s).
         /// </summary>
         public static string ResourceListView_SelectNamespace {
             get {

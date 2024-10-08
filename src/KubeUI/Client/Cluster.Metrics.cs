@@ -41,7 +41,6 @@ public partial class Cluster
 
     private async Task InitMetrics()
     {
-        var group = APIGroups.Groups.Any(g => g.Name == "metrics.k8s.io");
         var kube = Client as Kubernetes;
 
         var model = new V1SelfSubjectAccessReview()
@@ -78,7 +77,7 @@ public partial class Cluster
 
         var resp2 = await kube.CreateSelfSubjectAccessReviewAsync(model);
 
-        IsMetricsAvailable = group && resp.Status.Allowed && resp2.Status.Allowed;
+        IsMetricsAvailable = resp.Status.Allowed && resp2.Status.Allowed;
 
         if (IsMetricsAvailable)
         {

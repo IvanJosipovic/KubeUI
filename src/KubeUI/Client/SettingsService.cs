@@ -28,12 +28,12 @@ public sealed partial class SettingsService : ObservableObject
 
     public void LoadSettings()
     {
-        Settings = GetSettings();
+        Settings = LoadSettingsFromFile();
 
         ApplySettings();
     }
 
-    public static Settings GetSettings()
+    public static Settings LoadSettingsFromFile()
     {
         try
         {

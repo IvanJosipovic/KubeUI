@@ -15,7 +15,7 @@ public sealed class ModelCache
 
     public void AddToCache(Assembly assembly, XmlDocument xmlDocument)
     {
-        if (!Cache.ContainsKey(assembly))
+        if (!Cache.Keys.Any(x => x.FullName == assembly.FullName))
         {
             Cache[assembly] = xmlDocument;
 

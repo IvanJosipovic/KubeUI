@@ -1,12 +1,12 @@
 ﻿using System.Collections.Concurrent;
+using System.Net.Http.Json;
+using System.Reflection;
 using System.Text.Json;
 using System.Xml;
 using Dock.Model.Controls;
 using Dock.Model.Core;
-using Dock.Model.Mvvm;
 using Humanizer;
 using k8s;
-using k8s.KubeConfigModels;
 using k8s.Models;
 using KubernetesCRDModelGen;
 using KubeUI.Client.Informer;
@@ -23,6 +23,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
     private ILoggerFactory _loggerFactory;
 
     private ILogger<Cluster> _logger;
+
+    private SettingsService _settingsService;
 
     [ObservableProperty]
     private string _name;
@@ -53,7 +55,9 @@ public sealed partial class Cluster : ObservableObject, ICluster
     [ObservableProperty]
     private ObservableCollection<V1Namespace> _selectedNamespaces = [];
 
-    public V1APIGroupList APIGroups { get; private set; }
+    public V2beta1APIGroupDiscoveryList NativeAPIGroupDiscoveryList { get; private set; }
+
+    public V2beta1APIGroupDiscoveryList APIGroupDiscoveryList { get; private set; }
 
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
 
@@ -63,7 +67,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private ResourceNavigationLink _crdNavigationLink;
 
-    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ModelCache modelCache, IGenerator generator)
+    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ModelCache modelCache, IGenerator generator, SettingsService settingsService)
     {
         _loggerFactory = loggerFactory;
         _logger = logger;
@@ -74,6 +78,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         kubeAssemblyXmlDoc.Load(typeof(Generator).Assembly.GetManifestResourceStream("runtime.KubernetesClient.xml"));
 
         _modelCache.AddToCache(typeof(V1Deployment).Assembly, kubeAssemblyXmlDoc);
+        _settingsService = settingsService;
     }
 
     public async Task Connect()
@@ -88,33 +93,49 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 {
                     Client = new Kubernetes(KubernetesClientConfiguration.BuildConfigFromConfigFile(KubeConfigPath, Name));
 
-                    APIGroups = await Client.Apis.GetAPIVersionsAsync();
+                    NativeAPIGroupDiscoveryList = await GetAPIGroupDiscoveryList();
+
+                    APIGroupDiscoveryList = await GetAPIGroupDiscoveryList(false);
 
                     Connected = true;
 
                     await GetPermissions();
 
-                    if (!_listNamspaces)
+                    if (!ListNamespaces)
                     {
-                        var vm = Application.Current.GetRequiredService<ClusterSettingsViewModel>();
+                        var settings = _settingsService.Settings.GetClusterSettings(this);
 
-                        if (vm is IInitializeCluster init)
+                        if (settings.Namespaces.Count == 0)
                         {
-                            init.Initialize(this);
+                            var vm = Application.Current.GetRequiredService<ClusterSettingsViewModel>();
+
+                            if (vm is IInitializeCluster init)
+                            {
+                                init.Initialize(this);
+                            }
+
+                            Dispatcher.UIThread.Post(() => Application.Current.GetRequiredService<IFactory>().AddToDocuments(vm));
+
+                            return;
                         }
 
-                        Dispatcher.UIThread.Post(() => Application.Current.GetRequiredService<IFactory>().AddToDocuments(vm));
+                        var items = GetObjectDictionary<V1Namespace>();
 
-                        return;
+                        foreach (var item in settings.Namespaces)
+                        {
+                            items[new NamespacedName(item)] = new V1Namespace() { Metadata = new() { Name = item } };
+                        }
+
+                        Namespaces = items;
                     }
-
-                    await Seed<V1Namespace>(true);
-
-                    Namespaces = await GetObjectDictionaryAsync<V1Namespace>();
-
-                    while (Namespaces.Count == 0)
+                    else
                     {
-                        await Task.Delay(100);
+                        Namespaces = await GetObjectDictionaryAsync<V1Namespace>();
+
+                        while (Namespaces.Count == 0)
+                        {
+                            await Task.Delay(100);
+                        }
                     }
 
                     await AddDefaultNavigation();
@@ -156,6 +177,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private async Task AddDefaultNavigation()
     {
+        NavigationItems.Add(new NavigationLink() { Name = "Settings", ControlType = typeof(ClusterSettingsViewModel), Cluster = this, StyleIcon = "ic_fluent_settings_24_filled" });
         NavigationItems.Add(new NavigationLink() { Name = Resources.ClusterViewModel_Title, ControlType = typeof(ClusterViewModel), Cluster = this, SvgIcon = "/Assets/kube/infrastructure_components/unlabeled/control-plane.svg" });
         NavigationItems.Add(new NavigationLink() { Name = Resources.VisualizationViewModel_Title, ControlType = typeof(VisualizationViewModel), Cluster = this, StyleIcon = "ic_fluent_search_visual_24_filled" });
         NavigationItems.Add(new NavigationLink() { Name = "Load Yaml", Cluster = this, Id = "load-yaml", StyleIcon = "arrow_upload_regular" });
@@ -165,7 +187,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         {
             NavigationItems.Add(new ResourceNavigationLink() { Name = "Nodes", ControlType = typeof(V1Node), Cluster = this });
         }
-        if (_listNamspaces)
+        if (ListNamespaces)
         {
             NavigationItems.Add(new ResourceNavigationLink() { Name = "Namespaces", ControlType = typeof(V1Namespace), Cluster = this });
         }
@@ -362,7 +384,13 @@ public sealed partial class Cluster : ObservableObject, ICluster
         var type = typeof(T);
         var kind = GroupApiVersionKind.From<T>();
 
-        if (!Objects.TryGetValue(kind, out var container))
+        ContainerClass container;
+
+        if (Objects.TryGetValue(kind, out var container2))
+        {
+            container = container2;
+        }
+        else
         {
             container = new ContainerClass
             {
@@ -375,11 +403,13 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
         if (!Connected)
         {
-           await Connect();
+            await Connect();
         }
 
-        if (container.Informers.Count == 0)
+        if (!container.Initialised)
         {
+            container.Initialised = true;
+
             Task.WaitAll(
                 GetSelfSubjectAccessReview(type, Verb.List),
                 GetSelfSubjectAccessReview(type, Verb.Watch)
@@ -405,6 +435,11 @@ public sealed partial class Cluster : ObservableObject, ICluster
             }
             else
             {
+                if (!IsNamespaced<T>())
+                {
+                    return;
+                }
+
                 foreach (var item in GetObjectDictionary<V1Namespace>())
                 {
                     await Task.WhenAll(
@@ -585,7 +620,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
             Objects.TryAdd(attribute, container);
         }
 
-        return ((ConcurrentObservableDictionary<NamespacedName,T>)Objects[attribute].Items)[new NamespacedName(@namespace, name)];
+        return ((ConcurrentObservableDictionary<NamespacedName, T>)Objects[attribute].Items)[new NamespacedName(@namespace, name)];
     }
 
     public ConcurrentObservableDictionary<NamespacedName, T> GetObjectDictionary<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -736,6 +771,63 @@ public sealed partial class Cluster : ObservableObject, ICluster
             }
         }
     }
+
+    private bool IsNamespaced<T>()
+    {
+        var api = GroupApiVersionKind.From<T>();
+
+        try
+        {
+            if (string.IsNullOrEmpty(api.Group))
+            {
+                var native = NativeAPIGroupDiscoveryList.items[0].versions.First(x => x.freshness == "Current").resources.FirstOrDefault(z =>
+                    z.resource == api.PluralName &&
+                    z.singularResource == api.Kind.ToLower() &&
+                    //z.responseKind.version == api.ApiVersion &&
+                    //z.responseKind.group == api.Group &&
+                    z.responseKind.kind == api.Kind
+                );
+
+                if (native != null)
+                {
+                    return native.scope == "Namespaced";
+                }
+            }
+
+            var group = APIGroupDiscoveryList.items.First(x => x.metadata.name == api.Group);
+
+            var ver = group.versions.First(x => x.freshness == "Current" && x.version == api.ApiVersion);
+
+            var ext = ver.resources.FirstOrDefault(z =>
+                z.resource == api.PluralName &&
+                z.singularResource == api.Kind.ToLower() &&
+                z.responseKind.kind == api.Kind
+            );
+
+            return ext.scope == "Namespaced";
+        }
+        catch (Exception ex)
+        {
+            return false;
+        }
+    }
+
+    private async Task<V2beta1APIGroupDiscoveryList> GetAPIGroupDiscoveryList(bool native = true)
+    {
+        var mi = typeof(Kubernetes).GetMethod("SendRequest", BindingFlags.NonPublic | BindingFlags.Instance);
+
+        var gen = mi.MakeGenericMethod([typeof(V2beta1APIGroupDiscoveryList)]);
+
+        IReadOnlyDictionary<string, IReadOnlyList<string>> headers = new Dictionary<string, IReadOnlyList<string>>()
+        {
+            { "accept", new List<string>() { "application/json;g=apidiscovery.k8s.io;v=v2;as=APIGroupDiscoveryList,application/json;g=apidiscovery.k8s.io;v=v2beta1;as=APIGroupDiscoveryList,application/json" } }
+        };
+
+        //SendRequest(string relativeUri, HttpMethod method, IReadOnlyDictionary<string, IReadOnlyList<string>> customHeaders, T body, CancellationToken cancellationToken)
+        var resp = await (Task<HttpResponseMessage>)gen.Invoke(Client, [$"/{(native ? "api" : "apis")}?timeout=32s", HttpMethod.Get, headers, null, CancellationToken.None]);
+
+        return await resp.Content.ReadFromJsonAsync<V2beta1APIGroupDiscoveryList>();
+    }
 }
 
 public partial class ContainerClass : ObservableObject
@@ -748,4 +840,7 @@ public partial class ContainerClass : ObservableObject
 
     [ObservableProperty]
     private ICollection _items;
+
+    [ObservableProperty]
+    private bool _initialised;
 }

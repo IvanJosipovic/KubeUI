@@ -8,11 +8,12 @@ public partial class Cluster
 {
     private ConcurrentObservableCollection<V1SelfSubjectAccessReview> _selfSubjectAccessReviews { get; } = [];
 
-    private bool _listNamspaces;
+    [ObservableProperty]
+    private bool _listNamespaces;
 
     private async Task GetPermissions()
     {
-        _listNamspaces = await CanIListWatchAsync<V1Namespace>();
+        ListNamespaces = await CanIListWatchAsync<V1Namespace>();
     }
 
     public enum Verb
@@ -151,7 +152,7 @@ public partial class Cluster
 
         if (checkNamespace)
         {
-            foreach (var item in await GetObjectDictionaryAsync<V1Namespace>())
+            foreach (var item in GetObjectDictionary<V1Namespace>())
             {
                 await Task.WhenAll(
                     GetSelfSubjectAccessReview(type, Verb.List, item.Value.Name()),

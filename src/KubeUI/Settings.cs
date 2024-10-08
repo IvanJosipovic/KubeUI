@@ -1,4 +1,6 @@
-﻿namespace KubeUI;
+﻿using KubeUI.Client;
+
+namespace KubeUI;
 
 public enum LocalThemeVariant
 {
@@ -23,10 +25,26 @@ public sealed partial class Settings : ObservableObject
 
     [ObservableProperty]
     private Dictionary<string, ClusterSettings> _clusterSettings = [];
+
+    public ClusterSettings GetClusterSettings(ICluster cluster)
+    {
+        var _key = cluster.KubeConfigPath + " " + cluster.Name;
+
+        if (ClusterSettings.ContainsKey(_key))
+        {
+            return _clusterSettings[_key];
+        }
+
+        var settings = new ClusterSettings();
+
+        _clusterSettings[_key] = settings;
+
+        return settings;
+    }
 }
 
 public sealed partial class ClusterSettings : ObservableObject
 {
     [ObservableProperty]
-    private ObservableCollection<string>? _namespaces;
+    private ObservableCollection<string>? _namespaces = [];
 }

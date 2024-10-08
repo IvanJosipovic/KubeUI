@@ -28,7 +28,6 @@ public interface ICluster
     Task AddOrUpdate<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task Connect();
     Task<bool> Delete<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
-    V1APIGroupList APIGroups { get; }
     bool IsMetricsAvailable { get; }
     void ImportFolder(string path);
     void ImportYaml(Stream stream);
@@ -37,4 +36,6 @@ public interface ICluster
     bool CanI<T>(Verb verb, string @namespace = "", string subresource = "") where T : class, IKubernetesObject<V1ObjectMeta>, new();
     bool CanI(Type type, Verb verb, string @namespace = "", string subresource = "");
     Task<ConcurrentObservableDictionary<NamespacedName, T>> GetObjectDictionaryAsync<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
+
+    bool ListNamespaces { get; set; }
 }

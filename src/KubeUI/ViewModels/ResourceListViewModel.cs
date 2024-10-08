@@ -1675,11 +1675,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             return false;
         }
 
-        var version = item.Spec.Versions.First(x => x.Served && x.Storage);
-
-        var type = Cluster.ModelCache.GetResourceType(item.Spec.Group, version.Name, item.Spec.Names.Kind);
-
-        return Cluster.CanI(type, Verb.List) && Cluster.CanI(type, Verb.Watch);
+        return true;
     }
 
     #endregion
