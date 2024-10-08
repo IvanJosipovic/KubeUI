@@ -30,7 +30,7 @@ jobs:
         run: dotnet build -c Release
 
       - name: Test
-        run: dotnet test -c Release --collect:"XPlat Code Coverage"
+        run: dotnet test -c Release --collect:"XPlat Code Coverage" --no-build
 
       - name: Coverage
         uses: codecov/codecov-action@v4
@@ -38,7 +38,6 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: coverage.cobertura.xml
           fail_ci_if_error: false
-
 
   semantic-release:
     name: Bump Version
