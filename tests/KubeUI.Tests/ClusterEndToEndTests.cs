@@ -788,8 +788,6 @@ rules:
 
         await testHarness.Cluster.ImportYaml(stream);
 
-        await Task.Delay(TimeSpan.FromSeconds(5));
-
         var secret = await testHarness.Kubernetes.CoreV1.ReadNamespacedSecretAsync("my-serviceaccount", "my-app");
 
         // Test is prepped, generate KubeConfig
@@ -843,8 +841,6 @@ rules:
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(yamlLimitedRbacNoNamespace));
 
         await testHarness.Cluster.ImportYaml(stream);
-
-        await Task.Delay(TimeSpan.FromSeconds(10));
 
         var secret = await testHarness.Kubernetes.CoreV1.ReadNamespacedSecretAsync("my-serviceaccount", "my-app");
 
