@@ -10,6 +10,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using KubeUI.ViewModels;
 using KubeUI.Views;
 using Microsoft.Extensions.Hosting;
+using HanumanInstitute.MvvmDialogs;
+using Moq;
 
 namespace KubeUI.Tests;
 
@@ -34,6 +36,9 @@ public class TestApp : Application
         builder.Services.AddTransient<ModelCache>();
         builder.Services.AddSingleton<IGenerator, Generator>();
         builder.Services.AddSingleton<IFactory, DockFactory>();
+
+        var dialog = new Mock<IDialogService>();
+        builder.Services.AddSingleton<IDialogService>(dialog.Object);
 
         builder.Services.Scan(scan => scan
             .FromAssemblyOf<App>()

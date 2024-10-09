@@ -77,15 +77,10 @@ public sealed partial class SettingsService : ObservableObject, ISettingsService
         {
             if (EnsureSettingDirExists())
             {
-                using var fs = new FileStream(GetSettingsFilePath(), FileMode.OpenOrCreate, FileAccess.Write);
-
-                if (fs.CanWrite)
+                File.WriteAllText(GetSettingsFilePath(), JsonSerializer.Serialize(Settings, new JsonSerializerOptions(JsonSerializerDefaults.General)
                 {
-                    JsonSerializer.Serialize(fs, Settings, new JsonSerializerOptions(JsonSerializerDefaults.General)
-                    {
-                        WriteIndented = true,
-                    });
-                }
+                    WriteIndented = true,
+                }));
             }
             else
             {

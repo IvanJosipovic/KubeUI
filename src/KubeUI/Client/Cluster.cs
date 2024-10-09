@@ -5,6 +5,9 @@ using System.Text.Json;
 using System.Xml;
 using Dock.Model.Controls;
 using Dock.Model.Core;
+using FluentAvalonia.UI.Controls;
+using HanumanInstitute.MvvmDialogs;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using Humanizer;
 using k8s;
 using k8s.KubeConfigModels;
@@ -26,6 +29,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
     private ILogger<Cluster> _logger;
 
     private ISettingsService _settingsService;
+
+    private IDialogService _dialogService;
 
     [ObservableProperty]
     private string _name;
@@ -71,7 +76,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private ResourceNavigationLink _crdNavigationLink;
 
-    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ModelCache modelCache, IGenerator generator, ISettingsService settingsService)
+    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ModelCache modelCache, IGenerator generator, ISettingsService settingsService, IDialogService dialogService)
     {
         _loggerFactory = loggerFactory;
         _logger = logger;
@@ -83,6 +88,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
         _modelCache.AddToCache(typeof(V1Deployment).Assembly, kubeAssemblyXmlDoc);
         _settingsService = settingsService;
+        _dialogService = dialogService;
     }
 
     public async Task Connect()
@@ -122,6 +128,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                         if (settings.Namespaces.Count == 0)
                         {
+                            Connected = false;
+
                             var vm = Application.Current.GetRequiredService<ClusterSettingsViewModel>();
 
                             if (vm is IInitializeCluster init)
@@ -130,6 +138,18 @@ public sealed partial class Cluster : ObservableObject, ICluster
                             }
 
                             Dispatcher.UIThread.Post(() => Application.Current.GetRequiredService<IFactory>().AddToDocuments(vm));
+
+                            ContentDialogSettings dialogSettings = new()
+                            {
+                                Title = Resources.Cluster_Missing_Namespace_Permission_Title,
+                                Content = Resources.Cluster_Missing_Namespace_Permission_Content,
+                                PrimaryButtonText = Resources.Cluster_Missing_Namespace_Permission_Primary,
+                                DefaultButton = ContentDialogButton.Primary
+                            };
+
+                            var result = await _dialogService.ShowContentDialogAsync(this, dialogSettings);
+
+                            Connected = false;
 
                             return;
                         }
@@ -160,6 +180,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error connecting to {name}", Name);
+
+                    Connected = false;
 
                     var factory = Application.Current.GetRequiredService<IFactory>();
 
@@ -795,40 +817,31 @@ public sealed partial class Cluster : ObservableObject, ICluster
     {
         var api = GroupApiVersionKind.From<T>();
 
-        try
+        if (string.IsNullOrEmpty(api.Group))
         {
-            if (string.IsNullOrEmpty(api.Group))
-            {
-                var native = NativeAPIGroupDiscoveryList.items[0].versions.First(x => x.freshness == "Current").resources.FirstOrDefault(z =>
-                    z.resource == api.PluralName &&
-                    z.singularResource == api.Kind.ToLower() &&
-                    //z.responseKind.version == api.ApiVersion &&
-                    //z.responseKind.group == api.Group &&
-                    z.responseKind.kind == api.Kind
-                );
-
-                if (native != null)
-                {
-                    return native.scope == "Namespaced";
-                }
-            }
-
-            var group = APIGroupDiscoveryList.items.First(x => x.metadata.name == api.Group);
-
-            var ver = group.versions.First(x => x.freshness == "Current" && x.version == api.ApiVersion);
-
-            var ext = ver.resources.FirstOrDefault(z =>
+            var native = NativeAPIGroupDiscoveryList.items[0].versions.First(x => x.freshness == "Current").resources.FirstOrDefault(z =>
                 z.resource == api.PluralName &&
                 z.singularResource == api.Kind.ToLower() &&
                 z.responseKind.kind == api.Kind
             );
 
-            return ext.scope == "Namespaced";
+            if (native != null)
+            {
+                return native.scope == "Namespaced";
+            }
         }
-        catch (Exception ex)
-        {
-            return false;
-        }
+
+        var group = APIGroupDiscoveryList.items.First(x => x.metadata.name == api.Group);
+
+        var ver = group.versions.First(x => x.freshness == "Current" && x.version == api.ApiVersion);
+
+        var ext = ver.resources.FirstOrDefault(z =>
+            z.resource == api.PluralName &&
+            z.singularResource == api.Kind.ToLower() &&
+            z.responseKind.kind == api.Kind
+        );
+
+        return ext.scope == "Namespaced";
     }
 
     private async Task<V2beta1APIGroupDiscoveryList> GetAPIGroupDiscoveryList(bool native = true)

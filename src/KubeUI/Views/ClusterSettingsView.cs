@@ -39,6 +39,7 @@ public sealed class ClusterSettingsView : MyViewBase<ClusterSettingsViewModel>
                                                     .Cols("*,Auto")
                                                     .Children([
                                                         new TextBlock().Col(0)
+                                                            .VerticalAlignment(VerticalAlignment.Center)
                                                             .Text(@item),
                                                         new Button().Col(1)
                                                             .Content("Remove")

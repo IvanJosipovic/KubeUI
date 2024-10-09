@@ -36,6 +36,8 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
             ClusterSettings.Namespaces.Add(Namespace);
 
             SettingsService.SaveSettings();
+
+            Namespace = "";
         }
     }
 

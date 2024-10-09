@@ -16,7 +16,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
         Id = nameof(NavigationViewModel);
     }
 
-    public async void TreeView_SelectionChanged(object? item)
+    public void TreeView_SelectionChanged(object? item)
     {
         if (item is Cluster cluster)
         {
@@ -88,7 +88,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
 
             foreach (var file in folders)
             {
-                link.Cluster.ImportFolder(file.TryGetLocalPath());
+                await link.Cluster.ImportFolder(file.TryGetLocalPath());
             }
         }
         else

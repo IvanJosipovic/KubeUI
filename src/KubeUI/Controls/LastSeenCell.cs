@@ -85,7 +85,7 @@ public partial class LastSeenCell : MyViewBase<Corev1Event>
 
     protected override StyleGroup? BuildStyles() => [];
 
-    protected override object Build(Corev1Event vm) =>
+    protected override object Build(Corev1Event? vm) =>
         new TextBlock()
             .Margin(12, 0, 12, 0)
             .HorizontalAlignment(HorizontalAlignment.Left)
