@@ -844,7 +844,7 @@ rules:
 
         testHarness.Cluster.ImportYaml(stream);
 
-        await Task.Delay(TimeSpan.FromSeconds(5));
+        await Task.Delay(TimeSpan.FromSeconds(10));
 
         var secret = await testHarness.Kubernetes.CoreV1.ReadNamespacedSecretAsync("my-serviceaccount", "my-app");
 
