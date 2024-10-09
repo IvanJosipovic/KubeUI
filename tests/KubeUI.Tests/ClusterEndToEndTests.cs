@@ -19,7 +19,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        testHarness.Cluster.Seed<V1Namespace>();
+        await testHarness.Cluster.Seed<V1Namespace>();
 
         var ns = new V1Namespace()
         {
@@ -50,7 +50,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        testHarness.Cluster.Seed<V1Secret>();
+        await testHarness.Cluster.Seed<V1Secret>();
 
         var secret = new V1Secret()
         {
@@ -87,7 +87,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        testHarness.Cluster.Seed<V1Namespace>();
+        await testHarness.Cluster.Seed<V1Namespace>();
 
         var ns = new V1Namespace()
         {
@@ -115,7 +115,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        testHarness.Cluster.Seed<V1Secret>();
+        await testHarness.Cluster.Seed<V1Secret>();
 
         var secret = new V1Secret()
         {
@@ -149,7 +149,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        testHarness.Cluster.Seed<V1Namespace>();
+        await testHarness.Cluster.Seed<V1Namespace>();
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
@@ -163,7 +163,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        testHarness.Cluster.Seed<V1Namespace>();
+        await testHarness.Cluster.Seed<V1Namespace>();
 
         var ns = new V1Namespace()
         {
@@ -197,7 +197,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        testHarness.Cluster.Seed<V1Secret>();
+        await testHarness.Cluster.Seed<V1Secret>();
 
         var secret = new V1Secret()
         {
@@ -237,7 +237,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        testHarness.Cluster.Seed<V1Namespace>();
+        await testHarness.Cluster.Seed<V1Namespace>();
 
         var ns = new V1Namespace()
         {
@@ -268,7 +268,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        testHarness.Cluster.Seed<V1Secret>();
+        await testHarness.Cluster.Seed<V1Secret>();
 
         var secret = new V1Secret()
         {
@@ -300,7 +300,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        testHarness.Cluster.Seed<V1Namespace>();
+        await testHarness.Cluster.Seed<V1Namespace>();
 
         var ns = new V1Namespace()
         {
@@ -318,7 +318,7 @@ public class ClusterEndToEndTests
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(yaml));
 
-        testHarness.Cluster.ImportYaml(stream);
+        await testHarness.Cluster.ImportYaml(stream);
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
@@ -371,7 +371,7 @@ spec:
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        testHarness.Cluster.Seed<V1CustomResourceDefinition>();
+        await testHarness.Cluster.Seed<V1CustomResourceDefinition>();
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
@@ -390,7 +390,7 @@ spec:
 ";
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(yaml));
 
-        testHarness.Cluster.ImportYaml(stream);
+        await testHarness.Cluster.ImportYaml(stream);
         var type = testHarness.Cluster.ModelCache.GetResourceType("kubeui.com", "v1beta1", "Test");
 
         var _seedMethodInfo = testHarness.Cluster.GetType().GetMethod(nameof(Cluster.Seed), [typeof(bool)]);
@@ -786,7 +786,7 @@ rules:
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(yamlLimitedRbac));
 
-        testHarness.Cluster.ImportYaml(stream);
+        await testHarness.Cluster.ImportYaml(stream);
 
         await Task.Delay(TimeSpan.FromSeconds(5));
 
@@ -842,7 +842,7 @@ rules:
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(yamlLimitedRbacNoNamespace));
 
-        testHarness.Cluster.ImportYaml(stream);
+        await testHarness.Cluster.ImportYaml(stream);
 
         await Task.Delay(TimeSpan.FromSeconds(10));
 

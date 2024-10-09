@@ -728,7 +728,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         }
     }
 
-    public void ImportYaml(Stream stream)
+    public async Task ImportYaml(Stream stream)
     {
         var mi = GetType().GetMethods().First(x => x.Name == nameof(AddOrUpdate) && x.IsGenericMethod && x.GetParameters().Length == 1);
 
@@ -758,7 +758,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 if (model != null)
                 {
                     var fooRef = mi.MakeGenericMethod(type);
-                    fooRef.Invoke(this, [model]);
+                    await (Task)fooRef.Invoke(this, [model]);
                 }
             }
             catch (Exception ex)
@@ -768,7 +768,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         }
     }
 
-    public void ImportFolder(string path)
+    public async Task ImportFolder(string path)
     {
         if (Directory.Exists(path))
         {
@@ -781,7 +781,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
             {
                 try
                 {
-                    ImportYaml(file.OpenRead());
+                    await ImportYaml(file.OpenRead());
                 }
                 catch (Exception ex)
                 {

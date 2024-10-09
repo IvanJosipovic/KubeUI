@@ -74,7 +74,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
             foreach (var file in files)
             {
                 var stream = await file.OpenReadAsync();
-                link.Cluster.ImportYaml(stream);
+                await link.Cluster.ImportYaml(stream);
             }
         }
         else if (link.Id == "load-folder")

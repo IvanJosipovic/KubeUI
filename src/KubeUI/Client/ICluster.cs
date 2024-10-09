@@ -29,8 +29,8 @@ public interface ICluster
     Task Connect();
     Task<bool> Delete<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     bool IsMetricsAvailable { get; }
-    void ImportFolder(string path);
-    void ImportYaml(Stream stream);
+    Task ImportFolder(string path);
+    Task ImportYaml(Stream stream);
     void RemovePortForward(PortForwarder pf);
     Task Seed<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     bool CanI<T>(Verb verb, string @namespace = "", string subresource = "") where T : class, IKubernetesObject<V1ObjectMeta>, new();
