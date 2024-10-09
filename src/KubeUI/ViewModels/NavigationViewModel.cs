@@ -16,7 +16,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
         Id = nameof(NavigationViewModel);
     }
 
-    public async void TreeView_SelectionChanged(object? item)
+    public void TreeView_SelectionChanged(object? item)
     {
         if (item is Cluster cluster)
         {
@@ -25,11 +25,11 @@ public sealed partial class NavigationViewModel : ViewModelBase
         }
         else if (item is ResourceNavigationLink resourceNavLink)
         {
-            SelectResourceNavigationLink(resourceNavLink);
+            _ = Task.Run(() => SelectResourceNavigationLink(resourceNavLink));
         }
         else if (item is NavigationLink navLink)
         {
-            await SelectNavigationLink(navLink);
+            _ = Task.Run(async () => await SelectNavigationLink(navLink));
         }
 
         if (item is NavigationItem nav)
@@ -51,9 +51,12 @@ public sealed partial class NavigationViewModel : ViewModelBase
             init.Initialize(link.Cluster);
         }
 
-        link.Objects = link.Cluster.Objects[kind].Items;
+        Dispatcher.UIThread.Post(() =>
+        {
+            link.Objects = link.Cluster.Objects[kind].Items;
 
-        Factory.AddToDocuments(vm);
+            Factory.AddToDocuments(vm);
+        });
     }
 
     private async Task SelectNavigationLink(NavigationLink link)
@@ -71,7 +74,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
             foreach (var file in files)
             {
                 var stream = await file.OpenReadAsync();
-                link.Cluster.ImportYaml(stream);
+                await link.Cluster.ImportYaml(stream);
             }
         }
         else if (link.Id == "load-folder")
@@ -85,7 +88,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
 
             foreach (var file in folders)
             {
-                link.Cluster.ImportFolder(file.TryGetLocalPath());
+                await link.Cluster.ImportFolder(file.TryGetLocalPath());
             }
         }
         else
@@ -97,7 +100,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
                 init.Initialize(link.Cluster);
             }
 
-            Factory.AddToDocuments(vm);
+            Dispatcher.UIThread.Post(() => Factory.AddToDocuments(vm));
         }
     }
 }

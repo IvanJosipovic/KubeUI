@@ -85,11 +85,11 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
     }
 
     [RelayCommand(CanExecute = nameof(CanSave))]
-    private void Save()
+    private async Task Save()
     {
-        byte[] byteArray = Encoding.UTF8.GetBytes(_yamlDocument.Text);
-        using MemoryStream stream = new MemoryStream(byteArray);
-        Cluster.ImportYaml(stream);
+        byte[] byteArray = Encoding.UTF8.GetBytes(YamlDocument.Text);
+        await using MemoryStream stream = new MemoryStream(byteArray);
+        await Cluster.ImportYaml(stream);
     }
 
     private bool CanSave()

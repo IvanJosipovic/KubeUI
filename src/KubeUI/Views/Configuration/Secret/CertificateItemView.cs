@@ -76,7 +76,7 @@ public sealed partial class CertificateItemView : ViewBase
         {
             if (text.StartsWith("-----BEGIN CERTIFICATE-----"))
             {
-                var cert = new X509Certificate2(bytes);
+                var cert = X509CertificateLoader.LoadCertificate(bytes);
                 Certificates.Add(cert);
             }
             else if (text.StartsWith("-----BEGIN RSA PRIVATE KEY-----"))

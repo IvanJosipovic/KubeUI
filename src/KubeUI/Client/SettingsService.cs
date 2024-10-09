@@ -4,8 +4,8 @@ using Scrutor;
 
 namespace KubeUI.Client;
 
-[ServiceDescriptor<SettingsService>(ServiceLifetime.Singleton)]
-public sealed partial class SettingsService : ObservableObject
+[ServiceDescriptor<ISettingsService>(ServiceLifetime.Singleton)]
+public sealed partial class SettingsService : ObservableObject, ISettingsService
 {
     private readonly ILogger<SettingsService> _logger;
 
@@ -28,12 +28,12 @@ public sealed partial class SettingsService : ObservableObject
 
     public void LoadSettings()
     {
-        Settings = GetSettings();
+        Settings = LoadSettingsFromFile();
 
         ApplySettings();
     }
 
-    public static Settings GetSettings()
+    public static Settings LoadSettingsFromFile()
     {
         try
         {
@@ -49,7 +49,7 @@ public sealed partial class SettingsService : ObservableObject
                 }
             }
         }
-        catch (Exception){}
+        catch (Exception) { }
 
         return new Settings();
     }
@@ -77,15 +77,10 @@ public sealed partial class SettingsService : ObservableObject
         {
             if (EnsureSettingDirExists())
             {
-                using var fs = new FileStream(GetSettingsFilePath(), FileMode.OpenOrCreate, FileAccess.Write);
-
-                if (fs.CanWrite)
+                File.WriteAllText(GetSettingsFilePath(), JsonSerializer.Serialize(Settings, new JsonSerializerOptions(JsonSerializerDefaults.General)
                 {
-                    JsonSerializer.Serialize(fs, Settings, new JsonSerializerOptions(JsonSerializerDefaults.General)
-                    {
-                        WriteIndented = true,
-                    });
-                }
+                    WriteIndented = true,
+                }));
             }
             else
             {

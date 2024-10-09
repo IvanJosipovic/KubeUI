@@ -62,7 +62,7 @@ public sealed class PodStatusCell : MyViewBase<V1Pod>
 
     protected override StyleGroup? BuildStyles() => _styles;
 
-    protected override object Build(V1Pod vm) =>
+    protected override object Build(V1Pod? vm) =>
         new TextBlock()
             .Margin(12, 0, 12, 0)
             .HorizontalAlignment(HorizontalAlignment.Left)

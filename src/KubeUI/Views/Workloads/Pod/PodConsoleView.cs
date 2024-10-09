@@ -4,6 +4,7 @@ using Avalonia.Styling;
 using AvaloniaEdit;
 using static AvaloniaEdit.TextMate.TextMate;
 using TextMateSharp.Grammars;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 
 namespace KubeUI.Views;
 
@@ -82,6 +83,7 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
                     .FontWeight(FontWeight.Normal)
                     .IsReadOnly(true)
                     .ShowLineNumbers(false)
+                    .Background(new DynamicResourceExtension("SystemAltHighColor"))
                     .HorizontalScrollBarVisibility(ScrollBarVisibility.Auto)
                     .VerticalScrollBarVisibility(ScrollBarVisibility.Visible)
                     .OnKeyUp((e) => {

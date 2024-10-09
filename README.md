@@ -10,15 +10,24 @@
 KubeUI is a user interface for Kubernetes.
 
 ## Features
-
-- Not Electron ;) Powered by [Avalonia](https://avaloniaui.net/)
-- Create/View/Edit Resources as Yaml
-- Connect to Cluster
-- View Pod Logs
-- View Pod Console
-- Port Forwarding
-- Custom Resource Definition support
 - Automatic updates
+- Connect to Cluster
+- Create/View/Edit Resources as Yaml
+- Custom Resource Definition support
+- Multi Monitor Support
+- Limited Permission Support
+  - No access to List/Watch Namespaces
+  - Namespace specific Resource Permissions
+
+### Resource Specific Features
+- Pod
+  - View Logs
+  - View Console
+  - Port Forwarding
+  - CPU/Memory Usage
+- Secret
+  - View Certificate details (expiry etc)
+
 
 ## How to run?
 
@@ -58,7 +67,7 @@ Example of data collected:
 
 ## How to build?
 
-1. [Download .Net SDK 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
+1. [Download .Net SDK 9.0](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
 2. [Download an IDE](https://dotnet.microsoft.com/platform/tools)
 3. Build away!
 

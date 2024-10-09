@@ -2,7 +2,7 @@
 
 public sealed class HomeView : MyViewBase<HomeViewModel>
 {
-    protected override object Build(HomeViewModel vm) =>
+    protected override object Build(HomeViewModel? vm) =>
         new TextBlock()
             .Margin(5, 5, 0, 0)
             .HorizontalAlignment(HorizontalAlignment.Center)

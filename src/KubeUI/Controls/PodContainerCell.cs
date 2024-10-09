@@ -44,7 +44,7 @@ public sealed class PodContainerCell : MyViewBase<V1Pod>
         return Brushes.Red;
     }
 
-    protected override object Build(V1Pod vm) =>
+    protected override object Build(V1Pod? vm) =>
         new StackPanel()
             .Margin(10, 0, 0, 0)
             .Orientation(Orientation.Horizontal)

@@ -3,6 +3,7 @@ using k8s;
 using k8s.Models;
 using KubeUI.Client.Informer;
 using Swordfish.NET.Collections;
+using static KubeUI.Client.Cluster;
 
 namespace KubeUI.Client;
 
@@ -27,11 +28,14 @@ public interface ICluster
     Task AddOrUpdate<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task Connect();
     Task<bool> Delete<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
-    V1APIGroupList APIGroups { get; }
     bool IsMetricsAvailable { get; }
-
-    void ImportFolder(string path);
-    void ImportYaml(Stream stream);
+    Task ImportFolder(string path);
+    Task ImportYaml(Stream stream);
     void RemovePortForward(PortForwarder pf);
-    void Seed<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    Task Seed<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    bool CanI<T>(Verb verb, string @namespace = "", string subresource = "") where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    bool CanI(Type type, Verb verb, string @namespace = "", string subresource = "");
+    Task<ConcurrentObservableDictionary<NamespacedName, T>> GetObjectDictionaryAsync<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
+
+    bool ListNamespaces { get; set; }
 }

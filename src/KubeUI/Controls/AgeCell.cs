@@ -99,7 +99,7 @@ public partial class AgeCell : MyViewBase<IKubernetesObject<V1ObjectMeta>>
 
     protected override StyleGroup? BuildStyles() => [];
 
-    protected override object Build(IKubernetesObject<V1ObjectMeta> vm) =>
+    protected override object Build(IKubernetesObject<V1ObjectMeta>? vm) =>
         new TextBlock()
             .Margin(12, 0, 12, 0)
             .HorizontalAlignment(HorizontalAlignment.Left)

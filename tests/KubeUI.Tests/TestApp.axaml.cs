@@ -10,6 +10,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using KubeUI.ViewModels;
 using KubeUI.Views;
 using Microsoft.Extensions.Hosting;
+using HanumanInstitute.MvvmDialogs;
+using Moq;
 
 namespace KubeUI.Tests;
 
@@ -35,12 +37,17 @@ public class TestApp : Application
         builder.Services.AddSingleton<IGenerator, Generator>();
         builder.Services.AddSingleton<IFactory, DockFactory>();
 
+        var dialog = new Mock<IDialogService>();
+        builder.Services.AddSingleton<IDialogService>(dialog.Object);
+
         builder.Services.Scan(scan => scan
             .FromAssemblyOf<App>()
             .AddClasses(classes => classes.AssignableToAny([typeof(UserControl), typeof(ObservableObject), typeof(ViewModelBase), typeof(MyViewBase<>)]))
             .AsSelf()
             .WithTransientLifetime()
         );
+
+        builder.Services.Scan(x => x.FromAssemblyOf<App>().AddClasses().UsingAttributes());
 
         Host = builder.Build();
         Resources[typeof(IServiceProvider)] = Host.Services;

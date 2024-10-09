@@ -5,7 +5,7 @@ namespace KubeUI.Views;
 
 public sealed class MainView : MyViewBase<MainViewModel>
 {
-    protected override object Build(MainViewModel vm) =>
+    protected override object Build(MainViewModel? vm) =>
         new Grid()
             .Rows("Auto,*")
             .Children([

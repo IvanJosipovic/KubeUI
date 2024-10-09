@@ -151,6 +151,33 @@ namespace KubeUI.Assets {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Your account does not have the necessary permissions to list or watch namespaces. Please enter the names of the namespaces this account should have access to in the Settings window, and then reconnect.
+        /// </summary>
+        public static string Cluster_Missing_Namespace_Permission_Content {
+            get {
+                return ResourceManager.GetString("Cluster_Missing_Namespace_Permission_Content", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to OK.
+        /// </summary>
+        public static string Cluster_Missing_Namespace_Permission_Primary {
+            get {
+                return ResourceManager.GetString("Cluster_Missing_Namespace_Permission_Primary", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Warning.
+        /// </summary>
+        public static string Cluster_Missing_Namespace_Permission_Title {
+            get {
+                return ResourceManager.GetString("Cluster_Missing_Namespace_Permission_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Error connecting to the cluster.
         /// </summary>
         public static string ClusterErrorView_Header {
@@ -210,6 +237,15 @@ namespace KubeUI.Assets {
         public static string ClusterListViewModel_Title {
             get {
                 return ResourceManager.GetString("ClusterListViewModel_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cluster Settings.
+        /// </summary>
+        public static string ClusterSettingsViewModel_Title {
+            get {
+                return ResourceManager.GetString("ClusterSettingsViewModel_Title", resourceCulture);
             }
         }
         
@@ -503,7 +539,7 @@ namespace KubeUI.Assets {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Select Namespace(s).
+        ///   Looks up a localized string similar to Filter Namespace(s).
         /// </summary>
         public static string ResourceListView_SelectNamespace {
             get {
