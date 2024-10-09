@@ -65,10 +65,10 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="9.0.0-rc.1.24431.7" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.0-rc.1.24431.7" />
-    <PackageReference Include="Microsoft.Extensions.Diagnostics" Version="9.0.0-rc.1.24431.7" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0-rc.1.24431.7" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="9.0.0-rc.2.24473.5" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.0-rc.2.24473.5" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics" Version="9.0.0-rc.2.24473.5" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0-rc.2.24473.5" />
     <PackageReference Include="NodeEditorAvalonia" Version="11.1.0-rc1" />
     <PackageReference Include="NodeEditorAvalonia.Mvvm" Version="11.1.0-rc1" />
     <PackageReference Include="NReco.Logging.File" Version="1.2.1" />
