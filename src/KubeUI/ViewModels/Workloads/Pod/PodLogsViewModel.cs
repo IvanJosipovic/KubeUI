@@ -66,7 +66,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
                         if (!string.IsNullOrEmpty(log))
                         {
-                            Dispatcher.UIThread.Post(() => Logs.Insert(Logs.TextLength, log + Environment.NewLine));
+                            await Dispatcher.UIThread.InvokeAsync(() => Logs.Insert(Logs.TextLength, log + Environment.NewLine), DispatcherPriority.Background);
                         }
                     }
                     catch (IOException ex) when (ex.Message.Equals("The request was aborted."))

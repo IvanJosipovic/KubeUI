@@ -68,7 +68,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
                     str = RemoveAnsiEscapeSequences(str);
                     if (!string.IsNullOrEmpty(str))
                     {
-                       Dispatcher.UIThread.Post(() =>
+                       await Dispatcher.UIThread.InvokeAsync(() =>
                        {
                            // backspace
                            if (str.Equals("\b", StringComparison.Ordinal) || str.Equals("\b \b", StringComparison.Ordinal))
@@ -79,7 +79,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
                            {
                                Console.Insert(Console.TextLength, str);
                            }
-                       });
+                       }, DispatcherPriority.Background);
                     }
                 }
                 catch (IOException ex) when (ex.Message.Equals("The request was aborted.")) { break; }

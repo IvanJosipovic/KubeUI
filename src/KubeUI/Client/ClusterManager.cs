@@ -100,7 +100,7 @@ public sealed partial class ClusterManager : ObservableObject, IDisposable
 
     private void Watcher_Changed(object sender, FileSystemEventArgs e)
     {
-        Dispatcher.UIThread.Post(() => LoadFromConfigFromPath(e.FullPath));
+        Dispatcher.UIThread.Post(() => LoadFromConfigFromPath(e.FullPath), DispatcherPriority.Background);
     }
 
     private void LoadClusters()
