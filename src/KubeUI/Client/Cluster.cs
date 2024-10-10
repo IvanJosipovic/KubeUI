@@ -575,13 +575,13 @@ public sealed partial class Cluster : ObservableObject, ICluster
                         }
                     }
 
-                    Dispatcher.UIThread.Post(() => items[name] = item);
+                    Dispatcher.UIThread.Post(() => items[name] = item, DispatcherPriority.Background);
                     break;
                 case WatchEventType.Modified:
-                    Dispatcher.UIThread.Post(() => items[name] = item);
+                    Dispatcher.UIThread.Post(() => items[name] = item, DispatcherPriority.Background);
                     break;
                 case WatchEventType.Deleted:
-                    Dispatcher.UIThread.Post(() => items.Remove(name));
+                    Dispatcher.UIThread.Post(() => items.Remove(name), DispatcherPriority.Background);
                     //todo Check if CRD and remove from menu etc
                     break;
                 case WatchEventType.Error:
