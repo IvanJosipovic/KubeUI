@@ -173,9 +173,9 @@ public sealed partial class Cluster : ObservableObject, ICluster
                         }
                     }
 
-                    await AddDefaultNavigation();
-
                     await InitMetrics();
+
+                    await AddDefaultNavigation();
                 }
                 catch (Exception ex)
                 {
@@ -245,7 +245,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         if (await CanIListWatchAsync<V1Pod>(true))
         {
             workloads.NavigationItems.Add(new ResourceNavigationLink() { Name = "Pods", ControlType = typeof(V1Pod), Cluster = this });
-            _ = CanIAsync<V1Pod>(Verb.Create, "log", true);
+            await CanIAsync<V1Pod>(Verb.Get, "log", true);
             _ = CanIAsync<V1Pod>(Verb.Create, "exec", true);
             _ = CanIAsync<V1Pod>(Verb.Create, "portforward", true);
         }
@@ -452,11 +452,12 @@ public sealed partial class Cluster : ObservableObject, ICluster
             container.Initialised = true;
 
             Task.WaitAll(
+                GetSelfSubjectAccessReview(type, Verb.Create),
+                GetSelfSubjectAccessReview(type, Verb.Delete),
                 GetSelfSubjectAccessReview(type, Verb.List),
+                GetSelfSubjectAccessReview(type, Verb.Patch),
+                GetSelfSubjectAccessReview(type, Verb.Update),
                 GetSelfSubjectAccessReview(type, Verb.Watch)
-                //GetSelfSubjectAccessReview(type, Verb.Create, item.Value.Name()),
-                //GetSelfSubjectAccessReview(type, Verb.Update, item.Value.Name()),
-                //GetSelfSubjectAccessReview(type, Verb.Delete, item.Value.Name())
                 );
 
             if (CanI(type, Verb.List) && CanI(type, Verb.Watch))
@@ -484,11 +485,12 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 foreach (var item in GetObjectDictionary<V1Namespace>())
                 {
                     await Task.WhenAll(
+                        GetSelfSubjectAccessReview(type, Verb.Create, item.Value.Name()),
+                        GetSelfSubjectAccessReview(type, Verb.Delete, item.Value.Name()),
                         GetSelfSubjectAccessReview(type, Verb.List, item.Value.Name()),
+                        GetSelfSubjectAccessReview(type, Verb.Patch, item.Value.Name()),
+                        GetSelfSubjectAccessReview(type, Verb.Update, item.Value.Name()),
                         GetSelfSubjectAccessReview(type, Verb.Watch, item.Value.Name())
-                        //GetSelfSubjectAccessReview(type, Verb.Create, item.Value.Name()),
-                        //GetSelfSubjectAccessReview(type, Verb.Update, item.Value.Name()),
-                        //GetSelfSubjectAccessReview(type, Verb.Delete, item.Value.Name())
                         );
 
                     if (CanI(type, Verb.List, item.Value.Name()) && CanI(type, Verb.Watch, item.Value.Name()))

@@ -533,6 +533,16 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 },
                 AgeColumn(),
             ];
+
+            definition.MenuItems =
+            [
+                new()
+                {
+                    Header = "Restart",
+                    CommandPath = nameof(ResourceListViewModel<V1Deployment>.RestartDeploymentCommand),
+                    CommandParameterPath = "SelectedItem.Value"
+                },
+            ];
         }
         else if (resourceType == typeof(V1DaemonSet))
         {
@@ -556,6 +566,16 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 },
                 AgeColumn(),
             ];
+
+            definition.MenuItems =
+            [
+                new()
+                {
+                    Header = "Restart",
+                    CommandPath = nameof(ResourceListViewModel<V1Deployment>.RestartDaemonSetCommand),
+                    CommandParameterPath = "SelectedItem.Value"
+                },
+            ];
         }
         else if (resourceType == typeof(V1StatefulSet))
         {
@@ -571,6 +591,16 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 AgeColumn(),
+            ];
+
+            definition.MenuItems =
+            [
+                new()
+                {
+                    Header = "Restart",
+                    CommandPath = nameof(ResourceListViewModel<V1Deployment>.RestartStatefulSetCommand),
+                    CommandParameterPath = "SelectedItem.Value"
+                },
             ];
         }
         else if (resourceType == typeof(V1ReplicaSet))
@@ -601,6 +631,16 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 AgeColumn(),
+            ];
+
+            definition.MenuItems =
+            [
+                new()
+                {
+                    Header = "Restart",
+                    CommandPath = nameof(ResourceListViewModel<V1Deployment>.RestartReplicaSetCommand),
+                    CommandParameterPath = "SelectedItem.Value"
+                },
             ];
         }
         else if (resourceType == typeof(V1Job))
@@ -1591,7 +1631,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private bool CanViewLogs(V1Container? container)
     {
-        return container != null;
+        return container != null && Cluster.CanI<V1Pod>(Verb.Get, ((KeyValuePair<NamespacedName,V1Pod>)SelectedItem).Key.Namespace, "log");
     }
 
     [RelayCommand(CanExecute = nameof(CanViewConsole))]
@@ -1605,21 +1645,21 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
         if (Factory.AddToBottom(vm))
         {
-        try
-        {
-            await vm.Connect();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error connecting to console");
-            return;
-        }
+            try
+            {
+                await vm.Connect();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error connecting to console");
+                return;
+            }
         }
     }
 
     private bool CanViewConsole(V1Container? container)
     {
-        return container != null;
+        return container != null && Cluster.CanI<V1Pod>(Verb.Create, ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key.Namespace, "exec");
     }
 
     [RelayCommand(CanExecute = nameof(CanPortForward))]
@@ -1647,7 +1687,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private bool CanPortForward(V1ContainerPort? containerPort)
     {
-        return containerPort?.ContainerPort > 0 && containerPort.Protocol == "TCP";
+        return containerPort?.ContainerPort > 0 && containerPort.Protocol == "TCP" && Cluster.CanI<V1Pod>(Verb.Create, ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key.Namespace, "portforward");
     }
 
     [RelayCommand(CanExecute = nameof(CanListCRD))]
@@ -1676,6 +1716,134 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         }
 
         return true;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRestartDeployment))]
+    private async Task RestartDeployment(V1Deployment deployment)
+    {
+        try
+        {
+            var patch = $$"""
+            {
+              "spec": {
+                "template": {
+                  "metadata": {
+                    "annotations": {
+                      "kubectl.kubernetes.io/restartedAt": "{{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}}"
+                    }
+                  }
+                }
+              }
+            }
+            """;
+
+            await Cluster.Client.AppsV1.PatchNamespacedDeploymentAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), deployment.Metadata.Name, deployment.Metadata.NamespaceProperty);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error Restarting Deployment");
+        }
+    }
+
+    private bool CanRestartDeployment(V1Deployment deployment)
+    {
+        return deployment != null && Cluster.CanI<V1Deployment>(Verb.Patch, deployment.Namespace());
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRestartReplicaSet))]
+    private async Task RestartReplicaSet(V1ReplicaSet replicaSet)
+    {
+        try
+        {
+            var patch = $$"""
+            {
+              "spec": {
+                "template": {
+                  "metadata": {
+                    "annotations": {
+                      "kubectl.kubernetes.io/restartedAt": "{{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}}"
+                    }
+                  }
+                }
+              }
+            }
+            """;
+
+            await Cluster.Client.AppsV1.PatchNamespacedReplicaSetAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), replicaSet.Metadata.Name, replicaSet.Metadata.NamespaceProperty);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error Restarting ReplicaSet");
+        }
+    }
+
+    private bool CanRestartReplicaSet(V1ReplicaSet replicaSet)
+    {
+        return replicaSet != null && Cluster.CanI<V1ReplicaSet>(Verb.Patch, replicaSet.Namespace());
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRestartStatefulSet))]
+    private async Task RestartStatefulSet(V1StatefulSet statefulSet)
+    {
+        try
+        {
+            var patch = $$"""
+            {
+              "spec": {
+                "template": {
+                  "metadata": {
+                    "annotations": {
+                      "kubectl.kubernetes.io/restartedAt": "{{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}}"
+                    }
+                  }
+                }
+              }
+            }
+            """;
+
+            await Cluster.Client.AppsV1.PatchNamespacedStatefulSetAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), statefulSet.Metadata.Name, statefulSet.Metadata.NamespaceProperty);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error Restarting StatefulSet");
+        }
+    }
+
+    private bool CanRestartStatefulSet(V1StatefulSet statefulSet)
+    {
+        return statefulSet != null && Cluster.CanI<V1StatefulSet>(Verb.Patch, statefulSet.Namespace());
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRestartDaemonSet))]
+    private async Task RestartDaemonSet(V1DaemonSet daemonSet)
+    {
+        try
+        {
+            var patch = $$"""
+            {
+              "spec": {
+                "template": {
+                  "metadata": {
+                    "annotations": {
+                      "kubectl.kubernetes.io/restartedAt": "{{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}}"
+                    }
+                  }
+                }
+              }
+            }
+            """;
+
+            await Cluster.Client.AppsV1.PatchNamespacedDaemonSetAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), daemonSet.Metadata.Name, daemonSet.Metadata.NamespaceProperty);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error Restarting DaemonSet");
+        }
+    }
+
+    private bool CanRestartDaemonSet(V1DaemonSet daemonSet)
+    {
+        return daemonSet != null && Cluster.CanI<V1DaemonSet>(Verb.Patch, daemonSet.Namespace());
     }
 
     #endregion

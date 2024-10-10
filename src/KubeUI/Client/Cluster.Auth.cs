@@ -82,6 +82,23 @@ public partial class Cluster
     {
         var kind = GroupApiVersionKind.From(type);
 
+        // If checking namespace permissions, we should check if we have cluster level first
+        if (!string.IsNullOrEmpty(@namespace))
+        {
+            var global = _selfSubjectAccessReviews.ToList().FirstOrDefault(x =>
+                x.Spec.ResourceAttributes.Verb == verb.ToString().ToLowerInvariant() &&
+                x.Spec.ResourceAttributes.Resource == kind.PluralName &&
+                x.Spec.ResourceAttributes.Group == (string.IsNullOrEmpty(kind.Group) ? null : kind.Group) &&
+                x.Spec.ResourceAttributes.NamespaceProperty == null &&
+                x.Spec.ResourceAttributes.Subresource == (string.IsNullOrEmpty(subresource) ? null : subresource)
+            );
+
+            if (global != null && global.Status.Allowed)
+            {
+                return true;
+            }
+        }
+
         var review = _selfSubjectAccessReviews.ToList().FirstOrDefault(x =>
             x.Spec.ResourceAttributes.Verb == verb.ToString().ToLowerInvariant() &&
             x.Spec.ResourceAttributes.Resource == kind.PluralName &&
