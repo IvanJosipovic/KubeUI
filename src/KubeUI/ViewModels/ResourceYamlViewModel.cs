@@ -23,6 +23,9 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _hideNoisyFields = true;
 
+    [ObservableProperty]
+    private bool _wordWrap;
+
     public ResourceYamlViewModel()
     {
         Title = Resources.ResourceYamlViewModel_Title;

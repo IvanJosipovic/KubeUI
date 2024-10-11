@@ -332,4 +332,10 @@ Are you sure?</value>
   <data name="Cluster_Missing_Namespace_Permission_Primary" xml:space="preserve">
     <value>OK</value>
   </data>
+  <data name="ResourceYamlView_WordWrap" xml:space="preserve">
+    <value>Word Wrap</value>
+  </data>
+  <data name="PodLogsView_WordWrap" xml:space="preserve">
+    <value>Word Wrap</value>
+  </data>
 </root>
