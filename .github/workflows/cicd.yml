@@ -34,7 +34,15 @@ jobs:
         run: dotnet build -c Release
 
       - name: Test
-        run: dotnet test -c Release --collect:"XPlat Code Coverage" --no-build -l "console;verbosity=normal"
+        run: dotnet test -c Release --collect:"XPlat Code Coverage" --no-build --logger "trx;LogFileName=test-results.trx"
+
+      - name: Test Report
+        uses: dorny/test-reporter@v1
+        if: success() || failure()    # run this step even if previous step failed
+        with:
+          name: ${{ matrix.runs-on }} Tests
+          path: tests/KubeUI.Tests/TestResults/test-results.trx
+          reporter: dotnet-trx
 
       - name: Coverage
         if: matrix.runs-on == 'ubuntu-latest'
