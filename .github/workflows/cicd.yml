@@ -34,7 +34,7 @@ jobs:
         run: dotnet build -c Release
 
       - name: Test
-        run: dotnet test -c Release --collect:"XPlat Code Coverage" --no-build
+        run: dotnet test -c Release --collect:"XPlat Code Coverage" --no-build -l "console;verbosity=normal"
 
       - name: Coverage
         if: matrix.runs-on == 'ubuntu-latest'
