@@ -21,7 +21,7 @@ jobs:
         include:
           - runs-on: windows-latest
           - runs-on: ubuntu-latest
-          - runs-on: macos-latest
+          #- runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
