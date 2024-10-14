@@ -127,6 +127,29 @@ public static T IsTitleBarVisible<TValue,T>(this T control, TValue value, FuncVa
 => control._setEx(Ursa.Controls.UrsaWindow.IsTitleBarVisibleProperty, ps, () => control.IsTitleBarVisible = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
+ // IsManagedResizerVisible
+
+/*BindFromExpressionSetterGenerator*/
+public static T IsManagedResizerVisible<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.UrsaWindow 
+   => control._set(Ursa.Controls.UrsaWindow.IsManagedResizerVisibleProperty, func, onChanged, expression);
+
+/*MagicalSetterGenerator*/
+public static T IsManagedResizerVisible<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.UrsaWindow 
+=> control._setEx(Ursa.Controls.UrsaWindow.IsManagedResizerVisibleProperty, ps, () => control.IsManagedResizerVisible = value, bindingMode, converter, bindingSource);
+
+/*BindSetterGenerator*/
+public static T IsManagedResizerVisible<T>(this T control, IBinding binding) where T : Ursa.Controls.UrsaWindow 
+   => control._set(Ursa.Controls.UrsaWindow.IsManagedResizerVisibleProperty, binding);
+
+/*AvaloniaPropertyBindSetterGenerator*/
+public static T IsManagedResizerVisible<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Ursa.Controls.UrsaWindow 
+   => control._set(Ursa.Controls.UrsaWindow.IsManagedResizerVisibleProperty, avaloniaProperty, bindingMode, converter, overrideView);
+
+/*MagicalSetterWithConverterGenerator*/
+public static T IsManagedResizerVisible<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.UrsaWindow 
+=> control._setEx(Ursa.Controls.UrsaWindow.IsManagedResizerVisibleProperty, ps, () => control.IsManagedResizerVisible = converter.TryConvert(value), bindingMode, converter, bindingSource);
+
+
  // TitleBarContent
 
 /*BindFromExpressionSetterGenerator*/
@@ -283,6 +306,17 @@ public static Style<T> IsTitleBarVisible<T>(this Style<T> style, System.Boolean 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsTitleBarVisible<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.UrsaWindow 
 => style._addSetter(Ursa.Controls.UrsaWindow.IsTitleBarVisibleProperty, binding);
+
+
+ // IsManagedResizerVisible
+
+/*ValueStyleSetterGenerator*/
+public static Style<T> IsManagedResizerVisible<T>(this Style<T> style, System.Boolean value) where T : Ursa.Controls.UrsaWindow 
+=> style._addSetter(Ursa.Controls.UrsaWindow.IsManagedResizerVisibleProperty, value);
+
+/*BindingStyleSetterGenerator*/
+public static Style<T> IsManagedResizerVisible<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.UrsaWindow 
+=> style._addSetter(Ursa.Controls.UrsaWindow.IsManagedResizerVisibleProperty, binding);
 
 
  // TitleBarContent

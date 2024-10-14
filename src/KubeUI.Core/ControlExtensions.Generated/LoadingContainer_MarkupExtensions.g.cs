@@ -58,6 +58,29 @@ public static T LoadingMessage<TValue,T>(this T control, TValue value, FuncValue
 => control._setEx(Ursa.Controls.LoadingContainer.LoadingMessageProperty, ps, () => control.LoadingMessage = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
+ // MessageForeground
+
+/*BindFromExpressionSetterGenerator*/
+public static T MessageForeground<T>(this T control, Func<Avalonia.Media.IBrush> func, Action<Avalonia.Media.IBrush>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.LoadingContainer 
+   => control._set(Ursa.Controls.LoadingContainer.MessageForegroundProperty, func, onChanged, expression);
+
+/*MagicalSetterGenerator*/
+public static T MessageForeground<T>(this T control,Avalonia.Media.IBrush value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.LoadingContainer 
+=> control._setEx(Ursa.Controls.LoadingContainer.MessageForegroundProperty, ps, () => control.MessageForeground = value, bindingMode, converter, bindingSource);
+
+/*BindSetterGenerator*/
+public static T MessageForeground<T>(this T control, IBinding binding) where T : Ursa.Controls.LoadingContainer 
+   => control._set(Ursa.Controls.LoadingContainer.MessageForegroundProperty, binding);
+
+/*AvaloniaPropertyBindSetterGenerator*/
+public static T MessageForeground<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Ursa.Controls.LoadingContainer 
+   => control._set(Ursa.Controls.LoadingContainer.MessageForegroundProperty, avaloniaProperty, bindingMode, converter, overrideView);
+
+/*MagicalSetterWithConverterGenerator*/
+public static T MessageForeground<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IBrush> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.LoadingContainer 
+=> control._setEx(Ursa.Controls.LoadingContainer.MessageForegroundProperty, ps, () => control.MessageForeground = converter.TryConvert(value), bindingMode, converter, bindingSource);
+
+
  // LoadingMessageTemplate
 
 /*BindFromExpressionSetterGenerator*/
@@ -126,6 +149,17 @@ public static Style<T> LoadingMessage<T>(this Style<T> style, System.Object valu
 /*BindingStyleSetterGenerator*/
 public static Style<T> LoadingMessage<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.LoadingContainer 
 => style._addSetter(Ursa.Controls.LoadingContainer.LoadingMessageProperty, binding);
+
+
+ // MessageForeground
+
+/*ValueStyleSetterGenerator*/
+public static Style<T> MessageForeground<T>(this Style<T> style, Avalonia.Media.IBrush value) where T : Ursa.Controls.LoadingContainer 
+=> style._addSetter(Ursa.Controls.LoadingContainer.MessageForegroundProperty, value);
+
+/*BindingStyleSetterGenerator*/
+public static Style<T> MessageForeground<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.LoadingContainer 
+=> style._addSetter(Ursa.Controls.LoadingContainer.MessageForegroundProperty, binding);
 
 
  // LoadingMessageTemplate
