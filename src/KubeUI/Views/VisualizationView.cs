@@ -51,6 +51,6 @@ public sealed class VisualizationView : MyViewBase<VisualizationViewModel>
                     ]),
                 new Editor()
                     .Row(1)
-                    .DataContext(@vm.Drawing),
+                    .DrawingSource(@vm.Drawing),
             ]);
 }

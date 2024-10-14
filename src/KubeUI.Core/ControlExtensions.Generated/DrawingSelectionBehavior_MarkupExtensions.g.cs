@@ -12,6 +12,29 @@ namespace Avalonia.Markup.Declarative;
 public static partial class DrawingSelectionBehavior_MarkupExtensions
 {
 //================= Properties ======================//
+ // DrawingSource
+
+/*BindFromExpressionSetterGenerator*/
+public static T DrawingSource<T>(this T control, Func<NodeEditor.Model.IDrawingNode> func, Action<NodeEditor.Model.IDrawingNode>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Behaviors.DrawingSelectionBehavior 
+   => control._set(NodeEditor.Behaviors.DrawingSelectionBehavior.DrawingSourceProperty, func, onChanged, expression);
+
+/*MagicalSetterGenerator*/
+public static T DrawingSource<T>(this T control,NodeEditor.Model.IDrawingNode value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Behaviors.DrawingSelectionBehavior 
+=> control._setEx(NodeEditor.Behaviors.DrawingSelectionBehavior.DrawingSourceProperty, ps, () => control.DrawingSource = value, bindingMode, converter, bindingSource);
+
+/*BindSetterGenerator*/
+public static T DrawingSource<T>(this T control, IBinding binding) where T : NodeEditor.Behaviors.DrawingSelectionBehavior 
+   => control._set(NodeEditor.Behaviors.DrawingSelectionBehavior.DrawingSourceProperty, binding);
+
+/*AvaloniaPropertyBindSetterGenerator*/
+public static T DrawingSource<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : NodeEditor.Behaviors.DrawingSelectionBehavior 
+   => control._set(NodeEditor.Behaviors.DrawingSelectionBehavior.DrawingSourceProperty, avaloniaProperty, bindingMode, converter, overrideView);
+
+/*MagicalSetterWithConverterGenerator*/
+public static T DrawingSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, NodeEditor.Model.IDrawingNode> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Behaviors.DrawingSelectionBehavior 
+=> control._setEx(NodeEditor.Behaviors.DrawingSelectionBehavior.DrawingSourceProperty, ps, () => control.DrawingSource = converter.TryConvert(value), bindingMode, converter, bindingSource);
+
+
  // InputSource
 
 /*BindFromExpressionSetterGenerator*/
@@ -56,75 +79,6 @@ public static T AdornerCanvas<T>(this T control, AvaloniaProperty avaloniaProper
 /*MagicalSetterWithConverterGenerator*/
 public static T AdornerCanvas<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Canvas> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Behaviors.DrawingSelectionBehavior 
 => control._setEx(NodeEditor.Behaviors.DrawingSelectionBehavior.AdornerCanvasProperty, ps, () => control.AdornerCanvas = converter.TryConvert(value), bindingMode, converter, bindingSource);
-
-
- // EnableSnap
-
-/*BindFromExpressionSetterGenerator*/
-public static T EnableSnap<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Behaviors.DrawingSelectionBehavior 
-   => control._set(NodeEditor.Behaviors.DrawingSelectionBehavior.EnableSnapProperty, func, onChanged, expression);
-
-/*MagicalSetterGenerator*/
-public static T EnableSnap<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Behaviors.DrawingSelectionBehavior 
-=> control._setEx(NodeEditor.Behaviors.DrawingSelectionBehavior.EnableSnapProperty, ps, () => control.EnableSnap = value, bindingMode, converter, bindingSource);
-
-/*BindSetterGenerator*/
-public static T EnableSnap<T>(this T control, IBinding binding) where T : NodeEditor.Behaviors.DrawingSelectionBehavior 
-   => control._set(NodeEditor.Behaviors.DrawingSelectionBehavior.EnableSnapProperty, binding);
-
-/*AvaloniaPropertyBindSetterGenerator*/
-public static T EnableSnap<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : NodeEditor.Behaviors.DrawingSelectionBehavior 
-   => control._set(NodeEditor.Behaviors.DrawingSelectionBehavior.EnableSnapProperty, avaloniaProperty, bindingMode, converter, overrideView);
-
-/*MagicalSetterWithConverterGenerator*/
-public static T EnableSnap<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Behaviors.DrawingSelectionBehavior 
-=> control._setEx(NodeEditor.Behaviors.DrawingSelectionBehavior.EnableSnapProperty, ps, () => control.EnableSnap = converter.TryConvert(value), bindingMode, converter, bindingSource);
-
-
- // SnapX
-
-/*BindFromExpressionSetterGenerator*/
-public static T SnapX<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Behaviors.DrawingSelectionBehavior 
-   => control._set(NodeEditor.Behaviors.DrawingSelectionBehavior.SnapXProperty, func, onChanged, expression);
-
-/*MagicalSetterGenerator*/
-public static T SnapX<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Behaviors.DrawingSelectionBehavior 
-=> control._setEx(NodeEditor.Behaviors.DrawingSelectionBehavior.SnapXProperty, ps, () => control.SnapX = value, bindingMode, converter, bindingSource);
-
-/*BindSetterGenerator*/
-public static T SnapX<T>(this T control, IBinding binding) where T : NodeEditor.Behaviors.DrawingSelectionBehavior 
-   => control._set(NodeEditor.Behaviors.DrawingSelectionBehavior.SnapXProperty, binding);
-
-/*AvaloniaPropertyBindSetterGenerator*/
-public static T SnapX<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : NodeEditor.Behaviors.DrawingSelectionBehavior 
-   => control._set(NodeEditor.Behaviors.DrawingSelectionBehavior.SnapXProperty, avaloniaProperty, bindingMode, converter, overrideView);
-
-/*MagicalSetterWithConverterGenerator*/
-public static T SnapX<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Behaviors.DrawingSelectionBehavior 
-=> control._setEx(NodeEditor.Behaviors.DrawingSelectionBehavior.SnapXProperty, ps, () => control.SnapX = converter.TryConvert(value), bindingMode, converter, bindingSource);
-
-
- // SnapY
-
-/*BindFromExpressionSetterGenerator*/
-public static T SnapY<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Behaviors.DrawingSelectionBehavior 
-   => control._set(NodeEditor.Behaviors.DrawingSelectionBehavior.SnapYProperty, func, onChanged, expression);
-
-/*MagicalSetterGenerator*/
-public static T SnapY<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Behaviors.DrawingSelectionBehavior 
-=> control._setEx(NodeEditor.Behaviors.DrawingSelectionBehavior.SnapYProperty, ps, () => control.SnapY = value, bindingMode, converter, bindingSource);
-
-/*BindSetterGenerator*/
-public static T SnapY<T>(this T control, IBinding binding) where T : NodeEditor.Behaviors.DrawingSelectionBehavior 
-   => control._set(NodeEditor.Behaviors.DrawingSelectionBehavior.SnapYProperty, binding);
-
-/*AvaloniaPropertyBindSetterGenerator*/
-public static T SnapY<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : NodeEditor.Behaviors.DrawingSelectionBehavior 
-   => control._set(NodeEditor.Behaviors.DrawingSelectionBehavior.SnapYProperty, avaloniaProperty, bindingMode, converter, overrideView);
-
-/*MagicalSetterWithConverterGenerator*/
-public static T SnapY<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Behaviors.DrawingSelectionBehavior 
-=> control._setEx(NodeEditor.Behaviors.DrawingSelectionBehavior.SnapYProperty, ps, () => control.SnapY = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 

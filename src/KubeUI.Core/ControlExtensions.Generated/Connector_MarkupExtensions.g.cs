@@ -12,6 +12,29 @@ namespace Avalonia.Markup.Declarative;
 public static partial class Connector_MarkupExtensions
 {
 //================= Properties ======================//
+ // ConnectorSource
+
+/*BindFromExpressionSetterGenerator*/
+public static T ConnectorSource<T>(this T control, Func<NodeEditor.Model.IConnector> func, Action<NodeEditor.Model.IConnector>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Controls.Connector 
+   => control._set(NodeEditor.Controls.Connector.ConnectorSourceProperty, func, onChanged, expression);
+
+/*MagicalSetterGenerator*/
+public static T ConnectorSource<T>(this T control,NodeEditor.Model.IConnector value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.Connector 
+=> control._setEx(NodeEditor.Controls.Connector.ConnectorSourceProperty, ps, () => control.ConnectorSource = value, bindingMode, converter, bindingSource);
+
+/*BindSetterGenerator*/
+public static T ConnectorSource<T>(this T control, IBinding binding) where T : NodeEditor.Controls.Connector 
+   => control._set(NodeEditor.Controls.Connector.ConnectorSourceProperty, binding);
+
+/*AvaloniaPropertyBindSetterGenerator*/
+public static T ConnectorSource<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : NodeEditor.Controls.Connector 
+   => control._set(NodeEditor.Controls.Connector.ConnectorSourceProperty, avaloniaProperty, bindingMode, converter, overrideView);
+
+/*MagicalSetterWithConverterGenerator*/
+public static T ConnectorSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, NodeEditor.Model.IConnector> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.Connector 
+=> control._setEx(NodeEditor.Controls.Connector.ConnectorSourceProperty, ps, () => control.ConnectorSource = converter.TryConvert(value), bindingMode, converter, bindingSource);
+
+
  // StartPoint
 
 /*BindFromExpressionSetterGenerator*/
@@ -81,8 +104,42 @@ public static T Offset<TValue,T>(this T control, TValue value, FuncValueConverte
 => control._setEx(NodeEditor.Controls.Connector.OffsetProperty, ps, () => control.Offset = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
+ // Orientation
+
+/*BindFromExpressionSetterGenerator*/
+public static T Orientation<T>(this T control, Func<NodeEditor.Model.ConnectorOrientation> func, Action<NodeEditor.Model.ConnectorOrientation>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Controls.Connector 
+   => control._set(NodeEditor.Controls.Connector.OrientationProperty, func, onChanged, expression);
+
+/*MagicalSetterGenerator*/
+public static T Orientation<T>(this T control,NodeEditor.Model.ConnectorOrientation value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.Connector 
+=> control._setEx(NodeEditor.Controls.Connector.OrientationProperty, ps, () => control.Orientation = value, bindingMode, converter, bindingSource);
+
+/*BindSetterGenerator*/
+public static T Orientation<T>(this T control, IBinding binding) where T : NodeEditor.Controls.Connector 
+   => control._set(NodeEditor.Controls.Connector.OrientationProperty, binding);
+
+/*AvaloniaPropertyBindSetterGenerator*/
+public static T Orientation<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : NodeEditor.Controls.Connector 
+   => control._set(NodeEditor.Controls.Connector.OrientationProperty, avaloniaProperty, bindingMode, converter, overrideView);
+
+/*MagicalSetterWithConverterGenerator*/
+public static T Orientation<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, NodeEditor.Model.ConnectorOrientation> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.Connector 
+=> control._setEx(NodeEditor.Controls.Connector.OrientationProperty, ps, () => control.Orientation = converter.TryConvert(value), bindingMode, converter, bindingSource);
+
+
 
 //================= Styles ======================//
+ // ConnectorSource
+
+/*ValueStyleSetterGenerator*/
+public static Style<T> ConnectorSource<T>(this Style<T> style, NodeEditor.Model.IConnector value) where T : NodeEditor.Controls.Connector 
+=> style._addSetter(NodeEditor.Controls.Connector.ConnectorSourceProperty, value);
+
+/*BindingStyleSetterGenerator*/
+public static Style<T> ConnectorSource<T>(this Style<T> style, IBinding binding) where T : NodeEditor.Controls.Connector 
+=> style._addSetter(NodeEditor.Controls.Connector.ConnectorSourceProperty, binding);
+
+
  // StartPoint
 
 /*ValueStyleSetterGenerator*/
@@ -114,6 +171,17 @@ public static Style<T> Offset<T>(this Style<T> style, System.Double value) where
 /*BindingStyleSetterGenerator*/
 public static Style<T> Offset<T>(this Style<T> style, IBinding binding) where T : NodeEditor.Controls.Connector 
 => style._addSetter(NodeEditor.Controls.Connector.OffsetProperty, binding);
+
+
+ // Orientation
+
+/*ValueStyleSetterGenerator*/
+public static Style<T> Orientation<T>(this Style<T> style, NodeEditor.Model.ConnectorOrientation value) where T : NodeEditor.Controls.Connector 
+=> style._addSetter(NodeEditor.Controls.Connector.OrientationProperty, value);
+
+/*BindingStyleSetterGenerator*/
+public static Style<T> Orientation<T>(this Style<T> style, IBinding binding) where T : NodeEditor.Controls.Connector 
+=> style._addSetter(NodeEditor.Controls.Connector.OrientationProperty, binding);
 
 
 

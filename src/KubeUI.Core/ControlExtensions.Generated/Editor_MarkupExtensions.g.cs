@@ -12,50 +12,50 @@ namespace Avalonia.Markup.Declarative;
 public static partial class Editor_MarkupExtensions
 {
 //================= Properties ======================//
- // ZoomControl
+ // DrawingSource
 
 /*BindFromExpressionSetterGenerator*/
-public static T ZoomControl<T>(this T control, Func<NodeEditor.Controls.NodeZoomBorder> func, Action<NodeEditor.Controls.NodeZoomBorder>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Controls.Editor 
-   => control._set(NodeEditor.Controls.Editor.ZoomControlProperty, func, onChanged, expression);
+public static T DrawingSource<T>(this T control, Func<NodeEditor.Model.IDrawingNode> func, Action<NodeEditor.Model.IDrawingNode>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Controls.Editor 
+   => control._set(NodeEditor.Controls.Editor.DrawingSourceProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T ZoomControl<T>(this T control,NodeEditor.Controls.NodeZoomBorder value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.Editor 
-=> control._setEx(NodeEditor.Controls.Editor.ZoomControlProperty, ps, () => control.ZoomControl = value, bindingMode, converter, bindingSource);
+public static T DrawingSource<T>(this T control,NodeEditor.Model.IDrawingNode value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.Editor 
+=> control._setEx(NodeEditor.Controls.Editor.DrawingSourceProperty, ps, () => control.DrawingSource = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
-public static T ZoomControl<T>(this T control, IBinding binding) where T : NodeEditor.Controls.Editor 
-   => control._set(NodeEditor.Controls.Editor.ZoomControlProperty, binding);
+public static T DrawingSource<T>(this T control, IBinding binding) where T : NodeEditor.Controls.Editor 
+   => control._set(NodeEditor.Controls.Editor.DrawingSourceProperty, binding);
 
 /*AvaloniaPropertyBindSetterGenerator*/
-public static T ZoomControl<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : NodeEditor.Controls.Editor 
-   => control._set(NodeEditor.Controls.Editor.ZoomControlProperty, avaloniaProperty, bindingMode, converter, overrideView);
+public static T DrawingSource<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : NodeEditor.Controls.Editor 
+   => control._set(NodeEditor.Controls.Editor.DrawingSourceProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T ZoomControl<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, NodeEditor.Controls.NodeZoomBorder> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.Editor 
-=> control._setEx(NodeEditor.Controls.Editor.ZoomControlProperty, ps, () => control.ZoomControl = converter.TryConvert(value), bindingMode, converter, bindingSource);
+public static T DrawingSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, NodeEditor.Model.IDrawingNode> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.Editor 
+=> control._setEx(NodeEditor.Controls.Editor.DrawingSourceProperty, ps, () => control.DrawingSource = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
- // DrawingNode
+ // InputSource
 
 /*BindFromExpressionSetterGenerator*/
-public static T DrawingNode<T>(this T control, Func<NodeEditor.Controls.DrawingNode> func, Action<NodeEditor.Controls.DrawingNode>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Controls.Editor 
-   => control._set(NodeEditor.Controls.Editor.DrawingNodeProperty, func, onChanged, expression);
+public static T InputSource<T>(this T control, Func<Avalonia.Controls.Control> func, Action<Avalonia.Controls.Control>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Controls.Editor 
+   => control._set(NodeEditor.Controls.Editor.InputSourceProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T DrawingNode<T>(this T control,NodeEditor.Controls.DrawingNode value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.Editor 
-=> control._setEx(NodeEditor.Controls.Editor.DrawingNodeProperty, ps, () => control.DrawingNode = value, bindingMode, converter, bindingSource);
+public static T InputSource<T>(this T control,Avalonia.Controls.Control value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.Editor 
+=> control._setEx(NodeEditor.Controls.Editor.InputSourceProperty, ps, () => control.InputSource = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
-public static T DrawingNode<T>(this T control, IBinding binding) where T : NodeEditor.Controls.Editor 
-   => control._set(NodeEditor.Controls.Editor.DrawingNodeProperty, binding);
+public static T InputSource<T>(this T control, IBinding binding) where T : NodeEditor.Controls.Editor 
+   => control._set(NodeEditor.Controls.Editor.InputSourceProperty, binding);
 
 /*AvaloniaPropertyBindSetterGenerator*/
-public static T DrawingNode<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : NodeEditor.Controls.Editor 
-   => control._set(NodeEditor.Controls.Editor.DrawingNodeProperty, avaloniaProperty, bindingMode, converter, overrideView);
+public static T InputSource<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : NodeEditor.Controls.Editor 
+   => control._set(NodeEditor.Controls.Editor.InputSourceProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T DrawingNode<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, NodeEditor.Controls.DrawingNode> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.Editor 
-=> control._setEx(NodeEditor.Controls.Editor.DrawingNodeProperty, ps, () => control.DrawingNode = converter.TryConvert(value), bindingMode, converter, bindingSource);
+public static T InputSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Control> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.Editor 
+=> control._setEx(NodeEditor.Controls.Editor.InputSourceProperty, ps, () => control.InputSource = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // AdornerCanvas
@@ -81,28 +81,51 @@ public static T AdornerCanvas<TValue,T>(this T control, TValue value, FuncValueC
 => control._setEx(NodeEditor.Controls.Editor.AdornerCanvasProperty, ps, () => control.AdornerCanvas = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
-
-//================= Styles ======================//
  // ZoomControl
 
+/*BindFromExpressionSetterGenerator*/
+public static T ZoomControl<T>(this T control, Func<NodeEditor.Controls.NodeZoomBorder> func, Action<NodeEditor.Controls.NodeZoomBorder>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Controls.Editor 
+   => control._set(NodeEditor.Controls.Editor.ZoomControlProperty, func, onChanged, expression);
+
+/*MagicalSetterGenerator*/
+public static T ZoomControl<T>(this T control,NodeEditor.Controls.NodeZoomBorder value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.Editor 
+=> control._setEx(NodeEditor.Controls.Editor.ZoomControlProperty, ps, () => control.ZoomControl = value, bindingMode, converter, bindingSource);
+
+/*BindSetterGenerator*/
+public static T ZoomControl<T>(this T control, IBinding binding) where T : NodeEditor.Controls.Editor 
+   => control._set(NodeEditor.Controls.Editor.ZoomControlProperty, binding);
+
+/*AvaloniaPropertyBindSetterGenerator*/
+public static T ZoomControl<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : NodeEditor.Controls.Editor 
+   => control._set(NodeEditor.Controls.Editor.ZoomControlProperty, avaloniaProperty, bindingMode, converter, overrideView);
+
+/*MagicalSetterWithConverterGenerator*/
+public static T ZoomControl<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, NodeEditor.Controls.NodeZoomBorder> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.Editor 
+=> control._setEx(NodeEditor.Controls.Editor.ZoomControlProperty, ps, () => control.ZoomControl = converter.TryConvert(value), bindingMode, converter, bindingSource);
+
+
+
+//================= Styles ======================//
+ // DrawingSource
+
 /*ValueStyleSetterGenerator*/
-public static Style<T> ZoomControl<T>(this Style<T> style, NodeEditor.Controls.NodeZoomBorder value) where T : NodeEditor.Controls.Editor 
-=> style._addSetter(NodeEditor.Controls.Editor.ZoomControlProperty, value);
+public static Style<T> DrawingSource<T>(this Style<T> style, NodeEditor.Model.IDrawingNode value) where T : NodeEditor.Controls.Editor 
+=> style._addSetter(NodeEditor.Controls.Editor.DrawingSourceProperty, value);
 
 /*BindingStyleSetterGenerator*/
-public static Style<T> ZoomControl<T>(this Style<T> style, IBinding binding) where T : NodeEditor.Controls.Editor 
-=> style._addSetter(NodeEditor.Controls.Editor.ZoomControlProperty, binding);
+public static Style<T> DrawingSource<T>(this Style<T> style, IBinding binding) where T : NodeEditor.Controls.Editor 
+=> style._addSetter(NodeEditor.Controls.Editor.DrawingSourceProperty, binding);
 
 
- // DrawingNode
+ // InputSource
 
 /*ValueStyleSetterGenerator*/
-public static Style<T> DrawingNode<T>(this Style<T> style, NodeEditor.Controls.DrawingNode value) where T : NodeEditor.Controls.Editor 
-=> style._addSetter(NodeEditor.Controls.Editor.DrawingNodeProperty, value);
+public static Style<T> InputSource<T>(this Style<T> style, Avalonia.Controls.Control value) where T : NodeEditor.Controls.Editor 
+=> style._addSetter(NodeEditor.Controls.Editor.InputSourceProperty, value);
 
 /*BindingStyleSetterGenerator*/
-public static Style<T> DrawingNode<T>(this Style<T> style, IBinding binding) where T : NodeEditor.Controls.Editor 
-=> style._addSetter(NodeEditor.Controls.Editor.DrawingNodeProperty, binding);
+public static Style<T> InputSource<T>(this Style<T> style, IBinding binding) where T : NodeEditor.Controls.Editor 
+=> style._addSetter(NodeEditor.Controls.Editor.InputSourceProperty, binding);
 
 
  // AdornerCanvas
@@ -114,6 +137,17 @@ public static Style<T> AdornerCanvas<T>(this Style<T> style, Avalonia.Controls.C
 /*BindingStyleSetterGenerator*/
 public static Style<T> AdornerCanvas<T>(this Style<T> style, IBinding binding) where T : NodeEditor.Controls.Editor 
 => style._addSetter(NodeEditor.Controls.Editor.AdornerCanvasProperty, binding);
+
+
+ // ZoomControl
+
+/*ValueStyleSetterGenerator*/
+public static Style<T> ZoomControl<T>(this Style<T> style, NodeEditor.Controls.NodeZoomBorder value) where T : NodeEditor.Controls.Editor 
+=> style._addSetter(NodeEditor.Controls.Editor.ZoomControlProperty, value);
+
+/*BindingStyleSetterGenerator*/
+public static Style<T> ZoomControl<T>(this Style<T> style, IBinding binding) where T : NodeEditor.Controls.Editor 
+=> style._addSetter(NodeEditor.Controls.Editor.ZoomControlProperty, binding);
 
 
 
