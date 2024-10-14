@@ -51,13 +51,18 @@ public class Kind
 
     public async Task CreateCluster(string name, string? image = null)
     {
+        var stdOutBuffer = new StringBuilder();
         var stdErrBuffer = new StringBuilder();
 
         await Cli.Wrap(FileName)
             .WithArguments($"create cluster --name {name}" + (string.IsNullOrEmpty(image) ? "" : $" --image {image}"))
+            .WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdOutBuffer))
             .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
+            .WithValidation(CommandResultValidation.None)
             .ExecuteAsync();
 
+
+        var stdOut = stdOutBuffer.ToString();
         var stdErr = stdErrBuffer.ToString();
 
         if (!string.IsNullOrEmpty(stdErr) && stdErr.StartsWith("ERROR:"))
@@ -68,13 +73,18 @@ public class Kind
 
     public async Task DeleteCluster(string name)
     {
+        var stdOutBuffer = new StringBuilder();
+
         var stdErrBuffer = new StringBuilder();
 
         await Cli.Wrap(FileName)
             .WithArguments($"delete cluster --name {name}")
+            .WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdOutBuffer))
             .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
+            .WithValidation(CommandResultValidation.None)
             .ExecuteAsync();
 
+        var stdOut = stdOutBuffer.ToString();
         var stdErr = stdErrBuffer.ToString();
 
         if (!string.IsNullOrEmpty(stdErr) && stdErr.StartsWith("ERROR:"))
@@ -92,6 +102,7 @@ public class Kind
             .WithArguments("get clusters")
             .WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdOutBuffer))
             .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
+            .WithValidation(CommandResultValidation.None)
             .ExecuteAsync();
 
         var stdOut = stdOutBuffer.ToString();
@@ -114,6 +125,7 @@ public class Kind
             .WithArguments($"get kubeconfig --name {name}")
             .WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdOutBuffer))
             .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
+            .WithValidation(CommandResultValidation.None)
             .ExecuteAsync();
 
         var stdOut = stdOutBuffer.ToString();
