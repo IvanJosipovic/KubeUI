@@ -7,69 +7,67 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace Avalonia.Markup.Declarative;
-[global::System.CodeDom.Compiler.GeneratedCode("AvaloniaExtensionGenerator", "11.1.3.0")]
+[global::System.CodeDom.Compiler.GeneratedCode("AvaloniaExtensionGenerator", "1.0.0.0")]
 [global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public static partial class ToolPinnedControl_MarkupExtensions
 {
 //================= Properties ======================//
- // ItemsProperty
+ // Items
 
 /*BindFromExpressionSetterGenerator*/
-public static T Items<T>(this T control, Func<System.Collections.IEnumerable> func, Action<System.Collections.IEnumerable>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Dock.Avalonia.Controls.ToolPinnedControl
+public static T Items<T>(this T control, Func<System.Collections.IEnumerable> func, Action<System.Collections.IEnumerable>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Dock.Avalonia.Controls.ToolPinnedControl 
    => control._set(Dock.Avalonia.Controls.ToolPinnedControl.ItemsProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T Items<T>(this T control, System.Collections.IEnumerable value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.ToolPinnedControl
+public static T Items<T>(this T control,System.Collections.IEnumerable value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.ToolPinnedControl 
 => control._setEx(Dock.Avalonia.Controls.ToolPinnedControl.ItemsProperty, ps, () => control.Items = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
-public static T Items<T>(this T control, IBinding binding) where T : Dock.Avalonia.Controls.ToolPinnedControl
+public static T Items<T>(this T control, IBinding binding) where T : Dock.Avalonia.Controls.ToolPinnedControl 
    => control._set(Dock.Avalonia.Controls.ToolPinnedControl.ItemsProperty, binding);
 
 /*AvaloniaPropertyBindSetterGenerator*/
-public static T Items<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Dock.Avalonia.Controls.ToolPinnedControl
+public static T Items<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Dock.Avalonia.Controls.ToolPinnedControl 
    => control._set(Dock.Avalonia.Controls.ToolPinnedControl.ItemsProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T Items<T,TValue>(this T control, TValue value, FuncValueConverter<TValue, System.Collections.IEnumerable> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.ToolPinnedControl
+public static T Items<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Collections.IEnumerable> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.ToolPinnedControl 
 => control._setEx(Dock.Avalonia.Controls.ToolPinnedControl.ItemsProperty, ps, () => control.Items = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
- // OrientationProperty
+ // Orientation
 
 /*BindFromExpressionSetterGenerator*/
-public static T Orientation<T>(this T control, Func<Avalonia.Layout.Orientation> func, Action<Avalonia.Layout.Orientation>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Dock.Avalonia.Controls.ToolPinnedControl
+public static T Orientation<T>(this T control, Func<Avalonia.Layout.Orientation> func, Action<Avalonia.Layout.Orientation>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Dock.Avalonia.Controls.ToolPinnedControl 
    => control._set(Dock.Avalonia.Controls.ToolPinnedControl.OrientationProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T Orientation<T>(this T control, Avalonia.Layout.Orientation value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.ToolPinnedControl
+public static T Orientation<T>(this T control,Avalonia.Layout.Orientation value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.ToolPinnedControl 
 => control._setEx(Dock.Avalonia.Controls.ToolPinnedControl.OrientationProperty, ps, () => control.Orientation = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
-public static T Orientation<T>(this T control, IBinding binding) where T : Dock.Avalonia.Controls.ToolPinnedControl
+public static T Orientation<T>(this T control, IBinding binding) where T : Dock.Avalonia.Controls.ToolPinnedControl 
    => control._set(Dock.Avalonia.Controls.ToolPinnedControl.OrientationProperty, binding);
 
 /*AvaloniaPropertyBindSetterGenerator*/
-public static T Orientation<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Dock.Avalonia.Controls.ToolPinnedControl
+public static T Orientation<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Dock.Avalonia.Controls.ToolPinnedControl 
    => control._set(Dock.Avalonia.Controls.ToolPinnedControl.OrientationProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T Orientation<T,TValue>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Layout.Orientation> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.ToolPinnedControl
+public static T Orientation<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Layout.Orientation> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.ToolPinnedControl 
 => control._setEx(Dock.Avalonia.Controls.ToolPinnedControl.OrientationProperty, ps, () => control.Orientation = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
-//================= Events ======================//
-
 //================= Styles ======================//
- // OrientationProperty
+ // Orientation
 
 /*ValueStyleSetterGenerator*/
-public static Style<T> Orientation<T>(this Style<T> style, Avalonia.Layout.Orientation value) where T : Dock.Avalonia.Controls.ToolPinnedControl
+public static Style<T> Orientation<T>(this Style<T> style, Avalonia.Layout.Orientation value) where T : Dock.Avalonia.Controls.ToolPinnedControl 
 => style._addSetter(Dock.Avalonia.Controls.ToolPinnedControl.OrientationProperty, value);
 
 /*BindingStyleSetterGenerator*/
-public static Style<T> Orientation<T>(this Style<T> style, IBinding binding) where T : Dock.Avalonia.Controls.ToolPinnedControl
+public static Style<T> Orientation<T>(this Style<T> style, IBinding binding) where T : Dock.Avalonia.Controls.ToolPinnedControl 
 => style._addSetter(Dock.Avalonia.Controls.ToolPinnedControl.OrientationProperty, binding);
 
 
