@@ -38,11 +38,11 @@ public static T Indicator<TValue,T>(this T control, TValue value, FuncValueConve
  // IsLoading
 
 /*BindFromExpressionSetterGenerator*/
-public static T IsLoading<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.Loading 
+public static T IsLoading<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.Loading 
    => control._set(Ursa.Controls.Loading.IsLoadingProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T IsLoading<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Loading 
+public static T IsLoading<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Loading 
 => control._setEx(Ursa.Controls.Loading.IsLoadingProperty, ps, () => control.IsLoading = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
@@ -54,7 +54,7 @@ public static T IsLoading<T>(this T control, AvaloniaProperty avaloniaProperty, 
    => control._set(Ursa.Controls.Loading.IsLoadingProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T IsLoading<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Loading 
+public static T IsLoading<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Loading 
 => control._setEx(Ursa.Controls.Loading.IsLoadingProperty, ps, () => control.IsLoading = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
@@ -74,7 +74,7 @@ public static Style<T> Indicator<T>(this Style<T> style, IBinding binding) where
  // IsLoading
 
 /*ValueStyleSetterGenerator*/
-public static Style<T> IsLoading<T>(this Style<T> style, System.Object value) where T : Ursa.Controls.Loading 
+public static Style<T> IsLoading<T>(this Style<T> style, System.Boolean value) where T : Ursa.Controls.Loading 
 => style._addSetter(Ursa.Controls.Loading.IsLoadingProperty, value);
 
 /*BindingStyleSetterGenerator*/

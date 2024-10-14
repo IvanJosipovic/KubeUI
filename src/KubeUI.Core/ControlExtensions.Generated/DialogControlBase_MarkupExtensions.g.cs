@@ -35,6 +35,29 @@ public static T IsFullScreen<TValue,T>(this T control, TValue value, FuncValueCo
 => control._setEx(Ursa.Controls.DialogControlBase.IsFullScreenProperty, ps, () => control.IsFullScreen = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
+ // CanResize
+
+/*BindFromExpressionSetterGenerator*/
+public static T CanResize<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.DialogControlBase 
+   => control._set(Ursa.Controls.DialogControlBase.CanResizeProperty, func, onChanged, expression);
+
+/*MagicalSetterGenerator*/
+public static T CanResize<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.DialogControlBase 
+=> control._setEx(Ursa.Controls.DialogControlBase.CanResizeProperty, ps, () => control.CanResize = value, bindingMode, converter, bindingSource);
+
+/*BindSetterGenerator*/
+public static T CanResize<T>(this T control, IBinding binding) where T : Ursa.Controls.DialogControlBase 
+   => control._set(Ursa.Controls.DialogControlBase.CanResizeProperty, binding);
+
+/*AvaloniaPropertyBindSetterGenerator*/
+public static T CanResize<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Ursa.Controls.DialogControlBase 
+   => control._set(Ursa.Controls.DialogControlBase.CanResizeProperty, avaloniaProperty, bindingMode, converter, overrideView);
+
+/*MagicalSetterWithConverterGenerator*/
+public static T CanResize<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.DialogControlBase 
+=> control._setEx(Ursa.Controls.DialogControlBase.CanResizeProperty, ps, () => control.CanResize = converter.TryConvert(value), bindingMode, converter, bindingSource);
+
+
 
 //================= Attached Properties ======================//
  // CanDragMove
@@ -70,6 +93,19 @@ public static T OnLayerChanged<T>(this T control, Action<Ursa.Controls.DialogLay
   return control; 
 }
 
+
+
+
+//================= Styles ======================//
+ // CanResize
+
+/*ValueStyleSetterGenerator*/
+public static Style<T> CanResize<T>(this Style<T> style, System.Boolean value) where T : Ursa.Controls.DialogControlBase 
+=> style._addSetter(Ursa.Controls.DialogControlBase.CanResizeProperty, value);
+
+/*BindingStyleSetterGenerator*/
+public static Style<T> CanResize<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.DialogControlBase 
+=> style._addSetter(Ursa.Controls.DialogControlBase.CanResizeProperty, binding);
 
 
 
