@@ -1544,8 +1544,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private bool CanNewResource()
     {
-        return true;
-        //return Cluster.CanI<T>(Verb.Create);
+        return Cluster.CanIAnyNamespace(typeof(T), Verb.Create);
     }
 
     [RelayCommand(CanExecute = nameof(CanDelete))]
