@@ -34,9 +34,9 @@ jobs:
 
       - name: Test Report
         uses: dorny/test-reporter@v1
-        if: success() || failure()    # run this step even if previous step failed
+        if: success() || failure()
         with:
-          name: ${{ matrix.runs-on }} Tests
+          name: KubeUI Tests
           path: tests/KubeUI.Tests/TestResults/test-results.trx
           reporter: dotnet-trx
 
