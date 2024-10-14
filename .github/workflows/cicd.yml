@@ -25,10 +25,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup docker (missing on MacOS)
+      - name: Setup Docker on macOS
         if: runner.os == 'macos'
-        run: |
-          brew install docker
+        uses: douglascamata/setup-docker-macos-action@v1-alpha
 
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v4
