@@ -7,179 +7,177 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace Avalonia.Markup.Declarative;
-[global::System.CodeDom.Compiler.GeneratedCode("AvaloniaExtensionGenerator", "11.1.3.0")]
+[global::System.CodeDom.Compiler.GeneratedCode("AvaloniaExtensionGenerator", "1.0.0.0")]
 [global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public static partial class Breadcrumb_MarkupExtensions
 {
 //================= Properties ======================//
- // IconBindingProperty
+ // IconBinding
 
 /*BindFromExpressionSetterGenerator*/
-public static T IconBinding<T>(this T control, Func<Avalonia.Data.IBinding> func, Action<Avalonia.Data.IBinding>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.Breadcrumb
+public static T IconBinding<T>(this T control, Func<Avalonia.Data.IBinding> func, Action<Avalonia.Data.IBinding>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.Breadcrumb 
    => control._set(Ursa.Controls.Breadcrumb.IconBindingProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T IconBinding<T>(this T control, Avalonia.Data.IBinding value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Breadcrumb
+public static T IconBinding<T>(this T control,Avalonia.Data.IBinding value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Breadcrumb 
 => control._setEx(Ursa.Controls.Breadcrumb.IconBindingProperty, ps, () => control.IconBinding = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
-public static T IconBinding<T>(this T control, IBinding binding) where T : Ursa.Controls.Breadcrumb
+public static T IconBinding<T>(this T control, IBinding binding) where T : Ursa.Controls.Breadcrumb 
    => control._set(Ursa.Controls.Breadcrumb.IconBindingProperty, binding);
 
 /*AvaloniaPropertyBindSetterGenerator*/
-public static T IconBinding<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Ursa.Controls.Breadcrumb
+public static T IconBinding<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Ursa.Controls.Breadcrumb 
    => control._set(Ursa.Controls.Breadcrumb.IconBindingProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T IconBinding<T,TValue>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Data.IBinding> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Breadcrumb
+public static T IconBinding<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Data.IBinding> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Breadcrumb 
 => control._setEx(Ursa.Controls.Breadcrumb.IconBindingProperty, ps, () => control.IconBinding = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
- // CommandBindingProperty
+ // CommandBinding
 
 /*BindFromExpressionSetterGenerator*/
-public static T CommandBinding<T>(this T control, Func<Avalonia.Data.IBinding> func, Action<Avalonia.Data.IBinding>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.Breadcrumb
+public static T CommandBinding<T>(this T control, Func<Avalonia.Data.IBinding> func, Action<Avalonia.Data.IBinding>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.Breadcrumb 
    => control._set(Ursa.Controls.Breadcrumb.CommandBindingProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T CommandBinding<T>(this T control, Avalonia.Data.IBinding value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Breadcrumb
+public static T CommandBinding<T>(this T control,Avalonia.Data.IBinding value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Breadcrumb 
 => control._setEx(Ursa.Controls.Breadcrumb.CommandBindingProperty, ps, () => control.CommandBinding = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
-public static T CommandBinding<T>(this T control, IBinding binding) where T : Ursa.Controls.Breadcrumb
+public static T CommandBinding<T>(this T control, IBinding binding) where T : Ursa.Controls.Breadcrumb 
    => control._set(Ursa.Controls.Breadcrumb.CommandBindingProperty, binding);
 
 /*AvaloniaPropertyBindSetterGenerator*/
-public static T CommandBinding<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Ursa.Controls.Breadcrumb
+public static T CommandBinding<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Ursa.Controls.Breadcrumb 
    => control._set(Ursa.Controls.Breadcrumb.CommandBindingProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T CommandBinding<T,TValue>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Data.IBinding> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Breadcrumb
+public static T CommandBinding<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Data.IBinding> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Breadcrumb 
 => control._setEx(Ursa.Controls.Breadcrumb.CommandBindingProperty, ps, () => control.CommandBinding = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
- // CommandParameterBindingProperty
+ // CommandParameterBinding
 
 /*BindFromExpressionSetterGenerator*/
-public static T CommandParameterBinding<T>(this T control, Func<Avalonia.Data.IBinding> func, Action<Avalonia.Data.IBinding>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.Breadcrumb
+public static T CommandParameterBinding<T>(this T control, Func<Avalonia.Data.IBinding> func, Action<Avalonia.Data.IBinding>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.Breadcrumb 
    => control._set(Ursa.Controls.Breadcrumb.CommandParameterBindingProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T CommandParameterBinding<T>(this T control, Avalonia.Data.IBinding value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Breadcrumb
+public static T CommandParameterBinding<T>(this T control,Avalonia.Data.IBinding value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Breadcrumb 
 => control._setEx(Ursa.Controls.Breadcrumb.CommandParameterBindingProperty, ps, () => control.CommandParameterBinding = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
-public static T CommandParameterBinding<T>(this T control, IBinding binding) where T : Ursa.Controls.Breadcrumb
+public static T CommandParameterBinding<T>(this T control, IBinding binding) where T : Ursa.Controls.Breadcrumb 
    => control._set(Ursa.Controls.Breadcrumb.CommandParameterBindingProperty, binding);
 
 /*AvaloniaPropertyBindSetterGenerator*/
-public static T CommandParameterBinding<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Ursa.Controls.Breadcrumb
+public static T CommandParameterBinding<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Ursa.Controls.Breadcrumb 
    => control._set(Ursa.Controls.Breadcrumb.CommandParameterBindingProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T CommandParameterBinding<T,TValue>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Data.IBinding> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Breadcrumb
+public static T CommandParameterBinding<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Data.IBinding> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Breadcrumb 
 => control._setEx(Ursa.Controls.Breadcrumb.CommandParameterBindingProperty, ps, () => control.CommandParameterBinding = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
- // SeparatorProperty
+ // Separator
 
 /*BindFromExpressionSetterGenerator*/
-public static T Separator<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.Breadcrumb
+public static T Separator<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.Breadcrumb 
    => control._set(Ursa.Controls.Breadcrumb.SeparatorProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T Separator<T>(this T control, System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Breadcrumb
+public static T Separator<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Breadcrumb 
 => control._setEx(Ursa.Controls.Breadcrumb.SeparatorProperty, ps, () => control.Separator = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
-public static T Separator<T>(this T control, IBinding binding) where T : Ursa.Controls.Breadcrumb
+public static T Separator<T>(this T control, IBinding binding) where T : Ursa.Controls.Breadcrumb 
    => control._set(Ursa.Controls.Breadcrumb.SeparatorProperty, binding);
 
 /*AvaloniaPropertyBindSetterGenerator*/
-public static T Separator<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Ursa.Controls.Breadcrumb
+public static T Separator<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Ursa.Controls.Breadcrumb 
    => control._set(Ursa.Controls.Breadcrumb.SeparatorProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T Separator<T,TValue>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Breadcrumb
+public static T Separator<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Breadcrumb 
 => control._setEx(Ursa.Controls.Breadcrumb.SeparatorProperty, ps, () => control.Separator = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
- // IconTemplateProperty
+ // IconTemplate
 
 /*BindFromExpressionSetterGenerator*/
-public static T IconTemplate<T>(this T control, Func<Avalonia.Controls.Templates.IDataTemplate> func, Action<Avalonia.Controls.Templates.IDataTemplate>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.Breadcrumb
+public static T IconTemplate<T>(this T control, Func<Avalonia.Controls.Templates.IDataTemplate> func, Action<Avalonia.Controls.Templates.IDataTemplate>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.Breadcrumb 
    => control._set(Ursa.Controls.Breadcrumb.IconTemplateProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T IconTemplate<T>(this T control, Avalonia.Controls.Templates.IDataTemplate value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Breadcrumb
+public static T IconTemplate<T>(this T control,Avalonia.Controls.Templates.IDataTemplate value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Breadcrumb 
 => control._setEx(Ursa.Controls.Breadcrumb.IconTemplateProperty, ps, () => control.IconTemplate = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
-public static T IconTemplate<T>(this T control, IBinding binding) where T : Ursa.Controls.Breadcrumb
+public static T IconTemplate<T>(this T control, IBinding binding) where T : Ursa.Controls.Breadcrumb 
    => control._set(Ursa.Controls.Breadcrumb.IconTemplateProperty, binding);
 
 /*AvaloniaPropertyBindSetterGenerator*/
-public static T IconTemplate<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Ursa.Controls.Breadcrumb
+public static T IconTemplate<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Ursa.Controls.Breadcrumb 
    => control._set(Ursa.Controls.Breadcrumb.IconTemplateProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T IconTemplate<T,TValue>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Templates.IDataTemplate> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Breadcrumb
+public static T IconTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Templates.IDataTemplate> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Breadcrumb 
 => control._setEx(Ursa.Controls.Breadcrumb.IconTemplateProperty, ps, () => control.IconTemplate = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
-//================= Events ======================//
-
 //================= Styles ======================//
- // IconBindingProperty
+ // IconBinding
 
 /*ValueStyleSetterGenerator*/
-public static Style<T> IconBinding<T>(this Style<T> style, Avalonia.Data.IBinding value) where T : Ursa.Controls.Breadcrumb
+public static Style<T> IconBinding<T>(this Style<T> style, Avalonia.Data.IBinding value) where T : Ursa.Controls.Breadcrumb 
 => style._addSetter(Ursa.Controls.Breadcrumb.IconBindingProperty, value);
 
 /*BindingStyleSetterGenerator*/
 //Skipped IconBinding because already exist in value setters
 
 
- // CommandBindingProperty
+ // CommandBinding
 
 /*ValueStyleSetterGenerator*/
-public static Style<T> CommandBinding<T>(this Style<T> style, Avalonia.Data.IBinding value) where T : Ursa.Controls.Breadcrumb
+public static Style<T> CommandBinding<T>(this Style<T> style, Avalonia.Data.IBinding value) where T : Ursa.Controls.Breadcrumb 
 => style._addSetter(Ursa.Controls.Breadcrumb.CommandBindingProperty, value);
 
 /*BindingStyleSetterGenerator*/
 //Skipped CommandBinding because already exist in value setters
 
 
- // CommandParameterBindingProperty
+ // CommandParameterBinding
 
 /*ValueStyleSetterGenerator*/
-public static Style<T> CommandParameterBinding<T>(this Style<T> style, Avalonia.Data.IBinding value) where T : Ursa.Controls.Breadcrumb
+public static Style<T> CommandParameterBinding<T>(this Style<T> style, Avalonia.Data.IBinding value) where T : Ursa.Controls.Breadcrumb 
 => style._addSetter(Ursa.Controls.Breadcrumb.CommandParameterBindingProperty, value);
 
 /*BindingStyleSetterGenerator*/
 //Skipped CommandParameterBinding because already exist in value setters
 
 
- // SeparatorProperty
+ // Separator
 
 /*ValueStyleSetterGenerator*/
-public static Style<T> Separator<T>(this Style<T> style, System.Object value) where T : Ursa.Controls.Breadcrumb
+public static Style<T> Separator<T>(this Style<T> style, System.Object value) where T : Ursa.Controls.Breadcrumb 
 => style._addSetter(Ursa.Controls.Breadcrumb.SeparatorProperty, value);
 
 /*BindingStyleSetterGenerator*/
-public static Style<T> Separator<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.Breadcrumb
+public static Style<T> Separator<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.Breadcrumb 
 => style._addSetter(Ursa.Controls.Breadcrumb.SeparatorProperty, binding);
 
 
- // IconTemplateProperty
+ // IconTemplate
 
 /*ValueStyleSetterGenerator*/
-public static Style<T> IconTemplate<T>(this Style<T> style, Avalonia.Controls.Templates.IDataTemplate value) where T : Ursa.Controls.Breadcrumb
+public static Style<T> IconTemplate<T>(this Style<T> style, Avalonia.Controls.Templates.IDataTemplate value) where T : Ursa.Controls.Breadcrumb 
 => style._addSetter(Ursa.Controls.Breadcrumb.IconTemplateProperty, value);
 
 /*BindingStyleSetterGenerator*/
-public static Style<T> IconTemplate<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.Breadcrumb
+public static Style<T> IconTemplate<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.Breadcrumb 
 => style._addSetter(Ursa.Controls.Breadcrumb.IconTemplateProperty, binding);
 
 
