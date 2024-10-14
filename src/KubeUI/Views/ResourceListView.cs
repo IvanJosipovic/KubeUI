@@ -102,9 +102,27 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
         if (ViewModel.ViewDefinition.DefaultMenuItems)
         {
-            _grid.ContextMenu.Items.Add(CreateMenuItem(new() { Header = "View", CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewCommand), CommandParameterPath = "SelectedItem" }));
-            _grid.ContextMenu.Items.Add(CreateMenuItem(new() { Header = "View Yaml", CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewYamlCommand), CommandParameterPath = "SelectedItem" }));
-            _grid.ContextMenu.Items.Add(CreateMenuItem(new() { Header = "Delete", CommandPath = nameof(ResourceListViewModel<V1Pod>.DeleteCommand), CommandParameterPath = "SelectedItems" }));
+            _grid.ContextMenu.Items.Add(CreateMenuItem(new()
+            {
+                Header = "View",
+                CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewCommand),
+                CommandParameterPath = "SelectedItem",
+                IconResource = "ic_fluent_panel_right_filled",
+            }));
+            _grid.ContextMenu.Items.Add(CreateMenuItem(new()
+            {
+                Header = "View Yaml",
+                CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewYamlCommand),
+                CommandParameterPath = "SelectedItem",
+                IconResource = "code_regular",
+            }));
+            _grid.ContextMenu.Items.Add(CreateMenuItem(new()
+            {
+                Header = "Delete",
+                CommandPath = nameof(ResourceListViewModel<V1Pod>.DeleteCommand),
+                CommandParameterPath = "SelectedItems",
+                IconResource = "delete_regular",
+            }));
         }
 
         if (ViewModel.ViewDefinition.MenuItems != null)
@@ -152,6 +170,11 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
         if (menu.ItemSourceBinding != null)
         {
             menuItem.Bind(ItemsControl.ItemsSourceProperty, menu.ItemSourceBinding);
+        }
+
+        if (!string.IsNullOrEmpty(menu.IconResource))
+        {
+            menuItem.Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource(menu.IconResource) });
         }
 
         if (menu.ItemTemplate != null)

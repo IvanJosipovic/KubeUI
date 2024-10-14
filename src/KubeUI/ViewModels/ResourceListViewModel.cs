@@ -425,6 +425,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 new()
                 {
                     Header = "View Console",
+                    IconResource = "desktop_regular",
                     MenuItems =
                     [
                         new()
@@ -454,6 +455,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 new()
                 {
                     Header = "View Logs",
+                    IconResource = "text_description_regular",
                     MenuItems = [
                         new()
                         {
@@ -483,6 +485,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 {
                     Header = "Port Forwarding",
                     ItemSourcePath = "SelectedItem.Value.Spec.Containers",
+                    IconResource = "ic_fluent_cloud_flow_filled",
                     ItemTemplate = new()
                     {
                         HeaderBinding = new Binding(nameof(V1Container.Name)),
@@ -539,6 +542,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 new()
                 {
                     Header = "Restart",
+                    IconResource = "arrow_sync_regular",
                     CommandPath = nameof(ResourceListViewModel<V1Deployment>.RestartDeploymentCommand),
                     CommandParameterPath = "SelectedItem.Value"
                 },
@@ -572,6 +576,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 new()
                 {
                     Header = "Restart",
+                    IconResource = "arrow_sync_regular",
                     CommandPath = nameof(ResourceListViewModel<V1Deployment>.RestartDaemonSetCommand),
                     CommandParameterPath = "SelectedItem.Value"
                 },
@@ -598,6 +603,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 new()
                 {
                     Header = "Restart",
+                    IconResource = "arrow_sync_regular",
                     CommandPath = nameof(ResourceListViewModel<V1Deployment>.RestartStatefulSetCommand),
                     CommandParameterPath = "SelectedItem.Value"
                 },
@@ -638,6 +644,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 new()
                 {
                     Header = "Restart",
+                    IconResource = "arrow_sync_regular",
                     CommandPath = nameof(ResourceListViewModel<V1Deployment>.RestartReplicaSetCommand),
                     CommandParameterPath = "SelectedItem.Value"
                 },
@@ -1968,6 +1975,8 @@ public class ResourceListViewMenuItem
     public string? ItemSourcePath { get; set; }
 
     public IBinding? ItemSourceBinding { get; set; }
+
+    public string? IconResource { get; set; }
 
     public ResourceListViewMenuItem? ItemTemplate { get; set; }
 
