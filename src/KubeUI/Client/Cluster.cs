@@ -523,50 +523,55 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     {
                         var crd = (item as V1CustomResourceDefinition);
 
-                        var assembly = _generator.GenerateAssembly(crd, "KubeUI.Models");
-
-                        if (assembly.Item1 == null || assembly.Item2 == null)
+                        if (!ModelCache.CheckIfCRDExists(crd))
                         {
-                            _logger.LogWarning("Unable to generate CRD for {name}", name);
+                            var assembly = _generator.GenerateAssembly(crd, "KubeUI.Models");
 
-                            return;
-                        }
-
-                        ModelCache.AddToCache(assembly.Item1, assembly.Item2);
-
-                        var version = crd.Spec.Versions.First(x => x.Served && x.Storage);
-
-                        var type = ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
-
-                        var task = UpdateCanListWatchAnyNamespaceAsync(type);
-
-                        if (task.GetAwaiter().GetResult())
-                        {
-                            var nav = new ResourceNavigationLink() { Name = crd.Spec.Names.Kind.Humanize(LetterCasing.Title), ControlType = type, Cluster = this, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemComparer()) };
-
-                            var group = crd.Spec.Group;
-
-                            var fqdnlist = ConstructFQDNList(group);
-
-                            var list = _crdNavigationLink.NavigationItems;
-                            NavigationItem? navItem = null;
-
-                            foreach (var fqdn in fqdnlist)
+                            if (assembly.Item1 == null || assembly.Item2 == null)
                             {
-                                navItem = list.FirstOrDefault(x => x.Name == fqdn);
-                                if (navItem != null)
-                                {
-                                    list = navItem.NavigationItems;
-                                }
-                                else
-                                {
-                                    navItem = new NavigationItem() { Name = fqdn, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemComparer()) };
-                                    list.Add(navItem);
-                                    list = navItem.NavigationItems;
-                                }
+                                _logger.LogWarning("Unable to generate CRD for {name}", name);
+
+                                return;
                             }
 
-                            navItem!.NavigationItems.Add(nav);
+                            ModelCache.AddToCache(assembly.Item1, assembly.Item2);
+
+                            var version = crd.Spec.Versions.First(x => x.Served && x.Storage);
+
+                            var type = ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
+
+                            APIGroupDiscoveryList = GetAPIGroupDiscoveryList(false).GetAwaiter().GetResult();
+
+                            var task = UpdateCanListWatchAnyNamespaceAsync(type);
+
+                            if (task.GetAwaiter().GetResult())
+                            {
+                                var nav = new ResourceNavigationLink() { Name = crd.Spec.Names.Kind.Humanize(LetterCasing.Title), ControlType = type, Cluster = this, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemComparer()) };
+
+                                var group = crd.Spec.Group;
+
+                                var fqdnlist = ConstructFQDNList(group);
+
+                                var list = _crdNavigationLink.NavigationItems;
+                                NavigationItem? navItem = null;
+
+                                foreach (var fqdn in fqdnlist)
+                                {
+                                    navItem = list.FirstOrDefault(x => x.Name == fqdn);
+                                    if (navItem != null)
+                                    {
+                                        list = navItem.NavigationItems;
+                                    }
+                                    else
+                                    {
+                                        navItem = new NavigationItem() { Name = fqdn, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemComparer()) };
+                                        list.Add(navItem);
+                                        list = navItem.NavigationItems;
+                                    }
+                                }
+
+                                navItem!.NavigationItems.Add(nav);
+                            }
                         }
                     }
 
@@ -577,7 +582,45 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     break;
                 case WatchEventType.Deleted:
                     Dispatcher.UIThread.Post(() => items.Remove(name), DispatcherPriority.Background);
-                    //todo Check if CRD and remove from menu etc
+
+                    if (typeof(T) == typeof(V1CustomResourceDefinition))
+                    {
+                        var crd = (item as V1CustomResourceDefinition);
+
+                        APIGroupDiscoveryList = GetAPIGroupDiscoveryList(false).GetAwaiter().GetResult();
+
+                        var title = Name = crd.Spec.Names.Kind.Humanize(LetterCasing.Title);
+
+                        var group = crd.Spec.Group;
+
+                        var fqdnlist = ConstructFQDNList(group);
+                        var list = _crdNavigationLink.NavigationItems;
+
+                        NavigationItem? navItem = null;
+
+                        foreach (var fqdn in fqdnlist)
+                        {
+                            navItem = list.FirstOrDefault(x => x.Name == fqdn);
+                            if (navItem != null)
+                            {
+                                list = navItem.NavigationItems;
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+
+                        if (navItem != null)
+                        {
+                            var nav = navItem.NavigationItems.FirstOrDefault(x => x.Name == title);
+                            if (nav != null)
+                            {
+                                list.Remove(nav);
+                            }
+                        }
+                    }
+
                     break;
                 case WatchEventType.Error:
                     break;
