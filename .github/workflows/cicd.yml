@@ -28,7 +28,7 @@ jobs:
       - name: Setup docker (missing on MacOS)
         if: runner.os == 'macos'
         run: |
-          brew install docker
+          brew install docker colima
           colima start
 
       - name: Setup .NET Core
