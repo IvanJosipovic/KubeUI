@@ -1733,26 +1733,40 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         return Cluster.CanIAnyNamespace(type, Verb.List) && Cluster.CanIAnyNamespace(type, Verb.Watch);
     }
 
+    private static readonly string s_restartControllerPatch = $$"""
+    {
+        "spec": {
+        "template": {
+            "metadata": {
+            "annotations": {
+                "kubectl.kubernetes.io/restartedAt": "{{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}}"
+            }
+            }
+        }
+        }
+    }
+    """;
+
     [RelayCommand(CanExecute = nameof(CanRestartDeployment))]
     private async Task RestartDeployment(V1Deployment deployment)
     {
         try
         {
-            var patch = $$"""
+            ContentDialogSettings settings = new()
             {
-              "spec": {
-                "template": {
-                  "metadata": {
-                    "annotations": {
-                      "kubectl.kubernetes.io/restartedAt": "{{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}}"
-                    }
-                  }
-                }
-              }
-            }
-            """;
+                Title = Resources.ResourceListViewModel_Restart_Title,
+                Content = string.Format(Resources.ResourceListViewModel_Restart_Content, deployment.Name()),
+                PrimaryButtonText = Resources.ResourceListViewModel_Restart_Primary,
+                SecondaryButtonText = Resources.ResourceListViewModel_Restart_Secondary,
+                DefaultButton = ContentDialogButton.Secondary
+            };
 
-            await Cluster.Client.AppsV1.PatchNamespacedDeploymentAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), deployment.Metadata.Name, deployment.Metadata.NamespaceProperty);
+            var result = await _dialogService.ShowContentDialogAsync(this, settings);
+
+            if (result == ContentDialogResult.Primary)
+            {
+                await Cluster.Client.AppsV1.PatchNamespacedDeploymentAsync(new V1Patch(s_restartControllerPatch, V1Patch.PatchType.MergePatch), deployment.Metadata.Name, deployment.Metadata.NamespaceProperty);
+            }
         }
         catch (Exception ex)
         {
@@ -1770,21 +1784,21 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     {
         try
         {
-            var patch = $$"""
+            ContentDialogSettings settings = new()
             {
-              "spec": {
-                "template": {
-                  "metadata": {
-                    "annotations": {
-                      "kubectl.kubernetes.io/restartedAt": "{{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}}"
-                    }
-                  }
-                }
-              }
-            }
-            """;
+                Title = Resources.ResourceListViewModel_Restart_Title,
+                Content = string.Format(Resources.ResourceListViewModel_Restart_Content, replicaSet.Name()),
+                PrimaryButtonText = Resources.ResourceListViewModel_Restart_Primary,
+                SecondaryButtonText = Resources.ResourceListViewModel_Restart_Secondary,
+                DefaultButton = ContentDialogButton.Secondary
+            };
 
-            await Cluster.Client.AppsV1.PatchNamespacedReplicaSetAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), replicaSet.Metadata.Name, replicaSet.Metadata.NamespaceProperty);
+            var result = await _dialogService.ShowContentDialogAsync(this, settings);
+
+            if (result == ContentDialogResult.Primary)
+            {
+                await Cluster.Client.AppsV1.PatchNamespacedReplicaSetAsync(new V1Patch(s_restartControllerPatch, V1Patch.PatchType.MergePatch), replicaSet.Metadata.Name, replicaSet.Metadata.NamespaceProperty);
+            }
         }
         catch (Exception ex)
         {
@@ -1802,21 +1816,21 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     {
         try
         {
-            var patch = $$"""
+            ContentDialogSettings settings = new()
             {
-              "spec": {
-                "template": {
-                  "metadata": {
-                    "annotations": {
-                      "kubectl.kubernetes.io/restartedAt": "{{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}}"
-                    }
-                  }
-                }
-              }
-            }
-            """;
+                Title = Resources.ResourceListViewModel_Restart_Title,
+                Content = string.Format(Resources.ResourceListViewModel_Restart_Content, statefulSet.Name()),
+                PrimaryButtonText = Resources.ResourceListViewModel_Restart_Primary,
+                SecondaryButtonText = Resources.ResourceListViewModel_Restart_Secondary,
+                DefaultButton = ContentDialogButton.Secondary
+            };
 
-            await Cluster.Client.AppsV1.PatchNamespacedStatefulSetAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), statefulSet.Metadata.Name, statefulSet.Metadata.NamespaceProperty);
+            var result = await _dialogService.ShowContentDialogAsync(this, settings);
+
+            if (result == ContentDialogResult.Primary)
+            {
+                await Cluster.Client.AppsV1.PatchNamespacedStatefulSetAsync(new V1Patch(s_restartControllerPatch, V1Patch.PatchType.MergePatch), statefulSet.Metadata.Name, statefulSet.Metadata.NamespaceProperty);
+            }
         }
         catch (Exception ex)
         {
@@ -1834,21 +1848,21 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     {
         try
         {
-            var patch = $$"""
+            ContentDialogSettings settings = new()
             {
-              "spec": {
-                "template": {
-                  "metadata": {
-                    "annotations": {
-                      "kubectl.kubernetes.io/restartedAt": "{{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}}"
-                    }
-                  }
-                }
-              }
-            }
-            """;
+                Title = Resources.ResourceListViewModel_Restart_Title,
+                Content = string.Format(Resources.ResourceListViewModel_Restart_Content, daemonSet.Name()),
+                PrimaryButtonText = Resources.ResourceListViewModel_Restart_Primary,
+                SecondaryButtonText = Resources.ResourceListViewModel_Restart_Secondary,
+                DefaultButton = ContentDialogButton.Secondary
+            };
 
-            await Cluster.Client.AppsV1.PatchNamespacedDaemonSetAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), daemonSet.Metadata.Name, daemonSet.Metadata.NamespaceProperty);
+            var result = await _dialogService.ShowContentDialogAsync(this, settings);
+
+            if (result == ContentDialogResult.Primary)
+            {
+                await Cluster.Client.AppsV1.PatchNamespacedDaemonSetAsync(new V1Patch(s_restartControllerPatch, V1Patch.PatchType.MergePatch), daemonSet.Metadata.Name, daemonSet.Metadata.NamespaceProperty);
+            }
         }
         catch (Exception ex)
         {
