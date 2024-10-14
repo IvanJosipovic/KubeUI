@@ -454,16 +454,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
             await GetSelfSubjectAccessReview(type, Verb.Update);
             await GetSelfSubjectAccessReview(type, Verb.Watch);
 
-            //Task.WaitAll(
-            //    GetSelfSubjectAccessReview(type, Verb.Create),
-            //    GetSelfSubjectAccessReview(type, Verb.Delete),
-            //    GetSelfSubjectAccessReview(type, Verb.Get),
-            //    GetSelfSubjectAccessReview(type, Verb.List),
-            //    GetSelfSubjectAccessReview(type, Verb.Patch),
-            //    GetSelfSubjectAccessReview(type, Verb.Update),
-            //    GetSelfSubjectAccessReview(type, Verb.Watch)
-            //    );
-
             if (CanI(type, Verb.List) && CanI(type, Verb.Watch))
             {
                 var informer = new ResourceInformer<T>(_loggerFactory.CreateLogger<ResourceInformer<T>>(), Client);
@@ -495,16 +485,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     await GetSelfSubjectAccessReview(type, Verb.Patch, item.Value.Name());
                     await GetSelfSubjectAccessReview(type, Verb.Update, item.Value.Name());
                     await GetSelfSubjectAccessReview(type, Verb.Watch, item.Value.Name());
-
-                    //await Task.WhenAll(
-                    //    GetSelfSubjectAccessReview(type, Verb.Create, item.Value.Name()),
-                    //    GetSelfSubjectAccessReview(type, Verb.Delete, item.Value.Name()),
-                    //    GetSelfSubjectAccessReview(type, Verb.Get, item.Value.Name()),
-                    //    GetSelfSubjectAccessReview(type, Verb.List, item.Value.Name()),
-                    //    GetSelfSubjectAccessReview(type, Verb.Patch, item.Value.Name()),
-                    //    GetSelfSubjectAccessReview(type, Verb.Update, item.Value.Name()),
-                    //    GetSelfSubjectAccessReview(type, Verb.Watch, item.Value.Name())
-                    //    );
 
                     if (CanI(type, Verb.List, item.Value.Name()) && CanI(type, Verb.Watch, item.Value.Name()))
                     {
