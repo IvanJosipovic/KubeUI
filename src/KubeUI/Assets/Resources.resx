@@ -332,4 +332,23 @@ Are you sure?</value>
   <data name="Cluster_Missing_Namespace_Permission_Primary" xml:space="preserve">
     <value>OK</value>
   </data>
+  <data name="ResourceYamlView_WordWrap" xml:space="preserve">
+    <value>Word Wrap</value>
+  </data>
+  <data name="PodLogsView_WordWrap" xml:space="preserve">
+    <value>Word Wrap</value>
+  </data>
+  <data name="ResourceListViewModel_Restart_Title" xml:space="preserve">
+    <value>Restart Workload?</value>
+  </data>
+  <data name="ResourceListViewModel_Restart_Content" xml:space="preserve">
+    <value>This will restart {0}.
+Are you sure?</value>
+  </data>
+  <data name="ResourceListViewModel_Restart_Primary" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="ResourceListViewModel_Restart_Secondary" xml:space="preserve">
+    <value>No</value>
+  </data>
 </root>

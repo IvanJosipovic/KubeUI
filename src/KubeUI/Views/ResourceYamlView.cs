@@ -60,7 +60,11 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
                                     .Command(@vm.SetHideNoisyFieldsCommand)
                                     .ToolTip(Assets.Resources.ResourceYamlViewer_HideNoisyFields)
                                     .Content(new PathIcon() { Data = (Geometry)Application.Current.FindResource("eye_hide_regular") }),
-                            ]),
+                                new ToggleButton()
+                                    .IsChecked(@vm.WordWrap)
+                                    .ToolTip(Assets.Resources.ResourceYamlView_WordWrap)
+                                    .Content(new PathIcon() { Data = (Geometry)Application.Current.FindResource("text_wrap_regular") }),
+                        ]),
 
                     // In Edit Mode
                     new StackPanel()
@@ -76,7 +80,11 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
                                     .Command(@vm.SetEditModeCommand)
                                     .ToolTip(Assets.Resources.ResourceYamlViewer_Cancel)
                                     .Content(new PathIcon() { Data = (Geometry)Application.Current.FindResource("dismiss_regular") }),
-                            ]),
+                                new ToggleButton()
+                                    .IsChecked(@vm.WordWrap)
+                                    .ToolTip(Assets.Resources.ResourceYamlView_WordWrap)
+                                    .Content(new PathIcon() { Data = (Geometry)Application.Current.FindResource("text_wrap_regular") }),
+                        ]),
 
                     new TextEditor()
                         .Ref(out var editor)
@@ -109,6 +117,7 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
                         .Background(new DynamicResourceExtension("SystemAltHighColor"))
                         .HorizontalScrollBarVisibility(ScrollBarVisibility.Auto)
                         .VerticalScrollBarVisibility(ScrollBarVisibility.Visible)
+                        .WordWrap(@vm.WordWrap)
                         .ContextMenu(new ContextMenu()
                                         .Items([
                                             new MenuItem()

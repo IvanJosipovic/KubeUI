@@ -788,32 +788,7 @@ rules:
 
         await testHarness.Cluster.ImportYaml(stream);
 
-        var secret = await testHarness.Kubernetes.CoreV1.ReadNamespacedSecretAsync("my-serviceaccount", "my-app");
-
-        // Test is prepped, generate KubeConfig
-
-        var config = KubernetesYaml.Deserialize<K8SConfiguration>(KubernetesYaml.Serialize(testHarness.KubeConfig));
-
-        var name = "test1";
-
-        config.Clusters.First().Name = name;
-        var context = config.Contexts.First();
-
-        context.Name = name;
-        context.ContextDetails.Cluster = name;
-        context.ContextDetails.User = name;
-
-        var user = config.Users.First();
-
-        user.UserCredentials = new()
-        {
-            Token = Encoding.UTF8.GetString(secret.Data["token"])
-        };
-        user.Name = name;
-
-        testHarness.ClusterManager.LoadFromConfig(config);
-
-        var cluster = testHarness.ClusterManager.GetCluster(name);
+        var cluster = await testHarness.GetClusterFromServiceAccount("my-app", "my-serviceaccount");
 
         await cluster.Connect();
 
@@ -842,32 +817,7 @@ rules:
 
         await testHarness.Cluster.ImportYaml(stream);
 
-        var secret = await testHarness.Kubernetes.CoreV1.ReadNamespacedSecretAsync("my-serviceaccount", "my-app");
-
-        // Test is prepped, generate KubeConfig
-
-        var config = KubernetesYaml.Deserialize<K8SConfiguration>(KubernetesYaml.Serialize(testHarness.KubeConfig));
-
-        var name = "test1";
-
-        config.Clusters.First().Name = name;
-        var context = config.Contexts.First();
-
-        context.Name = name;
-        context.ContextDetails.Cluster = name;
-        context.ContextDetails.User = name;
-
-        var user = config.Users.First();
-
-        user.UserCredentials = new()
-        {
-            Token = Encoding.UTF8.GetString(secret.Data["token"])
-        };
-        user.Name = name;
-
-        testHarness.ClusterManager.LoadFromConfig(config);
-
-        var cluster = testHarness.ClusterManager.GetCluster(name);
+        var cluster = await testHarness.GetClusterFromServiceAccount("my-app", "my-serviceaccount");
 
         var settings = Application.Current.GetRequiredService<ISettingsService>();
 
@@ -890,6 +840,96 @@ rules:
         secrets.Count.Should().Be(1);
         secrets.Values.First().Namespace().Should().Be("my-app");
         secrets.Values.First().Name().Should().Be("my-serviceaccount");
+    }
+
+    [AvaloniaFact]
+    public async Task RootAccessCanI()
+    {
+        using var testHarness = new TestHarness();
+        await testHarness.Initialize();
+
+        var cluster = testHarness.Cluster;
+
+        await cluster.GetObjectDictionaryAsync<V1Pod>();
+
+        cluster.CanI<V1Pod>(Cluster.Verb.Create).Should().BeTrue();
+        cluster.CanI<V1Pod>(Cluster.Verb.Delete).Should().BeTrue();
+        cluster.CanI<V1Pod>(Cluster.Verb.Get).Should().BeTrue();
+        cluster.CanI<V1Pod>(Cluster.Verb.List).Should().BeTrue();
+        cluster.CanI<V1Pod>(Cluster.Verb.Patch).Should().BeTrue();
+        cluster.CanI<V1Pod>(Cluster.Verb.Update).Should().BeTrue();
+        cluster.CanI<V1Pod>(Cluster.Verb.Watch).Should().BeTrue();
+
+        cluster.CanI<V1Pod>(Cluster.Verb.Get, "log").Should().BeTrue();
+        cluster.CanI<V1Pod>(Cluster.Verb.Create, "exec").Should().BeTrue();
+        cluster.CanI<V1Pod>(Cluster.Verb.Create, "portforward").Should().BeTrue();
+
+        cluster.CanI<V1Pod>(Cluster.Verb.Create, "default").Should().BeTrue();
+        cluster.CanI<V1Pod>(Cluster.Verb.Delete, "default").Should().BeTrue();
+        cluster.CanI<V1Pod>(Cluster.Verb.Get, "default").Should().BeTrue();
+        cluster.CanI<V1Pod>(Cluster.Verb.List, "default").Should().BeTrue();
+        cluster.CanI<V1Pod>(Cluster.Verb.Patch, "default").Should().BeTrue();
+        cluster.CanI<V1Pod>(Cluster.Verb.Update, "default").Should().BeTrue();
+        cluster.CanI<V1Pod>(Cluster.Verb.Watch, "default").Should().BeTrue();
+
+        cluster.CanI<V1Pod>(Cluster.Verb.Get, "default", "log").Should().BeTrue();
+        cluster.CanI<V1Pod>(Cluster.Verb.Create, "default", "exec").Should().BeTrue();
+        cluster.CanI<V1Pod>(Cluster.Verb.Create, "default", "portforward").Should().BeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task LimitedAccessCanI()
+    {
+        using var testHarness = new TestHarness();
+        await testHarness.Initialize();
+
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(yamlLimitedRbacNoNamespace));
+
+        await testHarness.Cluster.ImportYaml(stream);
+
+        var cluster = await testHarness.GetClusterFromServiceAccount("my-app", "my-serviceaccount");
+
+        var settings = Application.Current.GetRequiredService<ISettingsService>();
+
+        settings.Settings = new();
+
+        settings.Settings.GetClusterSettings(cluster).Namespaces.Add("my-app");
+
+        await cluster.Connect();
+
+        await cluster.GetObjectDictionaryAsync<V1Pod>();
+
+        cluster.CanI<V1Namespace>(Cluster.Verb.Create).Should().BeFalse();
+        cluster.CanI<V1Namespace>(Cluster.Verb.Delete).Should().BeFalse();
+        cluster.CanI<V1Namespace>(Cluster.Verb.Get).Should().BeFalse();
+        cluster.CanI<V1Namespace>(Cluster.Verb.List).Should().BeFalse();
+        cluster.CanI<V1Namespace>(Cluster.Verb.Patch).Should().BeFalse();
+        cluster.CanI<V1Namespace>(Cluster.Verb.Update).Should().BeFalse();
+        cluster.CanI<V1Namespace>(Cluster.Verb.Watch).Should().BeFalse();
+
+        cluster.CanI<V1Pod>(Cluster.Verb.Create).Should().BeFalse();
+        cluster.CanI<V1Pod>(Cluster.Verb.Delete).Should().BeFalse();
+        cluster.CanI<V1Pod>(Cluster.Verb.Get).Should().BeFalse();
+        cluster.CanI<V1Pod>(Cluster.Verb.List).Should().BeFalse();
+        cluster.CanI<V1Pod>(Cluster.Verb.Patch).Should().BeFalse();
+        cluster.CanI<V1Pod>(Cluster.Verb.Update).Should().BeFalse();
+        cluster.CanI<V1Pod>(Cluster.Verb.Watch).Should().BeFalse();
+
+        cluster.CanI<V1Pod>(Cluster.Verb.Get, "log").Should().BeFalse();
+        cluster.CanI<V1Pod>(Cluster.Verb.Create, "exec").Should().BeFalse();
+        cluster.CanI<V1Pod>(Cluster.Verb.Create, "portforward").Should().BeFalse();
+
+        cluster.CanI<V1Pod>(Cluster.Verb.Create, "my-app").Should().BeFalse();
+        cluster.CanI<V1Pod>(Cluster.Verb.Delete, "my-app").Should().BeTrue();
+        cluster.CanI<V1Pod>(Cluster.Verb.Get, "my-app").Should().BeTrue();
+        cluster.CanI<V1Pod>(Cluster.Verb.List, "my-app").Should().BeTrue();
+        cluster.CanI<V1Pod>(Cluster.Verb.Patch, "my-app").Should().BeFalse();
+        cluster.CanI<V1Pod>(Cluster.Verb.Update, "my-app").Should().BeFalse();
+        cluster.CanI<V1Pod>(Cluster.Verb.Watch, "my-app").Should().BeTrue();
+
+        cluster.CanI<V1Pod>(Cluster.Verb.Get, "my-app", "log").Should().BeTrue();
+        cluster.CanI<V1Pod>(Cluster.Verb.Create, "my-app", "exec").Should().BeTrue();
+        cluster.CanI<V1Pod>(Cluster.Verb.Create, "my-app", "portforward").Should().BeTrue();
     }
 
     #endregion

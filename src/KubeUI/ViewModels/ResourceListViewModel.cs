@@ -70,7 +70,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
         Cluster.SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
 
-        ViewDefinition = GetViewDefinition<T>();
+        ViewDefinition = GetViewDefinition();
 
         SetFilter();
     }
@@ -192,7 +192,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         SetFilter();
     }
 
-    private ResourceListViewDefinition<T> GetViewDefinition<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    private ResourceListViewDefinition<T> GetViewDefinition()
     {
         var resourceType = typeof(T);
 
@@ -533,6 +533,16 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 },
                 AgeColumn(),
             ];
+
+            definition.MenuItems =
+            [
+                new()
+                {
+                    Header = "Restart",
+                    CommandPath = nameof(ResourceListViewModel<V1Deployment>.RestartDeploymentCommand),
+                    CommandParameterPath = "SelectedItem.Value"
+                },
+            ];
         }
         else if (resourceType == typeof(V1DaemonSet))
         {
@@ -556,6 +566,16 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 },
                 AgeColumn(),
             ];
+
+            definition.MenuItems =
+            [
+                new()
+                {
+                    Header = "Restart",
+                    CommandPath = nameof(ResourceListViewModel<V1Deployment>.RestartDaemonSetCommand),
+                    CommandParameterPath = "SelectedItem.Value"
+                },
+            ];
         }
         else if (resourceType == typeof(V1StatefulSet))
         {
@@ -571,6 +591,16 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 AgeColumn(),
+            ];
+
+            definition.MenuItems =
+            [
+                new()
+                {
+                    Header = "Restart",
+                    CommandPath = nameof(ResourceListViewModel<V1Deployment>.RestartStatefulSetCommand),
+                    CommandParameterPath = "SelectedItem.Value"
+                },
             ];
         }
         else if (resourceType == typeof(V1ReplicaSet))
@@ -601,6 +631,16 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 AgeColumn(),
+            ];
+
+            definition.MenuItems =
+            [
+                new()
+                {
+                    Header = "Restart",
+                    CommandPath = nameof(ResourceListViewModel<V1Deployment>.RestartReplicaSetCommand),
+                    CommandParameterPath = "SelectedItem.Value"
+                },
             ];
         }
         else if (resourceType == typeof(V1Job))
@@ -1347,7 +1387,12 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                             if (match.Success)
                             {
                                 var typeString = match.Groups[1].Value;
-                                typeString = typeString.TrimStart("System.Nullable`1[").TrimEnd("]");
+
+                                if (typeString.StartsWith("System.Nullable`1[", StringComparison.Ordinal))
+                                {
+                                    typeString = typeString["System.Nullable`1[".Length..].TrimEnd("]");
+                                }
+
                                 var type = Type.GetType(typeString);
 
                                 if (type == null)
@@ -1533,6 +1578,16 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             return false;
         }
 
+        foreach (var item in items)
+        {
+            var ns = (NamespacedName)item.GetType().GetProperty("Key")!.GetValue(item);
+
+            if (!Cluster.CanI<T>(Verb.Delete, ns.Namespace))
+            {
+                return false;
+            }
+        }
+
         return true;
     }
 
@@ -1591,7 +1646,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private bool CanViewLogs(V1Container? container)
     {
-        return container != null;
+        return container != null && Cluster.CanI<V1Pod>(Verb.Get, ((KeyValuePair<NamespacedName,V1Pod>)SelectedItem).Key.Namespace, "log");
     }
 
     [RelayCommand(CanExecute = nameof(CanViewConsole))]
@@ -1605,21 +1660,21 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
         if (Factory.AddToBottom(vm))
         {
-        try
-        {
-            await vm.Connect();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error connecting to console");
-            return;
-        }
+            try
+            {
+                await vm.Connect();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error connecting to console");
+                return;
+            }
         }
     }
 
     private bool CanViewConsole(V1Container? container)
     {
-        return container != null;
+        return container != null && Cluster.CanI<V1Pod>(Verb.Create, ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key.Namespace, "exec");
     }
 
     [RelayCommand(CanExecute = nameof(CanPortForward))]
@@ -1647,7 +1702,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private bool CanPortForward(V1ContainerPort? containerPort)
     {
-        return containerPort?.ContainerPort > 0 && containerPort.Protocol == "TCP";
+        return containerPort?.ContainerPort > 0 &&
+               containerPort.Protocol == "TCP" &&
+               Cluster.CanI<V1Pod>(Verb.Create, ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key.Namespace, "portforward");
     }
 
     [RelayCommand(CanExecute = nameof(CanListCRD))]
@@ -1675,7 +1732,152 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             return false;
         }
 
-        return true;
+        var version = item.Spec.Versions.First(x => x.Served && x.Storage);
+        var type = Cluster.ModelCache.GetResourceType(item.Spec.Group, version.Name, item.Spec.Names.Kind);
+
+        return Cluster.CanIAnyNamespace(type, Verb.List) && Cluster.CanIAnyNamespace(type, Verb.Watch);
+    }
+
+    private static readonly string s_restartControllerPatch = $$"""
+    {
+        "spec": {
+        "template": {
+            "metadata": {
+            "annotations": {
+                "kubectl.kubernetes.io/restartedAt": "{{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}}"
+            }
+            }
+        }
+        }
+    }
+    """;
+
+    [RelayCommand(CanExecute = nameof(CanRestartDeployment))]
+    private async Task RestartDeployment(V1Deployment deployment)
+    {
+        try
+        {
+            ContentDialogSettings settings = new()
+            {
+                Title = Resources.ResourceListViewModel_Restart_Title,
+                Content = string.Format(Resources.ResourceListViewModel_Restart_Content, deployment.Name()),
+                PrimaryButtonText = Resources.ResourceListViewModel_Restart_Primary,
+                SecondaryButtonText = Resources.ResourceListViewModel_Restart_Secondary,
+                DefaultButton = ContentDialogButton.Secondary
+            };
+
+            var result = await _dialogService.ShowContentDialogAsync(this, settings);
+
+            if (result == ContentDialogResult.Primary)
+            {
+                await Cluster.Client.AppsV1.PatchNamespacedDeploymentAsync(new V1Patch(s_restartControllerPatch, V1Patch.PatchType.MergePatch), deployment.Metadata.Name, deployment.Metadata.NamespaceProperty);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error Restarting Deployment");
+        }
+    }
+
+    private bool CanRestartDeployment(V1Deployment deployment)
+    {
+        return deployment != null && Cluster.CanI<V1Deployment>(Verb.Patch, deployment.Namespace());
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRestartReplicaSet))]
+    private async Task RestartReplicaSet(V1ReplicaSet replicaSet)
+    {
+        try
+        {
+            ContentDialogSettings settings = new()
+            {
+                Title = Resources.ResourceListViewModel_Restart_Title,
+                Content = string.Format(Resources.ResourceListViewModel_Restart_Content, replicaSet.Name()),
+                PrimaryButtonText = Resources.ResourceListViewModel_Restart_Primary,
+                SecondaryButtonText = Resources.ResourceListViewModel_Restart_Secondary,
+                DefaultButton = ContentDialogButton.Secondary
+            };
+
+            var result = await _dialogService.ShowContentDialogAsync(this, settings);
+
+            if (result == ContentDialogResult.Primary)
+            {
+                await Cluster.Client.AppsV1.PatchNamespacedReplicaSetAsync(new V1Patch(s_restartControllerPatch, V1Patch.PatchType.MergePatch), replicaSet.Metadata.Name, replicaSet.Metadata.NamespaceProperty);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error Restarting ReplicaSet");
+        }
+    }
+
+    private bool CanRestartReplicaSet(V1ReplicaSet replicaSet)
+    {
+        return replicaSet != null && Cluster.CanI<V1ReplicaSet>(Verb.Patch, replicaSet.Namespace());
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRestartStatefulSet))]
+    private async Task RestartStatefulSet(V1StatefulSet statefulSet)
+    {
+        try
+        {
+            ContentDialogSettings settings = new()
+            {
+                Title = Resources.ResourceListViewModel_Restart_Title,
+                Content = string.Format(Resources.ResourceListViewModel_Restart_Content, statefulSet.Name()),
+                PrimaryButtonText = Resources.ResourceListViewModel_Restart_Primary,
+                SecondaryButtonText = Resources.ResourceListViewModel_Restart_Secondary,
+                DefaultButton = ContentDialogButton.Secondary
+            };
+
+            var result = await _dialogService.ShowContentDialogAsync(this, settings);
+
+            if (result == ContentDialogResult.Primary)
+            {
+                await Cluster.Client.AppsV1.PatchNamespacedStatefulSetAsync(new V1Patch(s_restartControllerPatch, V1Patch.PatchType.MergePatch), statefulSet.Metadata.Name, statefulSet.Metadata.NamespaceProperty);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error Restarting StatefulSet");
+        }
+    }
+
+    private bool CanRestartStatefulSet(V1StatefulSet statefulSet)
+    {
+        return statefulSet != null && Cluster.CanI<V1StatefulSet>(Verb.Patch, statefulSet.Namespace());
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRestartDaemonSet))]
+    private async Task RestartDaemonSet(V1DaemonSet daemonSet)
+    {
+        try
+        {
+            ContentDialogSettings settings = new()
+            {
+                Title = Resources.ResourceListViewModel_Restart_Title,
+                Content = string.Format(Resources.ResourceListViewModel_Restart_Content, daemonSet.Name()),
+                PrimaryButtonText = Resources.ResourceListViewModel_Restart_Primary,
+                SecondaryButtonText = Resources.ResourceListViewModel_Restart_Secondary,
+                DefaultButton = ContentDialogButton.Secondary
+            };
+
+            var result = await _dialogService.ShowContentDialogAsync(this, settings);
+
+            if (result == ContentDialogResult.Primary)
+            {
+                await Cluster.Client.AppsV1.PatchNamespacedDaemonSetAsync(new V1Patch(s_restartControllerPatch, V1Patch.PatchType.MergePatch), daemonSet.Metadata.Name, daemonSet.Metadata.NamespaceProperty);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error Restarting DaemonSet");
+        }
+    }
+
+    private bool CanRestartDaemonSet(V1DaemonSet daemonSet)
+    {
+        return daemonSet != null && Cluster.CanI<V1DaemonSet>(Verb.Patch, daemonSet.Namespace());
     }
 
     #endregion

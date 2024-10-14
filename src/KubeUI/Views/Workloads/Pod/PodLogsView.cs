@@ -69,6 +69,10 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
                             .IsChecked(@vm.AutoScrollToBottom)
                             .ToolTip(Assets.Resources.PodLogsView_AutoScrollToBottom)
                             .Content(new PathIcon() { Data = (Geometry)Application.Current.FindResource("ic_fluent_padding_down_filled") }),
+                        new ToggleButton()
+                            .IsChecked(@vm.WordWrap)
+                            .ToolTip(Assets.Resources.PodLogsView_WordWrap)
+                            .Content(new PathIcon() { Data = (Geometry)Application.Current.FindResource("text_wrap_regular") }),
                     ]),
                 new TextEditor()
                     .Ref(out var editor)
@@ -95,6 +99,7 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
                     .Background(new DynamicResourceExtension("SystemAltHighColor"))
                     .HorizontalScrollBarVisibility(ScrollBarVisibility.Auto)
                     .VerticalScrollBarVisibility(ScrollBarVisibility.Visible)
+                    .WordWrap(@vm.WordWrap)
                     .ContextMenu(new ContextMenu()
                                     .Items([
                                         new MenuItem()

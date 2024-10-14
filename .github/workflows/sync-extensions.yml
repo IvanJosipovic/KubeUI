@@ -23,13 +23,13 @@ jobs:
 
       - name: Clean Extensions
         shell: pwsh
-        run: Remove-Item "src/KubeUI/ControlExtensions.Generated/*"  -Force -Recurse
+        run: Remove-Item "src/KubeUI.Core/ControlExtensions.Generated/*"  -Force -Recurse
 
       - name: Install Tool
         run: dotnet tool install --global AvaloniaExtensionGenerator --version 11.2.0-beta4
 
       - name: Run Generator
-        working-directory: src/KubeUI
+        working-directory: src/KubeUI.Core
         run: avalonia-amd-gen
 
       - name: Create Pull Request

@@ -475,6 +475,15 @@ namespace KubeUI.Assets {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Word Wrap.
+        /// </summary>
+        public static string PodLogsView_WordWrap {
+            get {
+                return ResourceManager.GetString("PodLogsView_WordWrap", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Pod Logs.
         /// </summary>
         public static string PodLogsViewModel_Title {
@@ -621,11 +630,56 @@ namespace KubeUI.Assets {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to test.
+        /// </summary>
+        public static string ResourceListViewModel_Restart_Content {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_Restart_Content", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to OK.
+        /// </summary>
+        public static string ResourceListViewModel_Restart_Primary {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_Restart_Primary", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No.
+        /// </summary>
+        public static string ResourceListViewModel_Restart_Secondary {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_Restart_Secondary", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Restart.
+        /// </summary>
+        public static string ResourceListViewModel_Restart_Title {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_Restart_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Properties.
         /// </summary>
         public static string ResourcePropertiesViewModel_Title {
             get {
                 return ResourceManager.GetString("ResourcePropertiesViewModel_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Word Wrap.
+        /// </summary>
+        public static string ResourceYamlView_WordWrap {
+            get {
+                return ResourceManager.GetString("ResourceYamlView_WordWrap", resourceCulture);
             }
         }
         
