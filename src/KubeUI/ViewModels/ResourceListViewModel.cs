@@ -70,7 +70,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
         Cluster.SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
 
-        ViewDefinition = GetViewDefinition<T>();
+        ViewDefinition = GetViewDefinition();
 
         SetFilter();
     }
@@ -192,7 +192,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         SetFilter();
     }
 
-    private ResourceListViewDefinition<T> GetViewDefinition<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    private ResourceListViewDefinition<T> GetViewDefinition()
     {
         var resourceType = typeof(T);
 
@@ -1573,6 +1573,16 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             return false;
         }
 
+        foreach (var item in items)
+        {
+            var ns = (NamespacedName)item.GetType().GetProperty("Key")!.GetValue(item);
+
+            if (!Cluster.CanI<T>(Verb.Delete, ns.Namespace))
+            {
+                return false;
+            }
+        }
+
         return true;
     }
 
@@ -1687,7 +1697,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private bool CanPortForward(V1ContainerPort? containerPort)
     {
-        return containerPort?.ContainerPort > 0 && containerPort.Protocol == "TCP" && Cluster.CanI<V1Pod>(Verb.Create, ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key.Namespace, "portforward");
+        return containerPort?.ContainerPort > 0 &&
+               containerPort.Protocol == "TCP" &&
+               Cluster.CanI<V1Pod>(Verb.Create, ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key.Namespace, "portforward");
     }
 
     [RelayCommand(CanExecute = nameof(CanListCRD))]
@@ -1715,7 +1727,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             return false;
         }
 
-        return true;
+        var version = item.Spec.Versions.First(x => x.Served && x.Storage);
+        var type = Cluster.ModelCache.GetResourceType(item.Spec.Group, version.Name, item.Spec.Names.Kind);
+
+        return Cluster.CanIAnyNamespace(type, Verb.List) && Cluster.CanIAnyNamespace(type, Verb.Watch);
     }
 
     [RelayCommand(CanExecute = nameof(CanRestartDeployment))]

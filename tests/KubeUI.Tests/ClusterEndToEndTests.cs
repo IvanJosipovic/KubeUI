@@ -860,6 +860,10 @@ rules:
         cluster.CanI<V1Pod>(Cluster.Verb.Update).Should().BeTrue();
         cluster.CanI<V1Pod>(Cluster.Verb.Watch).Should().BeTrue();
 
+        cluster.CanI<V1Pod>(Cluster.Verb.Get, "log").Should().BeTrue();
+        cluster.CanI<V1Pod>(Cluster.Verb.Create, "exec").Should().BeTrue();
+        cluster.CanI<V1Pod>(Cluster.Verb.Create, "portforward").Should().BeTrue();
+
         cluster.CanI<V1Pod>(Cluster.Verb.Create, "default").Should().BeTrue();
         cluster.CanI<V1Pod>(Cluster.Verb.Delete, "default").Should().BeTrue();
         cluster.CanI<V1Pod>(Cluster.Verb.Get, "default").Should().BeTrue();
@@ -867,6 +871,10 @@ rules:
         cluster.CanI<V1Pod>(Cluster.Verb.Patch, "default").Should().BeTrue();
         cluster.CanI<V1Pod>(Cluster.Verb.Update, "default").Should().BeTrue();
         cluster.CanI<V1Pod>(Cluster.Verb.Watch, "default").Should().BeTrue();
+
+        cluster.CanI<V1Pod>(Cluster.Verb.Get, "default", "log").Should().BeTrue();
+        cluster.CanI<V1Pod>(Cluster.Verb.Create, "default", "exec").Should().BeTrue();
+        cluster.CanI<V1Pod>(Cluster.Verb.Create, "default", "portforward").Should().BeTrue();
     }
 
     [AvaloniaFact]
@@ -907,6 +915,10 @@ rules:
         cluster.CanI<V1Pod>(Cluster.Verb.Update).Should().BeFalse();
         cluster.CanI<V1Pod>(Cluster.Verb.Watch).Should().BeFalse();
 
+        cluster.CanI<V1Pod>(Cluster.Verb.Get, "log").Should().BeFalse();
+        cluster.CanI<V1Pod>(Cluster.Verb.Create, "exec").Should().BeFalse();
+        cluster.CanI<V1Pod>(Cluster.Verb.Create, "portforward").Should().BeFalse();
+
         cluster.CanI<V1Pod>(Cluster.Verb.Create, "my-app").Should().BeFalse();
         cluster.CanI<V1Pod>(Cluster.Verb.Delete, "my-app").Should().BeTrue();
         cluster.CanI<V1Pod>(Cluster.Verb.Get, "my-app").Should().BeTrue();
@@ -914,6 +926,10 @@ rules:
         cluster.CanI<V1Pod>(Cluster.Verb.Patch, "my-app").Should().BeFalse();
         cluster.CanI<V1Pod>(Cluster.Verb.Update, "my-app").Should().BeFalse();
         cluster.CanI<V1Pod>(Cluster.Verb.Watch, "my-app").Should().BeTrue();
+
+        cluster.CanI<V1Pod>(Cluster.Verb.Get, "my-app", "log").Should().BeTrue();
+        cluster.CanI<V1Pod>(Cluster.Verb.Create, "my-app", "exec").Should().BeTrue();
+        cluster.CanI<V1Pod>(Cluster.Verb.Create, "my-app", "portforward").Should().BeTrue();
     }
 
     #endregion

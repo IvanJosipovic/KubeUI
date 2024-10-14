@@ -36,6 +36,7 @@ public interface ICluster
     bool CanI<T>(Verb verb, string @namespace = "", string subresource = "") where T : class, IKubernetesObject<V1ObjectMeta>, new();
     bool CanI(Type type, Verb verb, string @namespace = "", string subresource = "");
     Task<ConcurrentObservableDictionary<NamespacedName, T>> GetObjectDictionaryAsync<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    bool CanIAnyNamespace(Type type, Verb verb, string subresource = "");
 
     bool ListNamespaces { get; set; }
 }

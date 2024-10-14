@@ -13,7 +13,7 @@ public partial class Cluster
 
     private async Task GetPermissions()
     {
-        ListNamespaces = await CanIListWatchAsync<V1Namespace>();
+        ListNamespaces = await UpdateCanIListWatchAnyNamespaceAsync<V1Namespace>();
     }
 
     public enum Verb
@@ -65,11 +65,6 @@ public partial class Cluster
 
         var resp = await kube.CreateSelfSubjectAccessReviewAsync(model);
 
-        if (resp.Spec == null)
-        {
-            throw new Exception("V1SelfSubjectAccessReview is null");
-        }
-
          _selfSubjectAccessReviews.Add(resp);
     }
 
@@ -120,16 +115,37 @@ public partial class Cluster
         return CanI(typeof(T), verb, @namespace, subresource);
     }
 
-    public async Task<bool> CanIAsync(Type type, Verb verb, string subresource = "", bool checkNamespace = false)
+    public bool CanIAnyNamespace(Type type, Verb verb, string subresource = "")
     {
-        await GetSelfSubjectAccessReview(type, Verb.List, subresource: subresource);
+        if (CanI(type, verb, subresource: subresource))
+        {
+            return true;
+        }
+
+        if (IsNamespaced(type))
+        {
+            foreach (var item in GetObjectDictionary<V1Namespace>())
+            {
+                if (CanI(type, verb, item.Value.Name(), subresource))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public async Task<bool> UpdateCanIAnyNamespaceAsync(Type type, Verb verb, string subresource = "")
+    {
+        await GetSelfSubjectAccessReview(type, verb, subresource: subresource);
 
         if (CanI(type, verb, subresource: subresource))
         {
             return true;
         }
 
-        if (checkNamespace)
+        if (IsNamespaced(type))
         {
             foreach (var item in await GetObjectDictionaryAsync<V1Namespace>())
             {
@@ -145,44 +161,18 @@ public partial class Cluster
         return false;
     }
 
-    public async Task<bool> CanIAsync<T>(Verb verb, string subresource = "", bool checkNamespace = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public async Task<bool> UpdateCanIAnyNamespaceAsync<T>(Verb verb, string subresource = "") where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        return await CanIAsync(typeof(T), verb, subresource, checkNamespace);
+        return await UpdateCanIAnyNamespaceAsync(typeof(T), verb, subresource);
     }
 
-    private async Task<bool> CanIListWatchAsync<T>(bool checkNamespace = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    private async Task<bool> UpdateCanListWatchAnyNamespaceAsync(Type type, string subresource = "")
     {
-        return await CanListWatchAsync(typeof(T), checkNamespace);
+        return await UpdateCanIAnyNamespaceAsync(type, Verb.List, subresource) && await UpdateCanIAnyNamespaceAsync(type, Verb.Watch, subresource);
     }
 
-    private async Task<bool> CanListWatchAsync(Type type, bool checkNamespace = false)
+    private async Task<bool> UpdateCanIListWatchAnyNamespaceAsync<T>(string subresource = "") where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        await Task.WhenAll(
-            GetSelfSubjectAccessReview(type, Verb.List),
-            GetSelfSubjectAccessReview(type, Verb.Watch)
-        );
-
-        if (CanI(type, Verb.List) && CanI(type, Verb.Watch))
-        {
-            return true;
-        }
-
-        if (checkNamespace)
-        {
-            foreach (var item in GetObjectDictionary<V1Namespace>())
-            {
-                await Task.WhenAll(
-                    GetSelfSubjectAccessReview(type, Verb.List, item.Value.Name()),
-                    GetSelfSubjectAccessReview(type, Verb.Watch, item.Value.Name())
-                    );
-
-                if (CanI(type, Verb.List, item.Value.Name()) && CanI(type, Verb.Watch, item.Value.Name()))
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        return await UpdateCanListWatchAnyNamespaceAsync(typeof(T), subresource);
     }
 }

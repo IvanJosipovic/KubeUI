@@ -27,7 +27,7 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
             .Setter(Control.MarginProperty, new Thickness(0,0,4,0))
         ];
 
-    protected override object Build(NavigationViewModel vm) =>
+    protected override object Build(NavigationViewModel? vm) =>
         new TreeView()
             .ItemsSource(@vm.ClusterManager.Clusters)
             .OnSelectionChanged((e) =>
