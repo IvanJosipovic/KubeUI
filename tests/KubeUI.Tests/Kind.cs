@@ -67,7 +67,7 @@ public class Kind
 
         if (!string.IsNullOrEmpty(stdErr) && stdErr.StartsWith("ERROR:"))
         {
-            throw new Exception(stdErr);
+            throw new Exception(nameof(CreateCluster) + " " + stdErr);
         }
     }
 
@@ -89,7 +89,7 @@ public class Kind
 
         if (!string.IsNullOrEmpty(stdErr) && stdErr.StartsWith("ERROR:"))
         {
-            throw new Exception(stdErr);
+            throw new Exception(nameof(DeleteCluster) + " " + stdErr);
         }
     }
 
@@ -110,7 +110,7 @@ public class Kind
 
         if (!string.IsNullOrEmpty(stdErr) && stdErr.StartsWith("ERROR:"))
         {
-            throw new Exception(stdErr);
+            throw new Exception(nameof(GetClusters) + " " + stdErr);
         }
 
         return new List<string>(stdOut.TrimEnd().Split("\n"));
@@ -133,7 +133,7 @@ public class Kind
 
         if (!string.IsNullOrEmpty(stdErr) && stdErr.StartsWith("ERROR:"))
         {
-            throw new Exception(stdErr);
+            throw new Exception(nameof(GetKubeConfig) + " " + stdErr);
         }
 
         return stdOut;
