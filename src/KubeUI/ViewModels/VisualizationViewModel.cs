@@ -20,10 +20,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     {
         Nodes = new ObservableCollection<INode>(),
         Connectors = new ObservableCollection<IConnector>(),
-        EnableMultiplePinConnections = true,
-        EnableSnap = true,
-        SnapX = 10.0,
-        SnapY = 10.0,
+        Settings = new DrawingNodeSettingsViewModel()
+        {
+            EnableMultiplePinConnections = true,
+            EnableSnap = true,
+            SnapX = 10.0,
+            SnapY = 10.0,
+        }
     };
 
     [ObservableProperty]

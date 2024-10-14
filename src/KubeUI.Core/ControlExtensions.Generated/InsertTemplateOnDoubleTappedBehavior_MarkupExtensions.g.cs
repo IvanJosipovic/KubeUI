@@ -12,27 +12,27 @@ namespace Avalonia.Markup.Declarative;
 public static partial class InsertTemplateOnDoubleTappedBehavior_MarkupExtensions
 {
 //================= Properties ======================//
- // Drawing
+ // DrawingSource
 
 /*BindFromExpressionSetterGenerator*/
-public static T Drawing<T>(this T control, Func<NodeEditor.Model.IDrawingNode> func, Action<NodeEditor.Model.IDrawingNode>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Behaviors.InsertTemplateOnDoubleTappedBehavior 
-   => control._set(NodeEditor.Behaviors.InsertTemplateOnDoubleTappedBehavior.DrawingProperty, func, onChanged, expression);
+public static T DrawingSource<T>(this T control, Func<NodeEditor.Model.IDrawingNode> func, Action<NodeEditor.Model.IDrawingNode>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Behaviors.InsertTemplateOnDoubleTappedBehavior 
+   => control._set(NodeEditor.Behaviors.InsertTemplateOnDoubleTappedBehavior.DrawingSourceProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T Drawing<T>(this T control,NodeEditor.Model.IDrawingNode value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Behaviors.InsertTemplateOnDoubleTappedBehavior 
-=> control._setEx(NodeEditor.Behaviors.InsertTemplateOnDoubleTappedBehavior.DrawingProperty, ps, () => control.Drawing = value, bindingMode, converter, bindingSource);
+public static T DrawingSource<T>(this T control,NodeEditor.Model.IDrawingNode value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Behaviors.InsertTemplateOnDoubleTappedBehavior 
+=> control._setEx(NodeEditor.Behaviors.InsertTemplateOnDoubleTappedBehavior.DrawingSourceProperty, ps, () => control.DrawingSource = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
-public static T Drawing<T>(this T control, IBinding binding) where T : NodeEditor.Behaviors.InsertTemplateOnDoubleTappedBehavior 
-   => control._set(NodeEditor.Behaviors.InsertTemplateOnDoubleTappedBehavior.DrawingProperty, binding);
+public static T DrawingSource<T>(this T control, IBinding binding) where T : NodeEditor.Behaviors.InsertTemplateOnDoubleTappedBehavior 
+   => control._set(NodeEditor.Behaviors.InsertTemplateOnDoubleTappedBehavior.DrawingSourceProperty, binding);
 
 /*AvaloniaPropertyBindSetterGenerator*/
-public static T Drawing<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : NodeEditor.Behaviors.InsertTemplateOnDoubleTappedBehavior 
-   => control._set(NodeEditor.Behaviors.InsertTemplateOnDoubleTappedBehavior.DrawingProperty, avaloniaProperty, bindingMode, converter, overrideView);
+public static T DrawingSource<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : NodeEditor.Behaviors.InsertTemplateOnDoubleTappedBehavior 
+   => control._set(NodeEditor.Behaviors.InsertTemplateOnDoubleTappedBehavior.DrawingSourceProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T Drawing<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, NodeEditor.Model.IDrawingNode> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Behaviors.InsertTemplateOnDoubleTappedBehavior 
-=> control._setEx(NodeEditor.Behaviors.InsertTemplateOnDoubleTappedBehavior.DrawingProperty, ps, () => control.Drawing = converter.TryConvert(value), bindingMode, converter, bindingSource);
+public static T DrawingSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, NodeEditor.Model.IDrawingNode> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Behaviors.InsertTemplateOnDoubleTappedBehavior 
+=> control._setEx(NodeEditor.Behaviors.InsertTemplateOnDoubleTappedBehavior.DrawingSourceProperty, ps, () => control.DrawingSource = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
