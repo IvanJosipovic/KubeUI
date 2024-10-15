@@ -702,6 +702,15 @@ public sealed partial class Cluster : ObservableObject, ICluster
         return ((ConcurrentObservableDictionary<NamespacedName, T>)Objects[attribute].Items)[new NamespacedName(@namespace, name)];
     }
 
+    public async Task<T?> GetObjectAsync<T>(string @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        await Seed<T>(true);
+
+        var attribute = GroupApiVersionKind.From<T>();
+
+        return ((ConcurrentObservableDictionary<NamespacedName, T>)Objects[attribute].Items)[new NamespacedName(@namespace, name)];
+    }
+
     public ConcurrentObservableDictionary<NamespacedName, T> GetObjectDictionary<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         _ = Task.Run(() => Seed<T>());
@@ -727,17 +736,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
         await Seed<T>(true);
 
         var attribute = GroupApiVersionKind.From<T>();
-
-        if (!Objects.TryGetValue(attribute, out var container))
-        {
-            container = new ContainerClass
-            {
-                Type = typeof(T),
-                Items = new ConcurrentObservableDictionary<NamespacedName, T>()
-            };
-
-            Objects.TryAdd(attribute, container);
-        }
 
         return (ConcurrentObservableDictionary<NamespacedName, T>)Objects[attribute].Items;
     }

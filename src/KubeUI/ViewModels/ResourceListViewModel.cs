@@ -949,6 +949,29 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 },
                 AgeColumn(),
             ];
+
+            definition.MenuItems =
+            [
+                new()
+                {
+                    Header = "Port Forwarding",
+                    ItemSourcePath = "SelectedItem.Value.Spec.Ports",
+                    IconResource = "ic_fluent_cloud_flow_filled",
+                    ItemTemplate = new()
+                    {
+                        HeaderBinding = new MultiBinding()
+                        {
+                            Bindings =
+                            [
+                                new Binding(nameof(V1ServicePort.Name)),
+                                new Binding(nameof(V1ServicePort.Port))
+                            ],
+                            StringFormat = "{0} - {1}"
+                        },                        CommandPath = nameof(ResourceListViewModel<V1Pod>.PortForwardServiceCommand),
+                        CommandParameterPath = ".",
+                    }
+                }
+            ];
         }
         else if (resourceType == typeof(V1Endpoints))
         {
@@ -1686,7 +1709,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     [RelayCommand(CanExecute = nameof(CanPortForward))]
     private async Task PortForward(V1ContainerPort containerPort)
     {
-        var pf = Cluster.AddPortForward(((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key.Namespace, ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key.Name, containerPort.ContainerPort);
+        var pf = Cluster.AddPodPortForward(((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key.Namespace, ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key.Name, containerPort.ContainerPort);
 
         ContentDialogSettings settings = new()
         {
@@ -1711,6 +1734,37 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         return containerPort?.ContainerPort > 0 &&
                containerPort.Protocol == "TCP" &&
                Cluster.CanI<V1Pod>(Verb.Create, ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key.Namespace, "portforward");
+    }
+
+
+    [RelayCommand(CanExecute = nameof(CanPortForwardService))]
+    private async Task PortForwardService(V1ServicePort containerPort)
+    {
+        var pf = Cluster.AddServicePortForward(((KeyValuePair<NamespacedName, V1Service>)SelectedItem).Key.Namespace, ((KeyValuePair<NamespacedName, V1Service>)SelectedItem).Key.Name, containerPort.Port);
+
+        ContentDialogSettings settings = new()
+        {
+            Title = Resources.ResourceListViewModel_PortForward_Title,
+            Content = string.Format(Resources.ResourceListViewModel_PortForward_Content, containerPort.Port, pf.LocalPort),
+            PrimaryButtonText = Resources.ResourceListViewModel_PortForward_Primary,
+            SecondaryButtonText = Resources.ResourceListViewModel_PortForward_Secondary,
+            DefaultButton = ContentDialogButton.Secondary
+        };
+
+        var result = await _dialogService.ShowContentDialogAsync(this, settings);
+
+        if (result == ContentDialogResult.Primary)
+        {
+            var window = (Window)_dialogService.DialogManager.GetMainWindow()!.RefObj;
+            await window!.Launcher.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
+        }
+    }
+
+    private bool CanPortForwardService(V1ServicePort? servicePort)
+    {
+        return servicePort?.Port > 0 &&
+               servicePort.Protocol == "TCP" &&
+               Cluster.CanI<V1Pod>(Verb.Create, ((KeyValuePair<NamespacedName, V1Service>)SelectedItem).Key.Namespace, "portforward");
     }
 
     [RelayCommand(CanExecute = nameof(CanListCRD))]

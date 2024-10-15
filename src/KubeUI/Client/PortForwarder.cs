@@ -2,19 +2,22 @@
 using System.Net.Sockets;
 using System.Net;
 using k8s;
+using k8s.Models;
 
 namespace KubeUI.Client;
 
 public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>, IDisposable
 {
-    private readonly IKubernetes _client;
+    private readonly ICluster _cluster;
     private readonly TcpListener _listener;
 
-    public string PodName { get; }
+    public string Name { get; private set; }
 
     public string Namespace { get; }
 
-    public int ContainerPort { get; }
+    public int ContainerPort { get; private set; }
+
+    public string Type { get; private set; }
 
     [ObservableProperty]
     private int _localPort;
@@ -22,17 +25,30 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
     [ObservableProperty]
     private string _status = "Initializing";
 
+
     private bool _isDisposing;
 
-    public PortForwarder(IKubernetes client, string @namespace, string podName, int containerPort, int localPort = 0)
+    public PortForwarder(ICluster cluster, string @namespace, int localPort = 0)
     {
-        _client = client;
+        _cluster = cluster;
         Namespace = @namespace;
-        PodName = podName;
-        ContainerPort = containerPort;
         LocalPort = localPort;
 
         _listener = new TcpListener(IPAddress.Loopback, localPort);
+    }
+
+    public void SetPod(string podName, int containerPort)
+    {
+        Name = podName;
+        ContainerPort = containerPort;
+        Type = "Pod";
+    }
+
+    public void SetService(string serviceName, int containerPort)
+    {
+        Name = serviceName;
+        ContainerPort = containerPort;
+        Type = "Service";
     }
 
     public void Start()
@@ -65,7 +81,31 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
 
     private async Task HandleConnection(Socket socket)
     {
-        using var webSocket = await _client.WebSocketNamespacedPodPortForwardAsync(PodName, Namespace, new int[] { ContainerPort }, "v4.channel.k8s.io");
+        var podName = Name;
+        if (Type == "Service")
+        {
+            var service = await _cluster.GetObjectAsync<V1Service>(Namespace, Name);
+
+            var pods = await _cluster.GetObjectDictionaryAsync<V1Pod>();
+
+            var random = new Random();
+
+            var pod = pods.Where(x => service.Spec.Selector.All(y => x.Value.Metadata.Labels.ContainsKey(y.Key) && x.Value.Metadata.Labels[y.Key] == y.Value))
+                .Select(x => x.Value)
+                .OrderBy(x => random.Next())
+                .FirstOrDefault();
+
+            if (pod == null)
+            {
+                Status = "No pods found for service";
+                socket.Close();
+                return;
+            }
+
+            podName = pod.Name();
+        }
+
+        using var webSocket = await _cluster.Client.WebSocketNamespacedPodPortForwardAsync(podName, Namespace, new int[] { ContainerPort }, "v4.channel.k8s.io");
         using var demux = new StreamDemuxer(webSocket, StreamType.PortForward);
         demux.Start();
 
@@ -121,7 +161,7 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
 
     public bool Equals(PortForwarder? other)
     {
-        return other != null && other.PodName == PodName && other.Namespace == Namespace && other.ContainerPort == ContainerPort;
+        return other != null && other.Name == Name && other.Namespace == Namespace && other.ContainerPort == ContainerPort && other.Type == Type;
     }
 
     public void Dispose()
