@@ -15,7 +15,7 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
 
     public string Namespace { get; }
 
-    public int ContainerPort { get; private set; }
+    public int Port { get; private set; }
 
     public string Type { get; private set; }
 
@@ -40,14 +40,14 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
     public void SetPod(string podName, int containerPort)
     {
         Name = podName;
-        ContainerPort = containerPort;
+        Port = containerPort;
         Type = "Pod";
     }
 
-    public void SetService(string serviceName, int containerPort)
+    public void SetService(string serviceName, int servicePort)
     {
         Name = serviceName;
-        ContainerPort = containerPort;
+        Port = servicePort;
         Type = "Service";
     }
 
@@ -82,16 +82,19 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
     private async Task HandleConnection(Socket socket)
     {
         var podName = Name;
+        var podPort = Port;
         if (Type == "Service")
         {
             var service = await _cluster.GetObjectAsync<V1Service>(Namespace, Name);
-
-            var eps = await _cluster.GetObjectAsync<V1Endpoints>(Namespace, Name);
+            var port = service.Spec.Ports.First(x => x.Port == Port);
+            var endpoint = await _cluster.GetObjectAsync<V1Endpoints>(Namespace, Name);
 
             var random = new Random();
 
-            var pod = eps.Subsets.Where(x => x.Ports.Any(y => y.Port == ContainerPort))
-                .SelectMany(x => x.Addresses)
+            var subset = endpoint.Subsets.First(x => x.Ports.Any(y => y.Name == port.Name));
+            var portData = subset.Ports.First(y => y.Name == port.Name);
+
+            var pod = subset.Addresses
                 .Select(x => x.TargetRef.Name)
                 .OrderBy(x => random.Next())
                 .FirstOrDefault();
@@ -108,9 +111,10 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
             }
 
             podName = pod;
+            podPort = portData.Port;
         }
 
-        using var webSocket = await _cluster.Client.WebSocketNamespacedPodPortForwardAsync(podName, Namespace, new int[] { ContainerPort }, "v4.channel.k8s.io");
+        using var webSocket = await _cluster.Client.WebSocketNamespacedPodPortForwardAsync(podName, Namespace, [podPort], "v4.channel.k8s.io");
         using var demux = new StreamDemuxer(webSocket, StreamType.PortForward);
         demux.Start();
 
@@ -166,7 +170,7 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
 
     public bool Equals(PortForwarder? other)
     {
-        return other != null && other.Name == Name && other.Namespace == Namespace && other.ContainerPort == ContainerPort && other.Type == Type;
+        return other != null && other.Name == Name && other.Namespace == Namespace && other.Port == Port && other.Type == Type;
     }
 
     public void Dispose()

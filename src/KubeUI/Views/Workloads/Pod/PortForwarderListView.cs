@@ -34,8 +34,8 @@ public sealed class PortForwarderListView : MyViewBase<PortForwarderListViewMode
                             },
                             new DataGridTextColumn()
                             {
-                                Binding = new Binding(nameof(PortForwarder.ContainerPort)),
-                                Header = "Container Port",
+                                Binding = new Binding(nameof(PortForwarder.Port)),
+                                Header = "Port",
                             },
                             new DataGridTextColumn()
                             {
