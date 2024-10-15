@@ -1330,7 +1330,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                                 var colDef = new ResourceListViewDefinitionColumn<T, double>()
                                 {
                                     Name = item.Name,
-                                    Display = TransformToFuncOfString<T>(exp.Body, exp.Parameters).Compile(),
+                                    Display = TransformToFuncOfString(exp.Body, exp.Parameters).Compile(),
                                     Field = exp.Compile(),
                                     //Width = "*"
                                 };
@@ -1344,7 +1344,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                                 var colDef = new ResourceListViewDefinitionColumn<T, long>()
                                 {
                                     Name = item.Name,
-                                    Display = TransformToFuncOfString<T>(exp.Body, exp.Parameters).Compile(),
+                                    Display = TransformToFuncOfString(exp.Body, exp.Parameters).Compile(),
                                     Field = exp.Compile(),
                                     //Width = "*"
                                 };
@@ -1358,7 +1358,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                                 var colDef = new ResourceListViewDefinitionColumn<T, int>()
                                 {
                                     Name = item.Name,
-                                    Display = TransformToFuncOfString<T>(exp.Body, exp.Parameters).Compile(),
+                                    Display = TransformToFuncOfString(exp.Body, exp.Parameters).Compile(),
                                     Field = exp.Compile(),
                                     //Width = "*"
                                 };
@@ -1385,7 +1385,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                                 var colDef = new ResourceListViewDefinitionColumn<T, bool>()
                                 {
                                     Name = item.Name,
-                                    Display = TransformToFuncOfString<T>(exp.Body, exp.Parameters).Compile(),
+                                    Display = TransformToFuncOfString(exp.Body, exp.Parameters).Compile(),
                                     Field = exp.Compile(),
                                     //Width = "*"
                                 };
@@ -1399,7 +1399,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                                 var colDef = new ResourceListViewDefinitionColumn<T, string>()
                                 {
                                     Name = item.Name,
-                                    Field = TransformToFuncOfString<T>(exp.Body, exp.Parameters).Compile(),
+                                    Field = TransformToFuncOfString(exp.Body, exp.Parameters).Compile(),
                                     //Width = "*"
                                 };
 
@@ -1507,7 +1507,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         return definition;
     }
 
-    private static Expression<Func<T, string>> TransformToFuncOfString<T>(Expression expression, ReadOnlyCollection<ParameterExpression> parameters)
+    private static Expression<Func<T, string>> TransformToFuncOfString(Expression expression, ReadOnlyCollection<ParameterExpression> parameters)
     {
         // Check if the expression type is an enum
         if (expression.Type == typeof(Enum))

@@ -467,6 +467,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 if (waitForReady)
                 {
                     await inf.ReadyAsync(new CancellationToken());
+                    await Task.Delay(1000);
                 }
             }
             else
@@ -499,6 +500,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                         if (waitForReady)
                         {
                             await inf.ReadyAsync(new CancellationToken());
+                            await Task.Delay(1000);
                         }
                     }
                 }
