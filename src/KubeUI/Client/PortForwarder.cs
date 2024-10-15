@@ -86,23 +86,28 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
         {
             var service = await _cluster.GetObjectAsync<V1Service>(Namespace, Name);
 
-            var pods = await _cluster.GetObjectDictionaryAsync<V1Pod>();
+            var eps = await _cluster.GetObjectAsync<V1Endpoints>(Namespace, Name);
 
             var random = new Random();
 
-            var pod = pods.Where(x => service.Spec.Selector.All(y => x.Value.Metadata.Labels.ContainsKey(y.Key) && x.Value.Metadata.Labels[y.Key] == y.Value))
-                .Select(x => x.Value)
+            var pod = eps.Subsets.Where(x => x.Ports.Any(y => y.Port == ContainerPort))
+                .SelectMany(x => x.Addresses)
+                .Select(x => x.TargetRef.Name)
                 .OrderBy(x => random.Next())
                 .FirstOrDefault();
 
             if (pod == null)
             {
-                Status = "No pods found for service";
+                Status = "No pods found for Service";
                 socket.Close();
                 return;
             }
+            else
+            {
+                Status = "Active";
+            }
 
-            podName = pod.Name();
+            podName = pod;
         }
 
         using var webSocket = await _cluster.Client.WebSocketNamespacedPodPortForwardAsync(podName, Namespace, new int[] { ContainerPort }, "v4.channel.k8s.io");

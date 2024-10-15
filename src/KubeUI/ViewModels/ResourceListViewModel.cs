@@ -1762,9 +1762,13 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private bool CanPortForwardService(V1ServicePort? servicePort)
     {
+        var @namespace = ((KeyValuePair<NamespacedName, V1Service>)SelectedItem).Key.Namespace;
+
         return servicePort?.Port > 0 &&
                servicePort.Protocol == "TCP" &&
-               Cluster.CanI<V1Pod>(Verb.Create, ((KeyValuePair<NamespacedName, V1Service>)SelectedItem).Key.Namespace, "portforward");
+               Cluster.CanI<V1Pod>(Verb.Create, @namespace, "portforward") &&
+               Cluster.CanI<V1Endpoints>(Verb.List, @namespace) &&
+               Cluster.CanI<V1Endpoints>(Verb.Watch, @namespace);
     }
 
     [RelayCommand(CanExecute = nameof(CanListCRD))]
