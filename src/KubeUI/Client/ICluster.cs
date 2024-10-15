@@ -21,7 +21,7 @@ public interface ICluster
     ObservableCollection<PodMetrics> PodMetrics { get; set; }
     ObservableCollection<PortForwarder> PortForwarders { get; set; }
     ObservableCollection<V1Namespace> SelectedNamespaces { get; set; }
-    PortForwarder AddPortForward(string @namespace, string podName, int containerPort);
+    PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort);
     string KubeConfigPath { get; set; }
     string Name { get; set; }
     T? GetObject<T>(string @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new();
@@ -37,6 +37,8 @@ public interface ICluster
     bool CanI(Type type, Verb verb, string @namespace = "", string subresource = "");
     Task<ConcurrentObservableDictionary<NamespacedName, T>> GetObjectDictionaryAsync<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
     bool CanIAnyNamespace(Type type, Verb verb, string subresource = "");
+    Task<T?> GetObjectAsync<T>(string @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    PortForwarder AddServicePortForward(string @namespace, string serviceName, int containerPort);
 
     bool ListNamespaces { get; set; }
 }

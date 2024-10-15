@@ -27,7 +27,7 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
         ContentDialogSettings settings = new()
         {
             Title = Resources.PortForwarderListViewModel_Remove_Title,
-            Content = string.Format(Resources.PortForwarderListViewModel_Remove_Content, pf.Namespace, pf.PodName, pf.ContainerPort),
+            Content = string.Format(Resources.PortForwarderListViewModel_Remove_Content, pf.Namespace, pf.Name, pf.Port),
             PrimaryButtonText = Resources.PortForwarderListViewModel_Remove_Primary,
             SecondaryButtonText = Resources.PortForwarderListViewModel_Remove_Secondary,
             DefaultButton = ContentDialogButton.Secondary
