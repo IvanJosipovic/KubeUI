@@ -734,15 +734,15 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 new ResourceListViewDefinitionColumn<V1Secret, string>()
                 {
                     Name = "Labels",
-                    Display = x => x.Metadata.Labels != null ? x.Metadata.Labels.Keys.Aggregate((a,b) => a + ", " + b) : "",
-                    Field = x => x.Metadata.Labels.Keys.FirstOrDefault() ?? "",
+                    Display = x => x.Metadata?.Labels != null ? x.Metadata.Labels.Keys.Aggregate((a,b) => a + ", " + b) : "",
+                    Field = x => x.Metadata?.Labels?.Keys.FirstOrDefault() ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListViewDefinitionColumn<V1Secret, string>()
                 {
                     Name = "Keys",
                     Display = x => x.Data != null ? x.Data.Keys.Aggregate((a,b) => a + ", " + b) : "",
-                    Field = x => x.Data.Keys.FirstOrDefault() ?? "",
+                    Field = x => x.Data?.Keys.FirstOrDefault() ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListViewDefinitionColumn<V1Secret, string>()
@@ -1153,7 +1153,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 new ResourceListViewDefinitionColumn<V1StorageClass, string>()
                 {
                     Name = "Default", // "storageclass.kubernetes.io/is-default-class":"true"
-                    Field = x => x.Metadata.Annotations.ContainsKey("storageclass.kubernetes.io/is-default-class") ?
+                    Field = x => x.Metadata.Annotations?.ContainsKey("storageclass.kubernetes.io/is-default-class") == true ?
                                     x.Metadata.Annotations["storageclass.kubernetes.io/is-default-class"] : "false",
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },

@@ -399,6 +399,10 @@ public readonly struct MyFuncComparer<TObj, TPtop> : IComparer
         {
             return src6.CompareTo(dest6);
         }
+        else if (srcProperty is IntstrIntOrString src7 && destProperty is IntstrIntOrString dest7)
+        {
+            return src7.Value.CompareTo(dest7.Value);
+        }
 
         throw new NotImplementedException();
     }
