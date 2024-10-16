@@ -695,8 +695,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 new ResourceListViewDefinitionColumn<V1CronJob, int>()
                 {
                     Name = "Active",
-                    Display = x => x.Status.Active.Count.ToString(),
-                    Field = x => x.Status.Active.Count,
+                    Display = x => x.Status.Active?.Count.ToString() ?? "",
+                    Field = x => x.Status.Active?.Count ?? 0,
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListViewDefinitionColumn<V1CronJob, DateTime?>()
