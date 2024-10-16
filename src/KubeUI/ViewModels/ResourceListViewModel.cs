@@ -667,8 +667,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 new ResourceListViewDefinitionColumn<V1Job, string>()
                 {
                     Name = "Conditions",
-                    Display = x => x.Status.Conditions.FirstOrDefault(y => y.Status == "True").Type,
-                    Field = x => x.Status.Conditions.First(y => y.Status == "True").Type,
+                    Field = x => x.Status?.Conditions?.FirstOrDefault(y => y.Status == "True")?.Type ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
             ];
@@ -696,8 +695,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 new ResourceListViewDefinitionColumn<V1CronJob, int>()
                 {
                     Name = "Active",
-                    Display = x => x.Status.Active.Count.ToString(),
-                    Field = x => x.Status.Active.Count,
+                    Display = x => x.Status.Active?.Count.ToString() ?? "",
+                    Field = x => x.Status.Active?.Count ?? 0,
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListViewDefinitionColumn<V1CronJob, DateTime?>()
@@ -720,7 +719,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 {
                     Name = "Keys",
                     Display = x => x.Data != null && x.Data.Keys.Count > 0 ? x.Data.Keys.Aggregate((a,b) => a + ", " + b) : "",
-                    Field = x => x.Data.Keys.FirstOrDefault() ?? "",
+                    Field = x => x.Data?.Keys.FirstOrDefault() ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 AgeColumn(),
@@ -735,15 +734,15 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 new ResourceListViewDefinitionColumn<V1Secret, string>()
                 {
                     Name = "Labels",
-                    Display = x => x.Metadata.Labels != null ? x.Metadata.Labels.Keys.Aggregate((a,b) => a + ", " + b) : "",
-                    Field = x => x.Metadata.Labels.Keys.FirstOrDefault() ?? "",
+                    Display = x => x.Metadata?.Labels != null ? x.Metadata.Labels.Keys.Aggregate((a,b) => a + ", " + b) : "",
+                    Field = x => x.Metadata?.Labels?.Keys.FirstOrDefault() ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListViewDefinitionColumn<V1Secret, string>()
                 {
                     Name = "Keys",
                     Display = x => x.Data != null ? x.Data.Keys.Aggregate((a,b) => a + ", " + b) : "",
-                    Field = x => x.Data.Keys.FirstOrDefault() ?? "",
+                    Field = x => x.Data?.Keys.FirstOrDefault() ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListViewDefinitionColumn<V1Secret, string>()
@@ -1154,7 +1153,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 new ResourceListViewDefinitionColumn<V1StorageClass, string>()
                 {
                     Name = "Default", // "storageclass.kubernetes.io/is-default-class":"true"
-                    Field = x => x.Metadata.Annotations.ContainsKey("storageclass.kubernetes.io/is-default-class") ?
+                    Field = x => x.Metadata.Annotations?.ContainsKey("storageclass.kubernetes.io/is-default-class") == true ?
                                     x.Metadata.Annotations["storageclass.kubernetes.io/is-default-class"] : "false",
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },
