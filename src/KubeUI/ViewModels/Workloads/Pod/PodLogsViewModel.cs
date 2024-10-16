@@ -2,6 +2,8 @@
 using k8s.Models;
 using k8s;
 using KubeUI.Client;
+using AvaloniaEdit;
+using System.Reflection;
 
 namespace KubeUI.ViewModels;
 
@@ -32,6 +34,9 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     private bool _wordWrap;
+
+    [ObservableProperty]
+    private Vector _scrollOffset;
 
     private Stream? _stream;
 
@@ -101,6 +106,26 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         if(e.PropertyName?.Equals(nameof(Previous), StringComparison.Ordinal) == true || e.PropertyName?.Equals(nameof(Timestamps), StringComparison.Ordinal) == true)
         {
             await Connect();
+        }
+    }
+
+    public void SetOffset(TextEditor editor)
+    {
+        var sc = editor.GetType().GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(editor) as ScrollViewer;
+
+        if (sc != null)
+        {
+            sc.Offset = ScrollOffset;
+        }
+    }
+
+    public void GetOffset(TextEditor editor)
+    {
+        var sc = editor.GetType().GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(editor) as ScrollViewer;
+
+        if (sc != null)
+        {
+            ScrollOffset = sc.Offset;
         }
     }
 

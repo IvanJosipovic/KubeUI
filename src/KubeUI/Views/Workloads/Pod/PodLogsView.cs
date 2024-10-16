@@ -14,6 +14,8 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
 
     private RegistryOptions _registryOptions;
 
+    private TextEditor _textEditor;
+
     public PodLogsView()
     {
         _registryOptions = new RegistryOptions(Application.Current.ActualThemeVariant == ThemeVariant.Light ? ThemeName.Light : ThemeName.DarkPlus);
@@ -75,10 +77,10 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
                             .Content(new PathIcon() { Data = (Geometry)Application.Current.FindResource("text_wrap_regular") }),
                     ]),
                 new TextEditor()
-                    .Ref(out var editor)
+                    .Ref(out _textEditor)
                     .Row(1)
                     .Set(x => {
-                        _textMateInstallation = editor.InstallTextMate(_registryOptions, false);
+                        _textMateInstallation = _textEditor.InstallTextMate(_registryOptions, false);
 
                         x.Options.AllowScrollBelowDocument = false;
                         x.Options.ShowBoxForControlCharacters = false;
@@ -87,7 +89,7 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
 
                         x.TextChanged += (sender, e) => {
                             if (ViewModel?.AutoScrollToBottom == true)
-                                editor.ScrollToEnd();
+                                _textEditor.ScrollToEnd();
                         };
                     })
                     .Document(@vm.Logs, BindingMode.OneWay)
@@ -103,7 +105,7 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
                     .ContextMenu(new ContextMenu()
                                     .Items([
                                         new MenuItem()
-                                            .OnClick((_) => editor.Copy())
+                                            .OnClick((_) => _textEditor.Copy())
                                             .Header(Assets.Resources.Action_Copy)
                                             .InputGesture(new KeyGesture(Key.C, KeyModifiers.Control))
                                             .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("copy_regular") }),
@@ -112,8 +114,15 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
                 ]);
     }
 
+    protected override void OnLoaded(RoutedEventArgs e)
+    {
+        base.OnLoaded(e);
+        ViewModel.SetOffset(_textEditor);
+    }
+
     protected override void OnUnloaded(RoutedEventArgs e)
     {
+        ViewModel.GetOffset(_textEditor);
         base.OnUnloaded(e);
 
         Application.Current.ActualThemeVariantChanged -= Current_ActualThemeVariantChanged;
