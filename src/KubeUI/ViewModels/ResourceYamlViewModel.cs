@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using System.Reflection;
+using System.Text;
+using AvaloniaEdit;
 using AvaloniaEdit.Document;
 using k8s;
 using k8s.Models;
@@ -25,6 +27,9 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     private bool _wordWrap;
+
+    [ObservableProperty]
+    private Vector _scrollOffset;
 
     public ResourceYamlViewModel()
     {
@@ -134,6 +139,26 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
     private bool CanUndo()
     {
         return YamlDocument?.UndoStack.CanUndo == true;
+    }
+
+    public void SetOffset(TextEditor editor)
+    {
+        var sc = editor.GetType().GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(editor) as ScrollViewer;
+
+        if (sc != null)
+        {
+            sc.Offset = ScrollOffset;
+        }
+    }
+
+    public void GetOffset(TextEditor editor)
+    {
+        var sc = editor.GetType().GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(editor) as ScrollViewer;
+
+        if (sc != null)
+        {
+            ScrollOffset = sc.Offset;
+        }
     }
 
     public void Dispose()
