@@ -1,4 +1,5 @@
-﻿using Avalonia.Controls.Primitives;
+﻿using System.Reflection;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Styling;
@@ -114,15 +115,35 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
                 ]);
     }
 
+    public void SetOffset()
+    {
+        var sc = _textEditor.GetType().GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(_textEditor) as ScrollViewer;
+
+        if (sc != null)
+        {
+            sc.Offset = ViewModel.ScrollOffset;
+        }
+    }
+
+    public void GetOffset()
+    {
+        var sc = _textEditor.GetType().GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(_textEditor) as ScrollViewer;
+
+        if (sc != null)
+        {
+            ViewModel.ScrollOffset = sc.Offset;
+        }
+    }
+
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
-        ViewModel.SetOffset(_textEditor);
+        SetOffset();
     }
 
     protected override void OnUnloaded(RoutedEventArgs e)
     {
-        ViewModel.GetOffset(_textEditor);
+        GetOffset();
         base.OnUnloaded(e);
 
         Application.Current.ActualThemeVariantChanged -= Current_ActualThemeVariantChanged;
