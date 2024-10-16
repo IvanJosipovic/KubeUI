@@ -667,8 +667,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 new ResourceListViewDefinitionColumn<V1Job, string>()
                 {
                     Name = "Conditions",
-                    Display = x => x.Status.Conditions.FirstOrDefault(y => y.Status == "True").Type,
-                    Field = x => x.Status.Conditions.First(y => y.Status == "True").Type,
+                    Field = x => x.Status.Conditions.FirstOrDefault(y => y.Status == "True")?.Type ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
             ];
