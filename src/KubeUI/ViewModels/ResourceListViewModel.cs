@@ -719,7 +719,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 {
                     Name = "Keys",
                     Display = x => x.Data != null && x.Data.Keys.Count > 0 ? x.Data.Keys.Aggregate((a,b) => a + ", " + b) : "",
-                    Field = x => x.Data.Keys.FirstOrDefault() ?? "",
+                    Field = x => x.Data?.Keys.FirstOrDefault() ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 AgeColumn(),
