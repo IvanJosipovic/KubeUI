@@ -1,4 +1,5 @@
-﻿using Avalonia.Controls.Primitives;
+﻿using System.Reflection;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Styling;
@@ -93,12 +94,6 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
                         .Row(1)
                         .Document(@vm.YamlDocument, BindingMode.OneWay)
                         .Set(x => {
-                            _textMateInstallation = x.InstallTextMate(_registryOptions, true);
-                            _textMateInstallation.SetGrammar(_registryOptions.GetScopeByLanguageId(_registryOptions.GetLanguageByExtension(".yaml").Id));
-
-                            _foldingManager = FoldingManager.Install(_textEditor.TextArea);
-                            YamlFoldingStrategy.UpdateFoldings(_foldingManager, _textEditor.Document);
-
                             x.Options.AllowScrollBelowDocument = false;
                             x.Options.ShowBoxForControlCharacters = false;
                             x.Options.EnableHyperlinks = false;
@@ -168,15 +163,69 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
                 ]);
     }
 
+    public void SetOffset()
+    {
+        var sc = _textEditor.GetType().GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(_textEditor) as ScrollViewer;
+
+        if (sc != null)
+        {
+            sc.Offset = ViewModel.ScrollOffset;
+        }
+
+        ViewModel.AllFoldings = _foldingManager.AllFoldings;
+    }
+
+    public void GetOffset()
+    {
+        var sc = _textEditor.GetType().GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(_textEditor) as ScrollViewer;
+
+        if (sc != null)
+        {
+            ViewModel.ScrollOffset = sc.Offset;
+        }
+    }
+
     protected override void OnLoaded(RoutedEventArgs e)
     {
+        _textMateInstallation = _textEditor.InstallTextMate(_registryOptions, true);
+        _textMateInstallation.SetGrammar(_registryOptions.GetScopeByLanguageId(_registryOptions.GetLanguageByExtension(".yaml").Id));
+
+        _foldingManager = FoldingManager.Install(_textEditor.TextArea);
+
+        if (ViewModel.AllFoldings != null)
+        {
+            _foldingManager.UpdateFoldings(ConvertFolding(ViewModel.AllFoldings), -1);
+        }
+
+        YamlFoldingStrategy.UpdateFoldings(_foldingManager, _textEditor.Document);
+
         base.OnLoaded(e);
-        ViewModel.SetOffset(_textEditor);
+        SetOffset();
+    }
+
+    private IEnumerable<NewFolding> ConvertFolding(IEnumerable<FoldingSection> foldingSections)
+    {
+        var newFoldings = new List<NewFolding>();
+
+        foreach (var foldingSection in foldingSections)
+        {
+            var newFolding = new NewFolding
+            {
+                StartOffset = foldingSection.StartOffset,
+                EndOffset = foldingSection.EndOffset,
+                DefaultClosed = foldingSection.IsFolded,
+                Name = foldingSection.Title,
+            };
+
+            newFoldings.Add(newFolding);
+        }
+
+        return newFoldings;
     }
 
     protected override void OnUnloaded(RoutedEventArgs e)
     {
-        ViewModel.GetOffset(_textEditor);
+        GetOffset();
         base.OnUnloaded(e);
 
         Application.Current.ActualThemeVariantChanged -= Current_ActualThemeVariantChanged;
@@ -191,7 +240,6 @@ file static class YamlFoldingStrategy
     public static void UpdateFoldings(FoldingManager manager, TextDocument document)
     {
         var newFoldings = CreateNewFoldings(document, out var firstErrorOffset);
-        manager.Clear();
         manager.UpdateFoldings(newFoldings, firstErrorOffset);
     }
 

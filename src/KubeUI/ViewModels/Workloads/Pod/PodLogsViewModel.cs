@@ -109,7 +109,6 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         }
     }
 
-
     public void Dispose()
     {
         _isConnected = false;

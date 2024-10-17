@@ -2,6 +2,7 @@
 using System.Text;
 using AvaloniaEdit;
 using AvaloniaEdit.Document;
+using AvaloniaEdit.Folding;
 using k8s;
 using k8s.Models;
 using KubeUI.Client;
@@ -30,6 +31,9 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     private Vector _scrollOffset;
+
+    [ObservableProperty]
+    private IEnumerable<FoldingSection> _allFoldings;
 
     public ResourceYamlViewModel()
     {
@@ -139,26 +143,6 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
     private bool CanUndo()
     {
         return YamlDocument?.UndoStack.CanUndo == true;
-    }
-
-    public void SetOffset(TextEditor editor)
-    {
-        var sc = editor.GetType().GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(editor) as ScrollViewer;
-
-        if (sc != null)
-        {
-            sc.Offset = ScrollOffset;
-        }
-    }
-
-    public void GetOffset(TextEditor editor)
-    {
-        var sc = editor.GetType().GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(editor) as ScrollViewer;
-
-        if (sc != null)
-        {
-            ScrollOffset = sc.Offset;
-        }
     }
 
     public void Dispose()
