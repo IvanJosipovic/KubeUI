@@ -1,4 +1,5 @@
-﻿using Avalonia.Controls.Primitives;
+﻿using System.Reflection;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Styling;
@@ -13,6 +14,8 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
     private Installation _textMateInstallation;
 
     private RegistryOptions _registryOptions;
+
+    private TextEditor _textEditor;
 
     public PodLogsView()
     {
@@ -75,10 +78,10 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
                             .Content(new PathIcon() { Data = (Geometry)Application.Current.FindResource("text_wrap_regular") }),
                     ]),
                 new TextEditor()
-                    .Ref(out var editor)
+                    .Ref(out _textEditor)
                     .Row(1)
                     .Set(x => {
-                        _textMateInstallation = editor.InstallTextMate(_registryOptions, false);
+                        _textMateInstallation = _textEditor.InstallTextMate(_registryOptions, false);
 
                         x.Options.AllowScrollBelowDocument = false;
                         x.Options.ShowBoxForControlCharacters = false;
@@ -87,7 +90,7 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
 
                         x.TextChanged += (sender, e) => {
                             if (ViewModel?.AutoScrollToBottom == true)
-                                editor.ScrollToEnd();
+                                _textEditor.ScrollToEnd();
                         };
                     })
                     .Document(@vm.Logs, BindingMode.OneWay)
@@ -103,7 +106,7 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
                     .ContextMenu(new ContextMenu()
                                     .Items([
                                         new MenuItem()
-                                            .OnClick((_) => editor.Copy())
+                                            .OnClick((_) => _textEditor.Copy())
                                             .Header(Assets.Resources.Action_Copy)
                                             .InputGesture(new KeyGesture(Key.C, KeyModifiers.Control))
                                             .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("copy_regular") }),
@@ -112,8 +115,35 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
                 ]);
     }
 
+    public void SetOffset()
+    {
+        var sc = _textEditor.GetType().GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(_textEditor) as ScrollViewer;
+
+        if (sc != null)
+        {
+            sc.Offset = ViewModel.ScrollOffset;
+        }
+    }
+
+    public void GetOffset()
+    {
+        var sc = _textEditor.GetType().GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(_textEditor) as ScrollViewer;
+
+        if (sc != null)
+        {
+            ViewModel.ScrollOffset = sc.Offset;
+        }
+    }
+
+    protected override void OnLoaded(RoutedEventArgs e)
+    {
+        base.OnLoaded(e);
+        SetOffset();
+    }
+
     protected override void OnUnloaded(RoutedEventArgs e)
     {
+        GetOffset();
         base.OnUnloaded(e);
 
         Application.Current.ActualThemeVariantChanged -= Current_ActualThemeVariantChanged;

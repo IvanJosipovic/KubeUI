@@ -1,4 +1,5 @@
-﻿using Avalonia.Controls.Primitives;
+﻿using System.Reflection;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Styling;
@@ -18,6 +19,8 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
     private RegistryOptions _registryOptions;
 
     private FoldingManager _foldingManager;
+
+    private TextEditor _textEditor;
 
     public ResourceYamlView()
     {
@@ -87,14 +90,10 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
                         ]),
 
                     new TextEditor()
-                        .Ref(out var editor)
+                        .Ref(out _textEditor)
                         .Row(1)
                         .Document(@vm.YamlDocument, BindingMode.OneWay)
                         .Set(x => {
-                            _textMateInstallation = x.InstallTextMate(_registryOptions, true);
-                            _textMateInstallation.SetGrammar(_registryOptions.GetScopeByLanguageId(_registryOptions.GetLanguageByExtension(".yaml").Id));
-                            _foldingManager = FoldingManager.Install(editor.TextArea);
-                            YamlFoldingStrategy.UpdateFoldings(_foldingManager, editor.Document);
                             x.Options.AllowScrollBelowDocument = false;
                             x.Options.ShowBoxForControlCharacters = false;
                             x.Options.EnableHyperlinks = false;
@@ -107,7 +106,7 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
                             }
                         ])
                         .OnTextChanged((x) => {
-                            YamlFoldingStrategy.UpdateFoldings(_foldingManager, editor.Document);
+                            YamlFoldingStrategy.UpdateFoldings(_foldingManager, _textEditor.Document);
                         })
                         .FontFamily(new FontFamily("Consolas,Menlo,Monospace"))
                         .FontSize(14.0)
@@ -121,24 +120,24 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
                         .ContextMenu(new ContextMenu()
                                         .Items([
                                             new MenuItem()
-                                                .OnClick((x) => editor.Cut())
+                                                .OnClick((x) => _textEditor.Cut())
                                                 .Header(Assets.Resources.Action_Cut)
                                                 .InputGesture(new KeyGesture(Key.X, KeyModifiers.Control))
                                                 .IsVisible(@vm.EditMode)
                                                 .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("cut_regular") }),
                                             new MenuItem()
-                                                .OnClick((x) => editor.Copy())
+                                                .OnClick((x) => _textEditor.Copy())
                                                 .Header(Assets.Resources.Action_Copy)
                                                 .InputGesture(new KeyGesture(Key.C, KeyModifiers.Control))
                                                 .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("copy_regular") }),
                                             new MenuItem()
-                                                .OnClick((x) => editor.Paste())
+                                                .OnClick((x) => _textEditor.Paste())
                                                 .Header(Assets.Resources.Action_Paste)
                                                 .InputGesture(new KeyGesture(Key.V, KeyModifiers.Control))
                                                 .IsVisible(@vm.EditMode)
                                                 .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("clipboard_paste_regular") }),
                                             new MenuItem()
-                                                .OnClick((x) => editor.Delete())
+                                                .OnClick((x) => _textEditor.Delete())
                                                 .Header(Assets.Resources.Action_Delete)
                                                 .InputGesture(new KeyGesture(Key.Back))
                                                 .IsVisible(@vm.EditMode)
@@ -148,13 +147,13 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
                                                 .IsVisible(@vm.EditMode),
 
                                             new MenuItem()
-                                                .OnClick((x) => editor.Undo())
+                                                .OnClick((x) => _textEditor.Undo())
                                                 .Header(Assets.Resources.Action_Undo)
                                                 .InputGesture(new KeyGesture(Key.Z, KeyModifiers.Control))
                                                 .IsVisible(@vm.EditMode)
                                                 .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("arrow_undo_regular") }),
                                             new MenuItem()
-                                                .OnClick((x) => editor.Redo())
+                                                .OnClick((x) => _textEditor.Redo())
                                                 .Header(Assets.Resources.Action_Redo)
                                                 .InputGesture(new KeyGesture(Key.Y, KeyModifiers.Control))
                                                 .IsVisible(@vm.EditMode)
@@ -164,8 +163,69 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
                 ]);
     }
 
+    public void SetOffset()
+    {
+        var sc = _textEditor.GetType().GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(_textEditor) as ScrollViewer;
+
+        if (sc != null)
+        {
+            sc.Offset = ViewModel.ScrollOffset;
+        }
+
+        ViewModel.AllFoldings = _foldingManager.AllFoldings;
+    }
+
+    public void GetOffset()
+    {
+        var sc = _textEditor.GetType().GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(_textEditor) as ScrollViewer;
+
+        if (sc != null)
+        {
+            ViewModel.ScrollOffset = sc.Offset;
+        }
+    }
+
+    protected override void OnLoaded(RoutedEventArgs e)
+    {
+        _textMateInstallation = _textEditor.InstallTextMate(_registryOptions, true);
+        _textMateInstallation.SetGrammar(_registryOptions.GetScopeByLanguageId(_registryOptions.GetLanguageByExtension(".yaml").Id));
+
+        _foldingManager = FoldingManager.Install(_textEditor.TextArea);
+
+        if (ViewModel.AllFoldings != null)
+        {
+            _foldingManager.UpdateFoldings(ConvertFolding(ViewModel.AllFoldings), -1);
+        }
+
+        YamlFoldingStrategy.UpdateFoldings(_foldingManager, _textEditor.Document);
+
+        base.OnLoaded(e);
+        SetOffset();
+    }
+
+    private IEnumerable<NewFolding> ConvertFolding(IEnumerable<FoldingSection> foldingSections)
+    {
+        var newFoldings = new List<NewFolding>();
+
+        foreach (var foldingSection in foldingSections)
+        {
+            var newFolding = new NewFolding
+            {
+                StartOffset = foldingSection.StartOffset,
+                EndOffset = foldingSection.EndOffset,
+                DefaultClosed = foldingSection.IsFolded,
+                Name = foldingSection.Title,
+            };
+
+            newFoldings.Add(newFolding);
+        }
+
+        return newFoldings;
+    }
+
     protected override void OnUnloaded(RoutedEventArgs e)
     {
+        GetOffset();
         base.OnUnloaded(e);
 
         Application.Current.ActualThemeVariantChanged -= Current_ActualThemeVariantChanged;
@@ -180,7 +240,6 @@ file static class YamlFoldingStrategy
     public static void UpdateFoldings(FoldingManager manager, TextDocument document)
     {
         var newFoldings = CreateNewFoldings(document, out var firstErrorOffset);
-        manager.Clear();
         manager.UpdateFoldings(newFoldings, firstErrorOffset);
     }
 

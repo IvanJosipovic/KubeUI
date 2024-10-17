@@ -1,5 +1,8 @@
-﻿using System.Text;
+﻿using System.Reflection;
+using System.Text;
+using AvaloniaEdit;
 using AvaloniaEdit.Document;
+using AvaloniaEdit.Folding;
 using k8s;
 using k8s.Models;
 using KubeUI.Client;
@@ -25,6 +28,12 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     private bool _wordWrap;
+
+    [ObservableProperty]
+    private Vector _scrollOffset;
+
+    [ObservableProperty]
+    private IEnumerable<FoldingSection> _allFoldings;
 
     public ResourceYamlViewModel()
     {
