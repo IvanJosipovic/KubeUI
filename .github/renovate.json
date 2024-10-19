@@ -70,6 +70,15 @@
         "meziantou.analyzer",
         "roslynator.analyzers"
       ]
+    },
+    {
+      "groupName": "TextMateSharp",
+      "separateMajorMinor": true,
+      "groupSlug": "textmatesharp",
+      "matchPackageNames": [
+        "TextMateSharp"
+        "TextMateSharp.*"
+      ]
     }
   ]
 }
