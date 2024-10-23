@@ -1523,12 +1523,21 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         }
         else
         {
+            Expression bodyAsString;
+
             // Convert the body of the original expression to return a string
-            var bodyAsString = Expression.Condition(
-                Expression.Equal(expression, Expression.Constant(null, expression.Type)),
-                Expression.Constant(string.Empty),
-                Expression.Call(expression, nameof(object.ToString), Type.EmptyTypes)
-            );
+            if (Nullable.GetUnderlyingType(expression.Type) != null)
+            {
+                bodyAsString = Expression.Condition(
+                    Expression.Equal(expression, Expression.Constant(null, expression.Type)),
+                    Expression.Constant(string.Empty),
+                    Expression.Call(expression, nameof(object.ToString), Type.EmptyTypes)
+                );
+            }
+            else
+            {
+                bodyAsString = Expression.Call(expression, nameof(object.ToString), Type.EmptyTypes);
+            }
 
             // Create a new lambda expression
             return Expression.Lambda<Func<T, string>>(bodyAsString, parameters);
