@@ -26,8 +26,8 @@
     <PackageReference Include="Irihi.Ursa" Version="1.4.0" />
     <PackageReference Include="Irihi.Ursa.Themes.Semi" Version="1.4.0" />
     <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.0.0-rc4.5" />
-    <PackageReference Include="NodeEditorAvalonia" Version="11.1.0" />
-    <PackageReference Include="NodeEditorAvalonia.Mvvm" Version="11.1.0" />
+    <PackageReference Include="NodeEditorAvalonia" Version="11.2.0" />
+    <PackageReference Include="NodeEditorAvalonia.Mvvm" Version="11.2.0" />
     <PackageReference Include="Semi.Avalonia" Version="11.1.0.4" />
     <PackageReference Include="System.Text.Json" Version=" 9.0.0-rc.2.24473.5" />
 
