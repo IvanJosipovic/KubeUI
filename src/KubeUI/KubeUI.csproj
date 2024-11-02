@@ -64,7 +64,7 @@
     <PackageReference Include="Swordfish.NET.CollectionsV3" Version="3.3.12" />
     <PackageReference Include="TextMateSharp" Version="1.0.64" />
     <PackageReference Include="TextMateSharp.Grammars" Version="1.0.64" />
-    <PackageReference Include="Velopack" Version="0.0.626" />
+    <PackageReference Include="Velopack" Version="0.0.869" />
     <PackageReference Include="YamlDotNet.System.Text.Json" Version="1.6.2" />
   </ItemGroup>
 
