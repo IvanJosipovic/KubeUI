@@ -302,7 +302,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 new ResourceListViewDefinitionColumn<Corev1Event, string>()
                 {
                     Name = "Involved Object",
-                    Field = x => x.InvolvedObject.Name,
+                    Field = x => x?.InvolvedObject?.Name ?? "",
                     Width = "*"
                 },
                 new ResourceListViewDefinitionColumn<Corev1Event, string>()
