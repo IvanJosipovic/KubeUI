@@ -82,7 +82,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _filter = Objects.ToObservableChangeSet<ConcurrentObservableDictionary<NamespacedName, T>, KeyValuePair<NamespacedName, T>>()
             .Filter(GenerateFilter())
             .Bind(out var filteredObjects)
-            .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Set Namespace Filter: {ns}", nameof(T)));
+            .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Set Namespace Filter: {ns}", typeof(T)));
 
         DataGridObjects = filteredObjects;
     }
@@ -326,7 +326,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 new ResourceListViewDefinitionColumn<Corev1Event, string>()
                 {
                     Name = "Source",
-                    Field = x => x.Source.Component ?? "",
+                    Field = x => x?.Source?.Component ?? "",
                     Width = "*"
                 },
                 new ResourceListViewDefinitionColumn<Corev1Event, int>()
