@@ -375,4 +375,16 @@ Are you sure?</value>
   <data name="ResourceListViewModel_UnCordonNode_Title" xml:space="preserve">
     <value>Warning</value>
   </data>
+  <data name="ResourceListViewModel_DrainNode_Content" xml:space="preserve">
+    <value>Drain Nodes {0}</value>
+  </data>
+  <data name="ResourceListViewModel_DrainNode_Title" xml:space="preserve">
+    <value>Warning</value>
+  </data>
+  <data name="ResourceListViewModel_DrainNode_Secondary" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="ResourceListViewModel_DrainNode_Primary" xml:space="preserve">
+    <value>Yes</value>
+  </data>
 </root>

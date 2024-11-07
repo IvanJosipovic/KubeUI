@@ -276,6 +276,13 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                     CommandPath = nameof(ResourceListViewModel<V1Pod>.UnCordonNodeCommand),
                     CommandParameterPath = "SelectedItems",
                 },
+                new()
+                {
+                    Header = "Drain",
+                    IconResource = "stop_regular",
+                    CommandPath = nameof(ResourceListViewModel<V1Pod>.DrainNodeCommand),
+                    CommandParameterPath = "SelectedItems",
+                },
             ];
         }
         else if (resourceType == typeof(V1Namespace))
@@ -2052,6 +2059,71 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     }
 
     private bool CanUnCordonNode(IList items)
+    {
+        return Cluster.CanI<V1Node>(Verb.Patch);
+    }
+
+
+    [RelayCommand(CanExecute = nameof(CanCordonNode))]
+    private async Task DrainNode(IList items)
+    {
+        ContentDialogSettings settings = new()
+        {
+            Title = Resources.ResourceListViewModel_DrainNode_Title,
+            Content = string.Format(Resources.ResourceListViewModel_DrainNode_Content, items.Count),
+            PrimaryButtonText = Resources.ResourceListViewModel_DrainNode_Primary,
+            SecondaryButtonText = Resources.ResourceListViewModel_DrainNode_Secondary,
+            DefaultButton = ContentDialogButton.Secondary
+        };
+
+        var result = await _dialogService.ShowContentDialogAsync(this, settings);
+
+        var patch = $$"""
+        {
+            "spec": {
+                "{{nameof(V1NodeSpec.Unschedulable)}}": true
+            }
+        }
+        """;
+
+        if (result == ContentDialogResult.Primary)
+        {
+            foreach (var item in items.Cast<KeyValuePair<NamespacedName, V1Node>>().ToList())
+            {
+                try
+                {
+                    await Cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Key.Name, item.Key.Namespace);
+
+                    var pods = await Cluster.GetObjectDictionaryAsync<V1Pod>();
+
+                    foreach (var pod in pods)
+                    {
+                        if (pod.Value.Spec.NodeName == item.Value.Metadata.Name)
+                        {
+                            V1Eviction evict = new()
+                            {
+                                ApiVersion = V1Eviction.KubeGroup + "/" + V1Eviction.KubeApiVersion,
+                                Kind = V1Eviction.KubeKind,
+                                Metadata = new()
+                                {
+                                    Name = pod.Value.Metadata.Name,
+                                    NamespaceProperty = pod.Value.Metadata.NamespaceProperty
+                                }
+                            };
+
+                            evict = await Cluster.Client.CoreV1.CreateNamespacedPodEvictionAsync(evict, pod.Value.Metadata.Name, pod.Value.Metadata.NamespaceProperty);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error Draining Node");
+                }
+            }
+        }
+    }
+
+    private bool CanDrainNode(IList items)
     {
         return Cluster.CanI<V1Node>(Verb.Patch);
     }

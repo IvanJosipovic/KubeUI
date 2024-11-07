@@ -630,6 +630,42 @@ namespace KubeUI.Assets {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Drain Nodes {0}.
+        /// </summary>
+        public static string ResourceListViewModel_DrainNode_Content {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_DrainNode_Content", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Yes.
+        /// </summary>
+        public static string ResourceListViewModel_DrainNode_Primary {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_DrainNode_Primary", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No.
+        /// </summary>
+        public static string ResourceListViewModel_DrainNode_Secondary {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_DrainNode_Secondary", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Warning.
+        /// </summary>
+        public static string ResourceListViewModel_DrainNode_Title {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_DrainNode_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Port {0} was forwarded to {1}..
         /// </summary>
         public static string ResourceListViewModel_PortForward_Content {
