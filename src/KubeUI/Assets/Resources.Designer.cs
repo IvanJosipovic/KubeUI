@@ -557,6 +557,42 @@ namespace KubeUI.Assets {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Cordon Nodes {0}.
+        /// </summary>
+        public static string ResourceListViewModel_CordonNode_Content {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_CordonNode_Content", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Yes.
+        /// </summary>
+        public static string ResourceListViewModel_CordonNode_Primary {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_CordonNode_Primary", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No.
+        /// </summary>
+        public static string ResourceListViewModel_CordonNode_Secondary {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_CordonNode_Secondary", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Warning.
+        /// </summary>
+        public static string ResourceListViewModel_CordonNode_Title {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_CordonNode_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to This will delete {0} items.
         ///Are you sure?.
         /// </summary>
@@ -630,7 +666,8 @@ namespace KubeUI.Assets {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to test.
+        ///   Looks up a localized string similar to This will restart {0}.
+        ///Are you sure?.
         /// </summary>
         public static string ResourceListViewModel_Restart_Content {
             get {
@@ -639,7 +676,7 @@ namespace KubeUI.Assets {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to OK.
+        ///   Looks up a localized string similar to Yes.
         /// </summary>
         public static string ResourceListViewModel_Restart_Primary {
             get {
@@ -657,11 +694,47 @@ namespace KubeUI.Assets {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Restart.
+        ///   Looks up a localized string similar to Restart Workload?.
         /// </summary>
         public static string ResourceListViewModel_Restart_Title {
             get {
                 return ResourceManager.GetString("ResourceListViewModel_Restart_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to UnCordon Nodes {0}.
+        /// </summary>
+        public static string ResourceListViewModel_UnCordonNode_Content {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_UnCordonNode_Content", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Yes.
+        /// </summary>
+        public static string ResourceListViewModel_UnCordonNode_Primary {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_UnCordonNode_Primary", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No.
+        /// </summary>
+        public static string ResourceListViewModel_UnCordonNode_Secondary {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_UnCordonNode_Secondary", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Warning.
+        /// </summary>
+        public static string ResourceListViewModel_UnCordonNode_Title {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_UnCordonNode_Title", resourceCulture);
             }
         }
         

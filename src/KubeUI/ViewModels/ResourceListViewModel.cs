@@ -82,7 +82,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _filter = Objects.ToObservableChangeSet<ConcurrentObservableDictionary<NamespacedName, T>, KeyValuePair<NamespacedName, T>>()
             .Filter(GenerateFilter())
             .Bind(out var filteredObjects)
-            .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Set Namespace Filter"));
+            .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Set Namespace Filter: {ns}", nameof(T)));
 
         DataGridObjects = filteredObjects;
     }
@@ -258,6 +258,24 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },
                 AgeColumn(),
+            ];
+
+            definition.MenuItems =
+            [
+                new()
+                {
+                    Header = "Cordon Node(s)",
+                    IconResource = "stop_regular",
+                    CommandPath = nameof(ResourceListViewModel<V1Pod>.CordonNodeCommand),
+                    CommandParameterPath = "SelectedItems",
+                },
+                new()
+                {
+                    Header = "UnCordon Node(s)",
+                    IconResource = "play_regular",
+                    CommandPath = nameof(ResourceListViewModel<V1Pod>.UnCordonNodeCommand),
+                    CommandParameterPath = "SelectedItems",
+                },
             ];
         }
         else if (resourceType == typeof(V1Namespace))
@@ -1813,13 +1831,13 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     private static readonly string s_restartControllerPatch = $$"""
     {
         "spec": {
-        "template": {
-            "metadata": {
-            "annotations": {
-                "kubectl.kubernetes.io/restartedAt": "{{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}}"
+            "template": {
+                "metadata": {
+                    "annotations": {
+                        "kubectl.kubernetes.io/restartedAt": "{{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}}"
+                    }
+                }
             }
-            }
-        }
         }
     }
     """;
@@ -1950,6 +1968,92 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     private bool CanRestartDaemonSet(V1DaemonSet daemonSet)
     {
         return daemonSet != null && Cluster.CanI<V1DaemonSet>(Verb.Patch, daemonSet.Namespace());
+    }
+
+    [RelayCommand(CanExecute = nameof(CanCordonNode))]
+    private async Task CordonNode(IList items)
+    {
+        ContentDialogSettings settings = new()
+        {
+            Title = Resources.ResourceListViewModel_CordonNode_Title,
+            Content = string.Format(Resources.ResourceListViewModel_CordonNode_Content, items.Count),
+            PrimaryButtonText = Resources.ResourceListViewModel_CordonNode_Primary,
+            SecondaryButtonText = Resources.ResourceListViewModel_CordonNode_Secondary,
+            DefaultButton = ContentDialogButton.Secondary
+        };
+
+        var result = await _dialogService.ShowContentDialogAsync(this, settings);
+
+        var patch = $$"""
+        {
+            "spec": {
+                "{{nameof(V1NodeSpec.Unschedulable)}}": true
+            }
+        }
+        """;
+
+        if (result == ContentDialogResult.Primary)
+        {
+            foreach (var item in items.Cast<KeyValuePair<NamespacedName, V1Node>>().ToList())
+            {
+                try
+                {
+                    await Cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Key.Name, item.Key.Namespace);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error Cordoning Node");
+                }
+            }
+        }
+    }
+
+    private bool CanCordonNode(IList items)
+    {
+        return Cluster.CanI<V1Node>(Verb.Patch);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanUnCordonNode))]
+    private async Task UnCordonNode(IList items)
+    {
+        ContentDialogSettings settings = new()
+        {
+            Title = Resources.ResourceListViewModel_UnCordonNode_Title,
+            Content = string.Format(Resources.ResourceListViewModel_UnCordonNode_Content, items.Count),
+            PrimaryButtonText = Resources.ResourceListViewModel_UnCordonNode_Primary,
+            SecondaryButtonText = Resources.ResourceListViewModel_UnCordonNode_Secondary,
+            DefaultButton = ContentDialogButton.Secondary
+        };
+
+        var result = await _dialogService.ShowContentDialogAsync(this, settings);
+
+        var patch = $$"""
+        {
+            "spec": {
+                "{{nameof(V1NodeSpec.Unschedulable)}}": false
+            }
+        }
+        """;
+
+        if (result == ContentDialogResult.Primary)
+        {
+            foreach (var item in items.Cast<KeyValuePair<NamespacedName, V1Node>>().ToList())
+            {
+                try
+                {
+                    await Cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Key.Name, item.Key.Namespace);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error UnCordoning Node");
+                }
+            }
+        }
+    }
+
+    private bool CanUnCordonNode(IList items)
+    {
+        return Cluster.CanI<V1Node>(Verb.Patch);
     }
 
     #endregion

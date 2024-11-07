@@ -351,4 +351,28 @@ Are you sure?</value>
   <data name="ResourceListViewModel_Restart_Secondary" xml:space="preserve">
     <value>No</value>
   </data>
+  <data name="ResourceListViewModel_CordonNode_Title" xml:space="preserve">
+    <value>Warning</value>
+  </data>
+  <data name="ResourceListViewModel_CordonNode_Content" xml:space="preserve">
+    <value>Cordon Nodes {0}</value>
+  </data>
+  <data name="ResourceListViewModel_CordonNode_Primary" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="ResourceListViewModel_CordonNode_Secondary" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="ResourceListViewModel_UnCordonNode_Content" xml:space="preserve">
+    <value>UnCordon Nodes {0}</value>
+  </data>
+  <data name="ResourceListViewModel_UnCordonNode_Primary" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="ResourceListViewModel_UnCordonNode_Secondary" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="ResourceListViewModel_UnCordonNode_Title" xml:space="preserve">
+    <value>Warning</value>
+  </data>
 </root>
