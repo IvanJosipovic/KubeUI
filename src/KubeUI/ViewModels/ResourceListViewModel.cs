@@ -2111,7 +2111,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                                 }
                             };
 
-                            evict = await Cluster.Client.CoreV1.CreateNamespacedPodEvictionAsync(evict, pod.Value.Metadata.Name, pod.Value.Metadata.NamespaceProperty);
+                            await Cluster.Client.CoreV1.CreateNamespacedPodEvictionAsync(evict, pod.Value.Metadata.Name, pod.Value.Metadata.NamespaceProperty);
                         }
                     }
                 }
