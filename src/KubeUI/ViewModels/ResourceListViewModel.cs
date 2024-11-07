@@ -264,14 +264,14 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             [
                 new()
                 {
-                    Header = "Cordon Node(s)",
+                    Header = "Cordon",
                     IconResource = "stop_regular",
                     CommandPath = nameof(ResourceListViewModel<V1Pod>.CordonNodeCommand),
                     CommandParameterPath = "SelectedItems",
                 },
                 new()
                 {
-                    Header = "UnCordon Node(s)",
+                    Header = "UnCordon",
                     IconResource = "play_regular",
                     CommandPath = nameof(ResourceListViewModel<V1Pod>.UnCordonNodeCommand),
                     CommandParameterPath = "SelectedItems",
@@ -307,13 +307,13 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 new ResourceListViewDefinitionColumn<Corev1Event, string>()
                 {
                     Name = "Type",
-                    Field = x => x.Type,
+                    Field = x => x?.Type ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },
                 new ResourceListViewDefinitionColumn<Corev1Event, string>()
                 {
                     Name = "Message",
-                    Field = x => x.Message,
+                    Field = x => x?.Message ?? "",
                     Width = "4*"
                 },
                 NamespaceColumn(),
