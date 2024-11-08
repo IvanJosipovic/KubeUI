@@ -227,6 +227,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         {
             NavigationItems.Add(new ResourceNavigationLink() { Name = "Nodes", ControlType = typeof(V1Node), Cluster = this });
             await UpdateCanIAnyNamespaceAsync<V1Node>(Verb.Patch);
+            await UpdateCanIAnyNamespaceAsync<V1Pod>(Verb.Create, "eviction");
         }
         if (ListNamespaces)
         {

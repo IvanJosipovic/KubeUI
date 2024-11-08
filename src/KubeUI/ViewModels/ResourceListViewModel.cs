@@ -1994,7 +1994,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         var patch = $$"""
         {
             "spec": {
-                "{{nameof(V1NodeSpec.Unschedulable)}}": true
+                "unschedulable": true
             }
         }
         """;
@@ -2037,7 +2037,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         var patch = $$"""
         {
             "spec": {
-                "{{nameof(V1NodeSpec.Unschedulable)}}": false
+                "unschedulable": false
             }
         }
         """;
@@ -2081,7 +2081,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         var patch = $$"""
         {
             "spec": {
-                "{{nameof(V1NodeSpec.Unschedulable)}}": true
+                "unschedulable": true
             }
         }
         """;
@@ -2111,7 +2111,14 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                                 }
                             };
 
-                            await Cluster.Client.CoreV1.CreateNamespacedPodEvictionAsync(evict, pod.Value.Metadata.Name, pod.Value.Metadata.NamespaceProperty);
+                            try
+                            {
+                                await Cluster.Client.CoreV1.CreateNamespacedPodEvictionAsync(evict, pod.Value.Metadata.Name, pod.Value.Metadata.NamespaceProperty);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "Error Evicting Pod");
+                            }
                         }
                     }
                 }

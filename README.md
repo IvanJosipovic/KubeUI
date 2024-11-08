@@ -20,6 +20,9 @@ KubeUI is a user interface for Kubernetes.
   - Namespace specific Resource Permissions
 
 ### Resource Specific Features
+- Node
+  - Codon/UnCordon
+  - Drain
 - Pod
   - View Logs
   - View Console
