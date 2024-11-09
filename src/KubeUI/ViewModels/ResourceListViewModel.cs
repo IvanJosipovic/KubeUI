@@ -247,12 +247,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 },
                 new ResourceListViewDefinitionColumn<V1Node, string>()
                 {
-                    Name = "Roles",
-                    Field = x => x.Metadata.Annotations.Any(x => x.Key.StartsWith("node-role.kubernetes.io/")) ? x.Metadata.Annotations.Where(x => x.Key.StartsWith("node-role.kubernetes.io/")).Select(x => x.Value).Aggregate((x,y) => x + ", " + y) : "",
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
-                },
-                new ResourceListViewDefinitionColumn<V1Node, string>()
-                {
                     Name = "Version",
                     Field = x => x.Status.NodeInfo.KubeletVersion,
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
@@ -285,7 +279,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 new()
                 {
                     Header = "Drain",
-                    IconResource = "stop_regular",
+                    IconResource = "arrow_sync_regular",
                     CommandPath = nameof(ResourceListViewModel<V1Pod>.DrainNodeCommand),
                     CommandParameterPath = "SelectedItems",
                 },
