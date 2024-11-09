@@ -3,6 +3,8 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using Avalonia.Controls;
+using Avalonia.Controls.Notifications;
 using Avalonia.Data.Converters;
 using Avalonia.Styling;
 using Dock.Model.Core;
@@ -26,6 +28,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 {
     private readonly ILogger<ResourceListViewModel<T>> _logger;
     private readonly IDialogService _dialogService;
+
+    private WindowNotificationManager? _manager;
 
     [ObservableProperty]
     private ICluster _cluster;
@@ -57,6 +61,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     {
         _logger = Application.Current.GetRequiredService<ILogger<ResourceListViewModel<T>>>();
         _dialogService = Application.Current.GetRequiredService<IDialogService>();
+
+        _manager = new WindowNotificationManager(App.TopLevel) { MaxItems = 3 };
     }
 
     public void Initialize(ICluster cluster)
@@ -2009,7 +2015,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error Cordoning Node");
+                    _manager?.Show(new Notification("Error", "Error Cordoning Node: " + ex.Message, NotificationType.Error));
+
+                    _logger.LogInformation(ex, "Error Cordoning Node");
                 }
             }
         }
@@ -2062,7 +2070,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     {
         return Cluster.CanI<V1Node>(Verb.Patch);
     }
-
 
     [RelayCommand(CanExecute = nameof(CanCordonNode))]
     private async Task DrainNode(IList items)
@@ -2117,14 +2124,18 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                             }
                             catch (Exception ex)
                             {
-                                _logger.LogWarning(ex, "Error Evicting Pod");
+                                _manager?.Show(new Notification("Error", "Error Evicting Pod: " + ex.Message, NotificationType.Warning));
+
+                                _logger.LogInformation(ex, "Error Evicting Pod");
                             }
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error Draining Node");
+                    _manager?.Show(new Notification("Error", "Error Draining Node: " + ex.Message, NotificationType.Error));
+
+                    _logger.LogInformation(ex, "Error Draining Node");
                 }
             }
         }
