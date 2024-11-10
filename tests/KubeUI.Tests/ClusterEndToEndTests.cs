@@ -527,7 +527,7 @@ rules:
   apiGroups:
     - ''
   resources:
-    - service/portforward
+    - services/proxy
 
 - verbs:
     - delete
@@ -709,7 +709,7 @@ rules:
   apiGroups:
     - ''
   resources:
-    - service/portforward
+    - services/proxy
 
 - verbs:
     - delete
