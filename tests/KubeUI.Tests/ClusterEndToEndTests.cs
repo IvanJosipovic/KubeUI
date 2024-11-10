@@ -449,7 +449,6 @@ kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: my-serviceaccount
-  namespace: my-app
 rules: []
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -528,7 +527,7 @@ rules:
   apiGroups:
     - ''
   resources:
-    - service/proxy
+    - service/portforward
 
 - verbs:
     - delete
@@ -632,7 +631,6 @@ kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: my-serviceaccount
-  namespace: my-app
 rules: []
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -711,7 +709,7 @@ rules:
   apiGroups:
     - ''
   resources:
-    - service/proxy
+    - service/portforward
 
 - verbs:
     - delete
