@@ -2107,6 +2107,14 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                     {
                         if (pod.Value.Spec.NodeName == item.Value.Metadata.Name)
                         {
+                            if (pod.Value.Metadata.OwnerReferences.Any(x => x.ApiVersion == V1DaemonSet.KubeGroup + "/" + V1DaemonSet.KubeApiVersion &&
+                                                                            x.Kind == V1DaemonSet.KubeKind &&
+                                                                            x.Controller == true &&
+                                                                            x.BlockOwnerDeletion == true))
+                            {
+                                continue;
+                            }
+
                             V1Eviction evict = new()
                             {
                                 ApiVersion = V1Eviction.KubeGroup + "/" + V1Eviction.KubeApiVersion,
