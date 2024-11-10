@@ -111,7 +111,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         }
         catch (Exception ex)
         {
-            Utilities.HandleException(_logger, _notificationManager, ex, "Error Saving Yaml");
+            Utilities.HandleException(_logger, _notificationManager, ex, "Error Saving Yaml", sendNotification: true);
         }
     }
 

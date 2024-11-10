@@ -92,7 +92,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
                 }
                 catch (Exception ex)
                 {
-                    Utilities.HandleException(_logger, _notificationManager, ex, "Error loading yaml file");
+                    Utilities.HandleException(_logger, _notificationManager, ex, "Error loading yaml file", sendNotification: true);
                 }
             }
         }
@@ -105,15 +105,15 @@ public sealed partial class NavigationViewModel : ViewModelBase
                 AllowMultiple = false
             });
 
-            foreach (var file in folders)
+            foreach (var folder in folders)
             {
                 try
                 {
-                    await link.Cluster.ImportFolder(file.TryGetLocalPath());
+                    await link.Cluster.ImportFolder(folder.TryGetLocalPath());
                 }
                 catch (Exception ex)
                 {
-                    Utilities.HandleException(_logger, _notificationManager, ex, "Error loading yaml file");
+                    Utilities.HandleException(_logger, _notificationManager, ex, "Error loading yaml from folder", sendNotification: true);
                 }
             }
         }

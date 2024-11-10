@@ -790,6 +790,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 if (type == null)
                 {
                     _logger.LogWarning("Unable to find Type for {kind}", obj.ApiVersion + "/" + obj.Kind);
+                    exceptions.Add(new Exception($"Unable to find Type for {obj.ApiVersion + "/" + obj.Kind}"));
 
                     continue;
                 }
@@ -805,7 +806,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
             catch (Exception ex)
             {
                 exceptions.Add(ex);
-                _logger.LogError(ex, "Error Deserializing {kind}", obj.ApiVersion + "/" + obj.Kind);
+                _logger.LogError(ex, "Error Importing {kind}", obj.ApiVersion + "/" + obj.Kind);
             }
         }
 
