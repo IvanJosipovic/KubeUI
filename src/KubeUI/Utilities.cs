@@ -274,7 +274,26 @@ public static class Utilities
     {
         if (sendNotification)
         {
-            if (ex is HttpOperationException opEx)
+            if(ex is AggregateException aggregate)
+            {
+                foreach (var item in aggregate.InnerExceptions)
+                {
+                    if (item is HttpOperationException opEx)
+                    {
+                        var status = KubernetesYaml.Deserialize<V1Status>(opEx.Response.Content);
+
+                        if (status != null)
+                        {
+                            notificationManage.Show(new Notification(status.Reason, status.Message + "\n\n" + status?.Details?.Causes?.Select(x => x.Message).Aggregate((x, y) => x + "\n" + y) ?? "", type, TimeSpan.FromSeconds(30)));
+                        }
+                    }
+                    else
+                    {
+                        notificationManage.Show(new Notification(message, item.Message, type));
+                    }
+                }
+            }
+            else if (ex is HttpOperationException opEx)
             {
                 var status = KubernetesYaml.Deserialize<V1Status>(opEx.Response.Content);
 
