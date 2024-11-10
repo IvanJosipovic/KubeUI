@@ -12,6 +12,7 @@ using KubeUI.Views;
 using Microsoft.Extensions.Hosting;
 using HanumanInstitute.MvvmDialogs;
 using Moq;
+using Avalonia.Controls.Notifications;
 
 namespace KubeUI.Tests;
 
@@ -39,6 +40,9 @@ public class TestApp : Application
 
         var dialog = new Mock<IDialogService>();
         builder.Services.AddSingleton<IDialogService>(dialog.Object);
+
+        var notifications = new Mock<INotificationManager>();
+        builder.Services.AddSingleton<INotificationManager>(notifications.Object);
 
         builder.Services.Scan(scan => scan
             .FromAssemblyOf<App>()

@@ -1,4 +1,5 @@
-﻿using Avalonia.Platform.Storage;
+﻿using Avalonia.Controls.Notifications;
+using Avalonia.Platform.Storage;
 using Dock.Model.Core;
 using KubeUI.Client;
 
@@ -6,6 +7,15 @@ namespace KubeUI.ViewModels;
 
 public sealed partial class NavigationViewModel : ViewModelBase
 {
+    private readonly ILogger<NavigationViewModel> _logger;
+    private INotificationManager _notificationManager
+    {
+        get
+        {
+            return Application.Current.GetRequiredService<INotificationManager>();
+        }
+    }
+
     [ObservableProperty]
     private ClusterManager _clusterManager;
 
@@ -14,6 +24,8 @@ public sealed partial class NavigationViewModel : ViewModelBase
         ClusterManager = Application.Current.GetRequiredService<ClusterManager>();
         Title = Resources.NavigationViewModel_Title;
         Id = nameof(NavigationViewModel);
+        _logger = Application.Current.GetRequiredService<ILogger<NavigationViewModel>>();
+        //_notificationManager = Application.Current.GetRequiredService<INotificationManager>();
     }
 
     public void TreeView_SelectionChanged(object? item)
@@ -73,8 +85,15 @@ public sealed partial class NavigationViewModel : ViewModelBase
 
             foreach (var file in files)
             {
-                var stream = await file.OpenReadAsync();
-                await link.Cluster.ImportYaml(stream);
+                try
+                {
+                    var stream = await file.OpenReadAsync();
+                    await link.Cluster.ImportYaml(stream);
+                }
+                catch (Exception ex)
+                {
+                    Utilities.HandleException(_logger, _notificationManager, ex, "Error loading yaml file");
+                }
             }
         }
         else if (link.Id == "load-folder")
@@ -88,7 +107,14 @@ public sealed partial class NavigationViewModel : ViewModelBase
 
             foreach (var file in folders)
             {
-                await link.Cluster.ImportFolder(file.TryGetLocalPath());
+                try
+                {
+                    await link.Cluster.ImportFolder(file.TryGetLocalPath());
+                }
+                catch (Exception ex)
+                {
+                    Utilities.HandleException(_logger, _notificationManager, ex, "Error loading yaml file");
+                }
             }
         }
         else

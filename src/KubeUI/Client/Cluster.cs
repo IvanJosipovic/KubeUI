@@ -659,31 +659,20 @@ public sealed partial class Cluster : ObservableObject, ICluster
         return fqdnList;
     }
 
-    public async Task<bool> Delete<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public async Task Delete<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var api = GroupApiVersionKind.From<T>();
 
         using var client = new GenericClient(Client, api.Group, api.ApiVersion, api.PluralName, false);
 
-        try
+        if (string.IsNullOrEmpty(item.Namespace()))
         {
-            if (string.IsNullOrEmpty(item.Namespace()))
-            {
-                await client.DeleteAsync<T>(item.Name());
-            }
-            else
-            {
-                await client.DeleteNamespacedAsync<T>(item.Namespace(), item.Name());
-            }
-
-            return true;
+            await client.DeleteAsync<T>(item.Name());
         }
-        catch (Exception ex)
+        else
         {
-            _logger.LogError(ex, "Failed to delete");
+            await client.DeleteNamespacedAsync<T>(item.Namespace(), item.Name());
         }
-
-        return false;
     }
 
     public T? GetObject<T>(string @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -750,43 +739,31 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
         using var client = new GenericClient(Client, api.Group, api.ApiVersion, api.PluralName, false);
 
-        try
+        if (string.IsNullOrEmpty(item.Namespace()))
         {
-            if (string.IsNullOrEmpty(item.Namespace()))
+            if (item.Metadata.Uid != null)
             {
-                if (item.Metadata.Uid != null)
-                {
-                    // update
-                    await client.ReplaceAsync<T>(item, item.Name());
-                }
-                else
-                {
-                    // add
-                    await client.CreateAsync<T>(item);
-                }
+                // update
+                await client.ReplaceAsync<T>(item, item.Name());
             }
             else
             {
-                if (item.Metadata.Uid != null)
-                {
-                    // update namespaced
-                    await client.ReplaceNamespacedAsync<T>(item, item.Namespace(), item.Name());
-                }
-                else
-                {
-                    // add namespaced
-                    await client.CreateNamespacedAsync<T>(item, item.Namespace());
-                }
+                // add
+                await client.CreateAsync<T>(item);
             }
         }
-        catch (JsonException ex)
+        else
         {
-            _logger.LogError(ex, "Failed to AddOrUpdate");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to AddOrUpdate");
-            throw;
+            if (item.Metadata.Uid != null)
+            {
+                // update namespaced
+                await client.ReplaceNamespacedAsync<T>(item, item.Namespace(), item.Name());
+            }
+            else
+            {
+                // add namespaced
+                await client.CreateNamespacedAsync<T>(item, item.Namespace());
+            }
         }
     }
 
@@ -797,6 +774,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
         var reader = new StreamReader(stream);
         var parser = new Parser(new StringReader(reader.ReadToEnd()));
         parser.Consume<StreamStart>();
+
+        var exceptions = new List<Exception>();
 
         while (parser.Accept<DocumentStart>(out _))
         {
@@ -825,8 +804,14 @@ public sealed partial class Cluster : ObservableObject, ICluster
             }
             catch (Exception ex)
             {
+                exceptions.Add(ex);
                 _logger.LogError(ex, "Error Deserializing {kind}", obj.ApiVersion + "/" + obj.Kind);
             }
+        }
+
+        if (exceptions.Count > 0)
+        {
+            throw new AggregateException("Error importing Yaml", exceptions);
         }
     }
 
@@ -839,6 +824,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 .Where(fi => fi.Extension.Equals(".yaml", StringComparison.OrdinalIgnoreCase) || fi.Extension.Equals(".yml", StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
+            var exceptions = new List<Exception>();
+
             foreach (var file in files)
             {
                 try
@@ -847,8 +834,14 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error parsing Yaml {filename}", file.FullName);
+                    exceptions.Add(ex);
+                    _logger.LogError(ex, "Error importing File {filename}", file.FullName);
                 }
+            }
+
+            if (exceptions.Count > 0)
+            {
+                throw new AggregateException("Error importing Folder", exceptions);
             }
         }
     }

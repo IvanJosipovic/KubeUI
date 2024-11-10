@@ -304,7 +304,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                 new DataGrid()
                     .Ref(out _grid)
                     .Row(1)
-                    .ItemsSource(@vm.DataGridObjects)
+                    .ItemsSource(@vm.DataGridObjects, BindingMode.OneWay)
                     .SelectedItem(@vm.SelectedItem)
                     .CanUserReorderColumns(true)
                     .CanUserResizeColumns(true)

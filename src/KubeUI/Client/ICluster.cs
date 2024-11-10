@@ -27,7 +27,7 @@ public interface ICluster
     T? GetObject<T>(string @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task AddOrUpdate<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task Connect();
-    Task<bool> Delete<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    Task Delete<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     bool IsMetricsAvailable { get; }
     Task ImportFolder(string path);
     Task ImportYaml(Stream stream);

@@ -3,7 +3,6 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
-using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
 using Avalonia.Data.Converters;
 using Avalonia.Styling;
@@ -28,8 +27,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 {
     private readonly ILogger<ResourceListViewModel<T>> _logger;
     private readonly IDialogService _dialogService;
-
-    private WindowNotificationManager? _manager;
+    private readonly INotificationManager _notificationManager;
 
     [ObservableProperty]
     private ICluster _cluster;
@@ -61,8 +59,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     {
         _logger = Application.Current.GetRequiredService<ILogger<ResourceListViewModel<T>>>();
         _dialogService = Application.Current.GetRequiredService<IDialogService>();
-
-        _manager = new WindowNotificationManager(App.TopLevel) { MaxItems = 3 };
+        _notificationManager = Application.Current.GetRequiredService<INotificationManager>();
     }
 
     public void Initialize(ICluster cluster)
@@ -85,9 +82,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     {
         _filter?.Dispose();
 
-        _filter = Objects.ToObservableChangeSet<ConcurrentObservableDictionary<NamespacedName, T>, KeyValuePair<NamespacedName, T>>()
+        _filter = Objects
+            .ToObservableChangeSet<ConcurrentObservableDictionary<NamespacedName, T>, KeyValuePair<NamespacedName, T>>()
             .Filter(GenerateFilter())
-            .Bind(out var filteredObjects)
+            .Bind(out var filteredObjects, BindingOptions.NeverFireReset(false))
             .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Set Namespace Filter: {ns}", typeof(T)));
 
         DataGridObjects = filteredObjects;
@@ -1626,9 +1624,20 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
         if (result == ContentDialogResult.Primary)
         {
+            var exceptions = new List<Exception>();
+
             foreach (var item in items.Cast<KeyValuePair<NamespacedName, T>>().ToList())
             {
-                await Cluster.Delete<T>(item.Value);
+                try
+                {
+                    await Cluster.Delete<T>(item.Value);
+
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex);
+                    Utilities.HandleException(_logger, _notificationManager, ex, $"Error Deleting {item.Key.Namespace}/{item.Key.Name}", sendNotification: true);
+                }
             }
         }
     }
@@ -1769,7 +1778,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                Cluster.CanI<V1Pod>(Verb.Create, ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key.Namespace, "portforward");
     }
 
-
     [RelayCommand(CanExecute = nameof(CanPortForwardService))]
     private async Task PortForwardService(V1ServicePort containerPort)
     {
@@ -1872,7 +1880,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error Restarting Deployment");
+            Utilities.HandleException(_logger, _notificationManager, ex, "Error Restarting Deployment", sendNotification: true);
         }
     }
 
@@ -1904,7 +1912,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error Restarting ReplicaSet");
+            Utilities.HandleException(_logger, _notificationManager, ex, "Error Restarting ReplicaSet", sendNotification: true);
         }
     }
 
@@ -1936,7 +1944,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error Restarting StatefulSet");
+            Utilities.HandleException(_logger, _notificationManager, ex, "Error Restarting StatefulSet", sendNotification: true);
         }
     }
 
@@ -1968,7 +1976,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error Restarting DaemonSet");
+            Utilities.HandleException(_logger, _notificationManager, ex, "Error Restarting DaemonSet", sendNotification: true);
         }
     }
 
@@ -2009,9 +2017,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 }
                 catch (Exception ex)
                 {
-                    _manager?.Show(new Notification("Error", "Error Cordoning Node: " + ex.Message, NotificationType.Error));
-
-                    _logger.LogInformation(ex, "Error Cordoning Node");
+                    Utilities.HandleException(_logger, _notificationManager, ex, "Error Cordoning Node", sendNotification: true);
                 }
             }
         }
@@ -2054,7 +2060,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error UnCordoning Node");
+                    Utilities.HandleException(_logger, _notificationManager, ex, "Error UnCordoning Node", sendNotification: true);
                 }
             }
         }
@@ -2118,18 +2124,14 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                             }
                             catch (Exception ex)
                             {
-                                _manager?.Show(new Notification("Error", "Error Evicting Pod: " + ex.Message, NotificationType.Warning));
-
-                                _logger.LogInformation(ex, "Error Evicting Pod");
+                                Utilities.HandleException(_logger, _notificationManager, ex, "Error Evicting Pod", sendNotification: true);
                             }
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    _manager?.Show(new Notification("Error", "Error Draining Node: " + ex.Message, NotificationType.Error));
-
-                    _logger.LogInformation(ex, "Error Draining Node");
+                    Utilities.HandleException(_logger, _notificationManager, ex, "Error Draining Node", sendNotification: true);
                 }
             }
         }

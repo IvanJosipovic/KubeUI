@@ -1,6 +1,5 @@
-﻿using System.Reflection;
-using System.Text;
-using AvaloniaEdit;
+﻿using System.Text;
+using Avalonia.Controls.Notifications;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Folding;
 using k8s;
@@ -11,6 +10,9 @@ namespace KubeUI.ViewModels;
 
 public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 {
+    private readonly ILogger<ResourceYamlViewModel> _logger;
+    private readonly INotificationManager _notificationManager;
+
     [ObservableProperty]
     private ICluster? _cluster;
 
@@ -38,6 +40,8 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
     public ResourceYamlViewModel()
     {
         Title = Resources.ResourceYamlViewModel_Title;
+        _logger = Application.Current.GetRequiredService<ILogger<ResourceYamlViewModel>>();
+        _notificationManager = Application.Current.GetRequiredService<INotificationManager>();
     }
 
     public void Initialize(ICluster cluster, IKubernetesObject<V1ObjectMeta> @object)
@@ -99,9 +103,16 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
     [RelayCommand(CanExecute = nameof(CanSave))]
     private async Task Save()
     {
-        byte[] byteArray = Encoding.UTF8.GetBytes(YamlDocument.Text);
-        await using MemoryStream stream = new MemoryStream(byteArray);
-        await Cluster.ImportYaml(stream);
+        try
+        {
+            byte[] byteArray = Encoding.UTF8.GetBytes(YamlDocument.Text);
+            await using MemoryStream stream = new MemoryStream(byteArray);
+            await Cluster.ImportYaml(stream);
+        }
+        catch (Exception ex)
+        {
+            Utilities.HandleException(_logger, _notificationManager, ex, "Error Saving Yaml");
+        }
     }
 
     private bool CanSave()

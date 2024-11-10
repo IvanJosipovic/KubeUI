@@ -5,7 +5,7 @@ namespace KubeUI.ViewModels;
 
 public abstract class ViewModelBase : Tool
 {
-    public new  IFactory Factory { get; set; } = Application.Current.GetRequiredService<IFactory>();
+    public new IFactory Factory { get; set; } = Application.Current.GetRequiredService<IFactory>();
 
     public bool IsPinned => Factory.IsDockablePinned(this);
 }

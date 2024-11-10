@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using Avalonia.Controls.Notifications;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Logging;
 using Avalonia.Markup.Xaml;
@@ -9,7 +10,6 @@ using HanumanInstitute.MvvmDialogs.Avalonia;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubernetesCRDModelGen;
 using KubeUI.Client;
-using KubeUI.Desktop;
 using KubeUI.Views;
 using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
@@ -28,6 +28,8 @@ public partial class App : Application
     public static IHost Host { get; private set; }
 
     public static TopLevel TopLevel { get; private set; }
+
+    private INotificationManager? NotificationManager { get; set; }
 
     private ILogger<App> logger;
 
@@ -138,6 +140,8 @@ public partial class App : Application
         builder.Services.AddSingleton<IDialogManager, MyDialogManager>(x => new MyDialogManager(dialogFactory: x.GetRequiredService<IDialogFactory>(), logger: x.GetRequiredService<ILogger<DialogManager>>()));
         builder.Services.AddSingleton<IDialogService, DialogService>(x => new DialogService(x.GetRequiredService<IDialogManager>()));
 
+        builder.Services.AddSingleton<INotificationManager>(_ => NotificationManager!);
+
         Host = builder.Build();
         Resources[typeof(IServiceProvider)] = Host.Services;
         _ = Host.RunAsync();
@@ -189,6 +193,8 @@ public partial class App : Application
             singleViewPlatform.MainView.DataContext = Host.Services.GetRequiredService<MainViewModel>();
             TopLevel = TopLevel.GetTopLevel(singleViewPlatform.MainView);
         }
+
+        NotificationManager = new WindowNotificationManager(TopLevel) { MaxItems = 4 };
 
         base.OnFrameworkInitializationCompleted();
     }

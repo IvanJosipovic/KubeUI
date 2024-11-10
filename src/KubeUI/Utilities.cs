@@ -1,6 +1,8 @@
-﻿using Avalonia.Data.Converters;
+﻿using Avalonia.Controls.Notifications;
+using Avalonia.Data.Converters;
 using Avalonia.Input;
 using k8s;
+using k8s.Autorest;
 using k8s.Models;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -266,5 +268,27 @@ public static class Utilities
         var fooRef = _deserializeJson.MakeGenericMethod(type);
 
         return fooRef.Invoke(null, [json, null]);
+    }
+
+    public static void HandleException(ILogger logger, INotificationManager notificationManage, Exception ex, string message, NotificationType type = NotificationType.Error, bool sendNotification = false)
+    {
+        if (sendNotification)
+        {
+            if (ex is HttpOperationException opEx)
+            {
+                var status = KubernetesYaml.Deserialize<V1Status>(opEx.Response.Content);
+
+                if (status != null)
+                {
+                    notificationManage.Show(new Notification(status.Reason, status.Message + "\n\n" + status?.Details?.Causes?.Select(x => x.Message).Aggregate((x, y) => x + "\n" + y) ?? "", type, TimeSpan.FromSeconds(30)));
+                }
+            }
+            else
+            {
+                notificationManage.Show(new Notification(message, ex.Message, type));
+            }
+        }
+
+        logger.LogError(ex, message);
     }
 }
