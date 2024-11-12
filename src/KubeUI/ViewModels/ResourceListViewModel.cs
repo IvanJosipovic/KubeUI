@@ -2159,7 +2159,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
     }
 
-    private ResourceListViewDefinitionColumn<T, string> NameColumn(SortDirection sort = SortDirection.None)
+    public static ResourceListViewDefinitionColumn<T, string> NameColumn(SortDirection sort = SortDirection.None)
     {
         return new ResourceListViewDefinitionColumn<T, string>()
         {
@@ -2170,7 +2170,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         };
     }
 
-    private ResourceListViewDefinitionColumn<T, string> NamespaceColumn()
+    public static ResourceListViewDefinitionColumn<T, string> NamespaceColumn()
     {
         return new ResourceListViewDefinitionColumn<T, string>()
         {
@@ -2180,7 +2180,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         };
     }
 
-    private ResourceListViewDefinitionColumn<T, DateTime?> AgeColumn()
+    public static ResourceListViewDefinitionColumn<T, DateTime?> AgeColumn()
     {
         return new ResourceListViewDefinitionColumn<T, DateTime?>()
         {

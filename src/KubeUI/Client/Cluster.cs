@@ -1,7 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Net.Http.Json;
 using System.Reflection;
-using System.Text.Json;
 using System.Xml;
 using Dock.Model.Controls;
 using Dock.Model.Core;
@@ -14,6 +13,7 @@ using k8s.KubeConfigModels;
 using k8s.Models;
 using KubernetesCRDModelGen;
 using KubeUI.Client.Informer;
+using KubeUI.Client.Metrics;
 using Scrutor;
 using Swordfish.NET.Collections;
 using YamlDotNet.Core;
@@ -31,6 +31,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
     private ISettingsService _settingsService;
 
     private IDialogService _dialogService;
+
+    private MetricsService _metricsService;
 
     [ObservableProperty]
     private string _name;
@@ -76,7 +78,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private ResourceNavigationLink _crdNavigationLink;
 
-    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ModelCache modelCache, IGenerator generator, ISettingsService settingsService, IDialogService dialogService)
+    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ModelCache modelCache, IGenerator generator, ISettingsService settingsService, IDialogService dialogService, MetricsService metricsService)
     {
         _loggerFactory = loggerFactory;
         _logger = logger;
@@ -89,6 +91,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         _modelCache.AddToCache(typeof(V1Deployment).Assembly, kubeAssemblyXmlDoc);
         _settingsService = settingsService;
         _dialogService = dialogService;
+        _metricsService = metricsService;
     }
 
     public async Task Connect()
@@ -119,6 +122,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     APIGroupDiscoveryList = await GetAPIGroupDiscoveryList(false);
 
                     Connected = true;
+
+                    _metricsService.Initialize(this);
 
                     await GetPermissions();
 
