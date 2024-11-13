@@ -1442,7 +1442,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
                                 if (typeString.StartsWith("System.Nullable`1[", StringComparison.Ordinal))
                                 {
-                                    typeString = typeString["System.Nullable`1[".Length..].TrimEnd("]");
+                                    typeString = typeString["System.Nullable`1[".Length..].TrimEnd(']');
                                 }
 
                                 var type = Type.GetType(typeString);
