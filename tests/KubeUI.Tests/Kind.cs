@@ -6,9 +6,12 @@ using System.Text;
 
 namespace KubeUI.Core.Tests;
 
+/// <summary>
+/// Interface for KIND https://github.com/kubernetes-sigs/kind/releases
+/// </summary>
 public class Kind
 {
-    public string Version = "0.25.0";
+    public string Version = "latest";
 
     public string FileName { get; } = "kind" + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "");
 
@@ -24,18 +27,18 @@ public class Kind
             arch = "arm64";
         }
 
-        var os = $"linux-{arch}";
+        var os = "linux";
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
-            os = $"darwin-{arch}";
+            os = "darwin";
         }
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            os = $"windows-{arch}";
+            os = "windows";
         }
 
-        var url = $"https://kind.sigs.k8s.io/dl/v{Version}/kind-{os}";
+        var url = $"https://kind.sigs.k8s.io/dl/{Version}/kind-{os}-{arch}";
 
         var bytes = await client.GetByteArrayAsync(url);
 
