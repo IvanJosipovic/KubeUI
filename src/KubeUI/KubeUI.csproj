@@ -65,7 +65,7 @@
     <PackageReference Include="TextMateSharp" Version="1.0.64" />
     <PackageReference Include="TextMateSharp.Grammars" Version="1.0.64" />
     <PackageReference Include="Velopack" Version="0.0.869" />
-    <PackageReference Include="YamlDotNet.System.Text.Json" Version="1.6.2" />
+    <PackageReference Include="YamlDotNet.System.Text.Json" Version="1.6.4" />
   </ItemGroup>
 
   <ItemGroup>
