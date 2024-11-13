@@ -1,4 +1,7 @@
 ﻿using Avalonia.Data.Converters;
+using Avalonia.Markup.Declarative;
+using KubeUI.Client.Metrics;
+using Ursa.Controls;
 
 namespace KubeUI.Views;
 

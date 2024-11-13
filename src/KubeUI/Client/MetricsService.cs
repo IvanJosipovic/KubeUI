@@ -10,15 +10,22 @@ namespace KubeUI.Client.Metrics;
 public enum MetricsServiceType
 {
     None,
+
+    [Description("Kubernetes Metrics Server")]
     KubernetesMetricsServer,
-    Prometheus
+
+    Prometheus,
+
+    [Description("Azure Managed Prometheus")]
+    AzureManagedPrometheus
 }
 
 [ServiceDescriptor<MetricsService>(ServiceLifetime.Transient)]
 public partial class MetricsService : ObservableObject, IInitializeCluster
 {
     private readonly ILogger<MetricsService> _logger;
-    public MetricsServiceType Type { get; set; }
+
+    private readonly SettingsService _settings;
 
     private ICluster _cluster;
 
@@ -40,15 +47,22 @@ public partial class MetricsService : ObservableObject, IInitializeCluster
     [ObservableProperty]
     private ObservableCollection<NodeMetrics> _nodeMetrics = [];
 
-    public MetricsService(ILogger<MetricsService> logger)
+    public MetricsService(ILogger<MetricsService> logger, SettingsService settings)
     {
         _logger = logger;
+        _settings = settings;
     }
 
     public async Task DetectMetricSource()
     {
         await _cluster.Seed<V1Service>(true);
-        var kube = _cluster as Kubernetes;
+        var kube = (Kubernetes)_cluster.Client!;
+
+        // Manually set sttings, stop detection
+        if (_settings.Settings.GetClusterSettings(_cluster).MetricsServiceType == MetricsServiceType.AzureManagedPrometheus)
+        {
+            return;
+        }
 
         //Prometheus Operator
         // Service with label operated-prometheus=true
@@ -60,7 +74,8 @@ public partial class MetricsService : ObservableObject, IInitializeCluster
             {
                 if (service.Value.Metadata.Labels?.TryGetValue("operated-prometheus", out var value) == true && value == "true")
                 {
-                    Type = MetricsServiceType.Prometheus;
+                    _settings.Settings.GetClusterSettings(_cluster).MetricsServiceType = MetricsServiceType.Prometheus;
+                    _settings.SaveSettings();
                     _prometheusServiceNamespace = service.Value.Namespace();
                     _prometheusServiceName = service.Value.Name();
                     _prometheusServicePort = service.Value.Spec.Ports.First(x => x.Name == "http-web").Port;
@@ -113,7 +128,8 @@ public partial class MetricsService : ObservableObject, IInitializeCluster
 
             if (resp.Status.Allowed && resp2.Status.Allowed)
             {
-                Type = MetricsServiceType.KubernetesMetricsServer;
+                _settings.Settings.GetClusterSettings(_cluster).MetricsServiceType = MetricsServiceType.KubernetesMetricsServer;
+                _settings.SaveSettings();
                 return;
             }
         }
@@ -125,7 +141,7 @@ public partial class MetricsService : ObservableObject, IInitializeCluster
 
     public async Task GetData<T>(TimeSpan fromTime, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        if (Type == MetricsServiceType.KubernetesMetricsServer)
+        if (_settings.Settings.GetClusterSettings(_cluster).MetricsServiceType == MetricsServiceType.KubernetesMetricsServer)
         {
             if (typeof(T) == typeof(V1Node))
             {
@@ -136,7 +152,7 @@ public partial class MetricsService : ObservableObject, IInitializeCluster
 
             }
         }
-        else if (Type == MetricsServiceType.Prometheus)
+        else if (_settings.Settings.GetClusterSettings(_cluster).MetricsServiceType == MetricsServiceType.Prometheus)
         {
             if (typeof(T) == typeof(V1Node))
             {
@@ -157,7 +173,7 @@ public partial class MetricsService : ObservableObject, IInitializeCluster
         {
             await DetectMetricSource();
 
-            switch (Type)
+            switch (_settings.Settings.GetClusterSettings(_cluster).MetricsServiceType)
             {
                 case MetricsServiceType.None:
                     break;
@@ -172,6 +188,9 @@ public partial class MetricsService : ObservableObject, IInitializeCluster
                     _prometheusClient = Application.Current.GetRequiredService<PrometheusClient>();
                     _prometheusClient.Initialize(_prometheusService);
                     await GetData<V1Node>(TimeSpan.FromHours(1), "r720");
+                    break;
+                case MetricsServiceType.AzureManagedPrometheus:
+                    
                     break;
             }
         });

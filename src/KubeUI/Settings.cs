@@ -1,4 +1,5 @@
 ﻿using KubeUI.Client;
+using KubeUI.Client.Metrics;
 
 namespace KubeUI;
 
@@ -47,4 +48,10 @@ public sealed partial class ClusterSettings : ObservableObject
 {
     [ObservableProperty]
     private ObservableCollection<string>? _namespaces = [];
+
+    [ObservableProperty]
+    private MetricsServiceType _metricsServiceType;
+
+    [ObservableProperty]
+    private string _prometheusServerUrl;
 }

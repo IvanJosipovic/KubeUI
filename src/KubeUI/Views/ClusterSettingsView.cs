@@ -1,5 +1,8 @@
 ﻿using Avalonia.Controls.Templates;
+using Avalonia.Data.Converters;
 using k8s.Models;
+using KubeUI.Client.Metrics;
+using Ursa.Controls;
 
 namespace KubeUI.Views;
 
@@ -47,8 +50,33 @@ public sealed class ClusterSettingsView : MyViewBase<ClusterSettingsViewModel>
                                                             .CommandParameter(@item),
                                                         ]);
                                         })),
-                                ])
-                            ,
+                                ]),
                         ]),
-        ]);
+                new Grid()
+                    .Cols("*,2*")
+                    .ToolTip("Metrics Server Type")
+                    .Children([
+                        new Label()
+                            .Col(0)
+                            .Content("Metrics Server Type"),
+                        new EnumSelector()
+                            .Col(1)
+                            .DisplayDescription(true)
+                            .EnumType(typeof(MetricsServiceType))
+                            .Value(@vm.ClusterSettings.MetricsServiceType),
+                        ]),
+                new Grid()
+                    .Cols("*,2*")
+                    .ToolTip("Prometheus Server Url")
+                    .IsEnabled(@vm.ClusterSettings.MetricsServiceType, new FuncValueConverter<MetricsServiceType, bool>((x) => x == MetricsServiceType.AzureManagedPrometheus))
+                    .Children([
+                        new Label()
+                            .Col(0)
+                            .Content("Prometheus Server Url"),
+                        new TextBox()
+                            .Col(1)
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .Text(@vm.ClusterSettings.PrometheusServerUrl),
+                        ]),
+            ]);
 }

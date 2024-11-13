@@ -4,6 +4,8 @@ using Avalonia.Controls.Templates;
 using System.Text;
 using Avalonia.Controls.Primitives;
 using Avalonia.Styling;
+using Avalonia.Markup.Declarative;
+using KubeUI.Controls;
 
 namespace KubeUI.Views;
 
@@ -31,6 +33,22 @@ public sealed class ResourcePropertiesView<T> : MyViewBase<ResourcePropertiesVie
                         .Key("Created")
                         .Set(PropertyItem.ValueProperty, @vm.Object.Metadata.CreationTimestamp, converter: new ((x) => x.HasValue ? x.Value.ToLocalTime().ToString() : "" )),
             ]);
+
+        if (typeof(T) == typeof(V1Pod))
+        {
+            var obj = vm.Object as V1Pod;
+
+            sp.Children.Add(
+                new ExpandableSection()
+                    .Text("Metrics")
+                    .IsExpanded(true)
+                    .Controls([
+                        new MetricsControl()
+                            .Resource(@obj)
+                            .Cluster(@vm.Cluster),
+                    ])
+            );
+        }
 
         if (typeof(T) == typeof(V1Secret))
         {
@@ -66,6 +84,7 @@ public sealed class ResourcePropertiesView<T> : MyViewBase<ResourcePropertiesVie
                     ])
             );
         }
+
         return new ScrollViewer()
                 .VerticalScrollBarVisibility(ScrollBarVisibility.Auto)
                 .Content(sp);
