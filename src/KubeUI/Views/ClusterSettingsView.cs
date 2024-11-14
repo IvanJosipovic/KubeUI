@@ -16,7 +16,7 @@ public sealed class ClusterSettingsView : MyViewBase<ClusterSettingsViewModel>
                     .FontSize(25)
                     .Text($"{vm.Cluster.Name} Settings"),
                 new Grid()
-                    .IsEnabled(@vm.Cluster.ListNamespaces, converter: Utilities.InverseBooleanConverter)
+                    .IsVisible(@vm.Cluster.ListNamespaces, converter: Utilities.InverseBooleanConverter)
                     .Cols("*,2*")
                     .ToolTip("Manually specified namespaces")
                     .Children([
@@ -68,7 +68,7 @@ public sealed class ClusterSettingsView : MyViewBase<ClusterSettingsViewModel>
                 new Grid()
                     .Cols("*,2*")
                     .ToolTip("Prometheus Server Url")
-                    .IsEnabled(@vm.ClusterSettings.MetricsServiceType, new FuncValueConverter<MetricsServiceType, bool>((x) => x == MetricsServiceType.AzureManagedPrometheus))
+                    .IsVisible(@vm.ClusterSettings.MetricsServiceType, new FuncValueConverter<MetricsServiceType, bool>((x) => x == MetricsServiceType.AzureManagedPrometheus))
                     .Children([
                         new Label()
                             .Col(0)
@@ -81,7 +81,7 @@ public sealed class ClusterSettingsView : MyViewBase<ClusterSettingsViewModel>
                 new Grid()
                     .Cols("*,2*")
                     .ToolTip("Prometheus Client Id")
-                    .IsEnabled(@vm.ClusterSettings.MetricsServiceType, new FuncValueConverter<MetricsServiceType, bool>((x) => x == MetricsServiceType.AzureManagedPrometheus))
+                    .IsVisible(@vm.ClusterSettings.MetricsServiceType, new FuncValueConverter<MetricsServiceType, bool>((x) => x == MetricsServiceType.AzureManagedPrometheus))
                     .Children([
                         new Label()
                             .Col(0)
@@ -94,7 +94,7 @@ public sealed class ClusterSettingsView : MyViewBase<ClusterSettingsViewModel>
                 new Grid()
                     .Cols("*,2*")
                     .ToolTip("Prometheus Client Secret")
-                    .IsEnabled(@vm.ClusterSettings.MetricsServiceType, new FuncValueConverter<MetricsServiceType, bool>((x) => x == MetricsServiceType.AzureManagedPrometheus))
+                    .IsVisible(@vm.ClusterSettings.MetricsServiceType, new FuncValueConverter<MetricsServiceType, bool>((x) => x == MetricsServiceType.AzureManagedPrometheus))
                     .Children([
                         new Label()
                             .Col(0)

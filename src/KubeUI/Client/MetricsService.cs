@@ -20,22 +20,22 @@ public enum MetricsServiceType
     AzureManagedPrometheus
 }
 
-[ServiceDescriptor<MetricsService>(ServiceLifetime.Transient)]
-public partial class MetricsService : ObservableObject, IInitializeCluster
+[ServiceDescriptor<IMetricsService>(ServiceLifetime.Transient)]
+public partial class MetricsService : ObservableObject, IInitializeCluster, IMetricsService
 {
     private readonly ILogger<MetricsService> _logger;
 
     private readonly ISettingsService _settings;
 
-    private ICluster _cluster;
+    private ICluster? _cluster;
+    public MetricsServiceType MetricsServiceType => _settings.Settings.GetClusterSettings(_cluster).MetricsServiceType;
 
     // Used by Prometheus
-
-    private string _prometheusServiceNamespace;
-    private string _prometheusServiceName;
-    private int _prometheusServicePort;
-    private PortForwarder _prometheusService;
-    private PrometheusClient _prometheusClient;
+    private HttpClient? _httpClient;
+    private PortForwarder? _prometheusServicePortForward;
+    private string? _prometheusServiceNamespace;
+    private string? _prometheusServiceName;
+    private int? _prometheusServicePort;
 
     // Used by Kube Metrics
 
@@ -53,12 +53,40 @@ public partial class MetricsService : ObservableObject, IInitializeCluster
         _settings = settings;
     }
 
-    public async Task DetectMetricSource()
+    public IEnumerable<PodMetrics> GetPodMetrics(string name, string @namespace)
+    {
+        return PodMetrics.Where(x => x.Name() == name && x.Namespace() == @namespace);
+    }
+
+    public IEnumerable<NodeMetrics> GetNodeMetrics(string name)
+    {
+        return NodeMetrics.Where(x => x.Name() == name);
+    }
+
+    // https://prometheus.io/docs/prometheus/latest/querying/api/#range-queries
+    public async Task<PrometheusClientQueryRangeResponse?> GetPrometheusMetics(string query, DateTimeOffset start, DateTimeOffset end, string step = "1")
+    {
+        var url = $"{GetPrometheusUrl()}/api/v1/query_range?query={query}&start={start.ToUnixTimeSeconds()}&end={end.ToUnixTimeSeconds()}&step={step}";
+        var response = await _httpClient.GetAsync(url);
+        return await response.Content.ReadFromJsonAsync<PrometheusClientQueryRangeResponse>();
+    }
+
+    private string GetPrometheusUrl()
+    {
+        return _cluster.MetricsService.MetricsServiceType switch
+        {
+            MetricsServiceType.Prometheus => $"http://localhost:{_prometheusServicePortForward.LocalPort}",
+            MetricsServiceType.AzureManagedPrometheus => throw new NotSupportedException(), //todo
+            _ => throw new NotSupportedException(),
+        };
+    }
+
+    private async Task DetectMetricSource()
     {
         await _cluster.Seed<V1Service>(true);
         var kube = (Kubernetes)_cluster.Client!;
 
-        // Manually set sttings, stop detection
+        // Manually set settings, stop detection
         if (_settings.Settings.GetClusterSettings(_cluster).MetricsServiceType == MetricsServiceType.AzureManagedPrometheus)
         {
             return;
@@ -74,8 +102,11 @@ public partial class MetricsService : ObservableObject, IInitializeCluster
             {
                 if (service.Value.Metadata.Labels?.TryGetValue("operated-prometheus", out var value) == true && value == "true")
                 {
-                    _settings.Settings.GetClusterSettings(_cluster).MetricsServiceType = MetricsServiceType.Prometheus;
-                    _settings.SaveSettings();
+                    _ = Dispatcher.UIThread.InvokeAsync(() => {
+                        _settings.Settings.GetClusterSettings(_cluster).MetricsServiceType = MetricsServiceType.Prometheus;
+                        _settings.SaveSettings();
+                    });
+
                     _prometheusServiceNamespace = service.Value.Namespace();
                     _prometheusServiceName = service.Value.Name();
                     _prometheusServicePort = service.Value.Spec.Ports.First(x => x.Name == "http-web").Port;
@@ -139,32 +170,6 @@ public partial class MetricsService : ObservableObject, IInitializeCluster
         }
     }
 
-    public async Task GetData<T>(TimeSpan fromTime, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new()
-    {
-        if (_settings.Settings.GetClusterSettings(_cluster).MetricsServiceType == MetricsServiceType.KubernetesMetricsServer)
-        {
-            if (typeof(T) == typeof(V1Node))
-            {
-
-            }
-            else if (typeof(T) == typeof(V1Pod))
-            {
-
-            }
-        }
-        else if (_settings.Settings.GetClusterSettings(_cluster).MetricsServiceType == MetricsServiceType.Prometheus)
-        {
-            if (typeof(T) == typeof(V1Node))
-            {
-               var data1 =  await _prometheusClient.Query("sum(rate(node_cpu_seconds_total{mode=~\"user|system\"}[5m])) by(node)", DateTimeOffset.Now.Add(-fromTime), DateTimeOffset.Now);
-            }
-            else if (typeof(T) == typeof(V1Pod))
-            {
-
-            }
-        }
-    }
-
     public void Initialize(ICluster cluster)
     {
         _cluster = cluster;
@@ -175,23 +180,20 @@ public partial class MetricsService : ObservableObject, IInitializeCluster
 
             switch (_settings.Settings.GetClusterSettings(_cluster).MetricsServiceType)
             {
-                case MetricsServiceType.None:
-                    break;
                 case MetricsServiceType.KubernetesMetricsServer:
                     _metricsRefreshTimer = new(TimeSpan.FromSeconds(30), DispatcherPriority.Background, UpdateKubeMetrics);
                     _metricsRefreshTimer.Start();
                     UpdateKubeMetrics(null, null);
                     break;
                 case MetricsServiceType.Prometheus:
-                    _prometheusService = _cluster.AddServicePortForward(_prometheusServiceNamespace, _prometheusServiceName, _prometheusServicePort);
-
-                    _prometheusClient = Application.Current.GetRequiredService<PrometheusClient>();
-                    _prometheusClient.Initialize(_prometheusService);
-                    await GetData<V1Node>(TimeSpan.FromHours(1), "r720");
+                    _httpClient = new HttpClient();
+                    _prometheusServicePortForward = _cluster.AddServicePortForward(_prometheusServiceNamespace, _prometheusServiceName, _prometheusServicePort.Value);
                     break;
                 case MetricsServiceType.AzureManagedPrometheus:
-
-                    break;
+                    throw new NotSupportedException();
+                //break;
+                default:
+                    throw new NotSupportedException();
             }
         });
     }
@@ -224,33 +226,6 @@ public partial class MetricsService : ObservableObject, IInitializeCluster
         {
             _logger.LogError(ex, "Error updating Metrics");
         }
-    }
-}
-
-[ServiceDescriptor<MetricsService>(ServiceLifetime.Transient)]
-internal partial class PrometheusClient : ObservableObject
-{
-    private readonly ILogger<PrometheusClient> _logger;
-    private PortForwarder _portForwarder;
-    private readonly HttpClient _httpClient;
-    public PrometheusClient(ILogger<PrometheusClient> logger)
-    {
-        _logger = logger;
-        _httpClient = new HttpClient();
-    }
-
-    public void Initialize(PortForwarder portForwarder)
-    {
-        _portForwarder = portForwarder;
-    }
-
-    // https://prometheus.io/docs/prometheus/latest/querying/api/#range-queries
-    // http://localhost:60077/api/v1/query_range?query=sum(kube_node_status_capacity{resource="memory"}) by (node)&start=1731378073.038&end=1731378373.038&step=1
-    public async Task<PrometheusClientQueryRangeResponse> Query(string query, DateTimeOffset start, DateTimeOffset end, string step = "1")
-    {
-        var url = $"http://localhost:{_portForwarder.LocalPort}/api/v1/query_range?query={query}&start={start.ToUnixTimeSeconds()}&end={end.ToUnixTimeSeconds()}&step={step}";
-        var response = await _httpClient.GetAsync(url);
-        return await response.Content.ReadFromJsonAsync<PrometheusClientQueryRangeResponse>();
     }
 }
 
@@ -289,17 +264,17 @@ public class PrometheusClientQueryRangeResponse
 
             [JsonPropertyName("values")]
             [JsonConverter(typeof(TupleConverter))]
-            public IList<ValueTuple<DateTimeOffset, decimal>> Values { get; set; }
+            public IList<ValueTuple<DateTimeOffset, double>> Values { get; set; }
 
-            public class TupleConverter : JsonConverter<IList<ValueTuple<DateTimeOffset, decimal>>>
+            public class TupleConverter : JsonConverter<IList<ValueTuple<DateTimeOffset, double>>>
             {
-                public override IList<ValueTuple<DateTimeOffset, decimal>>? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                public override IList<ValueTuple<DateTimeOffset, double>>? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
                 {
-                    var list = new List<ValueTuple<DateTimeOffset, decimal>>();
+                    var list = new List<ValueTuple<DateTimeOffset, double>>();
 
                     if (reader.TokenType == JsonTokenType.StartArray)
                     {
-                        ValueTuple<DateTimeOffset, decimal> temp = default;
+                        ValueTuple<DateTimeOffset, double> temp = default;
                         bool instance = false;
 
                         while (reader.Read())
@@ -323,7 +298,7 @@ public class PrometheusClientQueryRangeResponse
 
                                     break;
                                 case JsonTokenType.String:
-                                    temp.Item2 = decimal.Parse(reader.GetString());
+                                    temp.Item2 = double.Parse(reader.GetString());
                                     break;
                                 case JsonTokenType.Number:
                                     temp.Item1 = DateTimeOffset.FromUnixTimeSeconds(reader.GetInt64());
@@ -337,7 +312,7 @@ public class PrometheusClientQueryRangeResponse
                     throw new NotSupportedException();
                 }
 
-                public override void Write(Utf8JsonWriter writer, IList<ValueTuple<DateTimeOffset, decimal>> value, JsonSerializerOptions options)
+                public override void Write(Utf8JsonWriter writer, IList<ValueTuple<DateTimeOffset, double>> value, JsonSerializerOptions options)
                 {
                     throw new NotSupportedException();
                 }

@@ -32,7 +32,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private IDialogService _dialogService;
 
-    private MetricsService _metricsService;
+    [ObservableProperty]
+    private IMetricsService _metricsService;
 
     [ObservableProperty]
     private string _name;
@@ -78,7 +79,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private ResourceNavigationLink _crdNavigationLink;
 
-    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ModelCache modelCache, IGenerator generator, ISettingsService settingsService, IDialogService dialogService, MetricsService metricsService)
+    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ModelCache modelCache, IGenerator generator, ISettingsService settingsService, IDialogService dialogService, IMetricsService metricsService)
     {
         _loggerFactory = loggerFactory;
         _logger = logger;

@@ -2,6 +2,7 @@
 using k8s;
 using k8s.Models;
 using KubeUI.Client.Informer;
+using KubeUI.Client.Metrics;
 using Swordfish.NET.Collections;
 using static KubeUI.Client.Cluster;
 
@@ -41,4 +42,6 @@ public interface ICluster
     PortForwarder AddServicePortForward(string @namespace, string serviceName, int containerPort);
 
     bool ListNamespaces { get; set; }
+
+    IMetricsService MetricsService { get; set; }
 }
