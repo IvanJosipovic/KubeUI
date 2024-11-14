@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using System.Text.Json.Serialization;
 using Avalonia.Styling;
 using Scrutor;
 
@@ -80,6 +81,7 @@ public sealed partial class SettingsService : ObservableObject, ISettingsService
                 File.WriteAllText(GetSettingsFilePath(), JsonSerializer.Serialize(Settings, new JsonSerializerOptions(JsonSerializerDefaults.General)
                 {
                     WriteIndented = true,
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
                 }));
             }
             else

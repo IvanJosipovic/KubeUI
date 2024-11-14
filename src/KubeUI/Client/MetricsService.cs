@@ -25,7 +25,7 @@ public partial class MetricsService : ObservableObject, IInitializeCluster
 {
     private readonly ILogger<MetricsService> _logger;
 
-    private readonly SettingsService _settings;
+    private readonly ISettingsService _settings;
 
     private ICluster _cluster;
 
@@ -47,7 +47,7 @@ public partial class MetricsService : ObservableObject, IInitializeCluster
     [ObservableProperty]
     private ObservableCollection<NodeMetrics> _nodeMetrics = [];
 
-    public MetricsService(ILogger<MetricsService> logger, SettingsService settings)
+    public MetricsService(ILogger<MetricsService> logger, ISettingsService settings)
     {
         _logger = logger;
         _settings = settings;
@@ -190,7 +190,7 @@ public partial class MetricsService : ObservableObject, IInitializeCluster
                     await GetData<V1Node>(TimeSpan.FromHours(1), "r720");
                     break;
                 case MetricsServiceType.AzureManagedPrometheus:
-                    
+
                     break;
             }
         });

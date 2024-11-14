@@ -2,7 +2,7 @@
 
 namespace KubeUI.ViewModels;
 
-public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializeCluster
+public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializeCluster, IDisposable
 {
     public ISettingsService SettingsService { get; }
 
@@ -15,11 +15,18 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
         SettingsService = Application.Current.GetRequiredService<ISettingsService>();
     }
 
+    private void Settings_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        SettingsService.SaveSettings();
+    }
+
     public void Initialize(ICluster cluster)
     {
         Cluster = cluster;
         Id = nameof(ClusterSettingsViewModel) + Cluster.Name;
         ClusterSettings = SettingsService.Settings.GetClusterSettings(cluster);
+
+        ClusterSettings.PropertyChanged += Settings_PropertyChanged;
     }
 
     [ObservableProperty]
@@ -31,11 +38,14 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
     [RelayCommand]
     private void AddNamespace()
     {
+        if (ClusterSettings.Namespaces == null)
+        {
+            ClusterSettings.Namespaces = [];
+        }
+
         if (!string.IsNullOrEmpty(Namespace) && !ClusterSettings.Namespaces.Contains(Namespace))
         {
             ClusterSettings.Namespaces.Add(Namespace);
-
-            SettingsService.SaveSettings();
 
             Namespace = "";
         }
@@ -47,8 +57,11 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
         if (!string.IsNullOrEmpty(ns) && ClusterSettings.Namespaces.Contains(ns))
         {
             ClusterSettings.Namespaces.Remove(ns);
-
-            SettingsService.SaveSettings();
         }
+    }
+
+    public void Dispose()
+    {
+        ClusterSettings.PropertyChanged -= Settings_PropertyChanged;
     }
 }

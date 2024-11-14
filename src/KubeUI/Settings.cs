@@ -47,11 +47,17 @@ public sealed partial class Settings : ObservableObject
 public sealed partial class ClusterSettings : ObservableObject
 {
     [ObservableProperty]
-    private ObservableCollection<string>? _namespaces = [];
+    private ObservableCollection<string>? _namespaces;
 
     [ObservableProperty]
     private MetricsServiceType _metricsServiceType;
 
     [ObservableProperty]
-    private string _prometheusServerUrl;
+    private string? _prometheusServerUrl;
+
+    [ObservableProperty]
+    private string? _prometheusClientId;
+
+    [ObservableProperty]
+    private string? _prometheusClientSecret;
 }

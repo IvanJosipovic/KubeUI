@@ -78,5 +78,31 @@ public sealed class ClusterSettingsView : MyViewBase<ClusterSettingsViewModel>
                             .VerticalAlignment(VerticalAlignment.Center)
                             .Text(@vm.ClusterSettings.PrometheusServerUrl),
                         ]),
+                new Grid()
+                    .Cols("*,2*")
+                    .ToolTip("Prometheus Client Id")
+                    .IsEnabled(@vm.ClusterSettings.MetricsServiceType, new FuncValueConverter<MetricsServiceType, bool>((x) => x == MetricsServiceType.AzureManagedPrometheus))
+                    .Children([
+                        new Label()
+                            .Col(0)
+                            .Content("Prometheus Client Id"),
+                        new TextBox()
+                            .Col(1)
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .Text(@vm.ClusterSettings.PrometheusClientId),
+                        ]),
+                new Grid()
+                    .Cols("*,2*")
+                    .ToolTip("Prometheus Client Secret")
+                    .IsEnabled(@vm.ClusterSettings.MetricsServiceType, new FuncValueConverter<MetricsServiceType, bool>((x) => x == MetricsServiceType.AzureManagedPrometheus))
+                    .Children([
+                        new Label()
+                            .Col(0)
+                            .Content("Prometheus Client Secret"),
+                        new TextBox()
+                            .Col(1)
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .Text(@vm.ClusterSettings.PrometheusClientSecret),
+                        ]),
             ]);
 }
