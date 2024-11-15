@@ -106,7 +106,10 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
                             }
                         ])
                         .OnTextChanged((x) => {
-                            YamlFoldingStrategy.UpdateFoldings(_foldingManager, _textEditor.Document);
+                            if (_foldingManager != null)
+                            {
+                                YamlFoldingStrategy.UpdateFoldings(_foldingManager, _textEditor.Document);
+                            }
                         })
                         .FontFamily(new FontFamily("Consolas,Menlo,Monospace"))
                         .FontSize(14.0)

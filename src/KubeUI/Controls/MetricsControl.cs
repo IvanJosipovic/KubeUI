@@ -107,7 +107,7 @@ public sealed class MetricsControl : ViewBase
                     var data = new StackedStepAreaSeries<DateTimePoint>
                     {
                         Name = "CPU",
-                        Values = data1.Data.Result.First().Values.Select(x => new DateTimePoint(x.Item1.DateTime, x.Item2)).ToList()
+                        Values = data1.Data.Result.FirstOrDefault()?.Values.Select(x => new DateTimePoint(x.Item1.DateTime, x.Item2)).ToList() ?? []
                     };
 
                     Series = [data];

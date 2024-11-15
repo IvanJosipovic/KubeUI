@@ -159,8 +159,10 @@ public partial class MetricsService : ObservableObject, IInitializeCluster, IMet
 
             if (resp.Status.Allowed && resp2.Status.Allowed)
             {
-                _settings.Settings.GetClusterSettings(_cluster).MetricsServiceType = MetricsServiceType.KubernetesMetricsServer;
-                _settings.SaveSettings();
+                _ = Dispatcher.UIThread.InvokeAsync(() => {
+                    _settings.Settings.GetClusterSettings(_cluster).MetricsServiceType = MetricsServiceType.KubernetesMetricsServer;
+                    _settings.SaveSettings();
+                });
                 return;
             }
         }
