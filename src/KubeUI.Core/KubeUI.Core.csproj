@@ -20,7 +20,7 @@
     <PackageReference Include="AvaloniaEdit.TextMate" Version="11.1.0" />
     <PackageReference Include="Dock.Avalonia" Version="11.2.0" />
     <PackageReference Include="Dock.Model.Mvvm" Version="11.2.0" />
-    <PackageReference Include="FluentAvaloniaUI" Version="2.1.0" />
+    <PackageReference Include="FluentAvaloniaUI" Version="2.2.0" />
     <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia" Version="2.1.0" />
     <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia.Fluent" Version="2.1.0" />
     <PackageReference Include="Irihi.Ursa" Version="1.5.0.1" />
