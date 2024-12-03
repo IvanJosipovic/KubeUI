@@ -59,7 +59,8 @@
       "separateMajorMinor": true,
       "groupSlug": "irihi",
       "matchPackageNames": [
-        "Irihi.*"
+        "Irihi.*",
+        "Semi.Avalonia"
       ]
     },
     {
