@@ -12,7 +12,7 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia.Headless.XUnit" Version="11.2.2" />
-    <PackageReference Include="CliWrap" Version="3.6.7" />
+    <PackageReference Include="CliWrap" Version="3.7.0" />
     <PackageReference Include="coverlet.collector" Version="6.0.2">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
