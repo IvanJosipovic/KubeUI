@@ -28,7 +28,7 @@
     <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.0.0-rc4.5" />
     <PackageReference Include="NodeEditorAvalonia" Version="11.2.0" />
     <PackageReference Include="NodeEditorAvalonia.Mvvm" Version="11.2.0" />
-    <PackageReference Include="Semi.Avalonia" Version="11.2.1.1" />
+    <PackageReference Include="Semi.Avalonia" Version="11.2.1.2" />
     <PackageReference Include="System.Text.Json" Version=" 9.0.0" />
 
     <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
