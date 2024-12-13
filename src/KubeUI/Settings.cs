@@ -12,19 +12,19 @@ public enum LocalThemeVariant
 public sealed partial class Settings : ObservableObject
 {
     [ObservableProperty]
-    private LocalThemeVariant _theme;
+    public partial LocalThemeVariant Theme { get; set; }
 
     [ObservableProperty]
-    private bool _loggingEnabled;
+    public partial bool LoggingEnabled { get; set; }
 
     [ObservableProperty]
-    private bool _telemetryEnabled = true;
+    public partial bool TelemetryEnabled { get; set; } = true;
 
     [ObservableProperty]
-    private bool _preReleaseChannel = true;
+    public partial bool PreReleaseChannel { get; set; } = true;
 
     [ObservableProperty]
-    private Dictionary<string, ClusterSettings> _clusterSettings = [];
+    public partial Dictionary<string, ClusterSettings> ClusterSettings { get; set; } = [];
 
     public ClusterSettings GetClusterSettings(ICluster cluster)
     {
@@ -46,5 +46,5 @@ public sealed partial class Settings : ObservableObject
 public sealed partial class ClusterSettings : ObservableObject
 {
     [ObservableProperty]
-    private ObservableCollection<string>? _namespaces = [];
+    public partial ObservableCollection<string>? Namespaces { get; set; } = [];
 }

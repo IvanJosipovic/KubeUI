@@ -19,16 +19,16 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
     }
 
     [ObservableProperty]
-    private ICluster _cluster;
+    public partial ICluster Cluster { get; set; }
 
     [ObservableProperty]
-    private V1Pod _object;
+    public partial V1Pod Object { get; set; }
 
     [ObservableProperty]
-    private string _containerName;
+    public partial string ContainerName { get; set; }
 
     [ObservableProperty]
-    private TextDocument _console = new();
+    public partial TextDocument Console { get; set; } = new();
 
     private WebSocket? _webSocket;
     private StreamDemuxer? _streamDemuxer;

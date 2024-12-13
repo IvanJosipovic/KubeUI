@@ -17,7 +17,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
     }
 
     [ObservableProperty]
-    private ClusterManager _clusterManager;
+    public partial ClusterManager ClusterManager { get; set; }
 
     public NavigationViewModel()
     {
@@ -134,37 +134,37 @@ public sealed partial class NavigationViewModel : ViewModelBase
 public partial class NavigationItem : ObservableObject
 {
     [ObservableProperty]
-    private string _id;
+    public partial string Id { get; set; }
 
     [ObservableProperty]
-    private string? _svgIcon;
+    public partial string? SvgIcon { get; set; }
 
     [ObservableProperty]
-    private string? _styleIcon;
+    public partial string? StyleIcon { get; set; }
 
     [ObservableProperty]
-    private string _name;
+    public partial string Name { get; set; }
 
     [ObservableProperty]
-    private ObservableCollection<NavigationItem> _navigationItems = [];
+    public partial ObservableCollection<NavigationItem> NavigationItems { get; set; } = [];
 
     [ObservableProperty]
-    private bool _isExpanded;
+    public partial bool IsExpanded { get; set; }
 }
 
 public partial class NavigationLink : NavigationItem
 {
     [ObservableProperty]
-    private ICluster _cluster;
+    public partial ICluster Cluster { get; set; }
 
     [ObservableProperty]
-    private Type _controlType;
+    public partial Type ControlType { get; set; }
 }
 
 public partial class ResourceNavigationLink : NavigationLink
 {
     [ObservableProperty]
-    private ICollection _objects;
+    public partial ICollection Objects { get; set; }
 
     public string IconPath => Utilities.GetKubeAssetPath(ControlType);
 }

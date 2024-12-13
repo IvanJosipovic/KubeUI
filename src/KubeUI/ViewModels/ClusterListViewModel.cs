@@ -8,23 +8,22 @@ namespace KubeUI.ViewModels;
 public sealed partial class ClusterListViewModel : ViewModelBase
 {
     [ObservableProperty]
-    private ClusterManager _clusterManager;
+    public partial ClusterManager ClusterManager { get; set; }
 
     private readonly IDialogService _dialogService;
 
     public ClusterListViewModel()
     {
-        _clusterManager = Application.Current.GetRequiredService<ClusterManager>();
+        ClusterManager = Application.Current.GetRequiredService<ClusterManager>();
         _dialogService = Application.Current.GetRequiredService<IDialogService>();
 
         Title = Resources.ClusterListViewModel_Title;
         Id = nameof(ClusterListViewModel);
-
-        _selectedItem = _clusterManager.Clusters.FirstOrDefault();
+        SelectedItem = ClusterManager.Clusters.FirstOrDefault();
     }
 
     [ObservableProperty]
-    private ICluster _selectedItem;
+    public partial ICluster SelectedItem { get; set; }
 
     [RelayCommand(CanExecute = nameof(CanDelete))]
     private async Task Delete(ICluster cluster)

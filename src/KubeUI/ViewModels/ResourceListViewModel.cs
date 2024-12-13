@@ -30,25 +30,25 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     private readonly INotificationManager _notificationManager;
 
     [ObservableProperty]
-    private ICluster _cluster;
+    public partial ICluster Cluster { get; set; }
 
     [ObservableProperty]
-    private GroupApiVersionKind _kind;
+    public partial GroupApiVersionKind Kind { get; set; }
 
     [ObservableProperty]
-    private ConcurrentObservableDictionary<NamespacedName, T> _objects;
+    public partial ConcurrentObservableDictionary<NamespacedName, T> Objects { get; set; }
 
     [ObservableProperty]
-    private object _selectedItem;
+    public partial object SelectedItem { get; set; }
 
     [ObservableProperty]
-    private ReadOnlyObservableCollection<KeyValuePair<NamespacedName, T>> _dataGridObjects;
+    public partial ReadOnlyObservableCollection<KeyValuePair<NamespacedName, T>> DataGridObjects { get; set; }
 
     [ObservableProperty]
-    private string _searchQuery;
+    public partial string SearchQuery { get; set; }
 
     [ObservableProperty]
-    private ResourceListViewDefinition<T> _viewDefinition;
+    public partial ResourceListViewDefinition<T> ViewDefinition { get; set; }
 
     private IDisposable? _filter;
 

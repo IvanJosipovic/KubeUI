@@ -3,7 +3,7 @@
 public partial class Cluster
 {
     [ObservableProperty]
-    private ObservableCollection<PortForwarder> _portForwarders = [];
+    public partial ObservableCollection<PortForwarder> PortForwarders { get; set; } = [];
 
     public PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort)
     {

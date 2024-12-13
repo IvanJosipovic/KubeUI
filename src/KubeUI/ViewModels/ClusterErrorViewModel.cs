@@ -9,5 +9,5 @@ public sealed partial class ClusterErrorViewModel : ViewModelBase
     }
 
     [ObservableProperty]
-    private string? _error;
+    public partial string? Error { get; set; }
 }

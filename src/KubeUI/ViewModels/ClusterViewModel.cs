@@ -7,53 +7,52 @@ namespace KubeUI.ViewModels;
 public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster, INotifyPropertyChanged
 {
     [ObservableProperty]
-    private ICluster _cluster;
+    public partial ICluster Cluster { get; set; }
 
     [ObservableProperty]
-    private ResourceListViewModel<Corev1Event> _eventsVM;
+    public partial ResourceListViewModel<Corev1Event> EventsVM { get; set; }
 
     public ClusterViewModel()
     {
         Title = Resources.ClusterViewModel_Title;
-
-        _eventsVM = Application.Current.GetRequiredService<ResourceListViewModel<Corev1Event>>();
+        EventsVM = Application.Current.GetRequiredService<ResourceListViewModel<Corev1Event>>();
     }
 
     [ObservableProperty]
-    private ObservableValue _maxPods = new();
+    public partial ObservableValue MaxPods { get; set; } = new();
 
     [ObservableProperty]
-    private ObservableValue _totalPods = new();
+    public partial ObservableValue TotalPods { get; set; } = new();
 
     [ObservableProperty]
-    private ObservableValue _cpuCapacity = new();
+    public partial ObservableValue CpuCapacity { get; set; } = new();
 
     [ObservableProperty]
-    private ObservableValue _cpuAllocatable = new();
+    public partial ObservableValue CpuAllocatable { get; set; } = new();
 
     [ObservableProperty]
-    private ObservableValue _cpuRequests = new();
+    public partial ObservableValue CpuRequests { get; set; } = new();
 
     [ObservableProperty]
-    private ObservableValue _cpuLimits = new();
+    public partial ObservableValue CpuLimits { get; set; } = new();
 
     [ObservableProperty]
-    private ObservableValue _cpuUsage = new();
+    public partial ObservableValue CpuUsage { get; set; } = new();
 
     [ObservableProperty]
-    private ObservableValue _memoryCapacity = new();
+    public partial ObservableValue MemoryCapacity { get; set; } = new();
 
     [ObservableProperty]
-    private ObservableValue _memoryAllocatable = new();
+    public partial ObservableValue MemoryAllocatable { get; set; } = new();
 
     [ObservableProperty]
-    private ObservableValue _memoryRequests = new();
+    public partial ObservableValue MemoryRequests { get; set; } = new();
 
     [ObservableProperty]
-    private ObservableValue _memoryLimits = new();
+    public partial ObservableValue MemoryLimits { get; set; } = new();
 
     [ObservableProperty]
-    private ObservableValue _memoryUsage = new();
+    public partial ObservableValue MemoryUsage { get; set; } = new();
 
     public void RefreshData()
     {

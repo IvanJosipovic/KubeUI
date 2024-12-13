@@ -33,37 +33,36 @@ public sealed partial class Cluster : ObservableObject, ICluster
     private IDialogService _dialogService;
 
     [ObservableProperty]
-    private string _name;
+    public partial string Name { get; set; }
 
     [ObservableProperty]
-    private string _kubeConfigPath;
+    public partial string KubeConfigPath { get; set; }
 
     [ObservableProperty]
-    private K8SConfiguration _kubeConfig;
+    public partial K8SConfiguration KubeConfig { get; set; }
 
     [ObservableProperty]
-    private bool _connected;
+    public partial bool Connected { get; set; }
 
     [ObservableProperty]
-    private IKubernetes? _client;
+    public partial IKubernetes? Client { get; set; }
 
     [ObservableProperty]
-    private ObservableCollection<NavigationItem> _navigationItems = [];
+    public partial ObservableCollection<NavigationItem> NavigationItems { get; set; } = [];
 
     [ObservableProperty]
-    private ModelCache _modelCache;
+    public partial ModelCache ModelCache { get; set; }
 
     private IGenerator _generator;
 
     [ObservableProperty]
-    private bool _isExpanded;
+    public partial bool IsExpanded { get; set; }
 
     [ObservableProperty]
-    private ConcurrentObservableDictionary<NamespacedName, V1Namespace> _namespaces = [];
+    public partial ConcurrentObservableDictionary<NamespacedName, V1Namespace> Namespaces { get; set; } = [];
 
     [ObservableProperty]
-    private ObservableCollection<V1Namespace> _selectedNamespaces = [];
-
+    public partial ObservableCollection<V1Namespace> SelectedNamespaces { get; set; } = [];
     public V2beta1APIGroupDiscoveryList NativeAPIGroupDiscoveryList { get; private set; }
 
     public V2beta1APIGroupDiscoveryList APIGroupDiscoveryList { get; private set; }
@@ -80,13 +79,12 @@ public sealed partial class Cluster : ObservableObject, ICluster
     {
         _loggerFactory = loggerFactory;
         _logger = logger;
-        _modelCache = modelCache;
+        ModelCache = modelCache;
         _generator = generator;
 
         var kubeAssemblyXmlDoc = new XmlDocument();
         kubeAssemblyXmlDoc.Load(typeof(Generator).Assembly.GetManifestResourceStream("runtime.KubernetesClient.xml"));
-
-        _modelCache.AddToCache(typeof(V1Deployment).Assembly, kubeAssemblyXmlDoc);
+        ModelCache.AddToCache(typeof(V1Deployment).Assembly, kubeAssemblyXmlDoc);
         _settingsService = settingsService;
         _dialogService = dialogService;
     }
@@ -901,14 +899,14 @@ public sealed partial class Cluster : ObservableObject, ICluster
 public partial class ContainerClass : ObservableObject
 {
     [ObservableProperty]
-    private Type _type;
+    public partial Type Type { get; set; }
 
     [ObservableProperty]
-    private List<IResourceInformer> _informers = [];
+    public partial List<IResourceInformer> Informers { get; set; } = [];
 
     [ObservableProperty]
-    private ICollection _items;
+    public partial ICollection Items { get; set; }
 
     [ObservableProperty]
-    private bool _initialised;
+    public partial bool Initialised { get; set; }
 }

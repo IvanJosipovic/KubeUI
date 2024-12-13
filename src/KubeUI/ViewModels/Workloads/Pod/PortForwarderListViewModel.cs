@@ -10,10 +10,10 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
     private readonly IDialogService _dialogService;
 
     [ObservableProperty]
-    private ICluster _cluster;
+    public partial ICluster Cluster { get; set; }
 
     [ObservableProperty]
-    private PortForwarder? _selectedItem;
+    public partial PortForwarder? SelectedItem { get; set; }
 
     public PortForwarderListViewModel()
     {

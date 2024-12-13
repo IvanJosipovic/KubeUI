@@ -17,7 +17,7 @@ public sealed partial class MainViewModel : ViewModelBase
     private readonly ISettingsService _settingsService;
 
     [ObservableProperty]
-    private ClusterManager _clusterManager;
+    public partial ClusterManager ClusterManager { get; set; }
 
     private readonly IDialogService _dialogService;
 
@@ -43,7 +43,7 @@ public sealed partial class MainViewModel : ViewModelBase
     }
 
     [ObservableProperty]
-    private IRootDock? _layout;
+    public partial IRootDock? Layout { get; set; }
 
     private void DebugFactoryEvents(IFactory factory)
     {

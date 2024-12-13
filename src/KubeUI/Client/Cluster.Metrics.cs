@@ -6,11 +6,10 @@ namespace KubeUI.Client;
 public partial class Cluster
 {
     [ObservableProperty]
-    private ObservableCollection<PodMetrics> _podMetrics = [];
+    public partial ObservableCollection<PodMetrics> PodMetrics { get; set; } = [];
 
     [ObservableProperty]
-    private ObservableCollection<NodeMetrics> _nodeMetrics = [];
-
+    public partial ObservableCollection<NodeMetrics> NodeMetrics { get; set; } = [];
     public bool IsMetricsAvailable { get; private set; }
 
     private DispatcherTimer _metricsRefreshTimer;
