@@ -124,7 +124,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                     Connected = true;
 
-                    _metricsService.Initialize(this);
+                    MetricsService.Initialize(this);
 
                     await GetPermissions();
 

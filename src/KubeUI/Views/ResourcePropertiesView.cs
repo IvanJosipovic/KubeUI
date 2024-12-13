@@ -4,7 +4,6 @@ using Avalonia.Controls.Templates;
 using System.Text;
 using Avalonia.Controls.Primitives;
 using Avalonia.Styling;
-using Avalonia.Markup.Declarative;
 using KubeUI.Controls;
 
 namespace KubeUI.Views;
