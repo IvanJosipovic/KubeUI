@@ -62,8 +62,8 @@
     </PackageReference>
     <PackageReference Include="Scrutor" Version="5.0.2" />
     <PackageReference Include="Swordfish.NET.CollectionsV3" Version="3.3.12" />
-    <PackageReference Include="TextMateSharp" Version="1.0.64" />
-    <PackageReference Include="TextMateSharp.Grammars" Version="1.0.64" />
+    <PackageReference Include="TextMateSharp" Version="1.0.65" />
+    <PackageReference Include="TextMateSharp.Grammars" Version="1.0.65" />
     <PackageReference Include="Velopack" Version="0.0.942" />
     <PackageReference Include="YamlDotNet.System.Text.Json" Version="1.6.4" />
   </ItemGroup>
