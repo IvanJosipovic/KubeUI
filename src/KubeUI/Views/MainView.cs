@@ -17,6 +17,9 @@ public sealed class MainView : MyViewBase<MainViewModel>
                             .Header(Assets.Resources.MainView_Menu_File)
                             .Items([
                                 new MenuItem()
+                                    .Header(Assets.Resources.MainView_Menu_File_LoadKubeConfig)
+                                    .Command(vm.LoadKubeConfigCommand),
+                                new MenuItem()
                                     .Header(Assets.Resources.MainView_Menu_File_Clusters)
                                     .Command(vm.OpenClustersCommand),
                                 new MenuItem()

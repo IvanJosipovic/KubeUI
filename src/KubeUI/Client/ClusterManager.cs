@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Text;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using k8s;
@@ -29,13 +28,16 @@ public sealed partial class ClusterManager : ObservableObject, IDisposable
 
     private readonly IFactory _factory;
 
+    private readonly ISettingsService _settingsService;
+
     private IDictionary<string, FileSystemWatcher> _fileWatchers = new Dictionary<string, FileSystemWatcher>();
 
-    public ClusterManager(ILogger<ClusterManager> logger, IServiceProvider serviceProvider, IFactory factory)
+    public ClusterManager(ILogger<ClusterManager> logger, IServiceProvider serviceProvider, IFactory factory, ISettingsService settingsService)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
         _factory = factory;
+        _settingsService = settingsService;
 
         KubernetesClientConfiguration.ExecStdError += KubernetesClientConfiguration_ExecStdError;
 
@@ -105,15 +107,45 @@ public sealed partial class ClusterManager : ObservableObject, IDisposable
 
     private void LoadClusters()
     {
-        LoadFromConfigFromPath(KubernetesClientConfiguration.KubeConfigDefaultLocation);
+        if (!_settingsService.Settings.KubeConfigs.Contains(KubernetesClientConfiguration.KubeConfigDefaultLocation))
+        {
+            // Load Default Kube Config
+            try
+            {
+                LoadFromConfigFromPath(KubernetesClientConfiguration.KubeConfigDefaultLocation);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error Loading Clusters from Default KubeConfig");
+            }
+        }
+
+        // Load Saved Kube Configs
+        foreach (var config in _settingsService.Settings.KubeConfigs)
+        {
+            try
+            {
+                LoadFromConfigFromPath(config);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error Loading Clusters from KubeConfig: " + config);
+            }
+        }
     }
 
-    private void LoadFromConfigFromPath(string path)
+    public void LoadFromConfigFromPath(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
 
         if (File.Exists(path))
         {
+            if (!_settingsService.Settings.KubeConfigs.Contains(path))
+            {
+                _settingsService.Settings.KubeConfigs.Add(path);
+                _settingsService.SaveSettings();
+            }
+
             try
             {
                 WatchKubeConfig(path);
@@ -174,15 +206,6 @@ public sealed partial class ClusterManager : ObservableObject, IDisposable
 
             Clusters.Add(cluster);
         }
-    }
-
-    public void LoadFromConfig(string kubeConfig)
-    {
-        ArgumentNullException.ThrowIfNull(kubeConfig);
-
-        var config = KubernetesClientConfiguration.LoadKubeConfig(new MemoryStream(Encoding.UTF8.GetBytes(kubeConfig)));
-
-        LoadFromConfig(config);
     }
 
     public ICluster? GetCluster(string name)

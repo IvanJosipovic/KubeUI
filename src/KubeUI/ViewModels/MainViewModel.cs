@@ -212,6 +212,28 @@ public sealed partial class MainViewModel : ViewModelBase
         _settingsService.SaveSettings();
     }
 
+    [RelayCommand]
+    private async Task LoadKubeConfig()
+    {
+        var files = await App.TopLevel.StorageProvider.OpenFilePickerAsync(new()
+        {
+            Title = Resources.MainView_Menu_File_LoadKubeConfig_Open,
+            AllowMultiple = true,
+        });
+
+        foreach (var file in files)
+        {
+            try
+            {
+                ClusterManager.LoadFromConfigFromPath(file.Path.LocalPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading kube config");
+            }
+        }
+    }
+
     private async Task CheckForUpdates()
     {
         var sor = new GithubSource("https://github.com/IvanJosipovic/KubeUI", null, _settingsService.Settings.PreReleaseChannel);

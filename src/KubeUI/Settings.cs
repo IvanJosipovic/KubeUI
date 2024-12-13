@@ -26,6 +26,9 @@ public sealed partial class Settings : ObservableObject
     [ObservableProperty]
     public partial Dictionary<string, ClusterSettings> ClusterSettings { get; set; } = [];
 
+    [ObservableProperty]
+    public partial ObservableCollection<string> KubeConfigs { get; set; } = [];
+
     public ClusterSettings GetClusterSettings(ICluster cluster)
     {
         var _key = cluster.KubeConfigPath + " " + cluster.Name;
