@@ -196,7 +196,7 @@ namespace KubeUI.Assets {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Remove Cluster: {0}.
+        ///   Looks up a localized string similar to Remove Cluster from Kube Config: {0}.
         /// </summary>
         public static string ClusterListViewModel_Delete_Content {
             get {
@@ -300,6 +300,24 @@ namespace KubeUI.Assets {
         public static string MainView_Menu_File_Exit {
             get {
                 return ResourceManager.GetString("MainView_Menu_File_Exit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to _Load Kube Config.
+        /// </summary>
+        public static string MainView_Menu_File_LoadKubeConfig {
+            get {
+                return ResourceManager.GetString("MainView_Menu_File_LoadKubeConfig", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Select Kube Config.
+        /// </summary>
+        public static string MainView_Menu_File_LoadKubeConfig_Open {
+            get {
+                return ResourceManager.GetString("MainView_Menu_File_LoadKubeConfig_Open", resourceCulture);
             }
         }
         

@@ -20,11 +20,10 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
     public string Type { get; private set; }
 
     [ObservableProperty]
-    private int _localPort;
+    public partial int LocalPort { get; set; }
 
     [ObservableProperty]
-    private string _status = "Initializing";
-
+    public partial string Status { get; set; } = "Initializing";
 
     private bool _isDisposing;
 

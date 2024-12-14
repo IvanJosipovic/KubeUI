@@ -14,28 +14,28 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
     private readonly INotificationManager _notificationManager;
 
     [ObservableProperty]
-    private ICluster? _cluster;
+    public partial ICluster? Cluster { get; set; }
 
     [ObservableProperty]
-    private IKubernetesObject<V1ObjectMeta>? _object;
+    public partial IKubernetesObject<V1ObjectMeta>? Object { get; set; }
 
     [ObservableProperty]
-    private TextDocument _yamlDocument = new();
+    public partial TextDocument YamlDocument { get; set; } = new();
 
     [ObservableProperty]
-    private bool _editMode;
+    public partial bool EditMode { get; set; }
 
     [ObservableProperty]
-    private bool _hideNoisyFields = true;
+    public partial bool HideNoisyFields { get; set; } = true;
 
     [ObservableProperty]
-    private bool _wordWrap;
+    public partial bool WordWrap { get; set; }
 
     [ObservableProperty]
-    private Vector _scrollOffset;
+    public partial Vector ScrollOffset { get; set; }
 
     [ObservableProperty]
-    private IEnumerable<FoldingSection> _allFoldings;
+    public partial IEnumerable<FoldingSection> AllFoldings { get; set; }
 
     public ResourceYamlViewModel()
     {

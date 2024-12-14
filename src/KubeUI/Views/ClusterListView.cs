@@ -28,6 +28,12 @@ public sealed class ClusterListView : MyViewBase<ClusterListViewModel>
                                     {
                                         Binding = new Binding("Name"),
                                         Header = "Name",
+                                        Width = new DataGridLength(1, DataGridLengthUnitType.Star),
+                                    },
+                                    new DataGridTextColumn()
+                                    {
+                                        Binding = new Binding("KubeConfigPath"),
+                                        Header = "KubeConfig",
                                     },
                                 ]);
 

@@ -42,10 +42,10 @@ public partial class MetricsService : ObservableObject, IInitializeCluster, IMet
     private DispatcherTimer _metricsRefreshTimer;
 
     [ObservableProperty]
-    private ObservableCollection<PodMetrics> _podMetrics = [];
+    public partial ObservableCollection<PodMetrics> PodMetrics { get; set; } = [];
 
     [ObservableProperty]
-    private ObservableCollection<NodeMetrics> _nodeMetrics = [];
+    public partial ObservableCollection<NodeMetrics> NodeMetrics { get; set; } = [];
 
     public MetricsService(ILogger<MetricsService> logger, ISettingsService settings)
     {

@@ -294,7 +294,7 @@ Are you sure?</value>
     <value>Clusters</value>
   </data>
   <data name="ClusterListViewModel_Delete_Content" xml:space="preserve">
-    <value>Remove Cluster: {0}</value>
+    <value>Remove Cluster from Kube Config: {0}</value>
   </data>
   <data name="ClusterListViewModel_Delete_Primary" xml:space="preserve">
     <value>Yes</value>
@@ -386,5 +386,11 @@ Are you sure?</value>
   </data>
   <data name="ResourceListViewModel_DrainNode_Primary" xml:space="preserve">
     <value>Yes</value>
+  </data>
+  <data name="MainView_Menu_File_LoadKubeConfig" xml:space="preserve">
+    <value>_Load Kube Config</value>
+  </data>
+  <data name="MainView_Menu_File_LoadKubeConfig_Open" xml:space="preserve">
+    <value>Select Kube Config</value>
   </data>
 </root>

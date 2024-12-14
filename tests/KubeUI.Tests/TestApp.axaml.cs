@@ -44,6 +44,8 @@ public class TestApp : Application
         var notifications = new Mock<INotificationManager>();
         builder.Services.AddSingleton<INotificationManager>(notifications.Object);
 
+        builder.Services.AddSingleton<ISettingsService, SettingsService>();
+
         builder.Services.Scan(scan => scan
             .FromAssemblyOf<App>()
             .AddClasses(classes => classes.AssignableToAny([typeof(UserControl), typeof(ObservableObject), typeof(ViewModelBase), typeof(MyViewBase<>)]))
@@ -54,6 +56,9 @@ public class TestApp : Application
         builder.Services.Scan(x => x.FromAssemblyOf<App>().AddClasses().UsingAttributes());
 
         Host = builder.Build();
+
+        Host.Services.GetRequiredService<ISettingsService>().Settings = new Settings();
+
         Resources[typeof(IServiceProvider)] = Host.Services;
         _ = Host.RunAsync();
 

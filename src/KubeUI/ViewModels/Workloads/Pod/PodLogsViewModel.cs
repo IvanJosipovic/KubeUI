@@ -12,31 +12,31 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     private readonly ILogger<PodLogsViewModel> _logger;
 
     [ObservableProperty]
-    private ICluster _cluster;
+    public partial ICluster Cluster { get; set; }
 
     [ObservableProperty]
-    private V1Pod _object;
+    public partial V1Pod Object { get; set; }
 
     [ObservableProperty]
-    private string _containerName;
+    public partial string ContainerName { get; set; }
 
     [ObservableProperty]
-    private TextDocument _logs = new();
+    public partial TextDocument Logs { get; set; } = new();
 
     [ObservableProperty]
-    private bool _previous;
+    public partial bool Previous { get; set; }
 
     [ObservableProperty]
-    private bool _timestamps;
+    public partial bool Timestamps { get; set; }
 
     [ObservableProperty]
-    private bool _autoScrollToBottom = true;
+    public partial bool AutoScrollToBottom { get; set; } = true;
 
     [ObservableProperty]
-    private bool _wordWrap;
+    public partial bool WordWrap { get; set; }
 
     [ObservableProperty]
-    private Vector _scrollOffset;
+    public partial Vector ScrollOffset { get; set; }
 
     private Stream? _stream;
 

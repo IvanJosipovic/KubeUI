@@ -30,10 +30,10 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
     }
 
     [ObservableProperty]
-    private ClusterSettings _clusterSettings;
+    public partial ClusterSettings ClusterSettings { get; set; }
 
     [ObservableProperty]
-    private string _namespace;
+    public partial string Namespace { get; set; }
 
     [RelayCommand]
     private void AddNamespace()

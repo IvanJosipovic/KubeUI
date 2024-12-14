@@ -17,7 +17,7 @@ public sealed partial class MainViewModel : ViewModelBase
     private readonly ISettingsService _settingsService;
 
     [ObservableProperty]
-    private ClusterManager _clusterManager;
+    public partial ClusterManager ClusterManager { get; set; }
 
     private readonly IDialogService _dialogService;
 
@@ -43,7 +43,7 @@ public sealed partial class MainViewModel : ViewModelBase
     }
 
     [ObservableProperty]
-    private IRootDock? _layout;
+    public partial IRootDock? Layout { get; set; }
 
     private void DebugFactoryEvents(IFactory factory)
     {
@@ -210,6 +210,28 @@ public sealed partial class MainViewModel : ViewModelBase
     {
         _settingsService.Settings.Theme = _settingsService.Settings.Theme == LocalThemeVariant.Light ? LocalThemeVariant.Dark : LocalThemeVariant.Light;
         _settingsService.SaveSettings();
+    }
+
+    [RelayCommand]
+    private async Task LoadKubeConfig()
+    {
+        var files = await App.TopLevel.StorageProvider.OpenFilePickerAsync(new()
+        {
+            Title = Resources.MainView_Menu_File_LoadKubeConfig_Open,
+            AllowMultiple = true,
+        });
+
+        foreach (var file in files)
+        {
+            try
+            {
+                ClusterManager.LoadFromConfigFromPath(file.Path.LocalPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading kube config");
+            }
+        }
     }
 
     private async Task CheckForUpdates()

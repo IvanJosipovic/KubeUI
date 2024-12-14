@@ -9,7 +9,7 @@ public partial class Cluster
     private ConcurrentObservableCollection<V1SelfSubjectAccessReview> _selfSubjectAccessReviews { get; } = [];
 
     [ObservableProperty]
-    private bool _listNamespaces;
+    public partial bool ListNamespaces { get; set; }
 
     private async Task GetPermissions()
     {

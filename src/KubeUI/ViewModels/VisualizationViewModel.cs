@@ -13,10 +13,10 @@ namespace KubeUI.ViewModels;
 public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeCluster, IDisposable
 {
     [ObservableProperty]
-    private ICluster? _cluster;
+    public partial ICluster? Cluster { get; set; }
 
     [ObservableProperty]
-    private DrawingNodeViewModel _drawing = new()
+    public partial DrawingNodeViewModel Drawing { get; set; } = new()
     {
         Nodes = new ObservableCollection<INode>(),
         Connectors = new ObservableCollection<IConnector>(),
@@ -30,10 +30,10 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     };
 
     [ObservableProperty]
-    private bool _hideNoise = true;
+    public partial bool HideNoise { get; set; } = true;
 
     [ObservableProperty]
-    private bool _hideUnattached = true;
+    public partial bool HideUnattached { get; set; } = true;
 
     private readonly int _resourceSize = 60;
 
@@ -2107,10 +2107,10 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     public sealed partial class ResourceNodeViewModel : NodeViewModel, INode
     {
         [ObservableProperty]
-        private IKubernetesObject<V1ObjectMeta> _resource;
+        public partial IKubernetesObject<V1ObjectMeta> Resource { get; set; }
 
         [ObservableProperty]
-        private GroupApiVersionKind _kind;
+        public partial GroupApiVersionKind Kind { get; set; }
 
         public ResourceNodeViewModel()
         {
