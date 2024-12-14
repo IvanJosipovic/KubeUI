@@ -44,9 +44,7 @@ public class TestApp : Application
         var notifications = new Mock<INotificationManager>();
         builder.Services.AddSingleton<INotificationManager>(notifications.Object);
 
-        var settings = new Mock<ISettingsService>();
-        settings.Object.Settings = new Settings();
-        builder.Services.AddSingleton<ISettingsService>(settings.Object);
+        builder.Services.AddSingleton<ISettingsService, SettingsService>();
 
         builder.Services.Scan(scan => scan
             .FromAssemblyOf<App>()
@@ -58,6 +56,9 @@ public class TestApp : Application
         builder.Services.Scan(x => x.FromAssemblyOf<App>().AddClasses().UsingAttributes());
 
         Host = builder.Build();
+
+        Host.Services.GetRequiredService<ISettingsService>().Settings = new Settings();
+
         Resources[typeof(IServiceProvider)] = Host.Services;
         _ = Host.RunAsync();
 

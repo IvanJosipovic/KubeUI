@@ -11,9 +11,9 @@ public sealed partial class SettingsService : ObservableObject, ISettingsService
 
     public Settings Settings { get; set; }
 
-    public SettingsService()
+    public SettingsService(ILogger<SettingsService> logger)
     {
-        _logger = Application.Current.GetRequiredService<ILogger<SettingsService>>();
+        _logger = logger;
     }
 
     public static string GetSettingsPath()
