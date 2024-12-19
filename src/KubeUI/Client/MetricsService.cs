@@ -9,6 +9,8 @@ namespace KubeUI.Client.Metrics;
 
 public enum MetricsServiceType
 {
+    Auto,
+
     None,
 
     [Description("Kubernetes Metrics Server")]
@@ -17,7 +19,7 @@ public enum MetricsServiceType
     Prometheus,
 
     [Description("Azure Managed Prometheus")]
-    AzureManagedPrometheus
+    AzureManagedPrometheus,
 }
 
 [ServiceDescriptor<IMetricsService>(ServiceLifetime.Transient)]
@@ -28,6 +30,7 @@ public partial class MetricsService : ObservableObject, IInitializeCluster, IMet
     private readonly ISettingsService _settings;
 
     private ICluster? _cluster;
+
     public MetricsServiceType MetricsServiceType => _settings.Settings.GetClusterSettings(_cluster).MetricsServiceType;
 
     // Used by Prometheus
@@ -64,7 +67,7 @@ public partial class MetricsService : ObservableObject, IInitializeCluster, IMet
     }
 
     // https://prometheus.io/docs/prometheus/latest/querying/api/#range-queries
-    public async Task<PrometheusClientQueryRangeResponse?> GetPrometheusMetics(string query, DateTimeOffset start, DateTimeOffset end, string step = "1")
+    public async Task<PrometheusClientQueryRangeResponse?> GetPrometheusMetrics(string query, DateTimeOffset start, DateTimeOffset end, string step = "1")
     {
         var url = $"{GetPrometheusUrl()}/api/v1/query_range?query={query}&start={start.ToUnixTimeSeconds()}&end={end.ToUnixTimeSeconds()}&step={step}";
         var response = await _httpClient.GetAsync(url);
@@ -87,7 +90,7 @@ public partial class MetricsService : ObservableObject, IInitializeCluster, IMet
         var kube = (Kubernetes)_cluster.Client!;
 
         // Manually set settings, stop detection
-        if (_settings.Settings.GetClusterSettings(_cluster).MetricsServiceType == MetricsServiceType.AzureManagedPrometheus)
+        if (_settings.Settings.GetClusterSettings(_cluster).MetricsServiceType != MetricsServiceType.Auto)
         {
             return;
         }
@@ -170,6 +173,11 @@ public partial class MetricsService : ObservableObject, IInitializeCluster, IMet
         {
             _logger.LogError(ex, "Error detecting Kubernetes Metrics Server");
         }
+
+        _ = Dispatcher.UIThread.InvokeAsync(() => {
+            _settings.Settings.GetClusterSettings(_cluster).MetricsServiceType = MetricsServiceType.None;
+            _settings.SaveSettings();
+        });
     }
 
     public void Initialize(ICluster cluster)
@@ -228,6 +236,12 @@ public partial class MetricsService : ObservableObject, IInitializeCluster, IMet
         {
             _logger.LogError(ex, "Error updating Metrics");
         }
+    }
+
+    public decimal GetPodCpuUsage(string @namespace, string name)
+    {
+        var cpuUsage = PodMetrics.Where(x => x.Name() == name && x.Namespace() == @namespace).OrderByDescending(x => x.Metadata.CreationTimestamp).FirstOrDefault().Containers.Select(x => x.Containers.Sum(y => y.Usage["cpu"]));
+        return cpuUsage;
     }
 }
 

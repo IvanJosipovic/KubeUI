@@ -147,7 +147,7 @@ public sealed class MetricsControl : ViewBase
 
     private async Task<ISeries> GeneratePromethes(string name, string query, DateTimeOffset from, DateTimeOffset to, string rate)
     {
-        var data1 = await _cluster.MetricsService.GetPrometheusMetics(query, from, to, rate);
+        var data1 = await _cluster.MetricsService.GetPrometheusMetrics(query, from, to, rate);
 
         if (data1.Status != "success")
         {

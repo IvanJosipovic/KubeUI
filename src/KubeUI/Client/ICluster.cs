@@ -10,26 +10,26 @@ namespace KubeUI.Client;
 
 public interface ICluster
 {
-    bool Connected { get; set; }
-    ConcurrentDictionary<GroupApiVersionKind, ContainerClass> Objects { get; }
-    ConcurrentObservableDictionary<NamespacedName, T> GetObjectDictionary<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
-    ConcurrentObservableDictionary<NamespacedName, V1Namespace> Namespaces { get; set; }
-    event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
-    IKubernetes? Client { get; set; }
-    ModelCache ModelCache { get; set; }
-    ObservableCollection<NavigationItem> NavigationItems { get; set; }
-    ObservableCollection<NodeMetrics> NodeMetrics { get; set; }
-    ObservableCollection<PodMetrics> PodMetrics { get; set; }
-    ObservableCollection<PortForwarder> PortForwarders { get; set; }
-    ObservableCollection<V1Namespace> SelectedNamespaces { get; set; }
-    PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort);
     string KubeConfigPath { get; set; }
     string Name { get; set; }
+    bool ListNamespaces { get; }
+    IMetricsService MetricsService { get; }
+    bool Connected { get; }
+    IKubernetes? Client { get; }
+    ModelCache ModelCache { get; }
+    ObservableCollection<NavigationItem> NavigationItems { get; }
+    ObservableCollection<PortForwarder> PortForwarders { get; set; }
+    ObservableCollection<V1Namespace> SelectedNamespaces { get; set; }
+    ConcurrentDictionary<GroupApiVersionKind, ContainerClass> Objects { get; }
+    ConcurrentObservableDictionary<NamespacedName, V1Namespace> Namespaces { get; }
+
+    event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
+
+    ConcurrentObservableDictionary<NamespacedName, T> GetObjectDictionary<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
     T? GetObject<T>(string @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task AddOrUpdate<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task Connect();
     Task Delete<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
-    bool IsMetricsAvailable { get; }
     Task ImportFolder(string path);
     Task ImportYaml(Stream stream);
     void RemovePortForward(PortForwarder pf);
@@ -39,9 +39,8 @@ public interface ICluster
     Task<ConcurrentObservableDictionary<NamespacedName, T>> GetObjectDictionaryAsync<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
     bool CanIAnyNamespace(Type type, Verb verb, string subresource = "");
     Task<T?> GetObjectAsync<T>(string @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new();
+
+
+    PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort);
     PortForwarder AddServicePortForward(string @namespace, string serviceName, int containerPort);
-
-    bool ListNamespaces { get; set; }
-
-    IMetricsService MetricsService { get; set; }
 }

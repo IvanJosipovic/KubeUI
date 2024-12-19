@@ -50,7 +50,7 @@ public sealed partial class Settings : ObservableObject
 public sealed partial class ClusterSettings : ObservableObject
 {
     [ObservableProperty]
-    public partial ObservableCollection<string>? Namespaces { get; set; } = [];
+    public partial ObservableCollection<string> Namespaces { get; set; } = [];
 
     [ObservableProperty]
     public partial MetricsServiceType MetricsServiceType { get; set; }

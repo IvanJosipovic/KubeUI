@@ -32,8 +32,22 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private IDialogService _dialogService;
 
-    [ObservableProperty]
-    public partial IMetricsService MetricsService { get; set; }
+    private IGenerator _generator;
+
+    private ResourceNavigationLink _crdNavigationLink;
+
+    private readonly SemaphoreSlim _semaphoreSlim = new(1);
+
+    public IMetricsService MetricsService { get; private set; }
+
+    public V2beta1APIGroupDiscoveryList NativeAPIGroupDiscoveryList { get; private set; }
+
+    public V2beta1APIGroupDiscoveryList APIGroupDiscoveryList { get; private set; }
+
+    public ConcurrentDictionary<GroupApiVersionKind, ContainerClass> Objects { get; } = [];
+
+    public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
+
 
     [ObservableProperty]
     public partial string Name { get; set; }
@@ -45,52 +59,39 @@ public sealed partial class Cluster : ObservableObject, ICluster
     public partial K8SConfiguration KubeConfig { get; set; }
 
     [ObservableProperty]
-    public partial bool Connected { get; set; }
+    public partial bool Connected { get; private set; }
 
     [ObservableProperty]
-    public partial IKubernetes? Client { get; set; }
+    public partial IKubernetes? Client { get; private set; }
 
     [ObservableProperty]
-    public partial ObservableCollection<NavigationItem> NavigationItems { get; set; } = [];
+    public partial ObservableCollection<NavigationItem> NavigationItems { get; private set; } = [];
 
     [ObservableProperty]
-    public partial ModelCache ModelCache { get; set; }
-
-    private IGenerator _generator;
+    public partial ModelCache ModelCache { get; private set; }
 
     [ObservableProperty]
     public partial bool IsExpanded { get; set; }
 
     [ObservableProperty]
-    public partial ConcurrentObservableDictionary<NamespacedName, V1Namespace> Namespaces { get; set; } = [];
+    public partial ConcurrentObservableDictionary<NamespacedName, V1Namespace> Namespaces { get; private set; } = [];
 
     [ObservableProperty]
     public partial ObservableCollection<V1Namespace> SelectedNamespaces { get; set; } = [];
-    public V2beta1APIGroupDiscoveryList NativeAPIGroupDiscoveryList { get; private set; }
-
-    public V2beta1APIGroupDiscoveryList APIGroupDiscoveryList { get; private set; }
-
-    public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
-
-    private readonly SemaphoreSlim _semaphoreSlim = new(1);
-
-    public ConcurrentDictionary<GroupApiVersionKind, ContainerClass> Objects { get; } = new();
-
-    private ResourceNavigationLink _crdNavigationLink;
 
     public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ModelCache modelCache, IGenerator generator, ISettingsService settingsService, IDialogService dialogService, IMetricsService metricsService)
     {
-        _loggerFactory = loggerFactory;
-        _logger = logger;
-        ModelCache = modelCache;
+        _dialogService = dialogService;
         _generator = generator;
+        _logger = logger;
+        _loggerFactory = loggerFactory;
+        _settingsService = settingsService;
+        MetricsService = metricsService;
+        ModelCache = modelCache;
 
         var kubeAssemblyXmlDoc = new XmlDocument();
         kubeAssemblyXmlDoc.Load(typeof(Generator).Assembly.GetManifestResourceStream("runtime.KubernetesClient.xml"));
         ModelCache.AddToCache(typeof(V1Deployment).Assembly, kubeAssemblyXmlDoc);
-        _settingsService = settingsService;
-        _dialogService = dialogService;
-        MetricsService = metricsService;
     }
 
     public async Task Connect()
@@ -176,8 +177,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
                             await Task.Delay(100);
                         }
                     }
-
-                    await InitMetrics();
 
                     await AddDefaultNavigation();
                 }

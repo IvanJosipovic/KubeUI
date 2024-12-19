@@ -7,7 +7,7 @@ namespace KubeUI.Client.Metrics
         MetricsServiceType MetricsServiceType { get; }
         IEnumerable<NodeMetrics> GetNodeMetrics(string name);
         IEnumerable<PodMetrics> GetPodMetrics(string name, string @namespace);
-        Task<PrometheusClientQueryRangeResponse?> GetPrometheusMetics(string query, DateTimeOffset start, DateTimeOffset end, string step = "1");
+        Task<PrometheusClientQueryRangeResponse?> GetPrometheusMetrics(string query, DateTimeOffset start, DateTimeOffset end, string step = "1");
         void Initialize(ICluster cluster);
     }
 }

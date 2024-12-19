@@ -423,22 +423,22 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 },
             ];
 
-            if (Cluster.IsMetricsAvailable)
+            if (Cluster.MetricsService.MetricsServiceType != Client.Metrics.MetricsServiceType.None)
             {
                 definition.Columns.Insert(3, new ResourceListViewDefinitionColumn<V1Pod, decimal>()
                 {
                     Name = "CPU",
                     CustomControl = typeof(PodMetricCPUCell),
-                    Field = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
-                    Display = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]).ToString() ?? "",
+                    //Field = x => Cluster.MetricsService.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
+                    //Display = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]).ToString() ?? "",
                     Width = "80"
                 });
                 definition.Columns.Insert(4, new ResourceListViewDefinitionColumn<V1Pod, decimal>()
                 {
                     Name = "Memory",
                     CustomControl = typeof(PodMetricMemoryCell),
-                    Field = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
-                    Display = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]).ToString() ?? "",
+                    //Field = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
+                    //Display = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]).ToString() ?? "",
                     Width = "80"
                 });
             }
