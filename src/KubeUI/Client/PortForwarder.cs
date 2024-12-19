@@ -25,6 +25,9 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
     [ObservableProperty]
     public partial string Status { get; set; } = "Initializing";
 
+    [ObservableProperty]
+    public partial int Connections { get; set; }
+
     private bool _isDisposing;
 
     public PortForwarder(ICluster cluster, string @namespace, int localPort = 0)
@@ -80,6 +83,7 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
 
     private async Task HandleConnection(Socket socket)
     {
+        Connections++;
         var podName = Name;
         var podPort = Port;
         if (Type == "Service")
@@ -102,6 +106,7 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
             {
                 Status = "No pods found for Service";
                 socket.Close();
+                Connections--;
                 return;
             }
             else
@@ -151,6 +156,7 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
         await write;
 
         socket.Close();
+        Connections--;
     }
 
     private static bool IsPortAvailable(int port)
