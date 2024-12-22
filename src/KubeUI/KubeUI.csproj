@@ -45,7 +45,7 @@
     <PackageReference Include="JsonPathLINQ" Version="1.0.0-alpha.10" />
     <PackageReference Include="KubernetesClient" Version="15.0.1" />
     <PackageReference Include="KubernetesCRDModelGen" Version="1.0.0-alpha.405" />
-    <PackageReference Include="Meziantou.Analyzer" Version="2.0.182">
+    <PackageReference Include="Meziantou.Analyzer" Version="2.0.183">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
