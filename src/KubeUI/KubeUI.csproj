@@ -60,7 +60,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Scrutor" Version="5.0.2" />
+    <PackageReference Include="Scrutor" Version="5.1.0" />
     <PackageReference Include="Swordfish.NET.CollectionsV3" Version="3.3.13" />
     <PackageReference Include="TextMateSharp" Version="1.0.65" />
     <PackageReference Include="TextMateSharp.Grammars" Version="1.0.65" />
