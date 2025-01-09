@@ -116,7 +116,9 @@ jobs:
         if: matrix.runs-on == 'windows-latest'
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Write metadata.json
         if: matrix.runs-on == 'windows-latest'
