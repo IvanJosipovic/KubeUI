@@ -135,9 +135,11 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Install Velopack Deps
+      - name: Write metadata.json
         if: matrix.runs-on == 'windows-latest'
-        run: echo ${{ secrets.AZURETRUSTEDSIGNFILE }} > src/KubeUI.Desktop/metadata.json
+        run: echo $SECRET > src/KubeUI.Desktop/metadata.json
+        env:
+          SECRET : ${{ secrets.AZURETRUSTEDSIGNFILE }}
 
       - name: Create Release
         working-directory: src/KubeUI.Desktop
