@@ -11,6 +11,10 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
 
+permissions:
+  id-token: write
+  contents: write
+
 jobs:
   build-test:
     name: Build & Test
@@ -58,11 +62,11 @@ jobs:
           - rid: win-x64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
-            packParam: --icon ../KubeUI/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose
+            packParam: --icon ../KubeUI/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signSkipDll
           - rid: win-arm64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
-            packParam: --icon ../KubeUI/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose
+            packParam: --icon ../KubeUI/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signSkipDll
           - rid: linux-x64
             fileName: KubeUI.Desktop
             runs-on: ubuntu-latest
