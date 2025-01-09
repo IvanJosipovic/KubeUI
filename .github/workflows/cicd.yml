@@ -126,7 +126,8 @@ jobs:
 
       - name: Write metadata.json
         if: matrix.runs-on == 'windows-latest'
-        run: echo $SECRET > src/KubeUI.Desktop/metadata.json
+        shell: pwsh
+        run: "[System.Text.Encoding]::UTF8.GetBytes($env:SECRET) | Set-Content -Path metadata.json -Encoding Byte"
         env:
           SECRET : ${{ secrets.AZURETRUSTEDSIGNFILE }}
 
