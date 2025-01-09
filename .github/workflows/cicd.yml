@@ -127,7 +127,7 @@ jobs:
       - name: Write metadata.json
         if: matrix.runs-on == 'windows-latest'
         shell: pwsh
-        run: "[System.Text.Encoding]::UTF8.GetBytes($env:SECRET) | Set-Content -Path metadata.json -Encoding Byte"
+        run: "[System.Text.Encoding]::UTF8.GetBytes($env:SECRET) | Set-Content -Path metadata.json -AsByteStream"
         env:
           SECRET : ${{ secrets.AZURETRUSTEDSIGNFILE }}
 
