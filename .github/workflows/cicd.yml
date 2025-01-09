@@ -75,11 +75,11 @@ jobs:
           - rid: win-x64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
-            packParam: --icon ../KubeUI/Assets/icon.ico
+            packParam: --icon ../KubeUI/Assets/icon.ico --azureTrustedSignFile metadata.json
           - rid: win-arm64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
-            packParam: --icon ../KubeUI/Assets/icon.ico
+            packParam: --icon ../KubeUI/Assets/icon.ico --azureTrustedSignFile metadata.json
           - rid: linux-x64
             fileName: KubeUI.Desktop
             runs-on: ubuntu-latest
@@ -128,6 +128,16 @@ jobs:
           files: 'src/KubeUI.Desktop/info.plist'
           search-text: '{{version}}'
           replacement-text: ${{ needs.semantic-release.outputs.new_release_version }}
+
+      - name: Azure Login
+        if: matrix.runs-on == 'windows-latest'
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Install Velopack Deps
+        if: matrix.runs-on == 'windows-latest'
+        run: echo ${{ secrets.AZURETRUSTEDSIGNFILE }} > src/KubeUI.Desktop/metadata.json
 
       - name: Create Release
         working-directory: src/KubeUI.Desktop
