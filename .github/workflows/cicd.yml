@@ -140,7 +140,7 @@ jobs:
           vpk pack --packTitle KubeUI -u KubeUI -v ${{ needs.semantic-release.outputs.new_release_version }} -p bin/publish -c ${{ matrix.rid }} -e ${{ matrix.fileName }} -o packed ${{ matrix.packParam }}
 
       - name: Test
-        if: matrix.runs-on == 'windows-latest' && success() || failure()
+        if: matrix.runs-on == 'windows-latest' && failure()
         shell: pwsh
         run: Get-ChildItem -Path C:\Users\runneradmin\AppData\Local\Temp\Velopack\temp.1\PreprocessPackDirWin\
 
