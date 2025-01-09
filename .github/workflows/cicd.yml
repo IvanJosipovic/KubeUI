@@ -33,6 +33,25 @@ jobs:
       - name: Build
         run: dotnet build -c Release
 
+      - name: Test
+        run: dotnet test -c Release --collect:"XPlat Code Coverage" --no-build --logger "trx;LogFileName=test-results.trx"
+
+      - name: Test Report
+        uses: dorny/test-reporter@v1
+        if: success() || failure()
+        with:
+          name: KubeUI Tests
+          path: tests/KubeUI.Tests/TestResults/test-results.trx
+          reporter: dotnet-trx
+
+      - name: Coverage
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: coverage.cobertura.xml
+          fail_ci_if_error: false
+
+
   semantic-release:
     name: Bump Version
     needs: [build-test]
@@ -138,11 +157,6 @@ jobs:
         run: |
           vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} -c ${{ matrix.rid }} --pre
           vpk pack --packTitle KubeUI -u KubeUI -v ${{ needs.semantic-release.outputs.new_release_version }} -p bin/publish -c ${{ matrix.rid }} -e ${{ matrix.fileName }} -o packed ${{ matrix.packParam }}
-
-      - name: Test
-        if: matrix.runs-on == 'windows-latest' && failure()
-        shell: pwsh
-        run: Get-ChildItem -Path C:\Users\runneradmin\AppData\Local\Temp\Velopack\temp.1\PreprocessPackDirWin\
 
       - name: Remove unnecessary assets
         working-directory: src/KubeUI.Desktop
