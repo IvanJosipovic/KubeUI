@@ -51,6 +51,7 @@ jobs:
     name: Publish Installers
     runs-on: ${{ matrix.runs-on }}
     needs: [semantic-release]
+    environment: production
     strategy:
       matrix:
         include:
