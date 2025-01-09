@@ -125,9 +125,11 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Write metadata.json
+        working-directory: src/KubeUI.Desktop
         if: matrix.runs-on == 'windows-latest'
         shell: pwsh
-        run: "[System.Text.Encoding]::UTF8.GetBytes($env:SECRET) | Set-Content -Path metadata.json -AsByteStream"
+        run: |
+          [System.Text.Encoding]::UTF8.GetBytes($env:SECRET) | Set-Content -Path metadata.json -AsByteStream
         env:
           SECRET : ${{ secrets.AZURETRUSTEDSIGNFILE }}
 
@@ -137,7 +139,7 @@ jobs:
           vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} -c ${{ matrix.rid }} --pre
           vpk pack --packTitle KubeUI -u KubeUI -v ${{ needs.semantic-release.outputs.new_release_version }} -p bin/publish -c ${{ matrix.rid }} -e ${{ matrix.fileName }} -o packed ${{ matrix.packParam }}
 
-      - name: Test Report
+      - name: Test
         shell: pwsh
         if: success() || failure()
         run: Get-ChildItem -Path C:\Users\runneradmin\AppData\Local\Temp\Velopack\temp.1\PreprocessPackDirWin\
