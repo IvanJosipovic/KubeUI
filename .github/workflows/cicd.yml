@@ -140,8 +140,8 @@ jobs:
           vpk pack --packTitle KubeUI -u KubeUI -v ${{ needs.semantic-release.outputs.new_release_version }} -p bin/publish -c ${{ matrix.rid }} -e ${{ matrix.fileName }} -o packed ${{ matrix.packParam }}
 
       - name: Test
+        if: matrix.runs-on == 'windows-latest' && success() || failure()
         shell: pwsh
-        if: success() || failure()
         run: Get-ChildItem -Path C:\Users\runneradmin\AppData\Local\Temp\Velopack\temp.1\PreprocessPackDirWin\
 
       - name: Remove unnecessary assets
