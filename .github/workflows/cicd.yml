@@ -14,6 +14,8 @@ on:
 permissions:
   id-token: write
   contents: write
+  actions: write
+  checks: write
 
 jobs:
   build-test:
