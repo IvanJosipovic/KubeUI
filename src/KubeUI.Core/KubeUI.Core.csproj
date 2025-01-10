@@ -23,8 +23,8 @@
     <PackageReference Include="FluentAvaloniaUI" Version="2.2.0" />
     <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia" Version="2.1.0" />
     <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia.Fluent" Version="2.1.0" />
-    <PackageReference Include="Irihi.Ursa" Version="1.6.2" />
-    <PackageReference Include="Irihi.Ursa.Themes.Semi" Version="1.6.2" />
+    <PackageReference Include="Irihi.Ursa" Version="1.7.0" />
+    <PackageReference Include="Irihi.Ursa.Themes.Semi" Version="1.7.0" />
     <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.0.0-rc4.5" />
     <PackageReference Include="NodeEditorAvalonia" Version="11.2.0" />
     <PackageReference Include="NodeEditorAvalonia.Mvvm" Version="11.2.0" />
