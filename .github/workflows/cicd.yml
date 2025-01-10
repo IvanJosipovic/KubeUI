@@ -11,6 +11,12 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
 
+permissions:
+  id-token: write
+  contents: write
+  actions: write
+  checks: write
+
 jobs:
   build-test:
     name: Build & Test
@@ -44,8 +50,9 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: coverage.cobertura.xml
+          files: coverage.cobertura.xml
           fail_ci_if_error: false
+
 
   semantic-release:
     name: Bump Version
@@ -69,17 +76,18 @@ jobs:
     name: Publish Installers
     runs-on: ${{ matrix.runs-on }}
     needs: [semantic-release]
+    environment: production
     strategy:
       matrix:
         include:
           - rid: win-x64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
-            packParam: --icon ../KubeUI/Assets/icon.ico
+            packParam: --icon ../KubeUI/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signSkipDll
           - rid: win-arm64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
-            packParam: --icon ../KubeUI/Assets/icon.ico
+            packParam: --icon ../KubeUI/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signSkipDll
           - rid: linux-x64
             fileName: KubeUI.Desktop
             runs-on: ubuntu-latest
@@ -128,6 +136,23 @@ jobs:
           files: 'src/KubeUI.Desktop/info.plist'
           search-text: '{{version}}'
           replacement-text: ${{ needs.semantic-release.outputs.new_release_version }}
+
+      - name: Azure Login
+        if: matrix.runs-on == 'windows-latest'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Write metadata.json
+        working-directory: src/KubeUI.Desktop
+        if: matrix.runs-on == 'windows-latest'
+        shell: pwsh
+        run: |
+          [System.Text.Encoding]::UTF8.GetBytes($env:SECRET) | Set-Content -Path metadata.json -AsByteStream
+        env:
+          SECRET : ${{ secrets.AZURETRUSTEDSIGNFILE }}
 
       - name: Create Release
         working-directory: src/KubeUI.Desktop
