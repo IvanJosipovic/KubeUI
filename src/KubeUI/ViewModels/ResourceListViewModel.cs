@@ -1588,7 +1588,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     {
         var resource = Activator.CreateInstance<T>();
         resource.Kind = Kind.Kind;
-        resource.ApiVersion = Kind.ApiVersion;
+        resource.ApiVersion = Kind.GroupApiVersion;
         resource.Metadata = new()
         {
             Name = "temp"
