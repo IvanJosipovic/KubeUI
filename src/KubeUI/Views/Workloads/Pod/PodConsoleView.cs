@@ -60,7 +60,25 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
                                         new Binding(nameof(PodConsoleViewModel.ContainerName))
                                 ],
                                 StringFormat = "{0}/{1}/{2}"
-                            })
+                            }),
+                        //new Label()
+                        //    .Margin(0,0,4,0)
+                        //    .Content(new MultiBinding(){
+                        //        Bindings = [
+                        //                new Binding("Width"),
+                        //                new Binding("Height"),
+                        //        ],
+                        //        StringFormat = "{0}x{1}"
+                        //    }),
+                        //new Label()
+                        //    .Margin(0,0,4,0)
+                        //    .Content(new MultiBinding(){
+                        //        Bindings = [
+                        //                new Binding("Terminal.Cols"),
+                        //                new Binding("Terminal.Rows"),
+                        //        ],
+                        //        StringFormat = "{0}x{1}"
+                        //    })
                     ]),
                 new TextEditor()
                     .Ref(out var editor)
@@ -72,11 +90,10 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
                         x.Options.ShowBoxForControlCharacters = false;
                         x.Options.EnableHyperlinks = false;
                         x.Options.EnableEmailHyperlinks = false;
-                        x.TextArea.Caret.CaretBrush = Brushes.Transparent;
-                        x.TextArea.Caret.Hide();
                     })
                     .OnTextChanged((e) => {
-                        editor.ScrollToEnd();
+                        editor.TextArea.Caret.Line =  vm.Terminal.Buffer.Y - vm.Terminal.Buffer.YDisp + vm.Terminal.Buffer.YBase + 1;
+                        editor.TextArea.Caret.Column = vm.Terminal.Buffer.X + 1;
                     })
                     .Document(@vm.Console, BindingMode.OneWay)
                     .FontFamily(new FontFamily("Consolas,Menlo,Monospace"))
@@ -138,11 +155,12 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
                                     break;
                                 case Key.PageDown:
                                     if (vm.Terminal.ApplicationCursor)
+                                    {
                                         dc1.Send(EscapeSequences.CmdPageDown);
-                                    else {
-                                                            // TODO: view should scroll one page down
+                                    } else {
+                                        // TODO: view should scroll one page down
                                     }
-                                                        break;
+                                    break;
                                 case Key.Home:
                                     dc1.Send(vm.Terminal.ApplicationCursor ? EscapeSequences.MoveHomeApp : EscapeSequences.MoveHomeNormal);
                                     break;
@@ -184,24 +202,11 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
                                 case Key.OemBackTab:
                                     dc1.Send(EscapeSequences.CmdBackTab);
                                     break;
+                                case Key.Tab:
+                                    dc1.Send(EscapeSequences.CmdTab);
+                                    break;
                                 default:
                                     dc1.Send(e.KeySymbol);
-                                    //if (keyEvent.Key >= Key.ControlA && keyEvent.Key <= Key.ControlZ) {
-                                    //    dc1.Send((byte)keyEvent.Key);
-                                    //    break;
-                                    //}
-                                    //if (keyEvent.IsAlt) {
-                                    //    dc1.Send(0x1b);
-                                    //}
-                                    //var rune = (Rune)(uint)keyEvent.Key;
-                                    //var len = Rune.RuneLen (rune);
-                                    //if (len > 0) {
-                                    //    var buff = new byte [len];
-                                    //    var n = Rune.EncodeRune (rune, buff);
-                                    //    dc1.Send(buff);
-                                    //} else {
-                                    //    dc1.Send((byte)keyEvent.Key);
-                                    //}
                                     break;
                                 }
 

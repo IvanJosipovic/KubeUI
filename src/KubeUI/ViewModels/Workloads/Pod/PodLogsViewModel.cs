@@ -2,8 +2,6 @@
 using k8s.Models;
 using k8s;
 using KubeUI.Client;
-using AvaloniaEdit;
-using System.Reflection;
 
 namespace KubeUI.ViewModels;
 
@@ -94,7 +92,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         }
         catch (Exception ex)
         {
-            //to display notification
+            //todo display notification
             _logger.LogError(ex, "Unable to View Logs");
         }
     }

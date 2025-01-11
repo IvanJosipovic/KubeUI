@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace XtermSharp {
 
-	public class Terminal {
+	public partial class Terminal: ObservableObject
+    {
 		const int MINIMUM_COLS = 2;
 		const int MINIMUM_ROWS = 1;
 
@@ -136,8 +138,13 @@ namespace XtermSharp {
 		public bool BracketedPasteMode { get; internal set; }
 
 		public TerminalOptions Options { get; private set; }
-		public int Cols { get; private set; }
-		public int Rows { get; private set; }
+
+        [ObservableProperty]
+		public partial int Cols { get; private set; }
+
+        [ObservableProperty]
+        public partial int Rows { get; private set; }
+
 		public bool InsertMode;
 		public int CurAttr;
 
@@ -355,7 +362,7 @@ namespace XtermSharp {
 			SyncScrollArea ();
 		}
 
-		// 
+		//
 		// ESC D Index (Index is 0x84)
 		//
 		internal void Index ()
@@ -587,7 +594,7 @@ namespace XtermSharp {
 			if (ch < 127) {
 				data.Add ((byte)ch);
 			} else {
-				if (ch > 2047) 
+				if (ch > 2047)
 					ch = 2047;
 				data.Add ((byte)(0xC0 | (ch >> 6)));
 				data.Add ((byte)(0x80 | (ch & 0x3F)));

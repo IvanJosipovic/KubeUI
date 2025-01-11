@@ -13,7 +13,6 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
 {
     private readonly ILogger<PodConsoleViewModel> _logger;
 
-
     public PodConsoleViewModel(ILogger<PodConsoleViewModel> logger)
     {
         _logger = logger;
@@ -35,13 +34,36 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     public partial Terminal Terminal { get; set; } = new(null, new()
     {
-        CursorBlink = true,
-        CursorStyle = CursorStyle.SteadyBar,
+        ScreenReaderMode = true,
     });
+
+    [ObservableProperty]
+    public partial double Width { get; set; }
+
+    [ObservableProperty]
+    public partial double Height { get; set; }
 
     private WebSocket? _webSocket;
     private StreamDemuxer? _streamDemuxer;
     private Stream? _stream;
+
+    public override void OnVisibleBoundsChanged(double x, double y, double width, double height)
+    {
+        base.OnVisibleBoundsChanged(x, y, width, height);
+
+        Width = width;
+        Height = height;
+
+        const double rowHeight = 21;
+        const double colWidth = 7;
+
+        if (Width > 0 && Height > 0)
+        {
+            Terminal.Resize((int)(width / colWidth), (int)(height / rowHeight));
+            Terminal.Delegate.SizeChanged(Terminal);
+            ReDrwaw();
+        }
+    }
 
     public async Task Connect()
     {
@@ -49,7 +71,11 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
         {
             "sh",
             "-c",
-            "clear; (bash || ash || sh || echo 'No Shell Found!')"
+            "clear; (bash || ash || sh || echo 'No Shell Found!')",
+            "env",
+            "COLUMNS=120",
+            "LINES=1000",
+            "TERM=xterm"
         };
 
         _webSocket = await Cluster.Client.WebSocketNamespacedPodExecAsync(Object.Name(), Object.Namespace(), command, ContainerName);
@@ -69,14 +95,19 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
                     byte[] buffer = new byte[bufferSize];
                     if (await _stream.ReadAsync(buffer, 0, bufferSize) > 0)
                     {
-                        Terminal.Feed(buffer);
-                        Dispatcher.UIThread.Post(() => Console.Text = TerminalToString(Terminal), DispatcherPriority.Background);
+                        Terminal.Feed(buffer, bufferSize);
+                        ReDrwaw();
                     }
                 }
                 catch (IOException ex) when (ex.Message.Equals("The request was aborted.")) { break; }
                 catch (ObjectDisposedException) { break; }
             }
         });
+    }
+
+    private void ReDrwaw()
+    {
+        Dispatcher.UIThread.Post(() => Console.Text = TerminalToString(Terminal), DispatcherPriority.Background);
     }
 
     // ANSI escape sequences pattern
@@ -191,6 +222,6 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
             result += lineText;
             result += '\n';
         }
-        return result;
+        return result.TrimEnd('\n');
     }
 }
