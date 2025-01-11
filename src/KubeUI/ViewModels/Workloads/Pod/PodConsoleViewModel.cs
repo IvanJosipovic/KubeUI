@@ -34,7 +34,6 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     public partial Terminal Terminal { get; set; } = new(null, new()
     {
-        ScreenReaderMode = true,
     });
 
     [ObservableProperty]
@@ -54,14 +53,15 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
         Width = width;
         Height = height;
 
-        const double rowHeight = 21;
+        const double toolHeaderHeight = 23;
+        const double rowHeight = 19;
         const double colWidth = 7;
 
         if (Width > 0 && Height > 0)
         {
-            Terminal.Resize((int)(width / colWidth), (int)(height / rowHeight));
+            Terminal.Resize((int)(width / colWidth), (int)((height - toolHeaderHeight)  / rowHeight));
             Terminal.Delegate.SizeChanged(Terminal);
-            ReDrwaw();
+            ReDraw();
         }
     }
 
@@ -96,7 +96,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
                     if (await _stream.ReadAsync(buffer, 0, bufferSize) > 0)
                     {
                         Terminal.Feed(buffer, bufferSize);
-                        ReDrwaw();
+                        ReDraw();
                     }
                 }
                 catch (IOException ex) when (ex.Message.Equals("The request was aborted.")) { break; }
@@ -105,7 +105,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
         });
     }
 
-    private void ReDrwaw()
+    private void ReDraw()
     {
         Dispatcher.UIThread.Post(() => Console.Text = TerminalToString(Terminal), DispatcherPriority.Background);
     }
@@ -213,12 +213,12 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
                 var cd = term.Buffer.Lines[line][cell];
                 // (line).get (cell) [CHAR_DATA_CHAR_INDEX] || WHITESPACE_CELL_CHAR;
                 if (cd.Code == 0)
-                    lineText += " ";
+                    lineText += "";
                 else
                     lineText += (char)cd.Rune;
             }
             // rtrim empty cells as xterm does
-            lineText = lineText.TrimEnd();
+            //lineText = lineText.TrimEnd();
             result += lineText;
             result += '\n';
         }
