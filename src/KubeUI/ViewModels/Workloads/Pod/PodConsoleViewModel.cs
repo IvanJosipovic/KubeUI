@@ -6,13 +6,13 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Text.RegularExpressions;
 using XtermSharp;
-using System.IO;
 
 namespace KubeUI.ViewModels;
 
 public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
 {
     private readonly ILogger<PodConsoleViewModel> _logger;
+
 
     public PodConsoleViewModel(ILogger<PodConsoleViewModel> logger)
     {
@@ -42,7 +42,6 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
     private WebSocket? _webSocket;
     private StreamDemuxer? _streamDemuxer;
     private Stream? _stream;
-    private StreamReader? _streamReader;
 
     public async Task Connect()
     {
@@ -59,25 +58,20 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
         _streamDemuxer.Start();
 
         _stream = _streamDemuxer.GetStream(ChannelIndex.StdOut, ChannelIndex.StdIn);
-        _streamReader = new StreamReader(_stream);
 
         _ = Task.Run(async () =>
         {
-            const int bufferSize = 4096; // 4KB buffer size
-            char[] buffer = new char[bufferSize];
-
             while (_stream.CanRead)
             {
                 try
                 {
-                    await _streamReader.ReadAsync(buffer, 0, bufferSize);
-
-                    //await _stream.ReadExactlyAsync(buffer, 0, bufferSize);
-
-                    Terminal.Feed(new string(buffer));
-
-                    var str = TerminalToString(Terminal);
-                    await Dispatcher.UIThread.InvokeAsync(() => Console.Text = str, DispatcherPriority.Background);
+                    const int bufferSize = 4096; // 4KB buffer size
+                    byte[] buffer = new byte[bufferSize];
+                    if (await _stream.ReadAsync(buffer, 0, bufferSize) > 0)
+                    {
+                        Terminal.Feed(buffer);
+                        Dispatcher.UIThread.Post(() => Console.Text = TerminalToString(Terminal), DispatcherPriority.Background);
+                    }
                 }
                 catch (IOException ex) when (ex.Message.Equals("The request was aborted.")) { break; }
                 catch (ObjectDisposedException) { break; }
@@ -107,6 +101,36 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
                 {
                     _stream.Write(Encoding.UTF8.GetBytes(text));
                 }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending text to console: ");
+            }
+        }
+    }
+
+    public void Send(byte bytes)
+    {
+        if (_stream?.CanWrite == true)
+        {
+            try
+            {
+                _stream.Write([bytes]);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending text to console: ");
+            }
+        }
+    }
+
+    public void Send(byte[] bytes)
+    {
+        if (_stream?.CanWrite == true)
+        {
+            try
+            {
+                _stream.Write(bytes);
             }
             catch (Exception ex)
             {

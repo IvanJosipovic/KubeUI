@@ -5,6 +5,7 @@ using AvaloniaEdit;
 using static AvaloniaEdit.TextMate.TextMate;
 using TextMateSharp.Grammars;
 using Avalonia.Markup.Xaml.MarkupExtensions;
+using XtermSharp;
 
 namespace KubeUI.Views;
 
@@ -103,30 +104,106 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
                                 }
                             }
 
-                            if (e.KeySymbol != null)
-                            {
-                                dc1.Send(e.KeySymbol);
-                            }
-                            else if (e.Key == Key.Up)
-                            {
-                                dc1.Send("\x1b[A");
-                            }
-                            else if (e.Key == Key.Down)
-                            {
-                                dc1.Send("\x1b[B");
-                            }
-                            else if (e.Key == Key.Left)
-                            {
-                                dc1.Send("\x1b[D");
-                            }
-                            else if (e.Key == Key.Right)
-                            {
-                                dc1.Send("\x1b[C");
-                            }
-                            else
-                            {
-                               _logger.LogInformation("Unmapped key: {0}", e.Key);
-                            }
+                            switch (e.Key) {
+                                case Key.Escape:
+                                    dc1.Send(0x1b);
+                                    break;
+                                case Key.Space:
+                                    dc1.Send(0x20);
+                                    break;
+                                case Key.Delete:
+                                    dc1.Send(EscapeSequences.CmdDelKey);
+                                    break;
+                                case Key.Back:
+                                    dc1.Send(0x7f);
+                                    break;
+                                case Key.Up:
+                                    dc1.Send(vm.Terminal.ApplicationCursor ? EscapeSequences.MoveUpApp : EscapeSequences.MoveUpNormal);
+                                    break;
+                                case Key.Down:
+                                    dc1.Send(vm.Terminal.ApplicationCursor ? EscapeSequences.MoveDownApp : EscapeSequences.MoveDownNormal);
+                                    break;
+                                case Key.Left:
+                                    dc1.Send(vm.Terminal.ApplicationCursor ? EscapeSequences.MoveLeftApp : EscapeSequences.MoveLeftNormal);
+                                    break;
+                                case Key.Right:
+                                    dc1.Send(vm.Terminal.ApplicationCursor ? EscapeSequences.MoveRightApp : EscapeSequences.MoveRightNormal);
+                                    break;
+                                case Key.PageUp:
+                                    if (vm.Terminal.ApplicationCursor)
+                                        dc1.Send(EscapeSequences.CmdPageUp);
+                                    else {
+                                        // TODO: view should scroll one page up.
+                                    }
+                                    break;
+                                case Key.PageDown:
+                                    if (vm.Terminal.ApplicationCursor)
+                                        dc1.Send(EscapeSequences.CmdPageDown);
+                                    else {
+                                                            // TODO: view should scroll one page down
+                                    }
+                                                        break;
+                                case Key.Home:
+                                    dc1.Send(vm.Terminal.ApplicationCursor ? EscapeSequences.MoveHomeApp : EscapeSequences.MoveHomeNormal);
+                                    break;
+                                case Key.End:
+                                    dc1.Send(vm.Terminal.ApplicationCursor ? EscapeSequences.MoveEndApp : EscapeSequences.MoveEndNormal);
+                                    break;
+                                case Key.Insert:
+                                    break;
+                                case Key.F1:
+                                    dc1.Send(EscapeSequences.CmdF [0]);
+                                    break;
+                                case Key.F2:
+                                    dc1.Send(EscapeSequences.CmdF [1]);
+                                    break;
+                                case Key.F3:
+                                    dc1.Send(EscapeSequences.CmdF [2]);
+                                    break;
+                                case Key.F4:
+                                    dc1.Send(EscapeSequences.CmdF [3]);
+                                    break;
+                                case Key.F5:
+                                    dc1.Send(EscapeSequences.CmdF [4]);
+                                    break;
+                                case Key.F6:
+                                    dc1.Send(EscapeSequences.CmdF [5]);
+                                    break;
+                                case Key.F7:
+                                    dc1.Send(EscapeSequences.CmdF [6]);
+                                    break;
+                                case Key.F8:
+                                    dc1.Send(EscapeSequences.CmdF [7]);
+                                    break;
+                                case Key.F9:
+                                    dc1.Send(EscapeSequences.CmdF [8]);
+                                    break;
+                                case Key.F10:
+                                    dc1.Send(EscapeSequences.CmdF [9]);
+                                    break;
+                                case Key.OemBackTab:
+                                    dc1.Send(EscapeSequences.CmdBackTab);
+                                    break;
+                                default:
+                                    dc1.Send(e.KeySymbol);
+                                    //if (keyEvent.Key >= Key.ControlA && keyEvent.Key <= Key.ControlZ) {
+                                    //    dc1.Send((byte)keyEvent.Key);
+                                    //    break;
+                                    //}
+                                    //if (keyEvent.IsAlt) {
+                                    //    dc1.Send(0x1b);
+                                    //}
+                                    //var rune = (Rune)(uint)keyEvent.Key;
+                                    //var len = Rune.RuneLen (rune);
+                                    //if (len > 0) {
+                                    //    var buff = new byte [len];
+                                    //    var n = Rune.EncodeRune (rune, buff);
+                                    //    dc1.Send(buff);
+                                    //} else {
+                                    //    dc1.Send((byte)keyEvent.Key);
+                                    //}
+                                    break;
+                                }
 
                             e.Handled = true;
                         }
