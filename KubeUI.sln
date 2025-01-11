@@ -23,6 +23,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeUI.Tests", "tests\KubeU
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KubeUI.Core", "src\KubeUI.Core\KubeUI.Core.csproj", "{57504622-EB10-4E5C-9436-B2DAA35F4335}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XtermSharp", "src\XtermSharp\XtermSharp.csproj", "{51CC524C-8557-D5ED-7ABB-7CC8FEC3E242}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{57504622-EB10-4E5C-9436-B2DAA35F4335}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{57504622-EB10-4E5C-9436-B2DAA35F4335}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{57504622-EB10-4E5C-9436-B2DAA35F4335}.Release|Any CPU.Build.0 = Release|Any CPU
+		{51CC524C-8557-D5ED-7ABB-7CC8FEC3E242}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{51CC524C-8557-D5ED-7ABB-7CC8FEC3E242}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{51CC524C-8557-D5ED-7ABB-7CC8FEC3E242}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{51CC524C-8557-D5ED-7ABB-7CC8FEC3E242}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

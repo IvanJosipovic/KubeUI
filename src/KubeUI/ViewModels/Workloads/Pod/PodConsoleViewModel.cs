@@ -5,6 +5,8 @@ using KubeUI.Client;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.RegularExpressions;
+using XtermSharp;
+using System.IO;
 
 namespace KubeUI.ViewModels;
 
@@ -30,6 +32,13 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     public partial TextDocument Console { get; set; } = new();
 
+    [ObservableProperty]
+    public partial Terminal Terminal { get; set; } = new(null, new()
+    {
+        CursorBlink = true,
+        CursorStyle = CursorStyle.SteadyBar,
+    });
+
     private WebSocket? _webSocket;
     private StreamDemuxer? _streamDemuxer;
     private Stream? _stream;
@@ -50,37 +59,25 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
         _streamDemuxer.Start();
 
         _stream = _streamDemuxer.GetStream(ChannelIndex.StdOut, ChannelIndex.StdIn);
-
         _streamReader = new StreamReader(_stream);
 
         _ = Task.Run(async () =>
         {
+            const int bufferSize = 4096; // 4KB buffer size
+            char[] buffer = new char[bufferSize];
+
             while (_stream.CanRead)
             {
                 try
                 {
-                    var memory = new Memory<char>(new char[1024]);
-                    await _streamReader.ReadAsync(memory).ConfigureAwait(false);
-                    var str = memory.ToString()
-                        .Replace("\0", "", StringComparison.Ordinal) // null character
-                        .Replace("\a", "", StringComparison.Ordinal) // bell or alert
-                        ;
-                    str = RemoveAnsiEscapeSequences(str);
-                    if (!string.IsNullOrEmpty(str))
-                    {
-                       await Dispatcher.UIThread.InvokeAsync(() =>
-                       {
-                           // backspace
-                           if (str.Equals("\b", StringComparison.Ordinal) || str.Equals("\b \b", StringComparison.Ordinal))
-                           {
-                               Console.Remove(Console.TextLength - 1, 1);
-                           }
-                           else
-                           {
-                               Console.Insert(Console.TextLength, str);
-                           }
-                       }, DispatcherPriority.Background);
-                    }
+                    await _streamReader.ReadAsync(buffer, 0, bufferSize);
+
+                    //await _stream.ReadExactlyAsync(buffer, 0, bufferSize);
+
+                    Terminal.Feed(new string(buffer));
+
+                    var str = TerminalToString(Terminal);
+                    await Dispatcher.UIThread.InvokeAsync(() => Console.Text = str, DispatcherPriority.Background);
                 }
                 catch (IOException ex) when (ex.Message.Equals("The request was aborted.")) { break; }
                 catch (ObjectDisposedException) { break; }
@@ -146,6 +143,30 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
         _webSocket?.Dispose();
         _streamDemuxer?.Dispose();
         _stream?.Dispose();
-        _streamReader?.Dispose();
+        //_streamReader?.Dispose();
+    }
+
+    private static string TerminalToString(Terminal term)
+    {
+        var result = "";
+        var lineText = "";
+        for (var line = term.Buffer.YBase; line < term.Buffer.YBase + term.Rows; line++)
+        {
+            lineText = "";
+            for (var cell = 0; cell < term.Cols; ++cell)
+            {
+                var cd = term.Buffer.Lines[line][cell];
+                // (line).get (cell) [CHAR_DATA_CHAR_INDEX] || WHITESPACE_CELL_CHAR;
+                if (cd.Code == 0)
+                    lineText += " ";
+                else
+                    lineText += (char)cd.Rune;
+            }
+            // rtrim empty cells as xterm does
+            lineText = lineText.TrimEnd();
+            result += lineText;
+            result += '\n';
+        }
+        return result;
     }
 }

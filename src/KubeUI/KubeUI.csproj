@@ -70,6 +70,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\KubeUI.Core\KubeUI.Core.csproj" />
+    <ProjectReference Include="..\XtermSharp\XtermSharp.csproj" />
   </ItemGroup>
 
   <ItemGroup>
