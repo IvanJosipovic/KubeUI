@@ -6,7 +6,6 @@ using static AvaloniaEdit.TextMate.TextMate;
 using TextMateSharp.Grammars;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using XtermSharp;
-using DynamicData;
 using AvaloniaEdit.Highlighting;
 
 namespace KubeUI.Views;
@@ -63,24 +62,24 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
                                 ],
                                 StringFormat = "{0}/{1}/{2}"
                             }),
-                        //new Label()
-                        //    .Margin(0,0,4,0)
-                        //    .Content(new MultiBinding(){
-                        //        Bindings = [
-                        //                new Binding("Width"),
-                        //                new Binding("Height"),
-                        //        ],
-                        //        StringFormat = "{0}x{1}"
-                        //    }),
-                        //new Label()
-                        //    .Margin(0,0,4,0)
-                        //    .Content(new MultiBinding(){
-                        //        Bindings = [
-                        //                new Binding("Terminal.Cols"),
-                        //                new Binding("Terminal.Rows"),
-                        //        ],
-                        //        StringFormat = "{0}x{1}"
-                        //    })
+                        new Label()
+                            .Margin(0,0,4,0)
+                            .Content(new MultiBinding(){
+                                Bindings = [
+                                        new Binding("Width"),
+                                        new Binding("Height"),
+                                ],
+                                StringFormat = "{0}x{1}"
+                            }),
+                        new Label()
+                            .Margin(0,0,4,0)
+                            .Content(new MultiBinding(){
+                                Bindings = [
+                                        new Binding("Terminal.Cols"),
+                                        new Binding("Terminal.Rows"),
+                                ],
+                                StringFormat = "{0}x{1}"
+                            })
                     ]),
                     new Grid()
                         .Children([
