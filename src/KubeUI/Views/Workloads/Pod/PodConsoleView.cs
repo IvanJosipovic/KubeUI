@@ -117,9 +117,9 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
                         editor.TextArea.Caret.Column = vm.Terminal.Buffer.X + 1;
                     })
                     .Document(@vm.Console, BindingMode.OneWay)
-                    .FontFamily(new FontFamily("Consolas,Menlo,Monospace"))
-                    .FontSize(14.0)
-                    .FontWeight(FontWeight.Normal)
+                    .FontFamily(@vm.FontName)
+                    .FontSize(@vm.FontSize)
+                    //.FontWeight(FontWeight.Normal)
                     .IsReadOnly(true)
                     .ShowLineNumbers(false)
                     .Background(new DynamicResourceExtension("SystemAltHighColor"))

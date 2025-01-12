@@ -94,7 +94,7 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
                         };
                     })
                     .Document(@vm.Logs, BindingMode.OneWay)
-                    .FontFamily(new FontFamily("Consolas,Menlo,Monospace"))
+                    .FontFamily(new FontFamily("Cascadia Mono"))
                     .FontSize(14.0)
                     .FontWeight(FontWeight.Normal)
                     .IsReadOnly(true)

@@ -7,6 +7,8 @@ using System.Text;
 using XtermSharp;
 using AvaloniaEdit.Highlighting;
 using Color = Avalonia.Media.Color;
+using System.Text.Json;
+using Avalonia.Media.TextFormatting;
 
 namespace KubeUI.ViewModels;
 
@@ -44,6 +46,12 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     public partial double Height { get; set; }
 
+    [ObservableProperty]
+    public partial int FontSize { get; set; } = 14;
+
+    [ObservableProperty]
+    public partial string FontName { get; set; } = "Cascadia Mono";
+
     private WebSocket? _webSocket;
     private StreamDemuxer? _streamDemuxer;
     private Stream? _stream;
@@ -57,15 +65,25 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
         Height = height;
 
         const double toolHeaderHeight = 23;
-        const double rowHeight = 19;
-        const double colWidth = 7.7;
 
         if (Width > 0 && Height > 0)
         {
-            Terminal.Resize((int)(width / colWidth), (int)((height - toolHeaderHeight)  / rowHeight));
+            var size = CalculateTextSize("a", FontName, FontSize);
+
+            Terminal.Resize((int)(width / size.Width), (int)((height - toolHeaderHeight)  / (size.Height * 1.17)));
             Terminal.Delegate.SizeChanged(Terminal);
             SendResize();
         }
+    }
+
+    public static Size CalculateTextSize(string text, string fontName, int myFontSize)
+    {
+        var myFont = FontFamily.Parse(fontName) ?? throw new ArgumentException($"The resource {fontName} is not a FontFamily.");
+
+        var typeface = new Typeface(myFont);
+        var shaped = TextShaper.Current.ShapeText(text, new TextShaperOptions(typeface.GlyphTypeface, myFontSize));
+        var run = new ShapedTextRun(shaped, new GenericTextRunProperties(typeface, myFontSize));
+        return run.Size;
     }
 
     public void SendResize()
@@ -76,7 +94,17 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
             Height = (ushort)Terminal.Rows,
         };
 
-        _refreshStream?.Write(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(size));
+        if (_refreshStream?.CanWrite == true)
+        {
+            try
+            {
+                _refreshStream?.Write(JsonSerializer.SerializeToUtf8Bytes(size));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error Sending Resize to console");
+            }
+        }
     }
 
     public async Task Connect()
