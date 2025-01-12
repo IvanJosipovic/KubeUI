@@ -62,24 +62,24 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
                                 ],
                                 StringFormat = "{0}/{1}/{2}"
                             }),
-                        new Label()
-                            .Margin(0,0,4,0)
-                            .Content(new MultiBinding(){
-                                Bindings = [
-                                        new Binding("Width"),
-                                        new Binding("Height"),
-                                ],
-                                StringFormat = "{0}x{1}"
-                            }),
-                        new Label()
-                            .Margin(0,0,4,0)
-                            .Content(new MultiBinding(){
-                                Bindings = [
-                                        new Binding("Terminal.Cols"),
-                                        new Binding("Terminal.Rows"),
-                                ],
-                                StringFormat = "{0}x{1}"
-                            })
+                        //new Label()
+                        //    .Margin(0,0,4,0)
+                        //    .Content(new MultiBinding(){
+                        //        Bindings = [
+                        //                new Binding("Width"),
+                        //                new Binding("Height"),
+                        //        ],
+                        //        StringFormat = "{0}x{1}"
+                        //    }),
+                        //new Label()
+                        //    .Margin(0,0,4,0)
+                        //    .Content(new MultiBinding(){
+                        //        Bindings = [
+                        //                new Binding("Terminal.Cols"),
+                        //                new Binding("Terminal.Rows"),
+                        //        ],
+                        //        StringFormat = "{0}x{1}"
+                        //    })
                     ]),
                     new Grid()
                         .Children([
@@ -119,7 +119,6 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
                     .Document(@vm.Console, BindingMode.OneWay)
                     .FontFamily(@vm.FontName)
                     .FontSize(@vm.FontSize)
-                    //.FontWeight(FontWeight.Normal)
                     .IsReadOnly(true)
                     .ShowLineNumbers(false)
                     .Background(new DynamicResourceExtension("SystemAltHighColor"))
@@ -381,9 +380,10 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
             ]);
     }
 
-    protected override void OnLoaded(RoutedEventArgs e)
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
-        base.OnLoaded(e);
+        base.OnAttachedToVisualTree(e);
+
         try
         {
             ViewModel.Connect().GetAwaiter();
