@@ -36,9 +36,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
     public partial RichTextModel ConsoleColor { get; set; } = new();
 
     [ObservableProperty]
-    public partial Terminal Terminal { get; set; } = new(null, new()
-    {
-    });
+    public partial Terminal Terminal { get; set; } = new();
 
     [ObservableProperty]
     public partial double Width { get; set; }
@@ -49,6 +47,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
     private WebSocket? _webSocket;
     private StreamDemuxer? _streamDemuxer;
     private Stream? _stream;
+    private Stream? _refreshStream;
 
     public override void OnVisibleBoundsChanged(double x, double y, double width, double height)
     {
@@ -65,18 +64,25 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
         {
             Terminal.Resize((int)(width / colWidth), (int)((height - toolHeaderHeight)  / rowHeight));
             Terminal.Delegate.SizeChanged(Terminal);
-            ReDraw();
+            SendResize();
         }
+    }
+
+    public void SendResize()
+    {
+        var size = new TerminalSize
+        {
+            Width = (ushort)Terminal.Cols,
+            Height = (ushort)Terminal.Rows,
+        };
+
+        _refreshStream?.Write(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(size));
     }
 
     public async Task Connect()
     {
         var command = new string[]
         {
-            "env",
-            "COLUMNS=" + Terminal.Cols,
-            "LINES=" + Terminal.Rows,
-            "TERM=xterm-256color",
             "sh",
             "-c",
             "clear; (bash || ash || sh || echo 'No Shell Found!')",
@@ -88,6 +94,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
         _streamDemuxer.Start();
 
         _stream = _streamDemuxer.GetStream(ChannelIndex.StdOut, ChannelIndex.StdIn);
+        _refreshStream = _streamDemuxer.GetStream(null, ChannelIndex.Resize);
 
         _ = Task.Run(async () =>
         {
@@ -562,4 +569,10 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
             _ => throw new ArgumentOutOfRangeException(nameof(xtermColor), "Color code must be between 0 and 255."),
         };
     }
+}
+
+public struct TerminalSize
+{
+    public ushort Width { get; set; }
+    public ushort Height { get; set; }
 }
