@@ -270,10 +270,26 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
                 {
                     hc.Foreground = new SimpleHighlightingBrush(ConvertXtermColor(fg));
                 }
+                else if(fg == 256) // DefaultColor
+                {
+
+                }
+                else if (fg == 257) // InvertedDefaultColor
+                {
+                    hc.Foreground = new SimpleHighlightingBrush(Colors.Black);
+                }
 
                 if (bg <= 255)
                 {
                     hc.Background = new SimpleHighlightingBrush(ConvertXtermColor(bg));
+                }
+                else if (bg == 256) // DefaultColor
+                {
+
+                }
+                else if (bg == 257) // InvertedDefaultColor
+                {
+                    hc.Background = new SimpleHighlightingBrush(Color.FromRgb(211, 215, 207));
                 }
 
                 var append = line > 0 && line < Terminal.Buffer.YBase + Terminal.Rows ? 1 : 0;
