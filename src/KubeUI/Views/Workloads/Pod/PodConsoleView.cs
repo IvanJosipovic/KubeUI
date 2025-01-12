@@ -215,10 +215,60 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
                                     case Key.Z:
                                         dc1.Send(0x1A);  // Ctrl+Z
                                         break;
+                                    case Key.D1: // Ctrl+1
+                                        dc1.Send(0x31);  // ASCII '1'
+                                        break;
+                                    case Key.D2: // Ctrl+2
+                                        dc1.Send(0x32);  // ASCII '2'
+                                        break;
+                                    case Key.D3: // Ctrl+3
+                                        dc1.Send(0x33);  // ASCII '3'
+                                        break;
+                                    case Key.D4: // Ctrl+4
+                                        dc1.Send(0x34);  // ASCII '4'
+                                        break;
+                                    case Key.D5: // Ctrl+5
+                                        dc1.Send(0x35);  // ASCII '5'
+                                        break;
+                                    case Key.D6: // Ctrl+6
+                                        dc1.Send(0x36);  // ASCII '6'
+                                        break;
+                                    case Key.D7: // Ctrl+7
+                                        dc1.Send(0x37);  // ASCII '7'
+                                        break;
+                                    case Key.D8: // Ctrl+8
+                                        dc1.Send(0x38);  // ASCII '8'
+                                        break;
+                                    case Key.D9: // Ctrl+9
+                                        dc1.Send(0x39);  // ASCII '9'
+                                        break;
+                                    case Key.D0: // Ctrl+0
+                                        dc1.Send(0x30);  // ASCII '0'
+                                        break;
+                                    case Key.OemOpenBrackets: // Ctrl+[
+                                        dc1.Send(0x1B);
+                                        break;
+                                    case Key.OemBackslash: // Ctrl+\
+                                        dc1.Send(0x1C);
+                                        break;
+                                    case Key.OemCloseBrackets: // Ctrl+]
+                                        dc1.Send(0x1D);
+                                        break;
+                                    case Key.Space: // Ctrl+Space
+                                        dc1.Send(0x00);
+                                        break;
+                                    case Key.OemMinus: // Ctrl+_
+                                        dc1.Send(0x1F);
+                                        break;
                                     default:
                                         dc1.Send(e.KeySymbol);
                                         break;
                                 }
+                            }
+                            if (e.KeyModifiers is KeyModifiers.Alt)
+                            {
+                                dc1.Send(0x1B);
+                                dc1.Send(e.KeySymbol);
                             }
                             else
                             {
@@ -330,6 +380,19 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
                                     ])
                     ),
             ]);
+    }
+
+    protected override void OnLoaded(RoutedEventArgs e)
+    {
+        base.OnLoaded(e);
+        try
+        {
+            ViewModel.Connect().GetAwaiter();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error connecting to Console1");
+        }
     }
 
     protected override void OnUnloaded(RoutedEventArgs e)

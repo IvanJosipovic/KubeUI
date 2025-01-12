@@ -60,13 +60,12 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
 
         const double toolHeaderHeight = 23;
         const double rowHeight = 19;
-        const double colWidth = 7;
+        const double colWidth = 7.7;
 
         if (Width > 0 && Height > 0)
         {
-            //(int)(width / colWidth)
-            Terminal.Resize(80, (int)((height - toolHeaderHeight)  / rowHeight));
-            Terminal.Delegate.SizeChanged(Terminal);
+            Terminal.Resize((int)(width / colWidth), (int)((height - toolHeaderHeight)  / rowHeight));
+            //Terminal.Delegate.SizeChanged(Terminal);
             ReDraw();
         }
     }
@@ -75,13 +74,12 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
     {
         var command = new string[]
         {
+            "env",
+            "COLUMNS=" + Terminal.Cols,
+            "TERM=xterm",
             "sh",
             "-c",
             "clear; (bash || ash || sh || echo 'No Shell Found!')",
-            "env",
-            "COLUMNS=120",
-            "LINES=1000",
-            "TERM=xterm"
         };
 
         _webSocket = await Cluster.Client.WebSocketNamespacedPodExecAsync(Object.Name(), Object.Namespace(), command, ContainerName);
@@ -116,20 +114,8 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
         Dispatcher.UIThread.Post(() =>
         {
             Console.Text = TerminalToString(Terminal);
-            TerminalColors(Terminal);
+            //TerminalColors(Terminal);
         }, DispatcherPriority.Background);
-    }
-
-    // ANSI escape sequences pattern
-    [GeneratedRegex(@"\x1B\[[0-?]*[ -/]*[@-~]", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
-    private static partial Regex AnsiEscape();
-
-    public static string RemoveAnsiEscapeSequences(string text)
-    {
-        if (string.IsNullOrEmpty(text))
-            return text;
-
-        return AnsiEscape().Replace(text, string.Empty);
     }
 
     public void Send(string text)
@@ -218,7 +204,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
         for (var line = term.Buffer.YBase; line < term.Buffer.YBase + term.Rows; line++)
         {
             lineText = "";
-            for (var cell = 0; cell < term.Cols; ++cell)
+            for (var cell = 0; cell < term.Cols; cell++)
             {
                 var cd = term.Buffer.Lines[line][cell];
 
@@ -243,7 +229,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
     {
         for (var line = term.Buffer.YBase; line < term.Buffer.YBase + term.Rows; line++)
         {
-            for (var cell = 0; cell < term.Cols; ++cell)
+            for (var cell = 0; cell < term.Cols; cell++)
             {
                 var cd = term.Buffer.Lines[line][cell];
                 var hc = new HighlightingColor();
@@ -287,7 +273,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
                     hc.Background = new SimpleHighlightingBrush(ConvertAnsi256ToColor(bg));
                 }
 
-                ConsoleColor.SetHighlighting((line * 81) + cell, 1, hc);
+                ConsoleColor.SetHighlighting((line * Terminal.Cols + 1) + cell, 1, hc);
             }
         }
     }
