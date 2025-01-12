@@ -220,8 +220,11 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
             // rtrim empty cells as xterm does
             //lineText = lineText.TrimEnd();
             result += lineText;
-            result += '\n';
+            if (line < term.Buffer.YBase + term.Rows - 1)
+            {
+                result += '\n';
+            }
         }
-        return result.TrimEnd('\n');
+        return result;
     }
 }
