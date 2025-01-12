@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <LangVersion>preview</LangVersion>
+    <UserSecretsId>db2a43a5-c230-49a5-b71b-59eae23db090</UserSecretsId>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -17,7 +18,7 @@
     <Folder Include="InputHandlers\" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="NStack.Core" Version="0.12.0" />
+    <PackageReference Include="NStack.Core" Version="1.1.1" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
   </ItemGroup>
   <ItemGroup>
