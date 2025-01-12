@@ -7,6 +7,7 @@ using TextMateSharp.Grammars;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using XtermSharp;
 using DynamicData;
+using AvaloniaEdit.Highlighting;
 
 namespace KubeUI.Views;
 
@@ -96,12 +97,21 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
                         x.Options.EnableHyperlinks = false;
                         x.Options.EnableEmailHyperlinks = false;
 
+                        // Add Coloring
+                        x.TextArea.TextView.LineTransformers.Add(new RichTextColorizer(vm.ConsoleColor));
+
                         // Remove Caret keyboard navigation
+                        foreach (var command in x.TextArea.DefaultInputHandler.CaretNavigation.CommandBindings.Where(x => x.Command.Gesture != null).ToList())
+                        {
+                            x.TextArea.DefaultInputHandler.CaretNavigation.CommandBindings.Remove(command);
+                        }
+
                         x.TextArea.DefaultInputHandler.CaretNavigation.KeyBindings.Clear();
 
                         // Remove all out of the box commands
-                        var commands = x.TextArea.CommandBindings.Where(x => x.Command.Gesture != null);
-                        x.TextArea.CommandBindings.RemoveMany(commands);
+                        // todo optimize this
+                        //var commands1 = x.TextArea.CommandBindings.Where(x => x.Command.Gesture != null);
+                        //x.TextArea.CommandBindings.RemoveMany(commands1);
                     })
                     .OnTextChanged((e) => {
                         editor.TextArea.Caret.Line =  vm.Terminal.Buffer.Y - vm.Terminal.Buffer.YDisp + vm.Terminal.Buffer.YBase + 1;
@@ -311,7 +321,6 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
                                         new MenuItem()
                                             .OnClick((_) => editor.Copy())
                                             .Header(Assets.Resources.Action_Copy)
-                                            .InputGesture(new KeyGesture(Key.C, KeyModifiers.Control))
                                             .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("copy_regular") }),
                                         new MenuItem()
                                             .Command(vm.PasteCommand)
