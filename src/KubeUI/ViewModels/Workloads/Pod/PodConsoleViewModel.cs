@@ -4,11 +4,9 @@ using k8s;
 using KubeUI.Client;
 using System.Net.WebSockets;
 using System.Text;
-using System.Text.RegularExpressions;
 using XtermSharp;
 using AvaloniaEdit.Highlighting;
 using Color = Avalonia.Media.Color;
-using NStack;
 
 namespace KubeUI.ViewModels;
 
@@ -78,7 +76,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
             "env",
             "COLUMNS=" + Terminal.Cols,
             "LINES=" + Terminal.Rows,
-            "TERM=xterm",
+            "TERM=xterm-256color",
             "sh",
             "-c",
             "clear; (bash || ash || sh || echo 'No Shell Found!')",
@@ -272,11 +270,11 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
                 }
                 else if(fg == 256) // DefaultColor
                 {
-
+                    hc.Foreground = new SimpleHighlightingBrush(ConvertXtermColor(15));
                 }
                 else if (fg == 257) // InvertedDefaultColor
                 {
-                    hc.Foreground = new SimpleHighlightingBrush(Colors.Black);
+                    hc.Foreground = new SimpleHighlightingBrush(ConvertXtermColor(0));
                 }
 
                 if (bg <= 255)
@@ -285,11 +283,11 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
                 }
                 else if (bg == 256) // DefaultColor
                 {
-
+                    hc.Background = new SimpleHighlightingBrush(ConvertXtermColor(0));
                 }
                 else if (bg == 257) // InvertedDefaultColor
                 {
-                    hc.Background = new SimpleHighlightingBrush(Color.FromRgb(211, 215, 207));
+                    hc.Background = new SimpleHighlightingBrush(ConvertXtermColor(15));
                 }
 
                 var append = line > 0 && line < Terminal.Buffer.YBase + Terminal.Rows ? 1 : 0;
