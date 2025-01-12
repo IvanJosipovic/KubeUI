@@ -6,6 +6,7 @@ using static AvaloniaEdit.TextMate.TextMate;
 using TextMateSharp.Grammars;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using XtermSharp;
+using DynamicData;
 
 namespace KubeUI.Views;
 
@@ -94,6 +95,13 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
                         x.Options.ShowBoxForControlCharacters = false;
                         x.Options.EnableHyperlinks = false;
                         x.Options.EnableEmailHyperlinks = false;
+
+                        // Remove Caret keyboard navigation
+                        x.TextArea.DefaultInputHandler.CaretNavigation.KeyBindings.Clear();
+
+                        // Remove all out of the box commands
+                        var commands = x.TextArea.CommandBindings.Where(x => x.Command.Gesture != null);
+                        x.TextArea.CommandBindings.RemoveMany(commands);
                     })
                     .OnTextChanged((e) => {
                         editor.TextArea.Caret.Line =  vm.Terminal.Buffer.Y - vm.Terminal.Buffer.YDisp + vm.Terminal.Buffer.YBase + 1;
@@ -106,7 +114,7 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
                     .IsReadOnly(true)
                     .ShowLineNumbers(false)
                     .Background(new DynamicResourceExtension("SystemAltHighColor"))
-                    .HorizontalScrollBarVisibility(ScrollBarVisibility.Auto)
+                    .HorizontalScrollBarVisibility(ScrollBarVisibility.Disabled)
                     .VerticalScrollBarVisibility(ScrollBarVisibility.Disabled)
                     .OnKeyDown((e) => {
                         e.Handled = true;
