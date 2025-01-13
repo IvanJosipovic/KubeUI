@@ -76,7 +76,9 @@ public partial class Cluster
 
         var resp2 = await kube.CreateSelfSubjectAccessReviewAsync(model);
 
-        IsMetricsAvailable = resp.Status.Allowed && resp2.Status.Allowed;
+        var APIGroups = await Client.Apis.GetAPIVersionsAsync();
+
+        IsMetricsAvailable = APIGroups.Groups.Any(g => g.Name == "metrics.k8s.io") && resp.Status.Allowed && resp2.Status.Allowed;
 
         if (IsMetricsAvailable)
         {
