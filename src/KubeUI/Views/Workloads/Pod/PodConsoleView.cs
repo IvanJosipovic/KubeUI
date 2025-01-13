@@ -348,11 +348,6 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
                                     }
 
                                     x.TextArea.DefaultInputHandler.CaretNavigation.KeyBindings.Clear();
-
-                                    // Remove all out of the box commands
-                                    // todo optimize this
-                                    //var commands1 = x.TextArea.CommandBindings.Where(x => x.Command.Gesture != null);
-                                    //x.TextArea.CommandBindings.RemoveMany(commands1);
                                 })
                                 .OnTextChanged((e) => {
                                     editor.TextArea.Caret.Line =  vm.Terminal.Buffer.Y - vm.Terminal.Buffer.YDisp + vm.Terminal.Buffer.YBase + 1;
