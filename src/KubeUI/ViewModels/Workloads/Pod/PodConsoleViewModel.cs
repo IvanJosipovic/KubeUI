@@ -50,12 +50,67 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
     public partial int FontSize { get; set; } = 14;
 
     [ObservableProperty]
-    public partial string FontName { get; set; } = "Cascadia Mono";
+    public partial int BufferLength { get; set; }
+
+    [ObservableProperty]
+    public partial string FontFamily { get; set; } = "Cascadia Mono";
 
     private WebSocket? _webSocket;
     private StreamDemuxer? _streamDemuxer;
     private Stream? _stream;
     private Stream? _refreshStream;
+
+    /// <summary>
+    /// Gets a value indicating whether or not the user can scroll the terminal contents
+    /// </summary>
+    public bool CanScroll
+    {
+        get
+        {
+            var shouldBeEnabled = !Terminal.Buffers.IsAlternateBuffer;
+            shouldBeEnabled = shouldBeEnabled && Terminal.Buffer.HasScrollback;
+            shouldBeEnabled = shouldBeEnabled && Terminal.Buffer.Lines.Length > Terminal.Rows;
+            return shouldBeEnabled;
+        }
+    }
+
+    /// <summary>
+    /// Gets a value indicating the scroll thumbsize
+    /// </summary>
+    public float ScrollThumbsize
+    {
+        get
+        {
+            if (Terminal.Buffers.IsAlternateBuffer)
+                return 0;
+
+            // the thumb size is the proportion of the visible content of the
+            // entire content but don't make it too small
+            return Math.Max((float)Terminal.Rows / (float)Terminal.Buffer.Lines.Length, 0.01f);
+        }
+    }
+
+    /// <summary>
+    /// Gets a value indicating the relative position of the terminal scroller
+    /// </summary>
+    public double ScrollPosition
+    {
+        get
+        {
+            if (Terminal.Buffers.IsAlternateBuffer)
+                return 0;
+
+            // strictly speaking these ought not to be outside these bounds
+            if (Terminal.Buffer.YDisp <= 0)
+                return 0;
+
+            var maxScrollback = Terminal.Buffer.Lines.Length - Terminal.Rows;
+            if (Terminal.Buffer.YDisp >= maxScrollback)
+                return 1;
+
+            return (double)Terminal.Buffer.YDisp / (double)maxScrollback;
+        }
+    }
 
     public override void OnVisibleBoundsChanged(double x, double y, double width, double height)
     {
@@ -68,17 +123,21 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
 
         if (Width > 0 && Height > 0)
         {
-            var size = CalculateTextSize("a", FontName, FontSize);
+            var size = CalculateTextSize("a", FontFamily, FontSize);
 
-            Terminal.Resize((int)(width / size.Width), (int)((height - toolHeaderHeight)  / (size.Height * 1.17)));
+            var cols = (int)((width - 16) / size.Width);
+            var rows = (int)((height - toolHeaderHeight) / (size.Height * 1.17));
+
+            Terminal.Resize(cols, rows);
             Terminal.Delegate.SizeChanged(Terminal);
             SendResize();
+            BufferLength = rows + Terminal.Options.Scrollback ?? 0;
         }
     }
 
     public static Size CalculateTextSize(string text, string fontName, int myFontSize)
     {
-        var myFont = FontFamily.Parse(fontName) ?? throw new ArgumentException($"The resource {fontName} is not a FontFamily.");
+        var myFont = Avalonia.Media.FontFamily.Parse(fontName) ?? throw new ArgumentException($"The resource {fontName} is not a FontFamily.");
 
         var typeface = new Typeface(myFont);
         var shaped = TextShaper.Current.ShapeText(text, new TextShaperOptions(typeface.GlyphTypeface, myFontSize));
@@ -135,22 +194,17 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
                     if (await _stream.ReadAsync(buffer, 0, bufferSize) > 0)
                     {
                         Terminal.Feed(buffer, bufferSize);
-                        ReDraw();
+                        await Dispatcher.UIThread.InvokeAsync(() =>
+                        {
+                            UpdateTerminalText();
+                            UpdateTerminalColors();
+                        }, DispatcherPriority.Background);
                     }
                 }
                 catch (IOException ex) when (ex.Message.Equals("The request was aborted.")) { break; }
                 catch (ObjectDisposedException) { break; }
             }
         });
-    }
-
-    private void ReDraw()
-    {
-        Dispatcher.UIThread.Post(() =>
-        {
-            UpdateTerminalText();
-            UpdateTerminalColors();
-        }, DispatcherPriority.Background);
     }
 
     public void Send(string text)
@@ -229,7 +283,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
         _webSocket?.Dispose();
         _streamDemuxer?.Dispose();
         _stream?.Dispose();
-        //_streamReader?.Dispose();
+        _refreshStream?.Dispose();
     }
 
     private void UpdateTerminalText()
@@ -303,7 +357,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
                 {
                     hc.Foreground = new SimpleHighlightingBrush(ConvertXtermColor(fg));
                 }
-                else if(fg == 256) // DefaultColor
+                else if (fg == 256) // DefaultColor
                 {
                     hc.Foreground = new SimpleHighlightingBrush(ConvertXtermColor(15));
                 }
