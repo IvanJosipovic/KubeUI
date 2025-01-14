@@ -340,8 +340,24 @@ public class ConsoleColorizer : DocumentColorizingTransformer
 
             for (var cell = 0; cell < line.Length; cell++)
             {
-                var cd = _terminal.Buffer.Lines[line.LineNumber - 1][cell];
-                colors[cell] = GenerateHighlightingColor(cd);
+                if (_terminal.Buffer.Lines.Length > line.LineNumber - 1)
+                {
+                    var row = _terminal.Buffer.Lines[line.LineNumber - 1];
+
+                    if (row.Length > cell)
+                    {
+                        var cd = row[cell];
+                        colors[cell] = GenerateHighlightingColor(cd);
+                    }
+                    else
+                    {
+                        colors[cell] = new HighlightingColor();
+                    }
+                }
+                else
+                {
+                    colors[cell] = new HighlightingColor();
+                }
             }
 
             int startOffset = line.Offset;
