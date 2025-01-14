@@ -9,6 +9,7 @@ using AvaloniaEdit.Highlighting;
 using Color = Avalonia.Media.Color;
 using System.Text.Json;
 using Avalonia.Media.TextFormatting;
+using AvaloniaEdit.Rendering;
 
 namespace KubeUI.ViewModels;
 
@@ -112,26 +113,21 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
         }
     }
 
-    public override void OnVisibleBoundsChanged(double x, double y, double width, double height)
+    public void Resize(double width, double height)
     {
-        base.OnVisibleBoundsChanged(x, y, width, height);
-
         Width = width;
         Height = height;
-
-        const double toolHeaderHeight = 23;
-
         if (Width > 0 && Height > 0)
         {
             var size = CalculateTextSize("a", FontFamily, FontSize);
-
-            var cols = (int)((width - 16) / size.Width);
-            var rows = (int)((height - toolHeaderHeight) / (size.Height * 1.17));
-
-            Terminal.Resize(cols, rows);
-            Terminal.Delegate.SizeChanged(Terminal);
-            SendResize();
-            BufferLength = rows + Terminal.Options.Scrollback ?? 0;
+            var cols = (int)((width) / size.Width);
+            var rows = (int)((height) / (size.Height * 1.17));
+            if (Terminal.Cols != cols || Terminal.Rows != rows)
+            {
+                Terminal.Resize(cols, rows);
+                SendResize();
+                BufferLength = rows + Terminal.Options.Scrollback ?? 0;
+            }
         }
     }
 
@@ -194,11 +190,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
                     if (await _stream.ReadAsync(buffer, 0, bufferSize) > 0)
                     {
                         Terminal.Feed(buffer, bufferSize);
-                        await Dispatcher.UIThread.InvokeAsync(() =>
-                        {
-                            UpdateTerminalText();
-                            UpdateTerminalColors();
-                        }, DispatcherPriority.Background);
+                        FullTextUpdate();
                     }
                 }
                 catch (IOException ex) when (ex.Message.Equals("The request was aborted.")) { break; }
@@ -286,7 +278,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
         _refreshStream?.Dispose();
     }
 
-    private void UpdateTerminalText()
+    private void FullTextUpdate()
     {
         var result = "";
         var lineText = "";
@@ -311,81 +303,127 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
                 result += '\n';
             }
         }
+        Dispatcher.UIThread.Post(() =>
+        {
+            Console.Text = result;
+        }, DispatcherPriority.Input);
+    }
+}
 
-        Console.Text = result;
+public struct TerminalSize
+{
+    public ushort Width { get; set; }
+    public ushort Height { get; set; }
+}
+
+/// <summary>
+/// A colorizer that applies the highlighting from a <see cref="Terminal"/> to the editor.
+/// </summary>
+public class ConsoleColorizer : DocumentColorizingTransformer
+{
+    private Terminal _terminal;
+
+    /// <summary>
+    /// Creates a new ConsoleColorizer instance.
+    /// </summary>
+    public ConsoleColorizer(Terminal terminal)
+    {
+        _terminal = terminal;
     }
 
-    private void UpdateTerminalColors()
+    /// <inheritdoc/>
+    protected override void ColorizeLine(DocumentLine line)
     {
-        for (var line = Terminal.Buffer.YBase; line < Terminal.Buffer.YBase + Terminal.Rows; line++)
+        if (line.Length > 0)
         {
-            for (var cell = 0; cell < Terminal.Cols; cell++)
+            var colors = new HighlightingColor[line.Length];
+
+            for (var cell = 0; cell < line.Length; cell++)
             {
-                var cd = Terminal.Buffer.Lines[line][cell];
-                var hc = new HighlightingColor();
-                var attribute = cd.Attribute;
-
-                // ((int)flags << 18) | (fg << 9) | bg;
-                int bg = attribute & 0x1ff;
-                int fg = (attribute >> 9) & 0x1ff;
-                var flags = (FLAGS)(attribute >> 18);
-
-                if (flags.HasFlag(FLAGS.INVERSE))
-                {
-                    var tmp = bg;
-                    bg = fg;
-                    fg = tmp;
-
-                    if (fg == Renderer.DefaultColor)
-                        fg = Renderer.InvertedDefaultColor;
-                    if (bg == Renderer.DefaultColor)
-                        bg = Renderer.InvertedDefaultColor;
-                }
-                if (flags.HasFlag(FLAGS.BOLD))
-                {
-                    hc.FontWeight = FontWeight.Bold;
-                }
-                if (flags.HasFlag(FLAGS.ITALIC))
-                {
-                    hc.FontStyle = FontStyle.Italic;
-                }
-                hc.Underline = flags.HasFlag(FLAGS.UNDERLINE);
-
-                hc.Strikethrough = flags.HasFlag(FLAGS.CrossedOut);
-
-                if (fg <= 255)
-                {
-                    hc.Foreground = new SimpleHighlightingBrush(ConvertXtermColor(fg));
-                }
-                else if (fg == 256) // DefaultColor
-                {
-                    hc.Foreground = new SimpleHighlightingBrush(ConvertXtermColor(15));
-                }
-                else if (fg == 257) // InvertedDefaultColor
-                {
-                    hc.Foreground = new SimpleHighlightingBrush(ConvertXtermColor(0));
-                }
-
-                if (bg <= 255)
-                {
-                    hc.Background = new SimpleHighlightingBrush(ConvertXtermColor(bg));
-                }
-                else if (bg == 256) // DefaultColor
-                {
-                    hc.Background = new SimpleHighlightingBrush(ConvertXtermColor(0));
-                }
-                else if (bg == 257) // InvertedDefaultColor
-                {
-                    hc.Background = new SimpleHighlightingBrush(ConvertXtermColor(15));
-                }
-
-                var append = line > 0 && line < Terminal.Buffer.YBase + Terminal.Rows ? 1 : 0;
-
-                var offset = (line * (Terminal.Cols + append)) + cell;
-
-                ConsoleColor.SetHighlighting(offset, 1, hc);
+                var cd = _terminal.Buffer.Lines[line.LineNumber - 1][cell];
+                colors[cell] = GenerateHighlightingColor(cd);
             }
+
+            int startOffset = line.Offset;
+            int endOffset = startOffset + line.Length;
+            var currentColor = colors[0];
+            int segmentStart = startOffset;
+
+            for (int i = 1; i < colors.Length; i++)
+            {
+                if (!colors[i].Equals(currentColor))
+                {
+                    ChangeLinePart(segmentStart, startOffset + i, visualLineElement => ApplyColorToElement(visualLineElement, currentColor, CurrentContext));
+                    currentColor = colors[i];
+                    segmentStart = startOffset + i;
+                }
+            }
+
+            // Apply the last segment
+            ChangeLinePart(segmentStart, endOffset, visualLineElement => ApplyColorToElement(visualLineElement, currentColor, CurrentContext));
         }
+    }
+
+    private static HighlightingColor GenerateHighlightingColor(CharData cd)
+    {
+        var hc = new HighlightingColor();
+        var attribute = cd.Attribute;
+
+        // ((int)flags << 18) | (fg << 9) | bg;
+        int bg = attribute & 0x1ff;
+        int fg = (attribute >> 9) & 0x1ff;
+        var flags = (FLAGS)(attribute >> 18);
+
+        if (flags.HasFlag(FLAGS.INVERSE))
+        {
+            var tmp = bg;
+            bg = fg;
+            fg = tmp;
+
+            if (fg == Renderer.DefaultColor)
+                fg = Renderer.InvertedDefaultColor;
+            if (bg == Renderer.DefaultColor)
+                bg = Renderer.InvertedDefaultColor;
+        }
+        if (flags.HasFlag(FLAGS.BOLD))
+        {
+            hc.FontWeight = FontWeight.Bold;
+        }
+        if (flags.HasFlag(FLAGS.ITALIC))
+        {
+            hc.FontStyle = FontStyle.Italic;
+        }
+        hc.Underline = flags.HasFlag(FLAGS.UNDERLINE);
+
+        hc.Strikethrough = flags.HasFlag(FLAGS.CrossedOut);
+
+        if (fg <= 255)
+        {
+            hc.Foreground = new SimpleHighlightingBrush(ConvertXtermColor(fg));
+        }
+        else if (fg == 256) // DefaultColor
+        {
+            hc.Foreground = new SimpleHighlightingBrush(ConvertXtermColor(15));
+        }
+        else if (fg == 257) // InvertedDefaultColor
+        {
+            hc.Foreground = new SimpleHighlightingBrush(ConvertXtermColor(0));
+        }
+
+        if (bg <= 255)
+        {
+            hc.Background = new SimpleHighlightingBrush(ConvertXtermColor(bg));
+        }
+        else if (bg == 256) // DefaultColor
+        {
+            hc.Background = new SimpleHighlightingBrush(ConvertXtermColor(0));
+        }
+        else if (bg == 257) // InvertedDefaultColor
+        {
+            hc.Background = new SimpleHighlightingBrush(ConvertXtermColor(15));
+        }
+
+        return hc;
     }
 
     private static Color ConvertXtermColor(int xtermColor)
@@ -651,10 +689,36 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
             _ => throw new ArgumentOutOfRangeException(nameof(xtermColor), "Color code must be between 0 and 255."),
         };
     }
-}
 
-public struct TerminalSize
-{
-    public ushort Width { get; set; }
-    public ushort Height { get; set; }
+    private static void ApplyColorToElement(VisualLineElement element, HighlightingColor color, ITextRunConstructionContext context)
+    {
+        if (color.Foreground != null)
+        {
+            var b = color.Foreground.GetBrush(context);
+            if (b != null)
+                element.TextRunProperties.SetForegroundBrush(b);
+        }
+        if (color.Background != null)
+        {
+            var b = color.Background.GetBrush(context);
+            if (b != null)
+                element.BackgroundBrush = b;
+        }
+        if (color.FontStyle != null || color.FontWeight != null || color.FontFamily != null)
+        {
+            var tf = element.TextRunProperties.Typeface;
+            element.TextRunProperties.SetTypeface(new Typeface(
+                color.FontFamily ?? tf.FontFamily,
+                color.FontStyle ?? tf.Style,
+                color.FontWeight ?? tf.Weight,
+                tf.Stretch
+            ));
+        }
+        if (color.Underline ?? false)
+            element.TextRunProperties.SetTextDecorations(TextDecorations.Underline);
+        if (color.Strikethrough ?? false)
+            element.TextRunProperties.SetTextDecorations(TextDecorations.Strikethrough);
+        if (color.FontSize.HasValue)
+            element.TextRunProperties.SetFontRenderingEmSize(color.FontSize.Value);
+    }
 }
