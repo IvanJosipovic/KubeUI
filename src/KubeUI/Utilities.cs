@@ -274,37 +274,44 @@ public static class Utilities
     {
         if (sendNotification)
         {
-            if(ex is AggregateException aggregate)
+            try
             {
-                foreach (var item in aggregate.InnerExceptions)
+                if (ex is AggregateException aggregate)
                 {
-                    if (item is HttpOperationException opEx)
+                    foreach (var item in aggregate.InnerExceptions)
                     {
-                        var status = KubernetesYaml.Deserialize<V1Status>(opEx.Response.Content);
-
-                        if (status != null)
+                        if (item is HttpOperationException opEx)
                         {
-                            notificationManage.Show(new Notification(status.Reason, status.Message + "\n\n" + status?.Details?.Causes?.Select(x => x.Message).Aggregate((x, y) => x + "\n" + y) ?? "", type, TimeSpan.FromSeconds(30)));
+                            var status = KubernetesJson.Deserialize<V1Status>(opEx.Response.Content);
+
+                            if (status != null)
+                            {
+                                notificationManage.Show(new Notification(status.Reason, status.Message + "\n\n" + status?.Details?.Causes?.Select(x => x.Message).Aggregate((x, y) => x + "\n" + y) ?? "", type, TimeSpan.FromSeconds(30)));
+                            }
+                        }
+                        else
+                        {
+                            notificationManage.Show(new Notification(message, item.Message, type));
                         }
                     }
-                    else
+                }
+                else if (ex is HttpOperationException opEx)
+                {
+                    var status = KubernetesJson.Deserialize<V1Status>(opEx.Response.Content);
+
+                    if (status != null)
                     {
-                        notificationManage.Show(new Notification(message, item.Message, type));
+                        notificationManage.Show(new Notification(status.Reason, status.Message + "\n\n" + status?.Details?.Causes?.Select(x => x.Message).Aggregate((x, y) => x + "\n" + y) ?? "", type, TimeSpan.FromSeconds(30)));
                     }
                 }
-            }
-            else if (ex is HttpOperationException opEx)
-            {
-                var status = KubernetesYaml.Deserialize<V1Status>(opEx.Response.Content);
-
-                if (status != null)
+                else
                 {
-                    notificationManage.Show(new Notification(status.Reason, status.Message + "\n\n" + status?.Details?.Causes?.Select(x => x.Message).Aggregate((x, y) => x + "\n" + y) ?? "", type, TimeSpan.FromSeconds(30)));
+                    notificationManage.Show(new Notification(message, ex.Message, type));
                 }
             }
-            else
+            catch (Exception ex2)
             {
-                notificationManage.Show(new Notification(message, ex.Message, type));
+                logger.LogError(ex2, "Error sending Notification");
             }
         }
 
