@@ -325,9 +325,12 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                     //})
                     .Styles([
                         new Style<DataGridCell>()
-                            .Setter(TextBlock.FontSizeProperty, Convert.ToDouble(_settingsService.Settings.FontSize)),
+                            .Setter(DataGridCell.FontSizeProperty, Convert.ToDouble(_settingsService.Settings.FontSize))
+                            .Setter(DataGridCell.MinHeightProperty, Convert.ToDouble(_settingsService.Settings.ListRowHeight)),
                         new Style<DataGridColumnHeader>()
-                            .Setter(TextBlock.FontSizeProperty, Convert.ToDouble(_settingsService.Settings.FontSize)),
+                            .Setter(DataGridColumnHeader.FontSizeProperty, Convert.ToDouble(_settingsService.Settings.FontSize))
+                            .Setter(DataGridColumnHeader.MinHeightProperty, Convert.ToDouble(_settingsService.Settings.ListRowHeight)),
+
                     ]),
             ]);
 
