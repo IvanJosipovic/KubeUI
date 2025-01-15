@@ -109,5 +109,10 @@ public sealed partial class SettingsService : ObservableObject, ISettingsService
                 Application.Current.RequestedThemeVariant = ThemeVariant.Light;
                 break;
         }
+
+        if (App.TopLevel != null)
+        {
+            App.TopLevel.FontSize = Convert.ToDouble(Settings.FontSize);
+        }
     }
 }

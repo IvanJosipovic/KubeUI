@@ -17,9 +17,12 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
 {
     private readonly ILogger<PodConsoleViewModel> _logger;
 
-    public PodConsoleViewModel(ILogger<PodConsoleViewModel> logger)
+    private readonly ISettingsService _settingsService;
+
+    public PodConsoleViewModel(ILogger<PodConsoleViewModel> logger, ISettingsService settings)
     {
         _logger = logger;
+        _settingsService = settings;
         Title = Resources.PodConsoleViewModel_Title;
     }
 
@@ -46,9 +49,6 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     public partial double Height { get; set; }
-
-    [ObservableProperty]
-    public partial int FontSize { get; set; } = 14;
 
     [ObservableProperty]
     public partial int BufferLength { get; set; }
@@ -119,7 +119,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
         Height = height;
         if (Width > 0 && Height > 0)
         {
-            var size = CalculateTextSize("a", FontFamily, FontSize);
+            var size = CalculateTextSize("a", FontFamily, Convert.ToDouble(_settingsService.Settings.ConsoleFontSize));
             var cols = (int)((width) / size.Width);
             var rows = (int)((height) / (size.Height * 1.17));
             if (Terminal.Cols != cols || Terminal.Rows != rows)
@@ -131,7 +131,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
         }
     }
 
-    public static Size CalculateTextSize(string text, string fontName, int myFontSize)
+    public static Size CalculateTextSize(string text, string fontName, double myFontSize)
     {
         var myFont = Avalonia.Media.FontFamily.Parse(fontName) ?? throw new ArgumentException($"The resource {fontName} is not a FontFamily.");
 

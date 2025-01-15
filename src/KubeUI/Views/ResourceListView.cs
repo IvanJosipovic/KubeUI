@@ -5,6 +5,7 @@ using Ursa.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Styling;
 using KubeUI.Client.Informer;
+using KubeUI.Client;
 
 namespace KubeUI.Views;
 
@@ -14,9 +15,12 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
     private readonly ILogger<ResourceListView<T>> _logger;
 
+    private readonly ISettingsService _settingsService;
+
     public ResourceListView()
     {
         _logger = Application.Current.GetRequiredService<ILogger<ResourceListView<T>>>();
+        _settingsService = Application.Current.GetRequiredService<ISettingsService>();
     }
 
     private void GenerateGrid()
@@ -311,7 +315,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                     .GridLinesVisibility(DataGridGridLinesVisibility.All)
                     .IsReadOnly(true)
                     .MinColumnWidth(90)
-                    .RowHeight(32)
+                    .RowHeight(Convert.ToDouble(_settingsService.Settings.ListRowHeight))
                     //.OnTapped((x) =>
                     //{
                     //    if(vm.ViewCommand.CanExecute(_grid.SelectedItem))
@@ -319,7 +323,12 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                     //        vm.ViewCommand.Execute(_grid.SelectedItem);
                     //    }
                     //})
-                    ,
+                    .Styles([
+                        new Style<DataGridCell>()
+                            .Setter(TextBlock.FontSizeProperty, Convert.ToDouble(_settingsService.Settings.FontSize)),
+                        new Style<DataGridColumnHeader>()
+                            .Setter(TextBlock.FontSizeProperty, Convert.ToDouble(_settingsService.Settings.FontSize)),
+                    ]),
             ]);
 
         GenerateGrid();
