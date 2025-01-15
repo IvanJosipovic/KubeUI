@@ -2,7 +2,7 @@
 using Avalonia.Input;
 using AvaloniaEdit;
 using XtermSharp;
-using AvaloniaEdit.Highlighting;
+using KubeUI.Client;
 
 namespace KubeUI.Views;
 
@@ -10,11 +10,14 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
 {
     private readonly ILogger<PodConsoleView> _logger;
 
+    private readonly ISettingsService _settingsService;
+
     private TextEditor _textEditor;
 
     public PodConsoleView(ILogger<PodConsoleView> logger)
     {
         _logger = logger;
+        _settingsService = Application.Current.GetRequiredService<ISettingsService>();
     }
 
     protected override object Build(PodConsoleViewModel? vm)
@@ -328,7 +331,7 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
                     })
                     .Document(@vm.Console, BindingMode.OneWay)
                     .FontFamily(@vm.FontFamily)
-                    .FontSize(@vm.FontSize)
+                    .FontSize(Convert.ToDouble(_settingsService.Settings.ConsoleFontSize))
                     .IsReadOnly(true)
                     .ShowLineNumbers(false)
                     .Background(Brushes.Black)
