@@ -15,11 +15,11 @@ public static partial class GeoMap_MarkupExtensions
  // ActiveMap
 
 /*BindFromExpressionSetterGenerator*/
-public static T ActiveMap<T>(this T control, Func<LiveChartsCore.Geo.CoreMap<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>> func, Action<LiveChartsCore.Geo.CoreMap<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.GeoMap 
+public static T ActiveMap<T>(this T control, Func<LiveChartsCore.Geo.DrawnMap> func, Action<LiveChartsCore.Geo.DrawnMap>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.GeoMap 
    => control._set(LiveChartsCore.SkiaSharpView.Avalonia.GeoMap.ActiveMapProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T ActiveMap<T>(this T control,LiveChartsCore.Geo.CoreMap<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext> value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.GeoMap 
+public static T ActiveMap<T>(this T control,LiveChartsCore.Geo.DrawnMap value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.GeoMap 
 => control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.GeoMap.ActiveMapProperty, ps, () => control.ActiveMap = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
@@ -31,7 +31,7 @@ public static T ActiveMap<T>(this T control, AvaloniaProperty avaloniaProperty, 
    => control._set(LiveChartsCore.SkiaSharpView.Avalonia.GeoMap.ActiveMapProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T ActiveMap<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, LiveChartsCore.Geo.CoreMap<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.GeoMap 
+public static T ActiveMap<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, LiveChartsCore.Geo.DrawnMap> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.GeoMap 
 => control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.GeoMap.ActiveMapProperty, ps, () => control.ActiveMap = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
@@ -130,11 +130,11 @@ public static T Series<TValue,T>(this T control, TValue value, FuncValueConverte
  // Stroke
 
 /*BindFromExpressionSetterGenerator*/
-public static T Stroke<T>(this T control, Func<LiveChartsCore.Drawing.IPaint<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>> func, Action<LiveChartsCore.Drawing.IPaint<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.GeoMap 
+public static T Stroke<T>(this T control, Func<LiveChartsCore.Painting.Paint> func, Action<LiveChartsCore.Painting.Paint>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.GeoMap 
    => control._set(LiveChartsCore.SkiaSharpView.Avalonia.GeoMap.StrokeProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T Stroke<T>(this T control,LiveChartsCore.Drawing.IPaint<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext> value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.GeoMap 
+public static T Stroke<T>(this T control,LiveChartsCore.Painting.Paint value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.GeoMap 
 => control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.GeoMap.StrokeProperty, ps, () => control.Stroke = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
@@ -146,18 +146,18 @@ public static T Stroke<T>(this T control, AvaloniaProperty avaloniaProperty, Bin
    => control._set(LiveChartsCore.SkiaSharpView.Avalonia.GeoMap.StrokeProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T Stroke<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, LiveChartsCore.Drawing.IPaint<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.GeoMap 
+public static T Stroke<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, LiveChartsCore.Painting.Paint> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.GeoMap 
 => control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.GeoMap.StrokeProperty, ps, () => control.Stroke = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // Fill
 
 /*BindFromExpressionSetterGenerator*/
-public static T Fill<T>(this T control, Func<LiveChartsCore.Drawing.IPaint<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>> func, Action<LiveChartsCore.Drawing.IPaint<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.GeoMap 
+public static T Fill<T>(this T control, Func<LiveChartsCore.Painting.Paint> func, Action<LiveChartsCore.Painting.Paint>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.GeoMap 
    => control._set(LiveChartsCore.SkiaSharpView.Avalonia.GeoMap.FillProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T Fill<T>(this T control,LiveChartsCore.Drawing.IPaint<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext> value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.GeoMap 
+public static T Fill<T>(this T control,LiveChartsCore.Painting.Paint value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.GeoMap 
 => control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.GeoMap.FillProperty, ps, () => control.Fill = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
@@ -169,7 +169,7 @@ public static T Fill<T>(this T control, AvaloniaProperty avaloniaProperty, Bindi
    => control._set(LiveChartsCore.SkiaSharpView.Avalonia.GeoMap.FillProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T Fill<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, LiveChartsCore.Drawing.IPaint<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.GeoMap 
+public static T Fill<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, LiveChartsCore.Painting.Paint> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.GeoMap 
 => control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.GeoMap.FillProperty, ps, () => control.Fill = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
