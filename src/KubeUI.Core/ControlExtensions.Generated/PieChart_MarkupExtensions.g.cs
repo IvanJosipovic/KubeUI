@@ -61,11 +61,11 @@ public static T SyncContext<TValue,T>(this T control, TValue value, FuncValueCon
  // Title
 
 /*BindFromExpressionSetterGenerator*/
-public static T Title<T>(this T control, Func<LiveChartsCore.VisualElements.VisualElement<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>> func, Action<LiveChartsCore.VisualElements.VisualElement<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+public static T Title<T>(this T control, Func<LiveChartsCore.VisualElements.VisualElement> func, Action<LiveChartsCore.VisualElements.VisualElement>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
    => control._set(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.TitleProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T Title<T>(this T control,LiveChartsCore.VisualElements.VisualElement<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext> value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+public static T Title<T>(this T control,LiveChartsCore.VisualElements.VisualElement value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
 => control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.TitleProperty, ps, () => control.Title = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
@@ -77,7 +77,7 @@ public static T Title<T>(this T control, AvaloniaProperty avaloniaProperty, Bind
    => control._set(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.TitleProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T Title<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, LiveChartsCore.VisualElements.VisualElement<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+public static T Title<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, LiveChartsCore.VisualElements.VisualElement> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
 => control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.TitleProperty, ps, () => control.Title = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
@@ -107,11 +107,11 @@ public static T Series<TValue,T>(this T control, TValue value, FuncValueConverte
  // VisualElements
 
 /*BindFromExpressionSetterGenerator*/
-public static T VisualElements<T>(this T control, Func<System.Collections.Generic.IEnumerable<LiveChartsCore.Kernel.ChartElement<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>>> func, Action<System.Collections.Generic.IEnumerable<LiveChartsCore.Kernel.ChartElement<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>>>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+public static T VisualElements<T>(this T control, Func<System.Collections.Generic.IEnumerable<LiveChartsCore.Kernel.ChartElement>> func, Action<System.Collections.Generic.IEnumerable<LiveChartsCore.Kernel.ChartElement>>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
    => control._set(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.VisualElementsProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T VisualElements<T>(this T control,System.Collections.Generic.IEnumerable<LiveChartsCore.Kernel.ChartElement<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>> value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+public static T VisualElements<T>(this T control,System.Collections.Generic.IEnumerable<LiveChartsCore.Kernel.ChartElement> value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
 => control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.VisualElementsProperty, ps, () => control.VisualElements = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
@@ -123,7 +123,7 @@ public static T VisualElements<T>(this T control, AvaloniaProperty avaloniaPrope
    => control._set(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.VisualElementsProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T VisualElements<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Collections.Generic.IEnumerable<LiveChartsCore.Kernel.ChartElement<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>>> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+public static T VisualElements<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Collections.Generic.IEnumerable<LiveChartsCore.Kernel.ChartElement>> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
 => control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.VisualElementsProperty, ps, () => control.VisualElements = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
@@ -314,11 +314,11 @@ public static T TooltipPosition<TValue,T>(this T control, TValue value, FuncValu
  // TooltipBackgroundPaint
 
 /*BindFromExpressionSetterGenerator*/
-public static T TooltipBackgroundPaint<T>(this T control, Func<LiveChartsCore.Drawing.IPaint<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>> func, Action<LiveChartsCore.Drawing.IPaint<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+public static T TooltipBackgroundPaint<T>(this T control, Func<LiveChartsCore.Painting.Paint> func, Action<LiveChartsCore.Painting.Paint>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
    => control._set(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.TooltipBackgroundPaintProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T TooltipBackgroundPaint<T>(this T control,LiveChartsCore.Drawing.IPaint<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext> value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+public static T TooltipBackgroundPaint<T>(this T control,LiveChartsCore.Painting.Paint value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
 => control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.TooltipBackgroundPaintProperty, ps, () => control.TooltipBackgroundPaint = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
@@ -330,18 +330,18 @@ public static T TooltipBackgroundPaint<T>(this T control, AvaloniaProperty avalo
    => control._set(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.TooltipBackgroundPaintProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T TooltipBackgroundPaint<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, LiveChartsCore.Drawing.IPaint<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+public static T TooltipBackgroundPaint<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, LiveChartsCore.Painting.Paint> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
 => control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.TooltipBackgroundPaintProperty, ps, () => control.TooltipBackgroundPaint = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // TooltipTextPaint
 
 /*BindFromExpressionSetterGenerator*/
-public static T TooltipTextPaint<T>(this T control, Func<LiveChartsCore.Drawing.IPaint<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>> func, Action<LiveChartsCore.Drawing.IPaint<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+public static T TooltipTextPaint<T>(this T control, Func<LiveChartsCore.Painting.Paint> func, Action<LiveChartsCore.Painting.Paint>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
    => control._set(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.TooltipTextPaintProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T TooltipTextPaint<T>(this T control,LiveChartsCore.Drawing.IPaint<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext> value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+public static T TooltipTextPaint<T>(this T control,LiveChartsCore.Painting.Paint value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
 => control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.TooltipTextPaintProperty, ps, () => control.TooltipTextPaint = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
@@ -353,18 +353,18 @@ public static T TooltipTextPaint<T>(this T control, AvaloniaProperty avaloniaPro
    => control._set(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.TooltipTextPaintProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T TooltipTextPaint<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, LiveChartsCore.Drawing.IPaint<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+public static T TooltipTextPaint<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, LiveChartsCore.Painting.Paint> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
 => control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.TooltipTextPaintProperty, ps, () => control.TooltipTextPaint = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // TooltipTextSize
 
 /*BindFromExpressionSetterGenerator*/
-public static T TooltipTextSize<T>(this T control, Func<System.Nullable<System.Double>> func, Action<System.Nullable<System.Double>>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+public static T TooltipTextSize<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
    => control._set(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.TooltipTextSizeProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T TooltipTextSize<T>(this T control,System.Nullable<System.Double> value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+public static T TooltipTextSize<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
 => control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.TooltipTextSizeProperty, ps, () => control.TooltipTextSize = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
@@ -376,7 +376,7 @@ public static T TooltipTextSize<T>(this T control, AvaloniaProperty avaloniaProp
    => control._set(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.TooltipTextSizeProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T TooltipTextSize<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Nullable<System.Double>> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+public static T TooltipTextSize<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
 => control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.TooltipTextSizeProperty, ps, () => control.TooltipTextSize = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
@@ -406,11 +406,11 @@ public static T LegendPosition<TValue,T>(this T control, TValue value, FuncValue
  // LegendBackgroundPaint
 
 /*BindFromExpressionSetterGenerator*/
-public static T LegendBackgroundPaint<T>(this T control, Func<LiveChartsCore.Drawing.IPaint<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>> func, Action<LiveChartsCore.Drawing.IPaint<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+public static T LegendBackgroundPaint<T>(this T control, Func<LiveChartsCore.Painting.Paint> func, Action<LiveChartsCore.Painting.Paint>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
    => control._set(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.LegendBackgroundPaintProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T LegendBackgroundPaint<T>(this T control,LiveChartsCore.Drawing.IPaint<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext> value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+public static T LegendBackgroundPaint<T>(this T control,LiveChartsCore.Painting.Paint value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
 => control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.LegendBackgroundPaintProperty, ps, () => control.LegendBackgroundPaint = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
@@ -422,18 +422,18 @@ public static T LegendBackgroundPaint<T>(this T control, AvaloniaProperty avalon
    => control._set(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.LegendBackgroundPaintProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T LegendBackgroundPaint<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, LiveChartsCore.Drawing.IPaint<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+public static T LegendBackgroundPaint<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, LiveChartsCore.Painting.Paint> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
 => control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.LegendBackgroundPaintProperty, ps, () => control.LegendBackgroundPaint = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // LegendTextPaint
 
 /*BindFromExpressionSetterGenerator*/
-public static T LegendTextPaint<T>(this T control, Func<LiveChartsCore.Drawing.IPaint<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>> func, Action<LiveChartsCore.Drawing.IPaint<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+public static T LegendTextPaint<T>(this T control, Func<LiveChartsCore.Painting.Paint> func, Action<LiveChartsCore.Painting.Paint>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
    => control._set(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.LegendTextPaintProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T LegendTextPaint<T>(this T control,LiveChartsCore.Drawing.IPaint<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext> value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+public static T LegendTextPaint<T>(this T control,LiveChartsCore.Painting.Paint value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
 => control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.LegendTextPaintProperty, ps, () => control.LegendTextPaint = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
@@ -445,18 +445,18 @@ public static T LegendTextPaint<T>(this T control, AvaloniaProperty avaloniaProp
    => control._set(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.LegendTextPaintProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T LegendTextPaint<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, LiveChartsCore.Drawing.IPaint<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+public static T LegendTextPaint<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, LiveChartsCore.Painting.Paint> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
 => control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.LegendTextPaintProperty, ps, () => control.LegendTextPaint = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // LegendTextSize
 
 /*BindFromExpressionSetterGenerator*/
-public static T LegendTextSize<T>(this T control, Func<System.Nullable<System.Double>> func, Action<System.Nullable<System.Double>>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+public static T LegendTextSize<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
    => control._set(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.LegendTextSizeProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T LegendTextSize<T>(this T control,System.Nullable<System.Double> value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+public static T LegendTextSize<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
 => control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.LegendTextSizeProperty, ps, () => control.LegendTextSize = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
@@ -468,7 +468,7 @@ public static T LegendTextSize<T>(this T control, AvaloniaProperty avaloniaPrope
    => control._set(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.LegendTextSizeProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T LegendTextSize<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Nullable<System.Double>> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+public static T LegendTextSize<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
 => control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.LegendTextSizeProperty, ps, () => control.LegendTextSize = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
@@ -587,27 +587,27 @@ public static T DataPointerDownCommand<TValue,T>(this T control, TValue value, F
 => control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.DataPointerDownCommandProperty, ps, () => control.DataPointerDownCommand = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
- // ChartPointPointerDownCommand
+ // HoveredPointsChangedCommand
 
 /*BindFromExpressionSetterGenerator*/
-public static T ChartPointPointerDownCommand<T>(this T control, Func<System.Windows.Input.ICommand> func, Action<System.Windows.Input.ICommand>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
-   => control._set(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.ChartPointPointerDownCommandProperty, func, onChanged, expression);
+public static T HoveredPointsChangedCommand<T>(this T control, Func<System.Windows.Input.ICommand> func, Action<System.Windows.Input.ICommand>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+   => control._set(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.HoveredPointsChangedCommandProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T ChartPointPointerDownCommand<T>(this T control,System.Windows.Input.ICommand value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
-=> control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.ChartPointPointerDownCommandProperty, ps, () => control.ChartPointPointerDownCommand = value, bindingMode, converter, bindingSource);
+public static T HoveredPointsChangedCommand<T>(this T control,System.Windows.Input.ICommand value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+=> control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.HoveredPointsChangedCommandProperty, ps, () => control.HoveredPointsChangedCommand = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
-public static T ChartPointPointerDownCommand<T>(this T control, IBinding binding) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
-   => control._set(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.ChartPointPointerDownCommandProperty, binding);
+public static T HoveredPointsChangedCommand<T>(this T control, IBinding binding) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+   => control._set(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.HoveredPointsChangedCommandProperty, binding);
 
 /*AvaloniaPropertyBindSetterGenerator*/
-public static T ChartPointPointerDownCommand<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
-   => control._set(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.ChartPointPointerDownCommandProperty, avaloniaProperty, bindingMode, converter, overrideView);
+public static T HoveredPointsChangedCommand<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+   => control._set(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.HoveredPointsChangedCommandProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T ChartPointPointerDownCommand<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Windows.Input.ICommand> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
-=> control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.ChartPointPointerDownCommandProperty, ps, () => control.ChartPointPointerDownCommand = converter.TryConvert(value), bindingMode, converter, bindingSource);
+public static T HoveredPointsChangedCommand<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Windows.Input.ICommand> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+=> control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.HoveredPointsChangedCommandProperty, ps, () => control.HoveredPointsChangedCommand = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // VisualElementsPointerDownCommand
@@ -638,22 +638,22 @@ public static T VisualElementsPointerDownCommand<TValue,T>(this T control, TValu
  // Measuring
 
 /*ActionToEventGenerator*/
-public static T OnMeasuring<T>(this T control, Action<LiveChartsCore.Kernel.Sketches.IChartView<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>> action) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart  => 
- control._setEvent((LiveChartsCore.Kernel.Events.ChartEventHandler<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>) ((arg0) => action(arg0)), h => control.Measuring += h);
+public static T OnMeasuring<T>(this T control, Action<LiveChartsCore.Kernel.Sketches.IChartView> action) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart  => 
+ control._setEvent((LiveChartsCore.Kernel.Events.ChartEventHandler) ((arg0) => action(arg0)), h => control.Measuring += h);
 
 
  // UpdateStarted
 
 /*ActionToEventGenerator*/
-public static T OnUpdateStarted<T>(this T control, Action<LiveChartsCore.Kernel.Sketches.IChartView<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>> action) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart  => 
- control._setEvent((LiveChartsCore.Kernel.Events.ChartEventHandler<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>) ((arg0) => action(arg0)), h => control.UpdateStarted += h);
+public static T OnUpdateStarted<T>(this T control, Action<LiveChartsCore.Kernel.Sketches.IChartView> action) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart  => 
+ control._setEvent((LiveChartsCore.Kernel.Events.ChartEventHandler) ((arg0) => action(arg0)), h => control.UpdateStarted += h);
 
 
  // UpdateFinished
 
 /*ActionToEventGenerator*/
-public static T OnUpdateFinished<T>(this T control, Action<LiveChartsCore.Kernel.Sketches.IChartView<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>> action) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart  => 
- control._setEvent((LiveChartsCore.Kernel.Events.ChartEventHandler<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>) ((arg0) => action(arg0)), h => control.UpdateFinished += h);
+public static T OnUpdateFinished<T>(this T control, Action<LiveChartsCore.Kernel.Sketches.IChartView> action) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart  => 
+ control._setEvent((LiveChartsCore.Kernel.Events.ChartEventHandler) ((arg0) => action(arg0)), h => control.UpdateFinished += h);
 
 
  // DataPointerDown
@@ -661,6 +661,13 @@ public static T OnUpdateFinished<T>(this T control, Action<LiveChartsCore.Kernel
 /*ActionToEventGenerator*/
 public static T OnDataPointerDown<T>(this T control, Action<LiveChartsCore.Kernel.Sketches.IChartView, System.Collections.Generic.IEnumerable<LiveChartsCore.Kernel.ChartPoint>> action) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart  => 
  control._setEvent((LiveChartsCore.Kernel.Events.ChartPointsHandler) ((arg0, arg1) => action(arg0, arg1)), h => control.DataPointerDown += h);
+
+
+ // HoveredPointsChanged
+
+/*ActionToEventGenerator*/
+public static T OnHoveredPointsChanged<T>(this T control, Action<LiveChartsCore.Kernel.Sketches.IChartView, System.Collections.Generic.IEnumerable<LiveChartsCore.Kernel.ChartPoint>, System.Collections.Generic.IEnumerable<LiveChartsCore.Kernel.ChartPoint>> action) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart  => 
+ control._setEvent((LiveChartsCore.Kernel.Events.ChartPointHoverHandler) ((arg0, arg1, arg2) => action(arg0, arg1, arg2)), h => control.HoveredPointsChanged += h);
 
 
  // ChartPointPointerDown
@@ -673,8 +680,8 @@ public static T OnChartPointPointerDown<T>(this T control, Action<LiveChartsCore
  // VisualElementsPointerDown
 
 /*ActionToEventGenerator*/
-public static T OnVisualElementsPointerDown<T>(this T control, Action<LiveChartsCore.Kernel.Sketches.IChartView, LiveChartsCore.Kernel.Events.VisualElementsEventArgs<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>> action) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart  => 
- control._setEvent((LiveChartsCore.Kernel.Events.VisualElementsHandler<LiveChartsCore.SkiaSharpView.Drawing.SkiaSharpDrawingContext>) ((arg0, arg1) => action(arg0, arg1)), h => control.VisualElementsPointerDown += h);
+public static T OnVisualElementsPointerDown<T>(this T control, Action<LiveChartsCore.Kernel.Sketches.IChartView, LiveChartsCore.Kernel.Events.VisualElementsEventArgs> action) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart  => 
+ control._setEvent((LiveChartsCore.Kernel.Events.VisualElementsHandler) ((arg0, arg1) => action(arg0, arg1)), h => control.VisualElementsPointerDown += h);
 
 
 
