@@ -2,7 +2,6 @@
 using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
 using Avalonia.Styling;
-using Avalonia.VisualTree;
 using KubeUI.Client;
 
 namespace KubeUI.Views;
