@@ -334,15 +334,17 @@ public class ConsoleColorizer : DocumentColorizingTransformer
     /// <inheritdoc/>
     protected override void ColorizeLine(DocumentLine line)
     {
+        var lineNumber = line.LineNumber - 1 + _terminal.Buffer.YBase;
+
         if (line.Length > 0)
         {
             var colors = new HighlightingColor[line.Length];
 
             for (var cell = 0; cell < line.Length; cell++)
             {
-                if (_terminal.Buffer.Lines.Length > line.LineNumber - 1)
+                if (_terminal.Buffer.Lines.Length > lineNumber)
                 {
-                    var row = _terminal.Buffer.Lines[line.LineNumber - 1];
+                    var row = _terminal.Buffer.Lines[lineNumber];
 
                     if (row.Length > cell)
                     {
