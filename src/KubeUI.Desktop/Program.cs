@@ -1,5 +1,6 @@
 ﻿using System;
 using Avalonia;
+using Avalonia.Fonts.Inter;
 using Velopack;
 
 namespace KubeUI.Desktop;
@@ -21,5 +22,9 @@ class Program
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
+            .ConfigureFonts(fontManager =>
+            {
+                fontManager.AddFontCollection(new CascadiaMonoFontCollection());
+            })
             .WithInterFont();
 }

@@ -67,5 +67,38 @@ public sealed class SettingsView : MyViewBase<SettingsViewModel>
                             .IsEnabled(false)
                             .IsChecked(@vm.SettingsService.Settings.PreReleaseChannel),
                         ]),
+                new Grid()
+                    .Cols("*,2*")
+                    .ToolTip("Font Size")
+                    .Children([
+                        new Label()
+                            .Col(0)
+                            .Content("Font Size"),
+                        new NumericUpDown()
+                            .Col(1)
+                            .Value(@vm.SettingsService.Settings.FontSize),
+                        ]),
+                new Grid()
+                    .Cols("*,2*")
+                    .ToolTip("Console/Logs/Yaml Font Size")
+                    .Children([
+                        new Label()
+                            .Col(0)
+                            .Content("Console/Logs/Yaml Font Size"),
+                        new NumericUpDown()
+                            .Col(1)
+                            .Value(@vm.SettingsService.Settings.ConsoleFontSize),
+                        ]),
+                new Grid()
+                    .Cols("*,2*")
+                    .ToolTip("List Row Height")
+                    .Children([
+                        new Label()
+                            .Col(0)
+                            .Content("List Row Height"),
+                        new NumericUpDown()
+                            .Col(1)
+                            .Value(@vm.SettingsService.Settings.ListRowHeight),
+                        ]),
         ]);
 }

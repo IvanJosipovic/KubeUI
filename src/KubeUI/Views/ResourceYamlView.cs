@@ -7,6 +7,7 @@ using AvaloniaEdit;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Folding;
 using AvaloniaEdit.TextMate;
+using KubeUI.Client;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
 
@@ -14,6 +15,8 @@ namespace KubeUI.Views;
 
 public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
 {
+    private readonly ISettingsService _settingsService;
+
     private Installation _textMateInstallation;
 
     private RegistryOptions _registryOptions;
@@ -22,8 +25,10 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
 
     private TextEditor _textEditor;
 
-    public ResourceYamlView()
+    public ResourceYamlView(ISettingsService settingsService)
     {
+        _settingsService = settingsService;
+
         _registryOptions = new RegistryOptions(Application.Current.ActualThemeVariant == ThemeVariant.Light ? ThemeName.Light : ThemeName.DarkPlus);
 
         Application.Current.ActualThemeVariantChanged += Current_ActualThemeVariantChanged;
@@ -111,8 +116,8 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
                                 YamlFoldingStrategy.UpdateFoldings(_foldingManager, _textEditor.Document);
                             }
                         })
-                        .FontFamily(new FontFamily("Consolas,Menlo,Monospace"))
-                        .FontSize(14.0)
+                        .FontFamily(new FontFamily("Cascadia Mono"))
+                        .FontSize(Convert.ToDouble(_settingsService.Settings.ConsoleFontSize))
                         .FontWeight(FontWeight.Normal)
                         .IsReadOnly(@vm.EditMode, converter: Utilities.InverseBooleanConverter)
                         .ShowLineNumbers(true)

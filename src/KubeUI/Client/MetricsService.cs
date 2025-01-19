@@ -160,7 +160,11 @@ public partial class MetricsService : ObservableObject, IInitializeCluster, IMet
 
             var resp2 = await kube.CreateSelfSubjectAccessReviewAsync(model);
 
-            if (resp.Status.Allowed && resp2.Status.Allowed)
+            var APIGroups = await _cluster.Client.Apis.GetAPIVersionsAsync();
+
+            var hasMetrics = APIGroups.Groups.Any(g => g.Name == "metrics.k8s.io") && resp.Status.Allowed && resp2.Status.Allowed;
+
+            if (resp.Status.Allowed && resp2.Status.Allowed && hasMetrics)
             {
                 _ = Dispatcher.UIThread.InvokeAsync(() => {
                     _settings.Settings.GetClusterSettings(_cluster).MetricsServiceType = MetricsServiceType.KubernetesMetricsServer;

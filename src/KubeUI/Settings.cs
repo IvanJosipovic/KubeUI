@@ -30,6 +30,15 @@ public sealed partial class Settings : ObservableObject
     [ObservableProperty]
     public partial ObservableCollection<string> KubeConfigs { get; set; } = [];
 
+    [ObservableProperty]
+    public partial decimal FontSize { get; set; } = 13;
+
+    [ObservableProperty]
+    public partial decimal ConsoleFontSize { get; set; } = 12;
+
+    [ObservableProperty]
+    public partial decimal ListRowHeight { get; set; } = 30;
+
     public ClusterSettings GetClusterSettings(ICluster cluster)
     {
         var _key = cluster.KubeConfigPath + " " + cluster.Name;

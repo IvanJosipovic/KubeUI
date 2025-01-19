@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Styling;
 using AvaloniaEdit;
+using KubeUI.Client;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
 
@@ -11,6 +12,8 @@ namespace KubeUI.Views;
 
 public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
 {
+    private readonly ISettingsService _settingsService;
+
     private Installation _textMateInstallation;
 
     private RegistryOptions _registryOptions;
@@ -19,6 +22,8 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
 
     public PodLogsView()
     {
+        _settingsService = Application.Current.GetRequiredService<ISettingsService>();
+
         _registryOptions = new RegistryOptions(Application.Current.ActualThemeVariant == ThemeVariant.Light ? ThemeName.Light : ThemeName.DarkPlus);
 
         Application.Current.ActualThemeVariantChanged += Current_ActualThemeVariantChanged;
@@ -94,8 +99,8 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
                         };
                     })
                     .Document(@vm.Logs, BindingMode.OneWay)
-                    .FontFamily(new FontFamily("Consolas,Menlo,Monospace"))
-                    .FontSize(14.0)
+                    .FontFamily(new FontFamily("Cascadia Mono"))
+                    .FontSize(Convert.ToDouble(_settingsService.Settings.ConsoleFontSize))
                     .FontWeight(FontWeight.Normal)
                     .IsReadOnly(true)
                     .ShowLineNumbers(false)

@@ -164,7 +164,7 @@ public partial class NavigationLink : NavigationItem
 public partial class ResourceNavigationLink : NavigationLink
 {
     [ObservableProperty]
-    public partial ICollection Objects { get; set; }
+    public partial ICollection? Objects { get; set; }
 
     public string IconPath => Utilities.GetKubeAssetPath(ControlType);
 }

@@ -1721,7 +1721,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     }
 
     [RelayCommand(CanExecute = nameof(CanViewConsole))]
-    private async Task ViewConsole(V1Container container)
+    private void ViewConsole(V1Container container)
     {
         var vm = Application.Current.GetRequiredService<PodConsoleViewModel>();
         vm.Cluster = Cluster;
@@ -1729,18 +1729,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         vm.ContainerName = container.Name;
         vm.Id = $"{nameof(ViewConsole)}-{Cluster.Name}-{((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key}-{container.Name}";
 
-        if (Factory.AddToBottom(vm))
-        {
-            try
-            {
-                await vm.Connect();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error connecting to console");
-                return;
-            }
-        }
+        Factory.AddToBottom(vm);
     }
 
     private bool CanViewConsole(V1Container? container)
