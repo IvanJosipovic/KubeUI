@@ -2,6 +2,7 @@
 using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
 using Avalonia.Styling;
+using Avalonia.VisualTree;
 using KubeUI.Client;
 
 namespace KubeUI.Views;
@@ -30,6 +31,7 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
     protected override object Build(NavigationViewModel? vm) =>
         new TreeView()
             .ItemsSource(@vm.ClusterManager.Clusters)
+            .AutoScrollToSelectedItem(false)
             .OnSelectionChanged((e) =>
             {
                 if (e.AddedItems.Count == 1 && DataContext is NavigationViewModel model)
