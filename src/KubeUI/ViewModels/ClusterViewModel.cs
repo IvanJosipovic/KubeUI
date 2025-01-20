@@ -14,7 +14,7 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
 
     public ClusterViewModel()
     {
-        Title = Resources.ClusterViewModel_Title;
+        Title = Assets.Resources.ClusterViewModel_Title;
         EventsVM = Application.Current.GetRequiredService<ResourceListViewModel<Corev1Event>>();
     }
 

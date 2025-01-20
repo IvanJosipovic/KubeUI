@@ -15,7 +15,7 @@ public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable
 
     public ResourcePropertiesViewModel()
     {
-        Title = Resources.ResourcePropertiesViewModel_Title;
+        Title = Assets.Resources.ResourcePropertiesViewModel_Title;
         Id = nameof(ResourcePropertiesViewModel<T>);
     }
 

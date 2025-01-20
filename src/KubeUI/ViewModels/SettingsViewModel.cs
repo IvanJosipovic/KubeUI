@@ -9,7 +9,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 
     public SettingsViewModel()
     {
-        Title = Resources.SettingsView_Title;
+        Title = Assets.Resources.SettingsView_Title;
         Id = nameof(SettingsViewModel);
 
         SettingsService = Application.Current.GetRequiredService<ISettingsService>();

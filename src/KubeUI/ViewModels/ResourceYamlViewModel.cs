@@ -39,7 +39,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
     public ResourceYamlViewModel()
     {
-        Title = Resources.ResourceYamlViewModel_Title;
+        Title = Assets.Resources.ResourceYamlViewModel_Title;
         _logger = Application.Current.GetRequiredService<ILogger<ResourceYamlViewModel>>();
         _notificationManager = Application.Current.GetRequiredService<INotificationManager>();
     }

@@ -139,9 +139,9 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                             ContentDialogSettings dialogSettings = new()
                             {
-                                Title = Resources.Cluster_Missing_Namespace_Permission_Title,
-                                Content = Resources.Cluster_Missing_Namespace_Permission_Content,
-                                PrimaryButtonText = Resources.Cluster_Missing_Namespace_Permission_Primary,
+                                Title = Assets.Resources.Cluster_Missing_Namespace_Permission_Title,
+                                Content = Assets.Resources.Cluster_Missing_Namespace_Permission_Content,
+                                PrimaryButtonText = Assets.Resources.Cluster_Missing_Namespace_Permission_Primary,
                                 DefaultButton = ContentDialogButton.Primary
                             };
 
@@ -216,8 +216,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
     private async Task AddDefaultNavigation()
     {
         NavigationItems.Add(new NavigationLink() { Name = "Settings", ControlType = typeof(ClusterSettingsViewModel), Cluster = this, StyleIcon = "ic_fluent_settings_24_filled" });
-        NavigationItems.Add(new NavigationLink() { Name = Resources.ClusterViewModel_Title, ControlType = typeof(ClusterViewModel), Cluster = this, SvgIcon = "/Assets/kube/infrastructure_components/unlabeled/control-plane.svg" });
-        NavigationItems.Add(new NavigationLink() { Name = Resources.VisualizationViewModel_Title, ControlType = typeof(VisualizationViewModel), Cluster = this, StyleIcon = "ic_fluent_search_visual_24_filled" });
+        NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.ClusterViewModel_Title, ControlType = typeof(ClusterViewModel), Cluster = this, SvgIcon = "/Assets/kube/infrastructure_components/unlabeled/control-plane.svg" });
+        NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.VisualizationViewModel_Title, ControlType = typeof(VisualizationViewModel), Cluster = this, StyleIcon = "ic_fluent_search_visual_24_filled" });
         NavigationItems.Add(new NavigationLink() { Name = "Load Yaml", Cluster = this, Id = "load-yaml", StyleIcon = "arrow_upload_regular" });
         NavigationItems.Add(new NavigationLink() { Name = "Load Folder", Cluster = this, Id = "load-folder", StyleIcon = "folder_add_regular" });
 
@@ -357,7 +357,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         }
         if (await UpdateCanIListWatchAnyNamespaceAsync<V1Pod>() && await UpdateCanIAnyNamespaceAsync<V1Pod>(Verb.Create, "portforward"))
         {
-            network.NavigationItems.Add(new NavigationLink() { Name = Resources.PortForwarderListViewModel_Title, ControlType = typeof(PortForwarderListViewModel), Cluster = this, StyleIcon = "ic_fluent_cloud_flow_filled" });
+            network.NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.PortForwarderListViewModel_Title, ControlType = typeof(PortForwarderListViewModel), Cluster = this, StyleIcon = "ic_fluent_cloud_flow_filled" });
         }
 
         var storage = new NavigationItem()
