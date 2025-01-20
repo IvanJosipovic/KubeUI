@@ -4,6 +4,7 @@ using Avalonia.Input;
 using k8s;
 using k8s.Autorest;
 using k8s.Models;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -316,5 +317,27 @@ public static class Utilities
         }
 
         logger.LogError(ex, message);
+    }
+
+    public static IBinding FuncBinding<T>(Expression<Func<T, object>> func)
+    {
+        var body = (MemberExpression)func.Body;
+
+        var param = (ParameterExpression)body.Expression;
+
+        var prop = body.ToString().Substring(param.Name.Length + 1);
+
+        return new Binding(prop);
+    }
+
+    public static string PathBuilder<T>(Expression<Func<T, object>> func)
+    {
+        var body = (MemberExpression)func.Body;
+
+        var param = (ParameterExpression)body.Expression;
+
+        var prop = body.ToString().Substring(param.Name.Length + 1);
+
+        return prop;
     }
 }

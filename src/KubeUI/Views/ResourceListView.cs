@@ -6,6 +6,7 @@ using Avalonia.Controls.Templates;
 using Avalonia.Styling;
 using KubeUI.Client.Informer;
 using KubeUI.Client;
+using KubeUI.Resources;
 
 namespace KubeUI.Views;
 
@@ -29,7 +30,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
         var converter = new DataGridLengthConverter();
 
-        foreach (var columnDefinition in ViewModel.ViewDefinition.Columns)
+        foreach (var columnDefinition in ViewModel.ResourceConfig.Columns())
         {
             try
             {
@@ -104,7 +105,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
         _grid.ContextMenu.Items.Clear();
 
-        if (ViewModel.ViewDefinition.DefaultMenuItems)
+        if (ViewModel.ResourceConfig.DefaultMenuItems)
         {
             _grid.ContextMenu.Items.Add(CreateMenuItem(new()
             {
@@ -129,11 +130,11 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
             }));
         }
 
-        if (ViewModel.ViewDefinition.MenuItems != null)
+        if (ViewModel.ResourceConfig.MenuItems != null)
         {
             _grid.ContextMenu.Items.Add(new Separator());
 
-            foreach (var item in ViewModel.ViewDefinition.MenuItems)
+            foreach (var item in ViewModel.ResourceConfig.MenuItems())
             {
                 _grid.ContextMenu.Items.Add(CreateMenuItem(item));
             }
@@ -169,11 +170,6 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
         if (!string.IsNullOrEmpty(menu.ItemSourcePath))
         {
             menuItem.Bind(ItemsControl.ItemsSourceProperty, new Binding(menu.ItemSourcePath));
-        }
-
-        if (menu.ItemSourceBinding != null)
-        {
-            menuItem.Bind(ItemsControl.ItemsSourceProperty, menu.ItemSourceBinding);
         }
 
         if (!string.IsNullOrEmpty(menu.IconResource))
@@ -253,7 +249,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
     protected override StyleGroup? BuildStyles()
     {
-        return ViewModel.ViewDefinition.SetStyle.Invoke();
+        return ViewModel.ResourceConfig.SetStyle.Invoke();
     }
 
     protected override object Build(ResourceListViewModel<T>? vm)
@@ -268,7 +264,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                         new Button()
                             .Col(0)
                             .Command(vm.NewResourceCommand)
-                            .IsVisible(@vm.ViewDefinition.ShowNewResource)
+                            .IsVisible(@vm.ResourceConfig.ShowNewResource)
                             .ToolTip(Assets.Resources.ResourceListView_NewResource)
                             .Content(new PathIcon() { Data = (Geometry)Application.Current.FindResource("add_square_regular") }),
                         new Label()
@@ -297,7 +293,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                                     .MaxHeight(20)
                                     .HorizontalAlignment(HorizontalAlignment.Right)
                                     .Classes("ClearButton")
-                                    .IsVisible(@vm.ViewDefinition.ShowNamespaces)
+                                    .IsVisible(@vm.ResourceConfig.ShowNamespaces)
                                     .ItemsSource(@vm.Cluster.Namespaces.Values)
                                     .SelectedItems(@vm.Cluster.SelectedNamespaces)
                                     .SelectedItemTemplate(new FuncDataTemplate<V1Namespace?>((x,y) => new Label().Content(@x?.Metadata.Name)))

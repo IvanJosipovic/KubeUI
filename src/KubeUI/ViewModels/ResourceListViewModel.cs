@@ -18,8 +18,11 @@ using k8s.Models;
 using KubeUI.Client;
 using KubeUI.Client.Informer;
 using KubeUI.Controls;
+using KubeUI.Resources;
+using OpenTelemetry.Trace;
 using Swordfish.NET.Collections;
 using static KubeUI.Client.Cluster;
+using SortDirection = KubeUI.Resources.SortDirection;
 
 namespace KubeUI.ViewModels;
 
@@ -39,7 +42,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     public partial ConcurrentObservableDictionary<NamespacedName, T> Objects { get; set; }
 
     [ObservableProperty]
-    public partial object SelectedItem { get; set; }
+    public partial KeyValuePair<NamespacedName, T>? SelectedItem { get; set; }
 
     [ObservableProperty]
     public partial ReadOnlyObservableCollection<KeyValuePair<NamespacedName, T>> DataGridObjects { get; set; }
@@ -48,7 +51,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     public partial string SearchQuery { get; set; }
 
     [ObservableProperty]
-    public partial ResourceListViewDefinition<T> ViewDefinition { get; set; }
+    public partial ResourceConfigBase<T> ResourceConfig { get; set; }
 
     private IDisposable? _filter;
 
@@ -60,11 +63,18 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _logger = Application.Current.GetRequiredService<ILogger<ResourceListViewModel<T>>>();
         _dialogService = Application.Current.GetRequiredService<IDialogService>();
         _notificationManager = Application.Current.GetRequiredService<INotificationManager>();
+        ResourceConfig = Application.Current.GetRequiredService<ResourceConfigBase<T>>();
     }
 
     public void Initialize(ICluster cluster)
     {
         Cluster = cluster;
+
+        if (ResourceConfig is IInitializeCluster init)
+        {
+            init.Initialize(Cluster);
+        }
+
         Kind = GroupApiVersionKind.From<T>();
         Title = Kind.Kind.Humanize(LetterCasing.Title);
         Id = Cluster.Name + "-" + Kind;
@@ -72,8 +82,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         Objects = Cluster.GetObjectDictionary<T>();
 
         Cluster.SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
-
-        ViewDefinition = GetViewDefinition();
 
         SetFilter();
     }
@@ -107,7 +115,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
             BinaryExpression? searchFilter = null;
 
-            if (Cluster.SelectedNamespaces != null && ViewDefinition.ShowNamespaces)
+            if (Cluster.SelectedNamespaces != null && ResourceConfig.ShowNamespaces)
             {
                 foreach (var item in Cluster.SelectedNamespaces)
                 {
@@ -133,7 +141,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
                     BinaryExpression? wordFilter = null;
 
-                    foreach (var column in ViewDefinition.Columns)
+                    foreach (var column in ResourceConfig.Columns())
                     {
                         var someValue = Expression.Constant(query, typeof(string));
 
@@ -443,93 +451,93 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 });
             }
 
-            definition.MenuItems =
-            [
-                new()
-                {
-                    Header = "View Console",
-                    IconResource = "desktop_regular",
-                    MenuItems =
-                    [
-                        new()
-                        {
-                            Header = "Init",
-                            ItemSourcePath = "SelectedItem.Value.Spec.InitContainers",
-                            ItemTemplate = new()
-                            {
-                                HeaderBinding = new Binding(nameof(V1Container.Name)),
-                                CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewConsoleCommand),
-                                CommandParameterPath = ".",
-                            }
-                        },
-                        new()
-                        {
-                            Header = "Normal",
-                            ItemSourcePath = "SelectedItem.Value.Spec.Containers",
-                            ItemTemplate = new()
-                            {
-                                HeaderBinding = new Binding(nameof(V1Container.Name)),
-                                CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewConsoleCommand),
-                                CommandParameterPath = ".",
-                            }
-                        },
-                    ]
-                },
-                new()
-                {
-                    Header = "View Logs",
-                    IconResource = "text_description_regular",
-                    MenuItems = [
-                        new()
-                        {
-                            Header = "Init",
-                            ItemSourcePath = "SelectedItem.Value.Spec.InitContainers",
-                            ItemTemplate = new()
-                            {
-                                HeaderBinding = new Binding(nameof(V1Container.Name)),
-                                CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewLogsCommand),
-                                CommandParameterPath = ".",
-                            }
-                        },
-                        new()
-                        {
-                            Header = "Normal",
-                            ItemSourcePath = "SelectedItem.Value.Spec.Containers",
-                            ItemTemplate = new()
-                            {
-                                HeaderBinding = new Binding(nameof(V1Container.Name)),
-                                CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewLogsCommand),
-                                CommandParameterPath = ".",
-                            }
-                        },
-                    ],
-                },
-                new()
-                {
-                    Header = "Port Forwarding",
-                    ItemSourcePath = "SelectedItem.Value.Spec.Containers",
-                    IconResource = "ic_fluent_cloud_flow_filled",
-                    ItemTemplate = new()
-                    {
-                        HeaderBinding = new Binding(nameof(V1Container.Name)),
-                        ItemSourcePath = nameof(V1Container.Ports),
-                        ItemTemplate = new()
-                        {
-                            HeaderBinding = new MultiBinding()
-                            {
-                                Bindings =
-                                [
-                                    new Binding(nameof(V1ContainerPort.Name)),
-                                    new Binding(nameof(V1ContainerPort.ContainerPort))
-                                ],
-                                StringFormat = "{0} - {1}"
-                            },
-                            CommandPath = nameof(ResourceListViewModel<V1Pod>.PortForwardCommand),
-                            CommandParameterPath = ".",
-                        }
-                    }
-                }
-            ];
+            //definition.MenuItems =
+            //[
+            //    new()
+            //    {
+            //        Header = "View Console",
+            //        IconResource = "desktop_regular",
+            //        MenuItems =
+            //        [
+            //            new()
+            //            {
+            //                Header = "Init",
+            //                ItemSourcePath = "SelectedItem.Value.Spec.InitContainers",
+            //                ItemTemplate = new()
+            //                {
+            //                    HeaderBinding = new Binding(nameof(V1Container.Name)),
+            //                    CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewConsoleCommand),
+            //                    CommandParameterPath = ".",
+            //                }
+            //            },
+            //            new()
+            //            {
+            //                Header = "Normal",
+            //                ItemSourcePath = "SelectedItem.Value.Spec.Containers",
+            //                ItemTemplate = new()
+            //                {
+            //                    HeaderBinding = new Binding(nameof(V1Container.Name)),
+            //                    CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewConsoleCommand),
+            //                    CommandParameterPath = ".",
+            //                }
+            //            },
+            //        ]
+            //    },
+            //    new()
+            //    {
+            //        Header = "View Logs",
+            //        IconResource = "text_description_regular",
+            //        MenuItems = [
+            //            new()
+            //            {
+            //                Header = "Init",
+            //                ItemSourcePath = "SelectedItem.Value.Spec.InitContainers",
+            //                ItemTemplate = new()
+            //                {
+            //                    HeaderBinding = new Binding(nameof(V1Container.Name)),
+            //                    CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewLogsCommand),
+            //                    CommandParameterPath = ".",
+            //                }
+            //            },
+            //            new()
+            //            {
+            //                Header = "Normal",
+            //                ItemSourcePath = "SelectedItem.Value.Spec.Containers",
+            //                ItemTemplate = new()
+            //                {
+            //                    HeaderBinding = new Binding(nameof(V1Container.Name)),
+            //                    CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewLogsCommand),
+            //                    CommandParameterPath = ".",
+            //                }
+            //            },
+            //        ],
+            //    },
+            //    new()
+            //    {
+            //        Header = "Port Forwarding",
+            //        ItemSourcePath = "SelectedItem.Value.Spec.Containers",
+            //        IconResource = "ic_fluent_cloud_flow_filled",
+            //        ItemTemplate = new()
+            //        {
+            //            HeaderBinding = new Binding(nameof(V1Container.Name)),
+            //            ItemSourcePath = nameof(V1Container.Ports),
+            //            ItemTemplate = new()
+            //            {
+            //                HeaderBinding = new MultiBinding()
+            //                {
+            //                    Bindings =
+            //                    [
+            //                        new Binding(nameof(V1ContainerPort.Name)),
+            //                        new Binding(nameof(V1ContainerPort.ContainerPort))
+            //                    ],
+            //                    StringFormat = "{0} - {1}"
+            //                },
+            //                CommandPath = nameof(ResourceListViewModel<V1Pod>.PortForwardCommand),
+            //                CommandParameterPath = ".",
+            //            }
+            //        }
+            //    }
+            //];
         }
         else if (resourceType == typeof(V1Deployment))
         {
@@ -989,7 +997,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                                 new Binding(nameof(V1ServicePort.Port))
                             ],
                             StringFormat = "{0} - {1}"
-                        },                        CommandPath = nameof(ResourceListViewModel<V1Pod>.PortForwardServiceCommand),
+                        },
+                        //CommandPath = nameof(ResourceListViewModel<V1Pod>.PortForwardServiceCommand), //todo fix
                         CommandParameterPath = ".",
                     }
                 }
@@ -1613,10 +1622,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     {
         ContentDialogSettings settings = new()
         {
-            Title = Resources.ResourceListViewModel_Delete_Title,
-            Content = string.Format(Resources.ResourceListViewModel_Delete_Content, items.Count),
-            PrimaryButtonText = Resources.ResourceListViewModel_Delete_Primary,
-            SecondaryButtonText = Resources.ResourceListViewModel_Delete_Secondary,
+            Title = Assets.Resources.ResourceListViewModel_Delete_Title,
+            Content = string.Format(Assets.Resources.ResourceListViewModel_Delete_Content, items.Count),
+            PrimaryButtonText = Assets.Resources.ResourceListViewModel_Delete_Primary,
+            SecondaryButtonText = Assets.Resources.ResourceListViewModel_Delete_Secondary,
             DefaultButton = ContentDialogButton.Secondary
         };
 
@@ -1692,114 +1701,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         return item != null;
     }
 
-    [RelayCommand(CanExecute = nameof(CanViewLogs))]
-    private async Task ViewLogs(V1Container container)
-    {
-        var vm = Application.Current.GetRequiredService<PodLogsViewModel>();
-        vm.Cluster = Cluster;
-        vm.Object = ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Value;
-        vm.ContainerName = container.Name;
-        vm.Id = $"{nameof(ViewLogs)}-{Cluster.Name}-{((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key}-{container.Name}";
 
-        if (Factory.AddToBottom(vm))
-        {
-        try
-        {
-            await vm.Connect();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error viewing logs");
-            return;
-        }
-        }
-    }
-
-    private bool CanViewLogs(V1Container? container)
-    {
-        return container != null && Cluster.CanI<V1Pod>(Verb.Get, ((KeyValuePair<NamespacedName,V1Pod>)SelectedItem).Key.Namespace, "log");
-    }
-
-    [RelayCommand(CanExecute = nameof(CanViewConsole))]
-    private void ViewConsole(V1Container container)
-    {
-        var vm = Application.Current.GetRequiredService<PodConsoleViewModel>();
-        vm.Cluster = Cluster;
-        vm.Object = ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Value;
-        vm.ContainerName = container.Name;
-        vm.Id = $"{nameof(ViewConsole)}-{Cluster.Name}-{((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key}-{container.Name}";
-
-        Factory.AddToBottom(vm);
-    }
-
-    private bool CanViewConsole(V1Container? container)
-    {
-        return container != null && Cluster.CanI<V1Pod>(Verb.Create, ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key.Namespace, "exec");
-    }
-
-    [RelayCommand(CanExecute = nameof(CanPortForward))]
-    private async Task PortForward(V1ContainerPort containerPort)
-    {
-        var pf = Cluster.AddPodPortForward(((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key.Namespace, ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key.Name, containerPort.ContainerPort);
-
-        ContentDialogSettings settings = new()
-        {
-            Title = Resources.ResourceListViewModel_PortForward_Title,
-            Content = string.Format(Resources.ResourceListViewModel_PortForward_Content, containerPort.ContainerPort, pf.LocalPort),
-            PrimaryButtonText = Resources.ResourceListViewModel_PortForward_Primary,
-            SecondaryButtonText = Resources.ResourceListViewModel_PortForward_Secondary,
-            DefaultButton = ContentDialogButton.Secondary
-        };
-
-        var result = await _dialogService.ShowContentDialogAsync(this, settings);
-
-        if (result == ContentDialogResult.Primary)
-        {
-            var window = (Window)_dialogService.DialogManager.GetMainWindow()!.RefObj;
-            await window!.Launcher.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
-        }
-    }
-
-    private bool CanPortForward(V1ContainerPort? containerPort)
-    {
-        return containerPort?.ContainerPort > 0 &&
-               containerPort.Protocol == "TCP" &&
-               Cluster.CanI<V1Pod>(Verb.Create, ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key.Namespace, "portforward");
-    }
-
-    [RelayCommand(CanExecute = nameof(CanPortForwardService))]
-    private async Task PortForwardService(V1ServicePort containerPort)
-    {
-        var pf = Cluster.AddServicePortForward(((KeyValuePair<NamespacedName, V1Service>)SelectedItem).Key.Namespace, ((KeyValuePair<NamespacedName, V1Service>)SelectedItem).Key.Name, containerPort.Port);
-
-        ContentDialogSettings settings = new()
-        {
-            Title = Resources.ResourceListViewModel_PortForward_Title,
-            Content = string.Format(Resources.ResourceListViewModel_PortForward_Content, containerPort.Port, pf.LocalPort),
-            PrimaryButtonText = Resources.ResourceListViewModel_PortForward_Primary,
-            SecondaryButtonText = Resources.ResourceListViewModel_PortForward_Secondary,
-            DefaultButton = ContentDialogButton.Secondary
-        };
-
-        var result = await _dialogService.ShowContentDialogAsync(this, settings);
-
-        if (result == ContentDialogResult.Primary)
-        {
-            var window = (Window)_dialogService.DialogManager.GetMainWindow()!.RefObj;
-            await window!.Launcher.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
-        }
-    }
-
-    private bool CanPortForwardService(V1ServicePort? servicePort)
-    {
-        var @namespace = ((KeyValuePair<NamespacedName, V1Service>)SelectedItem).Key.Namespace;
-
-        return servicePort?.Port > 0 &&
-               servicePort.Protocol == "TCP" &&
-               Cluster.CanI<V1Pod>(Verb.Create, @namespace, "portforward") &&
-               Cluster.CanI<V1Endpoints>(Verb.List, @namespace) &&
-               Cluster.CanI<V1Endpoints>(Verb.Watch, @namespace);
-    }
 
     [RelayCommand(CanExecute = nameof(CanListCRD))]
     private void ListCRD(V1CustomResourceDefinition item)
@@ -1853,10 +1755,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         {
             ContentDialogSettings settings = new()
             {
-                Title = Resources.ResourceListViewModel_Restart_Title,
-                Content = string.Format(Resources.ResourceListViewModel_Restart_Content, deployment.Name()),
-                PrimaryButtonText = Resources.ResourceListViewModel_Restart_Primary,
-                SecondaryButtonText = Resources.ResourceListViewModel_Restart_Secondary,
+                Title = Assets.Resources.ResourceListViewModel_Restart_Title,
+                Content = string.Format(Assets.Resources.ResourceListViewModel_Restart_Content, deployment.Name()),
+                PrimaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Primary,
+                SecondaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Secondary,
                 DefaultButton = ContentDialogButton.Secondary
             };
 
@@ -1885,10 +1787,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         {
             ContentDialogSettings settings = new()
             {
-                Title = Resources.ResourceListViewModel_Restart_Title,
-                Content = string.Format(Resources.ResourceListViewModel_Restart_Content, replicaSet.Name()),
-                PrimaryButtonText = Resources.ResourceListViewModel_Restart_Primary,
-                SecondaryButtonText = Resources.ResourceListViewModel_Restart_Secondary,
+                Title = Assets.Resources.ResourceListViewModel_Restart_Title,
+                Content = string.Format(Assets.Resources.ResourceListViewModel_Restart_Content, replicaSet.Name()),
+                PrimaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Primary,
+                SecondaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Secondary,
                 DefaultButton = ContentDialogButton.Secondary
             };
 
@@ -1917,10 +1819,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         {
             ContentDialogSettings settings = new()
             {
-                Title = Resources.ResourceListViewModel_Restart_Title,
-                Content = string.Format(Resources.ResourceListViewModel_Restart_Content, statefulSet.Name()),
-                PrimaryButtonText = Resources.ResourceListViewModel_Restart_Primary,
-                SecondaryButtonText = Resources.ResourceListViewModel_Restart_Secondary,
+                Title = Assets.Resources.ResourceListViewModel_Restart_Title,
+                Content = string.Format(Assets.Resources.ResourceListViewModel_Restart_Content, statefulSet.Name()),
+                PrimaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Primary,
+                SecondaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Secondary,
                 DefaultButton = ContentDialogButton.Secondary
             };
 
@@ -1949,10 +1851,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         {
             ContentDialogSettings settings = new()
             {
-                Title = Resources.ResourceListViewModel_Restart_Title,
-                Content = string.Format(Resources.ResourceListViewModel_Restart_Content, daemonSet.Name()),
-                PrimaryButtonText = Resources.ResourceListViewModel_Restart_Primary,
-                SecondaryButtonText = Resources.ResourceListViewModel_Restart_Secondary,
+                Title = Assets.Resources.ResourceListViewModel_Restart_Title,
+                Content = string.Format(Assets.Resources.ResourceListViewModel_Restart_Content, daemonSet.Name()),
+                PrimaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Primary,
+                SecondaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Secondary,
                 DefaultButton = ContentDialogButton.Secondary
             };
 
@@ -1979,10 +1881,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     {
         ContentDialogSettings settings = new()
         {
-            Title = Resources.ResourceListViewModel_CordonNode_Title,
-            Content = string.Format(Resources.ResourceListViewModel_CordonNode_Content, items.Count),
-            PrimaryButtonText = Resources.ResourceListViewModel_CordonNode_Primary,
-            SecondaryButtonText = Resources.ResourceListViewModel_CordonNode_Secondary,
+            Title = Assets.Resources.ResourceListViewModel_CordonNode_Title,
+            Content = string.Format(Assets.Resources.ResourceListViewModel_CordonNode_Content, items.Count),
+            PrimaryButtonText = Assets.Resources.ResourceListViewModel_CordonNode_Primary,
+            SecondaryButtonText = Assets.Resources.ResourceListViewModel_CordonNode_Secondary,
             DefaultButton = ContentDialogButton.Secondary
         };
 
@@ -2022,10 +1924,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     {
         ContentDialogSettings settings = new()
         {
-            Title = Resources.ResourceListViewModel_UnCordonNode_Title,
-            Content = string.Format(Resources.ResourceListViewModel_UnCordonNode_Content, items.Count),
-            PrimaryButtonText = Resources.ResourceListViewModel_UnCordonNode_Primary,
-            SecondaryButtonText = Resources.ResourceListViewModel_UnCordonNode_Secondary,
+            Title = Assets.Resources.ResourceListViewModel_UnCordonNode_Title,
+            Content = string.Format(Assets.Resources.ResourceListViewModel_UnCordonNode_Content, items.Count),
+            PrimaryButtonText = Assets.Resources.ResourceListViewModel_UnCordonNode_Primary,
+            SecondaryButtonText = Assets.Resources.ResourceListViewModel_UnCordonNode_Secondary,
             DefaultButton = ContentDialogButton.Secondary
         };
 
@@ -2065,10 +1967,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     {
         ContentDialogSettings settings = new()
         {
-            Title = Resources.ResourceListViewModel_DrainNode_Title,
-            Content = string.Format(Resources.ResourceListViewModel_DrainNode_Content, items.Count),
-            PrimaryButtonText = Resources.ResourceListViewModel_DrainNode_Primary,
-            SecondaryButtonText = Resources.ResourceListViewModel_DrainNode_Secondary,
+            Title = Assets.Resources.ResourceListViewModel_DrainNode_Title,
+            Content = string.Format(Assets.Resources.ResourceListViewModel_DrainNode_Content, items.Count),
+            PrimaryButtonText = Assets.Resources.ResourceListViewModel_DrainNode_Primary,
+            SecondaryButtonText = Assets.Resources.ResourceListViewModel_DrainNode_Secondary,
             DefaultButton = ContentDialogButton.Secondary
         };
 
@@ -2148,7 +2050,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
     }
 
-    private ResourceListViewDefinitionColumn<T, string> NameColumn(SortDirection sort = SortDirection.None)
+    public static ResourceListViewDefinitionColumn<T, string> NameColumn(SortDirection sort = SortDirection.None)
     {
         return new ResourceListViewDefinitionColumn<T, string>()
         {
@@ -2159,7 +2061,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         };
     }
 
-    private ResourceListViewDefinitionColumn<T, string> NamespaceColumn()
+    public static ResourceListViewDefinitionColumn<T, string> NamespaceColumn()
     {
         return new ResourceListViewDefinitionColumn<T, string>()
         {
@@ -2169,7 +2071,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         };
     }
 
-    private ResourceListViewDefinitionColumn<T, DateTime?> AgeColumn()
+    public static ResourceListViewDefinitionColumn<T, DateTime?> AgeColumn()
     {
         return new ResourceListViewDefinitionColumn<T, DateTime?>()
         {
@@ -2180,60 +2082,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             Width = "80"
         };
     }
-}
-
-public interface IResourceListViewDefinitionColumn
-{
-    string Name { get; set; }
-
-    public SortDirection Sort { get; set; }
-
-    public Type? CustomControl { get; set; }
-
-    public string? Width { get; set; }
-}
-
-public class ResourceListViewDefinitionColumn<T, T2> : IResourceListViewDefinitionColumn where T : class, IKubernetesObject<V1ObjectMeta>, new()
-{
-    public required string Name { get; set; }
-
-    public required Func<T, T2> Field { get; set; }
-
-    public Func<T, string>? Display { get; set; }
-
-    public SortDirection Sort { get; set; }
-
-    public Type? CustomControl { get; set; }
-
-    public string? Width { get; set; }
-}
-
-public enum SortDirection
-{
-    None,
-    Ascending,
-    Descending
-}
-
-public class ResourceListViewMenuItem
-{
-    public string? Header { get; set; }
-
-    public IBinding? HeaderBinding { get; set; }
-
-    public string? CommandPath { get; set; }
-
-    public string? CommandParameterPath { get; set; }
-
-    public string? ItemSourcePath { get; set; }
-
-    public IBinding? ItemSourceBinding { get; set; }
-
-    public string? IconResource { get; set; }
-
-    public ResourceListViewMenuItem? ItemTemplate { get; set; }
-
-    public IList<ResourceListViewMenuItem> MenuItems { get; set; }
 }
 
 public class ResourceListViewDefinition<T> where T : class, IKubernetesObject<V1ObjectMeta>, new()
