@@ -41,6 +41,7 @@ Supported Platforms (AMD64 and ARM64):
 - Linux
 - Mac ([*Note Issue](https://github.com/IvanJosipovic/KubeUI/issues/688))
 - Windows
+  - `winget install KubeUI`
   - [![Microsoft Store](https://get.microsoft.com/images/en-us%20dark.svg)](https://apps.microsoft.com/detail/XP9MRWDV3N310N?mode=direct)
 
 ## Example
