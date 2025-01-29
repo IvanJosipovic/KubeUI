@@ -158,7 +158,11 @@ jobs:
         working-directory: src/KubeUI.Desktop
         shell: pwsh
         run: |
-          [System.Text.Encoding]::UTF8.GetBytes($env:CHANGELOG) | Set-Content -Path CHANGELOG.md -AsByteStream
+          if([string]::IsNullOrEmpty($env:CHANGELOG){
+            "N/A" | Out-File -FilePath CHANGELOG.md
+          } else {
+            $env:CHANGELOG | Out-File -FilePath CHANGELOG.md
+          }
         env:
           CHANGELOG: ${{ needs.semantic-release.outputs.new_release_notes }}
 
