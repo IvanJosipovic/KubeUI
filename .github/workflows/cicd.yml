@@ -158,7 +158,7 @@ jobs:
         working-directory: src/KubeUI.Desktop
         shell: pwsh
         run: |
-          if([string]::IsNullOrEmpty($env:CHANGELOG){
+          if([string]::IsNullOrEmpty($env:CHANGELOG)){
             "N/A" | Out-File -FilePath CHANGELOG.md
           } else {
             $env:CHANGELOG | Out-File -FilePath CHANGELOG.md
