@@ -61,6 +61,7 @@ jobs:
     outputs:
       new_release_published: ${{ steps.semantic.outputs.new_release_published }}
       new_release_version: ${{ (steps.semantic.outputs.new_release_published && steps.semantic.outputs.new_release_version) || '0.0.1' }}
+      new_release_notes: ${{ steps.semantic.outputs.new_release_notes }}
     steps:
     - uses: actions/checkout@v4
 
@@ -152,13 +153,25 @@ jobs:
         run: |
           [System.Text.Encoding]::UTF8.GetBytes($env:SECRET) | Set-Content -Path metadata.json -AsByteStream
         env:
-          SECRET : ${{ secrets.AZURETRUSTEDSIGNFILE }}
+          SECRET: ${{ secrets.AZURETRUSTEDSIGNFILE }}
+
+      - name: Write CHANGELOG.md
+        working-directory: src/KubeUI.Desktop
+        shell: pwsh
+        run: |
+          if([string]::IsNullOrEmpty($env:CHANGELOG)){
+            "N/A" | Out-File -FilePath CHANGELOG.md
+          } else {
+            $env:CHANGELOG | Out-File -FilePath CHANGELOG.md
+          }
+        env:
+          CHANGELOG: ${{ needs.semantic-release.outputs.new_release_notes }}
 
       - name: Create Release
         working-directory: src/KubeUI.Desktop
         run: |
           vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} -c ${{ matrix.rid }} --pre
-          vpk pack --packTitle KubeUI -u KubeUI -v ${{ needs.semantic-release.outputs.new_release_version }} -p bin/publish -c ${{ matrix.rid }} -e ${{ matrix.fileName }} -o packed ${{ matrix.packParam }} --packAuthors "Ivan Josipovic"
+          vpk pack --packTitle KubeUI -u KubeUI -v ${{ needs.semantic-release.outputs.new_release_version }} -p bin/publish -c ${{ matrix.rid }} -e ${{ matrix.fileName }} -o packed ${{ matrix.packParam }} --packAuthors "Ivan Josipovic" --releaseNotes CHANGELOG.md
 
       - name: Remove unnecessary assets
         working-directory: src/KubeUI.Desktop

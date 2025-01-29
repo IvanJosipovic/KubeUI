@@ -35,27 +35,27 @@ public static T IsDropDownOpen<TValue,T>(this T control, TValue value, FuncValue
 => control._setEx(Ursa.Controls.MultiComboBox.IsDropDownOpenProperty, ps, () => control.IsDropDownOpen = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
- // MaxDropdownHeight
+ // MaxDropDownHeight
 
 /*BindFromExpressionSetterGenerator*/
-public static T MaxDropdownHeight<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.MultiComboBox 
-   => control._set(Ursa.Controls.MultiComboBox.MaxDropdownHeightProperty, func, onChanged, expression);
+public static T MaxDropDownHeight<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.MultiComboBox 
+   => control._set(Ursa.Controls.MultiComboBox.MaxDropDownHeightProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T MaxDropdownHeight<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.MultiComboBox 
-=> control._setEx(Ursa.Controls.MultiComboBox.MaxDropdownHeightProperty, ps, () => control.MaxDropdownHeight = value, bindingMode, converter, bindingSource);
+public static T MaxDropDownHeight<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.MultiComboBox 
+=> control._setEx(Ursa.Controls.MultiComboBox.MaxDropDownHeightProperty, ps, () => control.MaxDropDownHeight = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
-public static T MaxDropdownHeight<T>(this T control, IBinding binding) where T : Ursa.Controls.MultiComboBox 
-   => control._set(Ursa.Controls.MultiComboBox.MaxDropdownHeightProperty, binding);
+public static T MaxDropDownHeight<T>(this T control, IBinding binding) where T : Ursa.Controls.MultiComboBox 
+   => control._set(Ursa.Controls.MultiComboBox.MaxDropDownHeightProperty, binding);
 
 /*AvaloniaPropertyBindSetterGenerator*/
-public static T MaxDropdownHeight<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Ursa.Controls.MultiComboBox 
-   => control._set(Ursa.Controls.MultiComboBox.MaxDropdownHeightProperty, avaloniaProperty, bindingMode, converter, overrideView);
+public static T MaxDropDownHeight<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Ursa.Controls.MultiComboBox 
+   => control._set(Ursa.Controls.MultiComboBox.MaxDropDownHeightProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T MaxDropdownHeight<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.MultiComboBox 
-=> control._setEx(Ursa.Controls.MultiComboBox.MaxDropdownHeightProperty, ps, () => control.MaxDropdownHeight = converter.TryConvert(value), bindingMode, converter, bindingSource);
+public static T MaxDropDownHeight<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.MultiComboBox 
+=> control._setEx(Ursa.Controls.MultiComboBox.MaxDropDownHeightProperty, ps, () => control.MaxDropDownHeight = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // MaxSelectionBoxHeight
@@ -255,15 +255,15 @@ public static Style<T> IsDropDownOpen<T>(this Style<T> style, IBinding binding) 
 => style._addSetter(Ursa.Controls.MultiComboBox.IsDropDownOpenProperty, binding);
 
 
- // MaxDropdownHeight
+ // MaxDropDownHeight
 
 /*ValueStyleSetterGenerator*/
-public static Style<T> MaxDropdownHeight<T>(this Style<T> style, System.Double value) where T : Ursa.Controls.MultiComboBox 
-=> style._addSetter(Ursa.Controls.MultiComboBox.MaxDropdownHeightProperty, value);
+public static Style<T> MaxDropDownHeight<T>(this Style<T> style, System.Double value) where T : Ursa.Controls.MultiComboBox 
+=> style._addSetter(Ursa.Controls.MultiComboBox.MaxDropDownHeightProperty, value);
 
 /*BindingStyleSetterGenerator*/
-public static Style<T> MaxDropdownHeight<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.MultiComboBox 
-=> style._addSetter(Ursa.Controls.MultiComboBox.MaxDropdownHeightProperty, binding);
+public static Style<T> MaxDropDownHeight<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.MultiComboBox 
+=> style._addSetter(Ursa.Controls.MultiComboBox.MaxDropDownHeightProperty, binding);
 
 
  // MaxSelectionBoxHeight

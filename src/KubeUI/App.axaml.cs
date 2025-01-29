@@ -124,13 +124,13 @@ public partial class App : Application
         }
 
         builder.Services.Scan(scan => scan
-            .FromCallingAssembly()
+            .FromAssemblyOf<App>()
                 .AddClasses(classes => classes.AssignableToAny([typeof(UserControl), typeof(ObservableObject), typeof(ViewModelBase), typeof(MyViewBase<>)]))
                 .AsSelf()
                 .WithTransientLifetime()
         );
 
-        builder.Services.Scan(x => x.FromCallingAssembly().AddClasses().UsingAttributes());
+        builder.Services.Scan(x => x.FromAssemblyOf<App>().AddClasses().UsingAttributes());
 
         // Services
         builder.Services.AddSingleton<IGenerator, Generator>();
