@@ -376,7 +376,7 @@ namespace KubeUI.Assets {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to A new update is available. Update and restart now?.
+        ///   Looks up a localized string similar to Update and restart now?.
         /// </summary>
         public static string MainViewModel_CheckForUpdates_Content {
             get {
