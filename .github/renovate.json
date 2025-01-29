@@ -79,6 +79,15 @@
         "TextMateSharp",
         "TextMateSharp.*"
       ]
+    },
+    {
+      "groupName": "OpenTelemetry",
+      "separateMajorMinor": true,
+      "groupSlug": "opentelemetry",
+      "matchPackageNames": [
+        "OpenTelemetry",
+        "OpenTelemetry.*"
+      ]
     }
   ]
 }
