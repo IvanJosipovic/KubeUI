@@ -267,7 +267,7 @@ public sealed partial class MainViewModel : ViewModelBase
                 ContentDialogSettings settings = new()
                 {
                     Title = Assets.Resources.MainViewModel_CheckForUpdates_Title,
-                    Content = Assets.Resources.MainViewModel_CheckForUpdates_Content,
+                    Content = Assets.Resources.MainViewModel_CheckForUpdates_Content + "\n\n" + Markdig.Markdown.ToPlainText(update.TargetFullRelease.NotesMarkdown),
                     PrimaryButtonText = Assets.Resources.MainViewModel_CheckForUpdates_Primary,
                     SecondaryButtonText = Assets.Resources.MainViewModel_CheckForUpdates_Secondary,
                     DefaultButton = ContentDialogButton.Secondary
