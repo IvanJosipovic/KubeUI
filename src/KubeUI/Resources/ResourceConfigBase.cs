@@ -6,13 +6,13 @@ namespace KubeUI.Resources;
 
 public abstract partial class ResourceConfigBase<T> where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
-    public abstract string Category { get; }
+    public abstract string? Category { get; }
 
-    public bool DefaultMenuItems { get; set; } = true;
+    public abstract bool DefaultMenuItems { get;}
 
-    public bool ShowNewResource { get; set; } = true;
+    public abstract bool ShowNewResource { get;}
 
-    public bool ShowNamespaces { get; set; } = true;
+    public abstract bool ShowNamespaces { get;}
 
     public abstract IList<IResourceListViewDefinitionColumn> Columns();
 
@@ -22,7 +22,7 @@ public abstract partial class ResourceConfigBase<T> where T : class, IKubernetes
 
     public Func<StyleGroup>? SetStyle { get; set; } = () => [];
 
-    public ResourceListViewDefinitionColumn<T, string> NameColumn(SortDirection sort = SortDirection.None)
+    protected ResourceListViewDefinitionColumn<T, string> NameColumn(SortDirection sort = SortDirection.None)
     {
         return new ResourceListViewDefinitionColumn<T, string>()
         {
@@ -33,7 +33,7 @@ public abstract partial class ResourceConfigBase<T> where T : class, IKubernetes
         };
     }
 
-    public ResourceListViewDefinitionColumn<T, string> NamespaceColumn()
+    protected ResourceListViewDefinitionColumn<T, string> NamespaceColumn()
     {
         return new ResourceListViewDefinitionColumn<T, string>()
         {
@@ -43,7 +43,7 @@ public abstract partial class ResourceConfigBase<T> where T : class, IKubernetes
         };
     }
 
-    public ResourceListViewDefinitionColumn<T, DateTime?> AgeColumn()
+    protected ResourceListViewDefinitionColumn<T, DateTime?> AgeColumn()
     {
         return new ResourceListViewDefinitionColumn<T, DateTime?>()
         {

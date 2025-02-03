@@ -14,6 +14,12 @@ public sealed partial class PodConfig : ResourceConfigBase<V1Pod>, IInitializeCl
 
     public override string Category => "Workloads";
 
+    public override bool DefaultMenuItems => true;
+
+    public override bool ShowNewResource => true;
+
+    public override bool ShowNamespaces => true;
+
     public PodConfig(IFactory factory)
     {
         _factory = factory;
