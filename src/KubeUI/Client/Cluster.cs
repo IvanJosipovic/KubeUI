@@ -232,9 +232,16 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
         NavigationItems.Add(new NavigationItem() { Name = "Workloads", Order = 8 });
         NavigationItems.Add(new NavigationItem() { Name = "Configuration", Order = 9 });
-        NavigationItems.Add(new NavigationItem() { Name = "Network", Order = 10 });
+        var network = new NavigationItem() { Name = "Network", Order = 10 };
+        NavigationItems.Add(network);
         NavigationItems.Add(new NavigationItem() { Name = "Storage", Order = 11 });
         NavigationItems.Add(new NavigationItem() { Name = "Access Control", Order = 12 });
+
+
+        if (await UpdateCanIListWatchAnyNamespaceAsync<V1Pod>() && await UpdateCanIAnyNamespaceAsync<V1Pod>(Verb.Create, "portforward"))
+        {
+            network.NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.PortForwarderListViewModel_Title, ControlType = typeof(PortForwarderListViewModel), Cluster = this, StyleIcon = "ic_fluent_cloud_flow_filled", Order = 6 });
+        }
 
         var baseType = typeof(ResourceConfigBase<>);
         var assembly = Assembly.GetExecutingAssembly();
