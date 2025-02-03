@@ -13,13 +13,8 @@ public sealed partial class EventConfig : ResourceConfigBase<Corev1Event>, IInit
 {
     private ICluster _cluster;
     private IFactory _factory;
-    public override string Category => null;
 
-    public override bool DefaultMenuItems => true;
-
-    public override bool ShowNewResource => false;
-
-    public override bool ShowNamespaces => true;
+    public new bool ShowNewResource => false;
 
     public EventConfig(IFactory factory)
     {
@@ -92,23 +87,23 @@ public sealed partial class EventConfig : ResourceConfigBase<Corev1Event>, IInit
     }
 
     public new Func<StyleGroup>? SetStyle = () => [
-                new Style<DataGridRow>()
-                    .Setter(DataGridRow.ForegroundProperty, new Binding("Value.Type")
+        new Style<DataGridRow>()
+            .Setter(DataGridRow.ForegroundProperty, new Binding("Value.Type")
+            {
+                Converter = new FuncValueConverter<string, IBrush>(x =>
+                {
+                    if (string.Equals(x, "Warning", StringComparison.Ordinal))
                     {
-                        Converter = new FuncValueConverter<string, IBrush>(x =>
-                        {
-                            if (string.Equals(x, "Warning", StringComparison.Ordinal))
-                            {
-                                return Brushes.Red;
-                            }
+                        return Brushes.Red;
+                    }
 
-                            if (Application.Current.ActualThemeVariant == ThemeVariant.Light)
-                            {
-                                return Brushes.Black; //todo reference style
-                            }
+                    if (Application.Current.ActualThemeVariant == ThemeVariant.Light)
+                    {
+                        return Brushes.Black; //todo reference style
+                    }
 
-                            return Brushes.White; //todo reference style
-                        }),
-                    }),
-                ];
+                    return Brushes.White; //todo reference style
+                }),
+            }),
+    ];
 }

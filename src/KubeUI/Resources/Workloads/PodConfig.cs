@@ -3,6 +3,7 @@ using k8s.Models;
 using KubeUI.Client;
 using KubeUI.Controls;
 using Scrutor;
+using static KubeUI.Client.Cluster;
 
 namespace KubeUI.Resources.Workloads.Pod;
 
@@ -12,13 +13,7 @@ public sealed partial class PodConfig : ResourceConfigBase<V1Pod>, IInitializeCl
     private ICluster _cluster;
     private IFactory _factory;
 
-    public override string Category => "Workloads";
-
-    public override bool DefaultMenuItems => true;
-
-    public override bool ShowNewResource => true;
-
-    public override bool ShowNamespaces => true;
+    public new string Category => "Workloads";
 
     public PodConfig(IFactory factory)
     {
@@ -27,7 +22,8 @@ public sealed partial class PodConfig : ResourceConfigBase<V1Pod>, IInitializeCl
 
     public override IList<IResourceListViewDefinitionColumn> Columns()
     {
-        return [
+        List<IResourceListViewDefinitionColumn> cols =
+            [
                 NameColumn(SortDirection.Ascending),
                 new ResourceListViewDefinitionColumn<V1Pod, int>()
                 {
@@ -48,7 +44,7 @@ public sealed partial class PodConfig : ResourceConfigBase<V1Pod>, IInitializeCl
                 new ResourceListViewDefinitionColumn<V1Pod, string>()
                 {
                     Name = "Controlled By",
-                    Field = x => x.Metadata.OwnerReferences?.FirstOrDefault(x => x.Controller == true)?.Name ?? "",
+                    Field = x => x.Metadata.OwnerReferences?.FirstOrDefault()?.Name ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListViewDefinitionColumn<V1Pod, string>()
@@ -72,6 +68,28 @@ public sealed partial class PodConfig : ResourceConfigBase<V1Pod>, IInitializeCl
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
             ];
+
+        if (_cluster.IsMetricsAvailable)
+        {
+            cols.Insert(3, new ResourceListViewDefinitionColumn<V1Pod, decimal>()
+            {
+                Name = "CPU",
+                CustomControl = typeof(PodMetricCPUCell),
+                Field = x => _cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
+                Display = x => _cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]).ToString() ?? "",
+                Width = "80"
+            });
+            cols.Insert(4, new ResourceListViewDefinitionColumn<V1Pod, decimal>()
+            {
+                Name = "Memory",
+                CustomControl = typeof(PodMetricMemoryCell),
+                Field = x => _cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
+                Display = x => _cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]).ToString() ?? "",
+                Width = "80"
+            });
+        }
+
+        return cols;
     }
 
     public override IList<ResourceListViewMenuItem> MenuItems()

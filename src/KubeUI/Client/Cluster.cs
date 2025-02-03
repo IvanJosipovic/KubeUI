@@ -35,6 +35,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private IGenerator _generator;
 
+    private IServiceProvider _serviceProvider;
+
     public V2beta1APIGroupDiscoveryList NativeAPIGroupDiscoveryList { get; private set; }
 
     public V2beta1APIGroupDiscoveryList APIGroupDiscoveryList { get; private set; }
@@ -45,7 +47,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     public ConcurrentDictionary<GroupApiVersionKind, ContainerClass> Objects { get; } = new();
 
-    private ResourceNavigationLink _crdNavigationLink;
+    private ResourceNavigationLink _crdNavigationLink = null;
 
     [ObservableProperty]
     public partial string Name { get; set; }
@@ -80,7 +82,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
     [ObservableProperty]
     public partial ConcurrentObservableDictionary<GroupApiVersionKind, object> ResourceConfigs { get; set; } = [];
 
-    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ModelCache modelCache, IGenerator generator, ISettingsService settingsService, IDialogService dialogService)
+    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ModelCache modelCache, IGenerator generator, ISettingsService settingsService, IDialogService dialogService, IServiceProvider serviceProvider)
     {
         _loggerFactory = loggerFactory;
         _logger = logger;
@@ -92,6 +94,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         ModelCache.AddToCache(typeof(V1Deployment).Assembly, kubeAssemblyXmlDoc);
         _settingsService = settingsService;
         _dialogService = dialogService;
+        _serviceProvider = serviceProvider;
     }
 
     public async Task Connect()
@@ -225,6 +228,37 @@ public sealed partial class Cluster : ObservableObject, ICluster
         NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.VisualizationViewModel_Title, ControlType = typeof(VisualizationViewModel), Cluster = this, StyleIcon = "ic_fluent_search_visual_24_filled" });
         NavigationItems.Add(new NavigationLink() { Name = "Load Yaml", Cluster = this, Id = "load-yaml", StyleIcon = "arrow_upload_regular" });
         NavigationItems.Add(new NavigationLink() { Name = "Load Folder", Cluster = this, Id = "load-folder", StyleIcon = "folder_add_regular" });
+
+        var baseType = typeof(ResourceConfigBase<>);
+        var assembly = Assembly.GetExecutingAssembly();
+        var types = assembly.GetExportedTypes().Where(t => t.BaseType?.IsGenericType == true && t.BaseType.GetGenericTypeDefinition() == baseType).ToList();
+
+        List<IResourceConfig> configs = new();
+
+        foreach (var type in types)
+        {
+            var svc = _serviceProvider.GetRequiredService(type.BaseType) as IResourceConfig;
+
+            if (svc is IInitializeCluster init)
+            {
+                init.Initialize(this);
+            }
+
+            ResourceConfigs[svc.GroupApiVersionKind] = svc;
+
+            configs.Add(svc);
+        }
+
+        configs = configs.OrderBy(x => x.Order).ToList();
+
+        foreach (var config in configs)
+        {
+            if (await UpdateCanListWatchAnyNamespaceAsync(config.Type))
+            {
+                var link = new ResourceNavigationLink() { Name = config.Name, ControlType = config.Type, Cluster = this };
+                NavigationItems.Add(link);
+            }
+        }
 
         //if (await UpdateCanIListWatchAnyNamespaceAsync<V1Node>())
         //{
@@ -898,6 +932,11 @@ public sealed partial class Cluster : ObservableObject, ICluster
         var resp = await (Task<HttpResponseMessage>)gen.Invoke(Client, [$"/{(native ? "api" : "apis")}?timeout=32s", HttpMethod.Get, headers, null, CancellationToken.None]);
 
         return await resp.Content.ReadFromJsonAsync<V2beta1APIGroupDiscoveryList>();
+    }
+
+    public IResourceConfig GetResourceConfig(GroupApiVersionKind kind)
+    {
+        return (IResourceConfig)ResourceConfigs[kind];
     }
 }
 

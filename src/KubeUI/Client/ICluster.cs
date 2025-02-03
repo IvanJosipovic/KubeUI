@@ -2,6 +2,7 @@
 using k8s;
 using k8s.Models;
 using KubeUI.Client.Informer;
+using KubeUI.Resources;
 using Swordfish.NET.Collections;
 using static KubeUI.Client.Cluster;
 
@@ -39,6 +40,7 @@ public interface ICluster
     bool CanIAnyNamespace(Type type, Verb verb, string subresource = "");
     Task<T?> GetObjectAsync<T>(string @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     PortForwarder AddServicePortForward(string @namespace, string serviceName, int containerPort);
+    IResourceConfig GetResourceConfig(GroupApiVersionKind kind);
 
     bool ListNamespaces { get; set; }
 }

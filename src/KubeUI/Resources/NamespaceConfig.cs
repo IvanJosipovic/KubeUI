@@ -11,13 +11,7 @@ public sealed partial class NamespaceConfig : ResourceConfigBase<V1Namespace>, I
     private ICluster _cluster;
     private IFactory _factory;
 
-    public override string Category => null;
-
-    public override bool DefaultMenuItems => true;
-
-    public override bool ShowNewResource => false;
-
-    public override bool ShowNamespaces => false;
+    public new bool ShowNamespaces => false;
 
     public NamespaceConfig(IFactory factory)
     {

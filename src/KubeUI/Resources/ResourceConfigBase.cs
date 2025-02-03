@@ -1,18 +1,28 @@
 ﻿using k8s.Models;
 using k8s;
 using KubeUI.Controls;
+using KubeUI.Client;
+using Humanizer;
 
 namespace KubeUI.Resources;
 
-public abstract partial class ResourceConfigBase<T> where T : class, IKubernetesObject<V1ObjectMeta>, new()
+public abstract partial class ResourceConfigBase<T> : IResourceConfig where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
-    public abstract string? Category { get; }
+    public Type Type { get; } = typeof(T);
 
-    public abstract bool DefaultMenuItems { get;}
+    public GroupApiVersionKind GroupApiVersionKind { get; } = GroupApiVersionKind.From<T>();
 
-    public abstract bool ShowNewResource { get;}
+    public string Name => GroupApiVersionKind.PluralName.Humanize(LetterCasing.Title);
 
-    public abstract bool ShowNamespaces { get;}
+    public string? Category { get; } = null;
+
+    public bool DefaultMenuItems { get; } = true;
+
+    public bool ShowNewResource { get; } = true;
+
+    public bool ShowNamespaces { get; } = true;
+
+    public int Order { get; set; }
 
     public abstract IList<IResourceListViewDefinitionColumn> Columns();
 
