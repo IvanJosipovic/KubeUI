@@ -63,6 +63,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     [ObservableProperty]
     public partial ObservableCollection<V1Namespace> SelectedNamespaces { get; set; } = [];
+
     public V2beta1APIGroupDiscoveryList NativeAPIGroupDiscoveryList { get; private set; }
 
     public V2beta1APIGroupDiscoveryList APIGroupDiscoveryList { get; private set; }

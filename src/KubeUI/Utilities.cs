@@ -321,23 +321,32 @@ public static class Utilities
 
     public static IBinding FuncBinding<T>(Expression<Func<T, object>> func)
     {
-        var body = (MemberExpression)func.Body;
-
-        var param = (ParameterExpression)body.Expression;
-
-        var prop = body.ToString().Substring(param.Name.Length + 1);
-
-        return new Binding(prop);
+        return new Binding(PathBuilder(func));
     }
 
+    /// <summary>
+    /// Get the path of a property from a lambda expression
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="func"></param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
     public static string PathBuilder<T>(Expression<Func<T, object>> func)
     {
-        var body = (MemberExpression)func.Body;
+        if (func.Body is MemberExpression body)
+        {
+            if (body.Expression is ParameterExpression param)
+            {
+                return body.ToString()[(param.Name.Length + 1)..];
+            }
 
-        var param = (ParameterExpression)body.Expression;
+            if (body.Expression is MemberExpression prop)
+            {
+                var str = prop.ToString();
+                return str.Substring(str.IndexOf(".") + 1);
+            }
+        }
 
-        var prop = body.ToString().Substring(param.Name.Length + 1);
-
-        return prop;
+        throw new Exception("Unknown Expression Type");
     }
 }

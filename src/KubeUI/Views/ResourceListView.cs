@@ -161,10 +161,20 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
         if (!string.IsNullOrEmpty(menu.CommandParameterPath))
         {
-            menuItem.Bind(MenuItem.CommandParameterProperty, new Binding(menu.CommandParameterPath)
+            // Create the MultiBinding
+            var multiBinding = new MultiBinding
+            {
+                Mode = BindingMode.OneWay
+            };
+
+            // Add the individual bindings
+            multiBinding.Bindings.Add(new Binding("SelectedItem.Value"));
+            multiBinding.Bindings.Add(new Binding(menu.CommandParameterPath)
             {
                 Source = _grid,
             });
+
+            menuItem.Bind(MenuItem.CommandParameterProperty, multiBinding);
         }
 
         if (!string.IsNullOrEmpty(menu.ItemSourcePath))
@@ -229,7 +239,20 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
         if (!string.IsNullOrEmpty(menu.CommandParameterPath))
         {
-            style.Add(new Setter(MenuItem.CommandParameterProperty, new Binding(menu.CommandParameterPath)));
+            // Create the MultiBinding
+            var multiBinding = new MultiBinding
+            {
+                Mode = BindingMode.OneWay
+            };
+
+            // Add the individual bindings
+            multiBinding.Bindings.Add(new Binding("SelectedItem.Value")
+            {
+                Source = _grid,
+            });
+            multiBinding.Bindings.Add(new Binding(menu.CommandParameterPath));
+
+            style.Add(new Setter(MenuItem.CommandParameterProperty, multiBinding));
         }
 
         if (!string.IsNullOrEmpty(menu.ItemSourcePath))

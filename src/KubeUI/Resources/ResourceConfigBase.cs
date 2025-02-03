@@ -1,10 +1,13 @@
 ﻿using k8s.Models;
 using k8s;
+using KubeUI.Controls;
 
 namespace KubeUI.Resources;
 
 public abstract partial class ResourceConfigBase<T> where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
+    public abstract string Category { get; }
+
     public bool DefaultMenuItems { get; set; } = true;
 
     public bool ShowNewResource { get; set; } = true;
@@ -18,6 +21,39 @@ public abstract partial class ResourceConfigBase<T> where T : class, IKubernetes
     public abstract object? Properties(T resource);
 
     public Func<StyleGroup>? SetStyle { get; set; } = () => [];
+
+    public ResourceListViewDefinitionColumn<T, string> NameColumn(SortDirection sort = SortDirection.None)
+    {
+        return new ResourceListViewDefinitionColumn<T, string>()
+        {
+            Name = "Name",
+            Field = x => x.Metadata.Name,
+            Width = "2*",
+            Sort = sort,
+        };
+    }
+
+    public ResourceListViewDefinitionColumn<T, string> NamespaceColumn()
+    {
+        return new ResourceListViewDefinitionColumn<T, string>()
+        {
+            Name = "Namespace",
+            Field = x => x.Metadata.NamespaceProperty,
+            Width = "*",
+        };
+    }
+
+    public ResourceListViewDefinitionColumn<T, DateTime?> AgeColumn()
+    {
+        return new ResourceListViewDefinitionColumn<T, DateTime?>()
+        {
+            Name = "Age",
+            CustomControl = typeof(AgeCell),
+            Field = x => x.Metadata.CreationTimestamp,
+            Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
+            Width = "80"
+        };
+    }
 }
 
 public interface IResourceListViewDefinitionColumn

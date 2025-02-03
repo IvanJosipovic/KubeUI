@@ -1,4 +1,4 @@
-﻿using Dock.Model.Mvvm;
+﻿using Dock.Model.Core;
 using k8s.Models;
 using KubeUI.Client;
 using KubeUI.Controls;
@@ -10,11 +10,19 @@ namespace KubeUI.Resources.Workloads.Pod;
 public sealed partial class PodConfig : ResourceConfigBase<V1Pod>, IInitializeCluster
 {
     private ICluster _cluster;
+    private IFactory _factory;
+
+    public override string Category => "Workloads";
+
+    public PodConfig(IFactory factory)
+    {
+        _factory = factory;
+    }
 
     public override IList<IResourceListViewDefinitionColumn> Columns()
     {
         return [
-                ResourceListViewModel<V1Pod>.NameColumn(SortDirection.Ascending),
+                NameColumn(SortDirection.Ascending),
                 new ResourceListViewDefinitionColumn<V1Pod, int>()
                 {
                     Name = "Containers",
@@ -23,7 +31,7 @@ public sealed partial class PodConfig : ResourceConfigBase<V1Pod>, IInitializeCl
                     Display = x => (x.Spec.Containers.Count + ((x.Spec.InitContainers?.Count) ?? 0)).ToString(),
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },
-                ResourceListViewModel<V1Pod>.NamespaceColumn(),
+                NamespaceColumn(),
                 new ResourceListViewDefinitionColumn<V1Pod, int>()
                 {
                     Name = "Restarts",
@@ -49,7 +57,7 @@ public sealed partial class PodConfig : ResourceConfigBase<V1Pod>, IInitializeCl
                     Field = x => x.Status.QosClass ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },
-                ResourceListViewModel<V1Pod>.AgeColumn(),
+                AgeColumn(),
                 new ResourceListViewDefinitionColumn<V1Pod, string>()
                 {
                     Name = "Status",
@@ -63,36 +71,36 @@ public sealed partial class PodConfig : ResourceConfigBase<V1Pod>, IInitializeCl
     public override IList<ResourceListViewMenuItem> MenuItems()
     {
         return [
-            //new()
-            //{
-            //    Header = "View Console",
-            //    IconResource = "desktop_regular",
-            //    MenuItems =
-            //    [
-            //        new()
-            //        {
-            //            Header = "Init",
-            //            ItemSourcePath = "SelectedItem.Value.Spec.InitContainers",
-            //            ItemTemplate = new()
-            //            {
-            //                HeaderBinding = new Binding(nameof(V1Container.Name)),
-            //                CommandPath = nameof(PodConfig.ViewConsoleCommand),
-            //                CommandParameterPath = ".",
-            //            }
-            //        },
-            //        new()
-            //        {
-            //            Header = "Normal",
-            //            ItemSourcePath = "SelectedItem.Value.Spec.Containers",
-            //            ItemTemplate = new()
-            //            {
-            //                HeaderBinding = new Binding(nameof(V1Container.Name)),
-            //                CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewConsoleCommand),
-            //                CommandParameterPath = ".",
-            //            }
-            //        },
-            //    ]
-            //},
+            new()
+            {
+                Header = "View Console",
+                IconResource = "desktop_regular",
+                MenuItems =
+                [
+                    new()
+                    {
+                        Header = "Init",
+                        ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Value.Spec.InitContainers),
+                        ItemTemplate = new()
+                        {
+                            HeaderBinding = new Binding(nameof(V1Container.Name)),
+                            CommandPath = nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + nameof(ViewConsoleCommand),
+                            CommandParameterPath = ".",
+                        }
+                    },
+                    new()
+                    {
+                        Header = "Normal",
+                        ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Value.Spec.Containers),
+                        ItemTemplate = new()
+                        {
+                            HeaderBinding = new Binding(nameof(V1Container.Name)),
+                            CommandPath =nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." +  nameof(ViewConsoleCommand),
+                            CommandParameterPath = ".",
+                        }
+                    },
+                ]
+            },
             new()
             {
                 Header = "View Logs",
@@ -101,22 +109,22 @@ public sealed partial class PodConfig : ResourceConfigBase<V1Pod>, IInitializeCl
                     new()
                     {
                         Header = "Init",
-                        ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Value.Value.Spec.InitContainers),//"SelectedItem.Value.Spec.InitContainers",
+                        ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Value.Spec.InitContainers),
                         ItemTemplate = new()
                         {
                             HeaderBinding = Utilities.FuncBinding<V1Container>(x => x.Name),
-                            CommandPath = nameof(ViewLogsCommand),
+                            CommandPath = nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + nameof(ViewLogsCommand),
                             CommandParameterPath = ".",
                         }
                     },
                     new()
                     {
                         Header = "Normal",
-                        ItemSourcePath = "SelectedItem.Value.Spec.Containers",
+                        ItemSourcePath =  Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Value.Spec.Containers),
                         ItemTemplate = new()
                         {
                             HeaderBinding = Utilities.FuncBinding<V1Container>(x => x.Name),
-                            CommandPath =  "ResourceConfig." + nameof(ViewLogsCommand),
+                            CommandPath =  nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + nameof(ViewLogsCommand),
                             CommandParameterPath = ".",
                         }
                     },
@@ -160,52 +168,65 @@ public sealed partial class PodConfig : ResourceConfigBase<V1Pod>, IInitializeCl
         return null;
     }
 
-
     [RelayCommand(CanExecute = nameof(CanViewLogs))]
-    private async Task ViewLogs(V1Container container)
+    private async Task ViewLogs(IList parameters)
     {
-        //var vm = Application.Current.GetRequiredService<PodLogsViewModel>();
-        //vm.Cluster = _cluster;
-        //vm.Object = ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Value;
-        //vm.ContainerName = container.Name;
-        //vm.Id = $"{nameof(ViewLogs)}-{Cluster.Name}-{((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key}-{container.Name}";
+        var pod = parameters[0] as V1Pod;
+        var container = parameters[1] as V1Container;
 
-        //if (Factory.AddToBottom(vm))
-        //{
-        //    try
-        //    {
-        //        await vm.Connect();
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        _logger.LogError(ex, "Error viewing logs");
-        //        return;
-        //    }
-        //}
+        var vm = Application.Current.GetRequiredService<PodLogsViewModel>();
+        vm.Cluster = _cluster;
+        vm.Object = pod;
+        vm.ContainerName = container.Name;
+        vm.Id = $"{nameof(ViewLogs)}-{_cluster.Name}-{pod.Namespace()}-{pod.Name()}-{container.Name}";
+
+        if (_factory.AddToBottom(vm))
+        {
+            try
+            {
+                await vm.Connect();
+            }
+            catch (Exception ex)
+            {
+                //_logger.LogError(ex, "Error viewing logs");
+                return;
+            }
+        }
     }
 
-    private bool CanViewLogs(V1Container? container)
+    private bool CanViewLogs(IList parameters)
     {
-        return true;
+        return parameters != null;
         //return container != null && Cluster.CanI<V1Pod>(Verb.Get, ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key.Namespace, "log");
     }
 
-    //[RelayCommand(CanExecute = nameof(CanViewConsole))]
-    //private void ViewConsole(V1Container container)
-    //{
-    //    var vm = Application.Current.GetRequiredService<PodConsoleViewModel>();
-    //    vm.Cluster = Cluster;
-    //    vm.Object = ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Value;
-    //    vm.ContainerName = container.Name;
-    //    vm.Id = $"{nameof(ViewConsole)}-{Cluster.Name}-{((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key}-{container.Name}";
+    [RelayCommand(CanExecute = nameof(CanViewConsole))]
+    private void ViewConsole(IList parameters)
+    {
+        var pod = (V1Pod)parameters[0];
+        var container = (V1Container)parameters[1];
 
-    //    Factory.AddToBottom(vm);
-    //}
+        var vm = Application.Current.GetRequiredService<PodConsoleViewModel>();
+        vm.Cluster = _cluster;
+        vm.Object = pod;
+        vm.ContainerName = container.Name;
+        vm.Id = $"{nameof(ViewConsole)}-{_cluster.Name}-{pod.Namespace()}-{pod.Name()}-{container.Name}";
 
-    //private bool CanViewConsole(V1Container? container)
-    //{
-    //    return container != null && Cluster.CanI<V1Pod>(Verb.Create, ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key.Namespace, "exec");
-    //}
+        _factory.AddToBottom(vm);
+    }
+
+    private bool CanViewConsole(IList parameters)
+    {
+        if (parameters == null)
+        {
+            return false;
+        }
+
+        var pod = parameters[0] as V1Pod;
+        var container = parameters[1] as V1Container;
+
+        return container != null && pod != null && _cluster.CanI<V1Pod>(Verb.Create, pod.Namespace(), "exec");
+    }
 
     //[RelayCommand(CanExecute = nameof(CanPortForward))]
     //private async Task PortForward(V1ContainerPort containerPort)
