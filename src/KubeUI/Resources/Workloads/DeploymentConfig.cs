@@ -67,7 +67,7 @@ public sealed partial class DeploymentConfig : ResourceConfigBase<V1Deployment>,
         _cluster = cluster;
     }
 
-    public override object? Properties(V1Deployment resource)
+    public override Control[]? Properties(V1Deployment resource)
     {
         return null;
     }

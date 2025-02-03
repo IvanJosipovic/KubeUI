@@ -71,7 +71,7 @@ public sealed partial class NamespaceConfig : ResourceConfigBase<V1Namespace>, I
         _cluster = cluster;
     }
 
-    public override object? Properties(V1Namespace resource)
+    public override Control[]? Properties(V1Namespace resource)
     {
         return null;
     }

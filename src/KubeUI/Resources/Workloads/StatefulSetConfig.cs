@@ -54,7 +54,7 @@ public sealed partial class StatefulSetConfig : ResourceConfigBase<V1StatefulSet
         _cluster = cluster;
     }
 
-    public override object? Properties(V1StatefulSet resource)
+    public override Control[]? Properties(V1StatefulSet resource)
     {
         return null;
     }

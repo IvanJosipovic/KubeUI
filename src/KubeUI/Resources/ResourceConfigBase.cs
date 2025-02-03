@@ -28,7 +28,7 @@ public abstract partial class ResourceConfigBase<T> : IResourceConfig where T : 
 
     public abstract IList<ResourceListViewMenuItem> MenuItems();
 
-    public abstract object? Properties(T resource);
+    public abstract Control[]? Properties(T resource);
 
     public virtual Func<StyleGroup>? SetStyle { get; set; } = () => [];
 

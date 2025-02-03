@@ -68,7 +68,7 @@ public sealed partial class ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet>,
         _cluster = cluster;
     }
 
-    public override object? Properties(V1ReplicaSet resource)
+    public override Control[]? Properties(V1ReplicaSet resource)
     {
         return null;
     }

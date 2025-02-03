@@ -1,7 +1,11 @@
-﻿using Dock.Model.Core;
+﻿using System.Text;
+using Avalonia.Controls.Templates;
+using Avalonia.Markup.Declarative;
+using Dock.Model.Core;
 using k8s.Models;
 using KubeUI.Client;
 using KubeUI.Controls;
+using KubeUI.Views;
 using Scrutor;
 using static KubeUI.Client.Cluster;
 
@@ -189,9 +193,22 @@ public sealed partial class PodConfig : ResourceConfigBase<V1Pod>, IInitializeCl
         _cluster = cluster;
     }
 
-    public override object? Properties(V1Pod resource)
+    public override Control[]? Properties(V1Pod resource)
     {
-        return null;
+        return [
+            new ExpandableSection()
+                    .Text("Containers")
+                    .IsExpanded(true)
+                    .Controls([
+                        new ItemsControl()
+                            .ItemsSource(resource.Spec.Containers)
+                            .ItemTemplate(new FuncDataTemplate<V1Container>((x,_) =>
+                                new PropertyItem()
+                                    .Key("Name")
+                                    .Value(x.Name)
+                            ))
+                    ])
+        ];
     }
 
     [RelayCommand(CanExecute = nameof(CanViewLogs))]

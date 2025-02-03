@@ -67,7 +67,7 @@ public sealed partial class CronJobConfig : ResourceConfigBase<V1CronJob>, IInit
         _cluster = cluster;
     }
 
-    public override object? Properties(V1CronJob resource)
+    public override Control[]? Properties(V1CronJob resource)
     {
         return null;
     }

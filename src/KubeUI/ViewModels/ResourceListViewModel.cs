@@ -1136,8 +1136,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     }
 
     [RelayCommand(CanExecute = nameof(CanView))]
-    private void View(object item)
+    private void View(IList parameters)
     {
+        var item = parameters[1];
+
         var instance = Application.Current.GetRequiredService<ResourcePropertiesViewModel<T>>();
         instance.Initialize(Cluster, ((KeyValuePair<NamespacedName, T>)(item)).Value);
         instance.CanFloat = false;
@@ -1145,9 +1147,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         Factory?.AddToRight(instance);
     }
 
-    private bool CanView(object item)
+    private bool CanView(IList parameters)
     {
-        return item != null;
+        return parameters != null;
     }
 
     [RelayCommand(CanExecute = nameof(CanViewYaml))]

@@ -32,6 +32,13 @@ public sealed class ResourcePropertiesView<T> : MyViewBase<ResourcePropertiesVie
                         .Set(PropertyItem.ValueProperty, @vm.Object.Metadata.CreationTimestamp, converter: new ((x) => x.HasValue ? x.Value.ToLocalTime().ToString() : "" )),
             ]);
 
+        var props = vm.ResourceConfig.Properties(vm.Object);
+
+        if (props != null)
+        {
+            sp.Children.AddRange(props);
+        }
+
         if (typeof(T) == typeof(V1Secret))
         {
             var obj = vm.Object as V1Secret;

@@ -83,7 +83,7 @@ public sealed partial class EventConfig : ResourceConfigBase<Corev1Event>, IInit
         _cluster = cluster;
     }
 
-    public override object? Properties(Corev1Event resource)
+    public override Control[]? Properties(Corev1Event resource)
     {
         return null;
     }

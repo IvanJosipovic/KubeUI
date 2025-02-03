@@ -52,7 +52,7 @@ public sealed partial class JobConfig : ResourceConfigBase<V1Job>, IInitializeCl
         _cluster = cluster;
     }
 
-    public override object? Properties(V1Job resource)
+    public override Control[]? Properties(V1Job resource)
     {
         return null;
     }

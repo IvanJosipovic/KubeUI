@@ -61,7 +61,7 @@ public sealed partial class DaemonSetConfig : ResourceConfigBase<V1DaemonSet>, I
         _cluster = cluster;
     }
 
-    public override object? Properties(V1DaemonSet resource)
+    public override Control[]? Properties(V1DaemonSet resource)
     {
         return null;
     }

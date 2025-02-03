@@ -1,6 +1,7 @@
 ﻿using k8s;
 using k8s.Models;
 using KubeUI.Client;
+using KubeUI.Resources;
 
 namespace KubeUI.ViewModels;
 
@@ -13,6 +14,9 @@ public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable
     [ObservableProperty]
     public partial T? Object { get; set; }
 
+    [ObservableProperty]
+    public partial ResourceConfigBase<T> ResourceConfig { get; set; }
+
     public ResourcePropertiesViewModel()
     {
         Title = Assets.Resources.ResourcePropertiesViewModel_Title;
@@ -23,6 +27,7 @@ public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable
     {
         Cluster = cluster;
         Object = resource;
+        ResourceConfig = (ResourceConfigBase<T>)Cluster.GetResourceConfig(Kind);
     }
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)

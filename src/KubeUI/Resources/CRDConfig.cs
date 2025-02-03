@@ -70,7 +70,7 @@ public sealed partial class CRDConfig : ResourceConfigBase<V1CustomResourceDefin
         _cluster = cluster;
     }
 
-    public override object? Properties(V1CustomResourceDefinition resource)
+    public override Control[]? Properties(V1CustomResourceDefinition resource)
     {
         return null;
     }

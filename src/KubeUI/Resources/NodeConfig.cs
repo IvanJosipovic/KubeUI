@@ -106,7 +106,7 @@ public sealed partial class NodeConfig : ResourceConfigBase<V1Node>, IInitialize
         _cluster = cluster;
     }
 
-    public override object? Properties(V1Node resource)
+    public override Control[]? Properties(V1Node resource)
     {
         return null;
     }
