@@ -48,7 +48,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     public ConcurrentDictionary<GroupApiVersionKind, ContainerClass> Objects { get; } = new();
 
-    private ResourceNavigationLink _crdNavigationLink = null;
+    private ResourceNavigationLink _crdNavigationLink;
 
     [ObservableProperty]
     public partial string Name { get; set; }
@@ -274,6 +274,10 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 }
             }
         }
+
+        _crdNavigationLink = (ResourceNavigationLink)NavigationItems.First(x => x.Name == "Custom Resource Definitions");
+
+        _crdNavigationLink.NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer());
 
         //if (await UpdateCanIListWatchAnyNamespaceAsync<V1Node>())
         //{
@@ -602,7 +606,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                             if (task.GetAwaiter().GetResult())
                             {
-                                var nav = new ResourceNavigationLink() { Name = crd.Spec.Names.Kind.Humanize(LetterCasing.Title), ControlType = type, Cluster = this, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer()) };
+                                var nav = new ResourceNavigationLink() { Name = crd.Spec.Names.Kind.Humanize(LetterCasing.Title).Pluralize(), ControlType = type, Cluster = this, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer()) };
 
                                 var group = crd.Spec.Group;
 

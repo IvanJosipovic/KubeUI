@@ -12,7 +12,7 @@ public abstract partial class ResourceConfigBase<T> : IResourceConfig where T : 
 
     public GroupApiVersionKind GroupApiVersionKind { get; } = GroupApiVersionKind.From<T>();
 
-    public string Name => GroupApiVersionKind.PluralName.Humanize(LetterCasing.Title);
+    public string Name => GroupApiVersionKind.Kind.Humanize(LetterCasing.Title).Pluralize();
 
     public virtual string? Category { get; } = null;
 
