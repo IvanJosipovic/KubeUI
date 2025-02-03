@@ -6,17 +6,10 @@ using Scrutor;
 namespace KubeUI.Resources.Workloads.Pod;
 
 [ServiceDescriptor<ResourceConfigBase<V1Job>>(ServiceLifetime.Transient)]
-public sealed partial class JobConfig : ResourceConfigBase<V1Job>, IInitializeCluster
+public sealed partial class JobConfig : ResourceConfigBase<V1Job>
 {
-    private ICluster _cluster;
-    private IFactory _factory;
     public override string Category => "Workloads";
     public override int Order => 5;
-
-    public JobConfig(IFactory factory)
-    {
-        _factory = factory;
-    }
 
     public override IList<IResourceListViewDefinitionColumn> Columns()
     {
@@ -45,11 +38,6 @@ public sealed partial class JobConfig : ResourceConfigBase<V1Job>, IInitializeCl
         return [
 
         ];
-    }
-
-    public void Initialize(ICluster cluster)
-    {
-        _cluster = cluster;
     }
 
     public override Control[]? Properties(V1Job resource)

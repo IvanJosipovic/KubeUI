@@ -1,7 +1,5 @@
 ﻿using k8s.Models;
 using k8s;
-using Avalonia.Controls.Templates;
-using System.Text;
 using Avalonia.Controls.Primitives;
 using Avalonia.Styling;
 
@@ -39,40 +37,6 @@ public sealed class ResourcePropertiesView<T> : MyViewBase<ResourcePropertiesVie
             sp.Children.AddRange(props);
         }
 
-        if (typeof(T) == typeof(V1Secret))
-        {
-            var obj = vm.Object as V1Secret;
-
-            sp.Children.Add(
-                new ExpandableSection()
-                    .Text("Data")
-                    .IsExpanded(true)
-                    .Controls([
-                        new ItemsControl()
-                            .ItemsSource(@obj.Data)
-                            .ItemTemplate(new FuncDataTemplate<KeyValuePair<string, byte[]>>((x,_) =>
-                                new PropertyItem()
-                                    .Key(@x.Key)
-                                    .Value(Encoding.UTF8.GetString(x.Value))
-                            ))
-                    ])
-            );
-
-            sp.Children.Add(
-                new ExpandableSection()
-                    .Text("Certificates")
-                    .IsExpanded(true)
-                    .Controls([
-                        new ItemsControl()
-                            .ItemsSource(@obj.Data)
-                            .ItemTemplate(new FuncDataTemplate<KeyValuePair<string, byte[]>>((x,_) =>
-                                new CertificateItemView()
-                                    .Header(@x.Key)
-                                    .Bytes(@x.Value)
-                            ))
-                    ])
-            );
-        }
         return new ScrollViewer()
                 .VerticalScrollBarVisibility(ScrollBarVisibility.Auto)
                 .Content(sp);

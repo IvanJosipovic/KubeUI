@@ -1,0 +1,60 @@
+﻿using k8s.Models;
+using Scrutor;
+
+namespace KubeUI.Resources.Workloads.Configuration;
+
+[ServiceDescriptor<ResourceConfigBase<V2HorizontalPodAutoscaler>>(ServiceLifetime.Transient)]
+public sealed partial class HorizontalPodAutoscalerConfig : ResourceConfigBase<V2HorizontalPodAutoscaler>
+{
+    public override string Category => "Configuration";
+    public override int Order => 4;
+
+    public override IList<IResourceListViewDefinitionColumn> Columns()
+    {
+        return [
+            NameColumn(SortDirection.Ascending),
+            NamespaceColumn(),
+            new ResourceListViewDefinitionColumn<V2HorizontalPodAutoscaler, int>()
+            {
+                Name = "Min Pods",
+                Display = x => (x.Spec.MinReplicas ?? 0).ToString(),
+                Field = x => x.Spec.MinReplicas ?? 0,
+                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+            },
+            new ResourceListViewDefinitionColumn<V2HorizontalPodAutoscaler, int>()
+            {
+                Name = "Max Pods",
+                Display = x => x.Spec.MaxReplicas.ToString(),
+                Field = x => x.Spec.MaxReplicas,
+                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+            },
+            new ResourceListViewDefinitionColumn<V2HorizontalPodAutoscaler, int>()
+            {
+                Name = "Replica",
+                Display = x => (x.Status.CurrentReplicas ?? 0).ToString(),
+                Field = x => x.Status.CurrentReplicas ?? 0,
+                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+            },
+            AgeColumn(),
+            new ResourceListViewDefinitionColumn<V2HorizontalPodAutoscaler, string>()
+            {
+                Name = "Conditions",
+                Display = x => x.Status.Conditions.FirstOrDefault(y => y.Status == "True").Type,
+                Field = x => x.Status.Conditions.First(y => y.Status == "True").Type,
+                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+            },
+        ];
+    }
+
+    public override IList<ResourceListViewMenuItem> MenuItems()
+    {
+        return [
+
+        ];
+    }
+
+    public override Control[] Properties(V2HorizontalPodAutoscaler resource)
+    {
+        return null;
+    }
+}

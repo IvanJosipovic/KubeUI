@@ -6,19 +6,11 @@ using Scrutor;
 namespace KubeUI.Resources.Workloads.Pod;
 
 [ServiceDescriptor<ResourceConfigBase<V1StatefulSet>>(ServiceLifetime.Transient)]
-public sealed partial class StatefulSetConfig : ResourceConfigBase<V1StatefulSet>, IInitializeCluster
+public sealed partial class StatefulSetConfig : ResourceConfigBase<V1StatefulSet>
 {
-    private ICluster _cluster;
-    private IFactory _factory;
-
     public override string Category => "Workloads";
 
     public override int Order => 3;
-
-    public StatefulSetConfig(IFactory factory)
-    {
-        _factory = factory;
-    }
 
     public override IList<IResourceListViewDefinitionColumn> Columns()
     {
@@ -47,11 +39,6 @@ public sealed partial class StatefulSetConfig : ResourceConfigBase<V1StatefulSet
                 CommandParameterPath = "SelectedItem.Value"
             },
         ];
-    }
-
-    public void Initialize(ICluster cluster)
-    {
-        _cluster = cluster;
     }
 
     public override Control[]? Properties(V1StatefulSet resource)

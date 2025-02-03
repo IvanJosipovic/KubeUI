@@ -6,20 +6,11 @@ using Scrutor;
 namespace KubeUI.Resources.Workloads.Pod;
 
 [ServiceDescriptor<ResourceConfigBase<V1Node>>(ServiceLifetime.Transient)]
-public sealed partial class NodeConfig : ResourceConfigBase<V1Node>, IInitializeCluster
+public sealed partial class NodeConfig : ResourceConfigBase<V1Node>
 {
-    private ICluster _cluster;
-    private IFactory _factory;
-    public override bool ShowNewResource => false;
-
     public override bool ShowNamespaces => false;
 
     public override int Order => 5;
-
-    public NodeConfig(IFactory factory)
-    {
-        _factory = factory;
-    }
 
     public override IList<IResourceListViewDefinitionColumn> Columns()
     {
@@ -99,11 +90,6 @@ public sealed partial class NodeConfig : ResourceConfigBase<V1Node>, IInitialize
                     CommandParameterPath = "SelectedItems",
                 },
         ];
-    }
-
-    public void Initialize(ICluster cluster)
-    {
-        _cluster = cluster;
     }
 
     public override Control[]? Properties(V1Node resource)

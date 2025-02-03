@@ -1,22 +1,13 @@
-﻿using Dock.Model.Core;
-using k8s.Models;
-using KubeUI.Client;
+﻿using k8s.Models;
 using Scrutor;
 
 namespace KubeUI.Resources.Workloads.Pod;
 
 [ServiceDescriptor<ResourceConfigBase<V1CronJob>>(ServiceLifetime.Transient)]
-public sealed partial class CronJobConfig : ResourceConfigBase<V1CronJob>, IInitializeCluster
+public sealed partial class CronJobConfig : ResourceConfigBase<V1CronJob>
 {
-    private ICluster _cluster;
-    private IFactory _factory;
     public override string Category => "Workloads";
     public override int Order => 6;
-
-    public CronJobConfig(IFactory factory)
-    {
-        _factory = factory;
-    }
 
     public override IList<IResourceListViewDefinitionColumn> Columns()
     {
@@ -61,12 +52,6 @@ public sealed partial class CronJobConfig : ResourceConfigBase<V1CronJob>, IInit
 
         ];
     }
-
-    public void Initialize(ICluster cluster)
-    {
-        _cluster = cluster;
-    }
-
     public override Control[]? Properties(V1CronJob resource)
     {
         return null;

@@ -9,19 +9,10 @@ using Scrutor;
 namespace KubeUI.Resources.Workloads.Pod;
 
 [ServiceDescriptor<ResourceConfigBase<Corev1Event>>(ServiceLifetime.Transient)]
-public sealed partial class EventConfig : ResourceConfigBase<Corev1Event>, IInitializeCluster
+public sealed partial class EventConfig : ResourceConfigBase<Corev1Event>
 {
-    private ICluster _cluster;
-    private IFactory _factory;
-
     public new bool ShowNewResource => false;
     public override int Order => 7;
-
-    public EventConfig(IFactory factory)
-    {
-        _factory = factory;
-    }
-
 
     public override IList<IResourceListViewDefinitionColumn> Columns()
     {
@@ -76,11 +67,6 @@ public sealed partial class EventConfig : ResourceConfigBase<Corev1Event>, IInit
         return [
 
         ];
-    }
-
-    public void Initialize(ICluster cluster)
-    {
-        _cluster = cluster;
     }
 
     public override Control[]? Properties(Corev1Event resource)

@@ -6,18 +6,10 @@ using Scrutor;
 namespace KubeUI.Resources.Workloads.Pod;
 
 [ServiceDescriptor<ResourceConfigBase<V1Namespace>>(ServiceLifetime.Transient)]
-public sealed partial class NamespaceConfig : ResourceConfigBase<V1Namespace>, IInitializeCluster
+public sealed partial class NamespaceConfig : ResourceConfigBase<V1Namespace>
 {
-    private ICluster _cluster;
-    private IFactory _factory;
-
     public override bool ShowNamespaces => false;
     public override int Order => 6;
-
-    public NamespaceConfig(IFactory factory)
-    {
-        _factory = factory;
-    }
 
     public override IList<IResourceListViewDefinitionColumn> Columns()
     {
@@ -64,11 +56,6 @@ public sealed partial class NamespaceConfig : ResourceConfigBase<V1Namespace>, I
                     CommandParameterPath = "SelectedItems",
                 },
         ];
-    }
-
-    public void Initialize(ICluster cluster)
-    {
-        _cluster = cluster;
     }
 
     public override Control[]? Properties(V1Namespace resource)

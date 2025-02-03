@@ -89,11 +89,4 @@
     </Compile>
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Resources\Configuration\" />
-    <Folder Include="Resources\Network\" />
-    <Folder Include="Resources\AccessControl\" />
-    <Folder Include="Resources\Storage\" />
-  </ItemGroup>
-
 </Project>
