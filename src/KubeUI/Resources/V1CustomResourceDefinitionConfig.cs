@@ -7,7 +7,7 @@ using Scrutor;
 namespace KubeUI.Resources.Workloads.Pod;
 
 [ServiceDescriptor<ResourceConfigBase<V1CustomResourceDefinition>>(ServiceLifetime.Transient)]
-public sealed partial class CRDConfig : ResourceConfigBase<V1CustomResourceDefinition>, IInitializeCluster
+public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBase<V1CustomResourceDefinition>, IInitializeCluster
 {
     private ICluster _cluster;
     private IFactory _factory;
@@ -15,7 +15,7 @@ public sealed partial class CRDConfig : ResourceConfigBase<V1CustomResourceDefin
     public override bool ShowNamespaces => false;
     public override int Order => 13;
 
-    public CRDConfig(IFactory factory)
+    public V1CustomResourceDefinitionConfig(IFactory factory)
     {
         _factory = factory;
     }

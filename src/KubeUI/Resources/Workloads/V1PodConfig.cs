@@ -19,7 +19,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitialize
 
     public override int Order => 0;
 
-    public PodConfig(IFactory factory)
+    public V1PodConfig(IFactory factory)
     {
         _factory = factory;
     }

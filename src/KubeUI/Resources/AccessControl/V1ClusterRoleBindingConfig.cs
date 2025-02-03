@@ -1,4 +1,3 @@
-
 using k8s.Models;
 using Scrutor;
 
@@ -8,6 +7,8 @@ namespace KubeUI.Resources.AccessControl;
 public sealed partial class V1ClusterRoleBindingConfig : ResourceConfigBase<V1ClusterRoleBinding>
 {
     public override string Category => "Access Control";
+    public override int Order => 3;
+
     public override bool ShowNamespaces => false;
 
     public override IList<IResourceListViewDefinitionColumn> Columns()

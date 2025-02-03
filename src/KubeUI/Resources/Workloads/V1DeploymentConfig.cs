@@ -15,7 +15,7 @@ public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment
 
     public override int Order => 1;
 
-    public DeploymentConfig(IFactory factory)
+    public V1DeploymentConfig(IFactory factory)
     {
         _factory = factory;
     }
