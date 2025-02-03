@@ -1,4 +1,3 @@
-
 using k8s.Models;
 using Scrutor;
 
@@ -9,6 +8,7 @@ public sealed partial class StorageClassConfig : ResourceConfigBase<V1StorageCla
 {
     public override string Category => "Storage";
     public override int Order => 2;
+    public override bool ShowNamespaces => false;
 
     public override IList<IResourceListViewDefinitionColumn> Columns()
     {

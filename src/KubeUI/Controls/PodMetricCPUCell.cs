@@ -1,5 +1,4 @@
-﻿using k8s;
-using k8s.Models;
+﻿using k8s.Models;
 using KubeUI.Client;
 using KubeUI.Views;
 

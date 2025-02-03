@@ -1,6 +1,4 @@
-﻿using Dock.Model.Core;
-using k8s.Models;
-using KubeUI.Client;
+﻿using k8s.Models;
 using Scrutor;
 
 namespace KubeUI.Resources.Workloads.Pod;

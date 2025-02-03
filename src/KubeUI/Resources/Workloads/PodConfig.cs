@@ -1,6 +1,4 @@
-﻿using System.Text;
-using Avalonia.Controls.Templates;
-using Avalonia.Markup.Declarative;
+﻿using Avalonia.Controls.Templates;
 using Dock.Model.Core;
 using k8s.Models;
 using KubeUI.Client;

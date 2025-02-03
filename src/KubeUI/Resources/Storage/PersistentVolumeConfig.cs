@@ -1,4 +1,3 @@
-
 using k8s.Models;
 using Scrutor;
 
@@ -9,6 +8,7 @@ public sealed partial class PersistentVolumeConfig : ResourceConfigBase<V1Persis
 {
     public override string Category => "Storage";
     public override int Order => 1;
+    public override bool ShowNamespaces => false;
 
     public override IList<IResourceListViewDefinitionColumn> Columns()
     {

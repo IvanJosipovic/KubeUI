@@ -1,5 +1,4 @@
-﻿using Avalonia.Markup.Declarative;
-using Avalonia.Styling;
+﻿using Avalonia.Styling;
 using k8s.Models;
 using LiveChartsCore.Defaults;
 using LiveChartsCore.Measure;

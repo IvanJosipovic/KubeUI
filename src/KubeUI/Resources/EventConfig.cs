@@ -1,8 +1,6 @@
 ﻿using Avalonia.Data.Converters;
 using Avalonia.Styling;
-using Dock.Model.Core;
 using k8s.Models;
-using KubeUI.Client;
 using KubeUI.Controls;
 using Scrutor;
 
@@ -17,49 +15,49 @@ public sealed partial class EventConfig : ResourceConfigBase<Corev1Event>
     public override IList<IResourceListViewDefinitionColumn> Columns()
     {
         return [
-                new ResourceListViewDefinitionColumn<Corev1Event, string>()
-                {
-                    Name = "Type",
-                    Field = x => x?.Type ?? "",
-                    Width = nameof(DataGridLengthUnitType.SizeToCells)
-                },
-                new ResourceListViewDefinitionColumn<Corev1Event, string>()
-                {
-                    Name = "Message",
-                    Field = x => x?.Message ?? "",
-                    Width = "4*"
-                },
-                NamespaceColumn(),
-                new ResourceListViewDefinitionColumn<Corev1Event, string>()
-                {
-                    Name = "Involved Object",
-                    Field = x => x?.InvolvedObject?.Name ?? "",
-                    Width = "*"
-                },
-                new ResourceListViewDefinitionColumn<Corev1Event, string>()
-                {
-                    Name = "Source",
-                    Field = x => x?.Source?.Component ?? "",
-                    Width = "*"
-                },
-                new ResourceListViewDefinitionColumn<Corev1Event, int>()
-                {
-                    Name = "Count",
-                    Display = x => (x.Count ?? 0).ToString(),
-                    Field = x => x.Count ?? 0,
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
-                },
-                new ResourceListViewDefinitionColumn<Corev1Event, DateTime?>()
-                {
-                    Name = "Last Seen",
-                    CustomControl = typeof(LastSeenCell),
-                    Field = x => x.LastTimestamp,
-                    Display = x => x.LastTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
-                    Sort = SortDirection.Descending,
-                    Width = "80"
-                },
-                AgeColumn(),
-            ];
+            new ResourceListViewDefinitionColumn<Corev1Event, string>()
+            {
+                Name = "Type",
+                Field = x => x?.Type ?? "",
+                Width = nameof(DataGridLengthUnitType.SizeToCells)
+            },
+            new ResourceListViewDefinitionColumn<Corev1Event, string>()
+            {
+                Name = "Message",
+                Field = x => x?.Message ?? "",
+                Width = "4*"
+            },
+            NamespaceColumn(),
+            new ResourceListViewDefinitionColumn<Corev1Event, string>()
+            {
+                Name = "Involved Object",
+                Field = x => x?.InvolvedObject?.Name ?? "",
+                Width = "*"
+            },
+            new ResourceListViewDefinitionColumn<Corev1Event, string>()
+            {
+                Name = "Source",
+                Field = x => x?.Source?.Component ?? "",
+                Width = "*"
+            },
+            new ResourceListViewDefinitionColumn<Corev1Event, int>()
+            {
+                Name = "Count",
+                Display = x => (x.Count ?? 0).ToString(),
+                Field = x => x.Count ?? 0,
+                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+            },
+            new ResourceListViewDefinitionColumn<Corev1Event, DateTime?>()
+            {
+                Name = "Last Seen",
+                CustomControl = typeof(LastSeenCell),
+                Field = x => x.LastTimestamp,
+                Display = x => x.LastTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
+                Sort = SortDirection.Descending,
+                Width = "80"
+            },
+            AgeColumn(),
+        ];
     }
 
     public override IList<ResourceListViewMenuItem> MenuItems()
