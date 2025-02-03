@@ -2,6 +2,7 @@
 using Avalonia.Platform.Storage;
 using Dock.Model.Core;
 using KubeUI.Client;
+using Swordfish.NET.Collections;
 
 namespace KubeUI.ViewModels;
 
@@ -146,10 +147,13 @@ public partial class NavigationItem : ObservableObject
     public partial string Name { get; set; }
 
     [ObservableProperty]
-    public partial ObservableCollection<NavigationItem> NavigationItems { get; set; } = [];
+    public partial ObservableCollection<NavigationItem> NavigationItems { get; set; } = new ObservableSortedCollection<NavigationItem>(new NavigationItemOrderComparer());
 
     [ObservableProperty]
     public partial bool IsExpanded { get; set; }
+
+    [ObservableProperty]
+    public partial int Order { get; set; }
 }
 
 public partial class NavigationLink : NavigationItem
@@ -169,10 +173,18 @@ public partial class ResourceNavigationLink : NavigationLink
     public string IconPath => Utilities.GetKubeAssetPath(ControlType);
 }
 
-public class NavigationItemComparer : IComparer<NavigationItem>
+public class NavigationItemNameComparer : IComparer<NavigationItem>
 {
     public int Compare(NavigationItem? x, NavigationItem? y)
     {
         return x?.Name.CompareTo(y?.Name) ?? 0;
+    }
+}
+
+public class NavigationItemOrderComparer : IComparer<NavigationItem>
+{
+    public int Compare(NavigationItem? x, NavigationItem? y)
+    {
+        return x?.Order.CompareTo(y?.Order) ?? 0;
     }
 }

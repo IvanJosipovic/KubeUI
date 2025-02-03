@@ -19,6 +19,7 @@ using Scrutor;
 using Swordfish.NET.Collections;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
+using static NStack.Unicode;
 
 namespace KubeUI.Client;
 
@@ -65,7 +66,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
     public partial IKubernetes? Client { get; set; }
 
     [ObservableProperty]
-    public partial ObservableCollection<NavigationItem> NavigationItems { get; set; } = [];
+    public partial ObservableSortedCollection<NavigationItem> NavigationItems { get; set; } = new ObservableSortedCollection<NavigationItem>(new NavigationItemOrderComparer());
 
     [ObservableProperty]
     public partial ModelCache ModelCache { get; set; }
@@ -223,11 +224,17 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private async Task AddDefaultNavigation()
     {
-        NavigationItems.Add(new NavigationLink() { Name = "Settings", ControlType = typeof(ClusterSettingsViewModel), Cluster = this, StyleIcon = "ic_fluent_settings_24_filled" });
-        NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.ClusterViewModel_Title, ControlType = typeof(ClusterViewModel), Cluster = this, SvgIcon = "/Assets/kube/infrastructure_components/unlabeled/control-plane.svg" });
-        NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.VisualizationViewModel_Title, ControlType = typeof(VisualizationViewModel), Cluster = this, StyleIcon = "ic_fluent_search_visual_24_filled" });
-        NavigationItems.Add(new NavigationLink() { Name = "Load Yaml", Cluster = this, Id = "load-yaml", StyleIcon = "arrow_upload_regular" });
-        NavigationItems.Add(new NavigationLink() { Name = "Load Folder", Cluster = this, Id = "load-folder", StyleIcon = "folder_add_regular" });
+        NavigationItems.Add(new NavigationLink() { Name = "Settings", ControlType = typeof(ClusterSettingsViewModel), Cluster = this, StyleIcon = "ic_fluent_settings_24_filled", Order = 0 });
+        NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.ClusterViewModel_Title, ControlType = typeof(ClusterViewModel), Cluster = this, SvgIcon = "/Assets/kube/infrastructure_components/unlabeled/control-plane.svg", Order = 1 });
+        NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.VisualizationViewModel_Title, ControlType = typeof(VisualizationViewModel), Cluster = this, StyleIcon = "ic_fluent_search_visual_24_filled", Order = 2 });
+        NavigationItems.Add(new NavigationLink() { Name = "Load Yaml", Cluster = this, Id = "load-yaml", StyleIcon = "arrow_upload_regular", Order = 3 });
+        NavigationItems.Add(new NavigationLink() { Name = "Load Folder", Cluster = this, Id = "load-folder", StyleIcon = "folder_add_regular", Order = 4 });
+
+        NavigationItems.Add(new NavigationItem() { Name = "Workloads", Order = 8 });
+        NavigationItems.Add(new NavigationItem() { Name = "Configuration", Order = 9 });
+        NavigationItems.Add(new NavigationItem() { Name = "Network", Order = 10 });
+        NavigationItems.Add(new NavigationItem() { Name = "Storage", Order = 11 });
+        NavigationItems.Add(new NavigationItem() { Name = "Access Control", Order = 12 });
 
         var baseType = typeof(ResourceConfigBase<>);
         var assembly = Assembly.GetExecutingAssembly();
@@ -249,14 +256,22 @@ public sealed partial class Cluster : ObservableObject, ICluster
             configs.Add(svc);
         }
 
-        configs = configs.OrderBy(x => x.Order).ToList();
-
         foreach (var config in configs)
         {
             if (await UpdateCanListWatchAnyNamespaceAsync(config.Type))
             {
-                var link = new ResourceNavigationLink() { Name = config.Name, ControlType = config.Type, Cluster = this };
-                NavigationItems.Add(link);
+                if (string.IsNullOrEmpty(config.Category))
+                {
+                    var nav = new ResourceNavigationLink() { Name = config.Name, ControlType = config.Type, Cluster = this, Order = config.Order };
+                    NavigationItems.Add(nav);
+                }
+                else
+                {
+                    var category = NavigationItems.First(x => x.Name == config.Category);
+
+                    var link = new ResourceNavigationLink() { Name = config.Name, ControlType = config.Type, Cluster = this, Order = config.Order };
+                    category.NavigationItems.Add(link);
+                }
             }
         }
 
@@ -587,7 +602,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                             if (task.GetAwaiter().GetResult())
                             {
-                                var nav = new ResourceNavigationLink() { Name = crd.Spec.Names.Kind.Humanize(LetterCasing.Title), ControlType = type, Cluster = this, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemComparer()) };
+                                var nav = new ResourceNavigationLink() { Name = crd.Spec.Names.Kind.Humanize(LetterCasing.Title), ControlType = type, Cluster = this, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer()) };
 
                                 var group = crd.Spec.Group;
 
@@ -605,7 +620,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                                     }
                                     else
                                     {
-                                        navItem = new NavigationItem() { Name = fqdn, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemComparer()) };
+                                        navItem = new NavigationItem() { Name = fqdn, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer()) };
                                         list.Add(navItem);
                                         list = navItem.NavigationItems;
                                     }

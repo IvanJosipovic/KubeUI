@@ -10,9 +10,11 @@ public sealed partial class NodeConfig : ResourceConfigBase<V1Node>, IInitialize
 {
     private ICluster _cluster;
     private IFactory _factory;
-    public new bool ShowNewResource => false;
+    public override bool ShowNewResource => false;
 
-    public new bool ShowNamespaces => false;
+    public override bool ShowNamespaces => false;
+
+    public override int Order => 5;
 
     public NodeConfig(IFactory factory)
     {

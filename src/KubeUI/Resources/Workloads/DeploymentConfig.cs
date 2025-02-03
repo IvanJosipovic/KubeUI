@@ -11,7 +11,9 @@ public sealed partial class DeploymentConfig : ResourceConfigBase<V1Deployment>,
     private ICluster _cluster;
     private IFactory _factory;
 
-    public new string Category => "Workloads";
+    public override string Category => "Workloads";
+
+    public override int Order => 1;
 
     public DeploymentConfig(IFactory factory)
     {

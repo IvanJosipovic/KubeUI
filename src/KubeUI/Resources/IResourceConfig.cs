@@ -13,7 +13,7 @@ namespace KubeUI.Resources
         bool ShowNamespaces { get; }
         bool ShowNewResource { get; }
         Type Type { get; }
-        int Order { get; set; }
+        int Order { get; }
         string Name { get; }
 
         IList<IResourceListViewDefinitionColumn> Columns();

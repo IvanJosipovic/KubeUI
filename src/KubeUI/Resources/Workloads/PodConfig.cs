@@ -13,7 +13,9 @@ public sealed partial class PodConfig : ResourceConfigBase<V1Pod>, IInitializeCl
     private ICluster _cluster;
     private IFactory _factory;
 
-    public new string Category => "Workloads";
+    public override string Category => "Workloads";
+
+    public override int Order => 0;
 
     public PodConfig(IFactory factory)
     {

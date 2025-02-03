@@ -14,15 +14,15 @@ public abstract partial class ResourceConfigBase<T> : IResourceConfig where T : 
 
     public string Name => GroupApiVersionKind.PluralName.Humanize(LetterCasing.Title);
 
-    public string? Category { get; } = null;
+    public virtual string? Category { get; } = null;
 
-    public bool DefaultMenuItems { get; } = true;
+    public virtual bool DefaultMenuItems { get; } = true;
 
-    public bool ShowNewResource { get; } = true;
+    public virtual bool ShowNewResource { get; } = true;
 
-    public bool ShowNamespaces { get; } = true;
+    public virtual bool ShowNamespaces { get; } = true;
 
-    public int Order { get; set; }
+    public virtual int Order { get; }
 
     public abstract IList<IResourceListViewDefinitionColumn> Columns();
 
@@ -30,7 +30,7 @@ public abstract partial class ResourceConfigBase<T> : IResourceConfig where T : 
 
     public abstract object? Properties(T resource);
 
-    public Func<StyleGroup>? SetStyle { get; set; } = () => [];
+    public virtual Func<StyleGroup>? SetStyle { get; set; } = () => [];
 
     protected ResourceListViewDefinitionColumn<T, string> NameColumn(SortDirection sort = SortDirection.None)
     {

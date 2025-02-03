@@ -15,11 +15,13 @@ public sealed partial class EventConfig : ResourceConfigBase<Corev1Event>, IInit
     private IFactory _factory;
 
     public new bool ShowNewResource => false;
+    public override int Order => 7;
 
     public EventConfig(IFactory factory)
     {
         _factory = factory;
     }
+
 
     public override IList<IResourceListViewDefinitionColumn> Columns()
     {
