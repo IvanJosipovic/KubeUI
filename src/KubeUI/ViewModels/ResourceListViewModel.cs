@@ -1723,7 +1723,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     [RelayCommand(CanExecute = nameof(CanViewConsole))]
     private void ViewConsole(V1Container container)
     {
-        var vm = Application.Current.GetRequiredService<PodConsoleViewModel2>();
+        var vm = Application.Current.GetRequiredService<PodConsoleViewModel>();
         vm.Cluster = Cluster;
         vm.Object = ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Value;
         vm.ContainerName = container.Name;
