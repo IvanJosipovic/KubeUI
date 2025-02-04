@@ -18,7 +18,7 @@ public sealed partial class PodConsoleViewModel2 : ViewModelBase, IDisposable
     {
         _logger = logger;
         _settingsService = settings;
-        Title = Resources.PodConsoleViewModel_Title;
+        Title = Assets.Resources.PodConsoleViewModel_Title;
 
         Model.UserInput += Input;
         Model.SizeChanged += Terminal_SizeChanged;
