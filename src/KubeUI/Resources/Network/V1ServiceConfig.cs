@@ -1,13 +1,37 @@
+using Avalonia.Controls.Notifications;
+using Dock.Model.Core;
+using FluentAvalonia.UI.Controls;
+using HanumanInstitute.MvvmDialogs;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
+using KubeUI.Client;
+using KubeUI.Client.Informer;
+using KubeUI.Resources.Workloads.Pod;
 using Scrutor;
+using static KubeUI.Client.Cluster;
 
 namespace KubeUI.Resources.Network;
 
 [ServiceDescriptor<ResourceConfigBase<V1Service>>(ServiceLifetime.Transient)]
-public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
+public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>, IInitializeCluster
 {
+    private readonly ILogger<V1DaemonSetConfig> _logger;
+    private readonly IDialogService _dialogService;
+    private readonly INotificationManager _notificationManager;
+    private readonly IFactory _factory;
+
+    private ICluster _cluster;
+
     public override string Category => "Network";
     public override int Order => 0;
+
+    public V1ServiceConfig(ILogger<V1DaemonSetConfig> logger, IDialogService dialogService, INotificationManager notificationManager, IFactory factory)
+    {
+        _logger = logger;
+        _dialogService = dialogService;
+        _notificationManager = notificationManager;
+        _factory = factory;
+    }
 
     public override IList<IResourceListViewDefinitionColumn> Columns()
     {
@@ -58,15 +82,60 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
                         ],
                         StringFormat = "{0} - {1}"
                     },
-                    //CommandPath = nameof(ResourceListViewModel<V1Pod>.PortForwardServiceCommand), //todo fix
+                    CommandPath = nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + nameof(PortForwardServiceCommand),
                     CommandParameterPath = ".",
                 }
-            }
+            },
         ];
     }
 
     public override Control[]? Properties(V1Service resource)
     {
         return null;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanPortForwardService))]
+    private async Task PortForwardService(IList parameters)
+    {
+        if (parameters[0] is KeyValuePair<NamespacedName, V1Pod> pod && parameters[1] is V1ServicePort containerPort)
+        {
+            var pf = _cluster.AddServicePortForward(pod.Key.Namespace, pod.Key.Name, containerPort.Port);
+
+            ContentDialogSettings settings = new()
+            {
+                Title = Assets.Resources.ResourceListViewModel_PortForward_Title,
+                Content = string.Format(Assets.Resources.ResourceListViewModel_PortForward_Content, containerPort.Port, pf.LocalPort),
+                PrimaryButtonText = Assets.Resources.ResourceListViewModel_PortForward_Primary,
+                SecondaryButtonText = Assets.Resources.ResourceListViewModel_PortForward_Secondary,
+                DefaultButton = ContentDialogButton.Secondary
+            };
+
+            var result = await _dialogService.ShowContentDialogAsync(this, settings);
+
+            if (result == ContentDialogResult.Primary)
+            {
+                var window = (Window)_dialogService.DialogManager.GetMainWindow()!.RefObj;
+                await window!.Launcher.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
+            }
+        }
+    }
+
+    private bool CanPortForwardService(IList? parameters)
+    {
+        if (parameters?[0] is KeyValuePair<NamespacedName, V1Pod> pod && parameters?[1] is V1ServicePort servicePort)
+        {
+            return servicePort?.Port > 0 &&
+                   servicePort.Protocol == "TCP" &&
+                   _cluster.CanI<V1Pod>(Verb.Create, pod.Key.Namespace, "portforward") &&
+                   _cluster.CanI<V1Endpoints>(Verb.List, pod.Key.Namespace) &&
+                   _cluster.CanI<V1Endpoints>(Verb.Watch, pod.Key.Namespace);
+        }
+
+        return false;
+    }
+
+    public void Initialize(ICluster cluster)
+    {
+        _cluster = cluster;
     }
 }

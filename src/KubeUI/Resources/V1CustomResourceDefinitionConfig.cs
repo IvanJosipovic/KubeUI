@@ -1,5 +1,4 @@
 ﻿using Dock.Model.Core;
-using Dock.Model.Mvvm;
 using Humanizer;
 using k8s.Models;
 using KubeUI.Client;
@@ -78,33 +77,36 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
     }
 
     [RelayCommand(CanExecute = nameof(CanListCRD))]
-    private void ListCRD(V1CustomResourceDefinition item)
+    private void ListCRD(IList parameters)
     {
-        var version = item.Spec.Versions.First(x => x.Served && x.Storage);
-
-        var type = _cluster.ModelCache.GetResourceType(item.Spec.Group, version.Name, item.Spec.Names.Kind);
-        var resourceListType = typeof(ResourceListViewModel<>).MakeGenericType(type);
-
-        var vm = Application.Current.GetRequiredService(resourceListType) as IDockable;
-
-        if (vm is IInitializeCluster init)
+        if (parameters[1] is V1CustomResourceDefinition crd)
         {
-            init.Initialize(_cluster);
-        }
+            var version = crd.Spec.Versions.First(x => x.Served && x.Storage);
 
-        _factory.AddToDocuments(vm);
+            var type = _cluster.ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
+            var resourceListType = typeof(ResourceListViewModel<>).MakeGenericType(type);
+
+            var vm = Application.Current.GetRequiredService(resourceListType) as IDockable;
+
+            if (vm is IInitializeCluster init)
+            {
+                init.Initialize(_cluster);
+            }
+
+            _factory.AddToDocuments(vm);
+        }
     }
 
-    private bool CanListCRD(V1CustomResourceDefinition? item)
+    private bool CanListCRD(IList? parameters)
     {
-        if (item == null)
+        if (parameters?[1] is V1CustomResourceDefinition crd)
         {
-            return false;
+            var version = crd.Spec.Versions.First(x => x.Served && x.Storage);
+            var type = _cluster.ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
+
+            return _cluster.CanIAnyNamespace(type, Verb.List) && _cluster.CanIAnyNamespace(type, Verb.Watch);
         }
 
-        var version = item.Spec.Versions.First(x => x.Served && x.Storage);
-        var type = _cluster.ModelCache.GetResourceType(item.Spec.Group, version.Name, item.Spec.Names.Kind);
-
-        return _cluster.CanIAnyNamespace(type, Verb.List) && _cluster.CanIAnyNamespace(type, Verb.Watch);
+        return false;
     }
 }

@@ -1,11 +1,7 @@
 using System.Collections.Specialized;
 using System.Linq.Expressions;
-using System.Reflection;
-using System.Text.Json.Serialization;
-using System.Text.RegularExpressions;
 using Avalonia.Controls.Notifications;
 using Avalonia.Styling;
-using Dock.Model.Core;
 using DynamicData;
 using DynamicData.Binding;
 using FluentAvalonia.UI.Controls;
@@ -191,58 +187,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         SetFilter();
     }
 
-    private static Expression<Func<T, string>> TransformToFuncOfString(Expression expression, ReadOnlyCollection<ParameterExpression> parameters)
-    {
-        // Check if the expression type is an enum
-        if (expression.Type == typeof(Enum))
-        {
-            // Create a method to get the enum member name from the JsonStringEnumMemberNameAttribute
-            var getEnumMemberNameMethod = typeof(ResourceListViewModel<V1Pod>).GetMethod(nameof(GetEnumMemberName), BindingFlags.NonPublic | BindingFlags.Static)
-                .MakeGenericMethod(expression.Type);
-
-            // Call the method to get the enum member name
-            var bodyAsString = Expression.Call(getEnumMemberNameMethod, expression);
-
-            // Create a new lambda expression
-            return Expression.Lambda<Func<T, string>>(bodyAsString, parameters);
-        }
-        else
-        {
-            Expression bodyAsString;
-
-            // Convert the body of the original expression to return a string
-            if (Nullable.GetUnderlyingType(expression.Type) != null)
-            {
-                bodyAsString = Expression.Condition(
-                    Expression.Equal(expression, Expression.Constant(null, expression.Type)),
-                    Expression.Constant(string.Empty),
-                    Expression.Call(expression, nameof(object.ToString), Type.EmptyTypes)
-                );
-            }
-            else
-            {
-                bodyAsString = Expression.Call(expression, nameof(object.ToString), Type.EmptyTypes);
-            }
-
-            // Create a new lambda expression
-            return Expression.Lambda<Func<T, string>>(bodyAsString, parameters);
-        }
-    }
-
-    private static string GetEnumMemberName<TEnum>(TEnum enumValue) where TEnum : Enum
-    {
-        var memberInfo = typeof(TEnum).GetMember(enumValue.ToString()).FirstOrDefault();
-        if (memberInfo != null)
-        {
-            var attribute = memberInfo.GetCustomAttribute<JsonStringEnumMemberNameAttribute>();
-            if (attribute != null)
-            {
-                return attribute.Name;
-            }
-        }
-        return enumValue.ToString();
-    }
-
     #region Actions
 
     [RelayCommand(CanExecute = nameof(CanNewResource))]
@@ -276,7 +220,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         ContentDialogSettings settings = new()
         {
             Title = Assets.Resources.ResourceListViewModel_Delete_Title,
-            Content = string.Format(Assets.Resources.ResourceListViewModel_Delete_Content, items.Count),
+            Content = string.Format(Assets.Resources.ResourceListViewModel_Delete_Content, ((IList)items[1]).Count),
             PrimaryButtonText = Assets.Resources.ResourceListViewModel_Delete_Primary,
             SecondaryButtonText = Assets.Resources.ResourceListViewModel_Delete_Secondary,
             DefaultButton = ContentDialogButton.Secondary
@@ -288,12 +232,11 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         {
             var exceptions = new List<Exception>();
 
-            foreach (var item in items.Cast<KeyValuePair<NamespacedName, T>>().ToList())
+            foreach (var item in ((IList)items[1]).Cast<KeyValuePair<NamespacedName, T>>().ToList())
             {
                 try
                 {
                     await Cluster.Delete<T>(item.Value);
-
                 }
                 catch (Exception ex)
                 {
@@ -301,16 +244,16 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                     Utilities.HandleException(_logger, _notificationManager, ex, $"Error Deleting {item.Key.Namespace}/{item.Key.Name}", sendNotification: true);
                 }
             }
+
+            if (exceptions.Count > 0)
+            {
+                _logger.LogError(new AggregateException(exceptions), "Error Deleting Resources");
+            }
         }
     }
 
     private bool CanDelete(IList items)
     {
-        //if (items.Count == 0)
-        //{
-        //    return false;
-        //}
-
         //foreach (var item in items)
         //{
         //    var ns = (NamespacedName)item.GetType().GetProperty("Key")!.GetValue(item);
@@ -321,7 +264,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         //    }
         //}
 
-        return true;
+        return items?[1] is IList list && list.Count > 0;
     }
 
     [RelayCommand(CanExecute = nameof(CanView))]
@@ -336,9 +279,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         Factory?.AddToRight(instance);
     }
 
-    private bool CanView(IList parameters)
+    private bool CanView(IList? parameters)
     {
-        return parameters != null;
+        return parameters?[1] != null;
     }
 
     [RelayCommand(CanExecute = nameof(CanViewYaml))]
@@ -353,12 +296,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         Factory.AddToBottom(vm);
     }
 
-    private bool CanViewYaml(IList parameters)
+    private bool CanViewYaml(IList? parameters)
     {
-        return parameters != null;
+        return parameters?[1] != null;
     }
-
-
 
     #endregion
 

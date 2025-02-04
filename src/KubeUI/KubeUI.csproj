@@ -89,8 +89,4 @@
     </Compile>
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Resources\AccessControl\" />
-  </ItemGroup>
-
 </Project>

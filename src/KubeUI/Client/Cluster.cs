@@ -249,6 +249,10 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
         foreach (var type in types)
         {
+            if (type.IsGenericType)
+            {
+                continue;
+            }
             var svc = _serviceProvider.GetRequiredService(type.BaseType) as IResourceConfig;
 
             if (svc is IInitializeCluster init)
@@ -405,20 +409,25 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                             var version = crd.Spec.Versions.First(x => x.Served && x.Storage);
 
-                            var type = ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
+                            var resourceType = ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
 
                             //todo add check if the type is already in the list
                             APIGroupDiscoveryList = GetAPIGroupDiscoveryList(false).GetAwaiter().GetResult();
 
-                            var task = UpdateCanListWatchAnyNamespaceAsync(type);
+                            var task = UpdateCanListWatchAnyNamespaceAsync(resourceType);
 
                             if (task.GetAwaiter().GetResult())
                             {
                                 //Generate new Resource Configuration
+                                var resourceConfigType = typeof(CustomResourceDefinitionResourceConfig<>).MakeGenericType(resourceType);
 
+                                var resourceConfig = Application.Current.GetRequiredService(resourceConfigType);
 
+                                resourceConfigType.GetMethod(nameof(CustomResourceDefinitionResourceConfig<V1Pod>.Initialize)).Invoke(resourceConfig, [crd]);
 
-                                var nav = new ResourceNavigationLink() { Name = crd.Spec.Names.Kind.Humanize(LetterCasing.Title).Pluralize(), ControlType = type, Cluster = this, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer()) };
+                                ResourceConfigs[GroupApiVersionKind.From(resourceType)] = resourceConfig;
+
+                                var nav = new ResourceNavigationLink() { Name = crd.Spec.Names.Kind.Humanize(LetterCasing.Title).Pluralize(), ControlType = resourceType, Cluster = this, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer()) };
 
                                 var group = crd.Spec.Group;
 

@@ -1,7 +1,12 @@
-﻿using Avalonia.Controls.Templates;
+﻿using Avalonia.Controls.Notifications;
+using Avalonia.Controls.Templates;
 using Dock.Model.Core;
+using FluentAvalonia.UI.Controls;
+using HanumanInstitute.MvvmDialogs;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
 using KubeUI.Client;
+using KubeUI.Client.Informer;
 using KubeUI.Controls;
 using KubeUI.Views;
 using Scrutor;
@@ -12,15 +17,22 @@ namespace KubeUI.Resources.Workloads.Pod;
 [ServiceDescriptor<ResourceConfigBase<V1Pod>>(ServiceLifetime.Transient)]
 public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitializeCluster
 {
+    private readonly ILogger<V1DaemonSetConfig> _logger;
+    private readonly IDialogService _dialogService;
+    private readonly INotificationManager _notificationManager;
+    private readonly IFactory _factory;
+
     private ICluster _cluster;
-    private IFactory _factory;
 
     public override string Category => "Workloads";
 
     public override int Order => 0;
 
-    public V1PodConfig(IFactory factory)
+    public V1PodConfig(ILogger<V1DaemonSetConfig> logger, IDialogService dialogService, INotificationManager notificationManager, IFactory factory)
     {
+        _logger = logger;
+        _dialogService = dialogService;
+        _notificationManager = notificationManager;
         _factory = factory;
     }
 
@@ -158,31 +170,31 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitialize
                     },
                 ],
             },
-            //new()
-            //{
-            //    Header = "Port Forwarding",
-            //    ItemSourcePath = "SelectedItem.Value.Spec.Containers",
-            //    IconResource = "ic_fluent_cloud_flow_filled",
-            //    ItemTemplate = new()
-            //    {
-            //        HeaderBinding = new Binding(nameof(V1Container.Name)),
-            //        ItemSourcePath = nameof(V1Container.Ports),
-            //        ItemTemplate = new()
-            //        {
-            //            HeaderBinding = new MultiBinding()
-            //            {
-            //                Bindings =
-            //                [
-            //                    new Binding(nameof(V1ContainerPort.Name)),
-            //                    new Binding(nameof(V1ContainerPort.ContainerPort))
-            //                ],
-            //                StringFormat = "{0} - {1}"
-            //            },
-            //            CommandPath = nameof(ResourceListViewModel<V1Pod>.PortForwardCommand),
-            //            CommandParameterPath = ".",
-            //        }
-            //    }
-            //}
+            new()
+            {
+                Header = "Port Forwarding",
+                ItemSourcePath = "SelectedItem.Value.Spec.Containers",
+                IconResource = "ic_fluent_cloud_flow_filled",
+                ItemTemplate = new()
+                {
+                    HeaderBinding = new Binding(nameof(V1Container.Name)),
+                    ItemSourcePath = nameof(V1Container.Ports),
+                    ItemTemplate = new()
+                    {
+                        HeaderBinding = new MultiBinding()
+                        {
+                            Bindings =
+                            [
+                                new Binding(nameof(V1ContainerPort.Name)),
+                                new Binding(nameof(V1ContainerPort.ContainerPort))
+                            ],
+                            StringFormat = "{0} - {1}"
+                        },
+                        CommandPath = nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + nameof(PortForwardCommand),
+                        CommandParameterPath = ".",
+                    }
+                }
+            }
         ];
     }
 
@@ -212,124 +224,99 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitialize
     [RelayCommand(CanExecute = nameof(CanViewLogs))]
     private async Task ViewLogs(IList parameters)
     {
-        var pod = parameters[0] as V1Pod;
-        var container = parameters[1] as V1Container;
-
-        var vm = Application.Current.GetRequiredService<PodLogsViewModel>();
-        vm.Cluster = _cluster;
-        vm.Object = pod;
-        vm.ContainerName = container.Name;
-        vm.Id = $"{nameof(ViewLogs)}-{_cluster.Name}-{pod.Namespace()}-{pod.Name()}-{container.Name}";
-
-        if (_factory.AddToBottom(vm))
+        if (parameters[0] is KeyValuePair<NamespacedName, V1Pod> pod && parameters[1] is V1Container container)
         {
-            try
+            var vm = Application.Current.GetRequiredService<PodLogsViewModel>();
+            vm.Cluster = _cluster;
+            vm.Object = pod.Value;
+            vm.ContainerName = container.Name;
+            vm.Id = $"{nameof(ViewLogs)}-{_cluster.Name}-{pod.Key.Namespace} - {pod.Key.Name}-{container.Name}";
+
+            if (_factory.AddToBottom(vm))
             {
-                await vm.Connect();
-            }
-            catch (Exception ex)
-            {
-                //_logger.LogError(ex, "Error viewing logs");
-                return;
+                try
+                {
+                    await vm.Connect();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error viewing logs");
+                    return;
+                }
             }
         }
     }
 
-    private bool CanViewLogs(IList parameters)
+    private bool CanViewLogs(IList? parameters)
     {
-        return parameters != null;
-        //return container != null && Cluster.CanI<V1Pod>(Verb.Get, ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key.Namespace, "log");
+        if (parameters?[0] is KeyValuePair<NamespacedName, V1Pod> pod && parameters?[1] is V1Container container)
+        {
+            return _cluster.CanI<V1Pod>(Verb.Get, pod.Key.Namespace, "log");
+        }
+
+        return false;
     }
 
     [RelayCommand(CanExecute = nameof(CanViewConsole))]
     private void ViewConsole(IList parameters)
     {
-        var pod = (V1Pod)parameters[0];
-        var container = (V1Container)parameters[1];
+        if (parameters?[0] is KeyValuePair<NamespacedName, V1Pod> pod && parameters?[1] is V1Container container)
+        {
+            var vm = Application.Current.GetRequiredService<PodConsoleViewModel>();
+            vm.Cluster = _cluster;
+            vm.Object = pod.Value;
+            vm.ContainerName = container.Name;
+            vm.Id = $"{nameof(ViewConsole)}-{_cluster.Name}-{pod.Key.Namespace}-{pod.Key.Name}-{container.Name}";
 
-        var vm = Application.Current.GetRequiredService<PodConsoleViewModel>();
-        vm.Cluster = _cluster;
-        vm.Object = pod;
-        vm.ContainerName = container.Name;
-        vm.Id = $"{nameof(ViewConsole)}-{_cluster.Name}-{pod.Namespace()}-{pod.Name()}-{container.Name}";
-
-        _factory.AddToBottom(vm);
+            _factory.AddToBottom(vm);
+        }
     }
 
-    private bool CanViewConsole(IList parameters)
+    private bool CanViewConsole(IList? parameters)
     {
-        if (parameters == null)
+        if (parameters?[0] is KeyValuePair<NamespacedName, V1Pod> pod && parameters?[1] is V1Container container)
         {
-            return false;
+            return _cluster.CanI<V1Pod>(Verb.Create, pod.Key.Namespace, "exec");
         }
 
-        var pod = parameters[0] as V1Pod;
-        var container = parameters[1] as V1Container;
-
-        return container != null && pod != null && _cluster.CanI<V1Pod>(Verb.Create, pod.Namespace(), "exec");
+        return false;
     }
 
-    //[RelayCommand(CanExecute = nameof(CanPortForward))]
-    //private async Task PortForward(V1ContainerPort containerPort)
-    //{
-    //    var pf = Cluster.AddPodPortForward(((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key.Namespace, ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key.Name, containerPort.ContainerPort);
+    [RelayCommand(CanExecute = nameof(CanPortForward))]
+    private async Task PortForward(IList parameters)
+    {
+        if (parameters[0] is KeyValuePair<NamespacedName, V1Pod> pod && parameters[1] is V1ContainerPort containerPort)
+        {
+            var pf = _cluster.AddPodPortForward(pod.Key.Namespace, pod.Key.Name, containerPort.ContainerPort);
 
-    //    ContentDialogSettings settings = new()
-    //    {
-    //        Title = Resources.ResourceListViewModel_PortForward_Title,
-    //        Content = string.Format(Resources.ResourceListViewModel_PortForward_Content, containerPort.ContainerPort, pf.LocalPort),
-    //        PrimaryButtonText = Resources.ResourceListViewModel_PortForward_Primary,
-    //        SecondaryButtonText = Resources.ResourceListViewModel_PortForward_Secondary,
-    //        DefaultButton = ContentDialogButton.Secondary
-    //    };
+            ContentDialogSettings settings = new()
+            {
+                Title = Assets.Resources.ResourceListViewModel_PortForward_Title,
+                Content = string.Format(Assets.Resources.ResourceListViewModel_PortForward_Content, containerPort.ContainerPort, pf.LocalPort),
+                PrimaryButtonText = Assets.Resources.ResourceListViewModel_PortForward_Primary,
+                SecondaryButtonText = Assets.Resources.ResourceListViewModel_PortForward_Secondary,
+                DefaultButton = ContentDialogButton.Secondary
+            };
 
-    //    var result = await _dialogService.ShowContentDialogAsync(this, settings);
+            var result = await _dialogService.ShowContentDialogAsync(this, settings);
 
-    //    if (result == ContentDialogResult.Primary)
-    //    {
-    //        var window = (Window)_dialogService.DialogManager.GetMainWindow()!.RefObj;
-    //        await window!.Launcher.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
-    //    }
-    //}
+            if (result == ContentDialogResult.Primary)
+            {
+                var window = (Window)_dialogService.DialogManager.GetMainWindow()!.RefObj;
+                await window!.Launcher.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
+            }
+        }
+    }
 
-    //private bool CanPortForward(V1ContainerPort? containerPort)
-    //{
-    //    return containerPort?.ContainerPort > 0 &&
-    //           containerPort.Protocol == "TCP" &&
-    //           Cluster.CanI<V1Pod>(Verb.Create, ((KeyValuePair<NamespacedName, V1Pod>)SelectedItem).Key.Namespace, "portforward");
-    //}
+    private bool CanPortForward(IList? parameters)
+    {
+        if (parameters?[0] is KeyValuePair<NamespacedName, V1Pod> pod && parameters?[1] is V1ContainerPort containerPort)
+        {
+            return containerPort.ContainerPort > 0 &&
+                   containerPort.Protocol == "TCP" &&
+                   _cluster.CanI<V1Pod>(Verb.Create, pod.Key.Namespace, "portforward");
+        }
 
-    //[RelayCommand(CanExecute = nameof(CanPortForwardService))]
-    //private async Task PortForwardService(V1ServicePort containerPort)
-    //{
-    //    var pf = Cluster.AddServicePortForward(((KeyValuePair<NamespacedName, V1Service>)SelectedItem).Key.Namespace, ((KeyValuePair<NamespacedName, V1Service>)SelectedItem).Key.Name, containerPort.Port);
-
-    //    ContentDialogSettings settings = new()
-    //    {
-    //        Title = Resources.ResourceListViewModel_PortForward_Title,
-    //        Content = string.Format(Resources.ResourceListViewModel_PortForward_Content, containerPort.Port, pf.LocalPort),
-    //        PrimaryButtonText = Resources.ResourceListViewModel_PortForward_Primary,
-    //        SecondaryButtonText = Resources.ResourceListViewModel_PortForward_Secondary,
-    //        DefaultButton = ContentDialogButton.Secondary
-    //    };
-
-    //    var result = await _dialogService.ShowContentDialogAsync(this, settings);
-
-    //    if (result == ContentDialogResult.Primary)
-    //    {
-    //        var window = (Window)_dialogService.DialogManager.GetMainWindow()!.RefObj;
-    //        await window!.Launcher.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
-    //    }
-    //}
-
-    //private bool CanPortForwardService(V1ServicePort? servicePort)
-    //{
-    //    var @namespace = ((KeyValuePair<NamespacedName, V1Service>)SelectedItem).Key.Namespace;
-
-    //    return servicePort?.Port > 0 &&
-    //           servicePort.Protocol == "TCP" &&
-    //           Cluster.CanI<V1Pod>(Verb.Create, @namespace, "portforward") &&
-    //           Cluster.CanI<V1Endpoints>(Verb.List, @namespace) &&
-    //           Cluster.CanI<V1Endpoints>(Verb.Watch, @namespace);
-    //}
+        return false;
+    }
 }
