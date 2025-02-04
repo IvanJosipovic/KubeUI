@@ -6,7 +6,7 @@ using Humanizer;
 
 namespace KubeUI.Resources;
 
-public abstract partial class ResourceConfigBase<T> : IResourceConfig where T : class, IKubernetesObject<V1ObjectMeta>, new()
+public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourceConfig where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     public Type Type { get; } = typeof(T);
 
@@ -64,6 +64,20 @@ public abstract partial class ResourceConfigBase<T> : IResourceConfig where T : 
             Width = "80"
         };
     }
+
+    public static readonly string s_restartControllerPatch = $$"""
+    {
+        "spec": {
+            "template": {
+                "metadata": {
+                    "annotations": {
+                        "kubectl.kubernetes.io/restartedAt": "{{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}}"
+                    }
+                }
+            }
+        }
+    }
+    """;
 }
 
 public interface IResourceListViewDefinitionColumn

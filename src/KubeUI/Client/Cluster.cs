@@ -245,7 +245,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         var assembly = Assembly.GetExecutingAssembly();
         var types = assembly.GetExportedTypes().Where(t => t.BaseType?.IsGenericType == true && t.BaseType.GetGenericTypeDefinition() == baseType).ToList();
 
-        List<IResourceConfig> configs = new();
+        List<IResourceConfig> configs = [];
 
         foreach (var type in types)
         {
@@ -407,12 +407,17 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                             var type = ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
 
+                            //todo add check if the type is already in the list
                             APIGroupDiscoveryList = GetAPIGroupDiscoveryList(false).GetAwaiter().GetResult();
 
                             var task = UpdateCanListWatchAnyNamespaceAsync(type);
 
                             if (task.GetAwaiter().GetResult())
                             {
+                                //Generate new Resource Configuration
+
+
+
                                 var nav = new ResourceNavigationLink() { Name = crd.Spec.Names.Kind.Humanize(LetterCasing.Title).Pluralize(), ControlType = type, Cluster = this, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer()) };
 
                                 var group = crd.Spec.Group;

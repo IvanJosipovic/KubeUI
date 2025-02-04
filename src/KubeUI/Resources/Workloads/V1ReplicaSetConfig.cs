@@ -1,5 +1,8 @@
-﻿using k8s.Models;
+﻿using FluentAvalonia.UI.Controls;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using k8s.Models;
 using Scrutor;
+using static KubeUI.Client.Cluster;
 
 namespace KubeUI.Resources.Workloads.Pod;
 
@@ -56,5 +59,37 @@ public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet
     public override Control[]? Properties(V1ReplicaSet resource)
     {
         return null;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRestartReplicaSet))]
+    private async Task RestartReplicaSet(V1ReplicaSet replicaSet)
+    {
+        try
+        {
+            ContentDialogSettings settings = new()
+            {
+                Title = Assets.Resources.ResourceListViewModel_Restart_Title,
+                Content = string.Format(Assets.Resources.ResourceListViewModel_Restart_Content, replicaSet.Name()),
+                PrimaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Primary,
+                SecondaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Secondary,
+                DefaultButton = ContentDialogButton.Secondary
+            };
+
+            var result = await _dialogService.ShowContentDialogAsync(this, settings);
+
+            if (result == ContentDialogResult.Primary)
+            {
+                await Cluster.Client.AppsV1.PatchNamespacedReplicaSetAsync(new V1Patch(s_restartControllerPatch, V1Patch.PatchType.MergePatch), replicaSet.Metadata.Name, replicaSet.Metadata.NamespaceProperty);
+            }
+        }
+        catch (Exception ex)
+        {
+            Utilities.HandleException(_logger, _notificationManager, ex, "Error Restarting ReplicaSet", sendNotification: true);
+        }
+    }
+
+    private bool CanRestartReplicaSet(V1ReplicaSet replicaSet)
+    {
+        return replicaSet != null && Cluster.CanI<V1ReplicaSet>(Verb.Patch, replicaSet.Namespace());
     }
 }

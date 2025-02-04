@@ -1,5 +1,8 @@
-﻿using k8s.Models;
+﻿using FluentAvalonia.UI.Controls;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using k8s.Models;
 using Scrutor;
+using static KubeUI.Client.Cluster;
 
 namespace KubeUI.Resources.Workloads.Pod;
 
@@ -49,5 +52,37 @@ public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>
     public override Control[]? Properties(V1DaemonSet resource)
     {
         return null;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRestartDaemonSet))]
+    private async Task RestartDaemonSet(V1DaemonSet daemonSet)
+    {
+        try
+        {
+            ContentDialogSettings settings = new()
+            {
+                Title = Assets.Resources.ResourceListViewModel_Restart_Title,
+                Content = string.Format(Assets.Resources.ResourceListViewModel_Restart_Content, daemonSet.Name()),
+                PrimaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Primary,
+                SecondaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Secondary,
+                DefaultButton = ContentDialogButton.Secondary
+            };
+
+            var result = await _dialogService.ShowContentDialogAsync(this, settings);
+
+            if (result == ContentDialogResult.Primary)
+            {
+                await Cluster.Client.AppsV1.PatchNamespacedDaemonSetAsync(new V1Patch(s_restartControllerPatch, V1Patch.PatchType.MergePatch), daemonSet.Metadata.Name, daemonSet.Metadata.NamespaceProperty);
+            }
+        }
+        catch (Exception ex)
+        {
+            Utilities.HandleException(_logger, _notificationManager, ex, "Error Restarting DaemonSet", sendNotification: true);
+        }
+    }
+
+    private bool CanRestartDaemonSet(V1DaemonSet daemonSet)
+    {
+        return daemonSet != null && Cluster.CanI<V1DaemonSet>(Verb.Patch, daemonSet.Namespace());
     }
 }

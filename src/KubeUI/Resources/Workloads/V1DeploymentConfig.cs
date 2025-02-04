@@ -1,7 +1,10 @@
 ﻿using Dock.Model.Core;
+using FluentAvalonia.UI.Controls;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
 using KubeUI.Client;
 using Scrutor;
+using static KubeUI.Client.Cluster;
 
 namespace KubeUI.Resources.Workloads.Pod;
 
@@ -70,5 +73,37 @@ public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment
     public override Control[]? Properties(V1Deployment resource)
     {
         return null;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRestartDeployment))]
+    private async Task RestartDeployment(V1Deployment deployment)
+    {
+        try
+        {
+            ContentDialogSettings settings = new()
+            {
+                Title = Assets.Resources.ResourceListViewModel_Restart_Title,
+                Content = string.Format(Assets.Resources.ResourceListViewModel_Restart_Content, deployment.Name()),
+                PrimaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Primary,
+                SecondaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Secondary,
+                DefaultButton = ContentDialogButton.Secondary
+            };
+
+            var result = await _dialogService.ShowContentDialogAsync(this, settings);
+
+            if (result == ContentDialogResult.Primary)
+            {
+                await Cluster.Client.AppsV1.PatchNamespacedDeploymentAsync(new V1Patch(s_restartControllerPatch, V1Patch.PatchType.MergePatch), deployment.Metadata.Name, deployment.Metadata.NamespaceProperty);
+            }
+        }
+        catch (Exception ex)
+        {
+            Utilities.HandleException(_logger, _notificationManager, ex, "Error Restarting Deployment", sendNotification: true);
+        }
+    }
+
+    private bool CanRestartDeployment(V1Deployment deployment)
+    {
+        return deployment != null && Cluster.CanI<V1Deployment>(Verb.Patch, deployment.Namespace());
     }
 }

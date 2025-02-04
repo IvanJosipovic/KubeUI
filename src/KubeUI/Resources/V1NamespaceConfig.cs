@@ -1,7 +1,7 @@
 ﻿using k8s.Models;
 using Scrutor;
 
-namespace KubeUI.Resources.Workloads.Pod;
+namespace KubeUI.Resources;
 
 [ServiceDescriptor<ResourceConfigBase<V1Namespace>>(ServiceLifetime.Transient)]
 public sealed partial class V1NamespaceConfig : ResourceConfigBase<V1Namespace>
@@ -32,27 +32,6 @@ public sealed partial class V1NamespaceConfig : ResourceConfigBase<V1Namespace>
     public override IList<ResourceListViewMenuItem> MenuItems()
     {
         return [
-            new()
-            {
-                Header = "Cordon",
-                IconResource = "stop_regular",
-                CommandPath = nameof(ResourceListViewModel<V1Pod>.CordonNodeCommand),
-                CommandParameterPath = "SelectedItems",
-            },
-            new()
-            {
-                Header = "UnCordon",
-                IconResource = "play_regular",
-                CommandPath = nameof(ResourceListViewModel<V1Pod>.UnCordonNodeCommand),
-                CommandParameterPath = "SelectedItems",
-            },
-            new()
-            {
-                Header = "Drain",
-                IconResource = "arrow_sync_regular",
-                CommandPath = nameof(ResourceListViewModel<V1Pod>.DrainNodeCommand),
-                CommandParameterPath = "SelectedItems",
-            },
         ];
     }
 
