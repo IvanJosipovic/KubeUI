@@ -1,18 +1,35 @@
-﻿using FluentAvalonia.UI.Controls;
+﻿using Avalonia.Controls.Notifications;
+using FluentAvalonia.UI.Controls;
+using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using k8s;
 using k8s.Models;
+using KubeUI.Client;
 using KubeUI.Client.Informer;
+using KubeUI.Resources.Workloads.Pod;
 using Scrutor;
 using static KubeUI.Client.Cluster;
 
 namespace KubeUI.Resources;
 
 [ServiceDescriptor<ResourceConfigBase<V1Node>>(ServiceLifetime.Transient)]
-public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
+public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>, IInitializeCluster
 {
+    private readonly ILogger<V1DaemonSetConfig> _logger;
+    private readonly IDialogService _dialogService;
+    private readonly INotificationManager _notificationManager;
+    private ICluster _cluster;
+
     public override bool ShowNamespaces => false;
 
     public override int Order => 5;
+
+    public V1NodeConfig(ILogger<V1DaemonSetConfig> logger, IDialogService dialogService, INotificationManager notificationManager)
+    {
+        _logger = logger;
+        _dialogService = dialogService;
+        _notificationManager = notificationManager;
+    }
 
     public override IList<IResourceListViewDefinitionColumn> Columns()
     {
@@ -127,7 +144,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
             {
                 try
                 {
-                    await Cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Key.Name, item.Key.Namespace);
+                    await _cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Key.Name, item.Key.Namespace);
                 }
                 catch (Exception ex)
                 {
@@ -139,7 +156,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 
     private bool CanCordonNode(IList items)
     {
-        return Cluster.CanI<V1Node>(Verb.Patch);
+        return _cluster.CanI<V1Node>(Verb.Patch);
     }
 
     [RelayCommand(CanExecute = nameof(CanUnCordonNode))]
@@ -170,7 +187,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
             {
                 try
                 {
-                    await Cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Key.Name, item.Key.Namespace);
+                    await _cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Key.Name, item.Key.Namespace);
                 }
                 catch (Exception ex)
                 {
@@ -182,7 +199,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 
     private bool CanUnCordonNode(IList items)
     {
-        return Cluster.CanI<V1Node>(Verb.Patch);
+        return _cluster.CanI<V1Node>(Verb.Patch);
     }
 
     [RelayCommand(CanExecute = nameof(CanCordonNode))]
@@ -213,9 +230,9 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
             {
                 try
                 {
-                    await Cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Key.Name, item.Key.Namespace);
+                    await _cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Key.Name, item.Key.Namespace);
 
-                    var pods = await Cluster.GetObjectDictionaryAsync<V1Pod>();
+                    var pods = await _cluster.GetObjectDictionaryAsync<V1Pod>();
 
                     foreach (var pod in pods)
                     {
@@ -242,7 +259,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 
                             try
                             {
-                                await Cluster.Client.CoreV1.CreateNamespacedPodEvictionAsync(evict, pod.Value.Metadata.Name, pod.Value.Metadata.NamespaceProperty);
+                                await _cluster.Client.CoreV1.CreateNamespacedPodEvictionAsync(evict, pod.Value.Metadata.Name, pod.Value.Metadata.NamespaceProperty);
                             }
                             catch (Exception ex)
                             {
@@ -261,6 +278,11 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 
     private bool CanDrainNode(IList items)
     {
-        return Cluster.CanI<V1Node>(Verb.Patch);
+        return _cluster.CanI<V1Node>(Verb.Patch);
+    }
+
+    public void Initialize(ICluster cluster)
+    {
+        _cluster = cluster;
     }
 }

@@ -1,17 +1,33 @@
-﻿using FluentAvalonia.UI.Controls;
+﻿using Avalonia.Controls.Notifications;
+using FluentAvalonia.UI.Controls;
+using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using k8s;
 using k8s.Models;
+using KubeUI.Client;
 using Scrutor;
 using static KubeUI.Client.Cluster;
 
 namespace KubeUI.Resources.Workloads.Pod;
 
 [ServiceDescriptor<ResourceConfigBase<V1ReplicaSet>>(ServiceLifetime.Transient)]
-public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet>
+public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet>, IInitializeCluster
 {
+    private readonly ILogger<V1DaemonSetConfig> _logger;
+    private readonly IDialogService _dialogService;
+    private readonly INotificationManager _notificationManager;
+    private ICluster _cluster;
+
     public override string Category => "Workloads";
 
     public override int Order => 4;
+
+    public V1ReplicaSetConfig(ILogger<V1DaemonSetConfig> logger, IDialogService dialogService, INotificationManager notificationManager)
+    {
+        _logger = logger;
+        _dialogService = dialogService;
+        _notificationManager = notificationManager;
+    }
 
     public override IList<IResourceListViewDefinitionColumn> Columns()
     {
@@ -50,7 +66,7 @@ public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet
             {
                 Header = "Restart",
                 IconResource = "arrow_sync_regular",
-                CommandPath = nameof(ResourceListViewModel<V1Deployment>.RestartReplicaSetCommand),
+                CommandPath = nameof(ResourceListViewModel<V1Deployment>.ResourceConfig) + "." + nameof(RestartReplicaSetCommand),
                 CommandParameterPath = "SelectedItem.Value"
             },
         ];
@@ -79,7 +95,7 @@ public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet
 
             if (result == ContentDialogResult.Primary)
             {
-                await Cluster.Client.AppsV1.PatchNamespacedReplicaSetAsync(new V1Patch(s_restartControllerPatch, V1Patch.PatchType.MergePatch), replicaSet.Metadata.Name, replicaSet.Metadata.NamespaceProperty);
+                await _cluster.Client.AppsV1.PatchNamespacedReplicaSetAsync(new V1Patch(s_restartControllerPatch, V1Patch.PatchType.MergePatch), replicaSet.Metadata.Name, replicaSet.Metadata.NamespaceProperty);
             }
         }
         catch (Exception ex)
@@ -90,6 +106,11 @@ public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet
 
     private bool CanRestartReplicaSet(V1ReplicaSet replicaSet)
     {
-        return replicaSet != null && Cluster.CanI<V1ReplicaSet>(Verb.Patch, replicaSet.Namespace());
+        return replicaSet != null && _cluster.CanI<V1ReplicaSet>(Verb.Patch, replicaSet.Namespace());
+    }
+
+    public void Initialize(ICluster cluster)
+    {
+        _cluster = cluster;
     }
 }

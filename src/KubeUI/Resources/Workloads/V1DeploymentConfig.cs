@@ -1,6 +1,9 @@
-﻿using Dock.Model.Core;
+﻿using Avalonia.Controls.Notifications;
+using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
+using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using k8s;
 using k8s.Models;
 using KubeUI.Client;
 using Scrutor;
@@ -11,57 +14,64 @@ namespace KubeUI.Resources.Workloads.Pod;
 [ServiceDescriptor<ResourceConfigBase<V1Deployment>>(ServiceLifetime.Transient)]
 public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment>, IInitializeCluster
 {
+    private readonly ILogger<V1DaemonSetConfig> _logger;
+    private readonly IDialogService _dialogService;
+    private readonly INotificationManager _notificationManager;
+    private readonly IFactory _factory;
+
     private ICluster _cluster;
-    private IFactory _factory;
 
     public override string Category => "Workloads";
 
     public override int Order => 1;
 
-    public V1DeploymentConfig(IFactory factory)
+    public V1DeploymentConfig(ILogger<V1DaemonSetConfig> logger, IDialogService dialogService, INotificationManager notificationManager, IFactory factory)
     {
+        _logger = logger;
+        _dialogService = dialogService;
+        _notificationManager = notificationManager;
         _factory = factory;
     }
 
     public override IList<IResourceListViewDefinitionColumn> Columns()
     {
         return [
-                NameColumn(SortDirection.Ascending),
-                NamespaceColumn(),
-                new ResourceListViewDefinitionColumn<V1Deployment, int>()
-                {
-                    Name = "Pods",
-                    Display = x => $"{x.Status?.AvailableReplicas.GetValueOrDefault()}/{x.Spec?.Replicas}",
-                    Field = x => x.Status.AvailableReplicas.GetValueOrDefault(),
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
-                },
-                new ResourceListViewDefinitionColumn<V1Deployment, int>()
-                {
-                    Name = "Replicas",
-                    Display = x => x.Spec.Replicas.GetValueOrDefault().ToString(),
-                    Field = x => x.Spec.Replicas.GetValueOrDefault(),
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
-                },
-                new ResourceListViewDefinitionColumn<V1Deployment, string>()
-                {
-                    Name = "Available",
-                    Field = x => x.Status.Conditions == null ? "" : x.Status.Conditions.FirstOrDefault(x => x.Type == "Available")?.Status ?? "",
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
-                },
-                AgeColumn(),
-            ];
+            NameColumn(SortDirection.Ascending),
+            NamespaceColumn(),
+            new ResourceListViewDefinitionColumn<V1Deployment, int>()
+            {
+                Name = "Pods",
+                Display = x => $"{x.Status?.AvailableReplicas.GetValueOrDefault()}/{x.Spec?.Replicas}",
+                Field = x => x.Status.AvailableReplicas.GetValueOrDefault(),
+                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+            },
+            new ResourceListViewDefinitionColumn<V1Deployment, int>()
+            {
+                Name = "Replicas",
+                Display = x => x.Spec.Replicas.GetValueOrDefault().ToString(),
+                Field = x => x.Spec.Replicas.GetValueOrDefault(),
+                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+            },
+            new ResourceListViewDefinitionColumn<V1Deployment, string>()
+            {
+                Name = "Available",
+                Field = x => x.Status.Conditions == null ? "" : x.Status.Conditions.FirstOrDefault(x => x.Type == "Available")?.Status ?? "",
+                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+            },
+            AgeColumn(),
+        ];
     }
 
     public override IList<ResourceListViewMenuItem> MenuItems()
     {
         return [
-                new()
-                {
-                    Header = "Restart",
-                    IconResource = "arrow_sync_regular",
-                    CommandPath = nameof(ResourceListViewModel<V1Deployment>.RestartDeploymentCommand),
-                    CommandParameterPath = "SelectedItem.Value"
-                },
+            new()
+            {
+                Header = "Restart",
+                IconResource = "arrow_sync_regular",
+                CommandPath = nameof(ResourceListViewModel<V1Deployment>.ResourceConfig) + "." + nameof(RestartDeploymentCommand),
+                CommandParameterPath = "SelectedItem.Value"
+            },
         ];
     }
 
@@ -93,7 +103,7 @@ public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment
 
             if (result == ContentDialogResult.Primary)
             {
-                await Cluster.Client.AppsV1.PatchNamespacedDeploymentAsync(new V1Patch(s_restartControllerPatch, V1Patch.PatchType.MergePatch), deployment.Metadata.Name, deployment.Metadata.NamespaceProperty);
+                await _cluster.Client.AppsV1.PatchNamespacedDeploymentAsync(new V1Patch(s_restartControllerPatch, V1Patch.PatchType.MergePatch), deployment.Metadata.Name, deployment.Metadata.NamespaceProperty);
             }
         }
         catch (Exception ex)
@@ -104,6 +114,6 @@ public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment
 
     private bool CanRestartDeployment(V1Deployment deployment)
     {
-        return deployment != null && Cluster.CanI<V1Deployment>(Verb.Patch, deployment.Namespace());
+        return deployment != null && _cluster.CanI<V1Deployment>(Verb.Patch, deployment.Namespace());
     }
 }
