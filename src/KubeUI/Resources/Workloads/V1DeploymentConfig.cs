@@ -70,7 +70,7 @@ public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment
                 Header = "Restart",
                 IconResource = "arrow_sync_regular",
                 CommandPath = nameof(ResourceListViewModel<V1Deployment>.ResourceConfig) + "." + nameof(RestartDeploymentCommand),
-                CommandParameterPath = "SelectedItem.Value"
+                CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<V1Deployment>>(x => x.SelectedItem.Value)
             },
         ];
     }

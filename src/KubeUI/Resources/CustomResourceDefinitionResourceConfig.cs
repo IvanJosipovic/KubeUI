@@ -1,7 +1,6 @@
 ﻿using k8s.Models;
 using k8s;
 using System.Text.RegularExpressions;
-using KubeUI.Controls;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.Json.Serialization;
@@ -22,17 +21,14 @@ public partial class CustomResourceDefinitionResourceConfig<T> : ResourceConfigB
     }
 
     private V1CustomResourceDefinition _customResourceDefinition;
-
-    List<IResourceListViewDefinitionColumn> _columns = [];
+    private readonly List<IResourceListViewDefinitionColumn> _columns = [];
 
     public void Initialize(V1CustomResourceDefinition crd)
     {
         _customResourceDefinition = crd;
 
         // Add Name Column
-        var nameColumn = NameColumn(SortDirection.Ascending);
-
-        _columns.Add(nameColumn);
+        _columns.Add(NameColumn(SortDirection.Ascending));
 
         var version = crd.Spec.Versions.First(x => x.Storage);
 
@@ -40,9 +36,7 @@ public partial class CustomResourceDefinitionResourceConfig<T> : ResourceConfigB
         if (crd.Spec.Scope == "Namespaced")
         {
             // Add Namespace Column
-            var nsColumn = NamespaceColumn();
-
-            _columns.Add(nsColumn);
+            _columns.Add(NamespaceColumn());
         }
         else
         {
@@ -238,18 +232,7 @@ public partial class CustomResourceDefinitionResourceConfig<T> : ResourceConfigB
             }
         }
 
-
-        // Add Age Column
-        var ageColumn = new ResourceListViewDefinitionColumn<T, DateTime?>()
-        {
-            Name = "Age",
-            CustomControl = typeof(AgeCell),
-            Field = x => x.Metadata.CreationTimestamp,
-            Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
-            Width = "80"
-        };
-
-        _columns.Add(ageColumn);
+        _columns.Add(AgeColumn());
     }
 
     public override IList<IResourceListViewDefinitionColumn> Columns()

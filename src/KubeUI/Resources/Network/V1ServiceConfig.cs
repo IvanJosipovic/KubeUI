@@ -84,6 +84,7 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>, IIn
                     },
                     CommandPath = nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + nameof(PortForwardServiceCommand),
                     CommandParameterPath = ".",
+                    CommandParameterAddSelectedItem = true,
                 }
             },
         ];

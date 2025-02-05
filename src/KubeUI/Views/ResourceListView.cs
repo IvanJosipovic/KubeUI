@@ -7,6 +7,8 @@ using Avalonia.Styling;
 using KubeUI.Client.Informer;
 using KubeUI.Client;
 using KubeUI.Resources;
+using Avalonia.Input;
+using Avalonia.Data;
 
 namespace KubeUI.Views;
 
@@ -161,20 +163,30 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
         if (!string.IsNullOrEmpty(menu.CommandParameterPath))
         {
-            // Create the MultiBinding
-            var multiBinding = new MultiBinding
+            if (menu.CommandParameterAddSelectedItem == true)
             {
-                Mode = BindingMode.OneWay
-            };
+                // Create the MultiBinding
+                var multiBinding = new MultiBinding
+                {
+                    Mode = BindingMode.OneWay
+                };
 
-            // Add the individual bindings
-            multiBinding.Bindings.Add(new Binding("SelectedItem.Value"));
-            multiBinding.Bindings.Add(new Binding(menu.CommandParameterPath)
+                // Add the individual bindings
+                multiBinding.Bindings.Add(new Binding("SelectedItem.Value"));
+                multiBinding.Bindings.Add(new Binding(menu.CommandParameterPath)
+                {
+                    Source = _grid,
+                });
+
+                menuItem.Bind(MenuItem.CommandParameterProperty, multiBinding);
+            }
+            else
             {
-                Source = _grid,
-            });
-
-            menuItem.Bind(MenuItem.CommandParameterProperty, multiBinding);
+                menuItem.Bind(MenuItem.CommandParameterProperty, new Binding(menu.CommandParameterPath)
+                {
+                    Source = _grid,
+                });
+            }
         }
 
         if (!string.IsNullOrEmpty(menu.ItemSourcePath))
@@ -239,20 +251,30 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
         if (!string.IsNullOrEmpty(menu.CommandParameterPath))
         {
-            // Create the MultiBinding
-            var multiBinding = new MultiBinding
+            if (menu.CommandParameterAddSelectedItem == true)
             {
-                Mode = BindingMode.OneWay
-            };
+                // Create the MultiBinding
+                var multiBinding = new MultiBinding
+                {
+                    Mode = BindingMode.OneWay
+                };
 
-            // Add the individual bindings
-            multiBinding.Bindings.Add(new Binding("SelectedItem.Value")
+                // Add the individual bindings
+                multiBinding.Bindings.Add(new Binding("SelectedItem.Value")
+                {
+                    Source = _grid,
+                });
+                multiBinding.Bindings.Add(new Binding(menu.CommandParameterPath));
+
+                style.Add(new Setter(MenuItem.CommandParameterProperty, multiBinding));
+            }
+            else
             {
-                Source = _grid,
-            });
-            multiBinding.Bindings.Add(new Binding(menu.CommandParameterPath));
-
-            style.Add(new Setter(MenuItem.CommandParameterProperty, multiBinding));
+                style.Add(new Setter(MenuItem.CommandParameterProperty, new Binding("SelectedItem.Value")
+                {
+                    Source = _grid,
+                }));
+            }
         }
 
         if (!string.IsNullOrEmpty(menu.ItemSourcePath))
@@ -335,13 +357,19 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                     .IsReadOnly(true)
                     .MinColumnWidth(90)
                     .RowHeight(Convert.ToDouble(_settingsService.Settings.ListRowHeight))
-                    //.OnTapped((x) =>
-                    //{
-                    //    if(vm.ViewCommand.CanExecute(_grid.SelectedItem))
-                    //    {
-                    //        vm.ViewCommand.Execute(_grid.SelectedItem);
-                    //    }
-                    //})
+                    .OnDoubleTapped((x) =>
+                    {
+                        if(vm.ViewCommand.CanExecute(_grid.SelectedItem))
+                        {
+                            vm.ViewCommand.Execute(_grid.SelectedItem);
+                        }
+                    })
+                    .KeyBindings([
+                        new KeyBinding()
+                            .Gesture(new KeyGesture(Key.Enter))
+                            .Command(vm.ViewCommand)
+                            .CommandParameter(new Binding("SelectedItem") { Source = vm }),
+                        ])
                     .Styles([
                         new Style<DataGridCell>()
                             .Setter(DataGridCell.FontSizeProperty, Convert.ToDouble(_settingsService.Settings.FontSize))

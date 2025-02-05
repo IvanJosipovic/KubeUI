@@ -252,7 +252,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         }
     }
 
-    private bool CanDelete(IList items)
+    private bool CanDelete(IList? items)
     {
         //foreach (var item in items)
         //{
@@ -264,41 +264,37 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         //    }
         //}
 
-        return items?[1] is IList list && list.Count > 0;
+        return items is IList && items.Count > 0;
     }
 
     [RelayCommand(CanExecute = nameof(CanView))]
-    private void View(IList parameters)
+    private void View(KeyValuePair<NamespacedName, T>? item)
     {
-        var item = parameters[1];
-
         var instance = Application.Current.GetRequiredService<ResourcePropertiesViewModel<T>>();
-        instance.Initialize(Cluster, ((KeyValuePair<NamespacedName, T>)(item)).Value);
+        instance.Initialize(Cluster, item.Value.Value);
         instance.CanFloat = false;
 
         Factory?.AddToRight(instance);
     }
 
-    private bool CanView(IList? parameters)
+    private bool CanView(KeyValuePair<NamespacedName, T>? item)
     {
-        return parameters?[1] != null;
+        return item?.Key.Name != null;
     }
 
     [RelayCommand(CanExecute = nameof(CanViewYaml))]
-    private void ViewYaml(IList parameters)
+    private void ViewYaml(KeyValuePair<NamespacedName, T>? item)
     {
-        var item = parameters[1];
-
         var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
 
-        vm.Initialize(Cluster, ((KeyValuePair<NamespacedName, T>)item).Value);
+        vm.Initialize(Cluster, item.Value.Value);
 
         Factory.AddToBottom(vm);
     }
 
-    private bool CanViewYaml(IList? parameters)
+    private bool CanViewYaml(KeyValuePair<NamespacedName, T>? item)
     {
-        return parameters?[1] != null;
+        return item != null;
     }
 
     #endregion

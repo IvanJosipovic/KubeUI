@@ -60,7 +60,7 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
             new()
             {
                 Header = "View Items",
-                CommandParameterPath = "SelectedItem.Value",
+                CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<V1CustomResourceDefinition>>(x => x.SelectedItem.Value),
                 CommandPath = nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." +  nameof(ListCRDCommand)
             },
         ];
@@ -77,29 +77,26 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
     }
 
     [RelayCommand(CanExecute = nameof(CanListCRD))]
-    private void ListCRD(IList parameters)
+    private void ListCRD(V1CustomResourceDefinition crd)
     {
-        if (parameters[1] is V1CustomResourceDefinition crd)
+        var version = crd.Spec.Versions.First(x => x.Served && x.Storage);
+
+        var type = _cluster.ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
+        var resourceListType = typeof(ResourceListViewModel<>).MakeGenericType(type);
+
+        var vm = Application.Current.GetRequiredService(resourceListType) as IDockable;
+
+        if (vm is IInitializeCluster init)
         {
-            var version = crd.Spec.Versions.First(x => x.Served && x.Storage);
-
-            var type = _cluster.ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
-            var resourceListType = typeof(ResourceListViewModel<>).MakeGenericType(type);
-
-            var vm = Application.Current.GetRequiredService(resourceListType) as IDockable;
-
-            if (vm is IInitializeCluster init)
-            {
-                init.Initialize(_cluster);
-            }
-
-            _factory.AddToDocuments(vm);
+            init.Initialize(_cluster);
         }
+
+        _factory.AddToDocuments(vm);
     }
 
-    private bool CanListCRD(IList? parameters)
+    private bool CanListCRD(V1CustomResourceDefinition? crd)
     {
-        if (parameters?[1] is V1CustomResourceDefinition crd)
+        if (crd != null)
         {
             var version = crd.Spec.Versions.First(x => x.Served && x.Storage);
             var type = _cluster.ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);

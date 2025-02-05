@@ -126,6 +126,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitialize
                             HeaderBinding = new Binding(nameof(V1Container.Name)),
                             CommandPath = nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + nameof(ViewConsoleCommand),
                             CommandParameterPath = ".",
+                            CommandParameterAddSelectedItem = true,
                         }
                     },
                     new()
@@ -137,6 +138,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitialize
                             HeaderBinding = new Binding(nameof(V1Container.Name)),
                             CommandPath =nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." +  nameof(ViewConsoleCommand),
                             CommandParameterPath = ".",
+                            CommandParameterAddSelectedItem = true,
                         }
                     },
                 ]
@@ -155,6 +157,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitialize
                             HeaderBinding = Utilities.FuncBinding<V1Container>(x => x.Name),
                             CommandPath = nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + nameof(ViewLogsCommand),
                             CommandParameterPath = ".",
+                            CommandParameterAddSelectedItem = true,
                         }
                     },
                     new()
@@ -166,6 +169,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitialize
                             HeaderBinding = Utilities.FuncBinding<V1Container>(x => x.Name),
                             CommandPath =  nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + nameof(ViewLogsCommand),
                             CommandParameterPath = ".",
+                            CommandParameterAddSelectedItem = true,
                         }
                     },
                 ],
@@ -192,6 +196,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitialize
                         },
                         CommandPath = nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + nameof(PortForwardCommand),
                         CommandParameterPath = ".",
+                        CommandParameterAddSelectedItem = true,
                     }
                 }
             }
@@ -206,6 +211,18 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitialize
     public override Control[]? Properties(V1Pod resource)
     {
         return [
+            new PropertyItem()
+                .Key("Controlled By")
+                .Value(resource.Metadata.OwnerReferences.FirstOrDefault(x => x.Controller == true)?.Name ?? "N/A"),
+            new PropertyItem()
+                .Key("Status")
+                .Value(resource.Status.Phase),
+            new PropertyItem()
+                .Key("Node")
+                .Value(resource.Spec.NodeName),
+            new PropertyItem()
+                .Key("Pod IP")
+                .Value(resource.Status.PodIP),
             new ExpandableSection()
                     .Text("Containers")
                     .IsExpanded(true)

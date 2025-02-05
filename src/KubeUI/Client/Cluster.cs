@@ -79,7 +79,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
     public partial ObservableCollection<V1Namespace> SelectedNamespaces { get; set; } = [];
 
     [ObservableProperty]
-    public partial ConcurrentObservableDictionary<GroupApiVersionKind, object> ResourceConfigs { get; set; } = [];
+    public partial ConcurrentObservableDictionary<GroupApiVersionKind, IResourceConfig> ResourceConfigs { get; set; } = [];
 
     public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ModelCache modelCache, IGenerator generator, ISettingsService settingsService, IDialogService dialogService, IServiceProvider serviceProvider)
     {
@@ -284,7 +284,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
             }
         }
 
-        _crdNavigationLink = (ResourceNavigationLink)NavigationItems.First(x => x.Name == "Custom Resource Definitions");
+        _crdNavigationLink = (ResourceNavigationLink)NavigationItems.First(x => x is ResourceNavigationLink link && link.ControlType == typeof(V1CustomResourceDefinition));
 
         _crdNavigationLink.NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer());
     }
@@ -421,7 +421,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                                 //Generate new Resource Configuration
                                 var resourceConfigType = typeof(CustomResourceDefinitionResourceConfig<>).MakeGenericType(resourceType);
 
-                                var resourceConfig = Application.Current.GetRequiredService(resourceConfigType);
+                                var resourceConfig = Application.Current.GetRequiredService(resourceConfigType) as IResourceConfig;
 
                                 resourceConfigType.GetMethod(nameof(CustomResourceDefinitionResourceConfig<V1Pod>.Initialize)).Invoke(resourceConfig, [crd]);
 

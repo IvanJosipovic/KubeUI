@@ -59,7 +59,7 @@ public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>,
                 Header = "Restart",
                 IconResource = "arrow_sync_regular",
                 CommandPath = nameof(ResourceListViewModel<V1Deployment>.ResourceConfig) + "." + nameof(RestartDaemonSetCommand),
-                CommandParameterPath = "SelectedItem.Value"
+                CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<V1DaemonSet>>(x => x.SelectedItem.Value)
             },
         ];
     }

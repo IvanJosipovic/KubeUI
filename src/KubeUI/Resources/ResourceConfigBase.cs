@@ -119,16 +119,15 @@ public class ResourceListViewMenuItem
 
     public IBinding? HeaderBinding { get; set; }
 
-
     public string? CommandPath { get; set; }
 
     public string? CommandParameterPath { get; set; }
 
+    public bool? CommandParameterAddSelectedItem { get; set; }
+
     public IBinding? CommandParameterBinding { get; set; }
 
-
     public string? ItemSourcePath { get; set; }
-
 
     public string? IconResource { get; set; }
 

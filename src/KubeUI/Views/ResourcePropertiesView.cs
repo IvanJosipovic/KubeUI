@@ -14,7 +14,7 @@ public sealed class ResourcePropertiesView<T> : MyViewBase<ResourcePropertiesVie
 
     protected override object Build(ResourcePropertiesViewModel<T>? vm)
     {
-        if (vm == null)
+        if (vm == null || vm.Object == null)
             return new StackPanel();
 
         var sp = new StackPanel()

@@ -12,7 +12,7 @@ public enum LocalThemeVariant
 public sealed partial class Settings : ObservableObject
 {
     [ObservableProperty]
-    public partial LocalThemeVariant Theme { get; set; }
+    public partial LocalThemeVariant Theme { get; set; } = LocalThemeVariant.Dark;
 
     [ObservableProperty]
     public partial bool LoggingEnabled { get; set; }
