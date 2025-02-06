@@ -9,23 +9,11 @@ public sealed partial class V1ResourceQuotaConfig : ResourceConfigBase<V1Resourc
     public override string Category => "Configuration";
     public override int Order => 2;
 
-    public override IList<IResourceListViewDefinitionColumn> Columns()
+    public override IList<IResourceListColumn> Columns()
     {
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
         ];
-    }
-
-    public override IList<ResourceListViewMenuItem> MenuItems()
-    {
-        return [
-
-        ];
-    }
-
-    public override Control[] Properties(V1ResourceQuota resource)
-    {
-        return null;
     }
 }

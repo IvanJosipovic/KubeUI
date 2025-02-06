@@ -12,7 +12,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public GroupApiVersionKind GroupApiVersionKind { get; } = GroupApiVersionKind.From<T>();
 
-    public string Name => GroupApiVersionKind.Kind.Humanize(LetterCasing.Title).Pluralize();
+    public virtual string Name => GroupApiVersionKind.Kind.Humanize(LetterCasing.Title).Pluralize();
 
     public virtual string? Category { get; } = null;
 
@@ -24,17 +24,21 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public virtual int Order { get; }
 
-    public abstract IList<IResourceListViewDefinitionColumn> Columns();
+    public virtual StyleGroup ListStyle() => [];
 
-    public abstract IList<ResourceListViewMenuItem> MenuItems();
+    public virtual IList<IResourceListColumn> Columns() =>
+    [
+        NameColumn(SortDirection.Ascending),
+        AgeColumn()
+    ];
 
-    public abstract Control[]? Properties(T resource);
+    public virtual IList<ResourceMenuItem> MenuItems()=> [];
 
-    public virtual Func<StyleGroup>? SetStyle { get; set; } = () => [];
+    public virtual Control[] Properties(T resource)=> [];
 
-    protected ResourceListViewDefinitionColumn<T, string> NameColumn(SortDirection sort = SortDirection.None)
+    protected ResourceListColumn<T, string> NameColumn(SortDirection sort = SortDirection.None)
     {
-        return new ResourceListViewDefinitionColumn<T, string>()
+        return new ResourceListColumn<T, string>()
         {
             Name = "Name",
             Field = x => x.Metadata.Name,
@@ -43,9 +47,9 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         };
     }
 
-    protected ResourceListViewDefinitionColumn<T, string> NamespaceColumn()
+    protected ResourceListColumn<T, string> NamespaceColumn()
     {
-        return new ResourceListViewDefinitionColumn<T, string>()
+        return new ResourceListColumn<T, string>()
         {
             Name = "Namespace",
             Field = x => x.Metadata.NamespaceProperty,
@@ -53,9 +57,9 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         };
     }
 
-    protected ResourceListViewDefinitionColumn<T, DateTime?> AgeColumn()
+    protected ResourceListColumn<T, DateTime?> AgeColumn()
     {
-        return new ResourceListViewDefinitionColumn<T, DateTime?>()
+        return new ResourceListColumn<T, DateTime?>()
         {
             Name = "Age",
             CustomControl = typeof(AgeCell),
@@ -65,7 +69,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         };
     }
 
-    public static readonly string s_restartControllerPatch = $$"""
+    public static readonly string sRestartControllerPatch = $$"""
     {
         "spec": {
             "template": {
@@ -80,7 +84,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     """;
 }
 
-public interface IResourceListViewDefinitionColumn
+public interface IResourceListColumn
 {
     string Name { get; set; }
 
@@ -91,7 +95,7 @@ public interface IResourceListViewDefinitionColumn
     public string? Width { get; set; }
 }
 
-public class ResourceListViewDefinitionColumn<T, T2> : IResourceListViewDefinitionColumn where T : class, IKubernetesObject<V1ObjectMeta>, new()
+public class ResourceListColumn<T, T2> : IResourceListColumn where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     public required string Name { get; set; }
 
@@ -113,7 +117,7 @@ public enum SortDirection
     Descending
 }
 
-public class ResourceListViewMenuItem
+public class ResourceMenuItem
 {
     public string? Header { get; set; }
 
@@ -131,7 +135,7 @@ public class ResourceListViewMenuItem
 
     public string? IconResource { get; set; }
 
-    public ResourceListViewMenuItem? ItemTemplate { get; set; }
+    public ResourceMenuItem? ItemTemplate { get; set; }
 
-    public IList<ResourceListViewMenuItem> MenuItems { get; set; }
+    public IList<ResourceMenuItem> MenuItems { get; set; }
 }

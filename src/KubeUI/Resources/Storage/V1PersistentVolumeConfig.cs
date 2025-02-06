@@ -10,45 +10,35 @@ public sealed partial class V1PersistentVolumeConfig : ResourceConfigBase<V1Pers
     public override int Order => 1;
     public override bool ShowNamespaces => false;
 
-    public override IList<IResourceListViewDefinitionColumn> Columns()
+    public override IList<IResourceListColumn> Columns()
     {
         return [
             NameColumn(SortDirection.Ascending),
-            new ResourceListViewDefinitionColumn<V1PersistentVolume, string>()
+            new ResourceListColumn<V1PersistentVolume, string>()
             {
                 Name = "Storage Class",
                 Field = x => x.Spec.StorageClassName,
                 Width = "*",
             },
-            new ResourceListViewDefinitionColumn<V1PersistentVolume, string>()
+            new ResourceListColumn<V1PersistentVolume, string>()
             {
                 Name = "Size",
                 Field = x => x.Spec.Capacity["storage"].Value,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
-            new ResourceListViewDefinitionColumn<V1PersistentVolume, string>()
+            new ResourceListColumn<V1PersistentVolume, string>()
             {
                 Name = "Claim",
                 Field = x => x.Spec.ClaimRef.Name,
                 Width = "*",
             },
             AgeColumn(),
-            new ResourceListViewDefinitionColumn<V1PersistentVolume, string>()
+            new ResourceListColumn<V1PersistentVolume, string>()
             {
                 Name = "Status",
                 Field = x => x.Status.Phase,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
         ];
-    }
-
-    public override IList<ResourceListViewMenuItem> MenuItems()
-    {
-        return [];
-    }
-
-    public override Control[]? Properties(V1PersistentVolume resource)
-    {
-        return null;
     }
 }

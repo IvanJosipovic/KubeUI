@@ -11,11 +11,11 @@ public sealed partial class V1ValidatingWebhookConfigurationConfig : ResourceCon
     public override bool ShowNamespaces => false;
     public override int Order => 10;
 
-    public override IList<IResourceListViewDefinitionColumn> Columns()
+    public override IList<IResourceListColumn> Columns()
     {
         return [
             NameColumn(SortDirection.Ascending),
-            new ResourceListViewDefinitionColumn<V1ValidatingWebhookConfiguration, int>()
+            new ResourceListColumn<V1ValidatingWebhookConfiguration, int>()
             {
                 Name = "Webhooks",
                 Display = x => x.Webhooks.Count.ToString(),
@@ -26,15 +26,10 @@ public sealed partial class V1ValidatingWebhookConfigurationConfig : ResourceCon
         ];
     }
 
-    public override IList<ResourceListViewMenuItem> MenuItems()
+    public override IList<ResourceMenuItem> MenuItems()
     {
         return [
 
         ];
-    }
-
-    public override Control[] Properties(V1ValidatingWebhookConfiguration resource)
-    {
-        return null;
     }
 }

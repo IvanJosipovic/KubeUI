@@ -9,12 +9,12 @@ public sealed partial class V1LeaseConfig : ResourceConfigBase<V1Lease>
     public override string Category => "Configuration";
     public override int Order => 8;
 
-    public override IList<IResourceListViewDefinitionColumn> Columns()
+    public override IList<IResourceListColumn> Columns()
     {
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new ResourceListViewDefinitionColumn<V1Lease, string>()
+            new ResourceListColumn<V1Lease, string>()
             {
                 Name = "Holder",
                 Display = x => x.Spec.HolderIdentity ?? "",
@@ -23,17 +23,5 @@ public sealed partial class V1LeaseConfig : ResourceConfigBase<V1Lease>
             },
             AgeColumn(),
         ];
-    }
-
-    public override IList<ResourceListViewMenuItem> MenuItems()
-    {
-        return [
-
-        ];
-    }
-
-    public override Control[] Properties(V1Lease resource)
-    {
-        return null;
     }
 }

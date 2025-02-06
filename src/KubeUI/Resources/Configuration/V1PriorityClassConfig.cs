@@ -10,18 +10,18 @@ public sealed partial class V1PriorityClassConfig : ResourceConfigBase<V1Priorit
     public override bool ShowNamespaces => false;
     public override int Order => 6;
 
-    public override IList<IResourceListViewDefinitionColumn> Columns()
+    public override IList<IResourceListColumn> Columns()
     {
         return [
             NameColumn(SortDirection.Ascending),
-            new ResourceListViewDefinitionColumn<V1PriorityClass, int>()
+            new ResourceListColumn<V1PriorityClass, int>()
             {
                 Name = "Value",
                 Display = x => x.Value.ToString(),
                 Field = x => x.Value,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
-            new ResourceListViewDefinitionColumn<V1PriorityClass, bool?>()
+            new ResourceListColumn<V1PriorityClass, bool?>()
             {
                 Name = "Global Default",
                 Display = x => (x.GlobalDefault ?? false).ToString(),
@@ -30,17 +30,5 @@ public sealed partial class V1PriorityClassConfig : ResourceConfigBase<V1Priorit
             },
             AgeColumn(),
         ];
-    }
-
-    public override IList<ResourceListViewMenuItem> MenuItems()
-    {
-        return [
-
-        ];
-    }
-
-    public override Control[] Properties(V1PriorityClass resource)
-    {
-        return null;
     }
 }

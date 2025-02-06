@@ -9,22 +9,12 @@ public sealed partial class V1EndpointSliceConfig : ResourceConfigBase<V1Endpoin
     public override string Category => "Network";
     public override int Order => 2;
 
-    public override IList<IResourceListViewDefinitionColumn> Columns()
+    public override IList<IResourceListColumn> Columns()
     {
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
             AgeColumn(),
         ];
-    }
-
-    public override IList<ResourceListViewMenuItem> MenuItems()
-    {
-        return [];
-    }
-
-    public override Control[]? Properties(V1EndpointSlice resource)
-    {
-        return null;
     }
 }

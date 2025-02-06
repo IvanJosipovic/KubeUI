@@ -9,12 +9,12 @@ public sealed partial class V1ConfigMapConfig : ResourceConfigBase<V1ConfigMap>
     public override string Category => "Configuration";
     public override int Order => 0;
 
-    public override IList<IResourceListViewDefinitionColumn> Columns()
+    public override IList<IResourceListColumn> Columns()
     {
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new ResourceListViewDefinitionColumn<V1ConfigMap, string>()
+            new ResourceListColumn<V1ConfigMap, string>()
             {
                 Name = "Keys",
                 Display = x => x.Data != null && x.Data.Keys.Count > 0 ? x.Data.Keys.Aggregate((a,b) => a + ", " + b) : "",
@@ -23,17 +23,5 @@ public sealed partial class V1ConfigMapConfig : ResourceConfigBase<V1ConfigMap>
             },
             AgeColumn(),
         ];
-    }
-
-    public override IList<ResourceListViewMenuItem> MenuItems()
-    {
-        return [
-
-        ];
-    }
-
-    public override Control[] Properties(V1ConfigMap resource)
-    {
-        return null;
     }
 }

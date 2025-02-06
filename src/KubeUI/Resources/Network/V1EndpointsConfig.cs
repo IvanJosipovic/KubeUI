@@ -9,12 +9,12 @@ public sealed partial class V1EndpointsConfig : ResourceConfigBase<V1Endpoints>
     public override string Category => "Network";
     public override int Order => 1;
 
-    public override IList<IResourceListViewDefinitionColumn> Columns()
+    public override IList<IResourceListColumn> Columns()
     {
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new ResourceListViewDefinitionColumn<V1Endpoints, int>()
+            new ResourceListColumn<V1Endpoints, int>()
             {
                 Name = "Endpoints",
                 Display = x => x.Subsets != null ? x.Subsets.SelectMany(y => y.Ports.Select(z => y.Addresses[0].Ip + ":" + z.Port)).Aggregate((a,b) => a + ", " + b) : "",
@@ -23,15 +23,5 @@ public sealed partial class V1EndpointsConfig : ResourceConfigBase<V1Endpoints>
             },
             AgeColumn(),
         ];
-    }
-
-    public override IList<ResourceListViewMenuItem> MenuItems()
-    {
-        return [];
-    }
-
-    public override Control[]? Properties(V1Endpoints resource)
-    {
-        return null;
     }
 }

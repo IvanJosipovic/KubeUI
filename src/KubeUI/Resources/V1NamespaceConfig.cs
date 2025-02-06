@@ -9,17 +9,17 @@ public sealed partial class V1NamespaceConfig : ResourceConfigBase<V1Namespace>
     public override bool ShowNamespaces => false;
     public override int Order => 6;
 
-    public override IList<IResourceListViewDefinitionColumn> Columns()
+    public override IList<IResourceListColumn> Columns()
     {
         return [
             NameColumn(SortDirection.Ascending),
-            new ResourceListViewDefinitionColumn<V1Namespace, string>()
+            new ResourceListColumn<V1Namespace, string>()
             {
                 Name = "Labels",
                 Field = x => x.Metadata.Labels.Select(x => x.Key + "=" + x.Value).Aggregate((x,y) => x + ", " + y),
                 Width = "2*"
             },
-            new ResourceListViewDefinitionColumn<V1Namespace, string>()
+            new ResourceListColumn<V1Namespace, string>()
             {
                 Name = "Status",
                 Field = x => x.Status.Phase,
@@ -27,16 +27,5 @@ public sealed partial class V1NamespaceConfig : ResourceConfigBase<V1Namespace>
             },
             AgeColumn(),
         ];
-    }
-
-    public override IList<ResourceListViewMenuItem> MenuItems()
-    {
-        return [
-        ];
-    }
-
-    public override Control[]? Properties(V1Namespace resource)
-    {
-        return null;
     }
 }

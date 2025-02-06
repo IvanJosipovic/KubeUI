@@ -21,10 +21,10 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
         _factory = factory;
     }
 
-    public override IList<IResourceListViewDefinitionColumn> Columns()
+    public override IList<IResourceListColumn> Columns()
     {
         return [
-            new ResourceListViewDefinitionColumn<V1CustomResourceDefinition, string>()
+            new ResourceListColumn<V1CustomResourceDefinition, string>()
             {
                 Name = "Name",
                 Display = x => x.Spec.Names.Kind.Humanize(LetterCasing.Title),
@@ -32,19 +32,19 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
                 Sort = SortDirection.Ascending,
                 Width = "2*",
             },
-            new ResourceListViewDefinitionColumn<V1CustomResourceDefinition, string>()
+            new ResourceListColumn<V1CustomResourceDefinition, string>()
             {
                 Name = "Group",
                 Field = x => x.Spec.Group,
                 Width = "*",
             },
-            new ResourceListViewDefinitionColumn<V1CustomResourceDefinition, string>()
+            new ResourceListColumn<V1CustomResourceDefinition, string>()
             {
                 Name = "Version",
                 Field = x => x.Spec.Versions.First(x => x.Storage).Name,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
-            new ResourceListViewDefinitionColumn<V1CustomResourceDefinition, string>()
+            new ResourceListColumn<V1CustomResourceDefinition, string>()
             {
                 Name = "Scope",
                 Field = x => x.Spec.Scope,
@@ -54,7 +54,7 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
         ];
     }
 
-    public override IList<ResourceListViewMenuItem> MenuItems()
+    public override IList<ResourceMenuItem> MenuItems()
     {
         return [
             new()
@@ -69,11 +69,6 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
     public void Initialize(ICluster cluster)
     {
         _cluster = cluster;
-    }
-
-    public override Control[]? Properties(V1CustomResourceDefinition resource)
-    {
-        return null;
     }
 
     [RelayCommand(CanExecute = nameof(CanListCRD))]

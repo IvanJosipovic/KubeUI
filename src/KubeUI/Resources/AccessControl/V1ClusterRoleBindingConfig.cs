@@ -11,11 +11,11 @@ public sealed partial class V1ClusterRoleBindingConfig : ResourceConfigBase<V1Cl
 
     public override bool ShowNamespaces => false;
 
-    public override IList<IResourceListViewDefinitionColumn> Columns()
+    public override IList<IResourceListColumn> Columns()
     {
         return [
             NameColumn(SortDirection.Ascending),
-            new ResourceListViewDefinitionColumn<V1ClusterRoleBinding, string>()
+            new ResourceListColumn<V1ClusterRoleBinding, string>()
             {
                 Name = "Bindings",
                 Field = x => x.Subjects == null || x.Subjects.Count == 0 ? "" : x.Subjects.Select(y => y.Name).Aggregate((a, b) => a + ", " + b),
@@ -23,15 +23,5 @@ public sealed partial class V1ClusterRoleBindingConfig : ResourceConfigBase<V1Cl
             },
             AgeColumn(),
         ];
-    }
-
-    public override IList<ResourceListViewMenuItem> MenuItems()
-    {
-        return [];
-    }
-
-    public override Control[] Properties(V1ClusterRoleBinding resource)
-    {
-        return null;
     }
 }

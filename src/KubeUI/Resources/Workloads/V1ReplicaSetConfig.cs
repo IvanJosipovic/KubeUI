@@ -29,26 +29,26 @@ public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet
         _notificationManager = notificationManager;
     }
 
-    public override IList<IResourceListViewDefinitionColumn> Columns()
+    public override IList<IResourceListColumn> Columns()
     {
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new ResourceListViewDefinitionColumn<V1ReplicaSet, int>()
+            new ResourceListColumn<V1ReplicaSet, int>()
             {
                 Name = "Desired",
                 Display = x => (x.Spec.Replicas ?? 0).ToString(),
                 Field = x => x.Spec.Replicas ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListViewDefinitionColumn<V1ReplicaSet, int>()
+            new ResourceListColumn<V1ReplicaSet, int>()
             {
                 Name = "Current",
                 Display = x => x.Status.Replicas.ToString(),
                 Field = x => x.Status.Replicas,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListViewDefinitionColumn<V1ReplicaSet, int>()
+            new ResourceListColumn<V1ReplicaSet, int>()
             {
                 Name = "Ready",
                 Display = x => x.Status.Replicas.ToString(),
@@ -59,7 +59,7 @@ public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet
         ];
     }
 
-    public override IList<ResourceListViewMenuItem> MenuItems()
+    public override IList<ResourceMenuItem> MenuItems()
     {
         return [
             new()
@@ -70,11 +70,6 @@ public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet
                 CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<V1Deployment>>(x => x.SelectedItem.Value),
             },
         ];
-    }
-
-    public override Control[]? Properties(V1ReplicaSet resource)
-    {
-        return null;
     }
 
     [RelayCommand(CanExecute = nameof(CanRestartReplicaSet))]
@@ -95,7 +90,7 @@ public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet
 
             if (result == ContentDialogResult.Primary)
             {
-                await _cluster.Client.AppsV1.PatchNamespacedReplicaSetAsync(new V1Patch(s_restartControllerPatch, V1Patch.PatchType.MergePatch), replicaSet.Metadata.Name, replicaSet.Metadata.NamespaceProperty);
+                await _cluster.Client.AppsV1.PatchNamespacedReplicaSetAsync(new V1Patch(sRestartControllerPatch, V1Patch.PatchType.MergePatch), replicaSet.Metadata.Name, replicaSet.Metadata.NamespaceProperty);
             }
         }
         catch (Exception ex)

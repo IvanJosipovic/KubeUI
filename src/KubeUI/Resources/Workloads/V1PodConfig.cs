@@ -36,12 +36,12 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitialize
         _factory = factory;
     }
 
-    public override IList<IResourceListViewDefinitionColumn> Columns()
+    public override IList<IResourceListColumn> Columns()
     {
-        List<IResourceListViewDefinitionColumn> cols =
+        List<IResourceListColumn> cols =
             [
                 NameColumn(SortDirection.Ascending),
-                new ResourceListViewDefinitionColumn<V1Pod, int>()
+                new ResourceListColumn<V1Pod, int>()
                 {
                     Name = "Containers",
                     CustomControl = typeof(PodContainerCell),
@@ -50,33 +50,33 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitialize
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },
                 NamespaceColumn(),
-                new ResourceListViewDefinitionColumn<V1Pod, int>()
+                new ResourceListColumn<V1Pod, int>()
                 {
                     Name = "Restarts",
                     Field = x => x.Status.ContainerStatuses.Sum(x => x.RestartCount),
                     Display = x => x.Status.ContainerStatuses?.Sum(x => x.RestartCount).ToString() ?? "0",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
-                new ResourceListViewDefinitionColumn<V1Pod, string>()
+                new ResourceListColumn<V1Pod, string>()
                 {
                     Name = "Controlled By",
                     Field = x => x.Metadata.OwnerReferences?.FirstOrDefault()?.Name ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
-                new ResourceListViewDefinitionColumn<V1Pod, string>()
+                new ResourceListColumn<V1Pod, string>()
                 {
                     Name = "Node",
                     Field = x => x.Spec.NodeName ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
-                new ResourceListViewDefinitionColumn<V1Pod, string>()
+                new ResourceListColumn<V1Pod, string>()
                 {
                     Name = "QoS",
                     Field = x => x.Status.QosClass ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },
                 AgeColumn(),
-                new ResourceListViewDefinitionColumn<V1Pod, string>()
+                new ResourceListColumn<V1Pod, string>()
                 {
                     Name = "Status",
                     Field = x => x.Status.Phase ?? "",
@@ -87,7 +87,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitialize
 
         if (_cluster.IsMetricsAvailable)
         {
-            cols.Insert(3, new ResourceListViewDefinitionColumn<V1Pod, decimal>()
+            cols.Insert(3, new ResourceListColumn<V1Pod, decimal>()
             {
                 Name = "CPU",
                 CustomControl = typeof(PodMetricCPUCell),
@@ -95,7 +95,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitialize
                 Display = x => _cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]).ToString() ?? "",
                 Width = "80"
             });
-            cols.Insert(4, new ResourceListViewDefinitionColumn<V1Pod, decimal>()
+            cols.Insert(4, new ResourceListColumn<V1Pod, decimal>()
             {
                 Name = "Memory",
                 CustomControl = typeof(PodMetricMemoryCell),
@@ -108,7 +108,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitialize
         return cols;
     }
 
-    public override IList<ResourceListViewMenuItem> MenuItems()
+    public override IList<ResourceMenuItem> MenuItems()
     {
         return [
             new()
@@ -208,7 +208,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitialize
         _cluster = cluster;
     }
 
-    public override Control[]? Properties(V1Pod resource)
+    public override Control[] Properties(V1Pod resource)
     {
         return [
             new PropertyItem()

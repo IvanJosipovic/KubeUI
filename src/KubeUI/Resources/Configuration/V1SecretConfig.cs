@@ -12,39 +12,32 @@ public sealed partial class V1SecretConfig : ResourceConfigBase<V1Secret>
     public override string Category => "Configuration";
     public override int Order => 1;
 
-    public override IList<IResourceListViewDefinitionColumn> Columns()
+    public override IList<IResourceListColumn> Columns()
     {
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new ResourceListViewDefinitionColumn<V1Secret, string>()
+            new ResourceListColumn<V1Secret, string>()
             {
                 Name = "Labels",
                 Display = x => x.Metadata?.Labels != null ? x.Metadata.Labels.Keys.Aggregate((a,b) => a + ", " + b) : "",
                 Field = x => x.Metadata?.Labels?.Keys.FirstOrDefault() ?? "",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListViewDefinitionColumn<V1Secret, string>()
+            new ResourceListColumn<V1Secret, string>()
             {
                 Name = "Keys",
                 Display = x => x.Data != null ? x.Data.Keys.Aggregate((a,b) => a + ", " + b) : "",
                 Field = x => x.Data?.Keys.FirstOrDefault() ?? "",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListViewDefinitionColumn<V1Secret, string>()
+            new ResourceListColumn<V1Secret, string>()
             {
                 Name = "Type",
                 Field = x => x.Type,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             AgeColumn(),
-        ];
-    }
-
-    public override IList<ResourceListViewMenuItem> MenuItems()
-    {
-        return [
-
         ];
     }
 

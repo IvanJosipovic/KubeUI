@@ -11,21 +11,11 @@ public sealed partial class V1ClusterRoleConfig : ResourceConfigBase<V1ClusterRo
 
     public override bool ShowNamespaces => false;
 
-    public override IList<IResourceListViewDefinitionColumn> Columns()
+    public override IList<IResourceListColumn> Columns()
     {
         return [
             NameColumn(SortDirection.Ascending),
             AgeColumn(),
         ];
-    }
-
-    public override IList<ResourceListViewMenuItem> MenuItems()
-    {
-        return [];
-    }
-
-    public override Control[] Properties(V1ClusterRole resource)
-    {
-        return null;
     }
 }

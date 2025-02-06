@@ -29,12 +29,12 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
         _notificationManager = notificationManager;
     }
 
-    public override IList<IResourceListViewDefinitionColumn> Columns()
+    public override IList<IResourceListColumn> Columns()
     {
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new ResourceListViewDefinitionColumn<V1StatefulSet, int>()
+            new ResourceListColumn<V1StatefulSet, int>()
             {
                 Name = "Replicas",
                 Display = x => x.Status.Replicas.ToString(),
@@ -45,7 +45,7 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
         ];
     }
 
-    public override IList<ResourceListViewMenuItem> MenuItems()
+    public override IList<ResourceMenuItem> MenuItems()
     {
         return [
             new()
@@ -56,11 +56,6 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
                 CommandParameterPath = "SelectedItem.Value"
             },
         ];
-    }
-
-    public override Control[]? Properties(V1StatefulSet resource)
-    {
-        return null;
     }
 
     [RelayCommand(CanExecute = nameof(CanRestartStatefulSet))]
@@ -81,7 +76,7 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
 
             if (result == ContentDialogResult.Primary)
             {
-                await _cluster.Client.AppsV1.PatchNamespacedStatefulSetAsync(new V1Patch(s_restartControllerPatch, V1Patch.PatchType.MergePatch), statefulSet.Metadata.Name, statefulSet.Metadata.NamespaceProperty);
+                await _cluster.Client.AppsV1.PatchNamespacedStatefulSetAsync(new V1Patch(sRestartControllerPatch, V1Patch.PatchType.MergePatch), statefulSet.Metadata.Name, statefulSet.Metadata.NamespaceProperty);
             }
         }
         catch (Exception ex)

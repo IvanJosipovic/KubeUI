@@ -9,12 +9,12 @@ public sealed partial class V1NetworkPolicyConfig : ResourceConfigBase<V1Network
     public override string Category => "Network";
     public override int Order => 5;
 
-    public override IList<IResourceListViewDefinitionColumn> Columns()
+    public override IList<IResourceListColumn> Columns()
     {
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new ResourceListViewDefinitionColumn<V1NetworkPolicy, string>()
+            new ResourceListColumn<V1NetworkPolicy, string>()
             {
                 Name = "Policy Types",
                 Display = x => x.Spec.PolicyTypes.Aggregate((a,b) => a + ", " + b),
@@ -23,15 +23,5 @@ public sealed partial class V1NetworkPolicyConfig : ResourceConfigBase<V1Network
             },
             AgeColumn(),
         ];
-    }
-
-    public override IList<ResourceListViewMenuItem> MenuItems()
-    {
-        return [];
-    }
-
-    public override Control[]? Properties(V1NetworkPolicy resource)
-    {
-        return null;
     }
 }

@@ -9,19 +9,19 @@ public sealed partial class V1IngressConfig : ResourceConfigBase<V1Ingress>
     public override string Category => "Network";
     public override int Order => 3;
 
-    public override IList<IResourceListViewDefinitionColumn> Columns()
+    public override IList<IResourceListColumn> Columns()
     {
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new ResourceListViewDefinitionColumn<V1Ingress, string>()
+            new ResourceListColumn<V1Ingress, string>()
             {
                 Name = "Load Balancers",
                 Display = x => x.Status.LoadBalancer.Ingress.Select(x => x.Ip).Aggregate((a,b) => a + ", " + b),
                 Field = x => x.Status.LoadBalancer.Ingress.Count > 0 ? x.Status.LoadBalancer.Ingress[0].Ip : "",
                 Width = "*",
             },
-            new ResourceListViewDefinitionColumn<V1Ingress, string>()
+            new ResourceListColumn<V1Ingress, string>()
             {
                 Name = "Rules",
                 Display = x => x.Spec.Rules.Select(z => $"http://{z.Host}{z.Http.Paths[0].Path}").Aggregate((a,b) => a + ", " + b),
@@ -30,15 +30,5 @@ public sealed partial class V1IngressConfig : ResourceConfigBase<V1Ingress>
             },
             AgeColumn(),
         ];
-    }
-
-    public override IList<ResourceListViewMenuItem> MenuItems()
-    {
-        return [];
-    }
-
-    public override Control[]? Properties(V1Ingress resource)
-    {
-        return null;
     }
 }

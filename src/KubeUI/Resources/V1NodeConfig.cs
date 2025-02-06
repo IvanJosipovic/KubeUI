@@ -31,50 +31,50 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>, IInitiali
         _notificationManager = notificationManager;
     }
 
-    public override IList<IResourceListViewDefinitionColumn> Columns()
+    public override IList<IResourceListColumn> Columns()
     {
         return [
             NameColumn(SortDirection.Ascending),
-            new ResourceListViewDefinitionColumn<V1Node, string>()
+            new ResourceListColumn<V1Node, string>()
             {
                 Name = "Instance Type",
                 Field = x => x.Metadata.Labels.TryGetValue("node.kubernetes.io/instance-type", out var value) ? value : "",
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
-            new ResourceListViewDefinitionColumn<V1Node, decimal>()
+            new ResourceListColumn<V1Node, decimal>()
             {
                 Name = "CPU",
                 Field = x => x.Status?.Capacity?.TryGetValue("cpu", out var value) == true ? value.ToDecimal() : 0,
                 Display = x => x.Status?.Capacity?.TryGetValue("cpu", out var value) == true ? value.ToDecimal().ToString("0.##") + "c" : "0c",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListViewDefinitionColumn<V1Node, decimal>()
+            new ResourceListColumn<V1Node, decimal>()
             {
                 Name = "Memory",
                 Field = x => x.Status?.Capacity?.TryGetValue("memory", out var value) == true ? value.ToDecimal() : 0,
                 Display = x => x.Status?.Capacity?.TryGetValue("memory", out var value) == true ? (value.ToDecimal() / 1048576 / 1024).ToString("0.##") + "Gi" : "0Gi",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListViewDefinitionColumn<V1Node, decimal>()
+            new ResourceListColumn<V1Node, decimal>()
             {
                 Name = "Disk",
                 Field = x => x.Status?.Capacity?.TryGetValue("ephemeral-storage", out var value) == true ? value.ToDecimal() : 0,
                 Display = x => x.Status?.Capacity?.TryGetValue("ephemeral-storage", out var value) == true ? (value.ToDecimal() / 1048576 / 1024).ToString("0.##") + "Gi" : "0",
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
-            new ResourceListViewDefinitionColumn<V1Node, string>()
+            new ResourceListColumn<V1Node, string>()
             {
                 Name = "Taints",
                 Field = x => x?.Spec?.Taints?.Select(x => $"{x.Key}={x.Effect}").Aggregate((x,y) => $"{x}, {y}") ?? "",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListViewDefinitionColumn<V1Node, string>()
+            new ResourceListColumn<V1Node, string>()
             {
                 Name = "Version",
                 Field = x => x.Status.NodeInfo.KubeletVersion,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListViewDefinitionColumn<V1Node, string>()
+            new ResourceListColumn<V1Node, string>()
             {
                 Name = "Status",
                 Field = x => x.Status.Conditions.FirstOrDefault(x => x.Type == "Ready")?.Reason ?? "",
@@ -84,7 +84,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>, IInitiali
         ];
     }
 
-    public override IList<ResourceListViewMenuItem> MenuItems()
+    public override IList<ResourceMenuItem> MenuItems()
     {
         return [
             new()
@@ -109,11 +109,6 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>, IInitiali
                 CommandParameterPath = "SelectedItems",
             },
         ];
-    }
-
-    public override Control[]? Properties(V1Node resource)
-    {
-        return null;
     }
 
     [RelayCommand(CanExecute = nameof(CanCordonNode))]
@@ -202,7 +197,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>, IInitiali
         return _cluster.CanI<V1Node>(Verb.Patch);
     }
 
-    [RelayCommand(CanExecute = nameof(CanCordonNode))]
+    [RelayCommand(CanExecute = nameof(CanDrainNode))]
     private async Task DrainNode(IList items)
     {
         ContentDialogSettings settings = new()

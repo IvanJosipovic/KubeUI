@@ -28,19 +28,19 @@ public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>,
         _notificationManager = notificationManager;
     }
 
-    public override IList<IResourceListViewDefinitionColumn> Columns()
+    public override IList<IResourceListColumn> Columns()
     {
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new ResourceListViewDefinitionColumn<V1DaemonSet, int>()
+            new ResourceListColumn<V1DaemonSet, int>()
             {
                 Name = "Pods",
                 Display = x => x.Status.NumberReady.ToString(),
                 Field = x => x.Status.NumberReady,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListViewDefinitionColumn<V1DaemonSet, string>()
+            new ResourceListColumn<V1DaemonSet, string>()
             {
                 Name = "Node Selector",
                 Display = x => x.Spec.Selector.MatchLabels.Select(z => z.Key + "=" + z.Value).Aggregate((x,y) => x + ", " + y),
@@ -51,7 +51,7 @@ public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>,
             ];
     }
 
-    public override IList<ResourceListViewMenuItem> MenuItems()
+    public override IList<ResourceMenuItem> MenuItems()
     {
         return [
             new()
@@ -62,11 +62,6 @@ public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>,
                 CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<V1DaemonSet>>(x => x.SelectedItem.Value)
             },
         ];
-    }
-
-    public override Control[]? Properties(V1DaemonSet resource)
-    {
-        return null;
     }
 
     [RelayCommand(CanExecute = nameof(CanRestartDaemonSet))]
@@ -87,7 +82,7 @@ public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>,
 
             if (result == ContentDialogResult.Primary)
             {
-                await _cluster.Client.AppsV1.PatchNamespacedDaemonSetAsync(new V1Patch(s_restartControllerPatch, V1Patch.PatchType.MergePatch), daemonSet.Metadata.Name, daemonSet.Metadata.NamespaceProperty);
+                await _cluster.Client.AppsV1.PatchNamespacedDaemonSetAsync(new V1Patch(sRestartControllerPatch, V1Patch.PatchType.MergePatch), daemonSet.Metadata.Name, daemonSet.Metadata.NamespaceProperty);
             }
         }
         catch (Exception ex)

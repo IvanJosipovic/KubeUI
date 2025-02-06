@@ -10,11 +10,11 @@ public sealed partial class V1MutatingWebhookConfig : ResourceConfigBase<V1Mutat
     public override bool ShowNamespaces => false;
     public override int Order => 9;
 
-    public override IList<IResourceListViewDefinitionColumn> Columns()
+    public override IList<IResourceListColumn> Columns()
     {
         return [
             NameColumn(SortDirection.Ascending),
-            new ResourceListViewDefinitionColumn<V1MutatingWebhookConfiguration, int>()
+            new ResourceListColumn<V1MutatingWebhookConfiguration, int>()
             {
                 Name = "Webhooks",
                 Display = x => x.Webhooks?.Count.ToString() ?? "",
@@ -23,17 +23,5 @@ public sealed partial class V1MutatingWebhookConfig : ResourceConfigBase<V1Mutat
             },
             AgeColumn(),
         ];
-    }
-
-    public override IList<ResourceListViewMenuItem> MenuItems()
-    {
-        return [
-
-        ];
-    }
-
-    public override Control[] Properties(V1MutatingWebhookConfiguration resource)
-    {
-        return null;
     }
 }

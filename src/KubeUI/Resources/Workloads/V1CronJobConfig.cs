@@ -9,33 +9,33 @@ public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
     public override string Category => "Workloads";
     public override int Order => 6;
 
-    public override IList<IResourceListViewDefinitionColumn> Columns()
+    public override IList<IResourceListColumn> Columns()
     {
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new ResourceListViewDefinitionColumn<V1CronJob, string>()
+            new ResourceListColumn<V1CronJob, string>()
             {
                 Name = "Schedule",
                 Display = x => x.Spec.Schedule,
                 Field = x => x.Spec.Schedule,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListViewDefinitionColumn<V1CronJob, bool>()
+            new ResourceListColumn<V1CronJob, bool>()
             {
                 Name = "Suspend",
                 Display = x => (x.Spec.Suspend ?? false).ToString(),
                 Field = x => x.Spec.Suspend ?? false,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListViewDefinitionColumn<V1CronJob, int>()
+            new ResourceListColumn<V1CronJob, int>()
             {
                 Name = "Active",
                 Display = x => x.Status.Active?.Count.ToString() ?? "",
                 Field = x => x.Status.Active?.Count ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListViewDefinitionColumn<V1CronJob, DateTime?>()
+            new ResourceListColumn<V1CronJob, DateTime?>()
             {
                 Name = "Last Schedule",
                 Display = x => x.Status.LastScheduleTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
@@ -44,16 +44,5 @@ public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
             },
             AgeColumn(),
         ];
-    }
-
-    public override IList<ResourceListViewMenuItem> MenuItems()
-    {
-        return [
-
-        ];
-    }
-    public override Control[]? Properties(V1CronJob resource)
-    {
-        return null;
     }
 }

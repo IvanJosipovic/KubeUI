@@ -33,26 +33,26 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>, IIn
         _factory = factory;
     }
 
-    public override IList<IResourceListViewDefinitionColumn> Columns()
+    public override IList<IResourceListColumn> Columns()
     {
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new ResourceListViewDefinitionColumn<V1Service, string>()
+            new ResourceListColumn<V1Service, string>()
             {
                 Name = "Type",
                 Display = x => x.Spec.Type,
                 Field = x => x.Spec.Type,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
-            new ResourceListViewDefinitionColumn<V1Service, string>()
+            new ResourceListColumn<V1Service, string>()
             {
                 Name = "Cluster IP",
                 Display = x => x.Spec.ClusterIP,
                 Field = x => x.Spec.ClusterIP,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
-            new ResourceListViewDefinitionColumn<V1Service, int>()
+            new ResourceListColumn<V1Service, int>()
             {
                 Name = "Ports",
                 Display = x => x.Spec.Ports.Select((a) => $"{a.Port}{(string.IsNullOrEmpty(a.Name) ? "" : ":" + a.Name)}/{a.Protocol}").Aggregate((a,b) => a + ", " + b),
@@ -63,7 +63,7 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>, IIn
         ];
     }
 
-    public override IList<ResourceListViewMenuItem> MenuItems()
+    public override IList<ResourceMenuItem> MenuItems()
     {
         return [
             new()
@@ -88,11 +88,6 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>, IIn
                 }
             },
         ];
-    }
-
-    public override Control[]? Properties(V1Service resource)
-    {
-        return null;
     }
 
     [RelayCommand(CanExecute = nameof(CanPortForwardService))]

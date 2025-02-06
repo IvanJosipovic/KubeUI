@@ -7,14 +7,14 @@ namespace KubeUI.Resources
         string? Category { get; }
         bool DefaultMenuItems { get; }
         GroupApiVersionKind GroupApiVersionKind { get; }
-        Func<StyleGroup>? SetStyle { get; set; }
+
         bool ShowNamespaces { get; }
         bool ShowNewResource { get; }
         Type Type { get; }
         int Order { get; }
         string Name { get; }
-
-        IList<IResourceListViewDefinitionColumn> Columns();
-        IList<ResourceListViewMenuItem> MenuItems();
+        StyleGroup ListStyle();
+        IList<IResourceListColumn> Columns();
+        IList<ResourceMenuItem> MenuItems();
     }
 }

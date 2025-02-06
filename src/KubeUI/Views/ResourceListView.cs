@@ -36,9 +36,9 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
         {
             try
             {
-                var columnDisplay = (Func<T, string>)columnDefinition.GetType().GetProperty(nameof(ResourceListViewDefinitionColumn<T, string>.Display)).GetValue(columnDefinition);
+                var columnDisplay = (Func<T, string>)columnDefinition.GetType().GetProperty(nameof(ResourceListColumn<T, string>.Display)).GetValue(columnDefinition);
 
-                var columnField = columnDefinition.GetType().GetProperty(nameof(ResourceListViewDefinitionColumn<T, string>.Field)).GetValue(columnDefinition);
+                var columnField = columnDefinition.GetType().GetProperty(nameof(ResourceListColumn<T, string>.Field)).GetValue(columnDefinition);
 
                 // Create Sort FuncComparer
                 var colType = columnField.GetType().GenericTypeArguments[1];
@@ -143,7 +143,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
         }
     }
 
-    private MenuItem CreateMenuItem(ResourceListViewMenuItem menu, int level = 0)
+    private MenuItem CreateMenuItem(ResourceMenuItem menu, int level = 0)
     {
         var menuItem = new MenuItem();
 
@@ -215,7 +215,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
         return menuItem;
     }
 
-    private List<Style> GenerateStyles(ResourceListViewMenuItem menu, int level = 0)
+    private List<Style> GenerateStyles(ResourceMenuItem menu, int level = 0)
     {
         var styles = new List<Style>();
 
@@ -294,7 +294,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
     protected override StyleGroup? BuildStyles()
     {
-        return ViewModel.ResourceConfig.SetStyle.Invoke();
+        return ViewModel?.ResourceConfig.ListStyle();
     }
 
     protected override object Build(ResourceListViewModel<T>? vm)

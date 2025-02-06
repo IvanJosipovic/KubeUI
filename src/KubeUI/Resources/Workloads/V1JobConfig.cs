@@ -9,12 +9,12 @@ public sealed partial class V1JobConfig : ResourceConfigBase<V1Job>
     public override string Category => "Workloads";
     public override int Order => 5;
 
-    public override IList<IResourceListViewDefinitionColumn> Columns()
+    public override IList<IResourceListColumn> Columns()
     {
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new ResourceListViewDefinitionColumn<V1Job, int>()
+            new ResourceListColumn<V1Job, int>()
             {
                 Name = "Completions",
                 Display = x => $"{x.Status.Succeeded ?? 0}/{x.Spec.Completions ?? 0}",
@@ -22,24 +22,12 @@ public sealed partial class V1JobConfig : ResourceConfigBase<V1Job>
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             AgeColumn(),
-            new ResourceListViewDefinitionColumn<V1Job, string>()
+            new ResourceListColumn<V1Job, string>()
             {
                 Name = "Conditions",
                 Field = x => x.Status?.Conditions?.FirstOrDefault(y => y.Status == "True")?.Type ?? "",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             ];
-    }
-
-    public override IList<ResourceListViewMenuItem> MenuItems()
-    {
-        return [
-
-        ];
-    }
-
-    public override Control[]? Properties(V1Job resource)
-    {
-        return null;
     }
 }

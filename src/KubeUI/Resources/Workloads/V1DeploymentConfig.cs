@@ -33,26 +33,26 @@ public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment
         _factory = factory;
     }
 
-    public override IList<IResourceListViewDefinitionColumn> Columns()
+    public override IList<IResourceListColumn> Columns()
     {
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new ResourceListViewDefinitionColumn<V1Deployment, int>()
+            new ResourceListColumn<V1Deployment, int>()
             {
                 Name = "Pods",
                 Display = x => $"{x.Status?.AvailableReplicas.GetValueOrDefault()}/{x.Spec?.Replicas}",
                 Field = x => x.Status.AvailableReplicas.GetValueOrDefault(),
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListViewDefinitionColumn<V1Deployment, int>()
+            new ResourceListColumn<V1Deployment, int>()
             {
                 Name = "Replicas",
                 Display = x => x.Spec.Replicas.GetValueOrDefault().ToString(),
                 Field = x => x.Spec.Replicas.GetValueOrDefault(),
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListViewDefinitionColumn<V1Deployment, string>()
+            new ResourceListColumn<V1Deployment, string>()
             {
                 Name = "Available",
                 Field = x => x.Status.Conditions == null ? "" : x.Status.Conditions.FirstOrDefault(x => x.Type == "Available")?.Status ?? "",
@@ -62,7 +62,7 @@ public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment
         ];
     }
 
-    public override IList<ResourceListViewMenuItem> MenuItems()
+    public override IList<ResourceMenuItem> MenuItems()
     {
         return [
             new()
@@ -78,11 +78,6 @@ public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment
     public void Initialize(ICluster cluster)
     {
         _cluster = cluster;
-    }
-
-    public override Control[]? Properties(V1Deployment resource)
-    {
-        return null;
     }
 
     [RelayCommand(CanExecute = nameof(CanRestartDeployment))]
@@ -103,7 +98,7 @@ public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment
 
             if (result == ContentDialogResult.Primary)
             {
-                await _cluster.Client.AppsV1.PatchNamespacedDeploymentAsync(new V1Patch(s_restartControllerPatch, V1Patch.PatchType.MergePatch), deployment.Metadata.Name, deployment.Metadata.NamespaceProperty);
+                await _cluster.Client.AppsV1.PatchNamespacedDeploymentAsync(new V1Patch(sRestartControllerPatch, V1Patch.PatchType.MergePatch), deployment.Metadata.Name, deployment.Metadata.NamespaceProperty);
             }
         }
         catch (Exception ex)

@@ -21,7 +21,7 @@ public partial class CustomResourceDefinitionResourceConfig<T> : ResourceConfigB
     }
 
     private V1CustomResourceDefinition _customResourceDefinition;
-    private readonly List<IResourceListViewDefinitionColumn> _columns = [];
+    private readonly List<IResourceListColumn> _columns = [];
 
     public void Initialize(V1CustomResourceDefinition crd)
     {
@@ -60,7 +60,7 @@ public partial class CustomResourceDefinitionResourceConfig<T> : ResourceConfigB
                     {
                         var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<T, string>(item.JsonPath, true);
 
-                        var colDef = new ResourceListViewDefinitionColumn<T, string>()
+                        var colDef = new ResourceListColumn<T, string>()
                         {
                             Name = item.Name,
                             Field = exp.Compile(),
@@ -73,7 +73,7 @@ public partial class CustomResourceDefinitionResourceConfig<T> : ResourceConfigB
                     {
                         var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<T, double>(item.JsonPath, true);
 
-                        var colDef = new ResourceListViewDefinitionColumn<T, double>()
+                        var colDef = new ResourceListColumn<T, double>()
                         {
                             Name = item.Name,
                             Display = TransformToFuncOfString(exp.Body, exp.Parameters).Compile(),
@@ -87,7 +87,7 @@ public partial class CustomResourceDefinitionResourceConfig<T> : ResourceConfigB
                     {
                         var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<T, long>(item.JsonPath, true);
 
-                        var colDef = new ResourceListViewDefinitionColumn<T, long>()
+                        var colDef = new ResourceListColumn<T, long>()
                         {
                             Name = item.Name,
                             Display = TransformToFuncOfString(exp.Body, exp.Parameters).Compile(),
@@ -101,7 +101,7 @@ public partial class CustomResourceDefinitionResourceConfig<T> : ResourceConfigB
                     {
                         var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<T, int>(item.JsonPath, true);
 
-                        var colDef = new ResourceListViewDefinitionColumn<T, int>()
+                        var colDef = new ResourceListColumn<T, int>()
                         {
                             Name = item.Name,
                             Display = TransformToFuncOfString(exp.Body, exp.Parameters).Compile(),
@@ -115,7 +115,7 @@ public partial class CustomResourceDefinitionResourceConfig<T> : ResourceConfigB
                     {
                         var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<T, DateTime>(item.JsonPath, true);
 
-                        var colDef = new ResourceListViewDefinitionColumn<T, DateTime>()
+                        var colDef = new ResourceListColumn<T, DateTime>()
                         {
                             Name = item.Name,
                             Field = exp.Compile(),
@@ -128,7 +128,7 @@ public partial class CustomResourceDefinitionResourceConfig<T> : ResourceConfigB
                     {
                         var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<T, bool>(item.JsonPath, true);
 
-                        var colDef = new ResourceListViewDefinitionColumn<T, bool>()
+                        var colDef = new ResourceListColumn<T, bool>()
                         {
                             Name = item.Name,
                             Display = TransformToFuncOfString(exp.Body, exp.Parameters).Compile(),
@@ -142,7 +142,7 @@ public partial class CustomResourceDefinitionResourceConfig<T> : ResourceConfigB
                     {
                         var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<T, Enum>(item.JsonPath, true);
 
-                        var colDef = new ResourceListViewDefinitionColumn<T, string>()
+                        var colDef = new ResourceListColumn<T, string>()
                         {
                             Name = item.Name,
                             Field = TransformToFuncOfString(exp.Body, exp.Parameters).Compile(),
@@ -235,19 +235,9 @@ public partial class CustomResourceDefinitionResourceConfig<T> : ResourceConfigB
         _columns.Add(AgeColumn());
     }
 
-    public override IList<IResourceListViewDefinitionColumn> Columns()
+    public override IList<IResourceListColumn> Columns()
     {
         return _columns;
-    }
-
-    public override IList<ResourceListViewMenuItem> MenuItems()
-    {
-        return [];
-    }
-
-    public override Control[]? Properties(T resource)
-    {
-        return null;
     }
 
     [GeneratedRegex("types '(.+)' and '(.+)'", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
