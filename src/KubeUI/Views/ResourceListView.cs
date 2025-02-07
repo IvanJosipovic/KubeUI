@@ -8,7 +8,6 @@ using KubeUI.Client.Informer;
 using KubeUI.Client;
 using KubeUI.Resources;
 using Avalonia.Input;
-using Avalonia.Data;
 
 namespace KubeUI.Views;
 

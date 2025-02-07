@@ -3,7 +3,6 @@ using k8s;
 using KubeUI.Controls;
 using KubeUI.Client;
 using Humanizer;
-using Dock.Model.Mvvm;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Client.Informer;

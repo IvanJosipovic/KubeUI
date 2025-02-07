@@ -5,8 +5,6 @@ using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
-using KubeUI.Client;
-using KubeUI.Client.Informer;
 using KubeUI.Controls;
 using KubeUI.Views;
 using Scrutor;

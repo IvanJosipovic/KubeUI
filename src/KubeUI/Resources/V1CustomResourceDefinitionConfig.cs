@@ -1,7 +1,6 @@
 ﻿using Dock.Model.Core;
 using Humanizer;
 using k8s.Models;
-using KubeUI.Client;
 using Scrutor;
 using static KubeUI.Client.Cluster;
 

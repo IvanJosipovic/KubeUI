@@ -1,12 +1,8 @@
 using System.Collections.Specialized;
 using System.Linq.Expressions;
-using Avalonia.Controls.Notifications;
 using Avalonia.Styling;
 using DynamicData;
 using DynamicData.Binding;
-using FluentAvalonia.UI.Controls;
-using HanumanInstitute.MvvmDialogs;
-using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using Humanizer;
 using k8s;
 using k8s.Models;
@@ -14,7 +10,6 @@ using KubeUI.Client;
 using KubeUI.Client.Informer;
 using KubeUI.Resources;
 using Swordfish.NET.Collections;
-using static KubeUI.Client.Cluster;
 
 namespace KubeUI.ViewModels;
 

@@ -4,7 +4,6 @@ using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
 using k8s.Models;
-using KubeUI.Client;
 using KubeUI.Client.Informer;
 using KubeUI.Resources.Workloads.Pod;
 using Scrutor;
