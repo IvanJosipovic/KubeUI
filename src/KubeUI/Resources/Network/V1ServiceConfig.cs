@@ -90,9 +90,9 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
     [RelayCommand(CanExecute = nameof(CanPortForwardService))]
     private async Task PortForwardService(IList parameters)
     {
-        if (parameters[0] is V1Pod pod && parameters[1] is V1ServicePort containerPort)
+        if (parameters[0] is V1Service service && parameters[1] is V1ServicePort containerPort)
         {
-            var pf = Cluster.AddServicePortForward(pod.Namespace(), pod.Name(), containerPort.Port);
+            var pf = Cluster.AddServicePortForward(service.Namespace(), service.Name(), containerPort.Port);
 
             ContentDialogSettings settings = new()
             {
@@ -115,13 +115,13 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
 
     private bool CanPortForwardService(IList? parameters)
     {
-        if (parameters?[0] is V1Pod pod && parameters?[1] is V1ServicePort servicePort)
+        if (parameters?[0] is V1Service service && parameters?[1] is V1ServicePort servicePort)
         {
             return servicePort?.Port > 0 &&
                    servicePort.Protocol == "TCP" &&
-                   Cluster.CanI<V1Pod>(Verb.Create, pod.Namespace(), "portforward") &&
-                   Cluster.CanI<V1Endpoints>(Verb.List, pod.Namespace()) &&
-                   Cluster.CanI<V1Endpoints>(Verb.Watch, pod.Namespace());
+                   Cluster.CanI<V1Pod>(Verb.Create, service.Namespace(), "portforward") &&
+                   Cluster.CanI<V1Endpoints>(Verb.List, service.Namespace()) &&
+                   Cluster.CanI<V1Endpoints>(Verb.Watch, service.Namespace());
         }
 
         return false;

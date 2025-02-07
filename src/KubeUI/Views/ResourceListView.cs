@@ -246,7 +246,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                 {
                     Source = _grid,
                 });
-                multiBinding.Bindings.Add(new Binding(nameof(ResourceListViewModel<>.ResourceConfig) + "." + menu.CommandParameterPath));
+                multiBinding.Bindings.Add(new Binding(menu.CommandParameterPath));
 
                 style.Add(new Setter(MenuItem.CommandParameterProperty, multiBinding));
             }
