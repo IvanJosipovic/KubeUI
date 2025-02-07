@@ -66,7 +66,7 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
             new()
             {
                 Header = "Port Forwarding",
-                ItemSourcePath = "SelectedItem.Value.Spec.Ports",
+                ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Service>>(x => x.SelectedItem.Value.Spec.Ports),
                 IconResource = "ic_fluent_cloud_flow_filled",
                 ItemTemplate = new()
                 {
@@ -74,8 +74,8 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
                     {
                         Bindings =
                         [
-                            new Binding(nameof(V1ServicePort.Name)),
-                            new Binding(nameof(V1ServicePort.Port))
+                            Utilities.FuncBinding<V1ServicePort>(x => x.Name),
+                            Utilities.FuncBinding<V1ServicePort>(x => x.Port),
                         ],
                         StringFormat = "{0} - {1}"
                     },
@@ -90,9 +90,9 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
     [RelayCommand(CanExecute = nameof(CanPortForwardService))]
     private async Task PortForwardService(IList parameters)
     {
-        if (parameters[0] is KeyValuePair<NamespacedName, V1Pod> pod && parameters[1] is V1ServicePort containerPort)
+        if (parameters[0] is V1Pod pod && parameters[1] is V1ServicePort containerPort)
         {
-            var pf = Cluster.AddServicePortForward(pod.Key.Namespace, pod.Key.Name, containerPort.Port);
+            var pf = Cluster.AddServicePortForward(pod.Namespace(), pod.Name(), containerPort.Port);
 
             ContentDialogSettings settings = new()
             {
@@ -115,13 +115,13 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
 
     private bool CanPortForwardService(IList? parameters)
     {
-        if (parameters?[0] is KeyValuePair<NamespacedName, V1Pod> pod && parameters?[1] is V1ServicePort servicePort)
+        if (parameters?[0] is V1Pod pod && parameters?[1] is V1ServicePort servicePort)
         {
             return servicePort?.Port > 0 &&
                    servicePort.Protocol == "TCP" &&
-                   Cluster.CanI<V1Pod>(Verb.Create, pod.Key.Namespace, "portforward") &&
-                   Cluster.CanI<V1Endpoints>(Verb.List, pod.Key.Namespace) &&
-                   Cluster.CanI<V1Endpoints>(Verb.Watch, pod.Key.Namespace);
+                   Cluster.CanI<V1Pod>(Verb.Create, pod.Namespace(), "portforward") &&
+                   Cluster.CanI<V1Endpoints>(Verb.List, pod.Namespace()) &&
+                   Cluster.CanI<V1Endpoints>(Verb.Watch, pod.Namespace());
         }
 
         return false;

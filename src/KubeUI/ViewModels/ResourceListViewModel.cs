@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq.Expressions;
 using Avalonia.Styling;
@@ -30,7 +31,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     public partial KeyValuePair<NamespacedName, T> SelectedItem { get; set; }
 
     [ObservableProperty]
-    public partial ReadOnlyObservableCollection<KeyValuePair<NamespacedName, T>> DataGridObjects { get; set; }
+    public partial ReadOnlyObservableCollection<KeyValuePair<NamespacedName, T>>? DataGridObjects { get; private set; }
 
     [ObservableProperty]
     public partial string SearchQuery { get; set; }
@@ -67,7 +68,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _filter = Objects
             .ToObservableChangeSet<ConcurrentObservableDictionary<NamespacedName, T>, KeyValuePair<NamespacedName, T>>()
             .Filter(GenerateFilter())
-            .Bind(out var filteredObjects, BindingOptions.NeverFireReset(false))
+            .Bind(out var filteredObjects)
             .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Set Namespace Filter: {ns}", typeof(T)));
 
         DataGridObjects = filteredObjects;

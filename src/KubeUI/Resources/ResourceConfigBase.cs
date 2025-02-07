@@ -167,7 +167,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         ContentDialogSettings settings = new()
         {
             Title = Assets.Resources.ResourceListViewModel_Delete_Title,
-            Content = string.Format(Assets.Resources.ResourceListViewModel_Delete_Content, ((IList)items[1]).Count),
+            Content = string.Format(Assets.Resources.ResourceListViewModel_Delete_Content, items.Count),
             PrimaryButtonText = Assets.Resources.ResourceListViewModel_Delete_Primary,
             SecondaryButtonText = Assets.Resources.ResourceListViewModel_Delete_Secondary,
             DefaultButton = ContentDialogButton.Secondary

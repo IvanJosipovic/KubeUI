@@ -140,7 +140,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
         if (!string.IsNullOrEmpty(menu.CommandPath))
         {
-            menuItem.Bind(MenuItem.CommandProperty, new Binding(menu.CommandPath) { Source = DataContext });
+            menuItem.Bind(MenuItem.CommandProperty, new Binding(nameof(ResourceListViewModel<>.ResourceConfig) + "." + menu.CommandPath) { Source = DataContext });
         }
 
         if (!string.IsNullOrEmpty(menu.CommandParameterPath))
@@ -155,7 +155,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
                 // Add the individual bindings
                 multiBinding.Bindings.Add(new Binding("SelectedItem.Value"));
-                multiBinding.Bindings.Add(new Binding(nameof(ResourceListViewModel<>.ResourceConfig) + "." + menu.CommandParameterPath)
+                multiBinding.Bindings.Add(new Binding(menu.CommandParameterPath)
                 {
                     Source = _grid,
                 });
@@ -164,7 +164,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
             }
             else
             {
-                menuItem.Bind(MenuItem.CommandParameterProperty, new Binding(nameof(ResourceListViewModel<>.ResourceConfig) + "." + menu.CommandParameterPath)
+                menuItem.Bind(MenuItem.CommandParameterProperty, new Binding(menu.CommandParameterPath)
                 {
                     Source = _grid,
                 });
@@ -228,7 +228,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
         if (!string.IsNullOrEmpty(menu.CommandPath))
         {
-            style.Add(new Setter(MenuItem.CommandProperty, new Binding(menu.CommandPath) { Source = DataContext }));
+            style.Add(new Setter(MenuItem.CommandProperty, new Binding(nameof(ResourceListViewModel<>.ResourceConfig) + "." + menu.CommandPath) { Source = DataContext }));
         }
 
         if (!string.IsNullOrEmpty(menu.CommandParameterPath))
@@ -252,7 +252,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
             }
             else
             {
-                style.Add(new Setter(MenuItem.CommandParameterProperty, new Binding(nameof(ResourceListViewModel<>.ResourceConfig) + "." + menu.CommandParameterPath)
+                style.Add(new Setter(MenuItem.CommandParameterProperty, new Binding(menu.CommandParameterPath)
                 {
                     Source = _grid,
                 }));
