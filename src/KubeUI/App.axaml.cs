@@ -6,6 +6,7 @@ using Avalonia.Markup.Xaml;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using k8s.Models;
 using KubernetesCRDModelGen;
 using KubeUI.Client;
 using KubeUI.Views;

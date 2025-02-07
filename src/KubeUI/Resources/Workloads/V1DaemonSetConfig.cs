@@ -11,13 +11,11 @@ using static KubeUI.Client.Cluster;
 namespace KubeUI.Resources.Workloads.Pod;
 
 [ServiceDescriptor<ResourceConfigBase<V1DaemonSet>>(ServiceLifetime.Transient)]
-public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>, IInitializeCluster
+public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>
 {
     private readonly ILogger<V1DaemonSetConfig> _logger;
     private readonly IDialogService _dialogService;
     private readonly INotificationManager _notificationManager;
-    private ICluster _cluster;
-    public override string Category => "Workloads";
 
     public override int Order => 2;
 
@@ -58,7 +56,7 @@ public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>,
             {
                 Header = "Restart",
                 IconResource = "arrow_sync_regular",
-                CommandPath = nameof(ResourceListViewModel<V1Deployment>.ResourceConfig) + "." + nameof(RestartDaemonSetCommand),
+                CommandPath = nameof(RestartDaemonSetCommand),
                 CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<V1DaemonSet>>(x => x.SelectedItem.Value)
             },
         ];
@@ -82,7 +80,7 @@ public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>,
 
             if (result == ContentDialogResult.Primary)
             {
-                await _cluster.Client.AppsV1.PatchNamespacedDaemonSetAsync(new V1Patch(sRestartControllerPatch, V1Patch.PatchType.MergePatch), daemonSet.Metadata.Name, daemonSet.Metadata.NamespaceProperty);
+                await Cluster.Client.AppsV1.PatchNamespacedDaemonSetAsync(new V1Patch(sRestartControllerPatch, V1Patch.PatchType.MergePatch), daemonSet.Metadata.Name, daemonSet.Metadata.NamespaceProperty);
             }
         }
         catch (Exception ex)
@@ -93,11 +91,6 @@ public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>,
 
     private bool CanRestartDaemonSet(V1DaemonSet daemonSet)
     {
-        return daemonSet != null && _cluster.CanI<V1DaemonSet>(Verb.Patch, daemonSet.Namespace());
-    }
-
-    public void Initialize(ICluster cluster)
-    {
-        _cluster = cluster;
+        return daemonSet != null && Cluster.CanI<V1DaemonSet>(Verb.Patch, daemonSet.Namespace());
     }
 }

@@ -15,14 +15,12 @@ using static KubeUI.Client.Cluster;
 namespace KubeUI.Resources.Workloads.Pod;
 
 [ServiceDescriptor<ResourceConfigBase<V1Pod>>(ServiceLifetime.Transient)]
-public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitializeCluster
+public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 {
     private readonly ILogger<V1DaemonSetConfig> _logger;
     private readonly IDialogService _dialogService;
     private readonly INotificationManager _notificationManager;
     private readonly IFactory _factory;
-
-    private ICluster _cluster;
 
     public override string Category => "Workloads";
 
@@ -85,22 +83,22 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitialize
                 },
             ];
 
-        if (_cluster.IsMetricsAvailable)
+        if (Cluster.IsMetricsAvailable)
         {
             cols.Insert(3, new ResourceListColumn<V1Pod, decimal>()
             {
                 Name = "CPU",
                 CustomControl = typeof(PodMetricCPUCell),
-                Field = x => _cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
-                Display = x => _cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]).ToString() ?? "",
+                Field = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
+                Display = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]).ToString() ?? "",
                 Width = "80"
             });
             cols.Insert(4, new ResourceListColumn<V1Pod, decimal>()
             {
                 Name = "Memory",
                 CustomControl = typeof(PodMetricMemoryCell),
-                Field = x => _cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
-                Display = x => _cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]).ToString() ?? "",
+                Field = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
+                Display = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]).ToString() ?? "",
                 Width = "80"
             });
         }
@@ -123,8 +121,8 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitialize
                         ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Value.Spec.InitContainers),
                         ItemTemplate = new()
                         {
-                            HeaderBinding = new Binding(nameof(V1Container.Name)),
-                            CommandPath = nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + nameof(ViewConsoleCommand),
+                            HeaderBinding = Utilities.FuncBinding<V1Container>(x => x.Name),
+                            CommandPath = nameof(ViewConsoleCommand),
                             CommandParameterPath = ".",
                             CommandParameterAddSelectedItem = true,
                         }
@@ -135,8 +133,8 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitialize
                         ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Value.Spec.Containers),
                         ItemTemplate = new()
                         {
-                            HeaderBinding = new Binding(nameof(V1Container.Name)),
-                            CommandPath =nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." +  nameof(ViewConsoleCommand),
+                            HeaderBinding = Utilities.FuncBinding<V1Container>(x => x.Name),
+                            CommandPath =  nameof(ViewConsoleCommand),
                             CommandParameterPath = ".",
                             CommandParameterAddSelectedItem = true,
                         }
@@ -155,7 +153,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitialize
                         ItemTemplate = new()
                         {
                             HeaderBinding = Utilities.FuncBinding<V1Container>(x => x.Name),
-                            CommandPath = nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + nameof(ViewLogsCommand),
+                            CommandPath = nameof(ViewLogsCommand),
                             CommandParameterPath = ".",
                             CommandParameterAddSelectedItem = true,
                         }
@@ -163,11 +161,11 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitialize
                     new()
                     {
                         Header = "Normal",
-                        ItemSourcePath =  Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Value.Spec.Containers),
+                        ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Value.Spec.Containers),
                         ItemTemplate = new()
                         {
                             HeaderBinding = Utilities.FuncBinding<V1Container>(x => x.Name),
-                            CommandPath =  nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + nameof(ViewLogsCommand),
+                            CommandPath =  nameof(ViewLogsCommand),
                             CommandParameterPath = ".",
                             CommandParameterAddSelectedItem = true,
                         }
@@ -177,35 +175,30 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitialize
             new()
             {
                 Header = "Port Forwarding",
-                ItemSourcePath = "SelectedItem.Value.Spec.Containers",
+                ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Value.Spec.Containers),
                 IconResource = "ic_fluent_cloud_flow_filled",
                 ItemTemplate = new()
                 {
-                    HeaderBinding = new Binding(nameof(V1Container.Name)),
-                    ItemSourcePath = nameof(V1Container.Ports),
+                    HeaderBinding = Utilities.FuncBinding<V1Container>(x => x.Name),
+                    ItemSourcePath = Utilities.PathBuilder<V1Container>(x => x.Ports),
                     ItemTemplate = new()
                     {
                         HeaderBinding = new MultiBinding()
                         {
                             Bindings =
                             [
-                                new Binding(nameof(V1ContainerPort.Name)),
-                                new Binding(nameof(V1ContainerPort.ContainerPort))
+                                Utilities.FuncBinding<V1ContainerPort>(x => x.Name),
+                                Utilities.FuncBinding<V1ContainerPort>(x => x.ContainerPort),
                             ],
                             StringFormat = "{0} - {1}"
                         },
-                        CommandPath = nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + nameof(PortForwardCommand),
+                        CommandPath = nameof(PortForwardCommand),
                         CommandParameterPath = ".",
                         CommandParameterAddSelectedItem = true,
                     }
                 }
             }
         ];
-    }
-
-    public void Initialize(ICluster cluster)
-    {
-        _cluster = cluster;
     }
 
     public override Control[] Properties(V1Pod resource)
@@ -241,13 +234,13 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitialize
     [RelayCommand(CanExecute = nameof(CanViewLogs))]
     private async Task ViewLogs(IList parameters)
     {
-        if (parameters[0] is KeyValuePair<NamespacedName, V1Pod> pod && parameters[1] is V1Container container)
+        if (parameters[0] is V1Pod pod && parameters[1] is V1Container container)
         {
             var vm = Application.Current.GetRequiredService<PodLogsViewModel>();
-            vm.Cluster = _cluster;
-            vm.Object = pod.Value;
+            vm.Cluster = Cluster;
+            vm.Object = pod;
             vm.ContainerName = container.Name;
-            vm.Id = $"{nameof(ViewLogs)}-{_cluster.Name}-{pod.Key.Namespace} - {pod.Key.Name}-{container.Name}";
+            vm.Id = $"{nameof(ViewLogs)}-{Cluster.Name}-{pod.Namespace()} - {pod.Name()}-{container.Name}";
 
             if (_factory.AddToBottom(vm))
             {
@@ -266,9 +259,9 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitialize
 
     private bool CanViewLogs(IList? parameters)
     {
-        if (parameters?[0] is KeyValuePair<NamespacedName, V1Pod> pod && parameters?[1] is V1Container container)
+        if (parameters?[0] is V1Pod pod && parameters?[1] is V1Container container)
         {
-            return _cluster.CanI<V1Pod>(Verb.Get, pod.Key.Namespace, "log");
+            return Cluster.CanI<V1Pod>(Verb.Get, pod.Namespace(), "log");
         }
 
         return false;
@@ -277,13 +270,13 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitialize
     [RelayCommand(CanExecute = nameof(CanViewConsole))]
     private void ViewConsole(IList parameters)
     {
-        if (parameters?[0] is KeyValuePair<NamespacedName, V1Pod> pod && parameters?[1] is V1Container container)
+        if (parameters?[0] is V1Pod pod && parameters?[1] is V1Container container)
         {
             var vm = Application.Current.GetRequiredService<PodConsoleViewModel>();
-            vm.Cluster = _cluster;
-            vm.Object = pod.Value;
+            vm.Cluster = Cluster;
+            vm.Object = pod;
             vm.ContainerName = container.Name;
-            vm.Id = $"{nameof(ViewConsole)}-{_cluster.Name}-{pod.Key.Namespace}-{pod.Key.Name}-{container.Name}";
+            vm.Id = $"{nameof(ViewConsole)}-{Cluster.Name}-{pod.Namespace()}-{pod.Name()}-{container.Name}";
 
             _factory.AddToBottom(vm);
         }
@@ -291,9 +284,9 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitialize
 
     private bool CanViewConsole(IList? parameters)
     {
-        if (parameters?[0] is KeyValuePair<NamespacedName, V1Pod> pod && parameters?[1] is V1Container container)
+        if (parameters?[0] is V1Pod pod && parameters?[1] is V1Container container)
         {
-            return _cluster.CanI<V1Pod>(Verb.Create, pod.Key.Namespace, "exec");
+            return Cluster.CanI<V1Pod>(Verb.Create, pod.Namespace(), "exec");
         }
 
         return false;
@@ -302,9 +295,9 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitialize
     [RelayCommand(CanExecute = nameof(CanPortForward))]
     private async Task PortForward(IList parameters)
     {
-        if (parameters[0] is KeyValuePair<NamespacedName, V1Pod> pod && parameters[1] is V1ContainerPort containerPort)
+        if (parameters[0] is V1Pod pod && parameters[1] is V1ContainerPort containerPort)
         {
-            var pf = _cluster.AddPodPortForward(pod.Key.Namespace, pod.Key.Name, containerPort.ContainerPort);
+            var pf = Cluster.AddPodPortForward(pod.Namespace(), pod.Name(), containerPort.ContainerPort);
 
             ContentDialogSettings settings = new()
             {
@@ -327,11 +320,11 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>, IInitialize
 
     private bool CanPortForward(IList? parameters)
     {
-        if (parameters?[0] is KeyValuePair<NamespacedName, V1Pod> pod && parameters?[1] is V1ContainerPort containerPort)
+        if (parameters?[0] is V1Pod pod && parameters?[1] is V1ContainerPort containerPort)
         {
             return containerPort.ContainerPort > 0 &&
                    containerPort.Protocol == "TCP" &&
-                   _cluster.CanI<V1Pod>(Verb.Create, pod.Key.Namespace, "portforward");
+                   Cluster.CanI<V1Pod>(Verb.Create, pod.Namespace(), "portforward");
         }
 
         return false;

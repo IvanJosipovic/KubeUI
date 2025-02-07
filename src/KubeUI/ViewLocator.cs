@@ -70,7 +70,7 @@ public sealed class ViewLocator : IDataTemplate
         return new TextBlock { Text = "Unable to load View for ViewModel: " + modelType.FullName };
     }
 
-    private string GetPrettyName(Type type)
+    private static string GetPrettyName(Type type)
     {
         var prettyName = type.Name;
 

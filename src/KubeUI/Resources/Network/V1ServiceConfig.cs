@@ -13,14 +13,12 @@ using static KubeUI.Client.Cluster;
 namespace KubeUI.Resources.Network;
 
 [ServiceDescriptor<ResourceConfigBase<V1Service>>(ServiceLifetime.Transient)]
-public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>, IInitializeCluster
+public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
 {
     private readonly ILogger<V1DaemonSetConfig> _logger;
     private readonly IDialogService _dialogService;
     private readonly INotificationManager _notificationManager;
     private readonly IFactory _factory;
-
-    private ICluster _cluster;
 
     public override string Category => "Network";
     public override int Order => 0;
@@ -55,8 +53,8 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>, IIn
             new ResourceListColumn<V1Service, int>()
             {
                 Name = "Ports",
-                Display = x => x.Spec.Ports.Select((a) => $"{a.Port}{(string.IsNullOrEmpty(a.Name) ? "" : ":" + a.Name)}/{a.Protocol}").Aggregate((a,b) => a + ", " + b),
-                Field = x => x.Spec.Ports.FirstOrDefault().Port,
+                Display = x => x.Spec?.Ports?.Select((a) => $"{a.Port}{(string.IsNullOrEmpty(a.Name) ? "" : ":" + a.Name)}/{a.Protocol}").Aggregate((a,b) => a + ", " + b) ?? "",
+                Field = x => x.Spec.Ports?.FirstOrDefault()?.Port ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             AgeColumn(),
@@ -82,7 +80,7 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>, IIn
                         ],
                         StringFormat = "{0} - {1}"
                     },
-                    CommandPath = nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + nameof(PortForwardServiceCommand),
+                    CommandPath = nameof(PortForwardServiceCommand),
                     CommandParameterPath = ".",
                     CommandParameterAddSelectedItem = true,
                 }
@@ -95,7 +93,7 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>, IIn
     {
         if (parameters[0] is KeyValuePair<NamespacedName, V1Pod> pod && parameters[1] is V1ServicePort containerPort)
         {
-            var pf = _cluster.AddServicePortForward(pod.Key.Namespace, pod.Key.Name, containerPort.Port);
+            var pf = Cluster.AddServicePortForward(pod.Key.Namespace, pod.Key.Name, containerPort.Port);
 
             ContentDialogSettings settings = new()
             {
@@ -122,16 +120,11 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>, IIn
         {
             return servicePort?.Port > 0 &&
                    servicePort.Protocol == "TCP" &&
-                   _cluster.CanI<V1Pod>(Verb.Create, pod.Key.Namespace, "portforward") &&
-                   _cluster.CanI<V1Endpoints>(Verb.List, pod.Key.Namespace) &&
-                   _cluster.CanI<V1Endpoints>(Verb.Watch, pod.Key.Namespace);
+                   Cluster.CanI<V1Pod>(Verb.Create, pod.Key.Namespace, "portforward") &&
+                   Cluster.CanI<V1Endpoints>(Verb.List, pod.Key.Namespace) &&
+                   Cluster.CanI<V1Endpoints>(Verb.Watch, pod.Key.Namespace);
         }
 
         return false;
-    }
-
-    public void Initialize(ICluster cluster)
-    {
-        _cluster = cluster;
     }
 }

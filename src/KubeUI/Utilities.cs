@@ -262,11 +262,11 @@ public static class Utilities
         return (IKubernetesObject<V1ObjectMeta>)DeserializeKubeJson(json, obj.GetType());
     }
 
-    private static readonly MethodInfo _deserializeJson = typeof(KubernetesJson).GetMethod(nameof(KubernetesJson.Deserialize), BindingFlags.Static | BindingFlags.Public, [typeof(string), typeof(JsonSerializerOptions)]);
+    private static readonly MethodInfo s_deserializeJson = typeof(KubernetesJson).GetMethod(nameof(KubernetesJson.Deserialize), BindingFlags.Static | BindingFlags.Public, [typeof(string), typeof(JsonSerializerOptions)]);
 
     public static object DeserializeKubeJson(string json, Type type)
     {
-        var fooRef = _deserializeJson.MakeGenericMethod(type);
+        var fooRef = s_deserializeJson.MakeGenericMethod(type);
 
         return fooRef.Invoke(null, [json, null]);
     }
@@ -335,16 +335,14 @@ public static class Utilities
     {
         if (func.Body is MemberExpression body)
         {
-            if (body.Expression is ParameterExpression param)
-            {
-                return body.ToString()[(param.Name.Length + 1)..];
-            }
+            var str = body.ToString();
+            return str.Substring(str.IndexOf(".") + 1);
+        }
 
-            if (body.Expression is MemberExpression prop)
-            {
-                var str = prop.ToString();
-                return str.Substring(str.IndexOf(".") + 1);
-            }
+        if (func.Body is UnaryExpression unary)
+        {
+            var str = unary.Operand.ToString();
+            return str.Substring(str.IndexOf(".") + 1);
         }
 
         throw new Exception("Unknown Expression Type");

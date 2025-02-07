@@ -253,6 +253,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
             {
                 continue;
             }
+
             var svc = _serviceProvider.GetRequiredService(type.BaseType) as IResourceConfig;
 
             if (svc is IInitializeCluster init)
@@ -260,7 +261,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 init.Initialize(this);
             }
 
-            ResourceConfigs[svc.GroupApiVersionKind] = svc;
+            ResourceConfigs[svc.Kind] = svc;
 
             configs.Add(svc);
         }
@@ -269,17 +270,17 @@ public sealed partial class Cluster : ObservableObject, ICluster
         {
             if (await UpdateCanListWatchAnyNamespaceAsync(config.Type))
             {
+                var nav = new ResourceNavigationLink() { Name = config.Name, ControlType = config.Type, Cluster = this, Order = config.Order };
+
                 if (string.IsNullOrEmpty(config.Category))
                 {
-                    var nav = new ResourceNavigationLink() { Name = config.Name, ControlType = config.Type, Cluster = this, Order = config.Order };
                     NavigationItems.Add(nav);
                 }
                 else
                 {
                     var category = NavigationItems.First(x => x.Name == config.Category);
 
-                    var link = new ResourceNavigationLink() { Name = config.Name, ControlType = config.Type, Cluster = this, Order = config.Order };
-                    category.NavigationItems.Add(link);
+                    category.NavigationItems.Add(nav);
                 }
             }
         }
@@ -429,9 +430,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                                 var nav = new ResourceNavigationLink() { Name = crd.Spec.Names.Kind.Humanize(LetterCasing.Title).Pluralize(), ControlType = resourceType, Cluster = this, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer()) };
 
-                                var group = crd.Spec.Group;
-
-                                var fqdnlist = ConstructFQDNList(group);
+                                var fqdnlist = ConstructFQDNList(crd.Spec.Group);
 
                                 var list = _crdNavigationLink.NavigationItems;
                                 NavigationItem? navItem = null;
@@ -439,13 +438,18 @@ public sealed partial class Cluster : ObservableObject, ICluster
                                 foreach (var fqdn in fqdnlist)
                                 {
                                     navItem = list.FirstOrDefault(x => x.Name == fqdn);
+
                                     if (navItem != null)
                                     {
                                         list = navItem.NavigationItems;
                                     }
                                     else
                                     {
-                                        navItem = new NavigationItem() { Name = fqdn, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer()) };
+                                        navItem = new NavigationItem()
+                                        {
+                                            Name = fqdn,
+                                            NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer())
+                                        };
                                         list.Add(navItem);
                                         list = navItem.NavigationItems;
                                     }

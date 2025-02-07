@@ -11,12 +11,11 @@ using static KubeUI.Client.Cluster;
 namespace KubeUI.Resources.Workloads.Pod;
 
 [ServiceDescriptor<ResourceConfigBase<V1ReplicaSet>>(ServiceLifetime.Transient)]
-public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet>, IInitializeCluster
+public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet>
 {
     private readonly ILogger<V1DaemonSetConfig> _logger;
     private readonly IDialogService _dialogService;
     private readonly INotificationManager _notificationManager;
-    private ICluster _cluster;
 
     public override string Category => "Workloads";
 
@@ -66,7 +65,7 @@ public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet
             {
                 Header = "Restart",
                 IconResource = "arrow_sync_regular",
-                CommandPath = nameof(ResourceListViewModel<V1Deployment>.ResourceConfig) + "." + nameof(RestartReplicaSetCommand),
+                CommandPath = nameof(RestartReplicaSetCommand),
                 CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<V1Deployment>>(x => x.SelectedItem.Value),
             },
         ];
@@ -90,7 +89,7 @@ public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet
 
             if (result == ContentDialogResult.Primary)
             {
-                await _cluster.Client.AppsV1.PatchNamespacedReplicaSetAsync(new V1Patch(sRestartControllerPatch, V1Patch.PatchType.MergePatch), replicaSet.Metadata.Name, replicaSet.Metadata.NamespaceProperty);
+                await Cluster.Client.AppsV1.PatchNamespacedReplicaSetAsync(new V1Patch(sRestartControllerPatch, V1Patch.PatchType.MergePatch), replicaSet.Metadata.Name, replicaSet.Metadata.NamespaceProperty);
             }
         }
         catch (Exception ex)
@@ -101,11 +100,6 @@ public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet
 
     private bool CanRestartReplicaSet(V1ReplicaSet replicaSet)
     {
-        return replicaSet != null && _cluster.CanI<V1ReplicaSet>(Verb.Patch, replicaSet.Namespace());
-    }
-
-    public void Initialize(ICluster cluster)
-    {
-        _cluster = cluster;
+        return replicaSet != null && Cluster.CanI<V1ReplicaSet>(Verb.Patch, replicaSet.Namespace());
     }
 }

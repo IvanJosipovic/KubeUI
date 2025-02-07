@@ -12,14 +12,12 @@ using static KubeUI.Client.Cluster;
 namespace KubeUI.Resources.Workloads.Pod;
 
 [ServiceDescriptor<ResourceConfigBase<V1Deployment>>(ServiceLifetime.Transient)]
-public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment>, IInitializeCluster
+public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment>
 {
     private readonly ILogger<V1DaemonSetConfig> _logger;
     private readonly IDialogService _dialogService;
     private readonly INotificationManager _notificationManager;
     private readonly IFactory _factory;
-
-    private ICluster _cluster;
 
     public override string Category => "Workloads";
 
@@ -69,15 +67,10 @@ public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment
             {
                 Header = "Restart",
                 IconResource = "arrow_sync_regular",
-                CommandPath = nameof(ResourceListViewModel<V1Deployment>.ResourceConfig) + "." + nameof(RestartDeploymentCommand),
+                CommandPath = nameof(RestartDeploymentCommand),
                 CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<V1Deployment>>(x => x.SelectedItem.Value)
             },
         ];
-    }
-
-    public void Initialize(ICluster cluster)
-    {
-        _cluster = cluster;
     }
 
     [RelayCommand(CanExecute = nameof(CanRestartDeployment))]
@@ -98,7 +91,7 @@ public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment
 
             if (result == ContentDialogResult.Primary)
             {
-                await _cluster.Client.AppsV1.PatchNamespacedDeploymentAsync(new V1Patch(sRestartControllerPatch, V1Patch.PatchType.MergePatch), deployment.Metadata.Name, deployment.Metadata.NamespaceProperty);
+                await Cluster.Client.AppsV1.PatchNamespacedDeploymentAsync(new V1Patch(sRestartControllerPatch, V1Patch.PatchType.MergePatch), deployment.Metadata.Name, deployment.Metadata.NamespaceProperty);
             }
         }
         catch (Exception ex)
@@ -109,6 +102,6 @@ public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment
 
     private bool CanRestartDeployment(V1Deployment deployment)
     {
-        return deployment != null && _cluster.CanI<V1Deployment>(Verb.Patch, deployment.Namespace());
+        return deployment != null && Cluster.CanI<V1Deployment>(Verb.Patch, deployment.Namespace());
     }
 }

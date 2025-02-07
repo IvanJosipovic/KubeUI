@@ -11,12 +11,11 @@ using static KubeUI.Client.Cluster;
 namespace KubeUI.Resources.Workloads.Pod;
 
 [ServiceDescriptor<ResourceConfigBase<V1StatefulSet>>(ServiceLifetime.Transient)]
-public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulSet>, IInitializeCluster
+public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulSet>
 {
     private readonly ILogger<V1StatefulSetConfig> _logger;
     private readonly IDialogService _dialogService;
     private readonly INotificationManager _notificationManager;
-    private ICluster _cluster;
 
     public override string Category => "Workloads";
 
@@ -52,7 +51,7 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
             {
                 Header = "Restart",
                 IconResource = "arrow_sync_regular",
-                CommandPath = nameof(ResourceListViewModel<V1Deployment>.ResourceConfig) + "." + nameof(RestartStatefulSetCommand),
+                CommandPath = nameof(RestartStatefulSetCommand),
                 CommandParameterPath = "SelectedItem.Value"
             },
         ];
@@ -76,7 +75,7 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
 
             if (result == ContentDialogResult.Primary)
             {
-                await _cluster.Client.AppsV1.PatchNamespacedStatefulSetAsync(new V1Patch(sRestartControllerPatch, V1Patch.PatchType.MergePatch), statefulSet.Metadata.Name, statefulSet.Metadata.NamespaceProperty);
+                await Cluster.Client.AppsV1.PatchNamespacedStatefulSetAsync(new V1Patch(sRestartControllerPatch, V1Patch.PatchType.MergePatch), statefulSet.Metadata.Name, statefulSet.Metadata.NamespaceProperty);
             }
         }
         catch (Exception ex)
@@ -87,11 +86,6 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
 
     private bool CanRestartStatefulSet(V1StatefulSet statefulSet)
     {
-        return statefulSet != null && _cluster.CanI<V1StatefulSet>(Verb.Patch, statefulSet.Namespace());
-    }
-
-    public void Initialize(ICluster cluster)
-    {
-        _cluster = cluster;
+        return statefulSet != null && Cluster.CanI<V1StatefulSet>(Verb.Patch, statefulSet.Namespace());
     }
 }

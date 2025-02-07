@@ -2,11 +2,11 @@
 
 namespace KubeUI.Resources
 {
-    public interface IResourceConfig
+    public interface IResourceConfig: IInitializeCluster
     {
         string? Category { get; }
         bool DefaultMenuItems { get; }
-        GroupApiVersionKind GroupApiVersionKind { get; }
+        GroupApiVersionKind Kind { get; }
 
         bool ShowNamespaces { get; }
         bool ShowNewResource { get; }

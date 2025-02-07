@@ -3,16 +3,39 @@ using k8s;
 using KubeUI.Controls;
 using KubeUI.Client;
 using Humanizer;
+using Dock.Model.Mvvm;
+using FluentAvalonia.UI.Controls;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using KubeUI.Client.Informer;
+using static KubeUI.Client.Cluster;
+using HanumanInstitute.MvvmDialogs;
+using Avalonia.Controls.Notifications;
+using Dock.Model.Core;
 
 namespace KubeUI.Resources;
 
 public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourceConfig where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
+    private readonly ILogger<ResourceConfigBase<T>> _logger;
+    private readonly IDialogService _dialogService;
+    private readonly INotificationManager _notificationManager;
+    private readonly IFactory _factory;
+
+    public ResourceConfigBase()
+    {
+        _logger = Application.Current.GetRequiredService<ILogger<ResourceConfigBase<T>>>();
+        _dialogService = Application.Current.GetRequiredService<IDialogService>();
+        _factory = Application.Current.GetRequiredService<IFactory>();
+        _notificationManager = Application.Current.GetRequiredService<INotificationManager>();
+    }
+
     public Type Type { get; } = typeof(T);
 
-    public GroupApiVersionKind GroupApiVersionKind { get; } = GroupApiVersionKind.From<T>();
+    public GroupApiVersionKind Kind { get; } = GroupApiVersionKind.From<T>();
 
-    public virtual string Name => GroupApiVersionKind.Kind.Humanize(LetterCasing.Title).Pluralize();
+    public ICluster Cluster { get; private set; }
+
+    public virtual string Name => Kind.Kind.Humanize(LetterCasing.Title).Pluralize();
 
     public virtual string? Category { get; } = null;
 
@@ -69,6 +92,35 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         };
     }
 
+    public void Initialize(ICluster cluster)
+    {
+        Cluster = cluster;
+    }
+
+    public IList<ResourceMenuItem> GetDefaultMenuItems() => [
+        new()
+        {
+            Header = "View",
+            CommandPath = nameof(ViewCommand),
+            CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<T>>(x => x.SelectedItem.Value),
+            IconResource = "ic_fluent_panel_right_filled",
+        },
+        new()
+        {
+            Header = "View Yaml",
+            CommandPath = nameof(ViewYamlCommand),
+            CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<T>>(x => x.SelectedItem.Value),
+            IconResource = "code_regular",
+        },
+        new()
+        {
+            Header = "Delete",
+            CommandPath = nameof(DeleteCommand),
+            CommandParameterPath = "SelectedItems",
+            IconResource = "delete_regular",
+        }
+    ];
+
     public static readonly string sRestartControllerPatch = $$"""
     {
         "spec": {
@@ -82,6 +134,118 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         }
     }
     """;
+
+    #region Actions
+
+    [RelayCommand(CanExecute = nameof(CanNewResource))]
+    public void NewResource()
+    {
+        var resource = Activator.CreateInstance<T>();
+        resource.Kind = Kind.Kind;
+        resource.ApiVersion = Kind.GroupApiVersion;
+        resource.Metadata = new()
+        {
+            Name = "temp"
+        };
+
+        var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
+        vm.Cluster = Cluster;
+        vm.Object = resource;
+        vm.Id = $"{nameof(ViewYaml)}-{Cluster.Name}-new";
+        vm.EditMode = true;
+
+        _factory.AddToBottom(vm);
+    }
+
+    public bool CanNewResource()
+    {
+        return Cluster.CanIAnyNamespace(typeof(T), Verb.Create);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanDelete))]
+    public virtual async Task Delete(IList items)
+    {
+        ContentDialogSettings settings = new()
+        {
+            Title = Assets.Resources.ResourceListViewModel_Delete_Title,
+            Content = string.Format(Assets.Resources.ResourceListViewModel_Delete_Content, ((IList)items[1]).Count),
+            PrimaryButtonText = Assets.Resources.ResourceListViewModel_Delete_Primary,
+            SecondaryButtonText = Assets.Resources.ResourceListViewModel_Delete_Secondary,
+            DefaultButton = ContentDialogButton.Secondary
+        };
+
+        var result = await _dialogService.ShowContentDialogAsync(this, settings);
+
+        if (result == ContentDialogResult.Primary)
+        {
+            var exceptions = new List<Exception>();
+
+            foreach (var item in items.Cast<KeyValuePair<NamespacedName, T>>().ToList())
+            {
+                try
+                {
+                    await Cluster.Delete<T>(item.Value);
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex);
+                    Utilities.HandleException(_logger, _notificationManager, ex, $"Error Deleting {item.Key.Namespace}/{item.Key.Name}", sendNotification: true);
+                }
+            }
+
+            if (exceptions.Count > 0)
+            {
+                _logger.LogError(new AggregateException(exceptions), "Error Deleting Resources");
+            }
+        }
+    }
+
+    public virtual bool CanDelete(IList? items)
+    {
+        //foreach (var item in items)
+        //{
+        //    var ns = (NamespacedName)item.GetType().GetProperty("Key")!.GetValue(item);
+
+        //    if (!Cluster.CanI<T>(Verb.Delete, ns.Namespace))
+        //    {
+        //        return false;
+        //    }
+        //}
+
+        return items?.Count > 0;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanView))]
+    public void View(T item)
+    {
+        var instance = Application.Current.GetRequiredService<ResourcePropertiesViewModel<T>>();
+        instance.Initialize(Cluster, item);
+        instance.CanFloat = false;
+
+        _factory.AddToRight(instance);
+    }
+
+    public bool CanView(T? item)
+    {
+        return item != null;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanViewYaml))]
+    public void ViewYaml(T item)
+    {
+        var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
+
+        vm.Initialize(Cluster, item);
+
+        _factory.AddToBottom(vm);
+    }
+
+    public bool CanViewYaml(T? item)
+    {
+        return item != null;
+    }
+
+    #endregion
 }
 
 public interface IResourceListColumn

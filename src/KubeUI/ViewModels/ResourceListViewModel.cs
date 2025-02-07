@@ -21,8 +21,6 @@ namespace KubeUI.ViewModels;
 public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluster, IDisposable where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     private readonly ILogger<ResourceListViewModel<T>> _logger;
-    private readonly IDialogService _dialogService;
-    private readonly INotificationManager _notificationManager;
 
     [ObservableProperty]
     public partial ICluster Cluster { get; set; }
@@ -50,8 +48,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     public ResourceListViewModel()
     {
         _logger = Application.Current.GetRequiredService<ILogger<ResourceListViewModel<T>>>();
-        _dialogService = Application.Current.GetRequiredService<IDialogService>();
-        _notificationManager = Application.Current.GetRequiredService<INotificationManager>();
     }
 
     public void Initialize(ICluster cluster)
@@ -186,118 +182,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     {
         SetFilter();
     }
-
-    #region Actions
-
-    [RelayCommand(CanExecute = nameof(CanNewResource))]
-    private void NewResource()
-    {
-        var resource = Activator.CreateInstance<T>();
-        resource.Kind = Kind.Kind;
-        resource.ApiVersion = Kind.GroupApiVersion;
-        resource.Metadata = new()
-        {
-            Name = "temp"
-        };
-
-        var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
-        vm.Cluster = Cluster;
-        vm.Object = resource;
-        vm.Id = $"{nameof(ViewYaml)}-{Cluster.Name}-new";
-        vm.EditMode = true;
-
-        Factory.AddToBottom(vm);
-    }
-
-    private bool CanNewResource()
-    {
-        return Cluster.CanIAnyNamespace(typeof(T), Verb.Create);
-    }
-
-    [RelayCommand(CanExecute = nameof(CanDelete))]
-    private async Task Delete(IList items)
-    {
-        ContentDialogSettings settings = new()
-        {
-            Title = Assets.Resources.ResourceListViewModel_Delete_Title,
-            Content = string.Format(Assets.Resources.ResourceListViewModel_Delete_Content, ((IList)items[1]).Count),
-            PrimaryButtonText = Assets.Resources.ResourceListViewModel_Delete_Primary,
-            SecondaryButtonText = Assets.Resources.ResourceListViewModel_Delete_Secondary,
-            DefaultButton = ContentDialogButton.Secondary
-        };
-
-        var result = await _dialogService.ShowContentDialogAsync(this, settings);
-
-        if (result == ContentDialogResult.Primary)
-        {
-            var exceptions = new List<Exception>();
-
-            foreach (var item in ((IList)items[1]).Cast<KeyValuePair<NamespacedName, T>>().ToList())
-            {
-                try
-                {
-                    await Cluster.Delete<T>(item.Value);
-                }
-                catch (Exception ex)
-                {
-                    exceptions.Add(ex);
-                    Utilities.HandleException(_logger, _notificationManager, ex, $"Error Deleting {item.Key.Namespace}/{item.Key.Name}", sendNotification: true);
-                }
-            }
-
-            if (exceptions.Count > 0)
-            {
-                _logger.LogError(new AggregateException(exceptions), "Error Deleting Resources");
-            }
-        }
-    }
-
-    private bool CanDelete(IList? items)
-    {
-        //foreach (var item in items)
-        //{
-        //    var ns = (NamespacedName)item.GetType().GetProperty("Key")!.GetValue(item);
-
-        //    if (!Cluster.CanI<T>(Verb.Delete, ns.Namespace))
-        //    {
-        //        return false;
-        //    }
-        //}
-
-        return items is IList && items.Count > 0;
-    }
-
-    [RelayCommand(CanExecute = nameof(CanView))]
-    private void View(KeyValuePair<NamespacedName, T>? item)
-    {
-        var instance = Application.Current.GetRequiredService<ResourcePropertiesViewModel<T>>();
-        instance.Initialize(Cluster, item.Value.Value);
-        instance.CanFloat = false;
-
-        Factory?.AddToRight(instance);
-    }
-
-    private bool CanView(KeyValuePair<NamespacedName, T>? item)
-    {
-        return item?.Key.Name != null;
-    }
-
-    [RelayCommand(CanExecute = nameof(CanViewYaml))]
-    private void ViewYaml(KeyValuePair<NamespacedName, T>? item)
-    {
-        var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
-
-        vm.Initialize(Cluster, item.Value.Value);
-
-        Factory.AddToBottom(vm);
-    }
-
-    private bool CanViewYaml(KeyValuePair<NamespacedName, T>? item)
-    {
-        return item != null;
-    }
-
-    #endregion
 
     public void Dispose()
     {

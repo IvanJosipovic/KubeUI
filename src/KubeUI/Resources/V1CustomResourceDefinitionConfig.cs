@@ -8,9 +8,8 @@ using static KubeUI.Client.Cluster;
 namespace KubeUI.Resources;
 
 [ServiceDescriptor<ResourceConfigBase<V1CustomResourceDefinition>>(ServiceLifetime.Transient)]
-public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBase<V1CustomResourceDefinition>, IInitializeCluster
+public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBase<V1CustomResourceDefinition>
 {
-    private ICluster _cluster;
     private IFactory _factory;
 
     public override bool ShowNamespaces => false;
@@ -61,14 +60,9 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
             {
                 Header = "View Items",
                 CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<V1CustomResourceDefinition>>(x => x.SelectedItem.Value),
-                CommandPath = nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." +  nameof(ListCRDCommand)
+                CommandPath =  nameof(ListCRDCommand)
             },
         ];
-    }
-
-    public void Initialize(ICluster cluster)
-    {
-        _cluster = cluster;
     }
 
     [RelayCommand(CanExecute = nameof(CanListCRD))]
@@ -76,14 +70,14 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
     {
         var version = crd.Spec.Versions.First(x => x.Served && x.Storage);
 
-        var type = _cluster.ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
+        var type = Cluster.ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
         var resourceListType = typeof(ResourceListViewModel<>).MakeGenericType(type);
 
         var vm = Application.Current.GetRequiredService(resourceListType) as IDockable;
 
         if (vm is IInitializeCluster init)
         {
-            init.Initialize(_cluster);
+            init.Initialize(Cluster);
         }
 
         _factory.AddToDocuments(vm);
@@ -94,9 +88,9 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
         if (crd != null)
         {
             var version = crd.Spec.Versions.First(x => x.Served && x.Storage);
-            var type = _cluster.ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
+            var type = Cluster.ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
 
-            return _cluster.CanIAnyNamespace(type, Verb.List) && _cluster.CanIAnyNamespace(type, Verb.Watch);
+            return Cluster.CanIAnyNamespace(type, Verb.List) && Cluster.CanIAnyNamespace(type, Verb.Watch);
         }
 
         return false;

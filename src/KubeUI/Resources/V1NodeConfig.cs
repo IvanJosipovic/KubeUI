@@ -13,12 +13,11 @@ using static KubeUI.Client.Cluster;
 namespace KubeUI.Resources;
 
 [ServiceDescriptor<ResourceConfigBase<V1Node>>(ServiceLifetime.Transient)]
-public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>, IInitializeCluster
+public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 {
     private readonly ILogger<V1DaemonSetConfig> _logger;
     private readonly IDialogService _dialogService;
     private readonly INotificationManager _notificationManager;
-    private ICluster _cluster;
 
     public override bool ShowNamespaces => false;
 
@@ -91,21 +90,21 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>, IInitiali
             {
                 Header = "Cordon",
                 IconResource = "stop_regular",
-                CommandPath = nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + nameof(CordonNodeCommand),
+                CommandPath = nameof(CordonNodeCommand),
                 CommandParameterPath = "SelectedItems",
             },
             new()
             {
                 Header = "UnCordon",
                 IconResource = "play_regular",
-                CommandPath = nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + nameof(UnCordonNodeCommand),
+                CommandPath = nameof(UnCordonNodeCommand),
                 CommandParameterPath = "SelectedItems",
             },
             new()
             {
                 Header = "Drain",
                 IconResource = "arrow_sync_regular",
-                CommandPath = nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + nameof(DrainNodeCommand),
+                CommandPath = nameof(DrainNodeCommand),
                 CommandParameterPath = "SelectedItems",
             },
         ];
@@ -139,7 +138,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>, IInitiali
             {
                 try
                 {
-                    await _cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Key.Name, item.Key.Namespace);
+                    await Cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Key.Name, item.Key.Namespace);
                 }
                 catch (Exception ex)
                 {
@@ -149,9 +148,9 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>, IInitiali
         }
     }
 
-    private bool CanCordonNode(IList items)
+    private bool CanCordonNode(IList? items)
     {
-        return _cluster.CanI<V1Node>(Verb.Patch);
+        return items?.Count > 0 && Cluster.CanI<V1Node>(Verb.Patch);
     }
 
     [RelayCommand(CanExecute = nameof(CanUnCordonNode))]
@@ -182,7 +181,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>, IInitiali
             {
                 try
                 {
-                    await _cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Key.Name, item.Key.Namespace);
+                    await Cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Key.Name, item.Key.Namespace);
                 }
                 catch (Exception ex)
                 {
@@ -192,9 +191,9 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>, IInitiali
         }
     }
 
-    private bool CanUnCordonNode(IList items)
+    private bool CanUnCordonNode(IList? items)
     {
-        return _cluster.CanI<V1Node>(Verb.Patch);
+        return items?.Count > 0 && Cluster.CanI<V1Node>(Verb.Patch);
     }
 
     [RelayCommand(CanExecute = nameof(CanDrainNode))]
@@ -225,9 +224,9 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>, IInitiali
             {
                 try
                 {
-                    await _cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Key.Name, item.Key.Namespace);
+                    await Cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Key.Name, item.Key.Namespace);
 
-                    var pods = await _cluster.GetObjectDictionaryAsync<V1Pod>();
+                    var pods = await Cluster.GetObjectDictionaryAsync<V1Pod>();
 
                     foreach (var pod in pods)
                     {
@@ -254,7 +253,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>, IInitiali
 
                             try
                             {
-                                await _cluster.Client.CoreV1.CreateNamespacedPodEvictionAsync(evict, pod.Value.Metadata.Name, pod.Value.Metadata.NamespaceProperty);
+                                await Cluster.Client.CoreV1.CreateNamespacedPodEvictionAsync(evict, pod.Value.Metadata.Name, pod.Value.Metadata.NamespaceProperty);
                             }
                             catch (Exception ex)
                             {
@@ -271,13 +270,8 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>, IInitiali
         }
     }
 
-    private bool CanDrainNode(IList items)
+    private bool CanDrainNode(IList? items)
     {
-        return _cluster.CanI<V1Node>(Verb.Patch);
-    }
-
-    public void Initialize(ICluster cluster)
-    {
-        _cluster = cluster;
+        return items?.Count > 0 && Cluster.CanI<V1Node>(Verb.Patch);
     }
 }
