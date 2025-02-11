@@ -12,20 +12,9 @@ namespace KubeUI.Resources.Workloads.Pod;
 [ServiceDescriptor<ResourceConfigBase<V1ReplicaSet>>(ServiceLifetime.Transient)]
 public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet>
 {
-    private readonly ILogger<V1DaemonSetConfig> _logger;
-    private readonly IDialogService _dialogService;
-    private readonly INotificationManager _notificationManager;
-
     public override string Category => "Workloads";
 
     public override int Order => 4;
-
-    public V1ReplicaSetConfig(ILogger<V1DaemonSetConfig> logger, IDialogService dialogService, INotificationManager notificationManager)
-    {
-        _logger = logger;
-        _dialogService = dialogService;
-        _notificationManager = notificationManager;
-    }
 
     public override IList<IResourceListColumn> Columns()
     {

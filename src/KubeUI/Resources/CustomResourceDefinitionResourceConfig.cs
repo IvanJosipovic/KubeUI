@@ -9,21 +9,15 @@ namespace KubeUI.Resources;
 
 public partial class CustomResourceDefinitionResourceConfig<T> : ResourceConfigBase<T> where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
-    private readonly ILogger<CustomResourceDefinitionResourceConfig<T>> _logger;
-
     private bool _showNamespaces = true;
 
     public override bool ShowNamespaces => _showNamespaces;
 
-    public CustomResourceDefinitionResourceConfig(ILogger<CustomResourceDefinitionResourceConfig<T>> logger)
-    {
-        _logger = logger;
-    }
-
     private V1CustomResourceDefinition _customResourceDefinition;
+
     private readonly List<IResourceListColumn> _columns = [];
 
-    public void Initialize(V1CustomResourceDefinition crd)
+    public void Generate(V1CustomResourceDefinition crd)
     {
         _customResourceDefinition = crd;
 

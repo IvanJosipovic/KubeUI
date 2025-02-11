@@ -14,20 +14,9 @@ namespace KubeUI.Resources;
 [ServiceDescriptor<ResourceConfigBase<V1Node>>(ServiceLifetime.Transient)]
 public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 {
-    private readonly ILogger<V1DaemonSetConfig> _logger;
-    private readonly IDialogService _dialogService;
-    private readonly INotificationManager _notificationManager;
-
     public override bool ShowNamespaces => false;
 
     public override int Order => 5;
-
-    public V1NodeConfig(ILogger<V1DaemonSetConfig> logger, IDialogService dialogService, INotificationManager notificationManager)
-    {
-        _logger = logger;
-        _dialogService = dialogService;
-        _notificationManager = notificationManager;
-    }
 
     public override IList<IResourceListColumn> Columns()
     {

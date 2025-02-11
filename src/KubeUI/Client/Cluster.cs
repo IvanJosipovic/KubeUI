@@ -286,8 +286,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
         }
 
         _crdNavigationLink = (ResourceNavigationLink)NavigationItems.First(x => x is ResourceNavigationLink link && link.ControlType == typeof(V1CustomResourceDefinition));
-
-        _crdNavigationLink.NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer());
     }
 
     public async Task Seed<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -424,7 +422,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                                 var resourceConfig = Application.Current.GetRequiredService(resourceConfigType) as IResourceConfig;
 
-                                resourceConfigType.GetMethod(nameof(CustomResourceDefinitionResourceConfig<V1Pod>.Initialize)).Invoke(resourceConfig, [crd]);
+                                resourceConfigType.GetMethod(nameof(CustomResourceDefinitionResourceConfig<V1Pod>.Generate)).Invoke(resourceConfig, [crd]);
 
                                 ResourceConfigs[GroupApiVersionKind.From(resourceType)] = resourceConfig;
 
@@ -450,12 +448,12 @@ public sealed partial class Cluster : ObservableObject, ICluster
                                             Name = fqdn,
                                             NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer())
                                         };
-                                        list.Add(navItem);
+                                        Dispatcher.UIThread.Post(() => list.Add(navItem));
                                         list = navItem.NavigationItems;
                                     }
                                 }
 
-                                navItem!.NavigationItems.Add(nav);
+                                Dispatcher.UIThread.Post(() => navItem!.NavigationItems.Add(nav));
                             }
                         }
                     }

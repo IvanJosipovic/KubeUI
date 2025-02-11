@@ -13,22 +13,9 @@ namespace KubeUI.Resources.Workloads.Pod;
 [ServiceDescriptor<ResourceConfigBase<V1Deployment>>(ServiceLifetime.Transient)]
 public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment>
 {
-    private readonly ILogger<V1DaemonSetConfig> _logger;
-    private readonly IDialogService _dialogService;
-    private readonly INotificationManager _notificationManager;
-    private readonly IFactory _factory;
-
     public override string Category => "Workloads";
 
     public override int Order => 1;
-
-    public V1DeploymentConfig(ILogger<V1DaemonSetConfig> logger, IDialogService dialogService, INotificationManager notificationManager, IFactory factory)
-    {
-        _logger = logger;
-        _dialogService = dialogService;
-        _notificationManager = notificationManager;
-        _factory = factory;
-    }
 
     public override IList<IResourceListColumn> Columns()
     {

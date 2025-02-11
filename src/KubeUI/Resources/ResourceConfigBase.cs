@@ -15,10 +15,10 @@ namespace KubeUI.Resources;
 
 public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourceConfig where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
-    private readonly ILogger<ResourceConfigBase<T>> _logger;
-    private readonly IDialogService _dialogService;
-    private readonly INotificationManager _notificationManager;
-    private readonly IFactory _factory;
+    protected readonly ILogger<ResourceConfigBase<T>> _logger;
+    protected readonly IDialogService _dialogService;
+    protected readonly INotificationManager _notificationManager;
+    protected readonly IFactory _factory;
 
     public ResourceConfigBase()
     {
@@ -118,6 +118,16 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             CommandParameterPath = "SelectedItems",
             IconResource = "delete_regular",
         }
+    ];
+
+    public IList<Cluster.Verb> GetDefaultVerbs() => [
+        Verb.Create,
+        Verb.Delete,
+        Verb.Get,
+        Verb.List,
+        Verb.Patch,
+        Verb.Update,
+        Verb.Watch,
     ];
 
     public static readonly string sRestartControllerPatch = $$"""
@@ -251,11 +261,11 @@ public interface IResourceListColumn
 {
     string Name { get; set; }
 
-    public SortDirection Sort { get; set; }
+    SortDirection Sort { get; set; }
 
-    public Type? CustomControl { get; set; }
+    Type? CustomControl { get; set; }
 
-    public string? Width { get; set; }
+    string? Width { get; set; }
 }
 
 public class ResourceListColumn<T, T2> : IResourceListColumn where T : class, IKubernetesObject<V1ObjectMeta>, new()
