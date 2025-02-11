@@ -1,11 +1,9 @@
-﻿using Avalonia.Controls.Notifications;
-using FluentAvalonia.UI.Controls;
+﻿using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
 using k8s.Models;
 using KubeUI.Client.Informer;
-using KubeUI.Resources.Workloads.Pod;
 using Scrutor;
 using static KubeUI.Client.Cluster;
 
@@ -14,8 +12,6 @@ namespace KubeUI.Resources;
 [ServiceDescriptor<ResourceConfigBase<V1Node>>(ServiceLifetime.Transient)]
 public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 {
-    public override bool ShowNamespaces => false;
-
     public override int Order => 5;
 
     public override IList<IResourceListColumn> Columns()

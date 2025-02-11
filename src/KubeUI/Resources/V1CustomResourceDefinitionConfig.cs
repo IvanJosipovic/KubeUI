@@ -9,15 +9,7 @@ namespace KubeUI.Resources;
 [ServiceDescriptor<ResourceConfigBase<V1CustomResourceDefinition>>(ServiceLifetime.Transient)]
 public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBase<V1CustomResourceDefinition>
 {
-    private IFactory _factory;
-
-    public override bool ShowNamespaces => false;
     public override int Order => 13;
-
-    public V1CustomResourceDefinitionConfig(IFactory factory)
-    {
-        _factory = factory;
-    }
 
     public override IList<IResourceListColumn> Columns()
     {

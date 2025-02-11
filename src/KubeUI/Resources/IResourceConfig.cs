@@ -8,7 +8,7 @@ namespace KubeUI.Resources
         bool DefaultMenuItems { get; }
         GroupApiVersionKind Kind { get; }
 
-        bool ShowNamespaces { get; }
+        bool IsNamespaced { get; }
         bool ShowNewResource { get; }
         Type Type { get; }
         int Order { get; }

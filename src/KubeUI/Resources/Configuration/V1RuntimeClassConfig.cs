@@ -7,7 +7,6 @@ namespace KubeUI.Resources.Workloads.Configuration;
 public sealed partial class V1RuntimeClassConfig : ResourceConfigBase<V1RuntimeClass>
 {
     public override string Category => "Configuration";
-    public override bool ShowNamespaces => false;
     public override int Order => 7;
 
     public override IList<IResourceListColumn> Columns()

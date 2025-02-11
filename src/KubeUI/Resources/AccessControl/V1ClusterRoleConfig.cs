@@ -8,9 +8,6 @@ public sealed partial class V1ClusterRoleConfig : ResourceConfigBase<V1ClusterRo
 {
     public override string Category => "Access Control";
     public override int Order => 1;
-
-    public override bool ShowNamespaces => false;
-
     public override IList<IResourceListColumn> Columns()
     {
         return [

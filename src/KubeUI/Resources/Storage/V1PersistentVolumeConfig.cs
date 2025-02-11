@@ -8,7 +8,6 @@ public sealed partial class V1PersistentVolumeConfig : ResourceConfigBase<V1Pers
 {
     public override string Category => "Storage";
     public override int Order => 1;
-    public override bool ShowNamespaces => false;
 
     public override IList<IResourceListColumn> Columns()
     {

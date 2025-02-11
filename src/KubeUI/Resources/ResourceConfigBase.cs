@@ -42,17 +42,33 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public virtual bool ShowNewResource { get; } = true;
 
-    public virtual bool ShowNamespaces { get; } = true;
+    public virtual bool IsNamespaced { get; private set; }
 
     public virtual int Order { get; }
 
     public virtual StyleGroup ListStyle() => [];
 
-    public virtual IList<IResourceListColumn> Columns() =>
-    [
-        NameColumn(SortDirection.Ascending),
-        AgeColumn()
-    ];
+    public virtual IList<IResourceListColumn> Columns()
+    {
+
+        if (IsNamespaced)
+        {
+            return
+            [
+                NameColumn(SortDirection.Ascending),
+                NamespaceColumn(),
+                AgeColumn()
+            ];
+        }
+        else
+        {
+            return
+            [
+                NameColumn(SortDirection.Ascending),
+                AgeColumn()
+            ];
+        }
+    }
 
     public virtual IList<ResourceMenuItem> MenuItems()=> [];
 
@@ -94,6 +110,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     public void Initialize(ICluster cluster)
     {
         Cluster = cluster;
+        IsNamespaced = Cluster.IsNamespaced<T>();
     }
 
     public IList<ResourceMenuItem> GetDefaultMenuItems() => [

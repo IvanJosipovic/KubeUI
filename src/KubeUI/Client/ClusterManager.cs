@@ -102,7 +102,17 @@ public sealed partial class ClusterManager : ObservableObject, IDisposable
 
     private void Watcher_Changed(object sender, FileSystemEventArgs e)
     {
-        Dispatcher.UIThread.Post(() => LoadFromConfigFromPath(e.FullPath), DispatcherPriority.Background);
+        Dispatcher.UIThread.Post(() =>
+        {
+            try
+            {
+                LoadFromConfigFromPath(e.FullPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error Watching Kube Config {0}", e.FullPath);
+            }
+        }, DispatcherPriority.Background);
     }
 
     private void LoadClusters()

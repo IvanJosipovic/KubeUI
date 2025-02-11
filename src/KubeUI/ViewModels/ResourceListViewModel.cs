@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq.Expressions;
 using Avalonia.Styling;
@@ -90,7 +89,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
             BinaryExpression? searchFilter = null;
 
-            if (Cluster.SelectedNamespaces != null && ResourceConfig.ShowNamespaces)
+            if (Cluster.SelectedNamespaces != null && ResourceConfig.IsNamespaced)
             {
                 foreach (var item in Cluster.SelectedNamespaces)
                 {

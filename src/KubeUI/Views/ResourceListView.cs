@@ -320,7 +320,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                                     .MaxHeight(20)
                                     .HorizontalAlignment(HorizontalAlignment.Right)
                                     .Classes("ClearButton")
-                                    .IsVisible(@vm.ResourceConfig.ShowNamespaces)
+                                    .IsVisible(@vm.ResourceConfig.IsNamespaced)
                                     .ItemsSource(@vm.Cluster.Namespaces.Values)
                                     .SelectedItems(@vm.Cluster.SelectedNamespaces)
                                     .SelectedItemTemplate(new FuncDataTemplate<V1Namespace?>((x,y) => new Label().Content(@x?.Metadata.Name)))

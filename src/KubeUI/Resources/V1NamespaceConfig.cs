@@ -6,7 +6,6 @@ namespace KubeUI.Resources;
 [ServiceDescriptor<ResourceConfigBase<V1Namespace>>(ServiceLifetime.Transient)]
 public sealed partial class V1NamespaceConfig : ResourceConfigBase<V1Namespace>
 {
-    public override bool ShowNamespaces => false;
     public override int Order => 6;
 
     public override IList<IResourceListColumn> Columns()

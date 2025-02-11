@@ -11,7 +11,7 @@ public partial class CustomResourceDefinitionResourceConfig<T> : ResourceConfigB
 {
     private bool _showNamespaces = true;
 
-    public override bool ShowNamespaces => _showNamespaces;
+    public override bool IsNamespaced => _showNamespaces;
 
     private V1CustomResourceDefinition _customResourceDefinition;
 

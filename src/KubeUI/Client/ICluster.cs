@@ -41,6 +41,8 @@ public interface ICluster
     Task<T?> GetObjectAsync<T>(string @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     PortForwarder AddServicePortForward(string @namespace, string serviceName, int containerPort);
     IResourceConfig GetResourceConfig(GroupApiVersionKind kind);
+    bool IsNamespaced(Type type);
+    bool IsNamespaced<T>();
 
     bool ListNamespaces { get; set; }
 }

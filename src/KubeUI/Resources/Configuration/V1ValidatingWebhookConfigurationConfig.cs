@@ -8,7 +8,6 @@ public sealed partial class V1ValidatingWebhookConfigurationConfig : ResourceCon
 {
     public override string Category => "Configuration";
 
-    public override bool ShowNamespaces => false;
     public override int Order => 10;
 
     public override IList<IResourceListColumn> Columns()

@@ -1,6 +1,4 @@
-﻿using Avalonia.Controls.Notifications;
-using Avalonia.Controls.Templates;
-using Dock.Model.Core;
+﻿using Avalonia.Controls.Templates;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;

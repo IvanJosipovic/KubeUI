@@ -1,11 +1,7 @@
-using Avalonia.Controls.Notifications;
-using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
-using KubeUI.Client.Informer;
-using KubeUI.Resources.Workloads.Pod;
 using Scrutor;
 using static KubeUI.Client.Cluster;
 

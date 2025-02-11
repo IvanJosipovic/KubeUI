@@ -7,7 +7,6 @@ namespace KubeUI.Resources.Workloads.Configuration;
 public sealed partial class V1MutatingWebhookConfig : ResourceConfigBase<V1MutatingWebhookConfiguration>
 {
     public override string Category => "Configuration";
-    public override bool ShowNamespaces => false;
     public override int Order => 9;
 
     public override IList<IResourceListColumn> Columns()

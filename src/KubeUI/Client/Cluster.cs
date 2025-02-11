@@ -46,7 +46,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     public ConcurrentDictionary<GroupApiVersionKind, ContainerClass> Objects { get; } = new();
 
-    private ResourceNavigationLink _crdNavigationLink;
+    private ResourceNavigationLink? _crdNavigationLink;
 
     [ObservableProperty]
     public partial string Name { get; set; }
@@ -241,9 +241,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
             network.NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.PortForwarderListViewModel_Title, ControlType = typeof(PortForwarderListViewModel), Cluster = this, StyleIcon = "ic_fluent_cloud_flow_filled", Order = 6 });
         }
 
-        var baseType = typeof(ResourceConfigBase<>);
         var assembly = Assembly.GetExecutingAssembly();
-        var types = assembly.GetExportedTypes().Where(t => t.BaseType?.IsGenericType == true && t.BaseType.GetGenericTypeDefinition() == baseType).ToList();
+        var types = assembly.GetExportedTypes().Where(t => t.BaseType?.IsGenericType == true && t.BaseType.GetGenericTypeDefinition() == typeof(ResourceConfigBase<>)).ToList();
 
         List<IResourceConfig> configs = [];
 
@@ -254,7 +253,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 continue;
             }
 
-            var svc = _serviceProvider.GetRequiredService(type.BaseType) as IResourceConfig;
+            var svc = (IResourceConfig)_serviceProvider.GetRequiredService(type.BaseType);
 
             if (svc is IInitializeCluster init)
             {
@@ -272,6 +271,11 @@ public sealed partial class Cluster : ObservableObject, ICluster
             {
                 var nav = new ResourceNavigationLink() { Name = config.Name, ControlType = config.Type, Cluster = this, Order = config.Order };
 
+                if (config.Type == typeof(V1CustomResourceDefinition))
+                {
+                    _crdNavigationLink = nav;
+                }
+
                 if (string.IsNullOrEmpty(config.Category))
                 {
                     NavigationItems.Add(nav);
@@ -284,8 +288,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 }
             }
         }
-
-        _crdNavigationLink = (ResourceNavigationLink)NavigationItems.First(x => x is ResourceNavigationLink link && link.ControlType == typeof(V1CustomResourceDefinition));
     }
 
     public async Task Seed<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -723,7 +725,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         }
     }
 
-    private bool IsNamespaced(Type type)
+    public bool IsNamespaced(Type type)
     {
         var api = GroupApiVersionKind.From(type);
 
@@ -754,7 +756,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         return ext.scope == "Namespaced";
     }
 
-    private bool IsNamespaced<T>()
+    public bool IsNamespaced<T>()
     {
         return IsNamespaced(typeof(T));
     }
