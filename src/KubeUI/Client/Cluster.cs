@@ -64,7 +64,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
     public partial IKubernetes? Client { get; set; }
 
     [ObservableProperty]
-    public partial ObservableSortedCollection<NavigationItem> NavigationItems { get; set; } = new ObservableSortedCollection<NavigationItem>(new NavigationItemOrderComparer());
+    public partial ObservableCollection<NavigationItem> NavigationItems { get; set; } = new ObservableSortedCollection<NavigationItem>(new NavigationItemOrderComparer());
 
     [ObservableProperty]
     public partial ModelCache ModelCache { get; set; }

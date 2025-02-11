@@ -17,7 +17,7 @@ public interface ICluster
     event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
     IKubernetes? Client { get; set; }
     ModelCache ModelCache { get; set; }
-    ObservableSortedCollection<NavigationItem> NavigationItems { get; set; }
+    ObservableCollection<NavigationItem> NavigationItems { get; set; }
     ObservableCollection<NodeMetrics> NodeMetrics { get; set; }
     ObservableCollection<PodMetrics> PodMetrics { get; set; }
     ObservableCollection<PortForwarder> PortForwarders { get; set; }
