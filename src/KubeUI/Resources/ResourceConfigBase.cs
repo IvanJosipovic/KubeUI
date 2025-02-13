@@ -241,17 +241,23 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public virtual bool CanDelete(IList? items)
     {
-        //foreach (var item in items)
-        //{
-        //    var ns = (NamespacedName)item.GetType().GetProperty("Key")!.GetValue(item);
+        if (items == null || items.Count == 0)
+        {
+            return false;
+        }
 
-        //    if (!Cluster.CanI<T>(Verb.Delete, ns.Namespace))
-        //    {
-        //        return false;
-        //    }
-        //}
+        foreach (var item in items)
+        {
+            if (item is KeyValuePair<NamespacedName, T> resource )
+            {
+                if (!Cluster.CanI<T>(Verb.Delete, resource.Value.Namespace()))
+                {
+                    return false;
+                }
+            }
+        }
 
-        return items?.Count > 0;
+        return true;
     }
 
     [RelayCommand(CanExecute = nameof(CanView))]
