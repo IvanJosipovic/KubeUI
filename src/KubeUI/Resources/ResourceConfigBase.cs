@@ -137,15 +137,17 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         }
     ];
 
-    public IList<Cluster.Verb> GetDefaultVerbs() => [
-        Verb.Create,
-        Verb.Delete,
-        Verb.Get,
-        Verb.List,
-        Verb.Patch,
-        Verb.Update,
-        Verb.Watch,
+    public IList<(Cluster.Verb verb, string? subResource)> GetDefaultVerbs() => [
+        (Verb.Create, null),
+        (Verb.Delete, null),
+        (Verb.Get, null),
+        (Verb.List, null),
+        (Verb.Patch, null),
+        (Verb.Update, null),
+        (Verb.Watch, null),
     ];
+
+    public virtual IList<(Cluster.Verb verb, string? subResource)> CustomVerbs() => [];
 
     public static readonly string sRestartControllerPatch = $$"""
     {

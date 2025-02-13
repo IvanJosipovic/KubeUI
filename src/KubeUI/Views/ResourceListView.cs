@@ -140,7 +140,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
         if (!string.IsNullOrEmpty(menu.CommandPath))
         {
-            menuItem.Bind(MenuItem.CommandProperty, new Binding(nameof(ResourceListViewModel<>.ResourceConfig) + "." + menu.CommandPath) { Source = DataContext });
+            menuItem.Bind(MenuItem.CommandProperty, new Binding(nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + menu.CommandPath) { Source = DataContext });
         }
 
         if (!string.IsNullOrEmpty(menu.CommandParameterPath))
@@ -228,7 +228,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
         if (!string.IsNullOrEmpty(menu.CommandPath))
         {
-            style.Add(new Setter(MenuItem.CommandProperty, new Binding(nameof(ResourceListViewModel<>.ResourceConfig) + "." + menu.CommandPath) { Source = DataContext }));
+            style.Add(new Setter(MenuItem.CommandProperty, new Binding(nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + menu.CommandPath) { Source = DataContext }));
         }
 
         if (!string.IsNullOrEmpty(menu.CommandParameterPath))
