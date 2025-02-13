@@ -1,4 +1,5 @@
 ﻿using Avalonia.Controls.Templates;
+using Avalonia.Data.Converters;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
@@ -204,7 +205,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                     .IsExpanded(true)
                     .Controls([
                         new ItemsControl()
-                            .ItemsSource(resource.Spec.Containers)
+                            .ItemsSource(resource.Spec.Containers.Concat(resource.Spec.InitContainers))
                             .ItemTemplate(new FuncDataTemplate<V1Container>((x,_) =>
                                 new PropertyItem()
                                     .Key("Name")
