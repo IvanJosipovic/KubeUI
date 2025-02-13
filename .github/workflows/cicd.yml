@@ -16,6 +16,7 @@ permissions:
   contents: write
   actions: write
   checks: write
+  issues: write
 
 jobs:
   build-test:
