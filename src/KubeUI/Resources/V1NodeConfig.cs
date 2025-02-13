@@ -108,7 +108,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 
         var result = await _dialogService.ShowContentDialogAsync(this, settings);
 
-        var patch = $$"""
+        const string patch = /*lang=json*/ """
         {
             "spec": {
                 "unschedulable": true
@@ -151,7 +151,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 
         var result = await _dialogService.ShowContentDialogAsync(this, settings);
 
-        var patch = $$"""
+        const string patch = /*lang=json*/ """
         {
             "spec": {
                 "unschedulable": false
@@ -194,7 +194,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 
         var result = await _dialogService.ShowContentDialogAsync(this, settings);
 
-        var patch = $$"""
+        const string patch = /*lang=json*/ """
         {
             "spec": {
                 "unschedulable": true

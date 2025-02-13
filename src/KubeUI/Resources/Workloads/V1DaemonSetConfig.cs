@@ -11,6 +11,8 @@ namespace KubeUI.Resources.Workloads.Pod;
 [ServiceDescriptor<ResourceConfigBase<V1DaemonSet>>(ServiceLifetime.Transient)]
 public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>
 {
+    public override string Category => "Workloads";
+
     public override int Order => 2;
 
     public override IList<IResourceListColumn> Columns()

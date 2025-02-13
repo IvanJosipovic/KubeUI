@@ -214,6 +214,12 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         ];
     }
 
+    public override IList<(Verb verb, string? subResource)> CustomPermissions() => [
+        (Verb.Get, "log"),
+        (Verb.Create, "portforward"),
+        (Verb.Create, "exec"),
+    ];
+
     [RelayCommand(CanExecute = nameof(CanViewLogs))]
     private async Task ViewLogs(IList parameters)
     {

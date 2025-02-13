@@ -38,8 +38,6 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public virtual string? Category { get; } = null;
 
-    public virtual bool DefaultMenuItems { get; } = true;
-
     public virtual bool ShowNewResource { get; } = true;
 
     public virtual bool IsNamespaced { get; private set; }
@@ -71,6 +69,8 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     }
 
     public virtual IList<ResourceMenuItem> MenuItems()=> [];
+
+    public virtual IList<(Cluster.Verb verb, string? subResource)> CustomPermissions() => [];
 
     public virtual Control[] Properties(T resource)=> [];
 
@@ -113,7 +113,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         IsNamespaced = Cluster.IsNamespaced<T>();
     }
 
-    public IList<ResourceMenuItem> GetDefaultMenuItems() => [
+    public IList<ResourceMenuItem> DefaultMenuItems() => [
         new()
         {
             Header = "View",
@@ -137,7 +137,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         }
     ];
 
-    public IList<(Cluster.Verb verb, string? subResource)> GetDefaultVerbs() => [
+    public IList<(Cluster.Verb verb, string? subResource)> DefaultPermissions() => [
         (Verb.Create, null),
         (Verb.Delete, null),
         (Verb.Get, null),
@@ -146,8 +146,6 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         (Verb.Update, null),
         (Verb.Watch, null),
     ];
-
-    public virtual IList<(Cluster.Verb verb, string? subResource)> CustomVerbs() => [];
 
     public static readonly string sRestartControllerPatch = $$"""
     {
@@ -162,6 +160,19 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         }
     }
     """;
+
+    public async Task UpdatePermissions()
+    {
+        foreach (var (verb, subResource) in DefaultPermissions())
+        {
+            await Cluster.UpdateCanIAnyNamespaceAsync<T>(verb, subResource);
+        }
+
+        foreach (var (verb, subResource) in CustomPermissions())
+        {
+            await Cluster.UpdateCanIAnyNamespaceAsync<T>(verb, subResource);
+        }
+    }
 
     #region Actions
 

@@ -235,7 +235,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
         NavigationItems.Add(new NavigationItem() { Name = "Storage", Order = 11 });
         NavigationItems.Add(new NavigationItem() { Name = "Access Control", Order = 12 });
 
-
         if (await UpdateCanIListWatchAnyNamespaceAsync<V1Pod>() && await UpdateCanIAnyNamespaceAsync<V1Pod>(Verb.Create, "portforward"))
         {
             network.NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.PortForwarderListViewModel_Title, ControlType = typeof(PortForwarderListViewModel), Cluster = this, StyleIcon = "ic_fluent_cloud_flow_filled", Order = 6 });
@@ -253,21 +252,23 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 continue;
             }
 
-            var svc = (IResourceConfig)_serviceProvider.GetRequiredService(type.BaseType);
+            var resourceConfig = (IResourceConfig)_serviceProvider.GetRequiredService(type.BaseType);
 
-            if (svc is IInitializeCluster init)
+            if (resourceConfig is IInitializeCluster init)
             {
                 init.Initialize(this);
             }
 
-            ResourceConfigs[svc.Kind] = svc;
+            ResourceConfigs[resourceConfig.Kind] = resourceConfig;
 
-            configs.Add(svc);
+            configs.Add(resourceConfig);
         }
 
         foreach (var config in configs)
         {
-            if (await UpdateCanListWatchAnyNamespaceAsync(config.Type))
+            await config.UpdatePermissions();
+
+            if (CanIAnyNamespace(config.Type, Verb.List) && CanIAnyNamespace(config.Type, Verb.Watch))
             {
                 var nav = new ResourceNavigationLink() { Name = config.Name, ControlType = config.Type, Cluster = this, Order = config.Order };
 
@@ -415,7 +416,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                             //todo add check if the type is already in the list
                             APIGroupDiscoveryList = GetAPIGroupDiscoveryList(false).GetAwaiter().GetResult();
 
-                            var task = UpdateCanListWatchAnyNamespaceAsync(resourceType);
+                            var task = UpdateCanIListWatchAnyNamespaceAsync(resourceType);
 
                             if (task.GetAwaiter().GetResult())
                             {
@@ -423,6 +424,13 @@ public sealed partial class Cluster : ObservableObject, ICluster
                                 var resourceConfigType = typeof(CustomResourceDefinitionResourceConfig<>).MakeGenericType(resourceType);
 
                                 var resourceConfig = Application.Current.GetRequiredService(resourceConfigType) as IResourceConfig;
+
+                                if (resourceConfig is IInitializeCluster init)
+                                {
+                                    init.Initialize(this);
+                                }
+
+                                resourceConfig.UpdatePermissions().GetAwaiter().GetResult();
 
                                 resourceConfigType.GetMethod(nameof(CustomResourceDefinitionResourceConfig<V1Pod>.Generate)).Invoke(resourceConfig, [crd]);
 
@@ -780,7 +788,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     public IResourceConfig GetResourceConfig(GroupApiVersionKind kind)
     {
-        return (IResourceConfig)ResourceConfigs[kind];
+        return ResourceConfigs[kind];
     }
 }
 

@@ -68,11 +68,6 @@ public partial class Cluster
          _selfSubjectAccessReviews.Add(resp);
     }
 
-    private async Task GetSelfSubjectAccessReview<T>(Verb verb, string @namespace = "", string subresource = "") where T : class, IKubernetesObject<V1ObjectMeta>, new()
-    {
-        await GetSelfSubjectAccessReview(typeof(T), verb, @namespace, subresource);
-    }
-
     public bool CanI(Type type, Verb verb, string @namespace = "", string subresource = "")
     {
         var kind = GroupApiVersionKind.From(type);
@@ -88,7 +83,7 @@ public partial class Cluster
                 x.Spec.ResourceAttributes.Subresource == (string.IsNullOrEmpty(subresource) ? null : subresource)
             );
 
-            if (global != null && global.Status.Allowed)
+            if (global?.Status.Allowed == true)
             {
                 return true;
             }
@@ -136,6 +131,11 @@ public partial class Cluster
         return false;
     }
 
+    public bool CanIAnyNamespace<T>(Verb verb, string subresource = "") where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        return CanIAnyNamespace(typeof(T), verb, subresource);
+    }
+
     public async Task<bool> UpdateCanIAnyNamespaceAsync(Type type, Verb verb, string subresource = "")
     {
         await GetSelfSubjectAccessReview(type, verb, subresource: subresource);
@@ -166,13 +166,13 @@ public partial class Cluster
         return await UpdateCanIAnyNamespaceAsync(typeof(T), verb, subresource);
     }
 
-    private async Task<bool> UpdateCanListWatchAnyNamespaceAsync(Type type, string subresource = "")
+    private async Task<bool> UpdateCanIListWatchAnyNamespaceAsync(Type type, string subresource = "")
     {
         return await UpdateCanIAnyNamespaceAsync(type, Verb.List, subresource) && await UpdateCanIAnyNamespaceAsync(type, Verb.Watch, subresource);
     }
 
     private async Task<bool> UpdateCanIListWatchAnyNamespaceAsync<T>(string subresource = "") where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        return await UpdateCanListWatchAnyNamespaceAsync(typeof(T), subresource);
+        return await UpdateCanIListWatchAnyNamespaceAsync(typeof(T), subresource);
     }
 }

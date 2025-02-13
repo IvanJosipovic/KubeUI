@@ -4,17 +4,16 @@ namespace KubeUI.Resources
 {
     public interface IResourceConfig: IInitializeCluster
     {
-        string? Category { get; }
-        bool DefaultMenuItems { get; }
-        GroupApiVersionKind Kind { get; }
-
         bool IsNamespaced { get; }
         bool ShowNewResource { get; }
-        Type Type { get; }
-        int Order { get; }
-        string Name { get; }
-        StyleGroup ListStyle();
+        GroupApiVersionKind Kind { get; }
         IList<IResourceListColumn> Columns();
         IList<ResourceMenuItem> MenuItems();
+        int Order { get; }
+        string Name { get; }
+        string? Category { get; }
+        StyleGroup ListStyle();
+        Task UpdatePermissions();
+        Type Type { get; }
     }
 }

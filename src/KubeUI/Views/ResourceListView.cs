@@ -106,12 +106,9 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
         _grid.ContextMenu.Items.Clear();
 
-        if (ViewModel.ResourceConfig.DefaultMenuItems)
+        foreach (var item in ViewModel.ResourceConfig.DefaultMenuItems())
         {
-            foreach (var item in ViewModel.ResourceConfig.GetDefaultMenuItems())
-            {
-                _grid.ContextMenu.Items.Add(CreateMenuItem(item));
-            }
+            _grid.ContextMenu.Items.Add(CreateMenuItem(item));
         }
 
         if (ViewModel.ResourceConfig.MenuItems != null)
