@@ -35,7 +35,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 new ResourceListColumn<V1Pod, int>()
                 {
                     Name = "Restarts",
-                    Field = x => x.Status.ContainerStatuses.Sum(x => x.RestartCount),
+                    Field = x => x.Status.ContainerStatuses?.Sum(x => x.RestartCount) ?? 0,
                     Display = x => x.Status.ContainerStatuses?.Sum(x => x.RestartCount).ToString() ?? "0",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
@@ -190,26 +190,26 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         return [
             new PropertyItem()
                 .Key("Controlled By")
-                .Value(resource.Metadata.OwnerReferences.FirstOrDefault(x => x.Controller == true)?.Name ?? "N/A"),
+                .Value(@resource.Metadata.OwnerReferences.FirstOrDefault(x => x.Controller == true)?.Name ?? "N/A"),
             new PropertyItem()
                 .Key("Status")
-                .Value(resource.Status.Phase),
+                .Value(@resource.Status.Phase),
             new PropertyItem()
                 .Key("Node")
-                .Value(resource.Spec.NodeName),
+                .Value(@resource.Spec.NodeName),
             new PropertyItem()
                 .Key("Pod IP")
-                .Value(resource.Status.PodIP),
+                .Value(@resource.Status.PodIP),
             new ExpandableSection()
                     .Text("Containers")
                     .IsExpanded(true)
                     .Controls([
                         new ItemsControl()
-                            .ItemsSource(resource.Spec.Containers.Concat(resource.Spec.InitContainers))
+                            .ItemsSource((resource.Spec.InitContainers ?? []).Concat(resource.Spec.Containers))
                             .ItemTemplate(new FuncDataTemplate<V1Container>((x,_) =>
                                 new PropertyItem()
                                     .Key("Name")
-                                    .Value(x.Name)
+                                    .Value(@x.Name)
                             ))
                     ])
         ];

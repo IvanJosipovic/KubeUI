@@ -17,8 +17,14 @@ public sealed partial class V1EndpointsConfig : ResourceConfigBase<V1Endpoints>
             new ResourceListColumn<V1Endpoints, int>()
             {
                 Name = "Endpoints",
-                Display = x => x.Subsets != null ? x.Subsets.Where(x => x.Addresses != null).SelectMany(y => y.Ports.Select(z => y.Addresses[0].Ip + ":" + z.Port)).Aggregate((a,b) => a + ", " + b) : "",
-                Field = x => x.Subsets != null ? x.Subsets[0].Ports[0].Port : 0,
+                Display = x => x.Subsets != null
+                    ? x.Subsets
+                        .Where(x => x.Addresses != null && x.Ports != null)
+                        .SelectMany(y => y.Ports.Select(z => y.Addresses[0].Ip + ":" + z.Port))
+                        .DefaultIfEmpty("")
+                        .Aggregate((a, b) => a + ", " + b)
+                    : "",
+                Field = x => (x.Subsets?[0].Ports?[0].Port) ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             AgeColumn(),
