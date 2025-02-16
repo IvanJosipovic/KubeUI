@@ -1,7 +1,8 @@
-﻿using k8s.Models;
-using k8s;
-using Avalonia.Controls.Primitives;
+﻿using Avalonia.Controls.Primitives;
 using Avalonia.Styling;
+using k8s;
+using k8s.Models;
+using KubeUI.Client;
 
 namespace KubeUI.Views;
 
@@ -40,6 +41,40 @@ public sealed class ResourcePropertiesView<T> : MyViewBase<ResourcePropertiesVie
         return new ScrollViewer()
                 .VerticalScrollBarVisibility(ScrollBarVisibility.Auto)
                 .Content(sp);
+    }
+
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+        if (ViewModel != null)
+        {
+            ViewModel.Cluster.OnChange += Cluster_OnChange;
+        }
+    }
+
+    private async void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)
+    {
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            if (ViewModel?.Object != null
+                && ViewModel.Object.Kind == resource.Kind
+                && ViewModel.Object.ApiVersion == resource.ApiVersion
+                && ViewModel.Object.Metadata.Name == resource.Metadata.Name
+                && ViewModel.Object.Metadata.NamespaceProperty == resource.Metadata.NamespaceProperty)
+            {
+                ViewModel.Object = (T)resource;
+                Reload();
+            }
+        });
+    }
+
+    protected override void OnUnloaded(RoutedEventArgs e)
+    {
+        base.OnUnloaded(e);
+        if (ViewModel != null)
+        {
+            ViewModel.Cluster.OnChange -= Cluster_OnChange;
+        }
     }
 }
 

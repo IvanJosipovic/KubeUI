@@ -1,5 +1,6 @@
 ﻿using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
+using Avalonia.Markup.Declarative;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
@@ -201,19 +202,41 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 .Key("Pod IP")
                 .Value(@resource.Status.PodIP),
             new ExpandableSection()
+                    .Text("Init Containers")
+                    .IsExpanded(true)
+                    .IsVisible(() => resource.Spec.InitContainers?.Count > 0)
+                    .Controls([
+                        new ItemsControl()
+                            .ItemsSource(resource.Spec.InitContainers)
+                            .ItemTemplate(new FuncDataTemplate<V1Container>((x,_) =>
+                            new StackPanel()
+                                    .Children([
+                                        new PropertyItem().Key("Name").Value(@x.Name),
+                                        new PropertyItem().Key("Status").Value(@x.Name),
+                                        new PropertyItem().Key("Image").Value(@x.Image),
+                                        new PropertyItem().Key("Image Pull Policy").Value(@x.ImagePullPolicy),
+                                    ])
+                            ))
+                        ]),
+            new ExpandableSection()
                     .Text("Containers")
                     .IsExpanded(true)
                     .Controls([
                         new ItemsControl()
-                            .ItemsSource((resource.Spec.InitContainers ?? []).Concat(resource.Spec.Containers))
+                            .ItemsSource(resource.Spec.Containers)
                             .ItemTemplate(new FuncDataTemplate<V1Container>((x,_) =>
-                                new PropertyItem()
-                                    .Key("Name")
-                                    .Value(@x.Name)
+                            new StackPanel()
+                                    .Children([
+                                        new PropertyItem().Key("Name").Value(@x.Name),
+                                        new PropertyItem().Key("Status").Value(this.Name),
+                                        new PropertyItem().Key("Image").Value(@x.Image),
+                                        new PropertyItem().Key("Image Pull Policy").Value(@x.ImagePullPolicy),
+                                    ])
                             ))
                     ])
         ];
     }
+
 
     public override IList<(Verb verb, string? subResource)> CustomPermissions() => [
         (Verb.Get, "log"),

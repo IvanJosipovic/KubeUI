@@ -303,17 +303,15 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                             .Children([
                                 new TextBox()
                                     .Col(0)
-                                    .Width(300)
                                     .Background(Brushes.Transparent)
                                     .HorizontalAlignment(HorizontalAlignment.Right)
                                     .VerticalAlignment(VerticalAlignment.Stretch)
                                     .VerticalContentAlignment(VerticalAlignment.Center)
                                     .Text(@vm.SearchQuery)
-                                    .Watermark("Search"),
+                                    .Watermark("Search                                     "),
 
                                 new MultiComboBox()
                                     .Col(1)
-                                    .Width(300)
                                     .MaxHeight(20)
                                     .HorizontalAlignment(HorizontalAlignment.Right)
                                     .Classes("ClearButton")

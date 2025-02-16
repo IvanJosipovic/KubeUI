@@ -33,11 +33,6 @@ public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
         base.OnPropertyChanged(e);
-
-        if (e.PropertyName == nameof(Cluster))
-        {
-            Cluster.OnChange += Cluster_OnChange;
-        }
     }
 
     private void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)
@@ -54,9 +49,5 @@ public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable
 
     public void Dispose()
     {
-        if (Cluster != null)
-        {
-            Cluster.OnChange -= Cluster_OnChange;
-        }
     }
 }
