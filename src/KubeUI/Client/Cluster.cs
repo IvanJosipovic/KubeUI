@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 using System.Reflection;
 using System.Xml;
 using Dock.Model.Controls;
@@ -15,9 +14,10 @@ using KubernetesCRDModelGen;
 using KubeUI.Client.Informer;
 using KubeUI.Resources;
 using Scrutor;
-using Swordfish.NET.Collections;
+using Avalonia.Collections;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
+using Swordfish.NET.Collections;
 
 namespace KubeUI.Client;
 
@@ -44,7 +44,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private readonly SemaphoreSlim _semaphoreSlim = new(1);
 
-    public ConcurrentDictionary<GroupApiVersionKind, ContainerClass> Objects { get; } = new();
+    public AvaloniaDictionary<GroupApiVersionKind, ContainerClass> Objects { get; } = new();
 
     private ResourceNavigationLink? _crdNavigationLink;
 
@@ -73,13 +73,13 @@ public sealed partial class Cluster : ObservableObject, ICluster
     public partial bool IsExpanded { get; set; }
 
     [ObservableProperty]
-    public partial ConcurrentObservableDictionary<NamespacedName, V1Namespace> Namespaces { get; set; } = [];
+    public partial AvaloniaDictionary<NamespacedName, V1Namespace> Namespaces { get; set; } = [];
 
     [ObservableProperty]
     public partial ObservableCollection<V1Namespace> SelectedNamespaces { get; set; } = [];
 
     [ObservableProperty]
-    public partial ConcurrentObservableDictionary<GroupApiVersionKind, IResourceConfig> ResourceConfigs { get; set; } = [];
+    public partial AvaloniaDictionary<GroupApiVersionKind, IResourceConfig> ResourceConfigs { get; set; } = [];
 
     public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ModelCache modelCache, IGenerator generator, ISettingsService settingsService, IDialogService dialogService, IServiceProvider serviceProvider)
     {
@@ -307,7 +307,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
             container = new ContainerClass
             {
                 Type = type,
-                Items = new ConcurrentObservableDictionary<NamespacedName, T>()
+                Items = new AvaloniaDictionary<NamespacedName, T>()
             };
 
             Objects.TryAdd(kind, container);
@@ -385,7 +385,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         {
             var kind = GroupApiVersionKind.From<T>();
 
-            var items = (ConcurrentObservableDictionary<NamespacedName, T>)Objects[kind].Items;
+            var items = (AvaloniaDictionary<NamespacedName, T>)Objects[kind].Items;
 
             var name = new NamespacedName(item.Namespace(), item.Name());
 
@@ -458,12 +458,12 @@ public sealed partial class Cluster : ObservableObject, ICluster
                                             Name = fqdn,
                                             NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer())
                                         };
-                                        Dispatcher.UIThread.Post(() => list.Add(navItem));
+                                        list.Add(navItem);
                                         list = navItem.NavigationItems;
                                     }
                                 }
 
-                                Dispatcher.UIThread.Post(() => navItem!.NavigationItems.Add(nav));
+                                navItem!.NavigationItems.Add(nav);
                             }
                         }
                     }
@@ -575,13 +575,13 @@ public sealed partial class Cluster : ObservableObject, ICluster
             container = new ContainerClass
             {
                 Type = typeof(T),
-                Items = new ConcurrentObservableDictionary<NamespacedName, T>()
+                Items = new AvaloniaDictionary<NamespacedName, T>()
             };
 
             Objects.TryAdd(attribute, container);
         }
 
-        return ((ConcurrentObservableDictionary<NamespacedName, T>)Objects[attribute].Items)[new NamespacedName(@namespace, name)];
+        return ((AvaloniaDictionary<NamespacedName, T>)Objects[attribute].Items)[new NamespacedName(@namespace, name)];
     }
 
     public async Task<T?> GetObjectAsync<T>(string @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -590,10 +590,10 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
         var attribute = GroupApiVersionKind.From<T>();
 
-        return ((ConcurrentObservableDictionary<NamespacedName, T>)Objects[attribute].Items)[new NamespacedName(@namespace, name)];
+        return ((AvaloniaDictionary<NamespacedName, T>)Objects[attribute].Items)[new NamespacedName(@namespace, name)];
     }
 
-    public ConcurrentObservableDictionary<NamespacedName, T> GetObjectDictionary<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public AvaloniaDictionary<NamespacedName, T> GetObjectDictionary<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         _ = Task.Run(() => Seed<T>());
 
@@ -604,22 +604,22 @@ public sealed partial class Cluster : ObservableObject, ICluster
             container = new ContainerClass
             {
                 Type = typeof(T),
-                Items = new ConcurrentObservableDictionary<NamespacedName, T>()
+                Items = new AvaloniaDictionary<NamespacedName, T>()
             };
 
             Objects.TryAdd(attribute, container);
         }
 
-        return (ConcurrentObservableDictionary<NamespacedName, T>)Objects[attribute].Items;
+        return (AvaloniaDictionary<NamespacedName, T>)Objects[attribute].Items;
     }
 
-    public async Task<ConcurrentObservableDictionary<NamespacedName, T>> GetObjectDictionaryAsync<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public async Task<AvaloniaDictionary<NamespacedName, T>> GetObjectDictionaryAsync<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         await Seed<T>(true);
 
         var attribute = GroupApiVersionKind.From<T>();
 
-        return (ConcurrentObservableDictionary<NamespacedName, T>)Objects[attribute].Items;
+        return (AvaloniaDictionary<NamespacedName, T>)Objects[attribute].Items;
     }
 
     public async Task AddOrUpdate<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()

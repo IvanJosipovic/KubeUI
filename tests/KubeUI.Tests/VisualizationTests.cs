@@ -8,16 +8,16 @@ using KubeUI.Client;
 using KubeUI.Client.Informer;
 using KubeUI.ViewModels;
 using Moq;
-using Swordfish.NET.Collections;
+using Avalonia.Collections;
 using static KubeUI.ViewModels.VisualizationViewModel;
 
 namespace KubeUI.Tests;
 
 public class VisualizationTests
 {
-    private (Mock<ICluster>, ConcurrentDictionary<GroupApiVersionKind, ContainerClass>) GetMock()
+    private (Mock<ICluster>, AvaloniaDictionary<GroupApiVersionKind, ContainerClass>) GetMock()
     {
-        var resources = new ConcurrentDictionary<GroupApiVersionKind, ContainerClass>();
+        var resources = new AvaloniaDictionary<GroupApiVersionKind, ContainerClass>();
 
         var mock = new Mock<ICluster>();
         mock.Setup(p => p.Objects).Returns(resources);
@@ -40,7 +40,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -64,7 +64,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
         {
             {
                 new("default", "my-deployment"),
@@ -104,7 +104,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -121,7 +121,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1Pod>
+        var start = new AvaloniaDictionary<NamespacedName, V1Pod>
         {
             {
                 new("default", "my-deployment"),
@@ -173,7 +173,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -190,7 +190,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1Pod>
+        var start = new AvaloniaDictionary<NamespacedName, V1Pod>
         {
             {
                 new("default", "my-deployment"),
@@ -242,7 +242,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -259,7 +259,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1Pod>
+        var start = new AvaloniaDictionary<NamespacedName, V1Pod>
         {
             {
                 new("default", "my-deployment"),
@@ -308,7 +308,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -325,7 +325,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1Pod>
+        var start = new AvaloniaDictionary<NamespacedName, V1Pod>
         {
             {
                 new("default", "my-deployment"),
@@ -374,7 +374,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -391,7 +391,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1Pod>
+        var start = new AvaloniaDictionary<NamespacedName, V1Pod>
         {
             {
                 new("default", "my-deployment"),
@@ -435,7 +435,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -452,7 +452,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
         {
             {
                 new("default", "my-deployment"),
@@ -510,7 +510,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -527,7 +527,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
         {
             {
                 new("default", "my-deployment"),
@@ -585,7 +585,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -602,7 +602,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
         {
             {
                 new("default", "my-deployment"),
@@ -657,7 +657,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -674,7 +674,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
         {
             {
                 new("default", "my-deployment"),
@@ -729,7 +729,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -746,7 +746,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
         {
             {
                 new("default", "my-deployment"),
@@ -796,7 +796,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -813,7 +813,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1DaemonSet>
         {
             {
                 new("default", "my-deployment"),
@@ -871,7 +871,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -888,7 +888,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1DaemonSet>
         {
             {
                 new("default", "my-deployment"),
@@ -946,7 +946,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -963,7 +963,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1DaemonSet>
         {
             {
                 new("default", "my-deployment"),
@@ -1018,7 +1018,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -1035,7 +1035,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1DaemonSet>
         {
             {
                 new("default", "my-deployment"),
@@ -1090,7 +1090,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -1107,7 +1107,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1DaemonSet>
         {
             {
                 new("default", "my-deployment"),
@@ -1157,7 +1157,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -1174,7 +1174,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1StatefulSet>
         {
             {
                 new("default", "my-deployment"),
@@ -1232,7 +1232,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -1249,7 +1249,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1StatefulSet>
         {
             {
                 new("default", "my-deployment"),
@@ -1307,7 +1307,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -1324,7 +1324,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1StatefulSet>
         {
             {
                 new("default", "my-deployment"),
@@ -1379,7 +1379,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -1396,7 +1396,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1StatefulSet>
         {
             {
                 new("default", "my-deployment"),
@@ -1451,7 +1451,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -1468,7 +1468,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1StatefulSet>
         {
             {
                 new("default", "my-deployment"),
@@ -1519,7 +1519,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -1536,7 +1536,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1ReplicaSet>
         {
             {
                 new("default", "my-deployment"),
@@ -1598,7 +1598,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -1615,7 +1615,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1ReplicaSet>
         {
             {
                 new("default", "my-deployment"),
@@ -1677,7 +1677,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -1694,7 +1694,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1ReplicaSet>
         {
             {
                 new("default", "my-deployment"),
@@ -1753,7 +1753,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -1770,7 +1770,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1ReplicaSet>
         {
             {
                 new("default", "my-deployment"),
@@ -1829,7 +1829,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ConfigMap>
+        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
         {
             {
                 new("default", "my-config"),
@@ -1846,7 +1846,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1ReplicaSet>
         {
             {
                 new("default", "my-deployment"),
@@ -1903,7 +1903,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -1920,7 +1920,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
         {
             {
                 new("default", "my-deployment"),
@@ -1978,7 +1978,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -1995,7 +1995,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
         {
             {
                 new("default", "my-deployment"),
@@ -2053,7 +2053,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -2070,7 +2070,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
         {
             {
                 new("default", "my-deployment"),
@@ -2125,7 +2125,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -2142,7 +2142,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1Pod>
+        var start = new AvaloniaDictionary<NamespacedName, V1Pod>
         {
             {
                 new("default", "my-deployment"),
@@ -2191,7 +2191,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -2208,7 +2208,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1Pod>
+        var start = new AvaloniaDictionary<NamespacedName, V1Pod>
         {
             {
                 new("default", "my-deployment"),
@@ -2252,7 +2252,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -2269,7 +2269,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1Pod>
+        var start = new AvaloniaDictionary<NamespacedName, V1Pod>
         {
             {
                 new("default", "my-deployment"),
@@ -2321,7 +2321,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -2338,7 +2338,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1Pod>
+        var start = new AvaloniaDictionary<NamespacedName, V1Pod>
         {
             {
                 new("default", "my-deployment"),
@@ -2390,7 +2390,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -2407,7 +2407,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
         {
             {
                 new("default", "my-deployment"),
@@ -2462,7 +2462,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -2479,7 +2479,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
         {
             {
                 new("default", "my-deployment"),
@@ -2534,7 +2534,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -2551,7 +2551,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
         {
             {
                 new("default", "my-deployment"),
@@ -2601,7 +2601,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -2618,7 +2618,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1DaemonSet>
         {
             {
                 new("default", "my-deployment"),
@@ -2676,7 +2676,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -2693,7 +2693,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1DaemonSet>
         {
             {
                 new("default", "my-deployment"),
@@ -2751,7 +2751,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -2768,7 +2768,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1DaemonSet>
         {
             {
                 new("default", "my-deployment"),
@@ -2823,7 +2823,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -2840,7 +2840,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1DaemonSet>
         {
             {
                 new("default", "my-deployment"),
@@ -2895,7 +2895,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -2912,7 +2912,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1DaemonSet>
         {
             {
                 new("default", "my-deployment"),
@@ -2962,7 +2962,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -2979,7 +2979,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1StatefulSet>
         {
             {
                 new("default", "my-deployment"),
@@ -3037,7 +3037,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -3054,7 +3054,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1StatefulSet>
         {
             {
                 new("default", "my-deployment"),
@@ -3112,7 +3112,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -3129,7 +3129,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1StatefulSet>
         {
             {
                 new("default", "my-deployment"),
@@ -3184,7 +3184,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -3201,7 +3201,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1StatefulSet>
         {
             {
                 new("default", "my-deployment"),
@@ -3256,7 +3256,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -3273,7 +3273,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1StatefulSet>
         {
             {
                 new("default", "my-deployment"),
@@ -3324,7 +3324,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -3341,7 +3341,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1ReplicaSet>
         {
             {
                 new("default", "my-deployment"),
@@ -3403,7 +3403,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -3420,7 +3420,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1ReplicaSet>
         {
             {
                 new("default", "my-deployment"),
@@ -3482,7 +3482,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -3499,7 +3499,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1ReplicaSet>
         {
             {
                 new("default", "my-deployment"),
@@ -3558,7 +3558,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -3575,7 +3575,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1ReplicaSet>
         {
             {
                 new("default", "my-deployment"),
@@ -3634,7 +3634,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -3651,7 +3651,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1ReplicaSet>
         {
             {
                 new("default", "my-deployment"),
@@ -3705,7 +3705,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Secret>
+        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
         {
             {
                 new("default", "my-config"),
@@ -3723,7 +3723,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1ServiceAccount>
+        var start = new AvaloniaDictionary<NamespacedName, V1ServiceAccount>
         {
             {
                 new("default", "my-deployment"),
@@ -3762,7 +3762,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, Corev1Event>
+        var end = new AvaloniaDictionary<NamespacedName, Corev1Event>
         {
             {
                 new("default", "my-config"),
@@ -3783,7 +3783,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<Corev1Event>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
         {
             {
                 new("default", "my-deployment"),
@@ -3821,7 +3821,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1EndpointSlice>
+        var start = new AvaloniaDictionary<NamespacedName, V1EndpointSlice>
         {
             {
                 new("default", "my-config"),
@@ -3848,7 +3848,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1EndpointSlice>(), new() { Items = start });
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Pod>
+        var end = new AvaloniaDictionary<NamespacedName, V1Pod>
         {
             {
                 new("default", "my-deployment"),
@@ -3882,7 +3882,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1Endpoints>
+        var start = new AvaloniaDictionary<NamespacedName, V1Endpoints>
         {
             {
                 new("default", "my-config"),
@@ -3915,7 +3915,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1Endpoints>(), new() { Items = start });
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Pod>
+        var end = new AvaloniaDictionary<NamespacedName, V1Pod>
         {
             {
                 new("default", "my-deployment"),
@@ -3949,7 +3949,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1Ingress>
+        var start = new AvaloniaDictionary<NamespacedName, V1Ingress>
         {
             {
                 new("default", "my-config"),
@@ -3991,7 +3991,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1Ingress>(), new() { Items = start });
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Service>
+        var end = new AvaloniaDictionary<NamespacedName, V1Service>
         {
             {
                 new("default", "my-service"),
@@ -4024,7 +4024,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1Ingress>
+        var start = new AvaloniaDictionary<NamespacedName, V1Ingress>
         {
             {
                 new("default", "my-config"),
@@ -4051,7 +4051,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1Ingress>(), new() { Items = start });
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1Service>
+        var end = new AvaloniaDictionary<NamespacedName, V1Service>
         {
             {
                 new("default", "my-service"),
@@ -4086,7 +4086,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ServiceAccount>
+        var end = new AvaloniaDictionary<NamespacedName, V1ServiceAccount>
         {
             {
                 new("default", "my-config"),
@@ -4103,7 +4103,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ServiceAccount>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1Pod>
+        var start = new AvaloniaDictionary<NamespacedName, V1Pod>
         {
             {
                 new("default", "my-deployment"),
@@ -4138,7 +4138,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ServiceAccount>
+        var end = new AvaloniaDictionary<NamespacedName, V1ServiceAccount>
         {
             {
                 new("default", "my-config"),
@@ -4155,7 +4155,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ServiceAccount>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1Deployment>
+        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
         {
             {
                 new("default", "my-deployment"),
@@ -4196,7 +4196,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ServiceAccount>
+        var end = new AvaloniaDictionary<NamespacedName, V1ServiceAccount>
         {
             {
                 new("default", "my-config"),
@@ -4213,7 +4213,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ServiceAccount>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1StatefulSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1StatefulSet>
         {
             {
                 new("default", "my-deployment"),
@@ -4254,7 +4254,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ServiceAccount>
+        var end = new AvaloniaDictionary<NamespacedName, V1ServiceAccount>
         {
             {
                 new("default", "my-config"),
@@ -4271,7 +4271,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ServiceAccount>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1DaemonSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1DaemonSet>
         {
             {
                 new("default", "my-deployment"),
@@ -4312,7 +4312,7 @@ public class VisualizationTests
     {
         var (mock, resources) = GetMock();
 
-        var end = new ConcurrentObservableDictionary<NamespacedName, V1ServiceAccount>
+        var end = new AvaloniaDictionary<NamespacedName, V1ServiceAccount>
         {
             {
                 new("default", "my-config"),
@@ -4329,7 +4329,7 @@ public class VisualizationTests
 
         resources.TryAdd(GroupApiVersionKind.From<V1ServiceAccount>(), new() { Items = end });
 
-        var start = new ConcurrentObservableDictionary<NamespacedName, V1ReplicaSet>
+        var start = new AvaloniaDictionary<NamespacedName, V1ReplicaSet>
         {
             {
                 new("default", "my-deployment"),

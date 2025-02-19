@@ -1,9 +1,8 @@
-﻿using System.Collections.Concurrent;
-using k8s;
+﻿using k8s;
 using k8s.Models;
 using KubeUI.Client.Informer;
 using KubeUI.Resources;
-using Swordfish.NET.Collections;
+using Avalonia.Collections;
 using static KubeUI.Client.Cluster;
 
 namespace KubeUI.Client;
@@ -19,9 +18,9 @@ public interface ICluster
     bool IsNamespaced(Type type);
     bool IsNamespaced<T>();
     bool ListNamespaces { get; set; }
-    ConcurrentDictionary<GroupApiVersionKind, ContainerClass> Objects { get; }
-    ConcurrentObservableDictionary<NamespacedName, T> GetObjectDictionary<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
-    ConcurrentObservableDictionary<NamespacedName, V1Namespace> Namespaces { get; set; }
+    AvaloniaDictionary<GroupApiVersionKind, ContainerClass> Objects { get; }
+    AvaloniaDictionary<NamespacedName, T> GetObjectDictionary<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    AvaloniaDictionary<NamespacedName, V1Namespace> Namespaces { get; set; }
     event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
     IKubernetes? Client { get; set; }
     IResourceConfig GetResourceConfig(GroupApiVersionKind kind);
@@ -44,7 +43,7 @@ public interface ICluster
     Task Seed<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task<bool> UpdateCanIAnyNamespaceAsync(Type type, Verb verb, string subresource = "");
     Task<bool> UpdateCanIAnyNamespaceAsync<T>(Verb verb, string subresource = "") where T : class, IKubernetesObject<V1ObjectMeta>, new();
-    Task<ConcurrentObservableDictionary<NamespacedName, T>> GetObjectDictionaryAsync<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    Task<AvaloniaDictionary<NamespacedName, T>> GetObjectDictionaryAsync<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task<T?> GetObjectAsync<T>(string @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     void RemovePortForward(PortForwarder pf);
 }

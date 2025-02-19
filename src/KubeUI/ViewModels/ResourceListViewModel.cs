@@ -9,7 +9,7 @@ using k8s.Models;
 using KubeUI.Client;
 using KubeUI.Client.Informer;
 using KubeUI.Resources;
-using Swordfish.NET.Collections;
+using Avalonia.Collections;
 
 namespace KubeUI.ViewModels;
 
@@ -24,7 +24,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     public partial GroupApiVersionKind Kind { get; set; }
 
     [ObservableProperty]
-    public partial ConcurrentObservableDictionary<NamespacedName, T> Objects { get; set; }
+    public partial AvaloniaDictionary<NamespacedName, T> Objects { get; set; }
 
     [ObservableProperty]
     public partial KeyValuePair<NamespacedName, T> SelectedItem { get; set; }
@@ -65,7 +65,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _filter?.Dispose();
 
         _filter = Objects
-            .ToObservableChangeSet<ConcurrentObservableDictionary<NamespacedName, T>, KeyValuePair<NamespacedName, T>>()
+            .ToObservableChangeSet<AvaloniaDictionary<NamespacedName, T>, KeyValuePair<NamespacedName, T>>()
             .Filter(GenerateFilter())
             .Bind(out var filteredObjects)
             .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Set Namespace Filter: {ns}", typeof(T)));

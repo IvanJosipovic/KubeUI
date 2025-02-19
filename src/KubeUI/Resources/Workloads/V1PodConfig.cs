@@ -1,6 +1,4 @@
 ﻿using Avalonia.Controls.Templates;
-using Avalonia.Data.Converters;
-using Avalonia.Markup.Declarative;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
