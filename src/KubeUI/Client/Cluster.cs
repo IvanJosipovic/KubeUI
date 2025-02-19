@@ -458,12 +458,12 @@ public sealed partial class Cluster : ObservableObject, ICluster
                                             Name = fqdn,
                                             NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer())
                                         };
-                                        Dispatcher.UIThread.Post(() => list.Add(navItem));
+                                        list.Add(navItem);
                                         list = navItem.NavigationItems;
                                     }
                                 }
 
-                                Dispatcher.UIThread.Post(() => navItem!.NavigationItems.Add(nav));
+                                navItem!.NavigationItems.Add(nav);
                             }
                         }
                     }
