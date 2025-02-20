@@ -47,7 +47,7 @@
     <PackageReference Include="KubernetesClient" Version="16.0.2" />
     <PackageReference Include="KubernetesCRDModelGen" Version="1.0.0-alpha.425" />
     <PackageReference Include="Markdig" Version="0.40.0" />
-    <PackageReference Include="Meziantou.Analyzer" Version="2.0.187">
+    <PackageReference Include="Meziantou.Analyzer" Version="2.0.188">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
