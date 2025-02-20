@@ -24,7 +24,7 @@ public sealed class ClusterView : MyViewBase<ClusterViewModel>
     {
         if (ViewModel != null)
         {
-            Dispatcher.UIThread.Post(ViewModel.RefreshData);
+            Dispatcher.UIThread.Post(async () => await ViewModel.RefreshData());
         }
     }
 

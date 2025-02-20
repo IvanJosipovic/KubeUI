@@ -42,7 +42,9 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
 
-    private readonly SemaphoreSlim _semaphoreSlim = new(1);
+    private readonly SemaphoreSlim _connectionLimiter = new(1);
+
+    private readonly SemaphoreSlim _seedLimiter = new(1);
 
     public AvaloniaDictionary<GroupApiVersionKind, ContainerClass> Objects { get; } = new();
 
@@ -98,7 +100,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     public async Task Connect()
     {
-        await _semaphoreSlim.WaitAsync();
+        await _connectionLimiter.WaitAsync();
 
         try
         {
@@ -159,7 +161,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                             return;
                         }
 
-                        var items = GetObjectDictionary<V1Namespace>();
+                        var items = await GetObjectDictionaryAsync<V1Namespace>();
 
                         foreach (var item in settings.Namespaces)
                         {
@@ -216,7 +218,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         }
         finally
         {
-            _semaphoreSlim.Release();
+            _connectionLimiter.Release();
         }
     }
 
@@ -298,6 +300,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
         ContainerClass container;
 
+        await _seedLimiter.WaitAsync();
+
         if (Objects.TryGetValue(kind, out var container2))
         {
             container = container2;
@@ -310,12 +314,13 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 Items = new AvaloniaDictionary<NamespacedName, T>()
             };
 
-            Objects.TryAdd(kind, container);
+            Objects.Add(kind, container);
         }
 
         if (!container.Initialized)
         {
             container.Initialized = true;
+            _seedLimiter.Release();
 
             await GetSelfSubjectAccessReview(type, Verb.Create);
             await GetSelfSubjectAccessReview(type, Verb.Delete);
@@ -377,6 +382,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 }
             }
         }
+
+        _seedLimiter.Release();
     }
 
     private ResourceInformerCallback<T> GetResourceInformerCallback<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -564,26 +571,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
         }
     }
 
-    public T? GetObject<T>(string @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new()
-    {
-        _ = Seed<T>();
-
-        var attribute = GroupApiVersionKind.From<T>();
-
-        if (!Objects.TryGetValue(attribute, out var container))
-        {
-            container = new ContainerClass
-            {
-                Type = typeof(T),
-                Items = new AvaloniaDictionary<NamespacedName, T>()
-            };
-
-            Objects.TryAdd(attribute, container);
-        }
-
-        return ((AvaloniaDictionary<NamespacedName, T>)Objects[attribute].Items)[new NamespacedName(@namespace, name)];
-    }
-
     public async Task<T?> GetObjectAsync<T>(string @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         await Seed<T>(true);
@@ -595,20 +582,9 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     public AvaloniaDictionary<NamespacedName, T> GetObjectDictionary<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        _ = Task.Run(() => Seed<T>());
+        Seed<T>().GetAwaiter().GetResult();
 
         var attribute = GroupApiVersionKind.From<T>();
-
-        if (!Objects.TryGetValue(attribute, out var container))
-        {
-            container = new ContainerClass
-            {
-                Type = typeof(T),
-                Items = new AvaloniaDictionary<NamespacedName, T>()
-            };
-
-            Objects.TryAdd(attribute, container);
-        }
 
         return (AvaloniaDictionary<NamespacedName, T>)Objects[attribute].Items;
     }

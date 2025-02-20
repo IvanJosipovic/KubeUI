@@ -40,7 +40,7 @@ public class ClusterEndToEndTests
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        var ns3 = testHarness.Cluster.GetObject<V1Namespace>(null, "test");
+        var ns3 = await testHarness.Cluster.GetObjectAsync<V1Namespace>(null, "test");
         ns3.Name().Should().Be("test");
     }
 
@@ -76,7 +76,7 @@ public class ClusterEndToEndTests
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        var ns3 = testHarness.Cluster.GetObject<V1Secret>("default", "test");
+        var ns3 = await testHarness.Cluster.GetObjectAsync<V1Secret>("default", "test");
         ns3.Name().Should().Be("test");
         ns3.Namespace().Should().Be("default");
     }
@@ -105,7 +105,7 @@ public class ClusterEndToEndTests
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        var ns2 = testHarness.Cluster.GetObject<V1Namespace>(null, "test");
+        var ns2 = await testHarness.Cluster.GetObjectAsync<V1Namespace>(null, "test");
         ns2.Name().Should().Be("test");
     }
 
@@ -138,7 +138,7 @@ public class ClusterEndToEndTests
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        var ns2 = testHarness.Cluster.GetObject<V1Secret>("default", "test");
+        var ns2 = await testHarness.Cluster.GetObjectAsync<V1Secret>("default", "test");
         ns2.Name().Should().Be("test");
         ns2.Namespace().Should().Be("default");
     }
@@ -153,7 +153,7 @@ public class ClusterEndToEndTests
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        var ns = testHarness.Cluster.GetObjectDictionary<V1Namespace>().Values;
+        var ns = (await testHarness.Cluster.GetObjectDictionaryAsync<V1Namespace>()).Values;
         ns.Count.Should().BeGreaterThan(1);
     }
 
@@ -186,7 +186,7 @@ public class ClusterEndToEndTests
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        var ns2 = testHarness.Cluster.GetObject<V1Namespace>(null, ns.Name());
+        var ns2 = await testHarness.Cluster.GetObjectAsync<V1Namespace>(null, ns.Name());
         ns2.Name().Should().Be("test");
         ns2.Metadata.Labels["test"].Should().Be("test");
     }
@@ -225,7 +225,7 @@ public class ClusterEndToEndTests
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        var ns2 = testHarness.Cluster.GetObject<V1Secret>("default", "test");
+        var ns2 = await testHarness.Cluster.GetObjectAsync<V1Secret>("default", "test");
         ns2.Name().Should().Be("test");
         ns2.Namespace().Should().Be("default");
         ns2.Metadata.Labels["test"].Should().Be("test");
@@ -327,7 +327,7 @@ public class ClusterEndToEndTests
 
         await Task.Delay(TimeSpan.FromSeconds(5));
 
-        var ns3 = testHarness.Cluster.GetObject<V1Namespace>(null, "test");
+        var ns3 = await testHarness.Cluster.GetObjectAsync<V1Namespace>(null, "test");
         ns3.Name().Should().Be("test");
     }
 
