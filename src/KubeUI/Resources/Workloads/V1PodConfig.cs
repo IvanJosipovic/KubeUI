@@ -210,7 +210,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                             new StackPanel()
                                     .Children([
                                         new PropertyItem().Key("Name").Value(@x.Name),
-                                        new PropertyItem().Key("Status").Value(@x.Name),
+                                        //new PropertyItem().Key("Status").Value(@x.Name),
                                         new PropertyItem().Key("Image").Value(@x.Image),
                                         new PropertyItem().Key("Image Pull Policy").Value(@x.ImagePullPolicy),
                                     ])
@@ -226,7 +226,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                             new StackPanel()
                                     .Children([
                                         new PropertyItem().Key("Name").Value(@x.Name),
-                                        new PropertyItem().Key("Status").Value(this.Name),
+                                        //new PropertyItem().Key("Status").Value(this.Name),
                                         new PropertyItem().Key("Image").Value(@x.Image),
                                         new PropertyItem().Key("Image Pull Policy").Value(@x.ImagePullPolicy),
                                     ])
