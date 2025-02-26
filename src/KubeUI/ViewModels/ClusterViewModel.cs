@@ -14,7 +14,7 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
 
     public ClusterViewModel()
     {
-        Title = Resources.ClusterViewModel_Title;
+        Title = Assets.Resources.ClusterViewModel_Title;
         EventsVM = Application.Current.GetRequiredService<ResourceListViewModel<Corev1Event>>();
     }
 
@@ -54,10 +54,10 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
     [ObservableProperty]
     public partial ObservableValue MemoryUsage { get; set; } = new();
 
-    public void RefreshData()
+    public async Task RefreshData()
     {
-        var pods = Cluster.GetObjectDictionary<V1Pod>();
-        var nodes = Cluster.GetObjectDictionary<V1Node>();
+        var pods = await Cluster.GetObjectDictionaryAsync<V1Pod>();
+        var nodes = await Cluster.GetObjectDictionaryAsync<V1Node>();
 
         TotalPods.Value = pods.Count;
         MaxPods.Value = nodes.Sum(x => x.Value.Status.Capacity?.TryGetValue("pods", out var value) == true ? value.ToDouble(): 0);
@@ -81,7 +81,7 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
 
         Id = nameof(ClusterViewModel) + "-" + Cluster.Name + "-" + Title;
 
-        RefreshData();
+        RefreshData().GetAwaiter().GetResult();
 
         if (EventsVM is IInitializeCluster init)
         {

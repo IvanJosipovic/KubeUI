@@ -78,7 +78,7 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
                             new TextBlock()
                                 .Text(" "),
                             new TextBlock()
-                                .Text(new Binding($"{nameof(ResourceNavigationLink.Objects)}.{nameof(ResourceNavigationLink.Objects.Count)}", BindingMode.OneWay)), //todo fix
+                                .Text(Utilities.FuncBinding<ResourceNavigationLink>(x => x.Objects.Count))
                             ])
                 ,(x) => x.NavigationItems),
 

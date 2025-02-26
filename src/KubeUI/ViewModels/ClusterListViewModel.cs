@@ -17,7 +17,7 @@ public sealed partial class ClusterListViewModel : ViewModelBase
         ClusterManager = Application.Current.GetRequiredService<ClusterManager>();
         _dialogService = Application.Current.GetRequiredService<IDialogService>();
 
-        Title = Resources.ClusterListViewModel_Title;
+        Title = Assets.Resources.ClusterListViewModel_Title;
         Id = nameof(ClusterListViewModel);
         SelectedItem = ClusterManager.Clusters.FirstOrDefault();
     }
@@ -30,10 +30,10 @@ public sealed partial class ClusterListViewModel : ViewModelBase
     {
         ContentDialogSettings settings = new()
         {
-            Title = Resources.ClusterListViewModel_Delete_Title,
-            Content = string.Format(Resources.ClusterListViewModel_Delete_Content, cluster.Name),
-            PrimaryButtonText = Resources.ClusterListViewModel_Delete_Primary,
-            SecondaryButtonText = Resources.ClusterListViewModel_Delete_Secondary,
+            Title = Assets.Resources.ClusterListViewModel_Delete_Title,
+            Content = string.Format(Assets.Resources.ClusterListViewModel_Delete_Content, cluster.Name),
+            PrimaryButtonText = Assets.Resources.ClusterListViewModel_Delete_Primary,
+            SecondaryButtonText = Assets.Resources.ClusterListViewModel_Delete_Secondary,
             DefaultButton = ContentDialogButton.Secondary
         };
 

@@ -1,0 +1,43 @@
+using k8s.Models;
+using Scrutor;
+
+namespace KubeUI.Resources.Storage;
+
+[ServiceDescriptor<ResourceConfigBase<V1PersistentVolume>>(ServiceLifetime.Transient)]
+public sealed partial class V1PersistentVolumeConfig : ResourceConfigBase<V1PersistentVolume>
+{
+    public override string Category => "Storage";
+    public override int Order => 1;
+
+    public override IList<IResourceListColumn> Columns()
+    {
+        return [
+            NameColumn(SortDirection.Ascending),
+            new ResourceListColumn<V1PersistentVolume, string>()
+            {
+                Name = "Storage Class",
+                Field = x => x.Spec.StorageClassName,
+                Width = "*",
+            },
+            new ResourceListColumn<V1PersistentVolume, string>()
+            {
+                Name = "Size",
+                Field = x => x.Spec.Capacity["storage"].Value,
+                Width = nameof(DataGridLengthUnitType.SizeToCells)
+            },
+            new ResourceListColumn<V1PersistentVolume, string>()
+            {
+                Name = "Claim",
+                Field = x => x.Spec.ClaimRef.Name,
+                Width = "*",
+            },
+            AgeColumn(),
+            new ResourceListColumn<V1PersistentVolume, string>()
+            {
+                Name = "Status",
+                Field = x => x.Status.Phase,
+                Width = nameof(DataGridLengthUnitType.SizeToCells)
+            },
+        ];
+    }
+}

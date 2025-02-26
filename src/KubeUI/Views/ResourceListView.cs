@@ -6,6 +6,8 @@ using Avalonia.Controls.Templates;
 using Avalonia.Styling;
 using KubeUI.Client.Informer;
 using KubeUI.Client;
+using KubeUI.Resources;
+using Avalonia.Input;
 
 namespace KubeUI.Views;
 
@@ -29,13 +31,13 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
         var converter = new DataGridLengthConverter();
 
-        foreach (var columnDefinition in ViewModel.ViewDefinition.Columns)
+        foreach (var columnDefinition in ViewModel.ResourceConfig.Columns())
         {
             try
             {
-                var columnDisplay = (Func<T, string>)columnDefinition.GetType().GetProperty(nameof(ResourceListViewDefinitionColumn<T, string>.Display)).GetValue(columnDefinition);
+                var columnDisplay = (Func<T, string>)columnDefinition.GetType().GetProperty(nameof(ResourceListColumn<T, string>.Display)).GetValue(columnDefinition);
 
-                var columnField = columnDefinition.GetType().GetProperty(nameof(ResourceListViewDefinitionColumn<T, string>.Field)).GetValue(columnDefinition);
+                var columnField = columnDefinition.GetType().GetProperty(nameof(ResourceListColumn<T, string>.Field)).GetValue(columnDefinition);
 
                 // Create Sort FuncComparer
                 var colType = columnField.GetType().GenericTypeArguments[1];
@@ -104,43 +106,23 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
         _grid.ContextMenu.Items.Clear();
 
-        if (ViewModel.ViewDefinition.DefaultMenuItems)
+        foreach (var item in ViewModel.ResourceConfig.DefaultMenuItems())
         {
-            _grid.ContextMenu.Items.Add(CreateMenuItem(new()
-            {
-                Header = "View",
-                CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewCommand),
-                CommandParameterPath = "SelectedItem",
-                IconResource = "ic_fluent_panel_right_filled",
-            }));
-            _grid.ContextMenu.Items.Add(CreateMenuItem(new()
-            {
-                Header = "View Yaml",
-                CommandPath = nameof(ResourceListViewModel<V1Pod>.ViewYamlCommand),
-                CommandParameterPath = "SelectedItem",
-                IconResource = "code_regular",
-            }));
-            _grid.ContextMenu.Items.Add(CreateMenuItem(new()
-            {
-                Header = "Delete",
-                CommandPath = nameof(ResourceListViewModel<V1Pod>.DeleteCommand),
-                CommandParameterPath = "SelectedItems",
-                IconResource = "delete_regular",
-            }));
+            _grid.ContextMenu.Items.Add(CreateMenuItem(item));
         }
 
-        if (ViewModel.ViewDefinition.MenuItems != null)
+        if (ViewModel.ResourceConfig.MenuItems != null)
         {
             _grid.ContextMenu.Items.Add(new Separator());
 
-            foreach (var item in ViewModel.ViewDefinition.MenuItems)
+            foreach (var item in ViewModel.ResourceConfig.MenuItems())
             {
                 _grid.ContextMenu.Items.Add(CreateMenuItem(item));
             }
         }
     }
 
-    private MenuItem CreateMenuItem(ResourceListViewMenuItem menu, int level = 0)
+    private MenuItem CreateMenuItem(ResourceMenuItem menu, int level = 0)
     {
         var menuItem = new MenuItem();
 
@@ -155,25 +137,40 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
         if (!string.IsNullOrEmpty(menu.CommandPath))
         {
-            menuItem.Bind(MenuItem.CommandProperty, new Binding(menu.CommandPath) { Source = DataContext });
+            menuItem.Bind(MenuItem.CommandProperty, new Binding(nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + menu.CommandPath) { Source = DataContext });
         }
 
         if (!string.IsNullOrEmpty(menu.CommandParameterPath))
         {
-            menuItem.Bind(MenuItem.CommandParameterProperty, new Binding(menu.CommandParameterPath)
+            if (menu.CommandParameterAddSelectedItem == true)
             {
-                Source = _grid,
-            });
+                // Create the MultiBinding
+                var multiBinding = new MultiBinding
+                {
+                    Mode = BindingMode.OneWay
+                };
+
+                // Add the individual bindings
+                multiBinding.Bindings.Add(new Binding("SelectedItem.Value"));
+                multiBinding.Bindings.Add(new Binding(menu.CommandParameterPath)
+                {
+                    Source = _grid,
+                });
+
+                menuItem.Bind(MenuItem.CommandParameterProperty, multiBinding);
+            }
+            else
+            {
+                menuItem.Bind(MenuItem.CommandParameterProperty, new Binding(menu.CommandParameterPath)
+                {
+                    Source = _grid,
+                });
+            }
         }
 
         if (!string.IsNullOrEmpty(menu.ItemSourcePath))
         {
             menuItem.Bind(ItemsControl.ItemsSourceProperty, new Binding(menu.ItemSourcePath));
-        }
-
-        if (menu.ItemSourceBinding != null)
-        {
-            menuItem.Bind(ItemsControl.ItemsSourceProperty, menu.ItemSourceBinding);
         }
 
         if (!string.IsNullOrEmpty(menu.IconResource))
@@ -197,7 +194,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
         return menuItem;
     }
 
-    private List<Style> GenerateStyles(ResourceListViewMenuItem menu, int level = 0)
+    private List<Style> GenerateStyles(ResourceMenuItem menu, int level = 0)
     {
         var styles = new List<Style>();
 
@@ -228,12 +225,35 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
         if (!string.IsNullOrEmpty(menu.CommandPath))
         {
-            style.Add(new Setter(MenuItem.CommandProperty, new Binding(menu.CommandPath) { Source = DataContext }));
+            style.Add(new Setter(MenuItem.CommandProperty, new Binding(nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + menu.CommandPath) { Source = DataContext }));
         }
 
         if (!string.IsNullOrEmpty(menu.CommandParameterPath))
         {
-            style.Add(new Setter(MenuItem.CommandParameterProperty, new Binding(menu.CommandParameterPath)));
+            if (menu.CommandParameterAddSelectedItem == true)
+            {
+                // Create the MultiBinding
+                var multiBinding = new MultiBinding
+                {
+                    Mode = BindingMode.OneWay
+                };
+
+                // Add the individual bindings
+                multiBinding.Bindings.Add(new Binding("SelectedItem.Value")
+                {
+                    Source = _grid,
+                });
+                multiBinding.Bindings.Add(new Binding(menu.CommandParameterPath));
+
+                style.Add(new Setter(MenuItem.CommandParameterProperty, multiBinding));
+            }
+            else
+            {
+                style.Add(new Setter(MenuItem.CommandParameterProperty, new Binding(menu.CommandParameterPath)
+                {
+                    Source = _grid,
+                }));
+            }
         }
 
         if (!string.IsNullOrEmpty(menu.ItemSourcePath))
@@ -253,7 +273,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
     protected override StyleGroup? BuildStyles()
     {
-        return ViewModel.ViewDefinition.SetStyle.Invoke();
+        return ViewModel?.ResourceConfig.ListStyle();
     }
 
     protected override object Build(ResourceListViewModel<T>? vm)
@@ -267,8 +287,8 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                     .Children([
                         new Button()
                             .Col(0)
-                            .Command(vm.NewResourceCommand)
-                            .IsVisible(@vm.ViewDefinition.ShowNewResource)
+                            .Command(vm.ResourceConfig.NewResourceCommand)
+                            .IsVisible(@vm.ResourceConfig.ShowNewResource)
                             .ToolTip(Assets.Resources.ResourceListView_NewResource)
                             .Content(new PathIcon() { Data = (Geometry)Application.Current.FindResource("add_square_regular") }),
                         new Label()
@@ -283,21 +303,21 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                             .Children([
                                 new TextBox()
                                     .Col(0)
-                                    .Width(300)
+                                    .Width(200)
                                     .Background(Brushes.Transparent)
                                     .HorizontalAlignment(HorizontalAlignment.Right)
                                     .VerticalAlignment(VerticalAlignment.Stretch)
                                     .VerticalContentAlignment(VerticalAlignment.Center)
                                     .Text(@vm.SearchQuery)
-                                    .Watermark("Search"),
+                                    .Watermark("Search                                     "),
 
                                 new MultiComboBox()
                                     .Col(1)
-                                    .Width(300)
                                     .MaxHeight(20)
+                                    .Width(200)
                                     .HorizontalAlignment(HorizontalAlignment.Right)
                                     .Classes("ClearButton")
-                                    .IsVisible(@vm.ViewDefinition.ShowNamespaces)
+                                    .IsVisible(@vm.ResourceConfig.IsNamespaced)
                                     .ItemsSource(@vm.Cluster.Namespaces.Values)
                                     .SelectedItems(@vm.Cluster.SelectedNamespaces)
                                     .SelectedItemTemplate(new FuncDataTemplate<V1Namespace?>((x,y) => new Label().Content(@x?.Metadata.Name)))
@@ -316,13 +336,21 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                     .IsReadOnly(true)
                     .MinColumnWidth(90)
                     .RowHeight(Convert.ToDouble(_settingsService.Settings.ListRowHeight))
-                    //.OnTapped((x) =>
-                    //{
-                    //    if(vm.ViewCommand.CanExecute(_grid.SelectedItem))
-                    //    {
-                    //        vm.ViewCommand.Execute(_grid.SelectedItem);
-                    //    }
-                    //})
+                    .OnDoubleTapped((x) =>
+                    {
+                        if (_grid.SelectedItem == null) return;
+
+                        if(vm.ResourceConfig.ViewCommand.CanExecute(((KeyValuePair<NamespacedName, T>)_grid.SelectedItem).Value))
+                        {
+                            vm.ResourceConfig.ViewCommand.Execute(((KeyValuePair<NamespacedName, T>)_grid.SelectedItem).Value);
+                        }
+                    })
+                    .KeyBindings([
+                        new KeyBinding()
+                            .Gesture(new KeyGesture(Key.Enter))
+                            .Command(vm.ResourceConfig.ViewCommand)
+                            .CommandParameter(new Binding("SelectedItem.Value") { Source = vm }),
+                        ])
                     .Styles([
                         new Style<DataGridCell>()
                             .Setter(DataGridCell.FontSizeProperty, Convert.ToDouble(_settingsService.Settings.FontSize))

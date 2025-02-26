@@ -2,7 +2,7 @@
 
 namespace KubeUI.ViewModels;
 
-internal interface IInitializeCluster
+public interface IInitializeCluster
 {
     void Initialize(ICluster cluster);
 }

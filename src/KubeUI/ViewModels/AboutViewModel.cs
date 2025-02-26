@@ -6,7 +6,7 @@ public sealed partial class AboutViewModel : ViewModelBase
 {
     public AboutViewModel()
     {
-        Title = Resources.AboutView_Title;
+        Title = Assets.Resources.AboutView_Title;
         Id = nameof(AboutViewModel);
     }
 

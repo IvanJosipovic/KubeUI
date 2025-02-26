@@ -41,7 +41,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     public VisualizationViewModel()
     {
-        Title = Resources.VisualizationViewModel_Title;
+        Title = Assets.Resources.VisualizationViewModel_Title;
     }
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)

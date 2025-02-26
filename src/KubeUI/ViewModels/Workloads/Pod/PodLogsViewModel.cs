@@ -47,7 +47,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     public PodLogsViewModel(ILogger<PodLogsViewModel> logger)
     {
         _logger = logger;
-        Title = Resources.PodLogsViewModel_Title;
+        Title = Assets.Resources.PodLogsViewModel_Title;
     }
 
     public async Task Connect()
