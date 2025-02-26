@@ -217,7 +217,7 @@ public sealed partial class MainViewModel : ViewModelBase
     {
         var files = await App.TopLevel.StorageProvider.OpenFilePickerAsync(new()
         {
-            Title = Resources.MainView_Menu_File_LoadKubeConfig_Open,
+            Title = Assets.Resources.MainView_Menu_File_LoadKubeConfig_Open,
             AllowMultiple = true,
         });
 
@@ -266,10 +266,10 @@ public sealed partial class MainViewModel : ViewModelBase
             {
                 ContentDialogSettings settings = new()
                 {
-                    Title = Resources.MainViewModel_CheckForUpdates_Title,
-                    Content = Resources.MainViewModel_CheckForUpdates_Content + "\n\n" + Markdig.Markdown.ToPlainText(update.TargetFullRelease.NotesMarkdown),
-                    PrimaryButtonText = Resources.MainViewModel_CheckForUpdates_Primary,
-                    SecondaryButtonText = Resources.MainViewModel_CheckForUpdates_Secondary,
+                    Title = Assets.Resources.MainViewModel_CheckForUpdates_Title,
+                    Content = Assets.Resources.MainViewModel_CheckForUpdates_Content + "\n\n" + Markdig.Markdown.ToPlainText(update.TargetFullRelease.NotesMarkdown),
+                    PrimaryButtonText = Assets.Resources.MainViewModel_CheckForUpdates_Primary,
+                    SecondaryButtonText = Assets.Resources.MainViewModel_CheckForUpdates_Secondary,
                     DefaultButton = ContentDialogButton.Secondary
                 };
 
@@ -279,8 +279,8 @@ public sealed partial class MainViewModel : ViewModelBase
                 {
                     ContentDialogSettings updatePrompt = new()
                     {
-                        Title = Resources.MainViewModel_CheckForUpdates_Updating_Title,
-                        Content = Resources.MainViewModel_CheckForUpdates_Updating_Content,
+                        Title = Assets.Resources.MainViewModel_CheckForUpdates_Updating_Title,
+                        Content = Assets.Resources.MainViewModel_CheckForUpdates_Updating_Content,
                         IsPrimaryButtonEnabled = false,
                         IsSecondaryButtonEnabled = false
                     };

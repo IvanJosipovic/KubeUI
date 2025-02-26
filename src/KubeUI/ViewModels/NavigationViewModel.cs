@@ -2,6 +2,7 @@
 using Avalonia.Platform.Storage;
 using Dock.Model.Core;
 using KubeUI.Client;
+using Swordfish.NET.Collections;
 
 namespace KubeUI.ViewModels;
 
@@ -22,7 +23,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
     public NavigationViewModel()
     {
         ClusterManager = Application.Current.GetRequiredService<ClusterManager>();
-        Title = Resources.NavigationViewModel_Title;
+        Title = Assets.Resources.NavigationViewModel_Title;
         Id = nameof(NavigationViewModel);
         _logger = Application.Current.GetRequiredService<ILogger<NavigationViewModel>>();
         //_notificationManager = Application.Current.GetRequiredService<INotificationManager>();
@@ -78,7 +79,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
             // Start async operation to open the dialog.
             var files = await App.TopLevel.StorageProvider.OpenFilePickerAsync(new()
             {
-                Title = Resources.NavigationViewModel_LoadYaml,
+                Title = Assets.Resources.NavigationViewModel_LoadYaml,
                 AllowMultiple = true,
                 FileTypeFilter = new List<FilePickerFileType>() { new("Yaml") { Patterns = ["*.yaml", ".yml"] } }
             });
@@ -101,7 +102,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
             // Start async operation to open the dialog.
             var folders = await App.TopLevel.StorageProvider.OpenFolderPickerAsync(new()
             {
-                Title = Resources.NavigationViewModel_LoadFolder,
+                Title = Assets.Resources.NavigationViewModel_LoadFolder,
                 AllowMultiple = false
             });
 
@@ -146,10 +147,13 @@ public partial class NavigationItem : ObservableObject
     public partial string Name { get; set; }
 
     [ObservableProperty]
-    public partial ObservableCollection<NavigationItem> NavigationItems { get; set; } = [];
+    public partial ObservableCollection<NavigationItem> NavigationItems { get; set; } = new ObservableSortedCollection<NavigationItem>(new NavigationItemOrderComparer());
 
     [ObservableProperty]
     public partial bool IsExpanded { get; set; }
+
+    [ObservableProperty]
+    public partial int Order { get; set; }
 }
 
 public partial class NavigationLink : NavigationItem
@@ -169,10 +173,18 @@ public partial class ResourceNavigationLink : NavigationLink
     public string IconPath => Utilities.GetKubeAssetPath(ControlType);
 }
 
-public class NavigationItemComparer : IComparer<NavigationItem>
+public class NavigationItemNameComparer : IComparer<NavigationItem>
 {
     public int Compare(NavigationItem? x, NavigationItem? y)
     {
         return x?.Name.CompareTo(y?.Name) ?? 0;
+    }
+}
+
+public class NavigationItemOrderComparer : IComparer<NavigationItem>
+{
+    public int Compare(NavigationItem? x, NavigationItem? y)
+    {
+        return x?.Order.CompareTo(y?.Order) ?? 0;
     }
 }

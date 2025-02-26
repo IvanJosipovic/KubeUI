@@ -11,36 +11,36 @@ public static class MainWindow
             .SetProp(NativeMenu.MenuProperty, new NativeMenu()
                 .Items([
                     new NativeMenuItem()
-                        .Header(Resources.MainView_Menu_File)
+                        .Header(Assets.Resources.MainView_Menu_File)
                         .Items([
                             new NativeMenuItem()
-                                .Header(Resources.MainView_Menu_File_Clusters)
+                                .Header(Assets.Resources.MainView_Menu_File_Clusters)
                                 .Command(vm.OpenClustersCommand),
                             new NativeMenuItem()
-                                .Header(Resources.MainView_Menu_File_Settings)
+                                .Header(Assets.Resources.MainView_Menu_File_Settings)
                                 .Command(vm.OpenSettingsCommand),
 
                             new NativeMenuItemSeparator(),
 
                             new NativeMenuItem()
-                                .Header(Resources.MainView_Menu_File_Exit)
+                                .Header(Assets.Resources.MainView_Menu_File_Exit)
                                 .Command(vm.CloseCommand),
                             ]),
                     new NativeMenuItem()
-                        .Header(Resources.MainView_Menu_Window)
+                        .Header(Assets.Resources.MainView_Menu_Window)
                         .Items([
                             new NativeMenuItem()
-                                .Header(Resources.MainView_Menu_Window_ResetLayout)
+                                .Header(Assets.Resources.MainView_Menu_Window_ResetLayout)
                                 .Command(vm.ResetLayoutCommand),
                             new NativeMenuItem()
-                                .Header(Resources.MainView_Menu_Window_SwitchTheme)
+                                .Header(Assets.Resources.MainView_Menu_Window_SwitchTheme)
                                 .Command(vm.SwitchThemeCommand),
                             ]),
                     new NativeMenuItem()
-                        .Header(Resources.MainView_Menu_Help)
+                        .Header(Assets.Resources.MainView_Menu_Help)
                         .Items([
                             new NativeMenuItem()
-                                .Header(Resources.MainView_Menu_Help_About)
+                                .Header(Assets.Resources.MainView_Menu_Help_About)
                                 .Command(vm.OpenAboutCommand),
                             ]),
                     ])

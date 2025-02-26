@@ -4,6 +4,7 @@ using Avalonia.Input;
 using k8s;
 using k8s.Autorest;
 using k8s.Models;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -261,11 +262,11 @@ public static class Utilities
         return (IKubernetesObject<V1ObjectMeta>)DeserializeKubeJson(json, obj.GetType());
     }
 
-    private static readonly MethodInfo _deserializeJson = typeof(KubernetesJson).GetMethod(nameof(KubernetesJson.Deserialize), BindingFlags.Static | BindingFlags.Public, [typeof(string), typeof(JsonSerializerOptions)]);
+    private static readonly MethodInfo s_deserializeJson = typeof(KubernetesJson).GetMethod(nameof(KubernetesJson.Deserialize), BindingFlags.Static | BindingFlags.Public, [typeof(string), typeof(JsonSerializerOptions)]);
 
     public static object DeserializeKubeJson(string json, Type type)
     {
-        var fooRef = _deserializeJson.MakeGenericMethod(type);
+        var fooRef = s_deserializeJson.MakeGenericMethod(type);
 
         return fooRef.Invoke(null, [json, null]);
     }
@@ -316,5 +317,34 @@ public static class Utilities
         }
 
         logger.LogError(ex, message);
+    }
+
+    public static IBinding FuncBinding<T>(Expression<Func<T, object>> func)
+    {
+        return new Binding(PathBuilder(func));
+    }
+
+    /// <summary>
+    /// Get the path of a property from a lambda expression
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="func"></param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
+    public static string PathBuilder<T>(Expression<Func<T, object>> func)
+    {
+        if (func.Body is MemberExpression body)
+        {
+            var str = body.ToString();
+            return str.Substring(str.IndexOf(".") + 1);
+        }
+
+        if (func.Body is UnaryExpression unary)
+        {
+            var str = unary.Operand.ToString();
+            return str.Substring(str.IndexOf(".") + 1);
+        }
+
+        throw new Exception("Unknown Expression Type");
     }
 }

@@ -1,5 +1,4 @@
 ﻿using Avalonia.Controls.Templates;
-using k8s.Models;
 
 namespace KubeUI.Views;
 

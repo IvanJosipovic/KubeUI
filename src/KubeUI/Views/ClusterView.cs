@@ -1,5 +1,4 @@
-﻿using Avalonia.Markup.Declarative;
-using Avalonia.Styling;
+﻿using Avalonia.Styling;
 using k8s.Models;
 using LiveChartsCore.Defaults;
 using LiveChartsCore.Measure;
@@ -25,7 +24,7 @@ public sealed class ClusterView : MyViewBase<ClusterViewModel>
     {
         if (ViewModel != null)
         {
-            Dispatcher.UIThread.Post(ViewModel.RefreshData);
+            Dispatcher.UIThread.Post(async () => await ViewModel.RefreshData());
         }
     }
 

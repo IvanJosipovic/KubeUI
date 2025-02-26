@@ -1,9 +1,8 @@
-﻿using k8s.Models;
-using k8s;
-using Avalonia.Controls.Templates;
-using System.Text;
-using Avalonia.Controls.Primitives;
+﻿using Avalonia.Controls.Primitives;
 using Avalonia.Styling;
+using k8s;
+using k8s.Models;
+using KubeUI.Client;
 
 namespace KubeUI.Views;
 
@@ -16,7 +15,7 @@ public sealed class ResourcePropertiesView<T> : MyViewBase<ResourcePropertiesVie
 
     protected override object Build(ResourcePropertiesViewModel<T>? vm)
     {
-        if (vm == null)
+        if (vm == null || vm.Object == null)
             return new StackPanel();
 
         var sp = new StackPanel()
@@ -32,43 +31,50 @@ public sealed class ResourcePropertiesView<T> : MyViewBase<ResourcePropertiesVie
                         .Set(PropertyItem.ValueProperty, @vm.Object.Metadata.CreationTimestamp, converter: new ((x) => x.HasValue ? x.Value.ToLocalTime().ToString() : "" )),
             ]);
 
-        if (typeof(T) == typeof(V1Secret))
+        var props = vm.ResourceConfig.Properties(vm.Object);
+
+        if (props != null)
         {
-            var obj = vm.Object as V1Secret;
-
-            sp.Children.Add(
-                new ExpandableSection()
-                    .Text("Data")
-                    .IsExpanded(true)
-                    .Controls([
-                        new ItemsControl()
-                            .ItemsSource(@obj.Data)
-                            .ItemTemplate(new FuncDataTemplate<KeyValuePair<string, byte[]>>((x,_) =>
-                                new PropertyItem()
-                                    .Key(@x.Key)
-                                    .Value(Encoding.UTF8.GetString(x.Value))
-                            ))
-                    ])
-            );
-
-            sp.Children.Add(
-                new ExpandableSection()
-                    .Text("Certificates")
-                    .IsExpanded(true)
-                    .Controls([
-                        new ItemsControl()
-                            .ItemsSource(@obj.Data)
-                            .ItemTemplate(new FuncDataTemplate<KeyValuePair<string, byte[]>>((x,_) =>
-                                new CertificateItemView()
-                                    .Header(@x.Key)
-                                    .Bytes(@x.Value)
-                            ))
-                    ])
-            );
+            sp.Children.AddRange(props);
         }
+
         return new ScrollViewer()
                 .VerticalScrollBarVisibility(ScrollBarVisibility.Auto)
                 .Content(sp);
+    }
+
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+        if (ViewModel != null)
+        {
+            ViewModel.Cluster.OnChange += Cluster_OnChange;
+        }
+    }
+
+    private async void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)
+    {
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            if (ViewModel?.Object != null
+                && ViewModel.Object.Kind == resource.Kind
+                && ViewModel.Object.ApiVersion == resource.ApiVersion
+                && ViewModel.Object.Metadata.Name == resource.Metadata.Name
+                && ViewModel.Object.Metadata.NamespaceProperty == resource.Metadata.NamespaceProperty)
+            {
+                ViewModel.Object = (T)resource;
+                Reload();
+            }
+        });
+    }
+
+    protected override void OnUnloaded(RoutedEventArgs e)
+    {
+        base.OnUnloaded(e);
+        if (ViewModel != null)
+        {
+            ViewModel.Cluster.OnChange -= Cluster_OnChange;
+        }
     }
 }
 

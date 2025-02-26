@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -39,18 +39,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AvaloniaTerminal" Version="1.0.0-alpha.3" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="DynamicData" Version="9.1.2" />
     <PackageReference Include="Humanizer" Version="2.14.1" />
     <PackageReference Include="JsonPathLINQ" Version="1.0.0-alpha.10" />
     <PackageReference Include="KubernetesClient" Version="16.0.2" />
-    <PackageReference Include="KubernetesCRDModelGen" Version="1.0.0-alpha.425" />
+    <PackageReference Include="KubernetesCRDModelGen" Version="1.0.0-alpha.447" />
     <PackageReference Include="Markdig" Version="0.40.0" />
-    <PackageReference Include="Meziantou.Analyzer" Version="2.0.187">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.1" />
     <PackageReference Include="NReco.Logging.File" Version="1.2.2" />
     <PackageReference Include="OpenTelemetry" Version="1.11.1" />
@@ -58,7 +53,7 @@
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.11.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Process" Version="1.11.0-beta.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.11.0" />
-    <PackageReference Include="roslynator.analyzers" Version="4.13.0">
+    <PackageReference Include="roslynator.analyzers" Version="4.13.1">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

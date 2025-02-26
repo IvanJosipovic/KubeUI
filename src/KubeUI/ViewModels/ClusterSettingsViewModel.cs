@@ -10,7 +10,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
 
     public ClusterSettingsViewModel()
     {
-        Title = Resources.ClusterSettingsViewModel_Title;
+        Title = Assets.Resources.ClusterSettingsViewModel_Title;
 
         SettingsService = Application.Current.GetRequiredService<ISettingsService>();
     }

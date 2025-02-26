@@ -18,7 +18,7 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
     public PortForwarderListViewModel()
     {
         _dialogService = Application.Current.GetRequiredService<IDialogService>();
-        Title = Resources.PortForwarderListViewModel_Title;
+        Title = Assets.Resources.PortForwarderListViewModel_Title;
     }
 
     [RelayCommand(CanExecute = nameof(CanRemove))]
@@ -26,10 +26,10 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
     {
         ContentDialogSettings settings = new()
         {
-            Title = Resources.PortForwarderListViewModel_Remove_Title,
-            Content = string.Format(Resources.PortForwarderListViewModel_Remove_Content, pf.Namespace, pf.Name, pf.Port),
-            PrimaryButtonText = Resources.PortForwarderListViewModel_Remove_Primary,
-            SecondaryButtonText = Resources.PortForwarderListViewModel_Remove_Secondary,
+            Title = Assets.Resources.PortForwarderListViewModel_Remove_Title,
+            Content = string.Format(Assets.Resources.PortForwarderListViewModel_Remove_Content, pf.Namespace, pf.Name, pf.Port),
+            PrimaryButtonText = Assets.Resources.PortForwarderListViewModel_Remove_Primary,
+            SecondaryButtonText = Assets.Resources.PortForwarderListViewModel_Remove_Secondary,
             DefaultButton = ContentDialogButton.Secondary
         };
 

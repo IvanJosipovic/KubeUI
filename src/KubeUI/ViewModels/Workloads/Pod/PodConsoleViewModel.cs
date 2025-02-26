@@ -23,7 +23,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
     {
         _logger = logger;
         _settingsService = settings;
-        Title = Resources.PodConsoleViewModel_Title;
+        Title = Assets.Resources.PodConsoleViewModel_Title;
     }
 
     [ObservableProperty]
