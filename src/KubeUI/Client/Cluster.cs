@@ -182,7 +182,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                     await InitMetrics();
 
-                    await AddDefaultNavigation();
+                    await Dispatcher.UIThread.InvokeAsync(AddDefaultNavigation, DispatcherPriority.Background);
                 }
                 catch (Exception ex)
                 {

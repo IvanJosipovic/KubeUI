@@ -303,6 +303,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                             .Children([
                                 new TextBox()
                                     .Col(0)
+                                    .Width(200)
                                     .Background(Brushes.Transparent)
                                     .HorizontalAlignment(HorizontalAlignment.Right)
                                     .VerticalAlignment(VerticalAlignment.Stretch)
@@ -313,6 +314,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                                 new MultiComboBox()
                                     .Col(1)
                                     .MaxHeight(20)
+                                    .Width(200)
                                     .HorizontalAlignment(HorizontalAlignment.Right)
                                     .Classes("ClearButton")
                                     .IsVisible(@vm.ResourceConfig.IsNamespaced)
