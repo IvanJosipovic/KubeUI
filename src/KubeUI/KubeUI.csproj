@@ -45,7 +45,7 @@
     <PackageReference Include="Humanizer" Version="2.14.1" />
     <PackageReference Include="JsonPathLINQ" Version="1.0.0-alpha.10" />
     <PackageReference Include="KubernetesClient" Version="16.0.2" />
-    <PackageReference Include="KubernetesCRDModelGen" Version="1.0.0-alpha.425" />
+    <PackageReference Include="KubernetesCRDModelGen" Version="1.0.0-alpha.447" />
     <PackageReference Include="Markdig" Version="0.40.0" />
     <PackageReference Include="Meziantou.Analyzer" Version="2.0.188">
       <PrivateAssets>all</PrivateAssets>
