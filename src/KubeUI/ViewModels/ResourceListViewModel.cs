@@ -49,7 +49,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     {
         Cluster = cluster;
         Kind = GroupApiVersionKind.From<T>();
-        Title = Kind.Kind.Humanize(LetterCasing.Title);
+        Title = Kind.Kind.Humanize(LetterCasing.Title).Pluralize();
         Id = Cluster.Name + "-" + Kind;
         ResourceConfig = (ResourceConfigBase<T>)Cluster.GetResourceConfig(Kind);
 
