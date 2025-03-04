@@ -76,8 +76,7 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
                             new TextBlock()
                                 .Text(@vm.Name),
                             new TextBlock()
-                                .Text(" "),
-                            new TextBlock()
+                                .Margin(5,0,0,0)
                                 .Text(Utilities.FuncBinding<ResourceNavigationLink>(x => x.Objects.Count))
                             ])
                 ,(x) => x.NavigationItems),
