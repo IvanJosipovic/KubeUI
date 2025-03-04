@@ -277,6 +277,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 if (config.Type == typeof(V1CustomResourceDefinition))
                 {
                     _crdNavigationLink = nav;
+                    nav.NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer());
                 }
 
                 if (string.IsNullOrEmpty(config.Category))
