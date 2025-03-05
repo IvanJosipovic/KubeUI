@@ -199,11 +199,11 @@ public static T MaxAngle<TValue,T>(this T control, TValue value, FuncValueConver
  // MaxValue
 
 /*BindFromExpressionSetterGenerator*/
-public static T MaxValue<T>(this T control, Func<System.Nullable<System.Double>> func, Action<System.Nullable<System.Double>>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+public static T MaxValue<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
    => control._set(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.MaxValueProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T MaxValue<T>(this T control,System.Nullable<System.Double> value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+public static T MaxValue<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
 => control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.MaxValueProperty, ps, () => control.MaxValue = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
@@ -215,7 +215,7 @@ public static T MaxValue<T>(this T control, AvaloniaProperty avaloniaProperty, B
    => control._set(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.MaxValueProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T MaxValue<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Nullable<System.Double>> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
+public static T MaxValue<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : LiveChartsCore.SkiaSharpView.Avalonia.PieChart 
 => control._setEx(LiveChartsCore.SkiaSharpView.Avalonia.PieChart.MaxValueProperty, ps, () => control.MaxValue = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
