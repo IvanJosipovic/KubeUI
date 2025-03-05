@@ -81,29 +81,6 @@ public static T SecondIncrement<TValue,T>(this T control, TValue value, FuncValu
 => control._setEx(Ursa.Controls.TimePickerPresenter.SecondIncrementProperty, ps, () => control.SecondIncrement = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
- // Time
-
-/*BindFromExpressionSetterGenerator*/
-public static T Time<T>(this T control, Func<System.Nullable<System.TimeSpan>> func, Action<System.Nullable<System.TimeSpan>>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.TimePickerPresenter 
-   => control._set(Ursa.Controls.TimePickerPresenter.TimeProperty, func, onChanged, expression);
-
-/*MagicalSetterGenerator*/
-public static T Time<T>(this T control,System.Nullable<System.TimeSpan> value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.TimePickerPresenter 
-=> control._setEx(Ursa.Controls.TimePickerPresenter.TimeProperty, ps, () => control.Time = value, bindingMode, converter, bindingSource);
-
-/*BindSetterGenerator*/
-public static T Time<T>(this T control, IBinding binding) where T : Ursa.Controls.TimePickerPresenter 
-   => control._set(Ursa.Controls.TimePickerPresenter.TimeProperty, binding);
-
-/*AvaloniaPropertyBindSetterGenerator*/
-public static T Time<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Ursa.Controls.TimePickerPresenter 
-   => control._set(Ursa.Controls.TimePickerPresenter.TimeProperty, avaloniaProperty, bindingMode, converter, overrideView);
-
-/*MagicalSetterWithConverterGenerator*/
-public static T Time<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Nullable<System.TimeSpan>> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.TimePickerPresenter 
-=> control._setEx(Ursa.Controls.TimePickerPresenter.TimeProperty, ps, () => control.Time = converter.TryConvert(value), bindingMode, converter, bindingSource);
-
-
  // PanelFormat
 
 /*BindFromExpressionSetterGenerator*/
@@ -173,17 +150,6 @@ public static Style<T> SecondIncrement<T>(this Style<T> style, System.Int32 valu
 /*BindingStyleSetterGenerator*/
 public static Style<T> SecondIncrement<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.TimePickerPresenter 
 => style._addSetter(Ursa.Controls.TimePickerPresenter.SecondIncrementProperty, binding);
-
-
- // Time
-
-/*ValueStyleSetterGenerator*/
-public static Style<T> Time<T>(this Style<T> style, System.Nullable<System.TimeSpan> value) where T : Ursa.Controls.TimePickerPresenter 
-=> style._addSetter(Ursa.Controls.TimePickerPresenter.TimeProperty, value);
-
-/*BindingStyleSetterGenerator*/
-public static Style<T> Time<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.TimePickerPresenter 
-=> style._addSetter(Ursa.Controls.TimePickerPresenter.TimeProperty, binding);
 
 
  // PanelFormat
