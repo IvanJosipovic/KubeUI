@@ -40,7 +40,7 @@ jobs:
         run: dotnet test -c Release --collect:"XPlat Code Coverage" --no-build --logger "trx;LogFileName=test-results.trx"
 
       - name: Test Report
-        uses: dorny/test-reporter@v1
+        uses: dorny/test-reporter@v2
         if: success() || failure()
         with:
           name: KubeUI Tests
