@@ -172,7 +172,10 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
     {
         var sc = _textEditor.GetType().GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(_textEditor) as ScrollViewer;
 
-        sc?.Offset = ViewModel.ScrollOffset;
+        if (sc != null)
+        {
+            sc.Offset = ViewModel.ScrollOffset;
+        }
     }
 
     public void GetOffset()
