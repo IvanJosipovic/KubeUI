@@ -44,7 +44,7 @@
     <PackageReference Include="Humanizer" Version="2.14.1" />
     <PackageReference Include="JsonPathLINQ" Version="1.0.0-alpha.10" />
     <PackageReference Include="KubernetesClient" Version="16.0.2" />
-    <PackageReference Include="KubernetesCRDModelGen" Version="1.0.0-alpha.460" />
+    <PackageReference Include="KubernetesCRDModelGen" Version="1.0.0-alpha.486" />
     <PackageReference Include="Markdig" Version="0.40.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.4" />
     <PackageReference Include="NReco.Logging.File" Version="1.2.2" />
