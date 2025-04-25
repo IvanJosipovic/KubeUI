@@ -35,7 +35,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
     public partial Vector ScrollOffset { get; set; }
 
     [ObservableProperty]
-    public partial IEnumerable<FoldingSection> AllFoldings { get; set; }
+    public partial IEnumerable<NewFolding> AllFoldings { get; set; }
 
     public ResourceYamlViewModel()
     {
