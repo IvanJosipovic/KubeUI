@@ -176,8 +176,6 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
         {
             sc.Offset = ViewModel.ScrollOffset;
         }
-
-        ViewModel.AllFoldings = _foldingManager.AllFoldings;
     }
 
     public void GetOffset()
@@ -197,9 +195,9 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
 
         _foldingManager = FoldingManager.Install(_textEditor.TextArea);
 
-        if (ViewModel.AllFoldings != null)
+        if (ViewModel?.AllFoldings != null)
         {
-            _foldingManager.UpdateFoldings(ConvertFolding(ViewModel.AllFoldings), -1);
+            _foldingManager.UpdateFoldings(ViewModel.AllFoldings, -1);
         }
 
         YamlFoldingStrategy.UpdateFoldings(_foldingManager, _textEditor.Document);
@@ -208,32 +206,21 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
         SetOffset();
     }
 
-    private IEnumerable<NewFolding> ConvertFolding(IEnumerable<FoldingSection> foldingSections)
-    {
-        var newFoldings = new List<NewFolding>();
-
-        foreach (var foldingSection in foldingSections)
-        {
-            var newFolding = new NewFolding
-            {
-                StartOffset = foldingSection.StartOffset,
-                EndOffset = foldingSection.EndOffset,
-                DefaultClosed = foldingSection.IsFolded,
-                Name = foldingSection.Title,
-            };
-
-            newFoldings.Add(newFolding);
-        }
-
-        return newFoldings;
-    }
-
     protected override void OnUnloaded(RoutedEventArgs e)
     {
         GetOffset();
         base.OnUnloaded(e);
 
         Application.Current.ActualThemeVariantChanged -= Current_ActualThemeVariantChanged;
+
+        ViewModel.AllFoldings = _foldingManager.AllFoldings.Select(x =>
+        {
+            var tag = (NewFolding)x.Tag;
+            tag.DefaultClosed = x.IsFolded;
+            return tag;
+        }).ToList();
+
+        FoldingManager.Uninstall(_foldingManager);
     }
 }
 
