@@ -29,10 +29,11 @@ public class TestApp : Application
             ContentRootPath = Directory.GetCurrentDirectory(),
         });
 
-        builder.Services.AddLogging();
 
         // Services
         builder.Services.AddServices();
+
+        builder.Services.AddLogging();
 
         var dialog = new Mock<IDialogService>();
         builder.Services.AddSingleton<IDialogService>(dialog.Object);

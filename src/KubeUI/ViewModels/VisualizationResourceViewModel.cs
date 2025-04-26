@@ -5,7 +5,7 @@ using KubeUI.Client;
 
 namespace KubeUI.ViewModels;
 
-public sealed partial class VisualizationResourceViewModel : ObservableObject
+public sealed partial class VisualizationResourceViewModel : ViewModelBase
 {
     [ObservableProperty]
     public partial ICluster Cluster { get; set; }
