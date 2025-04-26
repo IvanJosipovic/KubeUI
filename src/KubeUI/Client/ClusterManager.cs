@@ -204,7 +204,7 @@ public sealed partial class ClusterManager : ObservableObject, IDisposable
 
         foreach (var item in kubeConfig.Contexts)
         {
-            var cluster = _serviceProvider.GetRequiredService<Cluster>();
+            var cluster = _serviceProvider.GetRequiredService<ICluster>();
 
             cluster.Name = item.Name;
 
