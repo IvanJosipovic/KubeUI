@@ -3,11 +3,9 @@ using Avalonia.Controls.Templates;
 using Dock.Model.Core;
 using KubeUI.Client;
 using KubeUI.Views;
-using Scrutor;
 
 namespace KubeUI;
 
-[ServiceDescriptor(typeof(ViewLocator), ServiceLifetime.Singleton)]
 public sealed class ViewLocator : IDataTemplate
 {
     private readonly ILogger<ViewLocator> _logger;

@@ -13,7 +13,6 @@ using k8s.Models;
 using KubernetesCRDModelGen;
 using KubeUI.Client.Informer;
 using KubeUI.Resources;
-using Scrutor;
 using Avalonia.Collections;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
@@ -21,7 +20,6 @@ using Swordfish.NET.Collections;
 
 namespace KubeUI.Client;
 
-[ServiceDescriptor<ICluster>(ServiceLifetime.Transient)]
 public sealed partial class Cluster : ObservableObject, ICluster
 {
     private ILoggerFactory _loggerFactory;

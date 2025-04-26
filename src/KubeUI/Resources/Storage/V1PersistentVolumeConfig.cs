@@ -1,9 +1,7 @@
 using k8s.Models;
-using Scrutor;
 
 namespace KubeUI.Resources.Storage;
 
-[ServiceDescriptor<ResourceConfigBase<V1PersistentVolume>>(ServiceLifetime.Transient)]
 public sealed partial class V1PersistentVolumeConfig : ResourceConfigBase<V1PersistentVolume>
 {
     public override string Category => "Storage";

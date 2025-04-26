@@ -1,10 +1,8 @@
 ﻿using System.Diagnostics.Metrics;
 using System.Reflection;
-using Scrutor;
 
 namespace KubeUI.Client;
 
-[ServiceDescriptor<Instrumentation>(ServiceLifetime.Singleton)]
 public class Instrumentation : IDisposable
 {
     public static string MeterName { get; set; } = "kubeui";

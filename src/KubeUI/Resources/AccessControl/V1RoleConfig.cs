@@ -1,9 +1,7 @@
 using k8s.Models;
-using Scrutor;
 
 namespace KubeUI.Resources.AccessControl;
 
-[ServiceDescriptor<ResourceConfigBase<V1Role>>(ServiceLifetime.Transient)]
 public sealed partial class V1RoleConfig : ResourceConfigBase<V1Role>
 {
     public override string Category => "Access Control";

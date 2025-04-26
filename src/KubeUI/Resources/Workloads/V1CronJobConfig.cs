@@ -1,9 +1,7 @@
 ﻿using k8s.Models;
-using Scrutor;
 
 namespace KubeUI.Resources.Workloads;
 
-[ServiceDescriptor<ResourceConfigBase<V1CronJob>>(ServiceLifetime.Transient)]
 public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
 {
     public override string Category => "Workloads";

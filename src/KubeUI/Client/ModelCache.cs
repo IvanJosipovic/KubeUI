@@ -2,12 +2,10 @@
 using System.Reflection;
 using System.Xml;
 using k8s.Models;
-using Scrutor;
 using Swordfish.NET.Collections.Auxiliary;
 
 namespace KubeUI.Client;
 
-[ServiceDescriptor<ModelCache>(ServiceLifetime.Transient)]
 public sealed class ModelCache
 {
     public readonly ConcurrentDictionary<Assembly, XmlDocument> Cache = new();

@@ -2,11 +2,9 @@
 using Avalonia.Styling;
 using k8s.Models;
 using KubeUI.Controls;
-using Scrutor;
 
 namespace KubeUI.Resources;
 
-[ServiceDescriptor<ResourceConfigBase<Corev1Event>>(ServiceLifetime.Transient)]
 public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
 {
     public override bool ShowNewResource => false;

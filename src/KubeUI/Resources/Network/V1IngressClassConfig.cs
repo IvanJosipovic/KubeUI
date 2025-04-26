@@ -1,9 +1,7 @@
 using k8s.Models;
-using Scrutor;
 
 namespace KubeUI.Resources.Network;
 
-[ServiceDescriptor<ResourceConfigBase<V1IngressClass>>(ServiceLifetime.Transient)]
 public sealed partial class V1IngressClassConfig : ResourceConfigBase<V1IngressClass>
 {
     public override string Category => "Network";

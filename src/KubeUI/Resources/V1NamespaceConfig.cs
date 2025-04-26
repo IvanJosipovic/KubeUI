@@ -1,9 +1,7 @@
 ﻿using k8s.Models;
-using Scrutor;
 
 namespace KubeUI.Resources;
 
-[ServiceDescriptor<ResourceConfigBase<V1Namespace>>(ServiceLifetime.Transient)]
 public sealed partial class V1NamespaceConfig : ResourceConfigBase<V1Namespace>
 {
     public override int Order => 6;

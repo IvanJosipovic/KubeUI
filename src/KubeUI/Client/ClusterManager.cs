@@ -3,7 +3,6 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using k8s;
 using k8s.KubeConfigModels;
-using Scrutor;
 using Swordfish.NET.Collections;
 using Swordfish.NET.Collections.Auxiliary;
 
@@ -17,7 +16,6 @@ public class ClusterComparer : IComparer<ICluster>
     }
 }
 
-[ServiceDescriptor<ClusterManager>(ServiceLifetime.Singleton)]
 public sealed partial class ClusterManager : ObservableObject, IDisposable
 {
     public ObservableSortedCollection<ICluster> Clusters { get; set; } = new(new ClusterComparer());
@@ -175,7 +173,7 @@ public sealed partial class ClusterManager : ObservableObject, IDisposable
 
                     foreach (var item in config.Contexts)
                     {
-                        var cluster = _serviceProvider.GetRequiredService<Cluster>();
+                        var cluster = _serviceProvider.GetRequiredService<ICluster>();
 
                         cluster.Name = item.Name;
 

@@ -4,12 +4,10 @@ using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
 using k8s.Models;
 using KubeUI.Client.Informer;
-using Scrutor;
 using static KubeUI.Client.Cluster;
 
 namespace KubeUI.Resources;
 
-[ServiceDescriptor<ResourceConfigBase<V1Node>>(ServiceLifetime.Transient)]
 public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 {
     public override int Order => 5;

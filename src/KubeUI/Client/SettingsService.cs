@@ -1,10 +1,8 @@
 ﻿using System.Text.Json;
 using Avalonia.Styling;
-using Scrutor;
 
 namespace KubeUI.Client;
 
-[ServiceDescriptor<ISettingsService>(ServiceLifetime.Singleton)]
 public sealed partial class SettingsService : ObservableObject, ISettingsService
 {
     private readonly ILogger<SettingsService> _logger;
