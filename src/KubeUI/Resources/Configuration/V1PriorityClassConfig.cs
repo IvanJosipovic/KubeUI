@@ -1,9 +1,7 @@
 ﻿using k8s.Models;
-using Scrutor;
 
 namespace KubeUI.Resources.Workloads.Configuration;
 
-[ServiceDescriptor<ResourceConfigBase<V1PriorityClass>>(ServiceLifetime.Transient)]
 public sealed partial class V1PriorityClassConfig : ResourceConfigBase<V1PriorityClass>
 {
     public override string Category => "Configuration";

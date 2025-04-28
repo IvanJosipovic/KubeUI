@@ -3,12 +3,10 @@ using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
 using k8s.Models;
-using Scrutor;
 using static KubeUI.Client.Cluster;
 
 namespace KubeUI.Resources.Workloads.Pod;
 
-[ServiceDescriptor<ResourceConfigBase<V1ReplicaSet>>(ServiceLifetime.Transient)]
 public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet>
 {
     public override string Category => "Workloads";

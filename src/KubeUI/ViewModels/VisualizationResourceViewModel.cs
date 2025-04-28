@@ -5,7 +5,7 @@ using KubeUI.Client;
 
 namespace KubeUI.ViewModels;
 
-public sealed partial class VisualizationResourceViewModel : ObservableObject
+public sealed partial class VisualizationResourceViewModel : ViewModelBase
 {
     [ObservableProperty]
     public partial ICluster Cluster { get; set; }
@@ -15,7 +15,6 @@ public sealed partial class VisualizationResourceViewModel : ObservableObject
 
     [ObservableProperty]
     public partial string IconPath { get; set; }
-    public IFactory Factory { get; set; } = Application.Current.GetRequiredService<IFactory>();
 
     public void Initialize(ICluster cluster, IKubernetesObject<V1ObjectMeta> @object)
     {

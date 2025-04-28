@@ -1,9 +1,7 @@
 ﻿using k8s.Models;
-using Scrutor;
 
 namespace KubeUI.Resources.Network;
 
-[ServiceDescriptor<ResourceConfigBase<V2HorizontalPodAutoscaler>>(ServiceLifetime.Transient)]
 public sealed partial class V2HorizontalPodAutoscalerConfig : ResourceConfigBase<V2HorizontalPodAutoscaler>
 {
     public override string Category => "Network";

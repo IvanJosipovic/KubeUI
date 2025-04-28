@@ -1,12 +1,10 @@
 ﻿using Dock.Model.Core;
 using Humanizer;
 using k8s.Models;
-using Scrutor;
 using static KubeUI.Client.Cluster;
 
 namespace KubeUI.Resources;
 
-[ServiceDescriptor<ResourceConfigBase<V1CustomResourceDefinition>>(ServiceLifetime.Transient)]
 public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBase<V1CustomResourceDefinition>
 {
     public override int Order => 13;

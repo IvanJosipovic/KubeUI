@@ -2,12 +2,10 @@ using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
-using Scrutor;
 using static KubeUI.Client.Cluster;
 
 namespace KubeUI.Resources.Network;
 
-[ServiceDescriptor<ResourceConfigBase<V1Service>>(ServiceLifetime.Transient)]
 public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
 {
     public override string Category => "Network";

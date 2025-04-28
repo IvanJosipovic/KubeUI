@@ -1,9 +1,7 @@
 ﻿using k8s.Models;
-using Scrutor;
 
 namespace KubeUI.Resources.Workloads.Pod;
 
-[ServiceDescriptor<ResourceConfigBase<V1Job>>(ServiceLifetime.Transient)]
 public sealed partial class V1JobConfig : ResourceConfigBase<V1Job>
 {
     public override string Category => "Workloads";

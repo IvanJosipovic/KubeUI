@@ -4,6 +4,7 @@ using KubeUI.Client.Informer;
 using KubeUI.Resources;
 using Avalonia.Collections;
 using static KubeUI.Client.Cluster;
+using k8s.KubeConfigModels;
 
 namespace KubeUI.Client;
 
@@ -34,6 +35,8 @@ public interface ICluster
     PortForwarder AddServicePortForward(string @namespace, string serviceName, int containerPort);
     string KubeConfigPath { get; set; }
     string Name { get; set; }
+    K8SConfiguration KubeConfig { get; set; }
+
     Task AddOrUpdate<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task Connect();
     Task Delete<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();

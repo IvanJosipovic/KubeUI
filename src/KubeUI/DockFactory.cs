@@ -3,12 +3,10 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm;
 using Dock.Model.Mvvm.Controls;
-using Scrutor;
 using Orientation = Dock.Model.Core.Orientation;
 
 namespace KubeUI;
 
-[ServiceDescriptor<IFactory>(ServiceLifetime.Singleton)]
 public class DockFactory : Factory
 {
     private readonly ILogger<DockFactory> _logger;

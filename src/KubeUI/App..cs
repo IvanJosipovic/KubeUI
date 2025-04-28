@@ -125,17 +125,8 @@ public partial class App : Application
                 });
         }
 
-        builder.Services.Scan(scan => scan
-            .FromAssemblyOf<App>()
-                .AddClasses(classes => classes.AssignableToAny([typeof(UserControl), typeof(ObservableObject), typeof(ViewModelBase), typeof(MyViewBase<>)]))
-                .AsSelf()
-                .WithTransientLifetime()
-        );
-
-        builder.Services.Scan(x => x.FromAssemblyOf<App>().AddClasses().UsingAttributes());
-
         // Services
-        builder.Services.AddSingleton<IGenerator, Generator>();
+        builder.Services.AddServices();
 
         // Dialog
         builder.Services.AddSingleton<IDialogFactory, FluentDialogFactory>(x => (FluentDialogFactory)new DialogFactory().AddFluent());
@@ -143,6 +134,8 @@ public partial class App : Application
         builder.Services.AddSingleton<IDialogService, DialogService>(x => new DialogService(x.GetRequiredService<IDialogManager>()));
 
         builder.Services.AddSingleton<INotificationManager>(_ => NotificationManager!);
+
+        builder.Services.AddSingleton<ServiceDescriptor[]>([.. builder.Services]);
 
         Host = builder.Build();
         Resources[typeof(IServiceProvider)] = Host.Services;

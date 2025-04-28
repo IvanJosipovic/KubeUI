@@ -1,14 +1,12 @@
 ﻿using Avalonia.Logging;
-using Scrutor;
 
 namespace KubeUI.Desktop;
 
-[ServiceDescriptor(typeof(ILoggerSink), ServiceLifetime.Singleton)]
-public class ILoggerSink : ILogSink
+public class LoggerSink : ILogSink
 {
     private readonly ILogger<Application> _logger;
 
-    public ILoggerSink(ILogger<Application> logger)
+    public LoggerSink(ILogger<Application> logger)
     {
         _logger = logger;
     }

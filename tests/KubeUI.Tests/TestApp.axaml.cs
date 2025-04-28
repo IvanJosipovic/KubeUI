@@ -29,14 +29,10 @@ public class TestApp : Application
             ContentRootPath = Directory.GetCurrentDirectory(),
         });
 
-        builder.Services.AddLogging();
 
         // Services
-        builder.Services.AddSingleton<ClusterManager>();
-        builder.Services.AddTransient<ICluster, Cluster>();
-        builder.Services.AddTransient<ModelCache>();
-        builder.Services.AddSingleton<IGenerator, Generator>();
-        builder.Services.AddSingleton<IFactory, DockFactory>();
+        builder.Services.AddServices();
+        builder.Services.AddLogging();
 
         var dialog = new Mock<IDialogService>();
         builder.Services.AddSingleton<IDialogService>(dialog.Object);
@@ -44,16 +40,7 @@ public class TestApp : Application
         var notifications = new Mock<INotificationManager>();
         builder.Services.AddSingleton<INotificationManager>(notifications.Object);
 
-        builder.Services.AddSingleton<ISettingsService, SettingsService>();
-
-        builder.Services.Scan(scan => scan
-            .FromAssemblyOf<App>()
-            .AddClasses(classes => classes.AssignableToAny([typeof(UserControl), typeof(ObservableObject), typeof(ViewModelBase), typeof(MyViewBase<>)]))
-            .AsSelf()
-            .WithTransientLifetime()
-        );
-
-        builder.Services.Scan(x => x.FromAssemblyOf<App>().AddClasses().UsingAttributes());
+        builder.Services.AddSingleton<ServiceDescriptor[]>([.. builder.Services]);
 
         Host = builder.Build();
 

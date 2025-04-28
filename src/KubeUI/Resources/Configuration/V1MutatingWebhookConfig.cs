@@ -1,9 +1,7 @@
 ﻿using k8s.Models;
-using Scrutor;
 
 namespace KubeUI.Resources.Workloads.Configuration;
 
-[ServiceDescriptor<ResourceConfigBase<V1MutatingWebhookConfiguration>>(ServiceLifetime.Transient)]
 public sealed partial class V1MutatingWebhookConfig : ResourceConfigBase<V1MutatingWebhookConfiguration>
 {
     public override string Category => "Configuration";

@@ -2,11 +2,9 @@
 using Avalonia.Controls.Templates;
 using k8s.Models;
 using KubeUI.Views;
-using Scrutor;
 
 namespace KubeUI.Resources.Workloads.Pod;
 
-[ServiceDescriptor<ResourceConfigBase<V1Secret>>(ServiceLifetime.Transient)]
 public sealed partial class V1SecretConfig : ResourceConfigBase<V1Secret>
 {
     public override string Category => "Configuration";

@@ -1,9 +1,7 @@
 ﻿using k8s.Models;
-using Scrutor;
 
 namespace KubeUI.Resources.Workloads.Configuration;
 
-[ServiceDescriptor<ResourceConfigBase<V1PodDisruptionBudget>>(ServiceLifetime.Transient)]
 public sealed partial class V1PodDisruptionBudgetConfig : ResourceConfigBase<V1PodDisruptionBudget>
 {
     public override string Category => "Configuration";

@@ -1,9 +1,7 @@
 ﻿using k8s.Models;
-using Scrutor;
 
 namespace KubeUI.Resources.Workloads.Configuration;
 
-[ServiceDescriptor<ResourceConfigBase<V1ConfigMap>>(ServiceLifetime.Transient)]
 public sealed partial class V1ConfigMapConfig : ResourceConfigBase<V1ConfigMap>
 {
     public override string Category => "Configuration";
