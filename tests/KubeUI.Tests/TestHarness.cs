@@ -24,7 +24,7 @@ public class TestHarness : IDisposable
     {
         Kind = new Kind();
         await Kind.DownloadClient();
-        await Kind.CreateCluster(Name);
+        await Kind.CreateCluster(Name, "kindest/node:v1.32.3");
 
         KubeConfig = await Kind.GetK8SConfiguration(Name);
 
