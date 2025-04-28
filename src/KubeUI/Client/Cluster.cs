@@ -240,19 +240,17 @@ public sealed partial class Cluster : ObservableObject, ICluster
             network.NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.PortForwarderListViewModel_Title, ControlType = typeof(PortForwarderListViewModel), Cluster = this, StyleIcon = "ic_fluent_cloud_flow_filled", Order = 6 });
         }
 
-        var assembly = Assembly.GetExecutingAssembly();
-        var types = assembly.GetExportedTypes().Where(t => t.BaseType?.IsGenericType == true && t.BaseType.GetGenericTypeDefinition() == typeof(ResourceConfigBase<>)).ToList();
+        var types = _serviceProvider.GetRequiredService<ServiceDescriptor[]>().Where(t => t.ServiceType.IsGenericType
+                                                                                       && t.ServiceType.GetGenericTypeDefinition() == typeof(ResourceConfigBase<>)
+                                                                                       && t.ServiceType.GenericTypeArguments.Length == 1
+                                                                                    ).Select(x => x.ServiceType)
+                                                                                     .ToList();
 
         List<IResourceConfig> configs = [];
 
         foreach (var type in types)
         {
-            if (type.IsGenericType)
-            {
-                continue;
-            }
-
-            var resourceConfig = (IResourceConfig)_serviceProvider.GetRequiredService(type.BaseType);
+            var resourceConfig = (IResourceConfig)_serviceProvider.GetRequiredService(type);
 
             if (resourceConfig is IInitializeCluster init)
             {

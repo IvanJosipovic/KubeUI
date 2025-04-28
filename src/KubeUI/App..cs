@@ -135,6 +135,8 @@ public partial class App : Application
 
         builder.Services.AddSingleton<INotificationManager>(_ => NotificationManager!);
 
+        builder.Services.AddSingleton<ServiceDescriptor[]>([.. builder.Services]);
+
         Host = builder.Build();
         Resources[typeof(IServiceProvider)] = Host.Services;
         AddStyles(Host.Services);

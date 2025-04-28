@@ -1,4 +1,5 @@
-﻿using Avalonia.Controls.Templates;
+﻿using System.Runtime.CompilerServices;
+using Avalonia.Controls.Templates;
 using Avalonia.Logging;
 using Dock.Model.Core;
 using KubernetesCRDModelGen;
@@ -13,7 +14,8 @@ public static partial class ServicesExtensions
     //[GenerateServiceRegistrations(AssignableTo = typeof(ObservableObject), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false)]
     [GenerateServiceRegistrations(AssignableTo = typeof(ViewModelBase), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false)]
     [GenerateServiceRegistrations(AssignableTo = typeof(MyViewBase<>), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false)]
-    [GenerateServiceRegistrations(AssignableTo = typeof(ResourceConfigBase<>), Lifetime = ServiceLifetime.Transient, AsImplementedInterfaces = false)]
+    [GenerateServiceRegistrations(AssignableTo = typeof(ResourceConfigBase<>), Lifetime = ServiceLifetime.Transient, AsSelf = false, AsImplementedInterfaces = false)]
+    [GenerateServiceRegistrations(AssignableTo = typeof(CustomResourceDefinitionResourceConfig<>), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false)]
 
     [GenerateServiceRegistrations(AssignableTo = typeof(ICluster), Lifetime = ServiceLifetime.Transient, AsSelf = false, AsImplementedInterfaces = true)]
 

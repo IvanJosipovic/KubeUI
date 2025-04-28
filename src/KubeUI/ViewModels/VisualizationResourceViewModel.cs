@@ -15,7 +15,6 @@ public sealed partial class VisualizationResourceViewModel : ViewModelBase
 
     [ObservableProperty]
     public partial string IconPath { get; set; }
-    public IFactory Factory { get; set; } = Application.Current.GetRequiredService<IFactory>();
 
     public void Initialize(ICluster cluster, IKubernetesObject<V1ObjectMeta> @object)
     {
