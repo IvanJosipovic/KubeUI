@@ -32,7 +32,6 @@ public class TestApp : Application
 
         // Services
         builder.Services.AddServices();
-
         builder.Services.AddLogging();
 
         var dialog = new Mock<IDialogService>();
@@ -41,6 +40,7 @@ public class TestApp : Application
         var notifications = new Mock<INotificationManager>();
         builder.Services.AddSingleton<INotificationManager>(notifications.Object);
 
+        builder.Services.AddSingleton<ServiceDescriptor[]>([.. builder.Services]);
 
         Host = builder.Build();
 
