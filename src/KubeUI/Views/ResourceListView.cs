@@ -372,10 +372,11 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                     .RowHeight(Convert.ToDouble(_settingsService.Settings.ListRowHeight))
                     .OnDoubleTapped((x) =>
                     {
-                        if ((x.Source is Visual control) && control.FindAncestorOfType<DataGridColumnHeader>(true) != null)
+                        if ((x.Source is Visual control) && control.FindAncestorOfType<DataGridCell>(true) == null)
                         {
                             return;
 	                    }
+
                         if (_grid.SelectedItem == null) return;
 
                         if(vm.ResourceConfig.ViewCommand.CanExecute(((KeyValuePair<NamespacedName, T>)_grid.SelectedItem).Value))
