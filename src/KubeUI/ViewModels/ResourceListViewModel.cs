@@ -38,6 +38,12 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     [ObservableProperty]
     public partial ResourceConfigBase<T> ResourceConfig { get; set; }
 
+    [ObservableProperty]
+    public partial string SortColumnName { get; set; }
+
+    [ObservableProperty]
+    public partial Resources.SortDirection SortDirection { get; set; }
+
     private IDisposable? _filter;
 
     public ResourceListViewModel()
@@ -68,7 +74,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             .ToObservableChangeSet<AvaloniaDictionary<NamespacedName, T>, KeyValuePair<NamespacedName, T>>()
             .Filter(GenerateFilter())
             .Bind(out var filteredObjects)
-            .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Set Namespace Filter: {ns}", typeof(T)));
+            .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Setting Resource List Filter: {ns}", typeof(T)));
 
         DataGridObjects = filteredObjects;
     }
