@@ -89,15 +89,30 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
         if (Type == "Service")
         {
             var service = await _cluster.GetObjectAsync<V1Service>(Namespace, Name);
-            var port = service.Spec.Ports.First(x => x.Port == Port);
-            var endpoints = await _cluster.GetObjectDictionaryAsync<V1EndpointSlice>();
-            var endpoint = endpoints.First(x => x.Value.Namespace() == service.Namespace() && x.Value.GetLabel("kubernetes.io/service-name") == service.Name()).Value;
+            var servicePort = service.Spec.Ports.First(x => x.Port == Port);
+
+            var endpointSlices = await _cluster.GetObjectDictionaryAsync<V1EndpointSlice>();
+
+            var endpointSlice = endpointSlices.FirstOrDefault(x => x.Value.Namespace() == service.Namespace() && x.Value.GetLabel("kubernetes.io/service-name") == service.Name()).Value;
+            if (endpointSlice == null)
+            {
+                Status = "No endpoint slices found for Service";
+                socket.Close();
+                Connections--;
+                return;
+            }
+
+            var portData = endpointSlice.Ports.FirstOrDefault(y => y.Name == servicePort.Name);
+            if (portData == null || portData.Port == null)
+            {
+                Status = "No port found for Service";
+                socket.Close();
+                Connections--;
+                return;
+            }
 
             var random = new Random();
-
-            var portData = endpoint.Ports.First(y => y.Name == port.Name);
-
-            var pod = endpoint.Endpoints
+            var pod = endpointSlice.Endpoints
                 .Where(x => x.Conditions != null && x.Conditions.Ready == true && x.Conditions.Serving == true && x.TargetRef.Kind == "Pod")
                 .Select(x => x.TargetRef.Name)
                 .OrderBy(x => random.Next())
