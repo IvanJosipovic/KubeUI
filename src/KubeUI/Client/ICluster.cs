@@ -32,7 +32,7 @@ public interface ICluster
     ObservableCollection<PortForwarder> PortForwarders { get; set; }
     ObservableCollection<V1Namespace> SelectedNamespaces { get; set; }
     PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort);
-    PortForwarder AddServicePortForward(string @namespace, string serviceName, int containerPort);
+    PortForwarder AddServicePortForward(string @namespace, string serviceName, int servicePort);
     string KubeConfigPath { get; set; }
     string Name { get; set; }
     K8SConfiguration KubeConfig { get; set; }

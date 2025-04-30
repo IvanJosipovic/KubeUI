@@ -23,11 +23,11 @@ public partial class Cluster
         return pf;
     }
 
-    public PortForwarder AddServicePortForward(string @namespace, string serviceName, int containerPort)
+    public PortForwarder AddServicePortForward(string @namespace, string serviceName, int servicePort)
     {
         var pf = new PortForwarder(this, @namespace);
 
-        pf.SetService(serviceName, containerPort);
+        pf.SetService(serviceName, servicePort);
 
         if (PortForwarders.Contains(pf))
         {

@@ -90,14 +90,15 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
         {
             var service = await _cluster.GetObjectAsync<V1Service>(Namespace, Name);
             var port = service.Spec.Ports.First(x => x.Port == Port);
-            var endpoint = await _cluster.GetObjectAsync<V1Endpoints>(Namespace, Name);
+            var endpoints = await _cluster.GetObjectDictionaryAsync<V1EndpointSlice>();
+            var endpoint = endpoints.First(x => x.Value.Namespace() == service.Namespace() && x.Value.GetLabel("kubernetes.io/service-name") == service.Name()).Value;
 
             var random = new Random();
 
-            var subset = endpoint.Subsets.First(x => x.Ports.Any(y => y.Name == port.Name));
-            var portData = subset.Ports.First(y => y.Name == port.Name);
+            var portData = endpoint.Ports.First(y => y.Name == port.Name);
 
-            var pod = subset.Addresses
+            var pod = endpoint.Endpoints
+                .Where(x => x.Conditions != null && x.Conditions.Ready == true && x.Conditions.Serving == true && x.TargetRef.Kind == "Pod")
                 .Select(x => x.TargetRef.Name)
                 .OrderBy(x => random.Next())
                 .FirstOrDefault();
@@ -115,7 +116,7 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
             }
 
             podName = pod;
-            podPort = portData.Port;
+            podPort = (int)portData.Port;
         }
 
         using var webSocket = await _cluster.Client.WebSocketNamespacedPodPortForwardAsync(podName, Namespace, [podPort], "v4.channel.k8s.io");
