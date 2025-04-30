@@ -8,6 +8,7 @@ using KubeUI.Client.Informer;
 using KubeUI.Client;
 using KubeUI.Resources;
 using Avalonia.Input;
+using Avalonia.VisualTree;
 
 namespace KubeUI.Views;
 
@@ -91,9 +92,19 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
                 _grid.Columns.Add(column);
 
-                if (columnDefinition.Sort != SortDirection.None)
+                if (string.IsNullOrEmpty(ViewModel.SortColumnName))
                 {
-                    Dispatcher.UIThread.Post(() => column.Sort(columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending));
+                    if (columnDefinition.Sort != SortDirection.None)
+                    {
+                        Dispatcher.UIThread.Post(() => column.Sort(columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending));
+                    }
+                }
+                else
+                {
+                    if (column.Header.ToString() == ViewModel.SortColumnName)
+                    {
+                        Dispatcher.UIThread.Post(() => column.Sort(ViewModel.SortDirection == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending));
+                    }
                 }
             }
             catch (Exception ex)
@@ -276,6 +287,29 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
         return ViewModel?.ResourceConfig.ListStyle();
     }
 
+    protected override void OnUnloaded(RoutedEventArgs e)
+    {
+        base.OnUnloaded(e);
+
+        SaveState();
+    }
+
+    private void SaveState()
+    {
+        foreach (var sortColumn in _grid.Columns)
+        {
+            var headerCell = sortColumn.GetType().GetProperty("HeaderCell", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(sortColumn) as DataGridColumnHeader;
+
+            var direction = headerCell.GetType().GetProperty("CurrentSortingState", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(headerCell) as ListSortDirection?;
+
+            if (direction != null)
+            {
+                ViewModel.SortColumnName = sortColumn.Header.ToString();
+                ViewModel.SortDirection = direction == ListSortDirection.Ascending ? SortDirection.Ascending : SortDirection.Descending;
+            }
+        }
+    }
+
     protected override object Build(ResourceListViewModel<T>? vm)
     {
         var controls = new Grid()
@@ -309,7 +343,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                                     .VerticalAlignment(VerticalAlignment.Stretch)
                                     .VerticalContentAlignment(VerticalAlignment.Center)
                                     .Text(@vm.SearchQuery)
-                                    .Watermark("Search                                     "),
+                                    .Watermark("Search"),
 
                                 new MultiComboBox()
                                     .Col(1)
@@ -338,6 +372,10 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                     .RowHeight(Convert.ToDouble(_settingsService.Settings.ListRowHeight))
                     .OnDoubleTapped((x) =>
                     {
+                        if ((x.Source is Visual control) && control.FindAncestorOfType<DataGridColumnHeader>(true) != null)
+                        {
+                            return;
+	                    }
                         if (_grid.SelectedItem == null) return;
 
                         if(vm.ResourceConfig.ViewCommand.CanExecute(((KeyValuePair<NamespacedName, T>)_grid.SelectedItem).Value))
