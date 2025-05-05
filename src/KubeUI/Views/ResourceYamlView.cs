@@ -15,6 +15,8 @@ namespace KubeUI.Views;
 
 public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
 {
+    private readonly ILogger<ResourceYamlView> _logger;
+
     private readonly ISettingsService _settingsService;
 
     private Installation _textMateInstallation;
@@ -25,8 +27,10 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
 
     private TextEditor _textEditor;
 
-    public ResourceYamlView(ISettingsService settingsService)
+    public ResourceYamlView(ILogger<ResourceYamlView> logger, ISettingsService settingsService)
     {
+        _logger = logger;
+
         _settingsService = settingsService;
 
         _registryOptions = new RegistryOptions(Application.Current.ActualThemeVariant == ThemeVariant.Light ? ThemeName.Light : ThemeName.DarkPlus);
@@ -197,7 +201,14 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
 
         if (ViewModel?.AllFoldings != null)
         {
-            _foldingManager.UpdateFoldings(ViewModel.AllFoldings, -1);
+            try
+            {
+                _foldingManager.UpdateFoldings(ViewModel.AllFoldings, -1);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Error loading foldings: {ex}", ex);
+            }
         }
 
         YamlFoldingStrategy.UpdateFoldings(_foldingManager, _textEditor.Document);
