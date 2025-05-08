@@ -12,6 +12,12 @@
   ],
   "packageRules": [
     {
+      "matchManagers": ["nuget"],
+      "matchPackageNames": ["OpenTelemetry.Instrumentation.Process"],
+      "ignoreUnstable": false,
+      "respectLatest": false
+    },
+    {
       "matchUpdateTypes": [ "minor", "patch", "digest" ],
       "automerge": true,
       "matchFileNames": [
