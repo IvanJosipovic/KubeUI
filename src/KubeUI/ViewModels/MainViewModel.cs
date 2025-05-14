@@ -236,7 +236,7 @@ public sealed partial class MainViewModel : ViewModelBase
 
     private async Task CheckForUpdates()
     {
-        var sor = new GithubSource("https://github.com/IvanJosipovic/KubeUI", null, _settingsService.Settings.PreReleaseChannel);
+        var source = new GithubSource("https://github.com/IvanJosipovic/KubeUI", null, _settingsService.Settings.PreReleaseChannel);
 
         var arch = "x64";
 
@@ -256,7 +256,7 @@ public sealed partial class MainViewModel : ViewModelBase
             channel = $"win-{arch}";
         }
 
-        var um = new UpdateManager(sor, new UpdateOptions() { ExplicitChannel = channel }, _logger);
+        var um = new UpdateManager(source, new UpdateOptions() { ExplicitChannel = channel });
 
         if (um.IsInstalled)
         {

@@ -85,11 +85,11 @@ jobs:
           - rid: win-x64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
-            packParam: --icon ../KubeUI/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signSkipDll
+            packParam: --icon ../KubeUI/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
           - rid: win-arm64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
-            packParam: --icon ../KubeUI/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signSkipDll
+            packParam: --icon ../KubeUI/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
           - rid: linux-x64
             fileName: KubeUI.Desktop
             runs-on: ubuntu-latest
