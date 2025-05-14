@@ -47,7 +47,7 @@
     <PackageReference Include="KubernetesClient" Version="16.0.7" />
     <PackageReference Include="KubernetesCRDModelGen" Version="1.0.0-alpha.496" />
     <PackageReference Include="Markdig" Version="0.41.1" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.4" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.5" />
     <PackageReference Include="NReco.Logging.File" Version="1.2.2" />
     <PackageReference Include="OpenTelemetry" Version="1.12.0" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.12.0" />
