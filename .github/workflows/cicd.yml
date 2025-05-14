@@ -121,7 +121,17 @@ jobs:
           global-json-file: global.json
 
       - name: Install Velopack
-        run: dotnet tool install -g vpk
+        shell: pwsh
+        run: |
+         $csprojPath = "src/KubeUI/KubeUI.csproj"
+
+         [xml]$csprojXml = Get-Content -Path $csprojPath
+
+         $velopackVersion = $csprojXml.Project.ItemGroup.PackageReference |
+            Where-Object { $_.Include -eq "Velopack" } |
+            Select-Object -ExpandProperty Version
+
+         dotnet tool install -g vpk --version $velopackVersion
 
       - name: Install Velopack Deps
         if: matrix.runs-on == 'ubuntu-latest'
