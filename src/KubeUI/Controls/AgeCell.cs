@@ -20,7 +20,7 @@ public partial class AgeCell : MyViewBase<IKubernetesObject<V1ObjectMeta>>
 
         if (DataContext is IKubernetesObject<V1ObjectMeta> date && date.Metadata.CreationTimestamp.HasValue)
         {
-            Date = date.Metadata.CreationTimestamp.Value;
+            _date = date.Metadata.CreationTimestamp.Value;
             Convert();
 
             if (!s_timer.IsEnabled)
@@ -35,19 +35,7 @@ public partial class AgeCell : MyViewBase<IKubernetesObject<V1ObjectMeta>>
         Convert();
     }
 
-    public static readonly DirectProperty<AgeCell, DateTime> DateProperty =
-    AvaloniaProperty.RegisterDirect<AgeCell, DateTime>(
-    nameof(Date),
-    o => o.Date,
-    (o, v) => o.Date = v);
-
     private DateTime _date;
-
-    public DateTime Date
-    {
-        get { return _date; }
-        set { SetAndRaise(DateProperty, ref _date, value); Convert(); }
-    }
 
     public static readonly DirectProperty<AgeCell, string> PrettyStringProperty =
     AvaloniaProperty.RegisterDirect<AgeCell, string>(
@@ -63,7 +51,7 @@ public partial class AgeCell : MyViewBase<IKubernetesObject<V1ObjectMeta>>
 
     private string _prettyString = string.Empty;
 
-    private TimeSpan Delta => DateTime.UtcNow - Date;
+    private TimeSpan Delta => DateTime.UtcNow - _date;
 
     private void Convert()
     {
@@ -104,7 +92,8 @@ public partial class AgeCell : MyViewBase<IKubernetesObject<V1ObjectMeta>>
             .Margin(12, 0, 12, 0)
             .HorizontalAlignment(HorizontalAlignment.Left)
             .VerticalAlignment(VerticalAlignment.Center)
-            .Text(AgeCell.PrettyStringProperty);
+            .Text(PrettyStringProperty)
+            .ToolTip(new Binding(nameof(PrettyString)) { Source = this });
 
     protected override void OnUnloaded(RoutedEventArgs e)
     {

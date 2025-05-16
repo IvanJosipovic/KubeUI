@@ -9,6 +9,7 @@ using KubeUI.Client;
 using KubeUI.Resources;
 using Avalonia.Input;
 using Avalonia.VisualTree;
+using KubeUI.Controls;
 
 namespace KubeUI.Views;
 
@@ -71,7 +72,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                 else
                 {
                     // Create Display FuncValueConverter
-                    column = new DataGridTextColumn
+                    column = new MyDataGridTextColumn
                     {
                         Binding = new Binding()
                         {

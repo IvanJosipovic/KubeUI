@@ -57,7 +57,8 @@ public sealed class PodMetricMemoryCell : MyViewBase<V1Pod>, IInitializeCluster
             .Margin(12, 0, 12, 0)
             .HorizontalAlignment(HorizontalAlignment.Left)
             .VerticalAlignment(VerticalAlignment.Center)
-            .Text(PodMetricMemoryCell.PrettyStringProperty);
+            .Text(PrettyStringProperty)
+            .ToolTip(new Binding(nameof(PrettyString)) { Source = this });
 
     protected override void OnUnloaded(RoutedEventArgs e)
     {
