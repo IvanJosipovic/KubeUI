@@ -1,4 +1,6 @@
-﻿namespace KubeUI.Views;
+﻿using KubeUI.Controls;
+
+namespace KubeUI.Views;
 
 public sealed class ClusterListView : MyViewBase<ClusterListViewModel>
 {
@@ -24,13 +26,13 @@ public sealed class ClusterListView : MyViewBase<ClusterListViewModel>
                             )
                             .Set(x => {
                                 x.Columns([
-                                    new DataGridTextColumn()
+                                    new MyDataGridTextColumn()
                                     {
                                         Binding = new Binding("Name"),
                                         Header = "Name",
                                         Width = new DataGridLength(1, DataGridLengthUnitType.Star),
                                     },
-                                    new DataGridTextColumn()
+                                    new MyDataGridTextColumn()
                                     {
                                         Binding = new Binding("KubeConfigPath"),
                                         Header = "KubeConfig",

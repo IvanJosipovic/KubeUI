@@ -67,5 +67,6 @@ public sealed class PodStatusCell : MyViewBase<V1Pod>
             .Margin(12, 0, 12, 0)
             .HorizontalAlignment(HorizontalAlignment.Left)
             .VerticalAlignment(VerticalAlignment.Center)
-            .Text(AgeCell.PrettyStringProperty);
+            .Text(PrettyStringProperty)
+            .ToolTip(new Binding(nameof(PrettyString)) { Source = this });
 }

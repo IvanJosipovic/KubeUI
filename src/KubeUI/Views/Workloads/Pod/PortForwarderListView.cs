@@ -1,4 +1,5 @@
 ﻿using KubeUI.Client;
+using KubeUI.Controls;
 
 namespace KubeUI.Views;
 
@@ -17,38 +18,38 @@ public sealed class PortForwarderListView : MyViewBase<PortForwarderListViewMode
                     .IsReadOnly(true)
                     .Set(x => {
                         x.Columns([
-                            new DataGridTextColumn()
+                            new MyDataGridTextColumn()
                             {
                                 Binding = new Binding(nameof(PortForwarder.Type)),
                                 Header = "Type",
                             },
-                            new DataGridTextColumn()
+                            new MyDataGridTextColumn()
                             {
                                 Binding = new Binding(nameof(PortForwarder.Name)),
                                 Header = "Name",
                                 Width = new DataGridLength(1, DataGridLengthUnitType.Star),
                             },
-                            new DataGridTextColumn()
+                            new MyDataGridTextColumn()
                             {
                                 Binding = new Binding(nameof(PortForwarder.Namespace)),
                                 Header = "Namespace",
                             },
-                            new DataGridTextColumn()
+                            new MyDataGridTextColumn()
                             {
                                 Binding = new Binding(nameof(PortForwarder.Port)),
                                 Header = "Port",
                             },
-                            new DataGridTextColumn()
+                            new MyDataGridTextColumn()
                             {
                                 Binding = new Binding(nameof(PortForwarder.LocalPort)),
                                 Header = "Local Port",
                             },
-                            new DataGridTextColumn()
+                            new MyDataGridTextColumn()
                             {
                                 Binding = new Binding(nameof(PortForwarder.Connections)),
                                 Header = "Connections",
                             },
-                            new DataGridTextColumn()
+                            new MyDataGridTextColumn()
                             {
                                 Binding = new Binding(nameof(PortForwarder.Status)),
                                 Header = "Status",
