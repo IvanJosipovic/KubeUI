@@ -1,6 +1,4 @@
-﻿using KubeUI.Controls;
-
-namespace KubeUI.Views;
+﻿namespace KubeUI.Views;
 
 public sealed class ClusterListView : MyViewBase<ClusterListViewModel>
 {
@@ -8,39 +6,17 @@ public sealed class ClusterListView : MyViewBase<ClusterListViewModel>
     {
         return new Grid()
                     .Children([
-                        new DataGrid()
-                            .SelectedItem(@vm.SelectedItem)
-                            .CanUserReorderColumns(true)
-                            .CanUserResizeColumns(true)
-                            .GridLinesVisibility(DataGridGridLinesVisibility.All)
-                            .ItemsSource(@vm.ClusterManager.Clusters)
-                            .IsReadOnly(true)
-                            .ContextMenu(new ContextMenu()
-                                            .Items([
-                                                new MenuItem()
-                                                    .Command(vm.DeleteCommand)
-                                                    .CommandParameter(@vm.SelectedItem)
-                                                    .Header("Delete")
-                                                    .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("delete_regular") })
-                                            ])
-                            )
-                            .Set(x => {
-                                x.Columns([
-                                    new MyDataGridTextColumn()
-                                    {
-                                        Binding = new Binding("Name"),
-                                        Header = "Name",
-                                        Width = new DataGridLength(1, DataGridLengthUnitType.Star),
-                                    },
-                                    new MyDataGridTextColumn()
-                                    {
-                                        Binding = new Binding("KubeConfigPath"),
-                                        Header = "KubeConfig",
-                                    },
-                                ]);
-
-                                Dispatcher.UIThread.Post(() => x.Columns[0].Sort(ListSortDirection.Ascending));
-                            }),
+                        new TreeDataGrid()
+                        .Set((x) => x.Source = vm.Source)
+                        .ContextMenu(new ContextMenu()
+                                        .Items([
+                                            new MenuItem()
+                                                .Command(vm.DeleteCommand)
+                                                .CommandParameter(vm.Source.RowSelection.SelectedItem)
+                                                .Header("Delete")
+                                                .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("delete_regular") })
+                                        ])
+                        )
                         ]);
     }
 }

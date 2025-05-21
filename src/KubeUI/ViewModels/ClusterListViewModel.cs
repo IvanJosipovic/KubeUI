@@ -1,4 +1,5 @@
-﻿using FluentAvalonia.UI.Controls;
+﻿using Avalonia.Controls.Models.TreeDataGrid;
+using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Client;
@@ -10,6 +11,9 @@ public sealed partial class ClusterListViewModel : ViewModelBase
     [ObservableProperty]
     public partial ClusterManager ClusterManager { get; set; }
 
+    [ObservableProperty]
+    public partial FlatTreeDataGridSource<ICluster> Source { get; set; }
+
     private readonly IDialogService _dialogService;
 
     public ClusterListViewModel()
@@ -19,11 +23,18 @@ public sealed partial class ClusterListViewModel : ViewModelBase
 
         Title = Assets.Resources.ClusterListViewModel_Title;
         Id = nameof(ClusterListViewModel);
-        SelectedItem = ClusterManager.Clusters.FirstOrDefault();
-    }
 
-    [ObservableProperty]
-    public partial ICluster SelectedItem { get; set; }
+        Source = new FlatTreeDataGridSource<ICluster>(ClusterManager.Clusters)
+        {
+            Columns =
+            {
+                new TextColumn<ICluster, string>("Name", x => x.Name, new GridLength(1, GridUnitType.Star)),
+                new TextColumn<ICluster, string>("KubeConfig", x => x.KubeConfigPath),
+            },
+        };
+
+        ((ITreeDataGridSource)Source).SortBy(Source.Columns[0], ListSortDirection.Ascending);
+    }
 
     [RelayCommand(CanExecute = nameof(CanDelete))]
     private async Task Delete(ICluster cluster)

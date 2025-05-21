@@ -256,6 +256,11 @@ public partial class App : Application
         });
         Styles.Add(new StyleInclude(new Uri("avares://KubeUI"))
         {
+            Source = new Uri("avares://Avalonia.Controls.TreeDataGrid/Themes/Fluent.axaml")
+        });
+
+        Styles.Add(new StyleInclude(new Uri("avares://KubeUI"))
+        {
             Source = new Uri("avares://KubeUI/Styles/Fluent.axaml")
         });
         Styles.Add(new StyleInclude(new Uri("avares://KubeUI"))

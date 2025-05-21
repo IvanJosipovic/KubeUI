@@ -1,4 +1,5 @@
-﻿using FluentAvalonia.UI.Controls;
+﻿using Avalonia.Controls.Models.TreeDataGrid;
+using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Client;
@@ -13,7 +14,7 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
     public partial ICluster Cluster { get; set; }
 
     [ObservableProperty]
-    public partial PortForwarder? SelectedItem { get; set; }
+    public partial FlatTreeDataGridSource<PortForwarder> Source { get; set; }
 
     public PortForwarderListViewModel()
     {
@@ -62,5 +63,21 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
     {
         Cluster = cluster;
         Id = cluster.Name + nameof(PortForwarderListViewModel);
+
+        Source = new FlatTreeDataGridSource<PortForwarder>(Cluster.PortForwarders)
+        {
+            Columns =
+            {
+                new TextColumn<PortForwarder, string>("Type", x => x.Type),
+                new TextColumn<PortForwarder, string>("Name", x => x.Name, new GridLength(1, GridUnitType.Star)),
+                new TextColumn<PortForwarder, string>("Namespace", x => x.Namespace),
+                new TextColumn<PortForwarder, int>("Port", x => x.Port),
+                new TextColumn<PortForwarder, int>("Local Port", x => x.LocalPort),
+                new TextColumn<PortForwarder, int>("Connections", x => x.Connections),
+                new TextColumn<PortForwarder, string>("Status", x => x.Status),
+            },
+        };
+
+        ((ITreeDataGridSource)Source).SortBy(Source.Columns[1], ListSortDirection.Ascending);
     }
 }

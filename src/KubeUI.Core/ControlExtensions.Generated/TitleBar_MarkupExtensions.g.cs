@@ -81,6 +81,42 @@ public static T IsTitleVisible<TValue,T>(this T control, TValue value, FuncValue
 => control._setEx(Ursa.Controls.TitleBar.IsTitleVisibleProperty, ps, () => control.IsTitleVisible = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
+ // IsTitleBarHitTestVisible
+
+/*BindFromExpressionSetterGenerator*/
+public static T IsTitleBarHitTestVisible<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.TitleBar 
+   => control._set(Ursa.Controls.TitleBar.IsTitleBarHitTestVisibleProperty, func, onChanged, expression);
+
+/*MagicalSetterGenerator*/
+public static T IsTitleBarHitTestVisible<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.TitleBar 
+=> control._setEx(Ursa.Controls.TitleBar.IsTitleBarHitTestVisibleProperty, ps, () => control.IsTitleBarHitTestVisible = value, bindingMode, converter, bindingSource);
+
+/*BindSetterGenerator*/
+public static T IsTitleBarHitTestVisible<T>(this T control, IBinding binding) where T : Ursa.Controls.TitleBar 
+   => control._set(Ursa.Controls.TitleBar.IsTitleBarHitTestVisibleProperty, binding);
+
+/*AvaloniaPropertyBindSetterGenerator*/
+public static T IsTitleBarHitTestVisible<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Ursa.Controls.TitleBar 
+   => control._set(Ursa.Controls.TitleBar.IsTitleBarHitTestVisibleProperty, avaloniaProperty, bindingMode, converter, overrideView);
+
+/*MagicalSetterWithConverterGenerator*/
+public static T IsTitleBarHitTestVisible<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.TitleBar 
+=> control._setEx(Ursa.Controls.TitleBar.IsTitleBarHitTestVisibleProperty, ps, () => control.IsTitleBarHitTestVisible = converter.TryConvert(value), bindingMode, converter, bindingSource);
+
+
+
+//================= Attached Properties ======================//
+ // IsTitleBarHitTestVisible
+
+/*AttachedPropertyMagicalSetterGenerator*/
+public static T TitleBar_IsTitleBarHitTestVisible<T>(this T control, System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Avalonia.Controls.Window
+ => control._setEx(Ursa.Controls.TitleBar.IsTitleBarHitTestVisibleProperty, ps, () => Ursa.Controls.TitleBar.SetIsTitleBarHitTestVisible(control, value), bindingMode, converter, bindingSource);
+
+/*AttachedPropertyBindFromExpressionSetterGenerator*/
+public static T TitleBar_IsTitleBarHitTestVisible<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Avalonia.Controls.Window 
+   => control._set(Ursa.Controls.TitleBar.IsTitleBarHitTestVisibleProperty, func, onChanged, expression);
+
+
 
 //================= Styles ======================//
  // LeftContent
@@ -114,6 +150,17 @@ public static Style<T> IsTitleVisible<T>(this Style<T> style, System.Boolean val
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsTitleVisible<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.TitleBar 
 => style._addSetter(Ursa.Controls.TitleBar.IsTitleVisibleProperty, binding);
+
+
+ // IsTitleBarHitTestVisible
+
+/*ValueStyleSetterGenerator*/
+public static Style<T> IsTitleBarHitTestVisible<T>(this Style<T> style, System.Boolean value) where T : Ursa.Controls.TitleBar 
+=> style._addSetter(Ursa.Controls.TitleBar.IsTitleBarHitTestVisibleProperty, value);
+
+/*BindingStyleSetterGenerator*/
+public static Style<T> IsTitleBarHitTestVisible<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.TitleBar 
+=> style._addSetter(Ursa.Controls.TitleBar.IsTitleBarHitTestVisibleProperty, binding);
 
 
 

@@ -1,7 +1,4 @@
-﻿using KubeUI.Client;
-using KubeUI.Controls;
-
-namespace KubeUI.Views;
+﻿namespace KubeUI.Views;
 
 public sealed class PortForwarderListView : MyViewBase<PortForwarderListViewModel>
 {
@@ -9,68 +6,20 @@ public sealed class PortForwarderListView : MyViewBase<PortForwarderListViewMode
     {
         return new Grid()
             .Children([
-                new DataGrid()
-                    .SelectedItem(@vm.SelectedItem)
-                    .CanUserReorderColumns(true)
-                    .CanUserResizeColumns(true)
-                    .GridLinesVisibility(DataGridGridLinesVisibility.All)
-                    .ItemsSource(@vm.Cluster.PortForwarders)
-                    .IsReadOnly(true)
-                    .Set(x => {
-                        x.Columns([
-                            new MyDataGridTextColumn()
-                            {
-                                Binding = new Binding(nameof(PortForwarder.Type)),
-                                Header = "Type",
-                            },
-                            new MyDataGridTextColumn()
-                            {
-                                Binding = new Binding(nameof(PortForwarder.Name)),
-                                Header = "Name",
-                                Width = new DataGridLength(1, DataGridLengthUnitType.Star),
-                            },
-                            new MyDataGridTextColumn()
-                            {
-                                Binding = new Binding(nameof(PortForwarder.Namespace)),
-                                Header = "Namespace",
-                            },
-                            new MyDataGridTextColumn()
-                            {
-                                Binding = new Binding(nameof(PortForwarder.Port)),
-                                Header = "Port",
-                            },
-                            new MyDataGridTextColumn()
-                            {
-                                Binding = new Binding(nameof(PortForwarder.LocalPort)),
-                                Header = "Local Port",
-                            },
-                            new MyDataGridTextColumn()
-                            {
-                                Binding = new Binding(nameof(PortForwarder.Connections)),
-                                Header = "Connections",
-                            },
-                            new MyDataGridTextColumn()
-                            {
-                                Binding = new Binding(nameof(PortForwarder.Status)),
-                                Header = "Status",
-                            },
-                        ]);
-
-                        x.ContextMenu(new ContextMenu()
+                        new TreeDataGrid()
+                        .Set((x) => x.Source = vm.Source)
+                        .ContextMenu(new ContextMenu()
                                         .Items([
                                             new MenuItem()
                                                 .Command(vm.OpenCommand)
-                                                .CommandParameter(new Binding(nameof(vm.SelectedItem)))
+                                                .CommandParameter(vm.Source.RowSelection.SelectedItem)
                                                 .Header("Open in Browser"),
                                             new MenuItem()
                                                 .Command(vm.RemoveCommand)
-                                                .CommandParameter(new Binding(nameof(vm.SelectedItem)))
+                                                .CommandParameter(vm.Source.RowSelection.SelectedItem)
                                                 .Header("Remove"),
                                         ])
-                        );
-
-                        Dispatcher.UIThread.Post(() => x.Columns[0].Sort(ListSortDirection.Ascending));
-                    }),
+                        ),
                 ]);
     }
 }

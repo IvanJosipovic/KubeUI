@@ -12,6 +12,29 @@ namespace Avalonia.Markup.Declarative;
 public static partial class TextArea_MarkupExtensions
 {
 //================= Properties ======================//
+ // Watermark
+
+/*BindFromExpressionSetterGenerator*/
+public static T Watermark<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.Editing.TextArea 
+   => control._set(AvaloniaEdit.Editing.TextArea.WatermarkProperty, func, onChanged, expression);
+
+/*MagicalSetterGenerator*/
+public static T Watermark<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
+=> control._setEx(AvaloniaEdit.Editing.TextArea.WatermarkProperty, ps, () => control.Watermark = value, bindingMode, converter, bindingSource);
+
+/*BindSetterGenerator*/
+public static T Watermark<T>(this T control, IBinding binding) where T : AvaloniaEdit.Editing.TextArea 
+   => control._set(AvaloniaEdit.Editing.TextArea.WatermarkProperty, binding);
+
+/*AvaloniaPropertyBindSetterGenerator*/
+public static T Watermark<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : AvaloniaEdit.Editing.TextArea 
+   => control._set(AvaloniaEdit.Editing.TextArea.WatermarkProperty, avaloniaProperty, bindingMode, converter, overrideView);
+
+/*MagicalSetterWithConverterGenerator*/
+public static T Watermark<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
+=> control._setEx(AvaloniaEdit.Editing.TextArea.WatermarkProperty, ps, () => control.Watermark = converter.TryConvert(value), bindingMode, converter, bindingSource);
+
+
  // Document
 
 /*BindFromExpressionSetterGenerator*/
@@ -272,6 +295,17 @@ public static T OnTextCopied<T>(this T control, Action<AvaloniaEdit.Editing.Text
 
 
 //================= Styles ======================//
+ // Watermark
+
+/*ValueStyleSetterGenerator*/
+public static Style<T> Watermark<T>(this Style<T> style, System.String value) where T : AvaloniaEdit.Editing.TextArea 
+=> style._addSetter(AvaloniaEdit.Editing.TextArea.WatermarkProperty, value);
+
+/*BindingStyleSetterGenerator*/
+public static Style<T> Watermark<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.Editing.TextArea 
+=> style._addSetter(AvaloniaEdit.Editing.TextArea.WatermarkProperty, binding);
+
+
  // Document
 
 /*ValueStyleSetterGenerator*/
