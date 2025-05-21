@@ -55,7 +55,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         Id = Cluster.Name + "-" + Kind;
         ResourceConfig = (ResourceConfigBase<T>)Cluster.GetResourceConfig(Kind);
 
-        Objects = Cluster.GetObjectDictionary<T>();
+        Objects = Cluster.GetObjects<T>();
 
         Cluster.SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
 
@@ -65,31 +65,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
         foreach (var column in ResourceConfig.Columns())
         {
-
-            //public MyCustomColumn(
-            //object? header,
-            //Func<TModel, TValue?> valueSelector,
-            //TypedBinding<TModel, TValue?> binding,
-            //GridLength? width = null,
-            //ColumnOptions<TModel>? options = null)
-
-            //var columnDisplay = (Func<T, string>)column.GetType().GetProperty(nameof(ResourceListColumn<T, string>.Display)).GetValue(column);
-
             // Expression<Func<T, TValue>>
             var columnField = column.GetType().GetProperty(nameof(ResourceListColumn<T, string>.FieldExpression)).GetValue(column);
-
-
-            // Convert Func<T, TValue> to Expression<Func<T, TValue>>
-            //var makeExpressionMethod = typeof(Utilities).GetMethod("MakeExpression", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
-            //makeExpressionMethod = makeExpressionMethod.MakeGenericMethod([typeof(T), columnType]);
-            //var expressionInstance = makeExpressionMethod.Invoke(null, [columnField]);
-
-
-            //var bindingType = typeof(TypedBinding<>).MakeGenericType([typeof(T)]);
-            //var oneWayMethod = bindingType.GetMethod("OneWay", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
-            //oneWayMethod = oneWayMethod.MakeGenericMethod([column.Type]);
-            //var bindingInstance = oneWayMethod.Invoke(null, [columnField]);
-
             var col = typeof(TextColumn<,>).MakeGenericType(typeof(T), column.Type);
             var colDefinition = Activator.CreateInstance(col, [column.Name, columnField, null, null]) as IColumn<T>;
 

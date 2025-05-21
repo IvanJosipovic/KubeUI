@@ -56,8 +56,8 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
 
     public async Task RefreshData()
     {
-        var pods = await Cluster.GetObjectDictionaryAsync<V1Pod>();
-        var nodes = await Cluster.GetObjectDictionaryAsync<V1Node>();
+        var pods = await Cluster.GetObjectsAsync<V1Pod>();
+        var nodes = await Cluster.GetObjectsAsync<V1Node>();
 
         TotalPods.Value = pods.Count;
         MaxPods.Value = nodes.Sum(x => x.Status.Capacity?.TryGetValue("pods", out var value) == true ? value.ToDouble(): 0);

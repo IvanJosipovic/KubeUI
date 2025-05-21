@@ -153,7 +153,7 @@ public class ClusterEndToEndTests
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        var ns = (await testHarness.Cluster.GetObjectDictionaryAsync<V1Namespace>());
+        var ns = (await testHarness.Cluster.GetObjectsAsync<V1Namespace>());
         ns.Count.Should().BeGreaterThan(1);
     }
 
@@ -259,7 +259,7 @@ public class ClusterEndToEndTests
 
         await Task.Delay(TimeSpan.FromSeconds(10));
 
-        testHarness.Cluster.GetObjectDictionary<V1Namespace>().All(x => x.Name() != "test").Should().BeTrue();
+        testHarness.Cluster.GetObjects<V1Namespace>().All(x => x.Name() != "test").Should().BeTrue();
     }
 
     [AvaloniaFact]
@@ -291,7 +291,7 @@ public class ClusterEndToEndTests
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        testHarness.Cluster.GetObjectDictionary<V1Secret>().All(x => x.Name() != "test").Should().BeTrue();
+        testHarness.Cluster.GetObjects<V1Secret>().All(x => x.Name() != "test").Should().BeTrue();
     }
 
     [AvaloniaFact]
@@ -796,10 +796,10 @@ rules:
 
         await Task.Delay(TimeSpan.FromSeconds(5));
 
-        var nodes = await cluster.GetObjectDictionaryAsync<V1Node>();
+        var nodes = await cluster.GetObjectsAsync<V1Node>();
         nodes.Count.Should().Be(1);
 
-        var secrets = await cluster.GetObjectDictionaryAsync<V1Secret>();
+        var secrets = await cluster.GetObjectsAsync<V1Secret>();
         secrets.Count.Should().Be(1);
         secrets.First().Namespace().Should().Be("my-app");
         secrets.First().Name().Should().Be("my-serviceaccount");
@@ -831,10 +831,10 @@ rules:
 
         await Task.Delay(TimeSpan.FromSeconds(5));
 
-        var nodes = await cluster.GetObjectDictionaryAsync<V1Node>();
+        var nodes = await cluster.GetObjectsAsync<V1Node>();
         nodes.Count.Should().Be(1);
 
-        var secrets = await cluster.GetObjectDictionaryAsync<V1Secret>();
+        var secrets = await cluster.GetObjectsAsync<V1Secret>();
         secrets.Count.Should().Be(1);
         secrets.First().Namespace().Should().Be("my-app");
         secrets.First().Name().Should().Be("my-serviceaccount");
@@ -848,7 +848,7 @@ rules:
 
         var cluster = testHarness.Cluster;
 
-        await cluster.GetObjectDictionaryAsync<V1Pod>();
+        await cluster.GetObjectsAsync<V1Pod>();
 
         cluster.CanI<V1Pod>(Cluster.Verb.Create).Should().BeTrue();
         cluster.CanI<V1Pod>(Cluster.Verb.Delete).Should().BeTrue();
@@ -895,7 +895,7 @@ rules:
 
         await cluster.Connect();
 
-        await cluster.GetObjectDictionaryAsync<V1Pod>();
+        await cluster.GetObjectsAsync<V1Pod>();
 
         cluster.CanI<V1Namespace>(Cluster.Verb.Create).Should().BeFalse();
         cluster.CanI<V1Namespace>(Cluster.Verb.Delete).Should().BeFalse();

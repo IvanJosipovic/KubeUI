@@ -160,7 +160,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                             return;
                         }
 
-                        var items = await GetObjectDictionaryAsync<V1Namespace>();
+                        var items = await GetObjectsAsync<V1Namespace>();
 
                         foreach (var item in settings.Namespaces)
                         {
@@ -171,7 +171,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     }
                     else
                     {
-                        Namespaces = await GetObjectDictionaryAsync<V1Namespace>();
+                        Namespaces = await GetObjectsAsync<V1Namespace>();
 
                         while (Namespaces.Count == 0)
                         {
@@ -351,7 +351,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     return;
                 }
 
-                foreach (var item in GetObjectDictionary<V1Namespace>())
+                foreach (var item in GetObjects<V1Namespace>())
                 {
                     await GetSelfSubjectAccessReview(type, Verb.Create, item.Name());
                     await GetSelfSubjectAccessReview(type, Verb.Delete, item.Name());
@@ -474,7 +474,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     }
                     Dispatcher.UIThread.Post(() =>
                     {
-                        var existing = items.FirstOrDefault(x => x.Name() == item.Name());
+                        var existing = items.FirstOrDefault(x => x.Name() == item.Name() && x.Namespace() == item.Namespace());
 
                         if (existing != null)
                         {
@@ -490,7 +490,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 case WatchEventType.Modified:
                     Dispatcher.UIThread.Post(() =>
                     {
-                        var existing = items.FirstOrDefault(x => x.Name() == item.Name());
+                        var existing = items.FirstOrDefault(x => x.Name() == item.Name() && x.Namespace() == item.Namespace());
 
                         if (existing != null)
                         {
@@ -506,7 +506,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 case WatchEventType.Deleted:
                     Dispatcher.UIThread.Post(() =>
                     {
-                        var existing = items.FirstOrDefault(x => x.Name() == item.Name());
+                        var existing = items.FirstOrDefault(x => x.Name() == item.Name() && x.Namespace() == item.Namespace());
 
                         if (existing != null)
                         {
@@ -615,7 +615,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         return ((ObservableCollection<T>)Objects[attribute].Items).FirstOrDefault(x => x.Namespace() == @namespace && x.Name() == name);
     }
 
-    public ObservableCollection<T> GetObjectDictionary<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public ObservableCollection<T> GetObjects<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         Seed<T>().GetAwaiter().GetResult();
 
@@ -624,7 +624,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         return (ObservableCollection<T>)Objects[attribute].Items;
     }
 
-    public async Task<ObservableCollection<T>> GetObjectDictionaryAsync<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public async Task<ObservableCollection<T>> GetObjectsAsync<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         await Seed<T>(true);
 

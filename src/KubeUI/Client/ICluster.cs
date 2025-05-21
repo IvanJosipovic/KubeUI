@@ -1,6 +1,5 @@
 ﻿using k8s;
 using k8s.Models;
-using KubeUI.Client.Informer;
 using KubeUI.Resources;
 using Avalonia.Collections;
 using static KubeUI.Client.Cluster;
@@ -20,7 +19,7 @@ public interface ICluster
     bool IsNamespaced<T>();
     bool ListNamespaces { get; set; }
     AvaloniaDictionary<GroupApiVersionKind, ContainerClass> Objects { get; }
-    ObservableCollection<T> GetObjectDictionary<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    ObservableCollection<T> GetObjects<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
     ObservableCollection<V1Namespace> Namespaces { get; set; }
     event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
     IKubernetes? Client { get; set; }
@@ -45,7 +44,7 @@ public interface ICluster
     Task Seed<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task<bool> UpdateCanIAnyNamespaceAsync(Type type, Verb verb, string subresource = "");
     Task<bool> UpdateCanIAnyNamespaceAsync<T>(Verb verb, string subresource = "") where T : class, IKubernetesObject<V1ObjectMeta>, new();
-    Task<ObservableCollection<T>> GetObjectDictionaryAsync<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    Task<ObservableCollection<T>> GetObjectsAsync<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task<T?> GetObjectAsync<T>(string @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     void RemovePortForward(PortForwarder pf);
 }

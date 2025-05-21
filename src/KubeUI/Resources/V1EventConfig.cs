@@ -16,41 +16,40 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
             new ResourceListColumn<Corev1Event, string>()
             {
                 Name = "Type",
-                Field = x => x?.Type ?? "",
+                FieldExpression = x => x.Type,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             new ResourceListColumn<Corev1Event, string>()
             {
                 Name = "Message",
-                Field = x => x?.Message ?? "",
+                FieldExpression = x => x.Message,
                 Width = "4*"
             },
             NamespaceColumn(),
             new ResourceListColumn<Corev1Event, string>()
             {
                 Name = "Involved Object",
-                Field = x => x?.InvolvedObject?.Name ?? "",
+                FieldExpression = x => x.InvolvedObject.Name,
                 Width = "*"
             },
             new ResourceListColumn<Corev1Event, string>()
             {
                 Name = "Source",
-                Field = x => x?.Source?.Component ?? "",
+                FieldExpression = x => x.Source.Component,
                 Width = "*"
             },
             new ResourceListColumn<Corev1Event, int>()
             {
                 Name = "Count",
-                Display = x => (x.Count ?? 0).ToString(),
-                Field = x => x.Count ?? 0,
+                FieldExpression = x => x.Count ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<Corev1Event, DateTime?>()
             {
                 Name = "Last Seen",
                 CustomControl = typeof(LastSeenCell),
-                Field = x => x.LastTimestamp,
-                Display = x => x.LastTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
+                FieldExpression = x => x.LastTimestamp,
+                //Display = x => x.LastTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
                 Sort = SortDirection.Descending,
                 Width = "80"
             },

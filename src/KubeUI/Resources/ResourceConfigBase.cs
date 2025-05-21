@@ -315,7 +315,7 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
 
     public Expression<Func<T, TValue>> FieldExpression { get; set; }
 
-    public required Func<T, TValue> Field { get; set; }
+    public Func<T, TValue> Field { get; set; }
 
     public Func<T, string>? Display { get; set; }
 

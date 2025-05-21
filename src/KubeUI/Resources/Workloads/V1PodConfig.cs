@@ -24,9 +24,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 {
                     Name = "Containers",
                     CustomControl = typeof(PodContainerCell),
-                    FieldExpression = x => x.Spec.Containers.Count + x.Spec.InitContainers.Count ,
-                    Field = x => x.Spec.Containers.Count + ((x.Spec.InitContainers?.Count) ?? 0),
-                    Display = x => (x.Spec.Containers.Count + ((x.Spec.InitContainers?.Count) ?? 0)).ToString(),
+                    FieldExpression = x => x.Spec.Containers.Count + x.Spec.InitContainers.Count,
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },
                 NamespaceColumn(),
@@ -34,37 +32,31 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 {
                     Name = "Restarts",
                     FieldExpression = x => x.Status.ContainerStatuses.Sum(x => x.RestartCount),
-                    Field = x => x.Status.ContainerStatuses?.Sum(x => x.RestartCount) ?? 0,
-                    Display = x => x.Status.ContainerStatuses?.Sum(x => x.RestartCount).ToString() ?? "0",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListColumn<V1Pod, string>()
                 {
                     Name = "Controlled By",
-                    Field = x => x.Metadata.OwnerReferences?.FirstOrDefault()?.Name ?? "",
-                    FieldExpression = x => x.Metadata.OwnerReferences.FirstOrDefault().Name ?? "",
+                    FieldExpression = x => x.Metadata.OwnerReferences.FirstOrDefault().Name,
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListColumn<V1Pod, string>()
                 {
                     Name = "Node",
-                    Field = x => x.Spec.NodeName ?? "",
-                    FieldExpression = x => x.Spec.NodeName ?? "",
+                    FieldExpression = x => x.Spec.NodeName,
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListColumn<V1Pod, string>()
                 {
                     Name = "QoS",
-                    Field = x => x.Status.QosClass ?? "",
-                    FieldExpression = x => x.Status.QosClass ?? "",
+                    FieldExpression = x => x.Status.QosClass,
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },
                 AgeColumn(),
                 new ResourceListColumn<V1Pod, string>()
                 {
                     Name = "Status",
-                    Field = x => x.Status.Phase ?? "",
-                    FieldExpression = x => x.Status.Phase ?? "",
+                    FieldExpression = x => x.Status.Phase,
                     CustomControl = typeof(PodStatusCell),
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
