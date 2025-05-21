@@ -48,7 +48,7 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
             new()
             {
                 Header = "View Items",
-                CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<V1CustomResourceDefinition>>(x => x.SelectedItem.Value),
+                CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<V1CustomResourceDefinition>>(x => x.Source.RowSelection.SelectedItem),
                 CommandPath =  nameof(ListCRDCommand)
             },
         ];

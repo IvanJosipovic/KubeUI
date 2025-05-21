@@ -47,7 +47,7 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
             new()
             {
                 Header = "Port Forwarding",
-                ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Service>>(x => x.SelectedItem.Value.Spec.Ports),
+                ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Service>>(x => x.Source.RowSelection.SelectedItem.Spec.Ports),
                 IconResource = "ic_fluent_cloud_flow_filled",
                 ItemTemplate = new()
                 {

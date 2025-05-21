@@ -24,6 +24,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 {
                     Name = "Containers",
                     CustomControl = typeof(PodContainerCell),
+                    FieldExpression = x => x.Spec.Containers.Count + x.Spec.InitContainers.Count ,
                     Field = x => x.Spec.Containers.Count + ((x.Spec.InitContainers?.Count) ?? 0),
                     Display = x => (x.Spec.Containers.Count + ((x.Spec.InitContainers?.Count) ?? 0)).ToString(),
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
@@ -32,6 +33,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 new ResourceListColumn<V1Pod, int>()
                 {
                     Name = "Restarts",
+                    FieldExpression = x => x.Status.ContainerStatuses.Sum(x => x.RestartCount),
                     Field = x => x.Status.ContainerStatuses?.Sum(x => x.RestartCount) ?? 0,
                     Display = x => x.Status.ContainerStatuses?.Sum(x => x.RestartCount).ToString() ?? "0",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
@@ -40,18 +42,21 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 {
                     Name = "Controlled By",
                     Field = x => x.Metadata.OwnerReferences?.FirstOrDefault()?.Name ?? "",
+                    FieldExpression = x => x.Metadata.OwnerReferences.FirstOrDefault().Name ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListColumn<V1Pod, string>()
                 {
                     Name = "Node",
                     Field = x => x.Spec.NodeName ?? "",
+                    FieldExpression = x => x.Spec.NodeName ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListColumn<V1Pod, string>()
                 {
                     Name = "QoS",
                     Field = x => x.Status.QosClass ?? "",
+                    FieldExpression = x => x.Status.QosClass ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },
                 AgeColumn(),
@@ -59,30 +64,31 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 {
                     Name = "Status",
                     Field = x => x.Status.Phase ?? "",
+                    FieldExpression = x => x.Status.Phase ?? "",
                     CustomControl = typeof(PodStatusCell),
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
             ];
 
-        if (Cluster.IsMetricsAvailable)
-        {
-            cols.Insert(3, new ResourceListColumn<V1Pod, decimal>()
-            {
-                Name = "CPU",
-                CustomControl = typeof(PodMetricCPUCell),
-                Field = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
-                Display = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]).ToString() ?? "",
-                Width = "80"
-            });
-            cols.Insert(4, new ResourceListColumn<V1Pod, decimal>()
-            {
-                Name = "Memory",
-                CustomControl = typeof(PodMetricMemoryCell),
-                Field = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
-                Display = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]).ToString() ?? "",
-                Width = "80"
-            });
-        }
+        //if (Cluster.IsMetricsAvailable)
+        //{
+        //    cols.Insert(3, new ResourceListColumn<V1Pod, decimal>()
+        //    {
+        //        Name = "CPU",
+        //        CustomControl = typeof(PodMetricCPUCell),
+        //        Field = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
+        //        Display = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]).ToString() ?? "",
+        //        Width = "80"
+        //    });
+        //    cols.Insert(4, new ResourceListColumn<V1Pod, decimal>()
+        //    {
+        //        Name = "Memory",
+        //        CustomControl = typeof(PodMetricMemoryCell),
+        //        Field = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
+        //        Display = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]).ToString() ?? "",
+        //        Width = "80"
+        //    });
+        //}
 
         return cols;
     }
@@ -99,7 +105,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                     new()
                     {
                         Header = "Init",
-                        ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Value.Spec.InitContainers),
+                        ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.Source.RowSelection.SelectedItem.Spec.InitContainers),
                         ItemTemplate = new()
                         {
                             HeaderBinding = Utilities.FuncBinding<V1Container>(x => x.Name),
@@ -111,7 +117,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                     new()
                     {
                         Header = "Normal",
-                        ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Value.Spec.Containers),
+                        ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.Source.RowSelection.SelectedItem.Spec.Containers),
                         ItemTemplate = new()
                         {
                             HeaderBinding = Utilities.FuncBinding<V1Container>(x => x.Name),
@@ -130,7 +136,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                     new()
                     {
                         Header = "Init",
-                        ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Value.Spec.InitContainers),
+                        ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.Source.RowSelection.SelectedItem.Spec.InitContainers),
                         ItemTemplate = new()
                         {
                             HeaderBinding = Utilities.FuncBinding<V1Container>(x => x.Name),
@@ -142,7 +148,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                     new()
                     {
                         Header = "Normal",
-                        ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Value.Spec.Containers),
+                        ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.Source.RowSelection.SelectedItem.Spec.Containers),
                         ItemTemplate = new()
                         {
                             HeaderBinding = Utilities.FuncBinding<V1Container>(x => x.Name),
@@ -156,7 +162,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             new()
             {
                 Header = "Port Forwarding",
-                ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Value.Spec.Containers),
+                ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.Source.RowSelection.SelectedItem.Spec.Containers),
                 IconResource = "ic_fluent_cloud_flow_filled",
                 ItemTemplate = new()
                 {

@@ -4,10 +4,17 @@
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
                     <Color x:Key="RegionColor">#EEEEF2</Color>
+
+                    <SolidColorBrush x:Key="ColumnHeaderBackgroundBrush" Color="#FF2B2B2B" />
                 </ResourceDictionary>
 
                 <ResourceDictionary x:Key="Dark">
                     <Color x:Key="RegionColor">#1F1F1F</Color>
+
+                    <SolidColorBrush x:Key="ColumnHeaderBackgroundBrush" Color="#FFF4F4F4" />
+
+                    <SolidColorBrush x:Key="TreeDataGridHeaderBorderBrushPointerOverBrush" Color="#FFF4F4F4" />
+                    <SolidColorBrush x:Key="TreeDataGridHeaderBorderBrushPressedBrush" Color="Transparent" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>

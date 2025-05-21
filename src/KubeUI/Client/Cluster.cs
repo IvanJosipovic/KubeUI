@@ -17,6 +17,7 @@ using Avalonia.Collections;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using Swordfish.NET.Collections;
+using DynamicData;
 
 namespace KubeUI.Client;
 
@@ -73,7 +74,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
     public partial bool IsExpanded { get; set; }
 
     [ObservableProperty]
-    public partial AvaloniaDictionary<NamespacedName, V1Namespace> Namespaces { get; set; } = [];
+    public partial ObservableCollection<V1Namespace> Namespaces { get; set; } = [];
 
     [ObservableProperty]
     public partial ObservableCollection<V1Namespace> SelectedNamespaces { get; set; } = [];
@@ -163,7 +164,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                         foreach (var item in settings.Namespaces)
                         {
-                            items[new NamespacedName(item)] = new V1Namespace() { Metadata = new() { Name = item } };
+                            items.Add(new V1Namespace() { Metadata = new() { Name = item } });
                         }
 
                         Namespaces = items;
@@ -308,7 +309,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
             container = new ContainerClass
             {
                 Type = type,
-                Items = new AvaloniaDictionary<NamespacedName, T>()
+                Items = new ObservableCollection<T>()
             };
 
             Objects.Add(kind, container);
@@ -352,17 +353,17 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                 foreach (var item in GetObjectDictionary<V1Namespace>())
                 {
-                    await GetSelfSubjectAccessReview(type, Verb.Create, item.Value.Name());
-                    await GetSelfSubjectAccessReview(type, Verb.Delete, item.Value.Name());
-                    await GetSelfSubjectAccessReview(type, Verb.Get, item.Value.Name());
-                    await GetSelfSubjectAccessReview(type, Verb.List, item.Value.Name());
-                    await GetSelfSubjectAccessReview(type, Verb.Patch, item.Value.Name());
-                    await GetSelfSubjectAccessReview(type, Verb.Update, item.Value.Name());
-                    await GetSelfSubjectAccessReview(type, Verb.Watch, item.Value.Name());
+                    await GetSelfSubjectAccessReview(type, Verb.Create, item.Name());
+                    await GetSelfSubjectAccessReview(type, Verb.Delete, item.Name());
+                    await GetSelfSubjectAccessReview(type, Verb.Get, item.Name());
+                    await GetSelfSubjectAccessReview(type, Verb.List, item.Name());
+                    await GetSelfSubjectAccessReview(type, Verb.Patch, item.Name());
+                    await GetSelfSubjectAccessReview(type, Verb.Update, item.Name());
+                    await GetSelfSubjectAccessReview(type, Verb.Watch, item.Name());
 
-                    if (CanI(type, Verb.List, item.Value.Name()) && CanI(type, Verb.Watch, item.Value.Name()))
+                    if (CanI(type, Verb.List, item.Name()) && CanI(type, Verb.Watch, item.Name()))
                     {
-                        var informer = new ResourceInformer<T>(_loggerFactory.CreateLogger<ResourceInformer<T>>(), Client, item.Value.Name());
+                        var informer = new ResourceInformer<T>(_loggerFactory.CreateLogger<ResourceInformer<T>>(), Client, item.Name());
 
                         container.Informers.Add(informer);
 
@@ -389,7 +390,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         {
             var kind = GroupApiVersionKind.From<T>();
 
-            var items = (AvaloniaDictionary<NamespacedName, T>)Objects[kind].Items;
+            var items = (ObservableCollection<T>)Objects[kind].Items;
 
             var name = new NamespacedName(item.Namespace(), item.Name());
 
@@ -471,15 +472,52 @@ public sealed partial class Cluster : ObservableObject, ICluster
                             }
                         }
                     }
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        var existing = items.FirstOrDefault(x => x.Name() == item.Name());
 
-                    Dispatcher.UIThread.Post(() => items[name] = item, DispatcherPriority.Background);
+                        if (existing != null)
+                        {
+                            items.Replace(existing, item);
+                        }
+                        else
+                        {
+                            items.Add(item);
+                        }
+
+                    }, DispatcherPriority.Background);
                     break;
                 case WatchEventType.Modified:
-                    Dispatcher.UIThread.Post(() => items[name] = item, DispatcherPriority.Background);
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        var existing = items.FirstOrDefault(x => x.Name() == item.Name());
+
+                        if (existing != null)
+                        {
+                            items.Replace(existing, item);
+                        }
+                        else
+                        {
+                            items.Add(item);
+                        }
+
+                    }, DispatcherPriority.Background);
                     break;
                 case WatchEventType.Deleted:
-                    Dispatcher.UIThread.Post(() => items.Remove(name), DispatcherPriority.Background);
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        var existing = items.FirstOrDefault(x => x.Name() == item.Name());
 
+                        if (existing != null)
+                        {
+                            items.Replace(existing, item);
+                        }
+                        else
+                        {
+                            items.Add(item);
+                        }
+
+                    }, DispatcherPriority.Background);
                     if (typeof(T) == typeof(V1CustomResourceDefinition))
                     {
                         var crd = (item as V1CustomResourceDefinition);
@@ -574,25 +612,25 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
         var attribute = GroupApiVersionKind.From<T>();
 
-        return ((AvaloniaDictionary<NamespacedName, T>)Objects[attribute].Items)[new NamespacedName(@namespace, name)];
+        return ((ObservableCollection<T>)Objects[attribute].Items).FirstOrDefault(x => x.Namespace() == @namespace && x.Name() == name);
     }
 
-    public AvaloniaDictionary<NamespacedName, T> GetObjectDictionary<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public ObservableCollection<T> GetObjectDictionary<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         Seed<T>().GetAwaiter().GetResult();
 
         var attribute = GroupApiVersionKind.From<T>();
 
-        return (AvaloniaDictionary<NamespacedName, T>)Objects[attribute].Items;
+        return (ObservableCollection<T>)Objects[attribute].Items;
     }
 
-    public async Task<AvaloniaDictionary<NamespacedName, T>> GetObjectDictionaryAsync<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public async Task<ObservableCollection<T>> GetObjectDictionaryAsync<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         await Seed<T>(true);
 
         var attribute = GroupApiVersionKind.From<T>();
 
-        return (AvaloniaDictionary<NamespacedName, T>)Objects[attribute].Items;
+        return (ObservableCollection<T>)Objects[attribute].Items;
     }
 
     public async Task AddOrUpdate<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()

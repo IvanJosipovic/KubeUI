@@ -10,6 +10,7 @@ using static KubeUI.Client.Cluster;
 using HanumanInstitute.MvvmDialogs;
 using Avalonia.Controls.Notifications;
 using Dock.Model.Core;
+using System.Linq.Expressions;
 
 namespace KubeUI.Resources;
 
@@ -80,6 +81,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         {
             Name = "Name",
             Field = x => x.Metadata.Name,
+            FieldExpression = x => x.Metadata.Name,
             Width = "2*",
             Sort = sort,
         };
@@ -91,6 +93,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         {
             Name = "Namespace",
             Field = x => x.Metadata.NamespaceProperty,
+            FieldExpression = x => x.Metadata.NamespaceProperty,
             Width = "*",
         };
     }
@@ -102,6 +105,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             Name = "Age",
             CustomControl = typeof(AgeCell),
             Field = x => x.Metadata.CreationTimestamp,
+            FieldExpression = x => x.Metadata.CreationTimestamp,
             Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
             Width = "80"
         };
@@ -118,14 +122,14 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         {
             Header = "View",
             CommandPath = nameof(ViewCommand),
-            CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<T>>(x => x.SelectedItem.Value),
+            CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<T>>(x => x.Source.RowSelection.SelectedItem),
             IconResource = "ic_fluent_panel_right_filled",
         },
         new()
         {
             Header = "View Yaml",
             CommandPath = nameof(ViewYamlCommand),
-            CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<T>>(x => x.SelectedItem.Value),
+            CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<T>>(x => x.Source.RowSelection.SelectedItem),
             IconResource = "code_regular",
         },
         new()
@@ -302,13 +306,16 @@ public interface IResourceListColumn
     Type? CustomControl { get; set; }
 
     string? Width { get; set; }
+    Type Type { get; }
 }
 
-public class ResourceListColumn<T, T2> : IResourceListColumn where T : class, IKubernetesObject<V1ObjectMeta>, new()
+public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     public required string Name { get; set; }
 
-    public required Func<T, T2> Field { get; set; }
+    public Expression<Func<T, TValue>> FieldExpression { get; set; }
+
+    public required Func<T, TValue> Field { get; set; }
 
     public Func<T, string>? Display { get; set; }
 
@@ -317,6 +324,8 @@ public class ResourceListColumn<T, T2> : IResourceListColumn where T : class, IK
     public Type? CustomControl { get; set; }
 
     public string? Width { get; set; }
+
+    public Type Type => typeof(TValue);
 }
 
 public enum SortDirection

@@ -153,7 +153,7 @@ public class ClusterEndToEndTests
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        var ns = (await testHarness.Cluster.GetObjectDictionaryAsync<V1Namespace>()).Values;
+        var ns = (await testHarness.Cluster.GetObjectDictionaryAsync<V1Namespace>());
         ns.Count.Should().BeGreaterThan(1);
     }
 
@@ -259,7 +259,7 @@ public class ClusterEndToEndTests
 
         await Task.Delay(TimeSpan.FromSeconds(10));
 
-        testHarness.Cluster.GetObjectDictionary<V1Namespace>().Values.All(x => x.Name() != "test").Should().BeTrue();
+        testHarness.Cluster.GetObjectDictionary<V1Namespace>().All(x => x.Name() != "test").Should().BeTrue();
     }
 
     [AvaloniaFact]
@@ -291,7 +291,7 @@ public class ClusterEndToEndTests
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        testHarness.Cluster.GetObjectDictionary<V1Secret>().Values.All(x => x.Name() != "test").Should().BeTrue();
+        testHarness.Cluster.GetObjectDictionary<V1Secret>().All(x => x.Name() != "test").Should().BeTrue();
     }
 
     [AvaloniaFact]
@@ -801,8 +801,8 @@ rules:
 
         var secrets = await cluster.GetObjectDictionaryAsync<V1Secret>();
         secrets.Count.Should().Be(1);
-        secrets.Values.First().Namespace().Should().Be("my-app");
-        secrets.Values.First().Name().Should().Be("my-serviceaccount");
+        secrets.First().Namespace().Should().Be("my-app");
+        secrets.First().Name().Should().Be("my-serviceaccount");
     }
 
     [AvaloniaFact]
@@ -836,8 +836,8 @@ rules:
 
         var secrets = await cluster.GetObjectDictionaryAsync<V1Secret>();
         secrets.Count.Should().Be(1);
-        secrets.Values.First().Namespace().Should().Be("my-app");
-        secrets.Values.First().Name().Should().Be("my-serviceaccount");
+        secrets.First().Namespace().Should().Be("my-app");
+        secrets.First().Name().Should().Be("my-serviceaccount");
     }
 
     [AvaloniaFact]

@@ -212,9 +212,9 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 
                     foreach (var pod in pods)
                     {
-                        if (pod.Value.Spec.NodeName == item.Value.Metadata.Name)
+                        if (pod.Spec.NodeName == item.Value.Metadata.Name)
                         {
-                            if (pod.Value.Metadata.OwnerReferences.Any(x => x.ApiVersion == V1DaemonSet.KubeGroup + "/" + V1DaemonSet.KubeApiVersion &&
+                            if (pod.Metadata.OwnerReferences.Any(x => x.ApiVersion == V1DaemonSet.KubeGroup + "/" + V1DaemonSet.KubeApiVersion &&
                                                                             x.Kind == V1DaemonSet.KubeKind &&
                                                                             x.Controller == true &&
                                                                             x.BlockOwnerDeletion == true))
@@ -228,14 +228,14 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
                                 Kind = V1Eviction.KubeKind,
                                 Metadata = new()
                                 {
-                                    Name = pod.Value.Metadata.Name,
-                                    NamespaceProperty = pod.Value.Metadata.NamespaceProperty
+                                    Name = pod.Metadata.Name,
+                                    NamespaceProperty = pod.Metadata.NamespaceProperty
                                 }
                             };
 
                             try
                             {
-                                await Cluster.Client.CoreV1.CreateNamespacedPodEvictionAsync(evict, pod.Value.Metadata.Name, pod.Value.Metadata.NamespaceProperty);
+                                await Cluster.Client.CoreV1.CreateNamespacedPodEvictionAsync(evict, pod.Metadata.Name, pod.Metadata.NamespaceProperty);
                             }
                             catch (Exception ex)
                             {

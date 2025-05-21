@@ -93,7 +93,7 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
 
             var endpointSlices = await _cluster.GetObjectDictionaryAsync<V1EndpointSlice>();
 
-            var endpointSlice = endpointSlices.FirstOrDefault(x => x.Value.Namespace() == service.Namespace() && x.Value.GetLabel("kubernetes.io/service-name") == service.Name()).Value;
+            var endpointSlice = endpointSlices.FirstOrDefault(x => x.Namespace() == service.Namespace() && x.GetLabel("kubernetes.io/service-name") == service.Name());
             if (endpointSlice == null)
             {
                 Status = "No endpoint slices found for Service";

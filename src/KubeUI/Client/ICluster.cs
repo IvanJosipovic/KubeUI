@@ -20,8 +20,8 @@ public interface ICluster
     bool IsNamespaced<T>();
     bool ListNamespaces { get; set; }
     AvaloniaDictionary<GroupApiVersionKind, ContainerClass> Objects { get; }
-    AvaloniaDictionary<NamespacedName, T> GetObjectDictionary<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
-    AvaloniaDictionary<NamespacedName, V1Namespace> Namespaces { get; set; }
+    ObservableCollection<T> GetObjectDictionary<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    ObservableCollection<V1Namespace> Namespaces { get; set; }
     event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
     IKubernetes? Client { get; set; }
     IResourceConfig GetResourceConfig(GroupApiVersionKind kind);
@@ -45,7 +45,7 @@ public interface ICluster
     Task Seed<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task<bool> UpdateCanIAnyNamespaceAsync(Type type, Verb verb, string subresource = "");
     Task<bool> UpdateCanIAnyNamespaceAsync<T>(Verb verb, string subresource = "") where T : class, IKubernetesObject<V1ObjectMeta>, new();
-    Task<AvaloniaDictionary<NamespacedName, T>> GetObjectDictionaryAsync<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    Task<ObservableCollection<T>> GetObjectDictionaryAsync<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task<T?> GetObjectAsync<T>(string @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     void RemovePortForward(PortForwarder pf);
 }

@@ -121,7 +121,7 @@ public partial class Cluster
         {
             foreach (var item in GetObjectDictionary<V1Namespace>())
             {
-                if (CanI(type, verb, item.Value.Name(), subresource))
+                if (CanI(type, verb, item.Name(), subresource))
                 {
                     return true;
                 }
@@ -149,9 +149,9 @@ public partial class Cluster
         {
             foreach (var item in await GetObjectDictionaryAsync<V1Namespace>())
             {
-                await GetSelfSubjectAccessReview(type, verb, item.Value.Name(), subresource);
+                await GetSelfSubjectAccessReview(type, verb, item.Name(), subresource);
 
-                if (CanI(type, verb, item.Value.Name(), subresource))
+                if (CanI(type, verb, item.Name(), subresource))
                 {
                     return true;
                 }

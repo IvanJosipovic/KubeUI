@@ -1,5 +1,8 @@
 using System.Collections.Specialized;
 using System.Linq.Expressions;
+using Avalonia.Collections;
+using Avalonia.Controls.Models.TreeDataGrid;
+using Avalonia.Experimental.Data;
 using Avalonia.Styling;
 using DynamicData;
 using DynamicData.Binding;
@@ -9,7 +12,6 @@ using k8s.Models;
 using KubeUI.Client;
 using KubeUI.Client.Informer;
 using KubeUI.Resources;
-using Avalonia.Collections;
 
 namespace KubeUI.ViewModels;
 
@@ -24,13 +26,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     public partial GroupApiVersionKind Kind { get; set; }
 
     [ObservableProperty]
-    public partial AvaloniaDictionary<NamespacedName, T> Objects { get; set; }
+    public partial ObservableCollection<T> Objects { get; set; }
 
-    [ObservableProperty]
-    public partial KeyValuePair<NamespacedName, T> SelectedItem { get; set; }
-
-    [ObservableProperty]
-    public partial ReadOnlyObservableCollection<KeyValuePair<NamespacedName, T>>? DataGridObjects { get; private set; }
+    //[ObservableProperty]
+    //public partial ReadOnlyObservableCollection<T>? DataGridObjects { get; private set; }
 
     [ObservableProperty]
     public partial string SearchQuery { get; set; }
@@ -39,12 +38,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     public partial ResourceConfigBase<T> ResourceConfig { get; set; }
 
     [ObservableProperty]
-    public partial string SortColumnName { get; set; }
+    public partial FlatTreeDataGridSource<T> Source { get; set; }
 
-    [ObservableProperty]
-    public partial Resources.SortDirection SortDirection { get; set; }
-
-    private IDisposable? _filter;
+    //private IDisposable? _filter;
 
     public ResourceListViewModel()
     {
@@ -64,22 +60,59 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         Cluster.SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
 
         SetFilter();
+
+        Source = new FlatTreeDataGridSource<T>(Objects);
+
+        foreach (var column in ResourceConfig.Columns())
+        {
+
+            //public MyCustomColumn(
+            //object? header,
+            //Func<TModel, TValue?> valueSelector,
+            //TypedBinding<TModel, TValue?> binding,
+            //GridLength? width = null,
+            //ColumnOptions<TModel>? options = null)
+
+            //var columnDisplay = (Func<T, string>)column.GetType().GetProperty(nameof(ResourceListColumn<T, string>.Display)).GetValue(column);
+
+            // Expression<Func<T, TValue>>
+            var columnField = column.GetType().GetProperty(nameof(ResourceListColumn<T, string>.FieldExpression)).GetValue(column);
+
+
+            // Convert Func<T, TValue> to Expression<Func<T, TValue>>
+            //var makeExpressionMethod = typeof(Utilities).GetMethod("MakeExpression", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
+            //makeExpressionMethod = makeExpressionMethod.MakeGenericMethod([typeof(T), columnType]);
+            //var expressionInstance = makeExpressionMethod.Invoke(null, [columnField]);
+
+
+            //var bindingType = typeof(TypedBinding<>).MakeGenericType([typeof(T)]);
+            //var oneWayMethod = bindingType.GetMethod("OneWay", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
+            //oneWayMethod = oneWayMethod.MakeGenericMethod([column.Type]);
+            //var bindingInstance = oneWayMethod.Invoke(null, [columnField]);
+
+            var col = typeof(TextColumn<,>).MakeGenericType(typeof(T), column.Type);
+            var colDefinition = Activator.CreateInstance(col, [column.Name, columnField, null, null]) as IColumn<T>;
+
+            Source.Columns.Add(colDefinition);
+        }
+
+        //((ITreeDataGridSource)Source).SortBy(Source.Columns[1], ListSortDirection.Ascending);
     }
 
     private void SetFilter()
     {
-        _filter?.Dispose();
+        //_filter?.Dispose();
 
-        _filter = Objects
-            .ToObservableChangeSet<AvaloniaDictionary<NamespacedName, T>, KeyValuePair<NamespacedName, T>>()
-            .Filter(GenerateFilter())
-            .Bind(out var filteredObjects)
-            .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Setting Resource List Filter: {ns}", typeof(T)));
+        //_filter = Objects
+        //    .ToObservableChangeSet<ObservableCollection<T>, T>()
+        //    //.Filter(GenerateFilter())
+        //    .Bind(out var filteredObjects)
+        //    .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Setting Resource List Filter: {ns}", typeof(T)));
 
-        DataGridObjects = filteredObjects;
+        //DataGridObjects = filteredObjects;
     }
 
-    private Func<KeyValuePair<NamespacedName, T>, bool> GenerateFilter()
+    private Func<T, bool> GenerateFilter()
     {
         try
         {
@@ -159,7 +192,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 body = Expression.Equal(Expression.Constant(true), Expression.Constant(true));
             }
 
-            return Expression.Lambda<Func<KeyValuePair<NamespacedName, T>, bool>>(body, param).Compile();
+            return Expression.Lambda<Func<T, bool>>(body).Compile();
         }
         catch (Exception ex)
         {
@@ -186,7 +219,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     public void Dispose()
     {
-        _filter?.Dispose();
+        //_filter?.Dispose();
 
         Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
     }

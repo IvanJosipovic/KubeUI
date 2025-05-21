@@ -51,7 +51,7 @@ public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet
                 Header = "Restart",
                 IconResource = "arrow_sync_regular",
                 CommandPath = nameof(RestartReplicaSetCommand),
-                CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<V1Deployment>>(x => x.SelectedItem.Value),
+                CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<V1Deployment>>(x => x.Source.RowSelection.SelectedItem),
             },
         ];
     }
