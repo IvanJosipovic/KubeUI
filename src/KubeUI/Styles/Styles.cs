@@ -11,6 +11,9 @@ public class Styles : Avalonia.Styling.Styles
 
         new Style(x => x.Is<TreeDataGridCell>())
             .Setter(TreeDataGridCell.BorderBrushProperty, Brushes.DarkGray)
-            .Setter(TreeDataGridCell.BorderThicknessProperty, Thickness.Parse("0.5"))
+            .Setter(TreeDataGridCell.BorderThicknessProperty, Thickness.Parse("0.5")),
+
+        new Style(x => x.OfType<TreeDataGridTextCell>().Template().OfType<Border>())
+            .Setter(ToolTip.TipProperty, new Binding("Value"){ RelativeSource = new RelativeSource(RelativeSourceMode.TemplatedParent) })
     ]);
 }
