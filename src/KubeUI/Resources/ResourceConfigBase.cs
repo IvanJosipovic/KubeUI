@@ -302,7 +302,7 @@ public interface IResourceListColumn
 
     Type? CustomControl { get; set; }
 
-    string? Width { get; set; }
+    string Width { get; set; }
 
     Type Type { get; }
 }
@@ -321,7 +321,7 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
 
     public Type? CustomControl { get; set; }
 
-    public string? Width { get; set; }
+    public string Width { get; set; } = "auto";
 
     public Type Type => typeof(TValue);
 }

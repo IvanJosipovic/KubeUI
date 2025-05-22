@@ -15,28 +15,25 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
             new ResourceListColumn<V1CustomResourceDefinition, string>()
             {
                 Name = "Name",
-                Display = x => x.Spec.Names.Kind.Humanize(LetterCasing.Title),
-                Field = x => x.Spec.Names.Kind,
+                //Display = x => x.Spec.Names.Kind.Humanize(LetterCasing.Title),
+                FieldExpression = x => x.Spec.Names.Kind,
                 Sort = SortDirection.Ascending,
                 Width = "2*",
             },
             new ResourceListColumn<V1CustomResourceDefinition, string>()
             {
                 Name = "Group",
-                Field = x => x.Spec.Group,
-                Width = "*",
+                FieldExpression = x => x.Spec.Group,
             },
             new ResourceListColumn<V1CustomResourceDefinition, string>()
             {
                 Name = "Version",
-                Field = x => x.Spec.Versions.First(x => x.Storage).Name,
-                Width = nameof(DataGridLengthUnitType.SizeToCells)
+                FieldExpression = x => x.Spec.Versions.First(x => x.Storage).Name,
             },
             new ResourceListColumn<V1CustomResourceDefinition, string>()
             {
                 Name = "Scope",
-                Field = x => x.Spec.Scope,
-                Width = nameof(DataGridLengthUnitType.SizeToCells)
+                FieldExpression = x => x.Spec.Scope,
             },
             AgeColumn(),
         ];

@@ -5,7 +5,7 @@ namespace KubeUI.Views;
 public static class MainWindow
 {
     public static Window Build(MainViewModel vm) =>
-        (Window)new Window()
+        new Window()
             .Title("KubeUI")
             .UseLayoutRounding(true)
             .SetProp(NativeMenu.MenuProperty, new NativeMenu()

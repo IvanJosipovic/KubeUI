@@ -201,7 +201,6 @@ public partial class App : Application
         Styles.Add(new FluentStyles());
         Styles.Add(new Icons());
         Styles.Add(new Styles.Styles());
-
     }
 
     private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)

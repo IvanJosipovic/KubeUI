@@ -57,8 +57,7 @@ public partial class CustomResourceDefinitionResourceConfig<T> : ResourceConfigB
                         var colDef = new ResourceListColumn<T, string>()
                         {
                             Name = item.Name,
-                            Field = exp.Compile(),
-                            //Width = "*"
+                            FieldExpression = exp,
                         };
 
                         _columns.Add(colDef);
@@ -70,9 +69,7 @@ public partial class CustomResourceDefinitionResourceConfig<T> : ResourceConfigB
                         var colDef = new ResourceListColumn<T, double>()
                         {
                             Name = item.Name,
-                            Display = TransformToFuncOfString(exp.Body, exp.Parameters).Compile(),
-                            Field = exp.Compile(),
-                            //Width = "*"
+                            FieldExpression = exp,
                         };
 
                         _columns.Add(colDef);
@@ -84,9 +81,7 @@ public partial class CustomResourceDefinitionResourceConfig<T> : ResourceConfigB
                         var colDef = new ResourceListColumn<T, long>()
                         {
                             Name = item.Name,
-                            Display = TransformToFuncOfString(exp.Body, exp.Parameters).Compile(),
-                            Field = exp.Compile(),
-                            //Width = "*"
+                            FieldExpression = exp,
                         };
 
                         _columns.Add(colDef);
@@ -98,9 +93,7 @@ public partial class CustomResourceDefinitionResourceConfig<T> : ResourceConfigB
                         var colDef = new ResourceListColumn<T, int>()
                         {
                             Name = item.Name,
-                            Display = TransformToFuncOfString(exp.Body, exp.Parameters).Compile(),
-                            Field = exp.Compile(),
-                            //Width = "*"
+                            FieldExpression = exp,
                         };
 
                         _columns.Add(colDef);
@@ -112,8 +105,7 @@ public partial class CustomResourceDefinitionResourceConfig<T> : ResourceConfigB
                         var colDef = new ResourceListColumn<T, DateTime>()
                         {
                             Name = item.Name,
-                            Field = exp.Compile(),
-                            //Width = "*"
+                            FieldExpression = exp,
                         };
 
                         _columns.Add(colDef);
@@ -125,9 +117,7 @@ public partial class CustomResourceDefinitionResourceConfig<T> : ResourceConfigB
                         var colDef = new ResourceListColumn<T, bool>()
                         {
                             Name = item.Name,
-                            Display = TransformToFuncOfString(exp.Body, exp.Parameters).Compile(),
-                            Field = exp.Compile(),
-                            //Width = "*"
+                            FieldExpression = exp,
                         };
 
                         _columns.Add(colDef);
@@ -139,8 +129,7 @@ public partial class CustomResourceDefinitionResourceConfig<T> : ResourceConfigB
                         var colDef = new ResourceListColumn<T, string>()
                         {
                             Name = item.Name,
-                            Field = TransformToFuncOfString(exp.Body, exp.Parameters).Compile(),
-                            //Width = "*"
+                            FieldExpression = TransformToFuncOfString(exp.Body, exp.Parameters),
                         };
 
                         _columns.Add(colDef);
