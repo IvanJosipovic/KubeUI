@@ -5,9 +5,9 @@ public sealed class PortForwarderListView : MyViewBase<PortForwarderListViewMode
     protected override object Build(PortForwarderListViewModel? vm)
     {
         return new Grid()
-            .Children([
+                    .Children([
                         new TreeDataGrid()
-                        .Set((x) => x.Source = vm.Source)
+                        .Source(vm.Source)
                         .ContextMenu(new ContextMenu()
                                         .Items([
                                             new MenuItem()

@@ -37,7 +37,7 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
                 Header = "Restart",
                 IconResource = "arrow_sync_regular",
                 CommandPath = nameof(RestartStatefulSetCommand),
-                CommandParameterPath = "SelectedItem.Value"
+                CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<V1DaemonSet>>(x => x.Source.RowSelection.SelectedItem)
             },
         ];
     }

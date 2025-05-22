@@ -59,9 +59,9 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
                             .Margin(0,0,4,0)
                             .Content(new MultiBinding(){
                                 Bindings = [
-                                        new Binding("Object.Metadata.NamespaceProperty"),
-                                        new Binding("Object.Metadata.Name"),
-                                        new Binding(nameof(PodConsoleViewModel.ContainerName))
+                                    Utilities.FuncBinding<PodLogsViewModel>(x => x.Object.Metadata.NamespaceProperty),
+                                    Utilities.FuncBinding<PodLogsViewModel>(x => x.Object.Metadata.Name),
+                                    Utilities.FuncBinding<PodLogsViewModel>(x => x.ContainerName),
                                 ],
                                 StringFormat = "{0}/{1}/{2}"
                             }),

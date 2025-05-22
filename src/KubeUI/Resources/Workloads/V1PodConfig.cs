@@ -24,33 +24,33 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 {
                     Name = "Containers",
                     CustomControl = typeof(PodContainerCell),
-                    FieldExpression = x => x.Spec.Containers.Count + x.Spec.InitContainers.Count,
-                    Width = nameof(DataGridLengthUnitType.SizeToCells)
+                    FieldExpression = x => x.Spec.Containers.Count + (x.Spec.InitContainers == null ? 0 : x.Spec.InitContainers.Count),
+                    Width = "auto"
                 },
                 NamespaceColumn(),
                 new ResourceListColumn<V1Pod, int>()
                 {
                     Name = "Restarts",
                     FieldExpression = x => x.Status.ContainerStatuses.Sum(x => x.RestartCount),
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                    Width = "auto"
                 },
                 new ResourceListColumn<V1Pod, string>()
                 {
                     Name = "Controlled By",
-                    FieldExpression = x => x.Metadata.OwnerReferences.FirstOrDefault().Name,
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                    FieldExpression = x => x.Metadata.OwnerReferences != null && x.Metadata.OwnerReferences.Any() ? x.Metadata.OwnerReferences[0].Name : "",
+                    Width = "auto"
                 },
                 new ResourceListColumn<V1Pod, string>()
                 {
                     Name = "Node",
                     FieldExpression = x => x.Spec.NodeName,
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                    Width = "auto"
                 },
                 new ResourceListColumn<V1Pod, string>()
                 {
                     Name = "QoS",
                     FieldExpression = x => x.Status.QosClass,
-                    Width = nameof(DataGridLengthUnitType.SizeToCells)
+                    Width = "auto"
                 },
                 AgeColumn(),
                 new ResourceListColumn<V1Pod, string>()
@@ -58,7 +58,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                     Name = "Status",
                     FieldExpression = x => x.Status.Phase,
                     CustomControl = typeof(PodStatusCell),
-                    Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                    Width = "auto"
                 },
             ];
 

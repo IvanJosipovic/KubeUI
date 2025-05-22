@@ -17,7 +17,7 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
             {
                 Name = "Type",
                 FieldExpression = x => x.Type,
-                Width = nameof(DataGridLengthUnitType.SizeToCells)
+                Width = "auto"
             },
             new ResourceListColumn<Corev1Event, string>()
             {
@@ -42,7 +42,7 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
             {
                 Name = "Count",
                 FieldExpression = x => x.Count ?? 0,
-                Width = nameof(DataGridLengthUnitType.SizeToHeader)
+                Width = "auto"
             },
             new ResourceListColumn<Corev1Event, DateTime?>()
             {
@@ -59,7 +59,7 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
 
     public override StyleGroup ListStyle() => [
         new Style<DataGridRow>()
-            .Setter(DataGridRow.ForegroundProperty, new Binding("Value.Type")
+            .Setter(DataGridRow.ForegroundProperty, new Binding(nameof(Corev1Event.Type))
             {
                 Converter = new FuncValueConverter<string, IBrush>(x =>
                 {

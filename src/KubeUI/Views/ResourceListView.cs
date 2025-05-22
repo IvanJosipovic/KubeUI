@@ -7,7 +7,6 @@ using Avalonia.Styling;
 using KubeUI.Client.Informer;
 using KubeUI.Client;
 using KubeUI.Resources;
-using KubeUI.Controls;
 
 namespace KubeUI.Views;
 
@@ -27,89 +26,6 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
     private void GenerateGrid()
     {
-        //var converter = new DataGridLengthConverter();
-
-        //foreach (var columnDefinition in ViewModel.ResourceConfig.Columns())
-        //{
-        //    try
-        //    {
-        //        var columnDisplay = (Func<T, string>)columnDefinition.GetType().GetProperty(nameof(ResourceListColumn<T, string>.Display)).GetValue(columnDefinition);
-
-        //        var columnField = columnDefinition.GetType().GetProperty(nameof(ResourceListColumn<T, string>.Field)).GetValue(columnDefinition);
-
-        //        // Create Sort FuncComparer
-        //        var colType = columnField.GetType().GenericTypeArguments[1];
-        //        var sortConverterType = typeof(MyFuncComparer<,>).MakeGenericType(typeof(T), colType);
-        //        var sortConverter = (IComparer)Activator.CreateInstance(sortConverterType, columnField);
-
-        //        DataGridColumn column = null;
-
-        //        if (columnDefinition.CustomControl != null)
-        //        {
-        //            column = new DataGridTemplateColumn()
-        //            {
-        //                Header = columnDefinition.Name,
-        //                CustomSortComparer = sortConverter,
-        //                CanUserSort = true,
-        //                CellTemplate = new FuncDataTemplate<KeyValuePair<NamespacedName, T>>((item, _) =>
-        //                {
-        //                    var control = Application.Current.GetRequiredService(columnDefinition.CustomControl) as Control;
-        //                    control.DataContext = item.Value;
-
-        //                    if (control is IInitializeCluster init)
-        //                    {
-        //                        init.Initialize(ViewModel.Cluster);
-        //                    }
-
-        //                    return control;
-        //                }),
-        //            };
-        //        }
-        //        else
-        //        {
-        //            // Create Display FuncValueConverter
-        //            column = new MyDataGridTextColumn
-        //            {
-        //                Binding = new Binding()
-        //                {
-        //                    Path = "Value",
-        //                    Converter = new FuncValueConverter<T, string>(columnDisplay ?? (Func<T, string>)columnField),
-        //                    Mode = BindingMode.OneWay
-        //                },
-        //                Header = columnDefinition.Name,
-        //                CanUserSort = true,
-        //                CustomSortComparer = sortConverter,
-        //            };
-        //        }
-
-        //        if (!string.IsNullOrEmpty(columnDefinition.Width) && converter.ConvertFromString(columnDefinition.Width) is DataGridLength width)
-        //        {
-        //            column.Width = width;
-        //        }
-
-        //        _grid.Columns.Add(column);
-
-        //        if (string.IsNullOrEmpty(ViewModel.SortColumnName))
-        //        {
-        //            if (columnDefinition.Sort != SortDirection.None)
-        //            {
-        //                Dispatcher.UIThread.Post(() => column.Sort(columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending));
-        //            }
-        //        }
-        //        else
-        //        {
-        //            if (column.Header.ToString() == ViewModel.SortColumnName)
-        //            {
-        //                Dispatcher.UIThread.Post(() => column.Sort(ViewModel.SortDirection == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending));
-        //            }
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        _logger.LogWarning(ex, "Unable to generate column for: ");
-        //    }
-        //}
-
         _grid.ContextMenu ??= new ContextMenu();
 
         _grid.ContextMenu.Items.Clear();
@@ -119,7 +35,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
             _grid.ContextMenu.Items.Add(CreateMenuItem(item));
         }
 
-        if (ViewModel.ResourceConfig.MenuItems != null)
+        if (ViewModel.ResourceConfig.MenuItems()?.Count > 0)
         {
             _grid.ContextMenu.Items.Add(new Separator());
 
@@ -145,7 +61,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
         if (!string.IsNullOrEmpty(menu.CommandPath))
         {
-            menuItem.Bind(MenuItem.CommandProperty, new Binding(nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + menu.CommandPath) { Source = DataContext });
+            menuItem.Bind(MenuItem.CommandProperty, new Binding(nameof(ResourceListViewModel<>.ResourceConfig) + "." + menu.CommandPath) { Source = DataContext });
         }
 
         if (!string.IsNullOrEmpty(menu.CommandParameterPath))
@@ -159,7 +75,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                 };
 
                 // Add the individual bindings
-                multiBinding.Bindings.Add(new Binding("SelectedItem.Value"));
+                multiBinding.Bindings.Add(Utilities.FuncBinding<ResourceListViewModel<T>>(x => x.Source.RowSelection.SelectedItem));
                 multiBinding.Bindings.Add(new Binding(menu.CommandParameterPath)
                 {
                     Source = _grid,
@@ -206,9 +122,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
     {
         var styles = new List<Style>();
 
-        Func<Selector?, Selector>? func = null;
-
-        func = x =>
+        Func<Selector?, Selector> func = x =>
         {
             var selector = x.OfType<MenuItem>().Descendant().OfType<MenuItem>();
 
@@ -233,7 +147,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
         if (!string.IsNullOrEmpty(menu.CommandPath))
         {
-            style.Add(new Setter(MenuItem.CommandProperty, new Binding(nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + menu.CommandPath) { Source = DataContext }));
+            style.Add(new Setter(MenuItem.CommandProperty, new Binding(nameof(ResourceListViewModel<>.ResourceConfig) + "." + menu.CommandPath) { Source = DataContext }));
         }
 
         if (!string.IsNullOrEmpty(menu.CommandParameterPath))
@@ -247,7 +161,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                 };
 
                 // Add the individual bindings
-                multiBinding.Bindings.Add(new Binding("SelectedItem.Value")
+                multiBinding.Bindings.Add(new Binding("Source.RowSelection.SelectedItem")
                 {
                     Source = _grid,
                 });
@@ -333,22 +247,14 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                                     .Watermark(Assets.Resources.ResourceListView_SelectNamespace)
                             ]),
                         ]),
-                        new TreeDataGrid()
-                        .Ref(out _grid)
-                        .Row(1)
-                        .Set(x => {
-                            x.Source = vm.Source;
-                        })
+                new TreeDataGrid()
+                    .Ref(out _grid)
+                    .Row(1)
+                    .Source(vm.Source, BindingMode.OneWay)
                 //new DataGrid()
                 //    .Ref(out _grid)
                 //    .Row(1)
-                //    .ItemsSource(@vm.DataGridObjects, BindingMode.OneWay)
-                //    .SelectedItem(@vm.SelectedItem)
-                //    .CanUserReorderColumns(true)
-                //    .CanUserResizeColumns(true)
                 //    .GridLinesVisibility(DataGridGridLinesVisibility.All)
-                //    .IsReadOnly(true)
-                //    .MinColumnWidth(90)
                 //    .RowHeight(Convert.ToDouble(_settingsService.Settings.ListRowHeight))
                 //    .OnDoubleTapped((x) =>
                 //    {
@@ -368,7 +274,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                 //        new KeyBinding()
                 //            .Gesture(new KeyGesture(Key.Enter))
                 //            .Command(vm.ResourceConfig.ViewCommand)
-                //            .CommandParameter(new Binding("SelectedItem.Value") { Source = vm }),
+                //            .CommandParameter(new Binding("Source.RowSelection.SelectedItem") { Source = vm }),
                 //        ])
                 //    .Styles([
                 //        new Style<DataGridCell>()
@@ -384,85 +290,5 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
         GenerateGrid();
 
         return controls;
-    }
-}
-
-public readonly struct MyFuncComparer<TObj, TPtop> : IComparer
-{
-    private readonly Func<TObj, TPtop> _cmp;
-
-    public MyFuncComparer(Func<TObj, TPtop> cmp)
-    {
-        _cmp = cmp;
-    }
-
-    public int Compare(object? x, object? y)
-    {
-        if (x == null && y == null)
-        {
-            return 0;
-        }
-
-        if (x == null && y != null)
-        {
-            return -1;
-        }
-
-        if (x != null && y == null)
-        {
-            return 1;
-        }
-
-        var sourceItem = ((KeyValuePair<NamespacedName, TObj>)x).Value;
-        var destItem = ((KeyValuePair<NamespacedName, TObj>)y).Value;
-
-        var srcProperty = _cmp.Invoke(sourceItem);
-        var destProperty = _cmp.Invoke(destItem);
-
-        if (srcProperty == null && destProperty == null)
-        {
-            return 0;
-        }
-
-        if (srcProperty == null && destProperty != null)
-        {
-            return -1;
-        }
-
-        if (srcProperty != null && destProperty == null)
-        {
-            return 1;
-        }
-
-        if (srcProperty is string src && destProperty is string dest)
-        {
-            return src.CompareTo(dest);
-        }
-        else if (srcProperty is int src2 && destProperty is int dest2)
-        {
-            return src2.CompareTo(dest2);
-        }
-        else if (srcProperty is long src3 && destProperty is long dest3)
-        {
-            return src3.CompareTo(dest3);
-        }
-        else if (srcProperty is DateTime src4 && destProperty is DateTime dest4)
-        {
-            return src4.CompareTo(dest4);
-        }
-        else if (srcProperty is bool src5 && destProperty is bool dest5)
-        {
-            return src5.CompareTo(dest5);
-        }
-        else if (srcProperty is decimal src6 && destProperty is decimal dest6)
-        {
-            return src6.CompareTo(dest6);
-        }
-        else if (srcProperty is IntstrIntOrString src7 && destProperty is IntstrIntOrString dest7)
-        {
-            return src7.Value.CompareTo(dest7.Value);
-        }
-
-        throw new NotImplementedException();
     }
 }

@@ -2,6 +2,7 @@ using System.Collections.Specialized;
 using System.Linq.Expressions;
 using Avalonia.Collections;
 using Avalonia.Controls.Models.TreeDataGrid;
+using Avalonia.Controls.Selection;
 using Avalonia.Experimental.Data;
 using Avalonia.Styling;
 using DynamicData;
@@ -68,12 +69,25 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             // Expression<Func<T, TValue>>
             var columnField = column.GetType().GetProperty(nameof(ResourceListColumn<T, string>.FieldExpression)).GetValue(column);
             var col = typeof(TextColumn<,>).MakeGenericType(typeof(T), column.Type);
-            var colDefinition = Activator.CreateInstance(col, [column.Name, columnField, null, null]) as IColumn<T>;
+
+            var gridLength = GridLength.Parse(column.Width);
+
+            var opts = new TextColumnOptions<T>
+            {
+                TextWrapping = TextWrapping.NoWrap,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                IsTextSearchEnabled = false
+            };
+
+            var colDefinition = Activator.CreateInstance(col, [column.Name, columnField, gridLength, opts]) as IColumn<T>;
 
             Source.Columns.Add(colDefinition);
-        }
 
-        //((ITreeDataGridSource)Source).SortBy(Source.Columns[1], ListSortDirection.Ascending);
+            if (column.Sort != Resources.SortDirection.None)
+            {
+                ((ITreeDataGridSource)Source).SortBy(colDefinition, column.Sort == Resources.SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending);
+            }
+        }
     }
 
     private void SetFilter()

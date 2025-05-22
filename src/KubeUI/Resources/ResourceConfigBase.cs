@@ -1,16 +1,16 @@
-﻿using k8s.Models;
-using k8s;
-using KubeUI.Controls;
-using KubeUI.Client;
-using Humanizer;
-using FluentAvalonia.UI.Controls;
-using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
-using KubeUI.Client.Informer;
-using static KubeUI.Client.Cluster;
-using HanumanInstitute.MvvmDialogs;
+﻿using System.Linq.Expressions;
 using Avalonia.Controls.Notifications;
 using Dock.Model.Core;
-using System.Linq.Expressions;
+using FluentAvalonia.UI.Controls;
+using HanumanInstitute.MvvmDialogs;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using Humanizer;
+using k8s;
+using k8s.Models;
+using KubeUI.Client;
+using KubeUI.Client.Informer;
+using KubeUI.Controls;
+using static KubeUI.Client.Cluster;
 
 namespace KubeUI.Resources;
 
@@ -107,7 +107,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             Field = x => x.Metadata.CreationTimestamp,
             FieldExpression = x => x.Metadata.CreationTimestamp,
             Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
-            Width = "80"
+            Width = "80",
         };
     }
 
@@ -136,7 +136,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         {
             Header = "Delete",
             CommandPath = nameof(DeleteCommand),
-            CommandParameterPath = "SelectedItems",
+            CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<T>>(x => x.Source.RowSelection.SelectedItems),
             IconResource = "delete_regular",
         }
     ];
@@ -206,7 +206,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     }
 
     [RelayCommand(CanExecute = nameof(CanDelete))]
-    public virtual async Task Delete(IList items)
+    public virtual async Task Delete(IReadOnlyList<T> items)
     {
         ContentDialogSettings settings = new()
         {
@@ -243,7 +243,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         }
     }
 
-    public virtual bool CanDelete(IList? items)
+    public virtual bool CanDelete(IReadOnlyList<T>? items)
     {
         if (items == null || items.Count == 0)
         {
@@ -252,12 +252,9 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
         foreach (var item in items)
         {
-            if (item is KeyValuePair<NamespacedName, T> resource )
+            if (!Cluster.CanI<T>(Verb.Delete, item.Namespace()))
             {
-                if (!Cluster.CanI<T>(Verb.Delete, resource.Value.Namespace()))
-                {
-                    return false;
-                }
+                return false;
             }
         }
 
@@ -306,6 +303,7 @@ public interface IResourceListColumn
     Type? CustomControl { get; set; }
 
     string? Width { get; set; }
+
     Type Type { get; }
 }
 

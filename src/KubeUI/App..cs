@@ -12,6 +12,7 @@ using HanumanInstitute.MvvmDialogs.Avalonia;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubernetesCRDModelGen;
 using KubeUI.Client;
+using KubeUI.Styles;
 using KubeUI.Views;
 using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
@@ -170,70 +171,8 @@ public partial class App : Application
             DensityStyle = DensityStyle.Compact,
         };
 
-        var lightPalette = new ColorPaletteResources
-        {
-            Accent = Color.Parse("#ff0073cf"),
-            AltHigh = Colors.White,
-            AltLow = Colors.White,
-            AltMedium = Colors.White,
-            AltMediumHigh = Colors.White,
-            AltMediumLow = Colors.White,
-            BaseHigh = Colors.Black,
-            BaseLow = Color.Parse("#ffcccccc"),
-            BaseMedium = Color.Parse("#ff898989"),
-            BaseMediumHigh = Color.Parse("#ff5d5d5d"),
-            BaseMediumLow = Color.Parse("#ff737373"),
-            ChromeAltLow = Color.Parse("#ff5d5d5d"),
-            ChromeBlackHigh = Colors.Black,
-            ChromeBlackLow = Color.Parse("#ffcccccc"),
-            ChromeBlackMedium = Color.Parse("#ff5d5d5d"),
-            ChromeBlackMediumLow = Color.Parse("#ff898989"),
-            ChromeDisabledHigh = Color.Parse("#ffcccccc"),
-            ChromeDisabledLow = Color.Parse("#ff898989"),
-            ChromeGray = Color.Parse("#ff737373"),
-            ChromeHigh = Color.Parse("#ffcccccc"),
-            ChromeLow = Color.Parse("#ffececec"),
-            ChromeMedium = Color.Parse("#ffe6e6e6"),
-            ChromeMediumLow = Color.Parse("#ffececec"),
-            ChromeWhite = Colors.White,
-            ListLow = Color.Parse("#ffe6e6e6"),
-            ListMedium = Color.Parse("#ffcccccc"),
-            RegionColor = Color.Parse("#EEEEF2")
-        };
-
-        var darkPalette = new ColorPaletteResources
-        {
-            Accent = Color.Parse("#ff0073cf"),
-            AltHigh = Colors.Black,
-            AltLow = Colors.Black,
-            AltMedium = Colors.Black,
-            AltMediumHigh = Colors.Black,
-            AltMediumLow = Colors.Black,
-            BaseHigh = Colors.White,
-            BaseLow = Color.Parse("#ff333333"),
-            BaseMedium = Color.Parse("#ff9a9a9a"),
-            BaseMediumHigh = Color.Parse("#ffb4b4b4"),
-            BaseMediumLow = Color.Parse("#ff676767"),
-            ChromeAltLow = Color.Parse("#ffb4b4b4"),
-            ChromeBlackHigh = Colors.Black,
-            ChromeBlackLow = Color.Parse("#ffb4b4b4"),
-            ChromeBlackMedium = Colors.Black,
-            ChromeBlackMediumLow = Colors.Black,
-            ChromeDisabledHigh = Color.Parse("#ff333333"),
-            ChromeDisabledLow = Color.Parse("#ff9a9a9a"),
-            ChromeGray = Colors.Gray,
-            ChromeHigh = Colors.Gray,
-            ChromeLow = Color.Parse("#ff151515"),
-            ChromeMedium = Color.Parse("#ff1d1d1d"),
-            ChromeMediumLow = Color.Parse("#ff2c2c2c"),
-            ChromeWhite = Colors.White,
-            ListLow = Color.Parse("#ff1d1d1d"),
-            ListMedium = Color.Parse("#ff333333"),
-            RegionColor = Color.Parse("#1E1E1E")
-        };
-
-        fluent.Palettes.Add(ThemeVariant.Light, lightPalette);
-        fluent.Palettes.Add(ThemeVariant.Dark, darkPalette);
+        fluent.Palettes.Add(ThemeVariant.Light, FluentStyles.LightPalette);
+        fluent.Palettes.Add(ThemeVariant.Dark, FluentStyles.DarkPalette);
 
         Styles.Add(fluent);
 
@@ -259,18 +198,10 @@ public partial class App : Application
             Source = new Uri("avares://Avalonia.Controls.TreeDataGrid/Themes/Fluent.axaml")
         });
 
-        Styles.Add(new StyleInclude(new Uri("avares://KubeUI"))
-        {
-            Source = new Uri("avares://KubeUI/Styles/Styles.axaml")
-        });
-        Styles.Add(new StyleInclude(new Uri("avares://KubeUI"))
-        {
-            Source = new Uri("avares://KubeUI/Styles/Fluent.axaml")
-        });
-        Styles.Add(new StyleInclude(new Uri("avares://KubeUI"))
-        {
-            Source = new Uri("avares://KubeUI/Styles/Icons.axaml")
-        });
+        Styles.Add(new FluentStyles());
+        Styles.Add(new Icons());
+        Styles.Add(new Styles.Styles());
+
     }
 
     private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)

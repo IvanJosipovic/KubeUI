@@ -73,21 +73,21 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
                 Header = "Cordon",
                 IconResource = "stop_regular",
                 CommandPath = nameof(CordonNodeCommand),
-                CommandParameterPath = "SelectedItems",
+                CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<V1Node>>(x => x.Source.RowSelection.SelectedItems),
             },
             new()
             {
                 Header = "UnCordon",
                 IconResource = "play_regular",
                 CommandPath = nameof(UnCordonNodeCommand),
-                CommandParameterPath = "SelectedItems",
+                CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<V1Node>>(x => x.Source.RowSelection.SelectedItems),
             },
             new()
             {
                 Header = "Drain",
                 IconResource = "arrow_sync_regular",
                 CommandPath = nameof(DrainNodeCommand),
-                CommandParameterPath = "SelectedItems",
+                CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<V1Node>>(x => x.Source.RowSelection.SelectedItems),
             },
         ];
     }

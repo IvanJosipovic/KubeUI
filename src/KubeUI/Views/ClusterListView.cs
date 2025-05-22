@@ -7,7 +7,7 @@ public sealed class ClusterListView : MyViewBase<ClusterListViewModel>
         return new Grid()
                     .Children([
                         new TreeDataGrid()
-                        .Set((x) => x.Source = vm.Source)
+                        .Source(vm.Source)
                         .ContextMenu(new ContextMenu()
                                         .Items([
                                             new MenuItem()
