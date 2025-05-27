@@ -14,13 +14,18 @@ public static partial class OverloadViewer_MarkupExtensions
 //================= Properties ======================//
  // Text
 
+/*ValueSetterGenerator*/
+public static T Text<T>(this T control, System.String value) where T : AvaloniaEdit.CodeCompletion.OverloadViewer 
+=> control._set(() => control.Text = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T Text<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.CodeCompletion.OverloadViewer 
-   => control._set(AvaloniaEdit.CodeCompletion.OverloadViewer.TextProperty, func, onChanged, expression);
+public static T Text<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.CodeCompletion.OverloadViewer 
+   => control._set(AvaloniaEdit.CodeCompletion.OverloadViewer.TextProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T Text<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.CodeCompletion.OverloadViewer 
-=> control._setEx(AvaloniaEdit.CodeCompletion.OverloadViewer.TextProperty, ps, () => control.Text = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Text<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.CodeCompletion.OverloadViewer 
+=> control._setEx(AvaloniaEdit.CodeCompletion.OverloadViewer.TextProperty, ps, () => control.Text = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Text<T>(this T control, IBinding binding) where T : AvaloniaEdit.CodeCompletion.OverloadViewer 
@@ -31,19 +36,25 @@ public static T Text<T>(this T control, AvaloniaProperty avaloniaProperty, Bindi
    => control._set(AvaloniaEdit.CodeCompletion.OverloadViewer.TextProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T Text<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.CodeCompletion.OverloadViewer 
-=> control._setEx(AvaloniaEdit.CodeCompletion.OverloadViewer.TextProperty, ps, () => control.Text = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Text<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.CodeCompletion.OverloadViewer 
+=> control._setEx(AvaloniaEdit.CodeCompletion.OverloadViewer.TextProperty, ps, () => control.Text = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // Provider
 
+/*ValueSetterGenerator*/
+public static T Provider<T>(this T control, AvaloniaEdit.CodeCompletion.IOverloadProvider value) where T : AvaloniaEdit.CodeCompletion.OverloadViewer 
+=> control._set(() => control.Provider = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T Provider<T>(this T control, Func<AvaloniaEdit.CodeCompletion.IOverloadProvider> func, Action<AvaloniaEdit.CodeCompletion.IOverloadProvider>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.CodeCompletion.OverloadViewer 
-   => control._set(AvaloniaEdit.CodeCompletion.OverloadViewer.ProviderProperty, func, onChanged, expression);
+public static T Provider<T>(this T control, Func<AvaloniaEdit.CodeCompletion.IOverloadProvider> func, Action<AvaloniaEdit.CodeCompletion.IOverloadProvider>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.CodeCompletion.OverloadViewer 
+   => control._set(AvaloniaEdit.CodeCompletion.OverloadViewer.ProviderProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T Provider<T>(this T control,AvaloniaEdit.CodeCompletion.IOverloadProvider value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.CodeCompletion.OverloadViewer 
-=> control._setEx(AvaloniaEdit.CodeCompletion.OverloadViewer.ProviderProperty, ps, () => control.Provider = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Provider<T>(this T control,AvaloniaEdit.CodeCompletion.IOverloadProvider value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.CodeCompletion.OverloadViewer 
+=> control._setEx(AvaloniaEdit.CodeCompletion.OverloadViewer.ProviderProperty, ps, () => control.Provider = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Provider<T>(this T control, IBinding binding) where T : AvaloniaEdit.CodeCompletion.OverloadViewer 
@@ -54,8 +65,9 @@ public static T Provider<T>(this T control, AvaloniaProperty avaloniaProperty, B
    => control._set(AvaloniaEdit.CodeCompletion.OverloadViewer.ProviderProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T Provider<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, AvaloniaEdit.CodeCompletion.IOverloadProvider> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.CodeCompletion.OverloadViewer 
-=> control._setEx(AvaloniaEdit.CodeCompletion.OverloadViewer.ProviderProperty, ps, () => control.Provider = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Provider<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, AvaloniaEdit.CodeCompletion.IOverloadProvider> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.CodeCompletion.OverloadViewer 
+=> control._setEx(AvaloniaEdit.CodeCompletion.OverloadViewer.ProviderProperty, ps, () => control.Provider = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
 
@@ -64,7 +76,7 @@ public static T Provider<TValue,T>(this T control, TValue value, FuncValueConver
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Text<T>(this Style<T> style, System.String value) where T : AvaloniaEdit.CodeCompletion.OverloadViewer 
-=> style._addSetter(AvaloniaEdit.CodeCompletion.OverloadViewer.TextProperty, value);
+=> style._addSetter(AvaloniaEdit.CodeCompletion.OverloadViewer.TextProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Text<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.CodeCompletion.OverloadViewer 
@@ -75,7 +87,7 @@ public static Style<T> Text<T>(this Style<T> style, IBinding binding) where T : 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Provider<T>(this Style<T> style, AvaloniaEdit.CodeCompletion.IOverloadProvider value) where T : AvaloniaEdit.CodeCompletion.OverloadViewer 
-=> style._addSetter(AvaloniaEdit.CodeCompletion.OverloadViewer.ProviderProperty, value);
+=> style._addSetter(AvaloniaEdit.CodeCompletion.OverloadViewer.ProviderProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Provider<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.CodeCompletion.OverloadViewer 

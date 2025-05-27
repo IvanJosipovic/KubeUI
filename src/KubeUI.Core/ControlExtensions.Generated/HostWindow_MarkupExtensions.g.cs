@@ -14,13 +14,18 @@ public static partial class HostWindow_MarkupExtensions
 //================= Properties ======================//
  // IsToolWindow
 
+/*ValueSetterGenerator*/
+public static T IsToolWindow<T>(this T control, System.Boolean value) where T : Dock.Avalonia.Controls.HostWindow 
+=> control._set(() => control.IsToolWindow = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T IsToolWindow<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Dock.Avalonia.Controls.HostWindow 
-   => control._set(Dock.Avalonia.Controls.HostWindow.IsToolWindowProperty, func, onChanged, expression);
+public static T IsToolWindow<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Dock.Avalonia.Controls.HostWindow 
+   => control._set(Dock.Avalonia.Controls.HostWindow.IsToolWindowProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T IsToolWindow<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.HostWindow 
-=> control._setEx(Dock.Avalonia.Controls.HostWindow.IsToolWindowProperty, ps, () => control.IsToolWindow = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IsToolWindow<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.HostWindow 
+=> control._setEx(Dock.Avalonia.Controls.HostWindow.IsToolWindowProperty, ps, () => control.IsToolWindow = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsToolWindow<T>(this T control, IBinding binding) where T : Dock.Avalonia.Controls.HostWindow 
@@ -31,19 +36,25 @@ public static T IsToolWindow<T>(this T control, AvaloniaProperty avaloniaPropert
    => control._set(Dock.Avalonia.Controls.HostWindow.IsToolWindowProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T IsToolWindow<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.HostWindow 
-=> control._setEx(Dock.Avalonia.Controls.HostWindow.IsToolWindowProperty, ps, () => control.IsToolWindow = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IsToolWindow<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.HostWindow 
+=> control._setEx(Dock.Avalonia.Controls.HostWindow.IsToolWindowProperty, ps, () => control.IsToolWindow = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // ToolChromeControlsWholeWindow
 
+/*ValueSetterGenerator*/
+public static T ToolChromeControlsWholeWindow<T>(this T control, System.Boolean value) where T : Dock.Avalonia.Controls.HostWindow 
+=> control._set(() => control.ToolChromeControlsWholeWindow = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T ToolChromeControlsWholeWindow<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Dock.Avalonia.Controls.HostWindow 
-   => control._set(Dock.Avalonia.Controls.HostWindow.ToolChromeControlsWholeWindowProperty, func, onChanged, expression);
+public static T ToolChromeControlsWholeWindow<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Dock.Avalonia.Controls.HostWindow 
+   => control._set(Dock.Avalonia.Controls.HostWindow.ToolChromeControlsWholeWindowProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T ToolChromeControlsWholeWindow<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.HostWindow 
-=> control._setEx(Dock.Avalonia.Controls.HostWindow.ToolChromeControlsWholeWindowProperty, ps, () => control.ToolChromeControlsWholeWindow = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T ToolChromeControlsWholeWindow<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.HostWindow 
+=> control._setEx(Dock.Avalonia.Controls.HostWindow.ToolChromeControlsWholeWindowProperty, ps, () => control.ToolChromeControlsWholeWindow = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T ToolChromeControlsWholeWindow<T>(this T control, IBinding binding) where T : Dock.Avalonia.Controls.HostWindow 
@@ -54,8 +65,9 @@ public static T ToolChromeControlsWholeWindow<T>(this T control, AvaloniaPropert
    => control._set(Dock.Avalonia.Controls.HostWindow.ToolChromeControlsWholeWindowProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T ToolChromeControlsWholeWindow<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.HostWindow 
-=> control._setEx(Dock.Avalonia.Controls.HostWindow.ToolChromeControlsWholeWindowProperty, ps, () => control.ToolChromeControlsWholeWindow = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T ToolChromeControlsWholeWindow<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.HostWindow 
+=> control._setEx(Dock.Avalonia.Controls.HostWindow.ToolChromeControlsWholeWindowProperty, ps, () => control.ToolChromeControlsWholeWindow = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
 
@@ -64,7 +76,7 @@ public static T ToolChromeControlsWholeWindow<TValue,T>(this T control, TValue v
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsToolWindow<T>(this Style<T> style, System.Boolean value) where T : Dock.Avalonia.Controls.HostWindow 
-=> style._addSetter(Dock.Avalonia.Controls.HostWindow.IsToolWindowProperty, value);
+=> style._addSetter(Dock.Avalonia.Controls.HostWindow.IsToolWindowProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsToolWindow<T>(this Style<T> style, IBinding binding) where T : Dock.Avalonia.Controls.HostWindow 
@@ -75,7 +87,7 @@ public static Style<T> IsToolWindow<T>(this Style<T> style, IBinding binding) wh
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> ToolChromeControlsWholeWindow<T>(this Style<T> style, System.Boolean value) where T : Dock.Avalonia.Controls.HostWindow 
-=> style._addSetter(Dock.Avalonia.Controls.HostWindow.ToolChromeControlsWholeWindowProperty, value);
+=> style._addSetter(Dock.Avalonia.Controls.HostWindow.ToolChromeControlsWholeWindowProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> ToolChromeControlsWholeWindow<T>(this Style<T> style, IBinding binding) where T : Dock.Avalonia.Controls.HostWindow 

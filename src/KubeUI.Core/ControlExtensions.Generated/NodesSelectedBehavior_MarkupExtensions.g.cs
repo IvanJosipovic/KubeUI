@@ -14,13 +14,18 @@ public static partial class NodesSelectedBehavior_MarkupExtensions
 //================= Properties ======================//
  // DrawingSource
 
+/*ValueSetterGenerator*/
+public static T DrawingSource<T>(this T control, NodeEditor.Model.IDrawingNode value) where T : NodeEditor.Behaviors.NodesSelectedBehavior 
+=> control._set(() => control.DrawingSource = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T DrawingSource<T>(this T control, Func<NodeEditor.Model.IDrawingNode> func, Action<NodeEditor.Model.IDrawingNode>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Behaviors.NodesSelectedBehavior 
-   => control._set(NodeEditor.Behaviors.NodesSelectedBehavior.DrawingSourceProperty, func, onChanged, expression);
+public static T DrawingSource<T>(this T control, Func<NodeEditor.Model.IDrawingNode> func, Action<NodeEditor.Model.IDrawingNode>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : NodeEditor.Behaviors.NodesSelectedBehavior 
+   => control._set(NodeEditor.Behaviors.NodesSelectedBehavior.DrawingSourceProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T DrawingSource<T>(this T control,NodeEditor.Model.IDrawingNode value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Behaviors.NodesSelectedBehavior 
-=> control._setEx(NodeEditor.Behaviors.NodesSelectedBehavior.DrawingSourceProperty, ps, () => control.DrawingSource = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T DrawingSource<T>(this T control,NodeEditor.Model.IDrawingNode value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Behaviors.NodesSelectedBehavior 
+=> control._setEx(NodeEditor.Behaviors.NodesSelectedBehavior.DrawingSourceProperty, ps, () => control.DrawingSource = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T DrawingSource<T>(this T control, IBinding binding) where T : NodeEditor.Behaviors.NodesSelectedBehavior 
@@ -31,8 +36,9 @@ public static T DrawingSource<T>(this T control, AvaloniaProperty avaloniaProper
    => control._set(NodeEditor.Behaviors.NodesSelectedBehavior.DrawingSourceProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T DrawingSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, NodeEditor.Model.IDrawingNode> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Behaviors.NodesSelectedBehavior 
-=> control._setEx(NodeEditor.Behaviors.NodesSelectedBehavior.DrawingSourceProperty, ps, () => control.DrawingSource = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T DrawingSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, NodeEditor.Model.IDrawingNode> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Behaviors.NodesSelectedBehavior 
+=> control._setEx(NodeEditor.Behaviors.NodesSelectedBehavior.DrawingSourceProperty, ps, () => control.DrawingSource = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
 
