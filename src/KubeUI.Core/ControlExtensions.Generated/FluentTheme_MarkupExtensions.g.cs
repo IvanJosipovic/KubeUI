@@ -14,18 +14,13 @@ public static partial class FluentTheme_MarkupExtensions
 //================= Properties ======================//
  // DensityStyle
 
-/*ValueSetterGenerator*/
-public static T DensityStyle<T>(this T control, Avalonia.Themes.Fluent.DensityStyle value) where T : Avalonia.Themes.Fluent.FluentTheme 
-=> control._set(() => control.DensityStyle = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T DensityStyle<T>(this T control, Func<Avalonia.Themes.Fluent.DensityStyle> func, Action<Avalonia.Themes.Fluent.DensityStyle>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Avalonia.Themes.Fluent.FluentTheme 
-   => control._set(Avalonia.Themes.Fluent.FluentTheme.DensityStyleProperty!, func, onChanged, expression);
+public static T DensityStyle<T>(this T control, Func<Avalonia.Themes.Fluent.DensityStyle> func, Action<Avalonia.Themes.Fluent.DensityStyle>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Avalonia.Themes.Fluent.FluentTheme 
+   => control._set(Avalonia.Themes.Fluent.FluentTheme.DensityStyleProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T DensityStyle<T>(this T control,Avalonia.Themes.Fluent.DensityStyle value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Avalonia.Themes.Fluent.FluentTheme 
-=> control._setEx(Avalonia.Themes.Fluent.FluentTheme.DensityStyleProperty, ps, () => control.DensityStyle = value!, bindingMode, converter, bindingSource);
+public static T DensityStyle<T>(this T control,Avalonia.Themes.Fluent.DensityStyle value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Avalonia.Themes.Fluent.FluentTheme 
+=> control._setEx(Avalonia.Themes.Fluent.FluentTheme.DensityStyleProperty, ps, () => control.DensityStyle = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T DensityStyle<T>(this T control, IBinding binding) where T : Avalonia.Themes.Fluent.FluentTheme 
@@ -36,9 +31,8 @@ public static T DensityStyle<T>(this T control, AvaloniaProperty avaloniaPropert
    => control._set(Avalonia.Themes.Fluent.FluentTheme.DensityStyleProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T DensityStyle<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Themes.Fluent.DensityStyle> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Avalonia.Themes.Fluent.FluentTheme 
-=> control._setEx(Avalonia.Themes.Fluent.FluentTheme.DensityStyleProperty, ps, () => control.DensityStyle = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T DensityStyle<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Themes.Fluent.DensityStyle> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Avalonia.Themes.Fluent.FluentTheme 
+=> control._setEx(Avalonia.Themes.Fluent.FluentTheme.DensityStyleProperty, ps, () => control.DensityStyle = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 

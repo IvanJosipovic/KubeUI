@@ -14,18 +14,13 @@ public static partial class CompletionList_MarkupExtensions
 //================= Properties ======================//
  // EmptyTemplate
 
-/*ValueSetterGenerator*/
-public static T EmptyTemplate<T>(this T control, Avalonia.Markup.Xaml.Templates.ControlTemplate value) where T : AvaloniaEdit.CodeCompletion.CompletionList 
-=> control._set(() => control.EmptyTemplate = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T EmptyTemplate<T>(this T control, Func<Avalonia.Markup.Xaml.Templates.ControlTemplate> func, Action<Avalonia.Markup.Xaml.Templates.ControlTemplate>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.CodeCompletion.CompletionList 
-   => control._set(AvaloniaEdit.CodeCompletion.CompletionList.EmptyTemplateProperty!, func, onChanged, expression);
+public static T EmptyTemplate<T>(this T control, Func<Avalonia.Markup.Xaml.Templates.ControlTemplate> func, Action<Avalonia.Markup.Xaml.Templates.ControlTemplate>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.CodeCompletion.CompletionList 
+   => control._set(AvaloniaEdit.CodeCompletion.CompletionList.EmptyTemplateProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T EmptyTemplate<T>(this T control,Avalonia.Markup.Xaml.Templates.ControlTemplate value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.CodeCompletion.CompletionList 
-=> control._setEx(AvaloniaEdit.CodeCompletion.CompletionList.EmptyTemplateProperty, ps, () => control.EmptyTemplate = value!, bindingMode, converter, bindingSource);
+public static T EmptyTemplate<T>(this T control,Avalonia.Markup.Xaml.Templates.ControlTemplate value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.CodeCompletion.CompletionList 
+=> control._setEx(AvaloniaEdit.CodeCompletion.CompletionList.EmptyTemplateProperty, ps, () => control.EmptyTemplate = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T EmptyTemplate<T>(this T control, IBinding binding) where T : AvaloniaEdit.CodeCompletion.CompletionList 
@@ -36,9 +31,8 @@ public static T EmptyTemplate<T>(this T control, AvaloniaProperty avaloniaProper
    => control._set(AvaloniaEdit.CodeCompletion.CompletionList.EmptyTemplateProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T EmptyTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Markup.Xaml.Templates.ControlTemplate> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.CodeCompletion.CompletionList 
-=> control._setEx(AvaloniaEdit.CodeCompletion.CompletionList.EmptyTemplateProperty, ps, () => control.EmptyTemplate = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T EmptyTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Markup.Xaml.Templates.ControlTemplate> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.CodeCompletion.CompletionList 
+=> control._setEx(AvaloniaEdit.CodeCompletion.CompletionList.EmptyTemplateProperty, ps, () => control.EmptyTemplate = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
@@ -63,7 +57,7 @@ public static T OnSelectionChanged<T>(this T control, Action<Avalonia.Controls.S
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> EmptyTemplate<T>(this Style<T> style, Avalonia.Markup.Xaml.Templates.ControlTemplate value) where T : AvaloniaEdit.CodeCompletion.CompletionList 
-=> style._addSetter(AvaloniaEdit.CodeCompletion.CompletionList.EmptyTemplateProperty!, value!);
+=> style._addSetter(AvaloniaEdit.CodeCompletion.CompletionList.EmptyTemplateProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> EmptyTemplate<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.CodeCompletion.CompletionList 

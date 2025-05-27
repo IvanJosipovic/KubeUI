@@ -14,18 +14,13 @@ public static partial class AppWindowTemplateSettings_MarkupExtensions
 //================= Properties ======================//
  // TitleBarHeight
 
-/*ValueSetterGenerator*/
-public static T TitleBarHeight<T>(this T control, System.Double value) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
-=> control._set(() => control.TitleBarHeight = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T TitleBarHeight<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
-   => control._set(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.TitleBarHeightProperty!, func, onChanged, expression);
+public static T TitleBarHeight<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
+   => control._set(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.TitleBarHeightProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T TitleBarHeight<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
-=> control._setEx(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.TitleBarHeightProperty, ps, () => control.TitleBarHeight = value!, bindingMode, converter, bindingSource);
+public static T TitleBarHeight<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
+=> control._setEx(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.TitleBarHeightProperty, ps, () => control.TitleBarHeight = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T TitleBarHeight<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
@@ -36,34 +31,28 @@ public static T TitleBarHeight<T>(this T control, AvaloniaProperty avaloniaPrope
    => control._set(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.TitleBarHeightProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T TitleBarHeight<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
-=> control._setEx(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.TitleBarHeightProperty, ps, () => control.TitleBarHeight = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T TitleBarHeight<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
+=> control._setEx(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.TitleBarHeightProperty, ps, () => control.TitleBarHeight = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // ContentMargin
 
-/*ValueSetterGenerator*/
-public static T ContentMargin<T>(this T control, Avalonia.Thickness value) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
-=> control._set(() => control.ContentMargin = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T ContentMargin<T>(this T control, Func<Avalonia.Thickness> func, Action<Avalonia.Thickness>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
-   => control._set(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.ContentMarginProperty!, func, onChanged, expression);
+public static T ContentMargin<T>(this T control, Func<Avalonia.Thickness> func, Action<Avalonia.Thickness>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
+   => control._set(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.ContentMarginProperty, func, onChanged, expression);
+
+/*MagicalSetterGenerator*/
+public static T ContentMargin<T>(this T control,Avalonia.Thickness value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
+=> control._setEx(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.ContentMarginProperty, ps, () => control.ContentMargin = value, bindingMode, converter, bindingSource);
 
 /*ValueOverloadsSetterGenerator*/
 
-public static T ContentMargin<T>(this T control, System.Double uniformLength = default!) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
+public static T ContentMargin<T>(this T control, System.Double uniformLength = default) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
    => control._set(() => control.ContentMargin = new Avalonia.Thickness(uniformLength));
-public static T ContentMargin<T>(this T control, System.Double horizontal = default!, System.Double vertical = default!) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
+public static T ContentMargin<T>(this T control, System.Double horizontal = default, System.Double vertical = default) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
    => control._set(() => control.ContentMargin = new Avalonia.Thickness(horizontal, vertical));
-public static T ContentMargin<T>(this T control, System.Double left = default!, System.Double top = default!, System.Double right = default!, System.Double bottom = default!) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
+public static T ContentMargin<T>(this T control, System.Double left = default, System.Double top = default, System.Double right = default, System.Double bottom = default) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
    => control._set(() => control.ContentMargin = new Avalonia.Thickness(left, top, right, bottom));
-
-/*MagicalSetterGenerator*/
-[Obsolete]
-public static T ContentMargin<T>(this T control,Avalonia.Thickness value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
-=> control._setEx(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.ContentMarginProperty, ps, () => control.ContentMargin = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T ContentMargin<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
@@ -74,25 +63,19 @@ public static T ContentMargin<T>(this T control, AvaloniaProperty avaloniaProper
    => control._set(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.ContentMarginProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T ContentMargin<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Thickness> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
-=> control._setEx(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.ContentMarginProperty, ps, () => control.ContentMargin = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T ContentMargin<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Thickness> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
+=> control._setEx(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.ContentMarginProperty, ps, () => control.ContentMargin = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // IsTitleBarContentVisible
 
-/*ValueSetterGenerator*/
-public static T IsTitleBarContentVisible<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
-=> control._set(() => control.IsTitleBarContentVisible = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IsTitleBarContentVisible<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
-   => control._set(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.IsTitleBarContentVisibleProperty!, func, onChanged, expression);
+public static T IsTitleBarContentVisible<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
+   => control._set(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.IsTitleBarContentVisibleProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IsTitleBarContentVisible<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
-=> control._setEx(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.IsTitleBarContentVisibleProperty, ps, () => control.IsTitleBarContentVisible = value!, bindingMode, converter, bindingSource);
+public static T IsTitleBarContentVisible<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
+=> control._setEx(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.IsTitleBarContentVisibleProperty, ps, () => control.IsTitleBarContentVisible = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsTitleBarContentVisible<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
@@ -103,25 +86,19 @@ public static T IsTitleBarContentVisible<T>(this T control, AvaloniaProperty ava
    => control._set(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.IsTitleBarContentVisibleProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IsTitleBarContentVisible<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
-=> control._setEx(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.IsTitleBarContentVisibleProperty, ps, () => control.IsTitleBarContentVisible = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IsTitleBarContentVisible<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
+=> control._setEx(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.IsTitleBarContentVisibleProperty, ps, () => control.IsTitleBarContentVisible = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // WindowIcon
 
-/*ValueSetterGenerator*/
-public static T WindowIcon<T>(this T control, Avalonia.Media.IImage value) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
-=> control._set(() => control.WindowIcon = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T WindowIcon<T>(this T control, Func<Avalonia.Media.IImage> func, Action<Avalonia.Media.IImage>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
-   => control._set(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.WindowIconProperty!, func, onChanged, expression);
+public static T WindowIcon<T>(this T control, Func<Avalonia.Media.IImage> func, Action<Avalonia.Media.IImage>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
+   => control._set(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.WindowIconProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T WindowIcon<T>(this T control,Avalonia.Media.IImage value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
-=> control._setEx(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.WindowIconProperty, ps, () => control.WindowIcon = value!, bindingMode, converter, bindingSource);
+public static T WindowIcon<T>(this T control,Avalonia.Media.IImage value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
+=> control._setEx(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.WindowIconProperty, ps, () => control.WindowIcon = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T WindowIcon<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
@@ -132,9 +109,8 @@ public static T WindowIcon<T>(this T control, AvaloniaProperty avaloniaProperty,
    => control._set(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.WindowIconProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T WindowIcon<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IImage> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
-=> control._setEx(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.WindowIconProperty, ps, () => control.WindowIcon = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T WindowIcon<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IImage> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Windowing.AppWindowTemplateSettings 
+=> control._setEx(FluentAvalonia.UI.Windowing.AppWindowTemplateSettings.WindowIconProperty, ps, () => control.WindowIcon = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 

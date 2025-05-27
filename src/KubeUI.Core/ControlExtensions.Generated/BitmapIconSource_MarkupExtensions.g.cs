@@ -14,18 +14,13 @@ public static partial class BitmapIconSource_MarkupExtensions
 //================= Properties ======================//
  // UriSource
 
-/*ValueSetterGenerator*/
-public static T UriSource<T>(this T control, System.Uri value) where T : FluentAvalonia.UI.Controls.BitmapIconSource 
-=> control._set(() => control.UriSource = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T UriSource<T>(this T control, Func<System.Uri> func, Action<System.Uri>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.BitmapIconSource 
-   => control._set(FluentAvalonia.UI.Controls.BitmapIconSource.UriSourceProperty!, func, onChanged, expression);
+public static T UriSource<T>(this T control, Func<System.Uri> func, Action<System.Uri>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.BitmapIconSource 
+   => control._set(FluentAvalonia.UI.Controls.BitmapIconSource.UriSourceProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T UriSource<T>(this T control,System.Uri value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.BitmapIconSource 
-=> control._setEx(FluentAvalonia.UI.Controls.BitmapIconSource.UriSourceProperty, ps, () => control.UriSource = value!, bindingMode, converter, bindingSource);
+public static T UriSource<T>(this T control,System.Uri value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.BitmapIconSource 
+=> control._setEx(FluentAvalonia.UI.Controls.BitmapIconSource.UriSourceProperty, ps, () => control.UriSource = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T UriSource<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.BitmapIconSource 
@@ -36,25 +31,19 @@ public static T UriSource<T>(this T control, AvaloniaProperty avaloniaProperty, 
    => control._set(FluentAvalonia.UI.Controls.BitmapIconSource.UriSourceProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T UriSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Uri> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.BitmapIconSource 
-=> control._setEx(FluentAvalonia.UI.Controls.BitmapIconSource.UriSourceProperty, ps, () => control.UriSource = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T UriSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Uri> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.BitmapIconSource 
+=> control._setEx(FluentAvalonia.UI.Controls.BitmapIconSource.UriSourceProperty, ps, () => control.UriSource = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // ShowAsMonochrome
 
-/*ValueSetterGenerator*/
-public static T ShowAsMonochrome<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.BitmapIconSource 
-=> control._set(() => control.ShowAsMonochrome = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T ShowAsMonochrome<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.BitmapIconSource 
-   => control._set(FluentAvalonia.UI.Controls.BitmapIconSource.ShowAsMonochromeProperty!, func, onChanged, expression);
+public static T ShowAsMonochrome<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.BitmapIconSource 
+   => control._set(FluentAvalonia.UI.Controls.BitmapIconSource.ShowAsMonochromeProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T ShowAsMonochrome<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.BitmapIconSource 
-=> control._setEx(FluentAvalonia.UI.Controls.BitmapIconSource.ShowAsMonochromeProperty, ps, () => control.ShowAsMonochrome = value!, bindingMode, converter, bindingSource);
+public static T ShowAsMonochrome<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.BitmapIconSource 
+=> control._setEx(FluentAvalonia.UI.Controls.BitmapIconSource.ShowAsMonochromeProperty, ps, () => control.ShowAsMonochrome = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T ShowAsMonochrome<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.BitmapIconSource 
@@ -65,9 +54,8 @@ public static T ShowAsMonochrome<T>(this T control, AvaloniaProperty avaloniaPro
    => control._set(FluentAvalonia.UI.Controls.BitmapIconSource.ShowAsMonochromeProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T ShowAsMonochrome<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.BitmapIconSource 
-=> control._setEx(FluentAvalonia.UI.Controls.BitmapIconSource.ShowAsMonochromeProperty, ps, () => control.ShowAsMonochrome = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T ShowAsMonochrome<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.BitmapIconSource 
+=> control._setEx(FluentAvalonia.UI.Controls.BitmapIconSource.ShowAsMonochromeProperty, ps, () => control.ShowAsMonochrome = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
