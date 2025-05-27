@@ -42,7 +42,7 @@ public sealed class PodConsoleView2 : MyViewBase<PodConsoleViewModel2>
                             }),
                     ]),
                 new TerminalControl()
-                    .Set(x => {
+                    .SetOnControl(x => {
                         x.Model = vm.Model;
                         _ = vm.Connect();
                     })

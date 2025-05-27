@@ -20,7 +20,7 @@ public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable
     public ResourcePropertiesViewModel()
     {
         Title = Assets.Resources.ResourcePropertiesViewModel_Title;
-        Id = nameof(ResourcePropertiesViewModel<T>);
+        Id = nameof(ResourcePropertiesViewModel<>);
     }
 
     public void Initialize(ICluster cluster, T resource)

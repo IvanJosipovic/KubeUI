@@ -68,5 +68,5 @@ public sealed class PodStatusCell : MyViewBase<V1Pod>
             .HorizontalAlignment(HorizontalAlignment.Left)
             .VerticalAlignment(VerticalAlignment.Center)
             .Text(PrettyStringProperty)
-            .ToolTip(new Binding(nameof(PrettyString)) { Source = this });
+            .ToolTip(PrettyStringProperty);
 }

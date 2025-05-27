@@ -66,26 +66,26 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
                                 StringFormat = "{0}/{1}/{2}"
                             }),
                         new ToggleButton()
-                            .IsChecked(@vm.Previous)
+                            .IsChecked(() => vm.Previous, (x) => vm.Previous = x.Value)
                             .ToolTip(Assets.Resources.PodLogsView_Previous)
                             .Content(new PathIcon() { Data = (Geometry)Application.Current.FindResource("arrow_undo_regular") }),
                         new ToggleButton()
-                            .IsChecked(@vm.Timestamps)
+                            .IsChecked(() => vm.Timestamps)
                             .ToolTip(Assets.Resources.PodLogsView_Timestamps)
                             .Content(new PathIcon() { Data = (Geometry)Application.Current.FindResource("timer_regular") }),
                         new ToggleButton()
-                            .IsChecked(@vm.AutoScrollToBottom)
+                            .IsChecked(() => vm.AutoScrollToBottom)
                             .ToolTip(Assets.Resources.PodLogsView_AutoScrollToBottom)
                             .Content(new PathIcon() { Data = (Geometry)Application.Current.FindResource("ic_fluent_padding_down_filled") }),
                         new ToggleButton()
-                            .IsChecked(@vm.WordWrap)
+                            .IsChecked(() => vm.WordWrap)
                             .ToolTip(Assets.Resources.PodLogsView_WordWrap)
                             .Content(new PathIcon() { Data = (Geometry)Application.Current.FindResource("text_wrap_regular") }),
                     ]),
                 new TextEditor()
                     .Ref(out _textEditor)
                     .Row(1)
-                    .Set(x => {
+                    .SetOnControl(x => {
                         _textMateInstallation = _textEditor.InstallTextMate(_registryOptions, false);
 
                         x.Options.AllowScrollBelowDocument = false;
@@ -98,16 +98,16 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
                                 _textEditor.ScrollToEnd();
                         };
                     })
-                    .Document(@vm.Logs, BindingMode.OneWay)
+                    .Document(() => vm.Logs)
                     .FontFamily(new FontFamily("Cascadia Mono"))
-                    .FontSize(Convert.ToDouble(_settingsService.Settings.ConsoleFontSize))
+                    .FontSize(() => Convert.ToDouble(_settingsService.Settings.ConsoleFontSize))
                     .FontWeight(FontWeight.Normal)
                     .IsReadOnly(true)
                     .ShowLineNumbers(false)
                     .Background(new DynamicResourceExtension("SystemAltHighColor"))
                     .HorizontalScrollBarVisibility(ScrollBarVisibility.Auto)
                     .VerticalScrollBarVisibility(ScrollBarVisibility.Visible)
-                    .WordWrap(@vm.WordWrap)
+                    .WordWrap(() => vm.WordWrap)
                     .ContextMenu(new ContextMenu()
                                     .Items([
                                         new MenuItem()

@@ -57,7 +57,7 @@ public sealed class PodMetricCPUCell : MyViewBase<V1Pod>, IInitializeCluster
             .HorizontalAlignment(HorizontalAlignment.Left)
             .VerticalAlignment(VerticalAlignment.Center)
             .Text(PrettyStringProperty)
-            .ToolTip(new Binding(nameof(PrettyString)) { Source = this });
+            .ToolTip(PrettyStringProperty);
 
     protected override void OnUnloaded(RoutedEventArgs e)
     {

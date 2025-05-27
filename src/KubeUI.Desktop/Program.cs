@@ -1,6 +1,5 @@
 ﻿using System;
 using Avalonia;
-using Avalonia.Fonts.Inter;
 using Velopack;
 
 namespace KubeUI.Desktop;

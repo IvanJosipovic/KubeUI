@@ -24,7 +24,7 @@ public sealed class ClusterListView : MyViewBase<ClusterListViewModel>
                                                     .Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource("delete_regular") })
                                             ])
                             )
-                            .Set(x => {
+                            .SetOnControl(x => {
                                 x.Columns([
                                     new MyDataGridTextColumn()
                                     {

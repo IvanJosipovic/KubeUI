@@ -1,13 +1,14 @@
-﻿using Avalonia.Controls.Notifications;
+﻿using System.Linq.Expressions;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Text.Json;
+using Avalonia.Controls.Notifications;
 using Avalonia.Data.Converters;
 using Avalonia.Input;
 using k8s;
 using k8s.Autorest;
 using k8s.Models;
-using System.Linq.Expressions;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Text.Json;
+using KubeUI.Views;
 
 namespace KubeUI;
 
@@ -37,7 +38,7 @@ public static class Utilities
         throw new Exception($"Cant find {typeof(IServiceProvider).Name}");
     }
 
-    public static T Set<T>(this T control, Action<T> func) where T : Control
+    public static T SetOnControl<T>(this T control, Action<T> func) where T : Control
     {
         func.Invoke(control);
 
@@ -84,9 +85,23 @@ public static class Utilities
         return container;
     }
 
-    public static TControl Set<TControl,TValue>(this TControl control, AvaloniaProperty property, TValue value, FuncValueConverter<TValue, object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where TControl : Control
+    public static TControl Set<TControl,TValue>(this TControl control, AvaloniaProperty property, AvaloniaProperty value, BindingMode? bindingMode = null, FuncValueConverter<TValue, object>? converter = null, ViewBase? overrideView = null) where TControl : Control
     {
-        return control._setEx(property, ps, () => control[property] = converter.TryConvert(value), bindingMode, converter, bindingSource);
+        return control._set(property, value, bindingMode, converter, overrideView);
+    }
+
+    public static T ToolTip<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Control
+    {
+        return control._set(Avalonia.Controls.ToolTip.TipProperty, avaloniaProperty, bindingMode, converter, overrideView);
+    }
+
+    public static TControl SetVal<TControl, TValue>(this TControl control, AvaloniaProperty property, TValue? value, BindingMode? bindingMode = null, FuncValueConverter<TValue, object>? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where TControl : Control
+    {
+        if (converter != null)
+        {
+            return control._setEx(property, ps, () => control[property] = converter.TryConvert(value), bindingMode, converter, bindingSource);
+        }
+        return control._setEx(property, ps, () => control[property] = value, bindingMode, converter, bindingSource);
     }
 
     public static TControl KeyBindings<TControl>(this TControl container, params KeyBinding[] items) where TControl : Control

@@ -66,7 +66,7 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
                 new TextEditor()
                     .Ref(out _textEditor)
                     .Row(1)
-                    .Set(x => {
+                    .SetOnControl(x => {
                         x.Options.AllowScrollBelowDocument = false;
                         x.Options.ShowBoxForControlCharacters = false;
                         x.Options.EnableHyperlinks = false;
@@ -329,9 +329,9 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
                         _textEditor.TextArea.Caret.Line =  vm.Terminal.Buffer.Y - vm.Terminal.Buffer.YDisp + vm.Terminal.Buffer.YBase + 1;
                         _textEditor.TextArea.Caret.Column = vm.Terminal.Buffer.X + 1;
                     })
-                    .Document(@vm.Console, BindingMode.OneWay)
-                    .FontFamily(@vm.FontFamily)
-                    .FontSize(Convert.ToDouble(_settingsService.Settings.ConsoleFontSize))
+                    .Document(() => vm.Console)
+                    .FontFamily(() => vm.FontFamily)
+                    .FontSize(() => Convert.ToDouble(_settingsService.Settings.ConsoleFontSize))
                     .IsReadOnly(true)
                     .ShowLineNumbers(false)
                     .Background(Brushes.Black)

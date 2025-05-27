@@ -46,8 +46,8 @@ public sealed class VisualizationView : MyViewBase<VisualizationViewModel>
                             .Classes("ClearButton")
                             .ItemsSource(@vm.Cluster.Namespaces.Values)
                             .SelectedItems(@vm.Cluster.SelectedNamespaces)
-                            .SelectedItemTemplate(new FuncDataTemplate<V1Namespace?>((x,y) => new Label().Content(@x?.Metadata.Name)))
-                            .ItemTemplate(new FuncDataTemplate<V1Namespace?>((x,y) => new Label().Content(@x?.Metadata.Name)))
+                            .SelectedItemTemplate(new FuncDataTemplate<V1Namespace>((x,y) => new Label().Content(@x.Metadata.Name)))
+                            .ItemTemplate(new FuncDataTemplate<V1Namespace>((x,y) => new Label().Content(@x.Metadata.Name)))
                     ]),
                 new Editor()
                     .Row(1)

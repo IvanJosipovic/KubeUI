@@ -91,7 +91,7 @@ public partial class LastSeenCell : MyViewBase<Corev1Event>
             .HorizontalAlignment(HorizontalAlignment.Left)
             .VerticalAlignment(VerticalAlignment.Center)
             .Text(PrettyStringProperty)
-            .ToolTip(new Binding(nameof(PrettyString)) { Source = this });
+            .ToolTip(PrettyStringProperty);
 
     protected override void OnUnloaded(RoutedEventArgs e)
     {

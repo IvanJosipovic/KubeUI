@@ -50,7 +50,7 @@ public sealed partial class V1SecretConfig : ResourceConfigBase<V1Secret>
                             .ItemsSource(resource.Data)
                             .ItemTemplate(new FuncDataTemplate<KeyValuePair<string, byte[]>>((x,_) =>
                                 new PropertyItem()
-                                    .Key(@x.Key)
+                                    .Key(x.Key)
                                     .Value(Encoding.UTF8.GetString(x.Value))
                             ))
                     ]),
@@ -62,8 +62,8 @@ public sealed partial class V1SecretConfig : ResourceConfigBase<V1Secret>
                             .ItemsSource(resource.Data)
                             .ItemTemplate(new FuncDataTemplate<KeyValuePair<string, byte[]>>((x,_) =>
                                 new CertificateItemView()
-                                    .Header(@x.Key)
-                                    .Bytes(@x.Value)
+                                    .Header(x.Key)
+                                    .Bytes(x.Value)
                             ))
                     ]),
             ];

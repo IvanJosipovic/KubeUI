@@ -122,14 +122,14 @@ public sealed partial class CertificateItemView : ViewBase
 
     protected override object Build() =>
         new HeaderItem()
-            .IsVisible(@HasCert)
+            .IsVisible(HasCertProperty)
             .DataContext(this)
-            .Text(@Header)
+            .Set<HeaderItem, string>(HeaderItem.TextProperty, HeaderProperty)
             .Controls([
                 new StackPanel()
                     .Children([
                         new ItemsControl()
-                            .ItemsSource(@Certificates)
+                            .ItemsSource(Certificates)
                             .ItemTemplate(new FuncDataTemplate<X509Certificate2>((x,_) =>
                                 new StackPanel()
                                     .Children([
@@ -156,7 +156,7 @@ public sealed partial class CertificateItemView : ViewBase
                                     ])
                         )),
                         new ItemsControl()
-                            .ItemsSource(@Rsa)
+                            .ItemsSource(Rsa)
                             .ItemTemplate(new FuncDataTemplate<RSA>((x,_) =>
                                 new StackPanel()
                                     .Children([
@@ -166,7 +166,7 @@ public sealed partial class CertificateItemView : ViewBase
                                     ])
                         )),
                         new ItemsControl()
-                            .ItemsSource(@Ecdsa)
+                            .ItemsSource(Ecdsa)
                             .ItemTemplate(new FuncDataTemplate<ECDsa>((x,_) =>
                                 new StackPanel()
                                     .Children([

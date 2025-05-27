@@ -102,7 +102,7 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
                         .Ref(out _textEditor)
                         .Row(1)
                         .Document(@vm.YamlDocument, BindingMode.OneWay)
-                        .Set(x => {
+                        .SetOnControl(x => {
                             x.Options.AllowScrollBelowDocument = false;
                             x.Options.ShowBoxForControlCharacters = false;
                             x.Options.EnableHyperlinks = false;

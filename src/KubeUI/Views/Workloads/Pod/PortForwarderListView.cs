@@ -16,7 +16,7 @@ public sealed class PortForwarderListView : MyViewBase<PortForwarderListViewMode
                     .GridLinesVisibility(DataGridGridLinesVisibility.All)
                     .ItemsSource(@vm.Cluster.PortForwarders)
                     .IsReadOnly(true)
-                    .Set(x => {
+                    .SetOnControl(x => {
                         x.Columns([
                             new MyDataGridTextColumn()
                             {

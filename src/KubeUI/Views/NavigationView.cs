@@ -46,7 +46,7 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
                             new CheckBox()
                                 .MinHeight(10)
                                 .Margin(0,0,4,0)
-                                .IsChecked(@vm.Connected)
+                                .IsChecked(new Binding(nameof(Cluster.Connected)))
                                 .IsEnabled(false)
                                 .Styles([
                                     new Style<CheckBox>().Selector(x => x.PropertyEquals(CheckBox.IsCheckedProperty, true).Template().OfType<Ellipse>())
@@ -87,6 +87,7 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
                         .Children([
                             new PathIcon()
                                 .Data(@vm.StyleIcon, s_resoureConverter)
+                                //.IsVisible(vm.StyleIcon,)
                                 .IsVisible(@vm.StyleIcon, Utilities.NotNullConverter),
                             new Avalonia.Svg.Skia.Svg(new Uri("avares://KubeUI/"))
                                 .Path(@vm.SvgIcon)

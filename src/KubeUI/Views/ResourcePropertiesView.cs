@@ -22,13 +22,13 @@ public sealed class ResourcePropertiesView<T> : MyViewBase<ResourcePropertiesVie
             .Children([
                     new PropertyItem()
                         .Key("Name")
-                        .Value(@vm.Object.Metadata.Name),
+                        .Value(vm.Object.Metadata.Name),
                     new PropertyItem()
                         .Key("Namespace")
-                        .Value(@vm.Object.Metadata.NamespaceProperty),
+                        .Value(vm.Object.Metadata.NamespaceProperty),
                     new PropertyItem()
                         .Key("Created")
-                        .Set(PropertyItem.ValueProperty, @vm.Object.Metadata.CreationTimestamp, converter: new ((x) => x.HasValue ? x.Value.ToLocalTime().ToString() : "" )),
+                        .Value(vm.Object.Metadata.CreationTimestamp?.ToLocalTime().ToString() ?? ""),
             ]);
 
         var props = vm.ResourceConfig.Properties(vm.Object);
@@ -81,7 +81,7 @@ public sealed class ResourcePropertiesView<T> : MyViewBase<ResourcePropertiesVie
 public partial class ExpandableSection : ViewBase
 {
     public static readonly DirectProperty<ExpandableSection, bool> IsExpandedProperty =
-    AvaloniaProperty.RegisterDirect<ExpandableSection, bool>(
+        AvaloniaProperty.RegisterDirect<ExpandableSection, bool>(
     nameof(IsExpanded),
     o => o.IsExpanded,
     (o, v) => o.IsExpanded = v);
@@ -131,11 +131,11 @@ public partial class ExpandableSection : ViewBase
                     .Setter(PaddingProperty, new Thickness(8))
                 ])
             .DataContext(this)
-            .IsExpanded(@IsExpanded)
-            .Header(@Text)
+            .IsExpanded(IsExpandedProperty)
+            .Header(TextProperty)
             .HorizontalAlignment(HorizontalAlignment.Stretch)
             .Content(new ItemsControl()
-                        .ItemsSource(@Controls)
+                        .ItemsSource(ControlsProperty)
             );
 }
 
@@ -169,52 +169,41 @@ public partial class HeaderItem : ViewBase
         set { SetAndRaise(ControlsProperty, ref _controls, value); }
     }
 
-    protected override object Build() =>
-        new StackPanel()
+    protected override object Build()
+    {
+        return new StackPanel()
             .DataContext(this)
             .Children([
                 new PropertyItem()
-                    .Key(@Text)
-                    .Value("")
+                    .Set<PropertyItem, string>(PropertyItem.KeyProperty, TextProperty)
                     .Styles([
                         new Style(x => x.OfType<SelectableTextBlock>())
                             .Setter(Border.BackgroundProperty, "SystemAltHighColor".GetDynamicResource())
                             .Setter(Border.PaddingProperty, new Thickness(8))
                         ]),
                 new ItemsControl()
-                    .ItemsSource(@Controls)
+                    .ItemsSource(ControlsProperty)
                 ]);
+    }
 }
 
 public partial class PropertyItem : ViewBase
 {
-    public static readonly DirectProperty<PropertyItem, string> KeyProperty =
-    AvaloniaProperty.RegisterDirect<PropertyItem, string>(
-    nameof(Key),
-    o => o.Key,
-    (o, v) => o.Key = v);
-
-    private string _key = string.Empty;
-
-    public string Key
+    public string? Key
     {
-        get { return _key; }
-        set { SetAndRaise(KeyProperty, ref _key, value); }
+        get => GetValue(KeyProperty);
+        set => SetValue(KeyProperty, value);
     }
 
-    public static readonly DirectProperty<PropertyItem, string> ValueProperty =
-    AvaloniaProperty.RegisterDirect<PropertyItem, string>(
-    nameof(Value),
-    o => o.Value,
-    (o, v) => o.Value = v);
+    public static readonly StyledProperty<string?> KeyProperty = AvaloniaProperty.Register<PropertyItem, string?>(nameof(Key));
 
-    public string Value
+    public string? Value
     {
-        get { return _value; }
-        set { SetAndRaise(ValueProperty, ref _value, value); }
+        get => GetValue(ValueProperty);
+        set => SetValue(ValueProperty, value);
     }
 
-    private string _value = string.Empty;
+    public static readonly StyledProperty<string?> ValueProperty = AvaloniaProperty.Register<PropertyItem, string?>(nameof(Value));
 
     protected override StyleGroup? BuildStyles() => [
         new Style(x => x.OfType<SelectableTextBlock>())
@@ -229,15 +218,15 @@ public partial class PropertyItem : ViewBase
             .Children([
                 new SelectableTextBlock()
                     .Row(0).Col(0)
-                    .Text(@Key)
+                    .Text(KeyProperty)
                     .TextWrapping(TextWrapping.NoWrap)
-                    .ToolTip(@Key),
+                    .ToolTip(KeyProperty),
                 new ScrollViewer()
                     .Row(0).Col(1)
                     .MaxHeight(200)
                     .VerticalScrollBarVisibility(ScrollBarVisibility.Auto)
                     .Content(new SelectableTextBlock()
-                                .Text(@Value)
+                                .Text(ValueProperty)
                                 .TextWrapping(TextWrapping.Wrap)
                     ),
             ])
