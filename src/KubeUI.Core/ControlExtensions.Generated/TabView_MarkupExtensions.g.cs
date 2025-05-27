@@ -14,18 +14,13 @@ public static partial class TabView_MarkupExtensions
 //================= Properties ======================//
  // TabWidthMode
 
-/*ValueSetterGenerator*/
-public static T TabWidthMode<T>(this T control, FluentAvalonia.UI.Controls.TabViewWidthMode value) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._set(() => control.TabWidthMode = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T TabWidthMode<T>(this T control, Func<FluentAvalonia.UI.Controls.TabViewWidthMode> func, Action<FluentAvalonia.UI.Controls.TabViewWidthMode>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
-   => control._set(FluentAvalonia.UI.Controls.TabView.TabWidthModeProperty!, func, onChanged, expression);
+public static T TabWidthMode<T>(this T control, Func<FluentAvalonia.UI.Controls.TabViewWidthMode> func, Action<FluentAvalonia.UI.Controls.TabViewWidthMode>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
+   => control._set(FluentAvalonia.UI.Controls.TabView.TabWidthModeProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T TabWidthMode<T>(this T control,FluentAvalonia.UI.Controls.TabViewWidthMode value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabWidthModeProperty, ps, () => control.TabWidthMode = value!, bindingMode, converter, bindingSource);
+public static T TabWidthMode<T>(this T control,FluentAvalonia.UI.Controls.TabViewWidthMode value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabWidthModeProperty, ps, () => control.TabWidthMode = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T TabWidthMode<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -36,25 +31,19 @@ public static T TabWidthMode<T>(this T control, AvaloniaProperty avaloniaPropert
    => control._set(FluentAvalonia.UI.Controls.TabView.TabWidthModeProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T TabWidthMode<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.TabViewWidthMode> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabWidthModeProperty, ps, () => control.TabWidthMode = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T TabWidthMode<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.TabViewWidthMode> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabWidthModeProperty, ps, () => control.TabWidthMode = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // CloseButtonOverlayMode
 
-/*ValueSetterGenerator*/
-public static T CloseButtonOverlayMode<T>(this T control, FluentAvalonia.UI.Controls.TabViewCloseButtonOverlayMode value) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._set(() => control.CloseButtonOverlayMode = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T CloseButtonOverlayMode<T>(this T control, Func<FluentAvalonia.UI.Controls.TabViewCloseButtonOverlayMode> func, Action<FluentAvalonia.UI.Controls.TabViewCloseButtonOverlayMode>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
-   => control._set(FluentAvalonia.UI.Controls.TabView.CloseButtonOverlayModeProperty!, func, onChanged, expression);
+public static T CloseButtonOverlayMode<T>(this T control, Func<FluentAvalonia.UI.Controls.TabViewCloseButtonOverlayMode> func, Action<FluentAvalonia.UI.Controls.TabViewCloseButtonOverlayMode>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
+   => control._set(FluentAvalonia.UI.Controls.TabView.CloseButtonOverlayModeProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T CloseButtonOverlayMode<T>(this T control,FluentAvalonia.UI.Controls.TabViewCloseButtonOverlayMode value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.CloseButtonOverlayModeProperty, ps, () => control.CloseButtonOverlayMode = value!, bindingMode, converter, bindingSource);
+public static T CloseButtonOverlayMode<T>(this T control,FluentAvalonia.UI.Controls.TabViewCloseButtonOverlayMode value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.CloseButtonOverlayModeProperty, ps, () => control.CloseButtonOverlayMode = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T CloseButtonOverlayMode<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -65,25 +54,19 @@ public static T CloseButtonOverlayMode<T>(this T control, AvaloniaProperty avalo
    => control._set(FluentAvalonia.UI.Controls.TabView.CloseButtonOverlayModeProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T CloseButtonOverlayMode<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.TabViewCloseButtonOverlayMode> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.CloseButtonOverlayModeProperty, ps, () => control.CloseButtonOverlayMode = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T CloseButtonOverlayMode<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.TabViewCloseButtonOverlayMode> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.CloseButtonOverlayModeProperty, ps, () => control.CloseButtonOverlayMode = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // TabStripHeader
 
-/*ValueSetterGenerator*/
-public static T TabStripHeader<T>(this T control, System.Object value) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._set(() => control.TabStripHeader = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T TabStripHeader<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
-   => control._set(FluentAvalonia.UI.Controls.TabView.TabStripHeaderProperty!, func, onChanged, expression);
+public static T TabStripHeader<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
+   => control._set(FluentAvalonia.UI.Controls.TabView.TabStripHeaderProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T TabStripHeader<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabStripHeaderProperty, ps, () => control.TabStripHeader = value!, bindingMode, converter, bindingSource);
+public static T TabStripHeader<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabStripHeaderProperty, ps, () => control.TabStripHeader = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T TabStripHeader<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -94,25 +77,19 @@ public static T TabStripHeader<T>(this T control, AvaloniaProperty avaloniaPrope
    => control._set(FluentAvalonia.UI.Controls.TabView.TabStripHeaderProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T TabStripHeader<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabStripHeaderProperty, ps, () => control.TabStripHeader = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T TabStripHeader<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabStripHeaderProperty, ps, () => control.TabStripHeader = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // TabStripHeaderTemplate
 
-/*ValueSetterGenerator*/
-public static T TabStripHeaderTemplate<T>(this T control, Avalonia.Controls.Templates.IDataTemplate value) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._set(() => control.TabStripHeaderTemplate = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T TabStripHeaderTemplate<T>(this T control, Func<Avalonia.Controls.Templates.IDataTemplate> func, Action<Avalonia.Controls.Templates.IDataTemplate>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
-   => control._set(FluentAvalonia.UI.Controls.TabView.TabStripHeaderTemplateProperty!, func, onChanged, expression);
+public static T TabStripHeaderTemplate<T>(this T control, Func<Avalonia.Controls.Templates.IDataTemplate> func, Action<Avalonia.Controls.Templates.IDataTemplate>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
+   => control._set(FluentAvalonia.UI.Controls.TabView.TabStripHeaderTemplateProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T TabStripHeaderTemplate<T>(this T control,Avalonia.Controls.Templates.IDataTemplate value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabStripHeaderTemplateProperty, ps, () => control.TabStripHeaderTemplate = value!, bindingMode, converter, bindingSource);
+public static T TabStripHeaderTemplate<T>(this T control,Avalonia.Controls.Templates.IDataTemplate value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabStripHeaderTemplateProperty, ps, () => control.TabStripHeaderTemplate = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T TabStripHeaderTemplate<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -123,25 +100,19 @@ public static T TabStripHeaderTemplate<T>(this T control, AvaloniaProperty avalo
    => control._set(FluentAvalonia.UI.Controls.TabView.TabStripHeaderTemplateProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T TabStripHeaderTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Templates.IDataTemplate> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabStripHeaderTemplateProperty, ps, () => control.TabStripHeaderTemplate = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T TabStripHeaderTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Templates.IDataTemplate> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabStripHeaderTemplateProperty, ps, () => control.TabStripHeaderTemplate = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // TabStripFooter
 
-/*ValueSetterGenerator*/
-public static T TabStripFooter<T>(this T control, System.Object value) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._set(() => control.TabStripFooter = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T TabStripFooter<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
-   => control._set(FluentAvalonia.UI.Controls.TabView.TabStripFooterProperty!, func, onChanged, expression);
+public static T TabStripFooter<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
+   => control._set(FluentAvalonia.UI.Controls.TabView.TabStripFooterProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T TabStripFooter<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabStripFooterProperty, ps, () => control.TabStripFooter = value!, bindingMode, converter, bindingSource);
+public static T TabStripFooter<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabStripFooterProperty, ps, () => control.TabStripFooter = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T TabStripFooter<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -152,25 +123,19 @@ public static T TabStripFooter<T>(this T control, AvaloniaProperty avaloniaPrope
    => control._set(FluentAvalonia.UI.Controls.TabView.TabStripFooterProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T TabStripFooter<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabStripFooterProperty, ps, () => control.TabStripFooter = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T TabStripFooter<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabStripFooterProperty, ps, () => control.TabStripFooter = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // TabStripFooterTemplate
 
-/*ValueSetterGenerator*/
-public static T TabStripFooterTemplate<T>(this T control, Avalonia.Controls.Templates.IDataTemplate value) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._set(() => control.TabStripFooterTemplate = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T TabStripFooterTemplate<T>(this T control, Func<Avalonia.Controls.Templates.IDataTemplate> func, Action<Avalonia.Controls.Templates.IDataTemplate>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
-   => control._set(FluentAvalonia.UI.Controls.TabView.TabStripFooterTemplateProperty!, func, onChanged, expression);
+public static T TabStripFooterTemplate<T>(this T control, Func<Avalonia.Controls.Templates.IDataTemplate> func, Action<Avalonia.Controls.Templates.IDataTemplate>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
+   => control._set(FluentAvalonia.UI.Controls.TabView.TabStripFooterTemplateProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T TabStripFooterTemplate<T>(this T control,Avalonia.Controls.Templates.IDataTemplate value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabStripFooterTemplateProperty, ps, () => control.TabStripFooterTemplate = value!, bindingMode, converter, bindingSource);
+public static T TabStripFooterTemplate<T>(this T control,Avalonia.Controls.Templates.IDataTemplate value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabStripFooterTemplateProperty, ps, () => control.TabStripFooterTemplate = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T TabStripFooterTemplate<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -181,25 +146,19 @@ public static T TabStripFooterTemplate<T>(this T control, AvaloniaProperty avalo
    => control._set(FluentAvalonia.UI.Controls.TabView.TabStripFooterTemplateProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T TabStripFooterTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Templates.IDataTemplate> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabStripFooterTemplateProperty, ps, () => control.TabStripFooterTemplate = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T TabStripFooterTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Templates.IDataTemplate> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabStripFooterTemplateProperty, ps, () => control.TabStripFooterTemplate = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // IsAddTabButtonVisible
 
-/*ValueSetterGenerator*/
-public static T IsAddTabButtonVisible<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._set(() => control.IsAddTabButtonVisible = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IsAddTabButtonVisible<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
-   => control._set(FluentAvalonia.UI.Controls.TabView.IsAddTabButtonVisibleProperty!, func, onChanged, expression);
+public static T IsAddTabButtonVisible<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
+   => control._set(FluentAvalonia.UI.Controls.TabView.IsAddTabButtonVisibleProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IsAddTabButtonVisible<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.IsAddTabButtonVisibleProperty, ps, () => control.IsAddTabButtonVisible = value!, bindingMode, converter, bindingSource);
+public static T IsAddTabButtonVisible<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.IsAddTabButtonVisibleProperty, ps, () => control.IsAddTabButtonVisible = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsAddTabButtonVisible<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -210,25 +169,19 @@ public static T IsAddTabButtonVisible<T>(this T control, AvaloniaProperty avalon
    => control._set(FluentAvalonia.UI.Controls.TabView.IsAddTabButtonVisibleProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IsAddTabButtonVisible<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.IsAddTabButtonVisibleProperty, ps, () => control.IsAddTabButtonVisible = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IsAddTabButtonVisible<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.IsAddTabButtonVisibleProperty, ps, () => control.IsAddTabButtonVisible = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // AddTabButtonCommand
 
-/*ValueSetterGenerator*/
-public static T AddTabButtonCommand<T>(this T control, System.Windows.Input.ICommand value) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._set(() => control.AddTabButtonCommand = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T AddTabButtonCommand<T>(this T control, Func<System.Windows.Input.ICommand> func, Action<System.Windows.Input.ICommand>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
-   => control._set(FluentAvalonia.UI.Controls.TabView.AddTabButtonCommandProperty!, func, onChanged, expression);
+public static T AddTabButtonCommand<T>(this T control, Func<System.Windows.Input.ICommand> func, Action<System.Windows.Input.ICommand>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
+   => control._set(FluentAvalonia.UI.Controls.TabView.AddTabButtonCommandProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T AddTabButtonCommand<T>(this T control,System.Windows.Input.ICommand value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.AddTabButtonCommandProperty, ps, () => control.AddTabButtonCommand = value!, bindingMode, converter, bindingSource);
+public static T AddTabButtonCommand<T>(this T control,System.Windows.Input.ICommand value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.AddTabButtonCommandProperty, ps, () => control.AddTabButtonCommand = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T AddTabButtonCommand<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -239,25 +192,19 @@ public static T AddTabButtonCommand<T>(this T control, AvaloniaProperty avalonia
    => control._set(FluentAvalonia.UI.Controls.TabView.AddTabButtonCommandProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T AddTabButtonCommand<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Windows.Input.ICommand> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.AddTabButtonCommandProperty, ps, () => control.AddTabButtonCommand = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T AddTabButtonCommand<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Windows.Input.ICommand> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.AddTabButtonCommandProperty, ps, () => control.AddTabButtonCommand = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // AddTabButtonCommandParameter
 
-/*ValueSetterGenerator*/
-public static T AddTabButtonCommandParameter<T>(this T control, System.Object value) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._set(() => control.AddTabButtonCommandParameter = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T AddTabButtonCommandParameter<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
-   => control._set(FluentAvalonia.UI.Controls.TabView.AddTabButtonCommandParameterProperty!, func, onChanged, expression);
+public static T AddTabButtonCommandParameter<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
+   => control._set(FluentAvalonia.UI.Controls.TabView.AddTabButtonCommandParameterProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T AddTabButtonCommandParameter<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.AddTabButtonCommandParameterProperty, ps, () => control.AddTabButtonCommandParameter = value!, bindingMode, converter, bindingSource);
+public static T AddTabButtonCommandParameter<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.AddTabButtonCommandParameterProperty, ps, () => control.AddTabButtonCommandParameter = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T AddTabButtonCommandParameter<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -268,25 +215,19 @@ public static T AddTabButtonCommandParameter<T>(this T control, AvaloniaProperty
    => control._set(FluentAvalonia.UI.Controls.TabView.AddTabButtonCommandParameterProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T AddTabButtonCommandParameter<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.AddTabButtonCommandParameterProperty, ps, () => control.AddTabButtonCommandParameter = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T AddTabButtonCommandParameter<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.AddTabButtonCommandParameterProperty, ps, () => control.AddTabButtonCommandParameter = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // TabItems
 
-/*ValueSetterGenerator*/
-public static T TabItems<T>(this T control, System.Collections.IEnumerable value) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._set(() => control.TabItems = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T TabItems<T>(this T control, Func<System.Collections.IEnumerable> func, Action<System.Collections.IEnumerable>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
-   => control._set(FluentAvalonia.UI.Controls.TabView.TabItemsProperty!, func, onChanged, expression);
+public static T TabItems<T>(this T control, Func<System.Collections.IEnumerable> func, Action<System.Collections.IEnumerable>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
+   => control._set(FluentAvalonia.UI.Controls.TabView.TabItemsProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T TabItems<T>(this T control,System.Collections.IEnumerable value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabItemsProperty, ps, () => control.TabItems = value!, bindingMode, converter, bindingSource);
+public static T TabItems<T>(this T control,System.Collections.IEnumerable value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabItemsProperty, ps, () => control.TabItems = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T TabItems<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -297,25 +238,19 @@ public static T TabItems<T>(this T control, AvaloniaProperty avaloniaProperty, B
    => control._set(FluentAvalonia.UI.Controls.TabView.TabItemsProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T TabItems<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Collections.IEnumerable> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabItemsProperty, ps, () => control.TabItems = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T TabItems<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Collections.IEnumerable> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabItemsProperty, ps, () => control.TabItems = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // TabItemTemplate
 
-/*ValueSetterGenerator*/
-public static T TabItemTemplate<T>(this T control, Avalonia.Controls.Templates.IDataTemplate value) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._set(() => control.TabItemTemplate = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T TabItemTemplate<T>(this T control, Func<Avalonia.Controls.Templates.IDataTemplate> func, Action<Avalonia.Controls.Templates.IDataTemplate>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
-   => control._set(FluentAvalonia.UI.Controls.TabView.TabItemTemplateProperty!, func, onChanged, expression);
+public static T TabItemTemplate<T>(this T control, Func<Avalonia.Controls.Templates.IDataTemplate> func, Action<Avalonia.Controls.Templates.IDataTemplate>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
+   => control._set(FluentAvalonia.UI.Controls.TabView.TabItemTemplateProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T TabItemTemplate<T>(this T control,Avalonia.Controls.Templates.IDataTemplate value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabItemTemplateProperty, ps, () => control.TabItemTemplate = value!, bindingMode, converter, bindingSource);
+public static T TabItemTemplate<T>(this T control,Avalonia.Controls.Templates.IDataTemplate value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabItemTemplateProperty, ps, () => control.TabItemTemplate = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T TabItemTemplate<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -326,25 +261,19 @@ public static T TabItemTemplate<T>(this T control, AvaloniaProperty avaloniaProp
    => control._set(FluentAvalonia.UI.Controls.TabView.TabItemTemplateProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T TabItemTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Templates.IDataTemplate> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabItemTemplateProperty, ps, () => control.TabItemTemplate = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T TabItemTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Templates.IDataTemplate> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.TabItemTemplateProperty, ps, () => control.TabItemTemplate = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // CanDragTabs
 
-/*ValueSetterGenerator*/
-public static T CanDragTabs<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._set(() => control.CanDragTabs = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T CanDragTabs<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
-   => control._set(FluentAvalonia.UI.Controls.TabView.CanDragTabsProperty!, func, onChanged, expression);
+public static T CanDragTabs<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
+   => control._set(FluentAvalonia.UI.Controls.TabView.CanDragTabsProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T CanDragTabs<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.CanDragTabsProperty, ps, () => control.CanDragTabs = value!, bindingMode, converter, bindingSource);
+public static T CanDragTabs<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.CanDragTabsProperty, ps, () => control.CanDragTabs = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T CanDragTabs<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -355,25 +284,19 @@ public static T CanDragTabs<T>(this T control, AvaloniaProperty avaloniaProperty
    => control._set(FluentAvalonia.UI.Controls.TabView.CanDragTabsProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T CanDragTabs<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.CanDragTabsProperty, ps, () => control.CanDragTabs = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T CanDragTabs<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.CanDragTabsProperty, ps, () => control.CanDragTabs = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // CanReorderTabs
 
-/*ValueSetterGenerator*/
-public static T CanReorderTabs<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._set(() => control.CanReorderTabs = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T CanReorderTabs<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
-   => control._set(FluentAvalonia.UI.Controls.TabView.CanReorderTabsProperty!, func, onChanged, expression);
+public static T CanReorderTabs<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
+   => control._set(FluentAvalonia.UI.Controls.TabView.CanReorderTabsProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T CanReorderTabs<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.CanReorderTabsProperty, ps, () => control.CanReorderTabs = value!, bindingMode, converter, bindingSource);
+public static T CanReorderTabs<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.CanReorderTabsProperty, ps, () => control.CanReorderTabs = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T CanReorderTabs<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -384,25 +307,19 @@ public static T CanReorderTabs<T>(this T control, AvaloniaProperty avaloniaPrope
    => control._set(FluentAvalonia.UI.Controls.TabView.CanReorderTabsProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T CanReorderTabs<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.CanReorderTabsProperty, ps, () => control.CanReorderTabs = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T CanReorderTabs<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.CanReorderTabsProperty, ps, () => control.CanReorderTabs = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // AllowDropTabs
 
-/*ValueSetterGenerator*/
-public static T AllowDropTabs<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._set(() => control.AllowDropTabs = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T AllowDropTabs<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
-   => control._set(FluentAvalonia.UI.Controls.TabView.AllowDropTabsProperty!, func, onChanged, expression);
+public static T AllowDropTabs<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
+   => control._set(FluentAvalonia.UI.Controls.TabView.AllowDropTabsProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T AllowDropTabs<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.AllowDropTabsProperty, ps, () => control.AllowDropTabs = value!, bindingMode, converter, bindingSource);
+public static T AllowDropTabs<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.AllowDropTabsProperty, ps, () => control.AllowDropTabs = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T AllowDropTabs<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -413,25 +330,19 @@ public static T AllowDropTabs<T>(this T control, AvaloniaProperty avaloniaProper
    => control._set(FluentAvalonia.UI.Controls.TabView.AllowDropTabsProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T AllowDropTabs<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.AllowDropTabsProperty, ps, () => control.AllowDropTabs = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T AllowDropTabs<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.AllowDropTabsProperty, ps, () => control.AllowDropTabs = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // SelectedIndex
 
-/*ValueSetterGenerator*/
-public static T SelectedIndex<T>(this T control, System.Int32 value) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._set(() => control.SelectedIndex = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T SelectedIndex<T>(this T control, Func<System.Int32> func, Action<System.Int32>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
-   => control._set(FluentAvalonia.UI.Controls.TabView.SelectedIndexProperty!, func, onChanged, expression);
+public static T SelectedIndex<T>(this T control, Func<System.Int32> func, Action<System.Int32>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
+   => control._set(FluentAvalonia.UI.Controls.TabView.SelectedIndexProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T SelectedIndex<T>(this T control,System.Int32 value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.SelectedIndexProperty, ps, () => control.SelectedIndex = value!, bindingMode, converter, bindingSource);
+public static T SelectedIndex<T>(this T control,System.Int32 value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.SelectedIndexProperty, ps, () => control.SelectedIndex = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T SelectedIndex<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -442,25 +353,19 @@ public static T SelectedIndex<T>(this T control, AvaloniaProperty avaloniaProper
    => control._set(FluentAvalonia.UI.Controls.TabView.SelectedIndexProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T SelectedIndex<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Int32> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.SelectedIndexProperty, ps, () => control.SelectedIndex = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T SelectedIndex<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Int32> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.SelectedIndexProperty, ps, () => control.SelectedIndex = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // SelectedItem
 
-/*ValueSetterGenerator*/
-public static T SelectedItem<T>(this T control, System.Object value) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._set(() => control.SelectedItem = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T SelectedItem<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
-   => control._set(FluentAvalonia.UI.Controls.TabView.SelectedItemProperty!, func, onChanged, expression);
+public static T SelectedItem<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TabView 
+   => control._set(FluentAvalonia.UI.Controls.TabView.SelectedItemProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T SelectedItem<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.SelectedItemProperty, ps, () => control.SelectedItem = value!, bindingMode, converter, bindingSource);
+public static T SelectedItem<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.SelectedItemProperty, ps, () => control.SelectedItem = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T SelectedItem<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -471,9 +376,8 @@ public static T SelectedItem<T>(this T control, AvaloniaProperty avaloniaPropert
    => control._set(FluentAvalonia.UI.Controls.TabView.SelectedItemProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T SelectedItem<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
-=> control._setEx(FluentAvalonia.UI.Controls.TabView.SelectedItemProperty, ps, () => control.SelectedItem = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T SelectedItem<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TabView 
+=> control._setEx(FluentAvalonia.UI.Controls.TabView.SelectedItemProperty, ps, () => control.SelectedItem = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
@@ -547,7 +451,7 @@ public static T OnTabStripDrop<T>(this T control, Action<Avalonia.Input.DragEven
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> TabWidthMode<T>(this Style<T> style, FluentAvalonia.UI.Controls.TabViewWidthMode value) where T : FluentAvalonia.UI.Controls.TabView 
-=> style._addSetter(FluentAvalonia.UI.Controls.TabView.TabWidthModeProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.TabView.TabWidthModeProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> TabWidthMode<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -558,7 +462,7 @@ public static Style<T> TabWidthMode<T>(this Style<T> style, IBinding binding) wh
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> CloseButtonOverlayMode<T>(this Style<T> style, FluentAvalonia.UI.Controls.TabViewCloseButtonOverlayMode value) where T : FluentAvalonia.UI.Controls.TabView 
-=> style._addSetter(FluentAvalonia.UI.Controls.TabView.CloseButtonOverlayModeProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.TabView.CloseButtonOverlayModeProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> CloseButtonOverlayMode<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -569,7 +473,7 @@ public static Style<T> CloseButtonOverlayMode<T>(this Style<T> style, IBinding b
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> TabStripHeader<T>(this Style<T> style, System.Object value) where T : FluentAvalonia.UI.Controls.TabView 
-=> style._addSetter(FluentAvalonia.UI.Controls.TabView.TabStripHeaderProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.TabView.TabStripHeaderProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> TabStripHeader<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -580,7 +484,7 @@ public static Style<T> TabStripHeader<T>(this Style<T> style, IBinding binding) 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> TabStripHeaderTemplate<T>(this Style<T> style, Avalonia.Controls.Templates.IDataTemplate value) where T : FluentAvalonia.UI.Controls.TabView 
-=> style._addSetter(FluentAvalonia.UI.Controls.TabView.TabStripHeaderTemplateProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.TabView.TabStripHeaderTemplateProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> TabStripHeaderTemplate<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -591,7 +495,7 @@ public static Style<T> TabStripHeaderTemplate<T>(this Style<T> style, IBinding b
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> TabStripFooter<T>(this Style<T> style, System.Object value) where T : FluentAvalonia.UI.Controls.TabView 
-=> style._addSetter(FluentAvalonia.UI.Controls.TabView.TabStripFooterProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.TabView.TabStripFooterProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> TabStripFooter<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -602,7 +506,7 @@ public static Style<T> TabStripFooter<T>(this Style<T> style, IBinding binding) 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> TabStripFooterTemplate<T>(this Style<T> style, Avalonia.Controls.Templates.IDataTemplate value) where T : FluentAvalonia.UI.Controls.TabView 
-=> style._addSetter(FluentAvalonia.UI.Controls.TabView.TabStripFooterTemplateProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.TabView.TabStripFooterTemplateProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> TabStripFooterTemplate<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -613,7 +517,7 @@ public static Style<T> TabStripFooterTemplate<T>(this Style<T> style, IBinding b
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsAddTabButtonVisible<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.TabView 
-=> style._addSetter(FluentAvalonia.UI.Controls.TabView.IsAddTabButtonVisibleProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.TabView.IsAddTabButtonVisibleProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsAddTabButtonVisible<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -624,7 +528,7 @@ public static Style<T> IsAddTabButtonVisible<T>(this Style<T> style, IBinding bi
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> AddTabButtonCommand<T>(this Style<T> style, System.Windows.Input.ICommand value) where T : FluentAvalonia.UI.Controls.TabView 
-=> style._addSetter(FluentAvalonia.UI.Controls.TabView.AddTabButtonCommandProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.TabView.AddTabButtonCommandProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> AddTabButtonCommand<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -635,7 +539,7 @@ public static Style<T> AddTabButtonCommand<T>(this Style<T> style, IBinding bind
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> AddTabButtonCommandParameter<T>(this Style<T> style, System.Object value) where T : FluentAvalonia.UI.Controls.TabView 
-=> style._addSetter(FluentAvalonia.UI.Controls.TabView.AddTabButtonCommandParameterProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.TabView.AddTabButtonCommandParameterProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> AddTabButtonCommandParameter<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -646,7 +550,7 @@ public static Style<T> AddTabButtonCommandParameter<T>(this Style<T> style, IBin
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> TabItemTemplate<T>(this Style<T> style, Avalonia.Controls.Templates.IDataTemplate value) where T : FluentAvalonia.UI.Controls.TabView 
-=> style._addSetter(FluentAvalonia.UI.Controls.TabView.TabItemTemplateProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.TabView.TabItemTemplateProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> TabItemTemplate<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -657,7 +561,7 @@ public static Style<T> TabItemTemplate<T>(this Style<T> style, IBinding binding)
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> CanDragTabs<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.TabView 
-=> style._addSetter(FluentAvalonia.UI.Controls.TabView.CanDragTabsProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.TabView.CanDragTabsProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> CanDragTabs<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -668,7 +572,7 @@ public static Style<T> CanDragTabs<T>(this Style<T> style, IBinding binding) whe
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> CanReorderTabs<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.TabView 
-=> style._addSetter(FluentAvalonia.UI.Controls.TabView.CanReorderTabsProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.TabView.CanReorderTabsProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> CanReorderTabs<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 
@@ -679,7 +583,7 @@ public static Style<T> CanReorderTabs<T>(this Style<T> style, IBinding binding) 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> AllowDropTabs<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.TabView 
-=> style._addSetter(FluentAvalonia.UI.Controls.TabView.AllowDropTabsProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.TabView.AllowDropTabsProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> AllowDropTabs<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TabView 

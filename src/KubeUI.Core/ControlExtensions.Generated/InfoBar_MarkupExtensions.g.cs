@@ -14,18 +14,13 @@ public static partial class InfoBar_MarkupExtensions
 //================= Properties ======================//
  // IsOpen
 
-/*ValueSetterGenerator*/
-public static T IsOpen<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._set(() => control.IsOpen = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IsOpen<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-   => control._set(FluentAvalonia.UI.Controls.InfoBar.IsOpenProperty!, func, onChanged, expression);
+public static T IsOpen<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+   => control._set(FluentAvalonia.UI.Controls.InfoBar.IsOpenProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IsOpen<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.IsOpenProperty, ps, () => control.IsOpen = value!, bindingMode, converter, bindingSource);
+public static T IsOpen<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.IsOpenProperty, ps, () => control.IsOpen = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsOpen<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.InfoBar 
@@ -36,25 +31,19 @@ public static T IsOpen<T>(this T control, AvaloniaProperty avaloniaProperty, Bin
    => control._set(FluentAvalonia.UI.Controls.InfoBar.IsOpenProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IsOpen<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.IsOpenProperty, ps, () => control.IsOpen = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IsOpen<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.IsOpenProperty, ps, () => control.IsOpen = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // Title
 
-/*ValueSetterGenerator*/
-public static T Title<T>(this T control, System.String value) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._set(() => control.Title = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T Title<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-   => control._set(FluentAvalonia.UI.Controls.InfoBar.TitleProperty!, func, onChanged, expression);
+public static T Title<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+   => control._set(FluentAvalonia.UI.Controls.InfoBar.TitleProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T Title<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.TitleProperty, ps, () => control.Title = value!, bindingMode, converter, bindingSource);
+public static T Title<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.TitleProperty, ps, () => control.Title = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Title<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.InfoBar 
@@ -65,25 +54,19 @@ public static T Title<T>(this T control, AvaloniaProperty avaloniaProperty, Bind
    => control._set(FluentAvalonia.UI.Controls.InfoBar.TitleProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T Title<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.TitleProperty, ps, () => control.Title = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T Title<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.TitleProperty, ps, () => control.Title = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // Message
 
-/*ValueSetterGenerator*/
-public static T Message<T>(this T control, System.String value) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._set(() => control.Message = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T Message<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-   => control._set(FluentAvalonia.UI.Controls.InfoBar.MessageProperty!, func, onChanged, expression);
+public static T Message<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+   => control._set(FluentAvalonia.UI.Controls.InfoBar.MessageProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T Message<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.MessageProperty, ps, () => control.Message = value!, bindingMode, converter, bindingSource);
+public static T Message<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.MessageProperty, ps, () => control.Message = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Message<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.InfoBar 
@@ -94,25 +77,19 @@ public static T Message<T>(this T control, AvaloniaProperty avaloniaProperty, Bi
    => control._set(FluentAvalonia.UI.Controls.InfoBar.MessageProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T Message<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.MessageProperty, ps, () => control.Message = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T Message<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.MessageProperty, ps, () => control.Message = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // Severity
 
-/*ValueSetterGenerator*/
-public static T Severity<T>(this T control, FluentAvalonia.UI.Controls.InfoBarSeverity value) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._set(() => control.Severity = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T Severity<T>(this T control, Func<FluentAvalonia.UI.Controls.InfoBarSeverity> func, Action<FluentAvalonia.UI.Controls.InfoBarSeverity>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-   => control._set(FluentAvalonia.UI.Controls.InfoBar.SeverityProperty!, func, onChanged, expression);
+public static T Severity<T>(this T control, Func<FluentAvalonia.UI.Controls.InfoBarSeverity> func, Action<FluentAvalonia.UI.Controls.InfoBarSeverity>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+   => control._set(FluentAvalonia.UI.Controls.InfoBar.SeverityProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T Severity<T>(this T control,FluentAvalonia.UI.Controls.InfoBarSeverity value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.SeverityProperty, ps, () => control.Severity = value!, bindingMode, converter, bindingSource);
+public static T Severity<T>(this T control,FluentAvalonia.UI.Controls.InfoBarSeverity value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.SeverityProperty, ps, () => control.Severity = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Severity<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.InfoBar 
@@ -123,25 +100,19 @@ public static T Severity<T>(this T control, AvaloniaProperty avaloniaProperty, B
    => control._set(FluentAvalonia.UI.Controls.InfoBar.SeverityProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T Severity<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.InfoBarSeverity> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.SeverityProperty, ps, () => control.Severity = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T Severity<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.InfoBarSeverity> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.SeverityProperty, ps, () => control.Severity = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // IconSource
 
-/*ValueSetterGenerator*/
-public static T IconSource<T>(this T control, FluentAvalonia.UI.Controls.IconSource value) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._set(() => control.IconSource = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IconSource<T>(this T control, Func<FluentAvalonia.UI.Controls.IconSource> func, Action<FluentAvalonia.UI.Controls.IconSource>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-   => control._set(FluentAvalonia.UI.Controls.InfoBar.IconSourceProperty!, func, onChanged, expression);
+public static T IconSource<T>(this T control, Func<FluentAvalonia.UI.Controls.IconSource> func, Action<FluentAvalonia.UI.Controls.IconSource>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+   => control._set(FluentAvalonia.UI.Controls.InfoBar.IconSourceProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IconSource<T>(this T control,FluentAvalonia.UI.Controls.IconSource value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.IconSourceProperty, ps, () => control.IconSource = value!, bindingMode, converter, bindingSource);
+public static T IconSource<T>(this T control,FluentAvalonia.UI.Controls.IconSource value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.IconSourceProperty, ps, () => control.IconSource = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IconSource<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.InfoBar 
@@ -152,25 +123,19 @@ public static T IconSource<T>(this T control, AvaloniaProperty avaloniaProperty,
    => control._set(FluentAvalonia.UI.Controls.InfoBar.IconSourceProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IconSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.IconSource> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.IconSourceProperty, ps, () => control.IconSource = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IconSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.IconSource> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.IconSourceProperty, ps, () => control.IconSource = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // IsIconVisible
 
-/*ValueSetterGenerator*/
-public static T IsIconVisible<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._set(() => control.IsIconVisible = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IsIconVisible<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-   => control._set(FluentAvalonia.UI.Controls.InfoBar.IsIconVisibleProperty!, func, onChanged, expression);
+public static T IsIconVisible<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+   => control._set(FluentAvalonia.UI.Controls.InfoBar.IsIconVisibleProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IsIconVisible<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.IsIconVisibleProperty, ps, () => control.IsIconVisible = value!, bindingMode, converter, bindingSource);
+public static T IsIconVisible<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.IsIconVisibleProperty, ps, () => control.IsIconVisible = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsIconVisible<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.InfoBar 
@@ -181,25 +146,19 @@ public static T IsIconVisible<T>(this T control, AvaloniaProperty avaloniaProper
    => control._set(FluentAvalonia.UI.Controls.InfoBar.IsIconVisibleProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IsIconVisible<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.IsIconVisibleProperty, ps, () => control.IsIconVisible = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IsIconVisible<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.IsIconVisibleProperty, ps, () => control.IsIconVisible = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // IsClosable
 
-/*ValueSetterGenerator*/
-public static T IsClosable<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._set(() => control.IsClosable = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IsClosable<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-   => control._set(FluentAvalonia.UI.Controls.InfoBar.IsClosableProperty!, func, onChanged, expression);
+public static T IsClosable<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+   => control._set(FluentAvalonia.UI.Controls.InfoBar.IsClosableProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IsClosable<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.IsClosableProperty, ps, () => control.IsClosable = value!, bindingMode, converter, bindingSource);
+public static T IsClosable<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.IsClosableProperty, ps, () => control.IsClosable = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsClosable<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.InfoBar 
@@ -210,25 +169,19 @@ public static T IsClosable<T>(this T control, AvaloniaProperty avaloniaProperty,
    => control._set(FluentAvalonia.UI.Controls.InfoBar.IsClosableProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IsClosable<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.IsClosableProperty, ps, () => control.IsClosable = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IsClosable<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.IsClosableProperty, ps, () => control.IsClosable = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // CloseButtonCommand
 
-/*ValueSetterGenerator*/
-public static T CloseButtonCommand<T>(this T control, System.Windows.Input.ICommand value) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._set(() => control.CloseButtonCommand = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T CloseButtonCommand<T>(this T control, Func<System.Windows.Input.ICommand> func, Action<System.Windows.Input.ICommand>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-   => control._set(FluentAvalonia.UI.Controls.InfoBar.CloseButtonCommandProperty!, func, onChanged, expression);
+public static T CloseButtonCommand<T>(this T control, Func<System.Windows.Input.ICommand> func, Action<System.Windows.Input.ICommand>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+   => control._set(FluentAvalonia.UI.Controls.InfoBar.CloseButtonCommandProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T CloseButtonCommand<T>(this T control,System.Windows.Input.ICommand value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.CloseButtonCommandProperty, ps, () => control.CloseButtonCommand = value!, bindingMode, converter, bindingSource);
+public static T CloseButtonCommand<T>(this T control,System.Windows.Input.ICommand value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.CloseButtonCommandProperty, ps, () => control.CloseButtonCommand = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T CloseButtonCommand<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.InfoBar 
@@ -239,25 +192,19 @@ public static T CloseButtonCommand<T>(this T control, AvaloniaProperty avaloniaP
    => control._set(FluentAvalonia.UI.Controls.InfoBar.CloseButtonCommandProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T CloseButtonCommand<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Windows.Input.ICommand> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.CloseButtonCommandProperty, ps, () => control.CloseButtonCommand = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T CloseButtonCommand<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Windows.Input.ICommand> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.CloseButtonCommandProperty, ps, () => control.CloseButtonCommand = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // CloseButtonCommandParameter
 
-/*ValueSetterGenerator*/
-public static T CloseButtonCommandParameter<T>(this T control, System.Object value) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._set(() => control.CloseButtonCommandParameter = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T CloseButtonCommandParameter<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-   => control._set(FluentAvalonia.UI.Controls.InfoBar.CloseButtonCommandParameterProperty!, func, onChanged, expression);
+public static T CloseButtonCommandParameter<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+   => control._set(FluentAvalonia.UI.Controls.InfoBar.CloseButtonCommandParameterProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T CloseButtonCommandParameter<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.CloseButtonCommandParameterProperty, ps, () => control.CloseButtonCommandParameter = value!, bindingMode, converter, bindingSource);
+public static T CloseButtonCommandParameter<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.CloseButtonCommandParameterProperty, ps, () => control.CloseButtonCommandParameter = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T CloseButtonCommandParameter<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.InfoBar 
@@ -268,25 +215,19 @@ public static T CloseButtonCommandParameter<T>(this T control, AvaloniaProperty 
    => control._set(FluentAvalonia.UI.Controls.InfoBar.CloseButtonCommandParameterProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T CloseButtonCommandParameter<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.CloseButtonCommandParameterProperty, ps, () => control.CloseButtonCommandParameter = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T CloseButtonCommandParameter<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.CloseButtonCommandParameterProperty, ps, () => control.CloseButtonCommandParameter = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // ActionButton
 
-/*ValueSetterGenerator*/
-public static T ActionButton<T>(this T control, Avalonia.Controls.Control value) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._set(() => control.ActionButton = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T ActionButton<T>(this T control, Func<Avalonia.Controls.Control> func, Action<Avalonia.Controls.Control>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-   => control._set(FluentAvalonia.UI.Controls.InfoBar.ActionButtonProperty!, func, onChanged, expression);
+public static T ActionButton<T>(this T control, Func<Avalonia.Controls.Control> func, Action<Avalonia.Controls.Control>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+   => control._set(FluentAvalonia.UI.Controls.InfoBar.ActionButtonProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T ActionButton<T>(this T control,Avalonia.Controls.Control value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.ActionButtonProperty, ps, () => control.ActionButton = value!, bindingMode, converter, bindingSource);
+public static T ActionButton<T>(this T control,Avalonia.Controls.Control value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.ActionButtonProperty, ps, () => control.ActionButton = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T ActionButton<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.InfoBar 
@@ -297,9 +238,8 @@ public static T ActionButton<T>(this T control, AvaloniaProperty avaloniaPropert
    => control._set(FluentAvalonia.UI.Controls.InfoBar.ActionButtonProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T ActionButton<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Control> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.ActionButtonProperty, ps, () => control.ActionButton = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T ActionButton<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Control> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBar 
+=> control._setEx(FluentAvalonia.UI.Controls.InfoBar.ActionButtonProperty, ps, () => control.ActionButton = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
@@ -331,7 +271,7 @@ public static T OnClosed<T>(this T control, Action<FluentAvalonia.UI.Controls.In
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsOpen<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> style._addSetter(FluentAvalonia.UI.Controls.InfoBar.IsOpenProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.InfoBar.IsOpenProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsOpen<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.InfoBar 
@@ -342,7 +282,7 @@ public static Style<T> IsOpen<T>(this Style<T> style, IBinding binding) where T 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Title<T>(this Style<T> style, System.String value) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> style._addSetter(FluentAvalonia.UI.Controls.InfoBar.TitleProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.InfoBar.TitleProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Title<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.InfoBar 
@@ -353,7 +293,7 @@ public static Style<T> Title<T>(this Style<T> style, IBinding binding) where T :
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Message<T>(this Style<T> style, System.String value) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> style._addSetter(FluentAvalonia.UI.Controls.InfoBar.MessageProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.InfoBar.MessageProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Message<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.InfoBar 
@@ -364,7 +304,7 @@ public static Style<T> Message<T>(this Style<T> style, IBinding binding) where T
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Severity<T>(this Style<T> style, FluentAvalonia.UI.Controls.InfoBarSeverity value) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> style._addSetter(FluentAvalonia.UI.Controls.InfoBar.SeverityProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.InfoBar.SeverityProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Severity<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.InfoBar 
@@ -375,7 +315,7 @@ public static Style<T> Severity<T>(this Style<T> style, IBinding binding) where 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IconSource<T>(this Style<T> style, FluentAvalonia.UI.Controls.IconSource value) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> style._addSetter(FluentAvalonia.UI.Controls.InfoBar.IconSourceProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.InfoBar.IconSourceProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IconSource<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.InfoBar 
@@ -386,7 +326,7 @@ public static Style<T> IconSource<T>(this Style<T> style, IBinding binding) wher
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsIconVisible<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> style._addSetter(FluentAvalonia.UI.Controls.InfoBar.IsIconVisibleProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.InfoBar.IsIconVisibleProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsIconVisible<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.InfoBar 
@@ -397,7 +337,7 @@ public static Style<T> IsIconVisible<T>(this Style<T> style, IBinding binding) w
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsClosable<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> style._addSetter(FluentAvalonia.UI.Controls.InfoBar.IsClosableProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.InfoBar.IsClosableProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsClosable<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.InfoBar 
@@ -408,7 +348,7 @@ public static Style<T> IsClosable<T>(this Style<T> style, IBinding binding) wher
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> CloseButtonCommand<T>(this Style<T> style, System.Windows.Input.ICommand value) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> style._addSetter(FluentAvalonia.UI.Controls.InfoBar.CloseButtonCommandProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.InfoBar.CloseButtonCommandProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> CloseButtonCommand<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.InfoBar 
@@ -419,7 +359,7 @@ public static Style<T> CloseButtonCommand<T>(this Style<T> style, IBinding bindi
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> CloseButtonCommandParameter<T>(this Style<T> style, System.Object value) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> style._addSetter(FluentAvalonia.UI.Controls.InfoBar.CloseButtonCommandParameterProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.InfoBar.CloseButtonCommandParameterProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> CloseButtonCommandParameter<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.InfoBar 
@@ -430,7 +370,7 @@ public static Style<T> CloseButtonCommandParameter<T>(this Style<T> style, IBind
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> ActionButton<T>(this Style<T> style, Avalonia.Controls.Control value) where T : FluentAvalonia.UI.Controls.InfoBar 
-=> style._addSetter(FluentAvalonia.UI.Controls.InfoBar.ActionButtonProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.InfoBar.ActionButtonProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> ActionButton<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.InfoBar 

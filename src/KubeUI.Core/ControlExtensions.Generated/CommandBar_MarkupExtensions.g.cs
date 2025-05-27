@@ -14,18 +14,13 @@ public static partial class CommandBar_MarkupExtensions
 //================= Properties ======================//
  // IsSticky
 
-/*ValueSetterGenerator*/
-public static T IsSticky<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> control._set(() => control.IsSticky = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IsSticky<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.CommandBar 
-   => control._set(FluentAvalonia.UI.Controls.CommandBar.IsStickyProperty!, func, onChanged, expression);
+public static T IsSticky<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.CommandBar 
+   => control._set(FluentAvalonia.UI.Controls.CommandBar.IsStickyProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IsSticky<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.IsStickyProperty, ps, () => control.IsSticky = value!, bindingMode, converter, bindingSource);
+public static T IsSticky<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
+=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.IsStickyProperty, ps, () => control.IsSticky = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsSticky<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.CommandBar 
@@ -36,25 +31,19 @@ public static T IsSticky<T>(this T control, AvaloniaProperty avaloniaProperty, B
    => control._set(FluentAvalonia.UI.Controls.CommandBar.IsStickyProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IsSticky<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.IsStickyProperty, ps, () => control.IsSticky = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IsSticky<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
+=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.IsStickyProperty, ps, () => control.IsSticky = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // IsOpen
 
-/*ValueSetterGenerator*/
-public static T IsOpen<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> control._set(() => control.IsOpen = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IsOpen<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.CommandBar 
-   => control._set(FluentAvalonia.UI.Controls.CommandBar.IsOpenProperty!, func, onChanged, expression);
+public static T IsOpen<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.CommandBar 
+   => control._set(FluentAvalonia.UI.Controls.CommandBar.IsOpenProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IsOpen<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.IsOpenProperty, ps, () => control.IsOpen = value!, bindingMode, converter, bindingSource);
+public static T IsOpen<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
+=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.IsOpenProperty, ps, () => control.IsOpen = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsOpen<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.CommandBar 
@@ -65,25 +54,19 @@ public static T IsOpen<T>(this T control, AvaloniaProperty avaloniaProperty, Bin
    => control._set(FluentAvalonia.UI.Controls.CommandBar.IsOpenProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IsOpen<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.IsOpenProperty, ps, () => control.IsOpen = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IsOpen<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
+=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.IsOpenProperty, ps, () => control.IsOpen = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // ClosedDisplayMode
 
-/*ValueSetterGenerator*/
-public static T ClosedDisplayMode<T>(this T control, FluentAvalonia.UI.Controls.CommandBarClosedDisplayMode value) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> control._set(() => control.ClosedDisplayMode = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T ClosedDisplayMode<T>(this T control, Func<FluentAvalonia.UI.Controls.CommandBarClosedDisplayMode> func, Action<FluentAvalonia.UI.Controls.CommandBarClosedDisplayMode>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.CommandBar 
-   => control._set(FluentAvalonia.UI.Controls.CommandBar.ClosedDisplayModeProperty!, func, onChanged, expression);
+public static T ClosedDisplayMode<T>(this T control, Func<FluentAvalonia.UI.Controls.CommandBarClosedDisplayMode> func, Action<FluentAvalonia.UI.Controls.CommandBarClosedDisplayMode>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.CommandBar 
+   => control._set(FluentAvalonia.UI.Controls.CommandBar.ClosedDisplayModeProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T ClosedDisplayMode<T>(this T control,FluentAvalonia.UI.Controls.CommandBarClosedDisplayMode value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.ClosedDisplayModeProperty, ps, () => control.ClosedDisplayMode = value!, bindingMode, converter, bindingSource);
+public static T ClosedDisplayMode<T>(this T control,FluentAvalonia.UI.Controls.CommandBarClosedDisplayMode value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
+=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.ClosedDisplayModeProperty, ps, () => control.ClosedDisplayMode = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T ClosedDisplayMode<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.CommandBar 
@@ -94,25 +77,19 @@ public static T ClosedDisplayMode<T>(this T control, AvaloniaProperty avaloniaPr
    => control._set(FluentAvalonia.UI.Controls.CommandBar.ClosedDisplayModeProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T ClosedDisplayMode<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.CommandBarClosedDisplayMode> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.ClosedDisplayModeProperty, ps, () => control.ClosedDisplayMode = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T ClosedDisplayMode<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.CommandBarClosedDisplayMode> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
+=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.ClosedDisplayModeProperty, ps, () => control.ClosedDisplayMode = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // OverflowButtonVisibility
 
-/*ValueSetterGenerator*/
-public static T OverflowButtonVisibility<T>(this T control, FluentAvalonia.UI.Controls.CommandBarOverflowButtonVisibility value) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> control._set(() => control.OverflowButtonVisibility = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T OverflowButtonVisibility<T>(this T control, Func<FluentAvalonia.UI.Controls.CommandBarOverflowButtonVisibility> func, Action<FluentAvalonia.UI.Controls.CommandBarOverflowButtonVisibility>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.CommandBar 
-   => control._set(FluentAvalonia.UI.Controls.CommandBar.OverflowButtonVisibilityProperty!, func, onChanged, expression);
+public static T OverflowButtonVisibility<T>(this T control, Func<FluentAvalonia.UI.Controls.CommandBarOverflowButtonVisibility> func, Action<FluentAvalonia.UI.Controls.CommandBarOverflowButtonVisibility>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.CommandBar 
+   => control._set(FluentAvalonia.UI.Controls.CommandBar.OverflowButtonVisibilityProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T OverflowButtonVisibility<T>(this T control,FluentAvalonia.UI.Controls.CommandBarOverflowButtonVisibility value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.OverflowButtonVisibilityProperty, ps, () => control.OverflowButtonVisibility = value!, bindingMode, converter, bindingSource);
+public static T OverflowButtonVisibility<T>(this T control,FluentAvalonia.UI.Controls.CommandBarOverflowButtonVisibility value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
+=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.OverflowButtonVisibilityProperty, ps, () => control.OverflowButtonVisibility = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T OverflowButtonVisibility<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.CommandBar 
@@ -123,25 +100,19 @@ public static T OverflowButtonVisibility<T>(this T control, AvaloniaProperty ava
    => control._set(FluentAvalonia.UI.Controls.CommandBar.OverflowButtonVisibilityProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T OverflowButtonVisibility<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.CommandBarOverflowButtonVisibility> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.OverflowButtonVisibilityProperty, ps, () => control.OverflowButtonVisibility = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T OverflowButtonVisibility<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.CommandBarOverflowButtonVisibility> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
+=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.OverflowButtonVisibilityProperty, ps, () => control.OverflowButtonVisibility = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // IsDynamicOverflowEnabled
 
-/*ValueSetterGenerator*/
-public static T IsDynamicOverflowEnabled<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> control._set(() => control.IsDynamicOverflowEnabled = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IsDynamicOverflowEnabled<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.CommandBar 
-   => control._set(FluentAvalonia.UI.Controls.CommandBar.IsDynamicOverflowEnabledProperty!, func, onChanged, expression);
+public static T IsDynamicOverflowEnabled<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.CommandBar 
+   => control._set(FluentAvalonia.UI.Controls.CommandBar.IsDynamicOverflowEnabledProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IsDynamicOverflowEnabled<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.IsDynamicOverflowEnabledProperty, ps, () => control.IsDynamicOverflowEnabled = value!, bindingMode, converter, bindingSource);
+public static T IsDynamicOverflowEnabled<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
+=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.IsDynamicOverflowEnabledProperty, ps, () => control.IsDynamicOverflowEnabled = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsDynamicOverflowEnabled<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.CommandBar 
@@ -152,25 +123,19 @@ public static T IsDynamicOverflowEnabled<T>(this T control, AvaloniaProperty ava
    => control._set(FluentAvalonia.UI.Controls.CommandBar.IsDynamicOverflowEnabledProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IsDynamicOverflowEnabled<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.IsDynamicOverflowEnabledProperty, ps, () => control.IsDynamicOverflowEnabled = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IsDynamicOverflowEnabled<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
+=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.IsDynamicOverflowEnabledProperty, ps, () => control.IsDynamicOverflowEnabled = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // ItemsAlignment
 
-/*ValueSetterGenerator*/
-public static T ItemsAlignment<T>(this T control, FluentAvalonia.UI.Controls.CommandBarItemsAlignment value) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> control._set(() => control.ItemsAlignment = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T ItemsAlignment<T>(this T control, Func<FluentAvalonia.UI.Controls.CommandBarItemsAlignment> func, Action<FluentAvalonia.UI.Controls.CommandBarItemsAlignment>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.CommandBar 
-   => control._set(FluentAvalonia.UI.Controls.CommandBar.ItemsAlignmentProperty!, func, onChanged, expression);
+public static T ItemsAlignment<T>(this T control, Func<FluentAvalonia.UI.Controls.CommandBarItemsAlignment> func, Action<FluentAvalonia.UI.Controls.CommandBarItemsAlignment>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.CommandBar 
+   => control._set(FluentAvalonia.UI.Controls.CommandBar.ItemsAlignmentProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T ItemsAlignment<T>(this T control,FluentAvalonia.UI.Controls.CommandBarItemsAlignment value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.ItemsAlignmentProperty, ps, () => control.ItemsAlignment = value!, bindingMode, converter, bindingSource);
+public static T ItemsAlignment<T>(this T control,FluentAvalonia.UI.Controls.CommandBarItemsAlignment value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
+=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.ItemsAlignmentProperty, ps, () => control.ItemsAlignment = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T ItemsAlignment<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.CommandBar 
@@ -181,25 +146,19 @@ public static T ItemsAlignment<T>(this T control, AvaloniaProperty avaloniaPrope
    => control._set(FluentAvalonia.UI.Controls.CommandBar.ItemsAlignmentProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T ItemsAlignment<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.CommandBarItemsAlignment> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.ItemsAlignmentProperty, ps, () => control.ItemsAlignment = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T ItemsAlignment<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.CommandBarItemsAlignment> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
+=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.ItemsAlignmentProperty, ps, () => control.ItemsAlignment = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // DefaultLabelPosition
 
-/*ValueSetterGenerator*/
-public static T DefaultLabelPosition<T>(this T control, FluentAvalonia.UI.Controls.CommandBarDefaultLabelPosition value) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> control._set(() => control.DefaultLabelPosition = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T DefaultLabelPosition<T>(this T control, Func<FluentAvalonia.UI.Controls.CommandBarDefaultLabelPosition> func, Action<FluentAvalonia.UI.Controls.CommandBarDefaultLabelPosition>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.CommandBar 
-   => control._set(FluentAvalonia.UI.Controls.CommandBar.DefaultLabelPositionProperty!, func, onChanged, expression);
+public static T DefaultLabelPosition<T>(this T control, Func<FluentAvalonia.UI.Controls.CommandBarDefaultLabelPosition> func, Action<FluentAvalonia.UI.Controls.CommandBarDefaultLabelPosition>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.CommandBar 
+   => control._set(FluentAvalonia.UI.Controls.CommandBar.DefaultLabelPositionProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T DefaultLabelPosition<T>(this T control,FluentAvalonia.UI.Controls.CommandBarDefaultLabelPosition value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.DefaultLabelPositionProperty, ps, () => control.DefaultLabelPosition = value!, bindingMode, converter, bindingSource);
+public static T DefaultLabelPosition<T>(this T control,FluentAvalonia.UI.Controls.CommandBarDefaultLabelPosition value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
+=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.DefaultLabelPositionProperty, ps, () => control.DefaultLabelPosition = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T DefaultLabelPosition<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.CommandBar 
@@ -210,9 +169,8 @@ public static T DefaultLabelPosition<T>(this T control, AvaloniaProperty avaloni
    => control._set(FluentAvalonia.UI.Controls.CommandBar.DefaultLabelPositionProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T DefaultLabelPosition<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.CommandBarDefaultLabelPosition> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.DefaultLabelPositionProperty, ps, () => control.DefaultLabelPosition = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T DefaultLabelPosition<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.CommandBarDefaultLabelPosition> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.CommandBar 
+=> control._setEx(FluentAvalonia.UI.Controls.CommandBar.DefaultLabelPositionProperty, ps, () => control.DefaultLabelPosition = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
@@ -251,7 +209,7 @@ public static T OnClosing<T>(this T control, Action<FluentAvalonia.UI.Controls.C
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsSticky<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> style._addSetter(FluentAvalonia.UI.Controls.CommandBar.IsStickyProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.CommandBar.IsStickyProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsSticky<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.CommandBar 
@@ -262,7 +220,7 @@ public static Style<T> IsSticky<T>(this Style<T> style, IBinding binding) where 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsOpen<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> style._addSetter(FluentAvalonia.UI.Controls.CommandBar.IsOpenProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.CommandBar.IsOpenProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsOpen<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.CommandBar 
@@ -273,7 +231,7 @@ public static Style<T> IsOpen<T>(this Style<T> style, IBinding binding) where T 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> ClosedDisplayMode<T>(this Style<T> style, FluentAvalonia.UI.Controls.CommandBarClosedDisplayMode value) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> style._addSetter(FluentAvalonia.UI.Controls.CommandBar.ClosedDisplayModeProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.CommandBar.ClosedDisplayModeProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> ClosedDisplayMode<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.CommandBar 
@@ -284,7 +242,7 @@ public static Style<T> ClosedDisplayMode<T>(this Style<T> style, IBinding bindin
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> OverflowButtonVisibility<T>(this Style<T> style, FluentAvalonia.UI.Controls.CommandBarOverflowButtonVisibility value) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> style._addSetter(FluentAvalonia.UI.Controls.CommandBar.OverflowButtonVisibilityProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.CommandBar.OverflowButtonVisibilityProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> OverflowButtonVisibility<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.CommandBar 
@@ -295,7 +253,7 @@ public static Style<T> OverflowButtonVisibility<T>(this Style<T> style, IBinding
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsDynamicOverflowEnabled<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> style._addSetter(FluentAvalonia.UI.Controls.CommandBar.IsDynamicOverflowEnabledProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.CommandBar.IsDynamicOverflowEnabledProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsDynamicOverflowEnabled<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.CommandBar 
@@ -306,7 +264,7 @@ public static Style<T> IsDynamicOverflowEnabled<T>(this Style<T> style, IBinding
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> ItemsAlignment<T>(this Style<T> style, FluentAvalonia.UI.Controls.CommandBarItemsAlignment value) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> style._addSetter(FluentAvalonia.UI.Controls.CommandBar.ItemsAlignmentProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.CommandBar.ItemsAlignmentProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> ItemsAlignment<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.CommandBar 
@@ -317,7 +275,7 @@ public static Style<T> ItemsAlignment<T>(this Style<T> style, IBinding binding) 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> DefaultLabelPosition<T>(this Style<T> style, FluentAvalonia.UI.Controls.CommandBarDefaultLabelPosition value) where T : FluentAvalonia.UI.Controls.CommandBar 
-=> style._addSetter(FluentAvalonia.UI.Controls.CommandBar.DefaultLabelPositionProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.CommandBar.DefaultLabelPositionProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> DefaultLabelPosition<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.CommandBar 

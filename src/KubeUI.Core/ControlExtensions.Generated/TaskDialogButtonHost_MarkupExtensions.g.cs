@@ -14,18 +14,13 @@ public static partial class TaskDialogButtonHost_MarkupExtensions
 //================= Properties ======================//
  // IconSource
 
-/*ValueSetterGenerator*/
-public static T IconSource<T>(this T control, FluentAvalonia.UI.Controls.IconSource value) where T : FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonHost 
-=> control._set(() => control.IconSource = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IconSource<T>(this T control, Func<FluentAvalonia.UI.Controls.IconSource> func, Action<FluentAvalonia.UI.Controls.IconSource>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonHost 
-   => control._set(FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonHost.IconSourceProperty!, func, onChanged, expression);
+public static T IconSource<T>(this T control, Func<FluentAvalonia.UI.Controls.IconSource> func, Action<FluentAvalonia.UI.Controls.IconSource>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonHost 
+   => control._set(FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonHost.IconSourceProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IconSource<T>(this T control,FluentAvalonia.UI.Controls.IconSource value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonHost 
-=> control._setEx(FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonHost.IconSourceProperty, ps, () => control.IconSource = value!, bindingMode, converter, bindingSource);
+public static T IconSource<T>(this T control,FluentAvalonia.UI.Controls.IconSource value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonHost 
+=> control._setEx(FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonHost.IconSourceProperty, ps, () => control.IconSource = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IconSource<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonHost 
@@ -36,9 +31,8 @@ public static T IconSource<T>(this T control, AvaloniaProperty avaloniaProperty,
    => control._set(FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonHost.IconSourceProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IconSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.IconSource> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonHost 
-=> control._setEx(FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonHost.IconSourceProperty, ps, () => control.IconSource = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IconSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.IconSource> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonHost 
+=> control._setEx(FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonHost.IconSourceProperty, ps, () => control.IconSource = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
@@ -47,7 +41,7 @@ public static T IconSource<TValue,T>(this T control, TValue value, FuncValueConv
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IconSource<T>(this Style<T> style, FluentAvalonia.UI.Controls.IconSource value) where T : FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonHost 
-=> style._addSetter(FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonHost.IconSourceProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonHost.IconSourceProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IconSource<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonHost 

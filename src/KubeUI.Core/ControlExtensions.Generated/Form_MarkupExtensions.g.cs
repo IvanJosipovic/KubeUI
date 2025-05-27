@@ -14,25 +14,20 @@ public static partial class Form_MarkupExtensions
 //================= Properties ======================//
  // LabelWidth
 
-/*ValueSetterGenerator*/
-public static T LabelWidth<T>(this T control, Avalonia.Controls.GridLength value) where T : Ursa.Controls.Form 
-=> control._set(() => control.LabelWidth = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T LabelWidth<T>(this T control, Func<Avalonia.Controls.GridLength> func, Action<Avalonia.Controls.GridLength>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Ursa.Controls.Form 
-   => control._set(Ursa.Controls.Form.LabelWidthProperty!, func, onChanged, expression);
+public static T LabelWidth<T>(this T control, Func<Avalonia.Controls.GridLength> func, Action<Avalonia.Controls.GridLength>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.Form 
+   => control._set(Ursa.Controls.Form.LabelWidthProperty, func, onChanged, expression);
+
+/*MagicalSetterGenerator*/
+public static T LabelWidth<T>(this T control,Avalonia.Controls.GridLength value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Form 
+=> control._setEx(Ursa.Controls.Form.LabelWidthProperty, ps, () => control.LabelWidth = value, bindingMode, converter, bindingSource);
 
 /*ValueOverloadsSetterGenerator*/
 
-public static T LabelWidth<T>(this T control, System.Double value = default!) where T : Ursa.Controls.Form 
+public static T LabelWidth<T>(this T control, System.Double value = default) where T : Ursa.Controls.Form 
    => control._set(() => control.LabelWidth = new Avalonia.Controls.GridLength(value));
-public static T LabelWidth<T>(this T control, System.Double value = default!, Avalonia.Controls.GridUnitType type = default!) where T : Ursa.Controls.Form 
+public static T LabelWidth<T>(this T control, System.Double value = default, Avalonia.Controls.GridUnitType type = default) where T : Ursa.Controls.Form 
    => control._set(() => control.LabelWidth = new Avalonia.Controls.GridLength(value, type));
-
-/*MagicalSetterGenerator*/
-[Obsolete]
-public static T LabelWidth<T>(this T control,Avalonia.Controls.GridLength value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.Form 
-=> control._setEx(Ursa.Controls.Form.LabelWidthProperty, ps, () => control.LabelWidth = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T LabelWidth<T>(this T control, IBinding binding) where T : Ursa.Controls.Form 
@@ -43,25 +38,19 @@ public static T LabelWidth<T>(this T control, AvaloniaProperty avaloniaProperty,
    => control._set(Ursa.Controls.Form.LabelWidthProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T LabelWidth<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.GridLength> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.Form 
-=> control._setEx(Ursa.Controls.Form.LabelWidthProperty, ps, () => control.LabelWidth = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T LabelWidth<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.GridLength> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Form 
+=> control._setEx(Ursa.Controls.Form.LabelWidthProperty, ps, () => control.LabelWidth = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // LabelPosition
 
-/*ValueSetterGenerator*/
-public static T LabelPosition<T>(this T control, Ursa.Common.Position value) where T : Ursa.Controls.Form 
-=> control._set(() => control.LabelPosition = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T LabelPosition<T>(this T control, Func<Ursa.Common.Position> func, Action<Ursa.Common.Position>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Ursa.Controls.Form 
-   => control._set(Ursa.Controls.Form.LabelPositionProperty!, func, onChanged, expression);
+public static T LabelPosition<T>(this T control, Func<Ursa.Common.Position> func, Action<Ursa.Common.Position>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.Form 
+   => control._set(Ursa.Controls.Form.LabelPositionProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T LabelPosition<T>(this T control,Ursa.Common.Position value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.Form 
-=> control._setEx(Ursa.Controls.Form.LabelPositionProperty, ps, () => control.LabelPosition = value!, bindingMode, converter, bindingSource);
+public static T LabelPosition<T>(this T control,Ursa.Common.Position value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Form 
+=> control._setEx(Ursa.Controls.Form.LabelPositionProperty, ps, () => control.LabelPosition = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T LabelPosition<T>(this T control, IBinding binding) where T : Ursa.Controls.Form 
@@ -72,25 +61,19 @@ public static T LabelPosition<T>(this T control, AvaloniaProperty avaloniaProper
    => control._set(Ursa.Controls.Form.LabelPositionProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T LabelPosition<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Ursa.Common.Position> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.Form 
-=> control._setEx(Ursa.Controls.Form.LabelPositionProperty, ps, () => control.LabelPosition = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T LabelPosition<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Ursa.Common.Position> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Form 
+=> control._setEx(Ursa.Controls.Form.LabelPositionProperty, ps, () => control.LabelPosition = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // LabelAlignment
 
-/*ValueSetterGenerator*/
-public static T LabelAlignment<T>(this T control, Avalonia.Layout.HorizontalAlignment value) where T : Ursa.Controls.Form 
-=> control._set(() => control.LabelAlignment = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T LabelAlignment<T>(this T control, Func<Avalonia.Layout.HorizontalAlignment> func, Action<Avalonia.Layout.HorizontalAlignment>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Ursa.Controls.Form 
-   => control._set(Ursa.Controls.Form.LabelAlignmentProperty!, func, onChanged, expression);
+public static T LabelAlignment<T>(this T control, Func<Avalonia.Layout.HorizontalAlignment> func, Action<Avalonia.Layout.HorizontalAlignment>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.Form 
+   => control._set(Ursa.Controls.Form.LabelAlignmentProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T LabelAlignment<T>(this T control,Avalonia.Layout.HorizontalAlignment value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.Form 
-=> control._setEx(Ursa.Controls.Form.LabelAlignmentProperty, ps, () => control.LabelAlignment = value!, bindingMode, converter, bindingSource);
+public static T LabelAlignment<T>(this T control,Avalonia.Layout.HorizontalAlignment value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Form 
+=> control._setEx(Ursa.Controls.Form.LabelAlignmentProperty, ps, () => control.LabelAlignment = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T LabelAlignment<T>(this T control, IBinding binding) where T : Ursa.Controls.Form 
@@ -101,9 +84,8 @@ public static T LabelAlignment<T>(this T control, AvaloniaProperty avaloniaPrope
    => control._set(Ursa.Controls.Form.LabelAlignmentProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T LabelAlignment<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Layout.HorizontalAlignment> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.Form 
-=> control._setEx(Ursa.Controls.Form.LabelAlignmentProperty, ps, () => control.LabelAlignment = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T LabelAlignment<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Layout.HorizontalAlignment> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.Form 
+=> control._setEx(Ursa.Controls.Form.LabelAlignmentProperty, ps, () => control.LabelAlignment = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
@@ -112,7 +94,7 @@ public static T LabelAlignment<TValue,T>(this T control, TValue value, FuncValue
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> LabelWidth<T>(this Style<T> style, Avalonia.Controls.GridLength value) where T : Ursa.Controls.Form 
-=> style._addSetter(Ursa.Controls.Form.LabelWidthProperty!, value!);
+=> style._addSetter(Ursa.Controls.Form.LabelWidthProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> LabelWidth<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.Form 
@@ -128,7 +110,7 @@ public static Style<T> LabelWidth<T>(this Style<T> style, System.Double value) w
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> LabelPosition<T>(this Style<T> style, Ursa.Common.Position value) where T : Ursa.Controls.Form 
-=> style._addSetter(Ursa.Controls.Form.LabelPositionProperty!, value!);
+=> style._addSetter(Ursa.Controls.Form.LabelPositionProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> LabelPosition<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.Form 
@@ -139,7 +121,7 @@ public static Style<T> LabelPosition<T>(this Style<T> style, IBinding binding) w
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> LabelAlignment<T>(this Style<T> style, Avalonia.Layout.HorizontalAlignment value) where T : Ursa.Controls.Form 
-=> style._addSetter(Ursa.Controls.Form.LabelAlignmentProperty!, value!);
+=> style._addSetter(Ursa.Controls.Form.LabelAlignmentProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> LabelAlignment<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.Form 

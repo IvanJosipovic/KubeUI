@@ -14,18 +14,13 @@ public static partial class ColorPickerButton_MarkupExtensions
 //================= Properties ======================//
  // Color
 
-/*ValueSetterGenerator*/
-public static T Color<T>(this T control, System.Nullable<Avalonia.Media.Color> value) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._set(() => control.Color = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T Color<T>(this T control, Func<System.Nullable<Avalonia.Media.Color>> func, Action<System.Nullable<Avalonia.Media.Color>>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-   => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.ColorProperty!, func, onChanged, expression);
+public static T Color<T>(this T control, Func<System.Nullable<Avalonia.Media.Color>> func, Action<System.Nullable<Avalonia.Media.Color>>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+   => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.ColorProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T Color<T>(this T control,System.Nullable<Avalonia.Media.Color> value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.ColorProperty, ps, () => control.Color = value!, bindingMode, converter, bindingSource);
+public static T Color<T>(this T control,System.Nullable<Avalonia.Media.Color> value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.ColorProperty, ps, () => control.Color = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Color<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
@@ -36,25 +31,19 @@ public static T Color<T>(this T control, AvaloniaProperty avaloniaProperty, Bind
    => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.ColorProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T Color<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Nullable<Avalonia.Media.Color>> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.ColorProperty, ps, () => control.Color = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T Color<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Nullable<Avalonia.Media.Color>> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.ColorProperty, ps, () => control.Color = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // IsMoreButtonVisible
 
-/*ValueSetterGenerator*/
-public static T IsMoreButtonVisible<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._set(() => control.IsMoreButtonVisible = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IsMoreButtonVisible<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-   => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.IsMoreButtonVisibleProperty!, func, onChanged, expression);
+public static T IsMoreButtonVisible<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+   => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.IsMoreButtonVisibleProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IsMoreButtonVisible<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.IsMoreButtonVisibleProperty, ps, () => control.IsMoreButtonVisible = value!, bindingMode, converter, bindingSource);
+public static T IsMoreButtonVisible<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.IsMoreButtonVisibleProperty, ps, () => control.IsMoreButtonVisible = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsMoreButtonVisible<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
@@ -65,25 +54,19 @@ public static T IsMoreButtonVisible<T>(this T control, AvaloniaProperty avalonia
    => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.IsMoreButtonVisibleProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IsMoreButtonVisible<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.IsMoreButtonVisibleProperty, ps, () => control.IsMoreButtonVisible = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IsMoreButtonVisible<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.IsMoreButtonVisibleProperty, ps, () => control.IsMoreButtonVisible = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // IsCompact
 
-/*ValueSetterGenerator*/
-public static T IsCompact<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._set(() => control.IsCompact = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IsCompact<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-   => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.IsCompactProperty!, func, onChanged, expression);
+public static T IsCompact<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+   => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.IsCompactProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IsCompact<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.IsCompactProperty, ps, () => control.IsCompact = value!, bindingMode, converter, bindingSource);
+public static T IsCompact<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.IsCompactProperty, ps, () => control.IsCompact = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsCompact<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
@@ -94,25 +77,19 @@ public static T IsCompact<T>(this T control, AvaloniaProperty avaloniaProperty, 
    => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.IsCompactProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IsCompact<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.IsCompactProperty, ps, () => control.IsCompact = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IsCompact<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.IsCompactProperty, ps, () => control.IsCompact = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // IsAlphaEnabled
 
-/*ValueSetterGenerator*/
-public static T IsAlphaEnabled<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._set(() => control.IsAlphaEnabled = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IsAlphaEnabled<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-   => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.IsAlphaEnabledProperty!, func, onChanged, expression);
+public static T IsAlphaEnabled<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+   => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.IsAlphaEnabledProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IsAlphaEnabled<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.IsAlphaEnabledProperty, ps, () => control.IsAlphaEnabled = value!, bindingMode, converter, bindingSource);
+public static T IsAlphaEnabled<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.IsAlphaEnabledProperty, ps, () => control.IsAlphaEnabled = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsAlphaEnabled<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
@@ -123,25 +100,19 @@ public static T IsAlphaEnabled<T>(this T control, AvaloniaProperty avaloniaPrope
    => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.IsAlphaEnabledProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IsAlphaEnabled<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.IsAlphaEnabledProperty, ps, () => control.IsAlphaEnabled = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IsAlphaEnabled<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.IsAlphaEnabledProperty, ps, () => control.IsAlphaEnabled = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // UseSpectrum
 
-/*ValueSetterGenerator*/
-public static T UseSpectrum<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._set(() => control.UseSpectrum = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T UseSpectrum<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-   => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.UseSpectrumProperty!, func, onChanged, expression);
+public static T UseSpectrum<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+   => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.UseSpectrumProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T UseSpectrum<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.UseSpectrumProperty, ps, () => control.UseSpectrum = value!, bindingMode, converter, bindingSource);
+public static T UseSpectrum<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.UseSpectrumProperty, ps, () => control.UseSpectrum = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T UseSpectrum<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
@@ -152,25 +123,19 @@ public static T UseSpectrum<T>(this T control, AvaloniaProperty avaloniaProperty
    => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.UseSpectrumProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T UseSpectrum<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.UseSpectrumProperty, ps, () => control.UseSpectrum = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T UseSpectrum<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.UseSpectrumProperty, ps, () => control.UseSpectrum = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // UseColorWheel
 
-/*ValueSetterGenerator*/
-public static T UseColorWheel<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._set(() => control.UseColorWheel = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T UseColorWheel<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-   => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.UseColorWheelProperty!, func, onChanged, expression);
+public static T UseColorWheel<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+   => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.UseColorWheelProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T UseColorWheel<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.UseColorWheelProperty, ps, () => control.UseColorWheel = value!, bindingMode, converter, bindingSource);
+public static T UseColorWheel<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.UseColorWheelProperty, ps, () => control.UseColorWheel = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T UseColorWheel<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
@@ -181,25 +146,19 @@ public static T UseColorWheel<T>(this T control, AvaloniaProperty avaloniaProper
    => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.UseColorWheelProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T UseColorWheel<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.UseColorWheelProperty, ps, () => control.UseColorWheel = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T UseColorWheel<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.UseColorWheelProperty, ps, () => control.UseColorWheel = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // UseColorTriangle
 
-/*ValueSetterGenerator*/
-public static T UseColorTriangle<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._set(() => control.UseColorTriangle = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T UseColorTriangle<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-   => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.UseColorTriangleProperty!, func, onChanged, expression);
+public static T UseColorTriangle<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+   => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.UseColorTriangleProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T UseColorTriangle<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.UseColorTriangleProperty, ps, () => control.UseColorTriangle = value!, bindingMode, converter, bindingSource);
+public static T UseColorTriangle<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.UseColorTriangleProperty, ps, () => control.UseColorTriangle = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T UseColorTriangle<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
@@ -210,25 +169,19 @@ public static T UseColorTriangle<T>(this T control, AvaloniaProperty avaloniaPro
    => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.UseColorTriangleProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T UseColorTriangle<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.UseColorTriangleProperty, ps, () => control.UseColorTriangle = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T UseColorTriangle<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.UseColorTriangleProperty, ps, () => control.UseColorTriangle = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // UseColorPalette
 
-/*ValueSetterGenerator*/
-public static T UseColorPalette<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._set(() => control.UseColorPalette = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T UseColorPalette<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-   => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.UseColorPaletteProperty!, func, onChanged, expression);
+public static T UseColorPalette<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+   => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.UseColorPaletteProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T UseColorPalette<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.UseColorPaletteProperty, ps, () => control.UseColorPalette = value!, bindingMode, converter, bindingSource);
+public static T UseColorPalette<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.UseColorPaletteProperty, ps, () => control.UseColorPalette = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T UseColorPalette<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
@@ -239,25 +192,19 @@ public static T UseColorPalette<T>(this T control, AvaloniaProperty avaloniaProp
    => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.UseColorPaletteProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T UseColorPalette<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.UseColorPaletteProperty, ps, () => control.UseColorPalette = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T UseColorPalette<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.UseColorPaletteProperty, ps, () => control.UseColorPalette = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // CustomPaletteColors
 
-/*ValueSetterGenerator*/
-public static T CustomPaletteColors<T>(this T control, System.Collections.Generic.IEnumerable<Avalonia.Media.Color> value) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._set(() => control.CustomPaletteColors = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T CustomPaletteColors<T>(this T control, Func<System.Collections.Generic.IEnumerable<Avalonia.Media.Color>> func, Action<System.Collections.Generic.IEnumerable<Avalonia.Media.Color>>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-   => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.CustomPaletteColorsProperty!, func, onChanged, expression);
+public static T CustomPaletteColors<T>(this T control, Func<System.Collections.Generic.IEnumerable<Avalonia.Media.Color>> func, Action<System.Collections.Generic.IEnumerable<Avalonia.Media.Color>>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+   => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.CustomPaletteColorsProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T CustomPaletteColors<T>(this T control,System.Collections.Generic.IEnumerable<Avalonia.Media.Color> value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.CustomPaletteColorsProperty, ps, () => control.CustomPaletteColors = value!, bindingMode, converter, bindingSource);
+public static T CustomPaletteColors<T>(this T control,System.Collections.Generic.IEnumerable<Avalonia.Media.Color> value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.CustomPaletteColorsProperty, ps, () => control.CustomPaletteColors = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T CustomPaletteColors<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
@@ -268,25 +215,19 @@ public static T CustomPaletteColors<T>(this T control, AvaloniaProperty avalonia
    => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.CustomPaletteColorsProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T CustomPaletteColors<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Collections.Generic.IEnumerable<Avalonia.Media.Color>> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.CustomPaletteColorsProperty, ps, () => control.CustomPaletteColors = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T CustomPaletteColors<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Collections.Generic.IEnumerable<Avalonia.Media.Color>> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.CustomPaletteColorsProperty, ps, () => control.CustomPaletteColors = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // PaletteColumnCount
 
-/*ValueSetterGenerator*/
-public static T PaletteColumnCount<T>(this T control, System.Int32 value) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._set(() => control.PaletteColumnCount = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T PaletteColumnCount<T>(this T control, Func<System.Int32> func, Action<System.Int32>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-   => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.PaletteColumnCountProperty!, func, onChanged, expression);
+public static T PaletteColumnCount<T>(this T control, Func<System.Int32> func, Action<System.Int32>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+   => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.PaletteColumnCountProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T PaletteColumnCount<T>(this T control,System.Int32 value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.PaletteColumnCountProperty, ps, () => control.PaletteColumnCount = value!, bindingMode, converter, bindingSource);
+public static T PaletteColumnCount<T>(this T control,System.Int32 value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.PaletteColumnCountProperty, ps, () => control.PaletteColumnCount = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T PaletteColumnCount<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
@@ -297,25 +238,19 @@ public static T PaletteColumnCount<T>(this T control, AvaloniaProperty avaloniaP
    => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.PaletteColumnCountProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T PaletteColumnCount<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Int32> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.PaletteColumnCountProperty, ps, () => control.PaletteColumnCount = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T PaletteColumnCount<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Int32> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.PaletteColumnCountProperty, ps, () => control.PaletteColumnCount = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // ShowAcceptDismissButtons
 
-/*ValueSetterGenerator*/
-public static T ShowAcceptDismissButtons<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._set(() => control.ShowAcceptDismissButtons = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T ShowAcceptDismissButtons<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-   => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.ShowAcceptDismissButtonsProperty!, func, onChanged, expression);
+public static T ShowAcceptDismissButtons<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+   => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.ShowAcceptDismissButtonsProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T ShowAcceptDismissButtons<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.ShowAcceptDismissButtonsProperty, ps, () => control.ShowAcceptDismissButtons = value!, bindingMode, converter, bindingSource);
+public static T ShowAcceptDismissButtons<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.ShowAcceptDismissButtonsProperty, ps, () => control.ShowAcceptDismissButtons = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T ShowAcceptDismissButtons<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
@@ -326,25 +261,19 @@ public static T ShowAcceptDismissButtons<T>(this T control, AvaloniaProperty ava
    => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.ShowAcceptDismissButtonsProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T ShowAcceptDismissButtons<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.ShowAcceptDismissButtonsProperty, ps, () => control.ShowAcceptDismissButtons = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T ShowAcceptDismissButtons<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.ShowAcceptDismissButtonsProperty, ps, () => control.ShowAcceptDismissButtons = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // FlyoutPlacement
 
-/*ValueSetterGenerator*/
-public static T FlyoutPlacement<T>(this T control, Avalonia.Controls.PlacementMode value) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._set(() => control.FlyoutPlacement = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T FlyoutPlacement<T>(this T control, Func<Avalonia.Controls.PlacementMode> func, Action<Avalonia.Controls.PlacementMode>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-   => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.FlyoutPlacementProperty!, func, onChanged, expression);
+public static T FlyoutPlacement<T>(this T control, Func<Avalonia.Controls.PlacementMode> func, Action<Avalonia.Controls.PlacementMode>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+   => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.FlyoutPlacementProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T FlyoutPlacement<T>(this T control,Avalonia.Controls.PlacementMode value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.FlyoutPlacementProperty, ps, () => control.FlyoutPlacement = value!, bindingMode, converter, bindingSource);
+public static T FlyoutPlacement<T>(this T control,Avalonia.Controls.PlacementMode value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.FlyoutPlacementProperty, ps, () => control.FlyoutPlacement = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T FlyoutPlacement<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
@@ -355,9 +284,8 @@ public static T FlyoutPlacement<T>(this T control, AvaloniaProperty avaloniaProp
    => control._set(FluentAvalonia.UI.Controls.ColorPickerButton.FlyoutPlacementProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T FlyoutPlacement<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.PlacementMode> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.FlyoutPlacementProperty, ps, () => control.FlyoutPlacement = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T FlyoutPlacement<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.PlacementMode> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerButton.FlyoutPlacementProperty, ps, () => control.FlyoutPlacement = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
@@ -403,7 +331,7 @@ public static T OnColorChanged<T>(this T control, Action<FluentAvalonia.UI.Contr
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Color<T>(this Style<T> style, System.Nullable<Avalonia.Media.Color> value) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> style._addSetter(FluentAvalonia.UI.Controls.ColorPickerButton.ColorProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ColorPickerButton.ColorProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Color<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
@@ -414,7 +342,7 @@ public static Style<T> Color<T>(this Style<T> style, IBinding binding) where T :
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsMoreButtonVisible<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> style._addSetter(FluentAvalonia.UI.Controls.ColorPickerButton.IsMoreButtonVisibleProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ColorPickerButton.IsMoreButtonVisibleProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsMoreButtonVisible<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
@@ -425,7 +353,7 @@ public static Style<T> IsMoreButtonVisible<T>(this Style<T> style, IBinding bind
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsCompact<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> style._addSetter(FluentAvalonia.UI.Controls.ColorPickerButton.IsCompactProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ColorPickerButton.IsCompactProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsCompact<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
@@ -436,7 +364,7 @@ public static Style<T> IsCompact<T>(this Style<T> style, IBinding binding) where
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsAlphaEnabled<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> style._addSetter(FluentAvalonia.UI.Controls.ColorPickerButton.IsAlphaEnabledProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ColorPickerButton.IsAlphaEnabledProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsAlphaEnabled<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
@@ -447,7 +375,7 @@ public static Style<T> IsAlphaEnabled<T>(this Style<T> style, IBinding binding) 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> UseSpectrum<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> style._addSetter(FluentAvalonia.UI.Controls.ColorPickerButton.UseSpectrumProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ColorPickerButton.UseSpectrumProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> UseSpectrum<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
@@ -458,7 +386,7 @@ public static Style<T> UseSpectrum<T>(this Style<T> style, IBinding binding) whe
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> UseColorWheel<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> style._addSetter(FluentAvalonia.UI.Controls.ColorPickerButton.UseColorWheelProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ColorPickerButton.UseColorWheelProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> UseColorWheel<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
@@ -469,7 +397,7 @@ public static Style<T> UseColorWheel<T>(this Style<T> style, IBinding binding) w
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> UseColorTriangle<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> style._addSetter(FluentAvalonia.UI.Controls.ColorPickerButton.UseColorTriangleProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ColorPickerButton.UseColorTriangleProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> UseColorTriangle<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
@@ -480,7 +408,7 @@ public static Style<T> UseColorTriangle<T>(this Style<T> style, IBinding binding
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> UseColorPalette<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> style._addSetter(FluentAvalonia.UI.Controls.ColorPickerButton.UseColorPaletteProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ColorPickerButton.UseColorPaletteProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> UseColorPalette<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
@@ -491,7 +419,7 @@ public static Style<T> UseColorPalette<T>(this Style<T> style, IBinding binding)
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> PaletteColumnCount<T>(this Style<T> style, System.Int32 value) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> style._addSetter(FluentAvalonia.UI.Controls.ColorPickerButton.PaletteColumnCountProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ColorPickerButton.PaletteColumnCountProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> PaletteColumnCount<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
@@ -502,7 +430,7 @@ public static Style<T> PaletteColumnCount<T>(this Style<T> style, IBinding bindi
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> ShowAcceptDismissButtons<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> style._addSetter(FluentAvalonia.UI.Controls.ColorPickerButton.ShowAcceptDismissButtonsProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ColorPickerButton.ShowAcceptDismissButtonsProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> ShowAcceptDismissButtons<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
@@ -513,7 +441,7 @@ public static Style<T> ShowAcceptDismissButtons<T>(this Style<T> style, IBinding
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> FlyoutPlacement<T>(this Style<T> style, Avalonia.Controls.PlacementMode value) where T : FluentAvalonia.UI.Controls.ColorPickerButton 
-=> style._addSetter(FluentAvalonia.UI.Controls.ColorPickerButton.FlyoutPlacementProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ColorPickerButton.FlyoutPlacementProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> FlyoutPlacement<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorPickerButton 

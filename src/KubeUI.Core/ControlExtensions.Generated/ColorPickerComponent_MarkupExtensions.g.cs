@@ -14,25 +14,20 @@ public static partial class ColorPickerComponent_MarkupExtensions
 //================= Properties ======================//
  // Color
 
-/*ValueSetterGenerator*/
-public static T Color<T>(this T control, FluentAvalonia.UI.Media.Color2 value) where T : FluentAvalonia.UI.Controls.ColorPickerComponent 
-=> control._set(() => control.Color = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T Color<T>(this T control, Func<FluentAvalonia.UI.Media.Color2> func, Action<FluentAvalonia.UI.Media.Color2>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerComponent 
-   => control._set(FluentAvalonia.UI.Controls.ColorPickerComponent.ColorProperty!, func, onChanged, expression);
+public static T Color<T>(this T control, Func<FluentAvalonia.UI.Media.Color2> func, Action<FluentAvalonia.UI.Media.Color2>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerComponent 
+   => control._set(FluentAvalonia.UI.Controls.ColorPickerComponent.ColorProperty, func, onChanged, expression);
+
+/*MagicalSetterGenerator*/
+public static T Color<T>(this T control,FluentAvalonia.UI.Media.Color2 value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerComponent 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerComponent.ColorProperty, ps, () => control.Color = value, bindingMode, converter, bindingSource);
 
 /*ValueOverloadsSetterGenerator*/
 
-public static T Color<T>(this T control, System.Byte r = default!, System.Byte g = default!, System.Byte b = default!, System.Byte a = default!) where T : FluentAvalonia.UI.Controls.ColorPickerComponent 
+public static T Color<T>(this T control, System.Byte r = default, System.Byte g = default, System.Byte b = default, System.Byte a = default) where T : FluentAvalonia.UI.Controls.ColorPickerComponent 
    => control._set(() => control.Color = new FluentAvalonia.UI.Media.Color2(r, g, b, a));
-public static T Color<T>(this T control, Avalonia.Media.Color avColor = default!) where T : FluentAvalonia.UI.Controls.ColorPickerComponent 
+public static T Color<T>(this T control, Avalonia.Media.Color avColor = default) where T : FluentAvalonia.UI.Controls.ColorPickerComponent 
    => control._set(() => control.Color = new FluentAvalonia.UI.Media.Color2(avColor));
-
-/*MagicalSetterGenerator*/
-[Obsolete]
-public static T Color<T>(this T control,FluentAvalonia.UI.Media.Color2 value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerComponent 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerComponent.ColorProperty, ps, () => control.Color = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Color<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorPickerComponent 
@@ -43,25 +38,19 @@ public static T Color<T>(this T control, AvaloniaProperty avaloniaProperty, Bind
    => control._set(FluentAvalonia.UI.Controls.ColorPickerComponent.ColorProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T Color<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Media.Color2> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerComponent 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerComponent.ColorProperty, ps, () => control.Color = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T Color<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Media.Color2> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerComponent 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerComponent.ColorProperty, ps, () => control.Color = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // Component
 
-/*ValueSetterGenerator*/
-public static T Component<T>(this T control, FluentAvalonia.UI.Controls.ColorComponent value) where T : FluentAvalonia.UI.Controls.ColorPickerComponent 
-=> control._set(() => control.Component = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T Component<T>(this T control, Func<FluentAvalonia.UI.Controls.ColorComponent> func, Action<FluentAvalonia.UI.Controls.ColorComponent>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerComponent 
-   => control._set(FluentAvalonia.UI.Controls.ColorPickerComponent.ComponentProperty!, func, onChanged, expression);
+public static T Component<T>(this T control, Func<FluentAvalonia.UI.Controls.ColorComponent> func, Action<FluentAvalonia.UI.Controls.ColorComponent>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorPickerComponent 
+   => control._set(FluentAvalonia.UI.Controls.ColorPickerComponent.ComponentProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T Component<T>(this T control,FluentAvalonia.UI.Controls.ColorComponent value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerComponent 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerComponent.ComponentProperty, ps, () => control.Component = value!, bindingMode, converter, bindingSource);
+public static T Component<T>(this T control,FluentAvalonia.UI.Controls.ColorComponent value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerComponent 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerComponent.ComponentProperty, ps, () => control.Component = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Component<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorPickerComponent 
@@ -72,9 +61,8 @@ public static T Component<T>(this T control, AvaloniaProperty avaloniaProperty, 
    => control._set(FluentAvalonia.UI.Controls.ColorPickerComponent.ComponentProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T Component<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.ColorComponent> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerComponent 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerComponent.ComponentProperty, ps, () => control.Component = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T Component<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.ColorComponent> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorPickerComponent 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorPickerComponent.ComponentProperty, ps, () => control.Component = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 

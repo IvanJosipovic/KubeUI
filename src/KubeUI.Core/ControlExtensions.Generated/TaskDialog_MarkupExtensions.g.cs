@@ -14,18 +14,13 @@ public static partial class TaskDialog_MarkupExtensions
 //================= Properties ======================//
  // Title
 
-/*ValueSetterGenerator*/
-public static T Title<T>(this T control, System.String value) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._set(() => control.Title = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T Title<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-   => control._set(FluentAvalonia.UI.Controls.TaskDialog.TitleProperty!, func, onChanged, expression);
+public static T Title<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+   => control._set(FluentAvalonia.UI.Controls.TaskDialog.TitleProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T Title<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.TitleProperty, ps, () => control.Title = value!, bindingMode, converter, bindingSource);
+public static T Title<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.TitleProperty, ps, () => control.Title = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Title<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialog 
@@ -36,25 +31,19 @@ public static T Title<T>(this T control, AvaloniaProperty avaloniaProperty, Bind
    => control._set(FluentAvalonia.UI.Controls.TaskDialog.TitleProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T Title<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.TitleProperty, ps, () => control.Title = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T Title<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.TitleProperty, ps, () => control.Title = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // Header
 
-/*ValueSetterGenerator*/
-public static T Header<T>(this T control, System.String value) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._set(() => control.Header = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T Header<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-   => control._set(FluentAvalonia.UI.Controls.TaskDialog.HeaderProperty!, func, onChanged, expression);
+public static T Header<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+   => control._set(FluentAvalonia.UI.Controls.TaskDialog.HeaderProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T Header<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.HeaderProperty, ps, () => control.Header = value!, bindingMode, converter, bindingSource);
+public static T Header<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.HeaderProperty, ps, () => control.Header = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Header<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialog 
@@ -65,25 +54,19 @@ public static T Header<T>(this T control, AvaloniaProperty avaloniaProperty, Bin
    => control._set(FluentAvalonia.UI.Controls.TaskDialog.HeaderProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T Header<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.HeaderProperty, ps, () => control.Header = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T Header<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.HeaderProperty, ps, () => control.Header = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // SubHeader
 
-/*ValueSetterGenerator*/
-public static T SubHeader<T>(this T control, System.String value) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._set(() => control.SubHeader = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T SubHeader<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-   => control._set(FluentAvalonia.UI.Controls.TaskDialog.SubHeaderProperty!, func, onChanged, expression);
+public static T SubHeader<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+   => control._set(FluentAvalonia.UI.Controls.TaskDialog.SubHeaderProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T SubHeader<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.SubHeaderProperty, ps, () => control.SubHeader = value!, bindingMode, converter, bindingSource);
+public static T SubHeader<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.SubHeaderProperty, ps, () => control.SubHeader = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T SubHeader<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialog 
@@ -94,25 +77,19 @@ public static T SubHeader<T>(this T control, AvaloniaProperty avaloniaProperty, 
    => control._set(FluentAvalonia.UI.Controls.TaskDialog.SubHeaderProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T SubHeader<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.SubHeaderProperty, ps, () => control.SubHeader = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T SubHeader<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.SubHeaderProperty, ps, () => control.SubHeader = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // IconSource
 
-/*ValueSetterGenerator*/
-public static T IconSource<T>(this T control, FluentAvalonia.UI.Controls.IconSource value) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._set(() => control.IconSource = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IconSource<T>(this T control, Func<FluentAvalonia.UI.Controls.IconSource> func, Action<FluentAvalonia.UI.Controls.IconSource>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-   => control._set(FluentAvalonia.UI.Controls.TaskDialog.IconSourceProperty!, func, onChanged, expression);
+public static T IconSource<T>(this T control, Func<FluentAvalonia.UI.Controls.IconSource> func, Action<FluentAvalonia.UI.Controls.IconSource>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+   => control._set(FluentAvalonia.UI.Controls.TaskDialog.IconSourceProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IconSource<T>(this T control,FluentAvalonia.UI.Controls.IconSource value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.IconSourceProperty, ps, () => control.IconSource = value!, bindingMode, converter, bindingSource);
+public static T IconSource<T>(this T control,FluentAvalonia.UI.Controls.IconSource value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.IconSourceProperty, ps, () => control.IconSource = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IconSource<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialog 
@@ -123,25 +100,19 @@ public static T IconSource<T>(this T control, AvaloniaProperty avaloniaProperty,
    => control._set(FluentAvalonia.UI.Controls.TaskDialog.IconSourceProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IconSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.IconSource> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.IconSourceProperty, ps, () => control.IconSource = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IconSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.IconSource> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.IconSourceProperty, ps, () => control.IconSource = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // Buttons
 
-/*ValueSetterGenerator*/
-public static T Buttons<T>(this T control, System.Collections.Generic.IList<FluentAvalonia.UI.Controls.TaskDialogButton> value) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._set(() => control.Buttons = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T Buttons<T>(this T control, Func<System.Collections.Generic.IList<FluentAvalonia.UI.Controls.TaskDialogButton>> func, Action<System.Collections.Generic.IList<FluentAvalonia.UI.Controls.TaskDialogButton>>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-   => control._set(FluentAvalonia.UI.Controls.TaskDialog.ButtonsProperty!, func, onChanged, expression);
+public static T Buttons<T>(this T control, Func<System.Collections.Generic.IList<FluentAvalonia.UI.Controls.TaskDialogButton>> func, Action<System.Collections.Generic.IList<FluentAvalonia.UI.Controls.TaskDialogButton>>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+   => control._set(FluentAvalonia.UI.Controls.TaskDialog.ButtonsProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T Buttons<T>(this T control,System.Collections.Generic.IList<FluentAvalonia.UI.Controls.TaskDialogButton> value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.ButtonsProperty, ps, () => control.Buttons = value!, bindingMode, converter, bindingSource);
+public static T Buttons<T>(this T control,System.Collections.Generic.IList<FluentAvalonia.UI.Controls.TaskDialogButton> value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.ButtonsProperty, ps, () => control.Buttons = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Buttons<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialog 
@@ -152,25 +123,19 @@ public static T Buttons<T>(this T control, AvaloniaProperty avaloniaProperty, Bi
    => control._set(FluentAvalonia.UI.Controls.TaskDialog.ButtonsProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T Buttons<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Collections.Generic.IList<FluentAvalonia.UI.Controls.TaskDialogButton>> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.ButtonsProperty, ps, () => control.Buttons = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T Buttons<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Collections.Generic.IList<FluentAvalonia.UI.Controls.TaskDialogButton>> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.ButtonsProperty, ps, () => control.Buttons = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // Commands
 
-/*ValueSetterGenerator*/
-public static T Commands<T>(this T control, System.Collections.Generic.IList<FluentAvalonia.UI.Controls.TaskDialogCommand> value) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._set(() => control.Commands = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T Commands<T>(this T control, Func<System.Collections.Generic.IList<FluentAvalonia.UI.Controls.TaskDialogCommand>> func, Action<System.Collections.Generic.IList<FluentAvalonia.UI.Controls.TaskDialogCommand>>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-   => control._set(FluentAvalonia.UI.Controls.TaskDialog.CommandsProperty!, func, onChanged, expression);
+public static T Commands<T>(this T control, Func<System.Collections.Generic.IList<FluentAvalonia.UI.Controls.TaskDialogCommand>> func, Action<System.Collections.Generic.IList<FluentAvalonia.UI.Controls.TaskDialogCommand>>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+   => control._set(FluentAvalonia.UI.Controls.TaskDialog.CommandsProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T Commands<T>(this T control,System.Collections.Generic.IList<FluentAvalonia.UI.Controls.TaskDialogCommand> value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.CommandsProperty, ps, () => control.Commands = value!, bindingMode, converter, bindingSource);
+public static T Commands<T>(this T control,System.Collections.Generic.IList<FluentAvalonia.UI.Controls.TaskDialogCommand> value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.CommandsProperty, ps, () => control.Commands = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Commands<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialog 
@@ -181,25 +146,19 @@ public static T Commands<T>(this T control, AvaloniaProperty avaloniaProperty, B
    => control._set(FluentAvalonia.UI.Controls.TaskDialog.CommandsProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T Commands<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Collections.Generic.IList<FluentAvalonia.UI.Controls.TaskDialogCommand>> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.CommandsProperty, ps, () => control.Commands = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T Commands<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Collections.Generic.IList<FluentAvalonia.UI.Controls.TaskDialogCommand>> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.CommandsProperty, ps, () => control.Commands = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // FooterVisibility
 
-/*ValueSetterGenerator*/
-public static T FooterVisibility<T>(this T control, FluentAvalonia.UI.Controls.TaskDialogFooterVisibility value) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._set(() => control.FooterVisibility = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T FooterVisibility<T>(this T control, Func<FluentAvalonia.UI.Controls.TaskDialogFooterVisibility> func, Action<FluentAvalonia.UI.Controls.TaskDialogFooterVisibility>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-   => control._set(FluentAvalonia.UI.Controls.TaskDialog.FooterVisibilityProperty!, func, onChanged, expression);
+public static T FooterVisibility<T>(this T control, Func<FluentAvalonia.UI.Controls.TaskDialogFooterVisibility> func, Action<FluentAvalonia.UI.Controls.TaskDialogFooterVisibility>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+   => control._set(FluentAvalonia.UI.Controls.TaskDialog.FooterVisibilityProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T FooterVisibility<T>(this T control,FluentAvalonia.UI.Controls.TaskDialogFooterVisibility value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.FooterVisibilityProperty, ps, () => control.FooterVisibility = value!, bindingMode, converter, bindingSource);
+public static T FooterVisibility<T>(this T control,FluentAvalonia.UI.Controls.TaskDialogFooterVisibility value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.FooterVisibilityProperty, ps, () => control.FooterVisibility = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T FooterVisibility<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialog 
@@ -210,25 +169,19 @@ public static T FooterVisibility<T>(this T control, AvaloniaProperty avaloniaPro
    => control._set(FluentAvalonia.UI.Controls.TaskDialog.FooterVisibilityProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T FooterVisibility<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.TaskDialogFooterVisibility> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.FooterVisibilityProperty, ps, () => control.FooterVisibility = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T FooterVisibility<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.TaskDialogFooterVisibility> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.FooterVisibilityProperty, ps, () => control.FooterVisibility = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // IsFooterExpanded
 
-/*ValueSetterGenerator*/
-public static T IsFooterExpanded<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._set(() => control.IsFooterExpanded = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IsFooterExpanded<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-   => control._set(FluentAvalonia.UI.Controls.TaskDialog.IsFooterExpandedProperty!, func, onChanged, expression);
+public static T IsFooterExpanded<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+   => control._set(FluentAvalonia.UI.Controls.TaskDialog.IsFooterExpandedProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IsFooterExpanded<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.IsFooterExpandedProperty, ps, () => control.IsFooterExpanded = value!, bindingMode, converter, bindingSource);
+public static T IsFooterExpanded<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.IsFooterExpandedProperty, ps, () => control.IsFooterExpanded = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsFooterExpanded<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialog 
@@ -239,25 +192,19 @@ public static T IsFooterExpanded<T>(this T control, AvaloniaProperty avaloniaPro
    => control._set(FluentAvalonia.UI.Controls.TaskDialog.IsFooterExpandedProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IsFooterExpanded<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.IsFooterExpandedProperty, ps, () => control.IsFooterExpanded = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IsFooterExpanded<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.IsFooterExpandedProperty, ps, () => control.IsFooterExpanded = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // Footer
 
-/*ValueSetterGenerator*/
-public static T Footer<T>(this T control, System.Object value) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._set(() => control.Footer = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T Footer<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-   => control._set(FluentAvalonia.UI.Controls.TaskDialog.FooterProperty!, func, onChanged, expression);
+public static T Footer<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+   => control._set(FluentAvalonia.UI.Controls.TaskDialog.FooterProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T Footer<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.FooterProperty, ps, () => control.Footer = value!, bindingMode, converter, bindingSource);
+public static T Footer<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.FooterProperty, ps, () => control.Footer = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Footer<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialog 
@@ -268,25 +215,19 @@ public static T Footer<T>(this T control, AvaloniaProperty avaloniaProperty, Bin
    => control._set(FluentAvalonia.UI.Controls.TaskDialog.FooterProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T Footer<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.FooterProperty, ps, () => control.Footer = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T Footer<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.FooterProperty, ps, () => control.Footer = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // FooterTemplate
 
-/*ValueSetterGenerator*/
-public static T FooterTemplate<T>(this T control, Avalonia.Controls.Templates.IDataTemplate value) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._set(() => control.FooterTemplate = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T FooterTemplate<T>(this T control, Func<Avalonia.Controls.Templates.IDataTemplate> func, Action<Avalonia.Controls.Templates.IDataTemplate>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-   => control._set(FluentAvalonia.UI.Controls.TaskDialog.FooterTemplateProperty!, func, onChanged, expression);
+public static T FooterTemplate<T>(this T control, Func<Avalonia.Controls.Templates.IDataTemplate> func, Action<Avalonia.Controls.Templates.IDataTemplate>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+   => control._set(FluentAvalonia.UI.Controls.TaskDialog.FooterTemplateProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T FooterTemplate<T>(this T control,Avalonia.Controls.Templates.IDataTemplate value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.FooterTemplateProperty, ps, () => control.FooterTemplate = value!, bindingMode, converter, bindingSource);
+public static T FooterTemplate<T>(this T control,Avalonia.Controls.Templates.IDataTemplate value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.FooterTemplateProperty, ps, () => control.FooterTemplate = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T FooterTemplate<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialog 
@@ -297,25 +238,19 @@ public static T FooterTemplate<T>(this T control, AvaloniaProperty avaloniaPrope
    => control._set(FluentAvalonia.UI.Controls.TaskDialog.FooterTemplateProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T FooterTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Templates.IDataTemplate> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.FooterTemplateProperty, ps, () => control.FooterTemplate = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T FooterTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Templates.IDataTemplate> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.FooterTemplateProperty, ps, () => control.FooterTemplate = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // ShowProgressBar
 
-/*ValueSetterGenerator*/
-public static T ShowProgressBar<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._set(() => control.ShowProgressBar = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T ShowProgressBar<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-   => control._set(FluentAvalonia.UI.Controls.TaskDialog.ShowProgressBarProperty!, func, onChanged, expression);
+public static T ShowProgressBar<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+   => control._set(FluentAvalonia.UI.Controls.TaskDialog.ShowProgressBarProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T ShowProgressBar<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.ShowProgressBarProperty, ps, () => control.ShowProgressBar = value!, bindingMode, converter, bindingSource);
+public static T ShowProgressBar<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.ShowProgressBarProperty, ps, () => control.ShowProgressBar = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T ShowProgressBar<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialog 
@@ -326,25 +261,19 @@ public static T ShowProgressBar<T>(this T control, AvaloniaProperty avaloniaProp
    => control._set(FluentAvalonia.UI.Controls.TaskDialog.ShowProgressBarProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T ShowProgressBar<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.ShowProgressBarProperty, ps, () => control.ShowProgressBar = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T ShowProgressBar<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.ShowProgressBarProperty, ps, () => control.ShowProgressBar = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // HeaderBackground
 
-/*ValueSetterGenerator*/
-public static T HeaderBackground<T>(this T control, Avalonia.Media.IBrush value) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._set(() => control.HeaderBackground = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T HeaderBackground<T>(this T control, Func<Avalonia.Media.IBrush> func, Action<Avalonia.Media.IBrush>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-   => control._set(FluentAvalonia.UI.Controls.TaskDialog.HeaderBackgroundProperty!, func, onChanged, expression);
+public static T HeaderBackground<T>(this T control, Func<Avalonia.Media.IBrush> func, Action<Avalonia.Media.IBrush>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+   => control._set(FluentAvalonia.UI.Controls.TaskDialog.HeaderBackgroundProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T HeaderBackground<T>(this T control,Avalonia.Media.IBrush value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.HeaderBackgroundProperty, ps, () => control.HeaderBackground = value!, bindingMode, converter, bindingSource);
+public static T HeaderBackground<T>(this T control,Avalonia.Media.IBrush value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.HeaderBackgroundProperty, ps, () => control.HeaderBackground = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T HeaderBackground<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialog 
@@ -355,25 +284,19 @@ public static T HeaderBackground<T>(this T control, AvaloniaProperty avaloniaPro
    => control._set(FluentAvalonia.UI.Controls.TaskDialog.HeaderBackgroundProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T HeaderBackground<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IBrush> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.HeaderBackgroundProperty, ps, () => control.HeaderBackground = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T HeaderBackground<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IBrush> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.HeaderBackgroundProperty, ps, () => control.HeaderBackground = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // HeaderForeground
 
-/*ValueSetterGenerator*/
-public static T HeaderForeground<T>(this T control, Avalonia.Media.IBrush value) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._set(() => control.HeaderForeground = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T HeaderForeground<T>(this T control, Func<Avalonia.Media.IBrush> func, Action<Avalonia.Media.IBrush>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-   => control._set(FluentAvalonia.UI.Controls.TaskDialog.HeaderForegroundProperty!, func, onChanged, expression);
+public static T HeaderForeground<T>(this T control, Func<Avalonia.Media.IBrush> func, Action<Avalonia.Media.IBrush>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+   => control._set(FluentAvalonia.UI.Controls.TaskDialog.HeaderForegroundProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T HeaderForeground<T>(this T control,Avalonia.Media.IBrush value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.HeaderForegroundProperty, ps, () => control.HeaderForeground = value!, bindingMode, converter, bindingSource);
+public static T HeaderForeground<T>(this T control,Avalonia.Media.IBrush value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.HeaderForegroundProperty, ps, () => control.HeaderForeground = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T HeaderForeground<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialog 
@@ -384,25 +307,19 @@ public static T HeaderForeground<T>(this T control, AvaloniaProperty avaloniaPro
    => control._set(FluentAvalonia.UI.Controls.TaskDialog.HeaderForegroundProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T HeaderForeground<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IBrush> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.HeaderForegroundProperty, ps, () => control.HeaderForeground = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T HeaderForeground<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IBrush> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.HeaderForegroundProperty, ps, () => control.HeaderForeground = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // IconForeground
 
-/*ValueSetterGenerator*/
-public static T IconForeground<T>(this T control, Avalonia.Media.IBrush value) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._set(() => control.IconForeground = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IconForeground<T>(this T control, Func<Avalonia.Media.IBrush> func, Action<Avalonia.Media.IBrush>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-   => control._set(FluentAvalonia.UI.Controls.TaskDialog.IconForegroundProperty!, func, onChanged, expression);
+public static T IconForeground<T>(this T control, Func<Avalonia.Media.IBrush> func, Action<Avalonia.Media.IBrush>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+   => control._set(FluentAvalonia.UI.Controls.TaskDialog.IconForegroundProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IconForeground<T>(this T control,Avalonia.Media.IBrush value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.IconForegroundProperty, ps, () => control.IconForeground = value!, bindingMode, converter, bindingSource);
+public static T IconForeground<T>(this T control,Avalonia.Media.IBrush value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.IconForegroundProperty, ps, () => control.IconForeground = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IconForeground<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialog 
@@ -413,9 +330,8 @@ public static T IconForeground<T>(this T control, AvaloniaProperty avaloniaPrope
    => control._set(FluentAvalonia.UI.Controls.TaskDialog.IconForegroundProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IconForeground<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IBrush> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.IconForegroundProperty, ps, () => control.IconForeground = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IconForeground<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IBrush> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialog.IconForegroundProperty, ps, () => control.IconForeground = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
@@ -454,7 +370,7 @@ public static T OnClosed<T>(this T control, Action<FluentAvalonia.UI.Controls.Ta
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Title<T>(this Style<T> style, System.String value) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> style._addSetter(FluentAvalonia.UI.Controls.TaskDialog.TitleProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.TaskDialog.TitleProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Title<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialog 
@@ -465,7 +381,7 @@ public static Style<T> Title<T>(this Style<T> style, IBinding binding) where T :
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Header<T>(this Style<T> style, System.String value) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> style._addSetter(FluentAvalonia.UI.Controls.TaskDialog.HeaderProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.TaskDialog.HeaderProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Header<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialog 
@@ -476,7 +392,7 @@ public static Style<T> Header<T>(this Style<T> style, IBinding binding) where T 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> SubHeader<T>(this Style<T> style, System.String value) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> style._addSetter(FluentAvalonia.UI.Controls.TaskDialog.SubHeaderProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.TaskDialog.SubHeaderProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> SubHeader<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialog 
@@ -487,7 +403,7 @@ public static Style<T> SubHeader<T>(this Style<T> style, IBinding binding) where
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IconSource<T>(this Style<T> style, FluentAvalonia.UI.Controls.IconSource value) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> style._addSetter(FluentAvalonia.UI.Controls.TaskDialog.IconSourceProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.TaskDialog.IconSourceProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IconSource<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialog 
@@ -498,7 +414,7 @@ public static Style<T> IconSource<T>(this Style<T> style, IBinding binding) wher
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> FooterVisibility<T>(this Style<T> style, FluentAvalonia.UI.Controls.TaskDialogFooterVisibility value) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> style._addSetter(FluentAvalonia.UI.Controls.TaskDialog.FooterVisibilityProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.TaskDialog.FooterVisibilityProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> FooterVisibility<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialog 
@@ -509,7 +425,7 @@ public static Style<T> FooterVisibility<T>(this Style<T> style, IBinding binding
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsFooterExpanded<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> style._addSetter(FluentAvalonia.UI.Controls.TaskDialog.IsFooterExpandedProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.TaskDialog.IsFooterExpandedProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsFooterExpanded<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialog 
@@ -520,7 +436,7 @@ public static Style<T> IsFooterExpanded<T>(this Style<T> style, IBinding binding
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Footer<T>(this Style<T> style, System.Object value) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> style._addSetter(FluentAvalonia.UI.Controls.TaskDialog.FooterProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.TaskDialog.FooterProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Footer<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialog 
@@ -531,7 +447,7 @@ public static Style<T> Footer<T>(this Style<T> style, IBinding binding) where T 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> FooterTemplate<T>(this Style<T> style, Avalonia.Controls.Templates.IDataTemplate value) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> style._addSetter(FluentAvalonia.UI.Controls.TaskDialog.FooterTemplateProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.TaskDialog.FooterTemplateProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> FooterTemplate<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialog 
@@ -542,7 +458,7 @@ public static Style<T> FooterTemplate<T>(this Style<T> style, IBinding binding) 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> ShowProgressBar<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> style._addSetter(FluentAvalonia.UI.Controls.TaskDialog.ShowProgressBarProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.TaskDialog.ShowProgressBarProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> ShowProgressBar<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialog 
@@ -553,7 +469,7 @@ public static Style<T> ShowProgressBar<T>(this Style<T> style, IBinding binding)
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> HeaderBackground<T>(this Style<T> style, Avalonia.Media.IBrush value) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> style._addSetter(FluentAvalonia.UI.Controls.TaskDialog.HeaderBackgroundProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.TaskDialog.HeaderBackgroundProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> HeaderBackground<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialog 
@@ -564,7 +480,7 @@ public static Style<T> HeaderBackground<T>(this Style<T> style, IBinding binding
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> HeaderForeground<T>(this Style<T> style, Avalonia.Media.IBrush value) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> style._addSetter(FluentAvalonia.UI.Controls.TaskDialog.HeaderForegroundProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.TaskDialog.HeaderForegroundProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> HeaderForeground<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialog 
@@ -575,7 +491,7 @@ public static Style<T> HeaderForeground<T>(this Style<T> style, IBinding binding
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IconForeground<T>(this Style<T> style, Avalonia.Media.IBrush value) where T : FluentAvalonia.UI.Controls.TaskDialog 
-=> style._addSetter(FluentAvalonia.UI.Controls.TaskDialog.IconForegroundProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.TaskDialog.IconForegroundProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IconForeground<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialog 
