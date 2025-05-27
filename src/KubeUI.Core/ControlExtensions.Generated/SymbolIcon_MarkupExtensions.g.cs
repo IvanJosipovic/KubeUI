@@ -14,13 +14,18 @@ public static partial class SymbolIcon_MarkupExtensions
 //================= Properties ======================//
  // Symbol
 
+/*ValueSetterGenerator*/
+public static T Symbol<T>(this T control, FluentAvalonia.UI.Controls.Symbol value) where T : FluentAvalonia.UI.Controls.SymbolIcon 
+=> control._set(() => control.Symbol = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T Symbol<T>(this T control, Func<FluentAvalonia.UI.Controls.Symbol> func, Action<FluentAvalonia.UI.Controls.Symbol>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.SymbolIcon 
-   => control._set(FluentAvalonia.UI.Controls.SymbolIcon.SymbolProperty, func, onChanged, expression);
+public static T Symbol<T>(this T control, Func<FluentAvalonia.UI.Controls.Symbol> func, Action<FluentAvalonia.UI.Controls.Symbol>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.SymbolIcon 
+   => control._set(FluentAvalonia.UI.Controls.SymbolIcon.SymbolProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T Symbol<T>(this T control,FluentAvalonia.UI.Controls.Symbol value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.SymbolIcon 
-=> control._setEx(FluentAvalonia.UI.Controls.SymbolIcon.SymbolProperty, ps, () => control.Symbol = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Symbol<T>(this T control,FluentAvalonia.UI.Controls.Symbol value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.SymbolIcon 
+=> control._setEx(FluentAvalonia.UI.Controls.SymbolIcon.SymbolProperty, ps, () => control.Symbol = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Symbol<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.SymbolIcon 
@@ -31,19 +36,25 @@ public static T Symbol<T>(this T control, AvaloniaProperty avaloniaProperty, Bin
    => control._set(FluentAvalonia.UI.Controls.SymbolIcon.SymbolProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T Symbol<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.Symbol> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.SymbolIcon 
-=> control._setEx(FluentAvalonia.UI.Controls.SymbolIcon.SymbolProperty, ps, () => control.Symbol = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Symbol<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.Symbol> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.SymbolIcon 
+=> control._setEx(FluentAvalonia.UI.Controls.SymbolIcon.SymbolProperty, ps, () => control.Symbol = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // FontSize
 
+/*ValueSetterGenerator*/
+public static T FontSize<T>(this T control, System.Double value) where T : FluentAvalonia.UI.Controls.SymbolIcon 
+=> control._set(() => control.FontSize = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T FontSize<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.SymbolIcon 
-   => control._set(FluentAvalonia.UI.Controls.SymbolIcon.FontSizeProperty, func, onChanged, expression);
+public static T FontSize<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.SymbolIcon 
+   => control._set(FluentAvalonia.UI.Controls.SymbolIcon.FontSizeProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T FontSize<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.SymbolIcon 
-=> control._setEx(FluentAvalonia.UI.Controls.SymbolIcon.FontSizeProperty, ps, () => control.FontSize = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T FontSize<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.SymbolIcon 
+=> control._setEx(FluentAvalonia.UI.Controls.SymbolIcon.FontSizeProperty, ps, () => control.FontSize = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T FontSize<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.SymbolIcon 
@@ -54,8 +65,9 @@ public static T FontSize<T>(this T control, AvaloniaProperty avaloniaProperty, B
    => control._set(FluentAvalonia.UI.Controls.SymbolIcon.FontSizeProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T FontSize<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.SymbolIcon 
-=> control._setEx(FluentAvalonia.UI.Controls.SymbolIcon.FontSizeProperty, ps, () => control.FontSize = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T FontSize<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.SymbolIcon 
+=> control._setEx(FluentAvalonia.UI.Controls.SymbolIcon.FontSizeProperty, ps, () => control.FontSize = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
 
@@ -64,7 +76,7 @@ public static T FontSize<TValue,T>(this T control, TValue value, FuncValueConver
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Symbol<T>(this Style<T> style, FluentAvalonia.UI.Controls.Symbol value) where T : FluentAvalonia.UI.Controls.SymbolIcon 
-=> style._addSetter(FluentAvalonia.UI.Controls.SymbolIcon.SymbolProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.SymbolIcon.SymbolProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Symbol<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.SymbolIcon 
@@ -75,7 +87,7 @@ public static Style<T> Symbol<T>(this Style<T> style, IBinding binding) where T 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> FontSize<T>(this Style<T> style, System.Double value) where T : FluentAvalonia.UI.Controls.SymbolIcon 
-=> style._addSetter(FluentAvalonia.UI.Controls.SymbolIcon.FontSizeProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.SymbolIcon.FontSizeProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> FontSize<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.SymbolIcon 

@@ -14,13 +14,18 @@ public static partial class Pins_MarkupExtensions
 //================= Properties ======================//
  // NodeSource
 
+/*ValueSetterGenerator*/
+public static T NodeSource<T>(this T control, NodeEditor.Model.INode value) where T : NodeEditor.Controls.Pins 
+=> control._set(() => control.NodeSource = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T NodeSource<T>(this T control, Func<NodeEditor.Model.INode> func, Action<NodeEditor.Model.INode>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Controls.Pins 
-   => control._set(NodeEditor.Controls.Pins.NodeSourceProperty, func, onChanged, expression);
+public static T NodeSource<T>(this T control, Func<NodeEditor.Model.INode> func, Action<NodeEditor.Model.INode>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : NodeEditor.Controls.Pins 
+   => control._set(NodeEditor.Controls.Pins.NodeSourceProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T NodeSource<T>(this T control,NodeEditor.Model.INode value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.Pins 
-=> control._setEx(NodeEditor.Controls.Pins.NodeSourceProperty, ps, () => control.NodeSource = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T NodeSource<T>(this T control,NodeEditor.Model.INode value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.Pins 
+=> control._setEx(NodeEditor.Controls.Pins.NodeSourceProperty, ps, () => control.NodeSource = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T NodeSource<T>(this T control, IBinding binding) where T : NodeEditor.Controls.Pins 
@@ -31,8 +36,9 @@ public static T NodeSource<T>(this T control, AvaloniaProperty avaloniaProperty,
    => control._set(NodeEditor.Controls.Pins.NodeSourceProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T NodeSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, NodeEditor.Model.INode> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.Pins 
-=> control._setEx(NodeEditor.Controls.Pins.NodeSourceProperty, ps, () => control.NodeSource = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T NodeSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, NodeEditor.Model.INode> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.Pins 
+=> control._setEx(NodeEditor.Controls.Pins.NodeSourceProperty, ps, () => control.NodeSource = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
 
@@ -41,7 +47,7 @@ public static T NodeSource<TValue,T>(this T control, TValue value, FuncValueConv
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> NodeSource<T>(this Style<T> style, NodeEditor.Model.INode value) where T : NodeEditor.Controls.Pins 
-=> style._addSetter(NodeEditor.Controls.Pins.NodeSourceProperty, value);
+=> style._addSetter(NodeEditor.Controls.Pins.NodeSourceProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> NodeSource<T>(this Style<T> style, IBinding binding) where T : NodeEditor.Controls.Pins 

@@ -15,10 +15,10 @@ public static partial class CalendarDayButton_MarkupExtensions
  // DateSelected
 
 /*ActionToEventGenerator*/
-public static T OnDateSelected<T>(this T control, Action<Ursa.Controls.CalendarDayButtonEventArgs> action, Avalonia.Interactivity.RoutingStrategies routes = Avalonia.Interactivity.RoutingStrategies.Tunnel | Avalonia.Interactivity.RoutingStrategies.Bubble) where T : Ursa.Controls.CalendarDayButton 
+public static T OnDateSelected<T>(this T control, Action<Ursa.Controls.CalendarDayButtonEventArgs> action, Avalonia.Interactivity.RoutingStrategies? routes = null) where T : Ursa.Controls.CalendarDayButton 
 {
-  control.AddHandler(Ursa.Controls.CalendarDayButton.DateSelectedEvent, (_, args) => action(args), routes);
-  return control; 
+  control.AddHandler(Ursa.Controls.CalendarDayButton.DateSelectedEvent, (_, args) => action(args), routes ?? Ursa.Controls.CalendarDayButton.DateSelectedEvent.RoutingStrategies);
+  return control;
 }
 
 
@@ -26,10 +26,10 @@ public static T OnDateSelected<T>(this T control, Action<Ursa.Controls.CalendarD
  // DatePreviewed
 
 /*ActionToEventGenerator*/
-public static T OnDatePreviewed<T>(this T control, Action<Ursa.Controls.CalendarDayButtonEventArgs> action, Avalonia.Interactivity.RoutingStrategies routes = Avalonia.Interactivity.RoutingStrategies.Tunnel | Avalonia.Interactivity.RoutingStrategies.Bubble) where T : Ursa.Controls.CalendarDayButton 
+public static T OnDatePreviewed<T>(this T control, Action<Ursa.Controls.CalendarDayButtonEventArgs> action, Avalonia.Interactivity.RoutingStrategies? routes = null) where T : Ursa.Controls.CalendarDayButton 
 {
-  control.AddHandler(Ursa.Controls.CalendarDayButton.DatePreviewedEvent, (_, args) => action(args), routes);
-  return control; 
+  control.AddHandler(Ursa.Controls.CalendarDayButton.DatePreviewedEvent, (_, args) => action(args), routes ?? Ursa.Controls.CalendarDayButton.DatePreviewedEvent.RoutingStrategies);
+  return control;
 }
 
 

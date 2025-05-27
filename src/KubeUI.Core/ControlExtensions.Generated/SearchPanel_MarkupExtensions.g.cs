@@ -14,13 +14,18 @@ public static partial class SearchPanel_MarkupExtensions
 //================= Properties ======================//
  // UseRegex
 
+/*ValueSetterGenerator*/
+public static T UseRegex<T>(this T control, System.Boolean value) where T : AvaloniaEdit.Search.SearchPanel 
+=> control._set(() => control.UseRegex = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T UseRegex<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.Search.SearchPanel 
-   => control._set(AvaloniaEdit.Search.SearchPanel.UseRegexProperty, func, onChanged, expression);
+public static T UseRegex<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.Search.SearchPanel 
+   => control._set(AvaloniaEdit.Search.SearchPanel.UseRegexProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T UseRegex<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Search.SearchPanel 
-=> control._setEx(AvaloniaEdit.Search.SearchPanel.UseRegexProperty, ps, () => control.UseRegex = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T UseRegex<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Search.SearchPanel 
+=> control._setEx(AvaloniaEdit.Search.SearchPanel.UseRegexProperty, ps, () => control.UseRegex = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T UseRegex<T>(this T control, IBinding binding) where T : AvaloniaEdit.Search.SearchPanel 
@@ -31,19 +36,25 @@ public static T UseRegex<T>(this T control, AvaloniaProperty avaloniaProperty, B
    => control._set(AvaloniaEdit.Search.SearchPanel.UseRegexProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T UseRegex<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Search.SearchPanel 
-=> control._setEx(AvaloniaEdit.Search.SearchPanel.UseRegexProperty, ps, () => control.UseRegex = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T UseRegex<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Search.SearchPanel 
+=> control._setEx(AvaloniaEdit.Search.SearchPanel.UseRegexProperty, ps, () => control.UseRegex = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // MatchCase
 
+/*ValueSetterGenerator*/
+public static T MatchCase<T>(this T control, System.Boolean value) where T : AvaloniaEdit.Search.SearchPanel 
+=> control._set(() => control.MatchCase = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T MatchCase<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.Search.SearchPanel 
-   => control._set(AvaloniaEdit.Search.SearchPanel.MatchCaseProperty, func, onChanged, expression);
+public static T MatchCase<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.Search.SearchPanel 
+   => control._set(AvaloniaEdit.Search.SearchPanel.MatchCaseProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T MatchCase<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Search.SearchPanel 
-=> control._setEx(AvaloniaEdit.Search.SearchPanel.MatchCaseProperty, ps, () => control.MatchCase = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T MatchCase<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Search.SearchPanel 
+=> control._setEx(AvaloniaEdit.Search.SearchPanel.MatchCaseProperty, ps, () => control.MatchCase = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T MatchCase<T>(this T control, IBinding binding) where T : AvaloniaEdit.Search.SearchPanel 
@@ -54,19 +65,25 @@ public static T MatchCase<T>(this T control, AvaloniaProperty avaloniaProperty, 
    => control._set(AvaloniaEdit.Search.SearchPanel.MatchCaseProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T MatchCase<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Search.SearchPanel 
-=> control._setEx(AvaloniaEdit.Search.SearchPanel.MatchCaseProperty, ps, () => control.MatchCase = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T MatchCase<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Search.SearchPanel 
+=> control._setEx(AvaloniaEdit.Search.SearchPanel.MatchCaseProperty, ps, () => control.MatchCase = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // WholeWords
 
+/*ValueSetterGenerator*/
+public static T WholeWords<T>(this T control, System.Boolean value) where T : AvaloniaEdit.Search.SearchPanel 
+=> control._set(() => control.WholeWords = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T WholeWords<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.Search.SearchPanel 
-   => control._set(AvaloniaEdit.Search.SearchPanel.WholeWordsProperty, func, onChanged, expression);
+public static T WholeWords<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.Search.SearchPanel 
+   => control._set(AvaloniaEdit.Search.SearchPanel.WholeWordsProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T WholeWords<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Search.SearchPanel 
-=> control._setEx(AvaloniaEdit.Search.SearchPanel.WholeWordsProperty, ps, () => control.WholeWords = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T WholeWords<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Search.SearchPanel 
+=> control._setEx(AvaloniaEdit.Search.SearchPanel.WholeWordsProperty, ps, () => control.WholeWords = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T WholeWords<T>(this T control, IBinding binding) where T : AvaloniaEdit.Search.SearchPanel 
@@ -77,19 +94,25 @@ public static T WholeWords<T>(this T control, AvaloniaProperty avaloniaProperty,
    => control._set(AvaloniaEdit.Search.SearchPanel.WholeWordsProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T WholeWords<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Search.SearchPanel 
-=> control._setEx(AvaloniaEdit.Search.SearchPanel.WholeWordsProperty, ps, () => control.WholeWords = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T WholeWords<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Search.SearchPanel 
+=> control._setEx(AvaloniaEdit.Search.SearchPanel.WholeWordsProperty, ps, () => control.WholeWords = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // SearchPattern
 
+/*ValueSetterGenerator*/
+public static T SearchPattern<T>(this T control, System.String value) where T : AvaloniaEdit.Search.SearchPanel 
+=> control._set(() => control.SearchPattern = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T SearchPattern<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.Search.SearchPanel 
-   => control._set(AvaloniaEdit.Search.SearchPanel.SearchPatternProperty, func, onChanged, expression);
+public static T SearchPattern<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.Search.SearchPanel 
+   => control._set(AvaloniaEdit.Search.SearchPanel.SearchPatternProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T SearchPattern<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Search.SearchPanel 
-=> control._setEx(AvaloniaEdit.Search.SearchPanel.SearchPatternProperty, ps, () => control.SearchPattern = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T SearchPattern<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Search.SearchPanel 
+=> control._setEx(AvaloniaEdit.Search.SearchPanel.SearchPatternProperty, ps, () => control.SearchPattern = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T SearchPattern<T>(this T control, IBinding binding) where T : AvaloniaEdit.Search.SearchPanel 
@@ -100,19 +123,25 @@ public static T SearchPattern<T>(this T control, AvaloniaProperty avaloniaProper
    => control._set(AvaloniaEdit.Search.SearchPanel.SearchPatternProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T SearchPattern<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Search.SearchPanel 
-=> control._setEx(AvaloniaEdit.Search.SearchPanel.SearchPatternProperty, ps, () => control.SearchPattern = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T SearchPattern<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Search.SearchPanel 
+=> control._setEx(AvaloniaEdit.Search.SearchPanel.SearchPatternProperty, ps, () => control.SearchPattern = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // IsReplaceMode
 
+/*ValueSetterGenerator*/
+public static T IsReplaceMode<T>(this T control, System.Boolean value) where T : AvaloniaEdit.Search.SearchPanel 
+=> control._set(() => control.IsReplaceMode = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T IsReplaceMode<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.Search.SearchPanel 
-   => control._set(AvaloniaEdit.Search.SearchPanel.IsReplaceModeProperty, func, onChanged, expression);
+public static T IsReplaceMode<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.Search.SearchPanel 
+   => control._set(AvaloniaEdit.Search.SearchPanel.IsReplaceModeProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T IsReplaceMode<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Search.SearchPanel 
-=> control._setEx(AvaloniaEdit.Search.SearchPanel.IsReplaceModeProperty, ps, () => control.IsReplaceMode = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IsReplaceMode<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Search.SearchPanel 
+=> control._setEx(AvaloniaEdit.Search.SearchPanel.IsReplaceModeProperty, ps, () => control.IsReplaceMode = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsReplaceMode<T>(this T control, IBinding binding) where T : AvaloniaEdit.Search.SearchPanel 
@@ -123,19 +152,25 @@ public static T IsReplaceMode<T>(this T control, AvaloniaProperty avaloniaProper
    => control._set(AvaloniaEdit.Search.SearchPanel.IsReplaceModeProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T IsReplaceMode<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Search.SearchPanel 
-=> control._setEx(AvaloniaEdit.Search.SearchPanel.IsReplaceModeProperty, ps, () => control.IsReplaceMode = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IsReplaceMode<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Search.SearchPanel 
+=> control._setEx(AvaloniaEdit.Search.SearchPanel.IsReplaceModeProperty, ps, () => control.IsReplaceMode = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // ReplacePattern
 
+/*ValueSetterGenerator*/
+public static T ReplacePattern<T>(this T control, System.String value) where T : AvaloniaEdit.Search.SearchPanel 
+=> control._set(() => control.ReplacePattern = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T ReplacePattern<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.Search.SearchPanel 
-   => control._set(AvaloniaEdit.Search.SearchPanel.ReplacePatternProperty, func, onChanged, expression);
+public static T ReplacePattern<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.Search.SearchPanel 
+   => control._set(AvaloniaEdit.Search.SearchPanel.ReplacePatternProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T ReplacePattern<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Search.SearchPanel 
-=> control._setEx(AvaloniaEdit.Search.SearchPanel.ReplacePatternProperty, ps, () => control.ReplacePattern = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T ReplacePattern<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Search.SearchPanel 
+=> control._setEx(AvaloniaEdit.Search.SearchPanel.ReplacePatternProperty, ps, () => control.ReplacePattern = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T ReplacePattern<T>(this T control, IBinding binding) where T : AvaloniaEdit.Search.SearchPanel 
@@ -146,8 +181,9 @@ public static T ReplacePattern<T>(this T control, AvaloniaProperty avaloniaPrope
    => control._set(AvaloniaEdit.Search.SearchPanel.ReplacePatternProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T ReplacePattern<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Search.SearchPanel 
-=> control._setEx(AvaloniaEdit.Search.SearchPanel.ReplacePatternProperty, ps, () => control.ReplacePattern = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T ReplacePattern<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Search.SearchPanel 
+=> control._setEx(AvaloniaEdit.Search.SearchPanel.ReplacePatternProperty, ps, () => control.ReplacePattern = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
 
@@ -165,7 +201,7 @@ public static T OnSearchOptionsChanged<T>(this T control, Action<AvaloniaEdit.Se
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> UseRegex<T>(this Style<T> style, System.Boolean value) where T : AvaloniaEdit.Search.SearchPanel 
-=> style._addSetter(AvaloniaEdit.Search.SearchPanel.UseRegexProperty, value);
+=> style._addSetter(AvaloniaEdit.Search.SearchPanel.UseRegexProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> UseRegex<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.Search.SearchPanel 
@@ -176,7 +212,7 @@ public static Style<T> UseRegex<T>(this Style<T> style, IBinding binding) where 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> MatchCase<T>(this Style<T> style, System.Boolean value) where T : AvaloniaEdit.Search.SearchPanel 
-=> style._addSetter(AvaloniaEdit.Search.SearchPanel.MatchCaseProperty, value);
+=> style._addSetter(AvaloniaEdit.Search.SearchPanel.MatchCaseProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> MatchCase<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.Search.SearchPanel 
@@ -187,7 +223,7 @@ public static Style<T> MatchCase<T>(this Style<T> style, IBinding binding) where
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> WholeWords<T>(this Style<T> style, System.Boolean value) where T : AvaloniaEdit.Search.SearchPanel 
-=> style._addSetter(AvaloniaEdit.Search.SearchPanel.WholeWordsProperty, value);
+=> style._addSetter(AvaloniaEdit.Search.SearchPanel.WholeWordsProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> WholeWords<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.Search.SearchPanel 
@@ -198,7 +234,7 @@ public static Style<T> WholeWords<T>(this Style<T> style, IBinding binding) wher
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> SearchPattern<T>(this Style<T> style, System.String value) where T : AvaloniaEdit.Search.SearchPanel 
-=> style._addSetter(AvaloniaEdit.Search.SearchPanel.SearchPatternProperty, value);
+=> style._addSetter(AvaloniaEdit.Search.SearchPanel.SearchPatternProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> SearchPattern<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.Search.SearchPanel 
@@ -209,7 +245,7 @@ public static Style<T> SearchPattern<T>(this Style<T> style, IBinding binding) w
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsReplaceMode<T>(this Style<T> style, System.Boolean value) where T : AvaloniaEdit.Search.SearchPanel 
-=> style._addSetter(AvaloniaEdit.Search.SearchPanel.IsReplaceModeProperty, value);
+=> style._addSetter(AvaloniaEdit.Search.SearchPanel.IsReplaceModeProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsReplaceMode<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.Search.SearchPanel 
@@ -220,7 +256,7 @@ public static Style<T> IsReplaceMode<T>(this Style<T> style, IBinding binding) w
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> ReplacePattern<T>(this Style<T> style, System.String value) where T : AvaloniaEdit.Search.SearchPanel 
-=> style._addSetter(AvaloniaEdit.Search.SearchPanel.ReplacePatternProperty, value);
+=> style._addSetter(AvaloniaEdit.Search.SearchPanel.ReplacePatternProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> ReplacePattern<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.Search.SearchPanel 

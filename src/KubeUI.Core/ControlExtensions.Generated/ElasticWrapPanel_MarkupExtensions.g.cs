@@ -14,13 +14,18 @@ public static partial class ElasticWrapPanel_MarkupExtensions
 //================= Properties ======================//
  // IsFillHorizontal
 
+/*ValueSetterGenerator*/
+public static T IsFillHorizontal<T>(this T control, System.Boolean value) where T : Ursa.Controls.ElasticWrapPanel 
+=> control._set(() => control.IsFillHorizontal = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T IsFillHorizontal<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.ElasticWrapPanel 
-   => control._set(Ursa.Controls.ElasticWrapPanel.IsFillHorizontalProperty, func, onChanged, expression);
+public static T IsFillHorizontal<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Ursa.Controls.ElasticWrapPanel 
+   => control._set(Ursa.Controls.ElasticWrapPanel.IsFillHorizontalProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T IsFillHorizontal<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.ElasticWrapPanel 
-=> control._setEx(Ursa.Controls.ElasticWrapPanel.IsFillHorizontalProperty, ps, () => control.IsFillHorizontal = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IsFillHorizontal<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.ElasticWrapPanel 
+=> control._setEx(Ursa.Controls.ElasticWrapPanel.IsFillHorizontalProperty, ps, () => control.IsFillHorizontal = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsFillHorizontal<T>(this T control, IBinding binding) where T : Ursa.Controls.ElasticWrapPanel 
@@ -31,19 +36,25 @@ public static T IsFillHorizontal<T>(this T control, AvaloniaProperty avaloniaPro
    => control._set(Ursa.Controls.ElasticWrapPanel.IsFillHorizontalProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T IsFillHorizontal<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.ElasticWrapPanel 
-=> control._setEx(Ursa.Controls.ElasticWrapPanel.IsFillHorizontalProperty, ps, () => control.IsFillHorizontal = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IsFillHorizontal<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.ElasticWrapPanel 
+=> control._setEx(Ursa.Controls.ElasticWrapPanel.IsFillHorizontalProperty, ps, () => control.IsFillHorizontal = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // IsFillVertical
 
+/*ValueSetterGenerator*/
+public static T IsFillVertical<T>(this T control, System.Boolean value) where T : Ursa.Controls.ElasticWrapPanel 
+=> control._set(() => control.IsFillVertical = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T IsFillVertical<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.ElasticWrapPanel 
-   => control._set(Ursa.Controls.ElasticWrapPanel.IsFillVerticalProperty, func, onChanged, expression);
+public static T IsFillVertical<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Ursa.Controls.ElasticWrapPanel 
+   => control._set(Ursa.Controls.ElasticWrapPanel.IsFillVerticalProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T IsFillVertical<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.ElasticWrapPanel 
-=> control._setEx(Ursa.Controls.ElasticWrapPanel.IsFillVerticalProperty, ps, () => control.IsFillVertical = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IsFillVertical<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.ElasticWrapPanel 
+=> control._setEx(Ursa.Controls.ElasticWrapPanel.IsFillVerticalProperty, ps, () => control.IsFillVertical = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsFillVertical<T>(this T control, IBinding binding) where T : Ursa.Controls.ElasticWrapPanel 
@@ -54,8 +65,9 @@ public static T IsFillVertical<T>(this T control, AvaloniaProperty avaloniaPrope
    => control._set(Ursa.Controls.ElasticWrapPanel.IsFillVerticalProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T IsFillVertical<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.ElasticWrapPanel 
-=> control._setEx(Ursa.Controls.ElasticWrapPanel.IsFillVerticalProperty, ps, () => control.IsFillVertical = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IsFillVertical<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.ElasticWrapPanel 
+=> control._setEx(Ursa.Controls.ElasticWrapPanel.IsFillVerticalProperty, ps, () => control.IsFillVertical = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
 
@@ -63,12 +75,12 @@ public static T IsFillVertical<TValue,T>(this T control, TValue value, FuncValue
  // FixToRB
 
 /*AttachedPropertyMagicalSetterGenerator*/
-public static T ElasticWrapPanel_FixToRB<T>(this T control, System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Avalonia.Controls.Control
+public static T ElasticWrapPanel_FixToRB<T>(this T control, System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Avalonia.Controls.Control
  => control._setEx(Ursa.Controls.ElasticWrapPanel.FixToRBProperty, ps, () => Ursa.Controls.ElasticWrapPanel.SetFixToRB(control, value), bindingMode, converter, bindingSource);
 
 /*AttachedPropertyBindFromExpressionSetterGenerator*/
-public static T ElasticWrapPanel_FixToRB<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Avalonia.Controls.Control 
-   => control._set(Ursa.Controls.ElasticWrapPanel.FixToRBProperty, func, onChanged, expression);
+public static T ElasticWrapPanel_FixToRB<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Avalonia.Controls.Control 
+   => control._set(Ursa.Controls.ElasticWrapPanel.FixToRBProperty!, func, onChanged, expression);
 
 
 
@@ -77,7 +89,7 @@ public static T ElasticWrapPanel_FixToRB<T>(this T control, Func<System.Boolean>
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsFillHorizontal<T>(this Style<T> style, System.Boolean value) where T : Ursa.Controls.ElasticWrapPanel 
-=> style._addSetter(Ursa.Controls.ElasticWrapPanel.IsFillHorizontalProperty, value);
+=> style._addSetter(Ursa.Controls.ElasticWrapPanel.IsFillHorizontalProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsFillHorizontal<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.ElasticWrapPanel 
@@ -88,7 +100,7 @@ public static Style<T> IsFillHorizontal<T>(this Style<T> style, IBinding binding
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsFillVertical<T>(this Style<T> style, System.Boolean value) where T : Ursa.Controls.ElasticWrapPanel 
-=> style._addSetter(Ursa.Controls.ElasticWrapPanel.IsFillVerticalProperty, value);
+=> style._addSetter(Ursa.Controls.ElasticWrapPanel.IsFillVerticalProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsFillVertical<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.ElasticWrapPanel 
