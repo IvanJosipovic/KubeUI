@@ -14,13 +14,18 @@ public static partial class DataGridTemplateColumn_MarkupExtensions
 //================= Properties ======================//
  // CellTemplate
 
+/*ValueSetterGenerator*/
+public static T CellTemplate<T>(this T control, Avalonia.Controls.Templates.IDataTemplate value) where T : Avalonia.Controls.DataGridTemplateColumn 
+=> control._set(() => control.CellTemplate = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T CellTemplate<T>(this T control, Func<Avalonia.Controls.Templates.IDataTemplate> func, Action<Avalonia.Controls.Templates.IDataTemplate>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Avalonia.Controls.DataGridTemplateColumn 
-   => control._set(Avalonia.Controls.DataGridTemplateColumn.CellTemplateProperty, func, onChanged, expression);
+public static T CellTemplate<T>(this T control, Func<Avalonia.Controls.Templates.IDataTemplate> func, Action<Avalonia.Controls.Templates.IDataTemplate>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Avalonia.Controls.DataGridTemplateColumn 
+   => control._set(Avalonia.Controls.DataGridTemplateColumn.CellTemplateProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T CellTemplate<T>(this T control,Avalonia.Controls.Templates.IDataTemplate value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Avalonia.Controls.DataGridTemplateColumn 
-=> control._setEx(Avalonia.Controls.DataGridTemplateColumn.CellTemplateProperty, ps, () => control.CellTemplate = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T CellTemplate<T>(this T control,Avalonia.Controls.Templates.IDataTemplate value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Avalonia.Controls.DataGridTemplateColumn 
+=> control._setEx(Avalonia.Controls.DataGridTemplateColumn.CellTemplateProperty, ps, () => control.CellTemplate = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T CellTemplate<T>(this T control, IBinding binding) where T : Avalonia.Controls.DataGridTemplateColumn 
@@ -31,19 +36,25 @@ public static T CellTemplate<T>(this T control, AvaloniaProperty avaloniaPropert
    => control._set(Avalonia.Controls.DataGridTemplateColumn.CellTemplateProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T CellTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Templates.IDataTemplate> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Avalonia.Controls.DataGridTemplateColumn 
-=> control._setEx(Avalonia.Controls.DataGridTemplateColumn.CellTemplateProperty, ps, () => control.CellTemplate = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T CellTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Templates.IDataTemplate> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Avalonia.Controls.DataGridTemplateColumn 
+=> control._setEx(Avalonia.Controls.DataGridTemplateColumn.CellTemplateProperty, ps, () => control.CellTemplate = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // CellEditingTemplate
 
+/*ValueSetterGenerator*/
+public static T CellEditingTemplate<T>(this T control, Avalonia.Controls.Templates.IDataTemplate value) where T : Avalonia.Controls.DataGridTemplateColumn 
+=> control._set(() => control.CellEditingTemplate = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T CellEditingTemplate<T>(this T control, Func<Avalonia.Controls.Templates.IDataTemplate> func, Action<Avalonia.Controls.Templates.IDataTemplate>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Avalonia.Controls.DataGridTemplateColumn 
-   => control._set(Avalonia.Controls.DataGridTemplateColumn.CellEditingTemplateProperty, func, onChanged, expression);
+public static T CellEditingTemplate<T>(this T control, Func<Avalonia.Controls.Templates.IDataTemplate> func, Action<Avalonia.Controls.Templates.IDataTemplate>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Avalonia.Controls.DataGridTemplateColumn 
+   => control._set(Avalonia.Controls.DataGridTemplateColumn.CellEditingTemplateProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T CellEditingTemplate<T>(this T control,Avalonia.Controls.Templates.IDataTemplate value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Avalonia.Controls.DataGridTemplateColumn 
-=> control._setEx(Avalonia.Controls.DataGridTemplateColumn.CellEditingTemplateProperty, ps, () => control.CellEditingTemplate = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T CellEditingTemplate<T>(this T control,Avalonia.Controls.Templates.IDataTemplate value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Avalonia.Controls.DataGridTemplateColumn 
+=> control._setEx(Avalonia.Controls.DataGridTemplateColumn.CellEditingTemplateProperty, ps, () => control.CellEditingTemplate = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T CellEditingTemplate<T>(this T control, IBinding binding) where T : Avalonia.Controls.DataGridTemplateColumn 
@@ -54,8 +65,9 @@ public static T CellEditingTemplate<T>(this T control, AvaloniaProperty avalonia
    => control._set(Avalonia.Controls.DataGridTemplateColumn.CellEditingTemplateProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T CellEditingTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Templates.IDataTemplate> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Avalonia.Controls.DataGridTemplateColumn 
-=> control._setEx(Avalonia.Controls.DataGridTemplateColumn.CellEditingTemplateProperty, ps, () => control.CellEditingTemplate = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T CellEditingTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Templates.IDataTemplate> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Avalonia.Controls.DataGridTemplateColumn 
+=> control._setEx(Avalonia.Controls.DataGridTemplateColumn.CellEditingTemplateProperty, ps, () => control.CellEditingTemplate = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
 

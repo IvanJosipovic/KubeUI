@@ -15,9 +15,9 @@ public static partial class CalendarYearButton_MarkupExtensions
  // ItemSelected
 
 /*ActionToEventGenerator*/
-public static T OnItemSelected<T>(this T control, Action<Ursa.Controls.CalendarYearButtonEventArgs> action, Avalonia.Interactivity.RoutingStrategies routes = Avalonia.Interactivity.RoutingStrategies.Tunnel | Avalonia.Interactivity.RoutingStrategies.Bubble) where T : Ursa.Controls.CalendarYearButton
+public static T OnItemSelected<T>(this T control, Action<Ursa.Controls.CalendarYearButtonEventArgs> action, Avalonia.Interactivity.RoutingStrategies? routes = null) where T : Ursa.Controls.CalendarYearButton 
 {
-  control.AddHandler(Ursa.Controls.CalendarYearButton.ItemSelectedEvent, (_, args) => action(args), routes);
+  control.AddHandler(Ursa.Controls.CalendarYearButton.ItemSelectedEvent, (_, args) => action(args), routes ?? Ursa.Controls.CalendarYearButton.ItemSelectedEvent.RoutingStrategies);
   return control;
 }
 

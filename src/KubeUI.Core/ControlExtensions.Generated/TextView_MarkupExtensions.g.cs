@@ -14,13 +14,18 @@ public static partial class TextView_MarkupExtensions
 //================= Properties ======================//
  // Document
 
+/*ValueSetterGenerator*/
+public static T Document<T>(this T control, AvaloniaEdit.Document.TextDocument value) where T : AvaloniaEdit.Rendering.TextView 
+=> control._set(() => control.Document = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T Document<T>(this T control, Func<AvaloniaEdit.Document.TextDocument> func, Action<AvaloniaEdit.Document.TextDocument>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.Rendering.TextView 
-   => control._set(AvaloniaEdit.Rendering.TextView.DocumentProperty, func, onChanged, expression);
+public static T Document<T>(this T control, Func<AvaloniaEdit.Document.TextDocument> func, Action<AvaloniaEdit.Document.TextDocument>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.Rendering.TextView 
+   => control._set(AvaloniaEdit.Rendering.TextView.DocumentProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T Document<T>(this T control,AvaloniaEdit.Document.TextDocument value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
-=> control._setEx(AvaloniaEdit.Rendering.TextView.DocumentProperty, ps, () => control.Document = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Document<T>(this T control,AvaloniaEdit.Document.TextDocument value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
+=> control._setEx(AvaloniaEdit.Rendering.TextView.DocumentProperty, ps, () => control.Document = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Document<T>(this T control, IBinding binding) where T : AvaloniaEdit.Rendering.TextView 
@@ -31,19 +36,25 @@ public static T Document<T>(this T control, AvaloniaProperty avaloniaProperty, B
    => control._set(AvaloniaEdit.Rendering.TextView.DocumentProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T Document<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, AvaloniaEdit.Document.TextDocument> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
-=> control._setEx(AvaloniaEdit.Rendering.TextView.DocumentProperty, ps, () => control.Document = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Document<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, AvaloniaEdit.Document.TextDocument> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
+=> control._setEx(AvaloniaEdit.Rendering.TextView.DocumentProperty, ps, () => control.Document = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // Options
 
+/*ValueSetterGenerator*/
+public static T Options<T>(this T control, AvaloniaEdit.TextEditorOptions value) where T : AvaloniaEdit.Rendering.TextView 
+=> control._set(() => control.Options = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T Options<T>(this T control, Func<AvaloniaEdit.TextEditorOptions> func, Action<AvaloniaEdit.TextEditorOptions>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.Rendering.TextView 
-   => control._set(AvaloniaEdit.Rendering.TextView.OptionsProperty, func, onChanged, expression);
+public static T Options<T>(this T control, Func<AvaloniaEdit.TextEditorOptions> func, Action<AvaloniaEdit.TextEditorOptions>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.Rendering.TextView 
+   => control._set(AvaloniaEdit.Rendering.TextView.OptionsProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T Options<T>(this T control,AvaloniaEdit.TextEditorOptions value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
-=> control._setEx(AvaloniaEdit.Rendering.TextView.OptionsProperty, ps, () => control.Options = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Options<T>(this T control,AvaloniaEdit.TextEditorOptions value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
+=> control._setEx(AvaloniaEdit.Rendering.TextView.OptionsProperty, ps, () => control.Options = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Options<T>(this T control, IBinding binding) where T : AvaloniaEdit.Rendering.TextView 
@@ -54,19 +65,25 @@ public static T Options<T>(this T control, AvaloniaProperty avaloniaProperty, Bi
    => control._set(AvaloniaEdit.Rendering.TextView.OptionsProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T Options<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, AvaloniaEdit.TextEditorOptions> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
-=> control._setEx(AvaloniaEdit.Rendering.TextView.OptionsProperty, ps, () => control.Options = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Options<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, AvaloniaEdit.TextEditorOptions> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
+=> control._setEx(AvaloniaEdit.Rendering.TextView.OptionsProperty, ps, () => control.Options = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // NonPrintableCharacterBrush
 
+/*ValueSetterGenerator*/
+public static T NonPrintableCharacterBrush<T>(this T control, Avalonia.Media.IBrush value) where T : AvaloniaEdit.Rendering.TextView 
+=> control._set(() => control.NonPrintableCharacterBrush = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T NonPrintableCharacterBrush<T>(this T control, Func<Avalonia.Media.IBrush> func, Action<Avalonia.Media.IBrush>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.Rendering.TextView 
-   => control._set(AvaloniaEdit.Rendering.TextView.NonPrintableCharacterBrushProperty, func, onChanged, expression);
+public static T NonPrintableCharacterBrush<T>(this T control, Func<Avalonia.Media.IBrush> func, Action<Avalonia.Media.IBrush>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.Rendering.TextView 
+   => control._set(AvaloniaEdit.Rendering.TextView.NonPrintableCharacterBrushProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T NonPrintableCharacterBrush<T>(this T control,Avalonia.Media.IBrush value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
-=> control._setEx(AvaloniaEdit.Rendering.TextView.NonPrintableCharacterBrushProperty, ps, () => control.NonPrintableCharacterBrush = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T NonPrintableCharacterBrush<T>(this T control,Avalonia.Media.IBrush value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
+=> control._setEx(AvaloniaEdit.Rendering.TextView.NonPrintableCharacterBrushProperty, ps, () => control.NonPrintableCharacterBrush = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T NonPrintableCharacterBrush<T>(this T control, IBinding binding) where T : AvaloniaEdit.Rendering.TextView 
@@ -77,19 +94,25 @@ public static T NonPrintableCharacterBrush<T>(this T control, AvaloniaProperty a
    => control._set(AvaloniaEdit.Rendering.TextView.NonPrintableCharacterBrushProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T NonPrintableCharacterBrush<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IBrush> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
-=> control._setEx(AvaloniaEdit.Rendering.TextView.NonPrintableCharacterBrushProperty, ps, () => control.NonPrintableCharacterBrush = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T NonPrintableCharacterBrush<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IBrush> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
+=> control._setEx(AvaloniaEdit.Rendering.TextView.NonPrintableCharacterBrushProperty, ps, () => control.NonPrintableCharacterBrush = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // LinkTextForegroundBrush
 
+/*ValueSetterGenerator*/
+public static T LinkTextForegroundBrush<T>(this T control, Avalonia.Media.IBrush value) where T : AvaloniaEdit.Rendering.TextView 
+=> control._set(() => control.LinkTextForegroundBrush = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T LinkTextForegroundBrush<T>(this T control, Func<Avalonia.Media.IBrush> func, Action<Avalonia.Media.IBrush>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.Rendering.TextView 
-   => control._set(AvaloniaEdit.Rendering.TextView.LinkTextForegroundBrushProperty, func, onChanged, expression);
+public static T LinkTextForegroundBrush<T>(this T control, Func<Avalonia.Media.IBrush> func, Action<Avalonia.Media.IBrush>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.Rendering.TextView 
+   => control._set(AvaloniaEdit.Rendering.TextView.LinkTextForegroundBrushProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T LinkTextForegroundBrush<T>(this T control,Avalonia.Media.IBrush value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
-=> control._setEx(AvaloniaEdit.Rendering.TextView.LinkTextForegroundBrushProperty, ps, () => control.LinkTextForegroundBrush = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T LinkTextForegroundBrush<T>(this T control,Avalonia.Media.IBrush value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
+=> control._setEx(AvaloniaEdit.Rendering.TextView.LinkTextForegroundBrushProperty, ps, () => control.LinkTextForegroundBrush = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T LinkTextForegroundBrush<T>(this T control, IBinding binding) where T : AvaloniaEdit.Rendering.TextView 
@@ -100,19 +123,25 @@ public static T LinkTextForegroundBrush<T>(this T control, AvaloniaProperty aval
    => control._set(AvaloniaEdit.Rendering.TextView.LinkTextForegroundBrushProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T LinkTextForegroundBrush<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IBrush> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
-=> control._setEx(AvaloniaEdit.Rendering.TextView.LinkTextForegroundBrushProperty, ps, () => control.LinkTextForegroundBrush = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T LinkTextForegroundBrush<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IBrush> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
+=> control._setEx(AvaloniaEdit.Rendering.TextView.LinkTextForegroundBrushProperty, ps, () => control.LinkTextForegroundBrush = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // LinkTextBackgroundBrush
 
+/*ValueSetterGenerator*/
+public static T LinkTextBackgroundBrush<T>(this T control, Avalonia.Media.IBrush value) where T : AvaloniaEdit.Rendering.TextView 
+=> control._set(() => control.LinkTextBackgroundBrush = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T LinkTextBackgroundBrush<T>(this T control, Func<Avalonia.Media.IBrush> func, Action<Avalonia.Media.IBrush>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.Rendering.TextView 
-   => control._set(AvaloniaEdit.Rendering.TextView.LinkTextBackgroundBrushProperty, func, onChanged, expression);
+public static T LinkTextBackgroundBrush<T>(this T control, Func<Avalonia.Media.IBrush> func, Action<Avalonia.Media.IBrush>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.Rendering.TextView 
+   => control._set(AvaloniaEdit.Rendering.TextView.LinkTextBackgroundBrushProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T LinkTextBackgroundBrush<T>(this T control,Avalonia.Media.IBrush value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
-=> control._setEx(AvaloniaEdit.Rendering.TextView.LinkTextBackgroundBrushProperty, ps, () => control.LinkTextBackgroundBrush = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T LinkTextBackgroundBrush<T>(this T control,Avalonia.Media.IBrush value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
+=> control._setEx(AvaloniaEdit.Rendering.TextView.LinkTextBackgroundBrushProperty, ps, () => control.LinkTextBackgroundBrush = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T LinkTextBackgroundBrush<T>(this T control, IBinding binding) where T : AvaloniaEdit.Rendering.TextView 
@@ -123,19 +152,25 @@ public static T LinkTextBackgroundBrush<T>(this T control, AvaloniaProperty aval
    => control._set(AvaloniaEdit.Rendering.TextView.LinkTextBackgroundBrushProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T LinkTextBackgroundBrush<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IBrush> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
-=> control._setEx(AvaloniaEdit.Rendering.TextView.LinkTextBackgroundBrushProperty, ps, () => control.LinkTextBackgroundBrush = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T LinkTextBackgroundBrush<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IBrush> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
+=> control._setEx(AvaloniaEdit.Rendering.TextView.LinkTextBackgroundBrushProperty, ps, () => control.LinkTextBackgroundBrush = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // LinkTextUnderline
 
+/*ValueSetterGenerator*/
+public static T LinkTextUnderline<T>(this T control, System.Boolean value) where T : AvaloniaEdit.Rendering.TextView 
+=> control._set(() => control.LinkTextUnderline = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T LinkTextUnderline<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.Rendering.TextView 
-   => control._set(AvaloniaEdit.Rendering.TextView.LinkTextUnderlineProperty, func, onChanged, expression);
+public static T LinkTextUnderline<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.Rendering.TextView 
+   => control._set(AvaloniaEdit.Rendering.TextView.LinkTextUnderlineProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T LinkTextUnderline<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
-=> control._setEx(AvaloniaEdit.Rendering.TextView.LinkTextUnderlineProperty, ps, () => control.LinkTextUnderline = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T LinkTextUnderline<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
+=> control._setEx(AvaloniaEdit.Rendering.TextView.LinkTextUnderlineProperty, ps, () => control.LinkTextUnderline = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T LinkTextUnderline<T>(this T control, IBinding binding) where T : AvaloniaEdit.Rendering.TextView 
@@ -146,19 +181,25 @@ public static T LinkTextUnderline<T>(this T control, AvaloniaProperty avaloniaPr
    => control._set(AvaloniaEdit.Rendering.TextView.LinkTextUnderlineProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T LinkTextUnderline<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
-=> control._setEx(AvaloniaEdit.Rendering.TextView.LinkTextUnderlineProperty, ps, () => control.LinkTextUnderline = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T LinkTextUnderline<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
+=> control._setEx(AvaloniaEdit.Rendering.TextView.LinkTextUnderlineProperty, ps, () => control.LinkTextUnderline = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // ColumnRulerPen
 
+/*ValueSetterGenerator*/
+public static T ColumnRulerPen<T>(this T control, Avalonia.Media.IPen value) where T : AvaloniaEdit.Rendering.TextView 
+=> control._set(() => control.ColumnRulerPen = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T ColumnRulerPen<T>(this T control, Func<Avalonia.Media.IPen> func, Action<Avalonia.Media.IPen>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.Rendering.TextView 
-   => control._set(AvaloniaEdit.Rendering.TextView.ColumnRulerPenProperty, func, onChanged, expression);
+public static T ColumnRulerPen<T>(this T control, Func<Avalonia.Media.IPen> func, Action<Avalonia.Media.IPen>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.Rendering.TextView 
+   => control._set(AvaloniaEdit.Rendering.TextView.ColumnRulerPenProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T ColumnRulerPen<T>(this T control,Avalonia.Media.IPen value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
-=> control._setEx(AvaloniaEdit.Rendering.TextView.ColumnRulerPenProperty, ps, () => control.ColumnRulerPen = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T ColumnRulerPen<T>(this T control,Avalonia.Media.IPen value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
+=> control._setEx(AvaloniaEdit.Rendering.TextView.ColumnRulerPenProperty, ps, () => control.ColumnRulerPen = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T ColumnRulerPen<T>(this T control, IBinding binding) where T : AvaloniaEdit.Rendering.TextView 
@@ -169,19 +210,25 @@ public static T ColumnRulerPen<T>(this T control, AvaloniaProperty avaloniaPrope
    => control._set(AvaloniaEdit.Rendering.TextView.ColumnRulerPenProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T ColumnRulerPen<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IPen> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
-=> control._setEx(AvaloniaEdit.Rendering.TextView.ColumnRulerPenProperty, ps, () => control.ColumnRulerPen = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T ColumnRulerPen<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IPen> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
+=> control._setEx(AvaloniaEdit.Rendering.TextView.ColumnRulerPenProperty, ps, () => control.ColumnRulerPen = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // CurrentLineBackground
 
+/*ValueSetterGenerator*/
+public static T CurrentLineBackground<T>(this T control, Avalonia.Media.IBrush value) where T : AvaloniaEdit.Rendering.TextView 
+=> control._set(() => control.CurrentLineBackground = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T CurrentLineBackground<T>(this T control, Func<Avalonia.Media.IBrush> func, Action<Avalonia.Media.IBrush>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.Rendering.TextView 
-   => control._set(AvaloniaEdit.Rendering.TextView.CurrentLineBackgroundProperty, func, onChanged, expression);
+public static T CurrentLineBackground<T>(this T control, Func<Avalonia.Media.IBrush> func, Action<Avalonia.Media.IBrush>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.Rendering.TextView 
+   => control._set(AvaloniaEdit.Rendering.TextView.CurrentLineBackgroundProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T CurrentLineBackground<T>(this T control,Avalonia.Media.IBrush value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
-=> control._setEx(AvaloniaEdit.Rendering.TextView.CurrentLineBackgroundProperty, ps, () => control.CurrentLineBackground = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T CurrentLineBackground<T>(this T control,Avalonia.Media.IBrush value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
+=> control._setEx(AvaloniaEdit.Rendering.TextView.CurrentLineBackgroundProperty, ps, () => control.CurrentLineBackground = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T CurrentLineBackground<T>(this T control, IBinding binding) where T : AvaloniaEdit.Rendering.TextView 
@@ -192,19 +239,25 @@ public static T CurrentLineBackground<T>(this T control, AvaloniaProperty avalon
    => control._set(AvaloniaEdit.Rendering.TextView.CurrentLineBackgroundProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T CurrentLineBackground<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IBrush> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
-=> control._setEx(AvaloniaEdit.Rendering.TextView.CurrentLineBackgroundProperty, ps, () => control.CurrentLineBackground = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T CurrentLineBackground<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IBrush> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
+=> control._setEx(AvaloniaEdit.Rendering.TextView.CurrentLineBackgroundProperty, ps, () => control.CurrentLineBackground = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // CurrentLineBorder
 
+/*ValueSetterGenerator*/
+public static T CurrentLineBorder<T>(this T control, Avalonia.Media.IPen value) where T : AvaloniaEdit.Rendering.TextView 
+=> control._set(() => control.CurrentLineBorder = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T CurrentLineBorder<T>(this T control, Func<Avalonia.Media.IPen> func, Action<Avalonia.Media.IPen>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.Rendering.TextView 
-   => control._set(AvaloniaEdit.Rendering.TextView.CurrentLineBorderProperty, func, onChanged, expression);
+public static T CurrentLineBorder<T>(this T control, Func<Avalonia.Media.IPen> func, Action<Avalonia.Media.IPen>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.Rendering.TextView 
+   => control._set(AvaloniaEdit.Rendering.TextView.CurrentLineBorderProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T CurrentLineBorder<T>(this T control,Avalonia.Media.IPen value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
-=> control._setEx(AvaloniaEdit.Rendering.TextView.CurrentLineBorderProperty, ps, () => control.CurrentLineBorder = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T CurrentLineBorder<T>(this T control,Avalonia.Media.IPen value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
+=> control._setEx(AvaloniaEdit.Rendering.TextView.CurrentLineBorderProperty, ps, () => control.CurrentLineBorder = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T CurrentLineBorder<T>(this T control, IBinding binding) where T : AvaloniaEdit.Rendering.TextView 
@@ -215,8 +268,9 @@ public static T CurrentLineBorder<T>(this T control, AvaloniaProperty avaloniaPr
    => control._set(AvaloniaEdit.Rendering.TextView.CurrentLineBorderProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T CurrentLineBorder<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IPen> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
-=> control._setEx(AvaloniaEdit.Rendering.TextView.CurrentLineBorderProperty, ps, () => control.CurrentLineBorder = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T CurrentLineBorder<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IPen> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Rendering.TextView 
+=> control._setEx(AvaloniaEdit.Rendering.TextView.CurrentLineBorderProperty, ps, () => control.CurrentLineBorder = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
 
@@ -259,10 +313,10 @@ public static T OnScrollOffsetChanged<T>(this T control, Action<System.EventArgs
  // PreviewPointerHover
 
 /*ActionToEventGenerator*/
-public static T OnPreviewPointerHover<T>(this T control, Action<Avalonia.Input.PointerEventArgs> action, Avalonia.Interactivity.RoutingStrategies routes = Avalonia.Interactivity.RoutingStrategies.Tunnel | Avalonia.Interactivity.RoutingStrategies.Bubble) where T : AvaloniaEdit.Rendering.TextView 
+public static T OnPreviewPointerHover<T>(this T control, Action<Avalonia.Input.PointerEventArgs> action, Avalonia.Interactivity.RoutingStrategies? routes = null) where T : AvaloniaEdit.Rendering.TextView 
 {
-  control.AddHandler(AvaloniaEdit.Rendering.TextView.PreviewPointerHoverEvent, (_, args) => action(args), routes);
-  return control; 
+  control.AddHandler(AvaloniaEdit.Rendering.TextView.PreviewPointerHoverEvent, (_, args) => action(args), routes ?? AvaloniaEdit.Rendering.TextView.PreviewPointerHoverEvent.RoutingStrategies);
+  return control;
 }
 
 
@@ -270,10 +324,10 @@ public static T OnPreviewPointerHover<T>(this T control, Action<Avalonia.Input.P
  // PointerHover
 
 /*ActionToEventGenerator*/
-public static T OnPointerHover<T>(this T control, Action<Avalonia.Input.PointerEventArgs> action, Avalonia.Interactivity.RoutingStrategies routes = Avalonia.Interactivity.RoutingStrategies.Tunnel | Avalonia.Interactivity.RoutingStrategies.Bubble) where T : AvaloniaEdit.Rendering.TextView 
+public static T OnPointerHover<T>(this T control, Action<Avalonia.Input.PointerEventArgs> action, Avalonia.Interactivity.RoutingStrategies? routes = null) where T : AvaloniaEdit.Rendering.TextView 
 {
-  control.AddHandler(AvaloniaEdit.Rendering.TextView.PointerHoverEvent, (_, args) => action(args), routes);
-  return control; 
+  control.AddHandler(AvaloniaEdit.Rendering.TextView.PointerHoverEvent, (_, args) => action(args), routes ?? AvaloniaEdit.Rendering.TextView.PointerHoverEvent.RoutingStrategies);
+  return control;
 }
 
 
@@ -281,10 +335,10 @@ public static T OnPointerHover<T>(this T control, Action<Avalonia.Input.PointerE
  // PreviewPointerHoverStopped
 
 /*ActionToEventGenerator*/
-public static T OnPreviewPointerHoverStopped<T>(this T control, Action<Avalonia.Input.PointerEventArgs> action, Avalonia.Interactivity.RoutingStrategies routes = Avalonia.Interactivity.RoutingStrategies.Tunnel | Avalonia.Interactivity.RoutingStrategies.Bubble) where T : AvaloniaEdit.Rendering.TextView 
+public static T OnPreviewPointerHoverStopped<T>(this T control, Action<Avalonia.Input.PointerEventArgs> action, Avalonia.Interactivity.RoutingStrategies? routes = null) where T : AvaloniaEdit.Rendering.TextView 
 {
-  control.AddHandler(AvaloniaEdit.Rendering.TextView.PreviewPointerHoverStoppedEvent, (_, args) => action(args), routes);
-  return control; 
+  control.AddHandler(AvaloniaEdit.Rendering.TextView.PreviewPointerHoverStoppedEvent, (_, args) => action(args), routes ?? AvaloniaEdit.Rendering.TextView.PreviewPointerHoverStoppedEvent.RoutingStrategies);
+  return control;
 }
 
 
@@ -292,10 +346,10 @@ public static T OnPreviewPointerHoverStopped<T>(this T control, Action<Avalonia.
  // PointerHoverStopped
 
 /*ActionToEventGenerator*/
-public static T OnPointerHoverStopped<T>(this T control, Action<Avalonia.Input.PointerEventArgs> action, Avalonia.Interactivity.RoutingStrategies routes = Avalonia.Interactivity.RoutingStrategies.Tunnel | Avalonia.Interactivity.RoutingStrategies.Bubble) where T : AvaloniaEdit.Rendering.TextView 
+public static T OnPointerHoverStopped<T>(this T control, Action<Avalonia.Input.PointerEventArgs> action, Avalonia.Interactivity.RoutingStrategies? routes = null) where T : AvaloniaEdit.Rendering.TextView 
 {
-  control.AddHandler(AvaloniaEdit.Rendering.TextView.PointerHoverStoppedEvent, (_, args) => action(args), routes);
-  return control; 
+  control.AddHandler(AvaloniaEdit.Rendering.TextView.PointerHoverStoppedEvent, (_, args) => action(args), routes ?? AvaloniaEdit.Rendering.TextView.PointerHoverStoppedEvent.RoutingStrategies);
+  return control;
 }
 
 
@@ -306,7 +360,7 @@ public static T OnPointerHoverStopped<T>(this T control, Action<Avalonia.Input.P
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Document<T>(this Style<T> style, AvaloniaEdit.Document.TextDocument value) where T : AvaloniaEdit.Rendering.TextView 
-=> style._addSetter(AvaloniaEdit.Rendering.TextView.DocumentProperty, value);
+=> style._addSetter(AvaloniaEdit.Rendering.TextView.DocumentProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Document<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.Rendering.TextView 
@@ -317,7 +371,7 @@ public static Style<T> Document<T>(this Style<T> style, IBinding binding) where 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Options<T>(this Style<T> style, AvaloniaEdit.TextEditorOptions value) where T : AvaloniaEdit.Rendering.TextView 
-=> style._addSetter(AvaloniaEdit.Rendering.TextView.OptionsProperty, value);
+=> style._addSetter(AvaloniaEdit.Rendering.TextView.OptionsProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Options<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.Rendering.TextView 
@@ -328,7 +382,7 @@ public static Style<T> Options<T>(this Style<T> style, IBinding binding) where T
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> NonPrintableCharacterBrush<T>(this Style<T> style, Avalonia.Media.IBrush value) where T : AvaloniaEdit.Rendering.TextView 
-=> style._addSetter(AvaloniaEdit.Rendering.TextView.NonPrintableCharacterBrushProperty, value);
+=> style._addSetter(AvaloniaEdit.Rendering.TextView.NonPrintableCharacterBrushProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> NonPrintableCharacterBrush<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.Rendering.TextView 
@@ -339,7 +393,7 @@ public static Style<T> NonPrintableCharacterBrush<T>(this Style<T> style, IBindi
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> LinkTextForegroundBrush<T>(this Style<T> style, Avalonia.Media.IBrush value) where T : AvaloniaEdit.Rendering.TextView 
-=> style._addSetter(AvaloniaEdit.Rendering.TextView.LinkTextForegroundBrushProperty, value);
+=> style._addSetter(AvaloniaEdit.Rendering.TextView.LinkTextForegroundBrushProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> LinkTextForegroundBrush<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.Rendering.TextView 
@@ -350,7 +404,7 @@ public static Style<T> LinkTextForegroundBrush<T>(this Style<T> style, IBinding 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> LinkTextBackgroundBrush<T>(this Style<T> style, Avalonia.Media.IBrush value) where T : AvaloniaEdit.Rendering.TextView 
-=> style._addSetter(AvaloniaEdit.Rendering.TextView.LinkTextBackgroundBrushProperty, value);
+=> style._addSetter(AvaloniaEdit.Rendering.TextView.LinkTextBackgroundBrushProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> LinkTextBackgroundBrush<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.Rendering.TextView 
@@ -361,7 +415,7 @@ public static Style<T> LinkTextBackgroundBrush<T>(this Style<T> style, IBinding 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> LinkTextUnderline<T>(this Style<T> style, System.Boolean value) where T : AvaloniaEdit.Rendering.TextView 
-=> style._addSetter(AvaloniaEdit.Rendering.TextView.LinkTextUnderlineProperty, value);
+=> style._addSetter(AvaloniaEdit.Rendering.TextView.LinkTextUnderlineProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> LinkTextUnderline<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.Rendering.TextView 
@@ -372,7 +426,7 @@ public static Style<T> LinkTextUnderline<T>(this Style<T> style, IBinding bindin
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> ColumnRulerPen<T>(this Style<T> style, Avalonia.Media.IPen value) where T : AvaloniaEdit.Rendering.TextView 
-=> style._addSetter(AvaloniaEdit.Rendering.TextView.ColumnRulerPenProperty, value);
+=> style._addSetter(AvaloniaEdit.Rendering.TextView.ColumnRulerPenProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> ColumnRulerPen<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.Rendering.TextView 
@@ -383,7 +437,7 @@ public static Style<T> ColumnRulerPen<T>(this Style<T> style, IBinding binding) 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> CurrentLineBackground<T>(this Style<T> style, Avalonia.Media.IBrush value) where T : AvaloniaEdit.Rendering.TextView 
-=> style._addSetter(AvaloniaEdit.Rendering.TextView.CurrentLineBackgroundProperty, value);
+=> style._addSetter(AvaloniaEdit.Rendering.TextView.CurrentLineBackgroundProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> CurrentLineBackground<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.Rendering.TextView 
@@ -394,7 +448,7 @@ public static Style<T> CurrentLineBackground<T>(this Style<T> style, IBinding bi
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> CurrentLineBorder<T>(this Style<T> style, Avalonia.Media.IPen value) where T : AvaloniaEdit.Rendering.TextView 
-=> style._addSetter(AvaloniaEdit.Rendering.TextView.CurrentLineBorderProperty, value);
+=> style._addSetter(AvaloniaEdit.Rendering.TextView.CurrentLineBorderProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> CurrentLineBorder<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.Rendering.TextView 

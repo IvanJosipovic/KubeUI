@@ -14,13 +14,18 @@ public static partial class NavigationViewItemPresenter_MarkupExtensions
 //================= Properties ======================//
  // IconSource
 
+/*ValueSetterGenerator*/
+public static T IconSource<T>(this T control, FluentAvalonia.UI.Controls.IconSource value) where T : FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter 
+=> control._set(() => control.IconSource = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T IconSource<T>(this T control, Func<FluentAvalonia.UI.Controls.IconSource> func, Action<FluentAvalonia.UI.Controls.IconSource>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter 
-   => control._set(FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter.IconSourceProperty, func, onChanged, expression);
+public static T IconSource<T>(this T control, Func<FluentAvalonia.UI.Controls.IconSource> func, Action<FluentAvalonia.UI.Controls.IconSource>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter 
+   => control._set(FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter.IconSourceProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T IconSource<T>(this T control,FluentAvalonia.UI.Controls.IconSource value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter 
-=> control._setEx(FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter.IconSourceProperty, ps, () => control.IconSource = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IconSource<T>(this T control,FluentAvalonia.UI.Controls.IconSource value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter 
+=> control._setEx(FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter.IconSourceProperty, ps, () => control.IconSource = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IconSource<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter 
@@ -31,19 +36,25 @@ public static T IconSource<T>(this T control, AvaloniaProperty avaloniaProperty,
    => control._set(FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter.IconSourceProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T IconSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.IconSource> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter 
-=> control._setEx(FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter.IconSourceProperty, ps, () => control.IconSource = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IconSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.IconSource> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter 
+=> control._setEx(FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter.IconSourceProperty, ps, () => control.IconSource = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // InfoBadge
 
+/*ValueSetterGenerator*/
+public static T InfoBadge<T>(this T control, FluentAvalonia.UI.Controls.InfoBadge value) where T : FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter 
+=> control._set(() => control.InfoBadge = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T InfoBadge<T>(this T control, Func<FluentAvalonia.UI.Controls.InfoBadge> func, Action<FluentAvalonia.UI.Controls.InfoBadge>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter 
-   => control._set(FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter.InfoBadgeProperty, func, onChanged, expression);
+public static T InfoBadge<T>(this T control, Func<FluentAvalonia.UI.Controls.InfoBadge> func, Action<FluentAvalonia.UI.Controls.InfoBadge>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter 
+   => control._set(FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter.InfoBadgeProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T InfoBadge<T>(this T control,FluentAvalonia.UI.Controls.InfoBadge value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter 
-=> control._setEx(FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter.InfoBadgeProperty, ps, () => control.InfoBadge = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T InfoBadge<T>(this T control,FluentAvalonia.UI.Controls.InfoBadge value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter 
+=> control._setEx(FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter.InfoBadgeProperty, ps, () => control.InfoBadge = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T InfoBadge<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter 
@@ -54,8 +65,9 @@ public static T InfoBadge<T>(this T control, AvaloniaProperty avaloniaProperty, 
    => control._set(FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter.InfoBadgeProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T InfoBadge<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.InfoBadge> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter 
-=> control._setEx(FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter.InfoBadgeProperty, ps, () => control.InfoBadge = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T InfoBadge<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.InfoBadge> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter 
+=> control._setEx(FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter.InfoBadgeProperty, ps, () => control.InfoBadge = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
 
@@ -64,7 +76,7 @@ public static T InfoBadge<TValue,T>(this T control, TValue value, FuncValueConve
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IconSource<T>(this Style<T> style, FluentAvalonia.UI.Controls.IconSource value) where T : FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter 
-=> style._addSetter(FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter.IconSourceProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter.IconSourceProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IconSource<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter 
@@ -75,7 +87,7 @@ public static Style<T> IconSource<T>(this Style<T> style, IBinding binding) wher
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> InfoBadge<T>(this Style<T> style, FluentAvalonia.UI.Controls.InfoBadge value) where T : FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter 
-=> style._addSetter(FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter.InfoBadgeProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter.InfoBadgeProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> InfoBadge<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.Primitives.NavigationViewItemPresenter 
