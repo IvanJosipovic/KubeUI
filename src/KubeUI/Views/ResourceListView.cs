@@ -1,15 +1,17 @@
-﻿using k8s.Models;
-using k8s;
-using Avalonia.Data.Converters;
-using Ursa.Controls;
+﻿using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
-using Avalonia.Styling;
-using KubeUI.Client.Informer;
-using KubeUI.Client;
-using KubeUI.Resources;
+using Avalonia.Data.Converters;
 using Avalonia.Input;
+using Avalonia.Styling;
 using Avalonia.VisualTree;
+using k8s;
+using k8s.Models;
+using KubeUI.Client;
+using KubeUI.Client.Informer;
 using KubeUI.Controls;
+using KubeUI.Resources;
+using OpenTelemetry.Resources;
+using Ursa.Controls;
 
 namespace KubeUI.Views;
 
@@ -144,7 +146,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
         }
         else if (menu.HeaderBinding != null)
         {
-            menuItem.Bind(Avalonia.Controls.Primitives.HeaderedSelectingItemsControl.HeaderProperty, menu.HeaderBinding);
+            menuItem.Bind(HeaderedSelectingItemsControl.HeaderProperty, menu.HeaderBinding);
         }
 
         if (!string.IsNullOrEmpty(menu.CommandPath))
@@ -228,16 +230,16 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
         if (menu.Header != null)
         {
-            style.Add(new Setter(Avalonia.Controls.Primitives.HeaderedSelectingItemsControl.HeaderProperty, menu.Header));
+            style.Add(new Setter(HeaderedSelectingItemsControl.HeaderProperty, menu.Header));
         }
         else if (menu.HeaderBinding != null)
         {
-            style.Add(new Setter(Avalonia.Controls.Primitives.HeaderedSelectingItemsControl.HeaderProperty, menu.HeaderBinding));
+            style.Add(new Setter(HeaderedSelectingItemsControl.HeaderProperty, menu.HeaderBinding));
         }
 
         if (!string.IsNullOrEmpty(menu.CommandPath))
         {
-            style.Add(new Setter(MenuItem.CommandProperty, new Binding(nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + menu.CommandPath) { Source = DataContext }));
+            style.Add(new Setter(MenuItem.CommandProperty, new Binding(nameof(ResourceListViewModel<>.ResourceConfig) + "." + menu.CommandPath) { Source = DataContext }));
         }
 
         if (!string.IsNullOrEmpty(menu.CommandParameterPath))
@@ -343,7 +345,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                                     .HorizontalAlignment(HorizontalAlignment.Right)
                                     .VerticalAlignment(VerticalAlignment.Stretch)
                                     .VerticalContentAlignment(VerticalAlignment.Center)
-                                    .Text(@vm.SearchQuery)
+                                    .Text(vm.SearchQuery)
                                     .Watermark("Search"),
 
                                 new MultiComboBox()
@@ -352,9 +354,9 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                                     .Width(200)
                                     .HorizontalAlignment(HorizontalAlignment.Right)
                                     .Classes("ClearButton")
-                                    .IsVisible(@vm.ResourceConfig.IsNamespaced)
-                                    .ItemsSource(@vm.Cluster.Namespaces.Values)
-                                    .SelectedItems(@vm.Cluster.SelectedNamespaces)
+                                    .IsVisible(vm.ResourceConfig.IsNamespaced)
+                                    .ItemsSource(vm.Cluster.Namespaces.Values)
+                                    .SelectedItems(vm.Cluster.SelectedNamespaces)
                                     .SelectedItemTemplate(new FuncDataTemplate<V1Namespace?>((x,y) => new Label().Content(@x?.Metadata.Name)))
                                     .ItemTemplate(new FuncDataTemplate<V1Namespace?>((x,y) => new Label().Content(@x?.Metadata.Name)))
                                     .Watermark(Assets.Resources.ResourceListView_SelectNamespace)
@@ -363,8 +365,8 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                 new DataGrid()
                     .Ref(out _grid)
                     .Row(1)
-                    .ItemsSource(@vm.DataGridObjects, BindingMode.OneWay)
-                    .SelectedItem(@vm.SelectedItem)
+                    .ItemsSource(() => vm.DataGridObjects)
+                    .SelectedItem(() => vm.SelectedItem, (x) => { if (x != null) vm.SelectedItem = (KeyValuePair<NamespacedName, T>)x; })
                     .CanUserReorderColumns(true)
                     .CanUserResizeColumns(true)
                     .GridLinesVisibility(DataGridGridLinesVisibility.All)

@@ -47,7 +47,7 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
                             new CheckBox()
                                 .MinHeight(10)
                                 .Margin(0,0,4,0)
-                                .IsChecked(new Binding(nameof(Cluster.Connected)))
+                                .IsChecked(new Binding(nameof(ICluster.Connected)))
                                 .IsEnabled(false)
                                 .Styles([
                                     new Style<CheckBox>().Selector(x => x.PropertyEquals(CheckBox.IsCheckedProperty, true).Template().OfType<Ellipse>())
@@ -73,9 +73,9 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
                         .Classes("navigation-view-stack-panel")
                         .Children([
                             new Avalonia.Svg.Skia.Svg(new Uri("avares://KubeUI/"))
-                                .Path(@vm.IconPath),
+                                .Path(vm.IconPath),
                             new TextBlock()
-                                .Text(@vm.Name),
+                                .Text(vm.Name),
                             new TextBlock()
                                 .Margin(5,0,0,0)
                                 .Text(Utilities.FuncBinding<ResourceNavigationLink>(x => x.Objects.Count))
@@ -87,18 +87,13 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
                         .Classes("navigation-view-stack-panel")
                         .Children([
                             new PathIcon()
-                                .Data((Geometry)Application.Current.FindResource(vm.StyleIcon))
-                                //.Data(@vm.StyleIcon, s_resoureConverter)
-                                //.IsVisible(() => !string.IsNullOrEmpty(vm.StyleIcon))
-                                //.IsVisible(@vm.StyleIcon, Utilities.NotNullConverter)
-                                ,
+                                .Data(s_resoureConverter.TryConvert(vm.StyleIcon))
+                                .IsVisible(!string.IsNullOrEmpty(vm.StyleIcon)),
                             new Avalonia.Svg.Skia.Svg(new Uri("avares://KubeUI/"))
                                 .Path(vm.SvgIcon)
-                                //.IsVisible(() => !string.IsNullOrEmpty(vm.SvgIcon))
-                                //.IsVisible(@vm.SvgIcon, Utilities.NotNullConverter)
-                                ,
+                                .IsVisible(!string.IsNullOrEmpty(vm.SvgIcon)),
                             new TextBlock()
-                                .Text(@vm.Name)
+                                .Text(vm.Name)
                             ])
                 ,(x) => x.NavigationItems),
             ])

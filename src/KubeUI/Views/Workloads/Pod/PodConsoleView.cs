@@ -36,14 +36,15 @@ public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
                             .Content("Pod: "),
                         new Label()
                             .Margin(0,0,4,0)
-                            .Content(new MultiBinding(){
-                                Bindings = [
-                                        new Binding("Object.Metadata.NamespaceProperty"),
-                                        new Binding("Object.Metadata.Name"),
-                                        new Binding(nameof(PodConsoleViewModel.ContainerName))
-                                ],
-                                StringFormat = "{0}/{1}/{2}"
-                            }),
+                            .Content(() => $"{vm?.Object?.Metadata?.NamespaceProperty}/{vm?.Object?.Metadata?.Name}/{vm?.ContainerName}")
+                            //.Content(new MultiBinding(){
+                            //    Bindings = [
+                            //            new Binding("Object.Metadata.NamespaceProperty"),
+                            //            new Binding("Object.Metadata.Name"),
+                            //            new Binding(nameof(PodConsoleViewModel.ContainerName))
+                            //    ],
+                            //    StringFormat = "{0}/{1}/{2}"
+                            //}),
                         //new Label()
                         //    .Margin(0,0,4,0)
                         //    .Content(new MultiBinding(){

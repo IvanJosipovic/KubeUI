@@ -133,10 +133,18 @@ public sealed partial class CertificateItemView : ViewBase
                             .ItemTemplate(new FuncDataTemplate<X509Certificate2>((x,_) =>
                                 new StackPanel()
                                     .Children([
-                                        new PropertyItem().Key("Issuer").Value(x.Issuer),
-                                        new PropertyItem().Key("Subject").Value(x.SubjectName.Name),
-                                        new PropertyItem().Key("Not Before").Value(x.NotBefore.ToLocalTime().ToString()),
-                                        new PropertyItem().Key("Expires").Value($"{x.NotAfter.ToLocalTime()} (Valid:{(x.NotAfter.ToLocalTime() - DateTime.Now).Days} days)"),
+                                        new PropertyItem()
+                                            .Key("Issuer")
+                                            .Value(x.Issuer),
+                                        new PropertyItem()
+                                            .Key("Subject")
+                                            .Value(x.SubjectName.Name),
+                                        new PropertyItem()
+                                            .Key("Not Before")
+                                            .Value(x.NotBefore.ToLocalTime().ToString()),
+                                        new PropertyItem()
+                                            .Key("Expires")
+                                            .Value($"{x.NotAfter.ToLocalTime()} (Valid:{(x.NotAfter.ToLocalTime() - DateTime.Now).Days} days)"),
                                         new ItemsControl()
                                             .ItemsSource(x.Extensions.OfType<X509SubjectAlternativeNameExtension>().FirstOrDefault()?.EnumerateDnsNames() ?? [])
                                             .ItemTemplate(new FuncDataTemplate<string>((x,_) =>
