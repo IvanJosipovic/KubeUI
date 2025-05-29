@@ -14,18 +14,13 @@ public static partial class StandardUICommand_MarkupExtensions
 //================= Properties ======================//
  // Kind
 
-/*ValueSetterGenerator*/
-public static T Kind<T>(this T control, FluentAvalonia.UI.Input.StandardUICommandKind value) where T : FluentAvalonia.UI.Input.StandardUICommand 
-=> control._set(() => control.Kind = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T Kind<T>(this T control, Func<FluentAvalonia.UI.Input.StandardUICommandKind> func, Action<FluentAvalonia.UI.Input.StandardUICommandKind>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Input.StandardUICommand 
-   => control._set(FluentAvalonia.UI.Input.StandardUICommand.KindProperty!, func, onChanged, expression);
+public static T Kind<T>(this T control, Func<FluentAvalonia.UI.Input.StandardUICommandKind> func, Action<FluentAvalonia.UI.Input.StandardUICommandKind>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Input.StandardUICommand 
+   => control._set(FluentAvalonia.UI.Input.StandardUICommand.KindProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T Kind<T>(this T control,FluentAvalonia.UI.Input.StandardUICommandKind value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Input.StandardUICommand 
-=> control._setEx(FluentAvalonia.UI.Input.StandardUICommand.KindProperty, ps, () => control.Kind = value!, bindingMode, converter, bindingSource);
+public static T Kind<T>(this T control,FluentAvalonia.UI.Input.StandardUICommandKind value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Input.StandardUICommand 
+=> control._setEx(FluentAvalonia.UI.Input.StandardUICommand.KindProperty, ps, () => control.Kind = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Kind<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Input.StandardUICommand 
@@ -36,9 +31,8 @@ public static T Kind<T>(this T control, AvaloniaProperty avaloniaProperty, Bindi
    => control._set(FluentAvalonia.UI.Input.StandardUICommand.KindProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T Kind<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Input.StandardUICommandKind> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Input.StandardUICommand 
-=> control._setEx(FluentAvalonia.UI.Input.StandardUICommand.KindProperty, ps, () => control.Kind = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T Kind<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Input.StandardUICommandKind> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Input.StandardUICommand 
+=> control._setEx(FluentAvalonia.UI.Input.StandardUICommand.KindProperty, ps, () => control.Kind = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 

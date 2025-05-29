@@ -14,18 +14,13 @@ public static partial class ColorSpectrum_MarkupExtensions
 //================= Properties ======================//
  // Shape
 
-/*ValueSetterGenerator*/
-public static T Shape<T>(this T control, FluentAvalonia.UI.Controls.ColorSpectrumShape value) where T : FluentAvalonia.UI.Controls.ColorSpectrum 
-=> control._set(() => control.Shape = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T Shape<T>(this T control, Func<FluentAvalonia.UI.Controls.ColorSpectrumShape> func, Action<FluentAvalonia.UI.Controls.ColorSpectrumShape>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorSpectrum 
-   => control._set(FluentAvalonia.UI.Controls.ColorSpectrum.ShapeProperty!, func, onChanged, expression);
+public static T Shape<T>(this T control, Func<FluentAvalonia.UI.Controls.ColorSpectrumShape> func, Action<FluentAvalonia.UI.Controls.ColorSpectrumShape>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorSpectrum 
+   => control._set(FluentAvalonia.UI.Controls.ColorSpectrum.ShapeProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T Shape<T>(this T control,FluentAvalonia.UI.Controls.ColorSpectrumShape value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorSpectrum 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorSpectrum.ShapeProperty, ps, () => control.Shape = value!, bindingMode, converter, bindingSource);
+public static T Shape<T>(this T control,FluentAvalonia.UI.Controls.ColorSpectrumShape value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorSpectrum 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorSpectrum.ShapeProperty, ps, () => control.Shape = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Shape<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorSpectrum 
@@ -36,25 +31,19 @@ public static T Shape<T>(this T control, AvaloniaProperty avaloniaProperty, Bind
    => control._set(FluentAvalonia.UI.Controls.ColorSpectrum.ShapeProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T Shape<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.ColorSpectrumShape> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorSpectrum 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorSpectrum.ShapeProperty, ps, () => control.Shape = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T Shape<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.ColorSpectrumShape> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorSpectrum 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorSpectrum.ShapeProperty, ps, () => control.Shape = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // BorderBrush
 
-/*ValueSetterGenerator*/
-public static T BorderBrush<T>(this T control, Avalonia.Media.IBrush value) where T : FluentAvalonia.UI.Controls.ColorSpectrum 
-=> control._set(() => control.BorderBrush = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T BorderBrush<T>(this T control, Func<Avalonia.Media.IBrush> func, Action<Avalonia.Media.IBrush>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorSpectrum 
-   => control._set(FluentAvalonia.UI.Controls.ColorSpectrum.BorderBrushProperty!, func, onChanged, expression);
+public static T BorderBrush<T>(this T control, Func<Avalonia.Media.IBrush> func, Action<Avalonia.Media.IBrush>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorSpectrum 
+   => control._set(FluentAvalonia.UI.Controls.ColorSpectrum.BorderBrushProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T BorderBrush<T>(this T control,Avalonia.Media.IBrush value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorSpectrum 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorSpectrum.BorderBrushProperty, ps, () => control.BorderBrush = value!, bindingMode, converter, bindingSource);
+public static T BorderBrush<T>(this T control,Avalonia.Media.IBrush value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorSpectrum 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorSpectrum.BorderBrushProperty, ps, () => control.BorderBrush = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T BorderBrush<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorSpectrum 
@@ -65,25 +54,19 @@ public static T BorderBrush<T>(this T control, AvaloniaProperty avaloniaProperty
    => control._set(FluentAvalonia.UI.Controls.ColorSpectrum.BorderBrushProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T BorderBrush<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IBrush> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorSpectrum 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorSpectrum.BorderBrushProperty, ps, () => control.BorderBrush = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T BorderBrush<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IBrush> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorSpectrum 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorSpectrum.BorderBrushProperty, ps, () => control.BorderBrush = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // BorderThickness
 
-/*ValueSetterGenerator*/
-public static T BorderThickness<T>(this T control, System.Double value) where T : FluentAvalonia.UI.Controls.ColorSpectrum 
-=> control._set(() => control.BorderThickness = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T BorderThickness<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorSpectrum 
-   => control._set(FluentAvalonia.UI.Controls.ColorSpectrum.BorderThicknessProperty!, func, onChanged, expression);
+public static T BorderThickness<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ColorSpectrum 
+   => control._set(FluentAvalonia.UI.Controls.ColorSpectrum.BorderThicknessProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T BorderThickness<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorSpectrum 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorSpectrum.BorderThicknessProperty, ps, () => control.BorderThickness = value!, bindingMode, converter, bindingSource);
+public static T BorderThickness<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorSpectrum 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorSpectrum.BorderThicknessProperty, ps, () => control.BorderThickness = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T BorderThickness<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorSpectrum 
@@ -94,9 +77,8 @@ public static T BorderThickness<T>(this T control, AvaloniaProperty avaloniaProp
    => control._set(FluentAvalonia.UI.Controls.ColorSpectrum.BorderThicknessProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T BorderThickness<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorSpectrum 
-=> control._setEx(FluentAvalonia.UI.Controls.ColorSpectrum.BorderThicknessProperty, ps, () => control.BorderThickness = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T BorderThickness<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ColorSpectrum 
+=> control._setEx(FluentAvalonia.UI.Controls.ColorSpectrum.BorderThicknessProperty, ps, () => control.BorderThickness = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
@@ -105,7 +87,7 @@ public static T BorderThickness<TValue,T>(this T control, TValue value, FuncValu
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> BorderBrush<T>(this Style<T> style, Avalonia.Media.IBrush value) where T : FluentAvalonia.UI.Controls.ColorSpectrum 
-=> style._addSetter(FluentAvalonia.UI.Controls.ColorSpectrum.BorderBrushProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ColorSpectrum.BorderBrushProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> BorderBrush<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorSpectrum 
@@ -116,7 +98,7 @@ public static Style<T> BorderBrush<T>(this Style<T> style, IBinding binding) whe
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> BorderThickness<T>(this Style<T> style, System.Double value) where T : FluentAvalonia.UI.Controls.ColorSpectrum 
-=> style._addSetter(FluentAvalonia.UI.Controls.ColorSpectrum.BorderThicknessProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ColorSpectrum.BorderThicknessProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> BorderThickness<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ColorSpectrum 

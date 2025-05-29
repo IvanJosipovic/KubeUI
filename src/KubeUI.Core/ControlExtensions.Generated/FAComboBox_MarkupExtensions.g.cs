@@ -14,18 +14,13 @@ public static partial class FAComboBox_MarkupExtensions
 //================= Properties ======================//
  // MaxDropDownHeight
 
-/*ValueSetterGenerator*/
-public static T MaxDropDownHeight<T>(this T control, System.Double value) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._set(() => control.MaxDropDownHeight = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T MaxDropDownHeight<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-   => control._set(FluentAvalonia.UI.Controls.FAComboBox.MaxDropDownHeightProperty!, func, onChanged, expression);
+public static T MaxDropDownHeight<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+   => control._set(FluentAvalonia.UI.Controls.FAComboBox.MaxDropDownHeightProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T MaxDropDownHeight<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.MaxDropDownHeightProperty, ps, () => control.MaxDropDownHeight = value!, bindingMode, converter, bindingSource);
+public static T MaxDropDownHeight<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.MaxDropDownHeightProperty, ps, () => control.MaxDropDownHeight = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T MaxDropDownHeight<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.FAComboBox 
@@ -36,25 +31,19 @@ public static T MaxDropDownHeight<T>(this T control, AvaloniaProperty avaloniaPr
    => control._set(FluentAvalonia.UI.Controls.FAComboBox.MaxDropDownHeightProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T MaxDropDownHeight<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.MaxDropDownHeightProperty, ps, () => control.MaxDropDownHeight = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T MaxDropDownHeight<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.MaxDropDownHeightProperty, ps, () => control.MaxDropDownHeight = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // IsEditable
 
-/*ValueSetterGenerator*/
-public static T IsEditable<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._set(() => control.IsEditable = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IsEditable<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-   => control._set(FluentAvalonia.UI.Controls.FAComboBox.IsEditableProperty!, func, onChanged, expression);
+public static T IsEditable<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+   => control._set(FluentAvalonia.UI.Controls.FAComboBox.IsEditableProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IsEditable<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.IsEditableProperty, ps, () => control.IsEditable = value!, bindingMode, converter, bindingSource);
+public static T IsEditable<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.IsEditableProperty, ps, () => control.IsEditable = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsEditable<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.FAComboBox 
@@ -65,25 +54,19 @@ public static T IsEditable<T>(this T control, AvaloniaProperty avaloniaProperty,
    => control._set(FluentAvalonia.UI.Controls.FAComboBox.IsEditableProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IsEditable<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.IsEditableProperty, ps, () => control.IsEditable = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IsEditable<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.IsEditableProperty, ps, () => control.IsEditable = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // IsDropDownOpen
 
-/*ValueSetterGenerator*/
-public static T IsDropDownOpen<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._set(() => control.IsDropDownOpen = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IsDropDownOpen<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-   => control._set(FluentAvalonia.UI.Controls.FAComboBox.IsDropDownOpenProperty!, func, onChanged, expression);
+public static T IsDropDownOpen<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+   => control._set(FluentAvalonia.UI.Controls.FAComboBox.IsDropDownOpenProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IsDropDownOpen<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.IsDropDownOpenProperty, ps, () => control.IsDropDownOpen = value!, bindingMode, converter, bindingSource);
+public static T IsDropDownOpen<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.IsDropDownOpenProperty, ps, () => control.IsDropDownOpen = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsDropDownOpen<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.FAComboBox 
@@ -94,25 +77,19 @@ public static T IsDropDownOpen<T>(this T control, AvaloniaProperty avaloniaPrope
    => control._set(FluentAvalonia.UI.Controls.FAComboBox.IsDropDownOpenProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IsDropDownOpen<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.IsDropDownOpenProperty, ps, () => control.IsDropDownOpen = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IsDropDownOpen<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.IsDropDownOpenProperty, ps, () => control.IsDropDownOpen = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // PlaceholderText
 
-/*ValueSetterGenerator*/
-public static T PlaceholderText<T>(this T control, System.String value) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._set(() => control.PlaceholderText = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T PlaceholderText<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-   => control._set(FluentAvalonia.UI.Controls.FAComboBox.PlaceholderTextProperty!, func, onChanged, expression);
+public static T PlaceholderText<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+   => control._set(FluentAvalonia.UI.Controls.FAComboBox.PlaceholderTextProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T PlaceholderText<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.PlaceholderTextProperty, ps, () => control.PlaceholderText = value!, bindingMode, converter, bindingSource);
+public static T PlaceholderText<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.PlaceholderTextProperty, ps, () => control.PlaceholderText = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T PlaceholderText<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.FAComboBox 
@@ -123,25 +100,19 @@ public static T PlaceholderText<T>(this T control, AvaloniaProperty avaloniaProp
    => control._set(FluentAvalonia.UI.Controls.FAComboBox.PlaceholderTextProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T PlaceholderText<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.PlaceholderTextProperty, ps, () => control.PlaceholderText = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T PlaceholderText<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.PlaceholderTextProperty, ps, () => control.PlaceholderText = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // SelectionChangedTrigger
 
-/*ValueSetterGenerator*/
-public static T SelectionChangedTrigger<T>(this T control, FluentAvalonia.UI.Controls.FAComboBoxSelectionChangedTrigger value) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._set(() => control.SelectionChangedTrigger = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T SelectionChangedTrigger<T>(this T control, Func<FluentAvalonia.UI.Controls.FAComboBoxSelectionChangedTrigger> func, Action<FluentAvalonia.UI.Controls.FAComboBoxSelectionChangedTrigger>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-   => control._set(FluentAvalonia.UI.Controls.FAComboBox.SelectionChangedTriggerProperty!, func, onChanged, expression);
+public static T SelectionChangedTrigger<T>(this T control, Func<FluentAvalonia.UI.Controls.FAComboBoxSelectionChangedTrigger> func, Action<FluentAvalonia.UI.Controls.FAComboBoxSelectionChangedTrigger>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+   => control._set(FluentAvalonia.UI.Controls.FAComboBox.SelectionChangedTriggerProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T SelectionChangedTrigger<T>(this T control,FluentAvalonia.UI.Controls.FAComboBoxSelectionChangedTrigger value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.SelectionChangedTriggerProperty, ps, () => control.SelectionChangedTrigger = value!, bindingMode, converter, bindingSource);
+public static T SelectionChangedTrigger<T>(this T control,FluentAvalonia.UI.Controls.FAComboBoxSelectionChangedTrigger value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.SelectionChangedTriggerProperty, ps, () => control.SelectionChangedTrigger = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T SelectionChangedTrigger<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.FAComboBox 
@@ -152,25 +123,19 @@ public static T SelectionChangedTrigger<T>(this T control, AvaloniaProperty aval
    => control._set(FluentAvalonia.UI.Controls.FAComboBox.SelectionChangedTriggerProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T SelectionChangedTrigger<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.FAComboBoxSelectionChangedTrigger> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.SelectionChangedTriggerProperty, ps, () => control.SelectionChangedTrigger = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T SelectionChangedTrigger<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.FAComboBoxSelectionChangedTrigger> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.SelectionChangedTriggerProperty, ps, () => control.SelectionChangedTrigger = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // PlaceholderForeground
 
-/*ValueSetterGenerator*/
-public static T PlaceholderForeground<T>(this T control, Avalonia.Media.IBrush value) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._set(() => control.PlaceholderForeground = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T PlaceholderForeground<T>(this T control, Func<Avalonia.Media.IBrush> func, Action<Avalonia.Media.IBrush>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-   => control._set(FluentAvalonia.UI.Controls.FAComboBox.PlaceholderForegroundProperty!, func, onChanged, expression);
+public static T PlaceholderForeground<T>(this T control, Func<Avalonia.Media.IBrush> func, Action<Avalonia.Media.IBrush>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+   => control._set(FluentAvalonia.UI.Controls.FAComboBox.PlaceholderForegroundProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T PlaceholderForeground<T>(this T control,Avalonia.Media.IBrush value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.PlaceholderForegroundProperty, ps, () => control.PlaceholderForeground = value!, bindingMode, converter, bindingSource);
+public static T PlaceholderForeground<T>(this T control,Avalonia.Media.IBrush value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.PlaceholderForegroundProperty, ps, () => control.PlaceholderForeground = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T PlaceholderForeground<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.FAComboBox 
@@ -181,25 +146,19 @@ public static T PlaceholderForeground<T>(this T control, AvaloniaProperty avalon
    => control._set(FluentAvalonia.UI.Controls.FAComboBox.PlaceholderForegroundProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T PlaceholderForeground<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IBrush> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.PlaceholderForegroundProperty, ps, () => control.PlaceholderForeground = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T PlaceholderForeground<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IBrush> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.PlaceholderForegroundProperty, ps, () => control.PlaceholderForeground = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // TextBoxTheme
 
-/*ValueSetterGenerator*/
-public static T TextBoxTheme<T>(this T control, Avalonia.Styling.ControlTheme value) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._set(() => control.TextBoxTheme = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T TextBoxTheme<T>(this T control, Func<Avalonia.Styling.ControlTheme> func, Action<Avalonia.Styling.ControlTheme>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-   => control._set(FluentAvalonia.UI.Controls.FAComboBox.TextBoxThemeProperty!, func, onChanged, expression);
+public static T TextBoxTheme<T>(this T control, Func<Avalonia.Styling.ControlTheme> func, Action<Avalonia.Styling.ControlTheme>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+   => control._set(FluentAvalonia.UI.Controls.FAComboBox.TextBoxThemeProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T TextBoxTheme<T>(this T control,Avalonia.Styling.ControlTheme value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.TextBoxThemeProperty, ps, () => control.TextBoxTheme = value!, bindingMode, converter, bindingSource);
+public static T TextBoxTheme<T>(this T control,Avalonia.Styling.ControlTheme value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.TextBoxThemeProperty, ps, () => control.TextBoxTheme = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T TextBoxTheme<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.FAComboBox 
@@ -210,25 +169,19 @@ public static T TextBoxTheme<T>(this T control, AvaloniaProperty avaloniaPropert
    => control._set(FluentAvalonia.UI.Controls.FAComboBox.TextBoxThemeProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T TextBoxTheme<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Styling.ControlTheme> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.TextBoxThemeProperty, ps, () => control.TextBoxTheme = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T TextBoxTheme<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Styling.ControlTheme> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.TextBoxThemeProperty, ps, () => control.TextBoxTheme = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // Text
 
-/*ValueSetterGenerator*/
-public static T Text<T>(this T control, System.String value) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._set(() => control.Text = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T Text<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-   => control._set(FluentAvalonia.UI.Controls.FAComboBox.TextProperty!, func, onChanged, expression);
+public static T Text<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+   => control._set(FluentAvalonia.UI.Controls.FAComboBox.TextProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T Text<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.TextProperty, ps, () => control.Text = value!, bindingMode, converter, bindingSource);
+public static T Text<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.TextProperty, ps, () => control.Text = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Text<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.FAComboBox 
@@ -239,25 +192,19 @@ public static T Text<T>(this T control, AvaloniaProperty avaloniaProperty, Bindi
    => control._set(FluentAvalonia.UI.Controls.FAComboBox.TextProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T Text<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.TextProperty, ps, () => control.Text = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T Text<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.TextProperty, ps, () => control.Text = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // HorizontalContentAlignment
 
-/*ValueSetterGenerator*/
-public static T HorizontalContentAlignment<T>(this T control, Avalonia.Layout.HorizontalAlignment value) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._set(() => control.HorizontalContentAlignment = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T HorizontalContentAlignment<T>(this T control, Func<Avalonia.Layout.HorizontalAlignment> func, Action<Avalonia.Layout.HorizontalAlignment>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-   => control._set(FluentAvalonia.UI.Controls.FAComboBox.HorizontalContentAlignmentProperty!, func, onChanged, expression);
+public static T HorizontalContentAlignment<T>(this T control, Func<Avalonia.Layout.HorizontalAlignment> func, Action<Avalonia.Layout.HorizontalAlignment>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+   => control._set(FluentAvalonia.UI.Controls.FAComboBox.HorizontalContentAlignmentProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T HorizontalContentAlignment<T>(this T control,Avalonia.Layout.HorizontalAlignment value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.HorizontalContentAlignmentProperty, ps, () => control.HorizontalContentAlignment = value!, bindingMode, converter, bindingSource);
+public static T HorizontalContentAlignment<T>(this T control,Avalonia.Layout.HorizontalAlignment value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.HorizontalContentAlignmentProperty, ps, () => control.HorizontalContentAlignment = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T HorizontalContentAlignment<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.FAComboBox 
@@ -268,25 +215,19 @@ public static T HorizontalContentAlignment<T>(this T control, AvaloniaProperty a
    => control._set(FluentAvalonia.UI.Controls.FAComboBox.HorizontalContentAlignmentProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T HorizontalContentAlignment<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Layout.HorizontalAlignment> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.HorizontalContentAlignmentProperty, ps, () => control.HorizontalContentAlignment = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T HorizontalContentAlignment<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Layout.HorizontalAlignment> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.HorizontalContentAlignmentProperty, ps, () => control.HorizontalContentAlignment = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // VerticalContentAlignment
 
-/*ValueSetterGenerator*/
-public static T VerticalContentAlignment<T>(this T control, Avalonia.Layout.VerticalAlignment value) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._set(() => control.VerticalContentAlignment = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T VerticalContentAlignment<T>(this T control, Func<Avalonia.Layout.VerticalAlignment> func, Action<Avalonia.Layout.VerticalAlignment>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-   => control._set(FluentAvalonia.UI.Controls.FAComboBox.VerticalContentAlignmentProperty!, func, onChanged, expression);
+public static T VerticalContentAlignment<T>(this T control, Func<Avalonia.Layout.VerticalAlignment> func, Action<Avalonia.Layout.VerticalAlignment>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+   => control._set(FluentAvalonia.UI.Controls.FAComboBox.VerticalContentAlignmentProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T VerticalContentAlignment<T>(this T control,Avalonia.Layout.VerticalAlignment value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.VerticalContentAlignmentProperty, ps, () => control.VerticalContentAlignment = value!, bindingMode, converter, bindingSource);
+public static T VerticalContentAlignment<T>(this T control,Avalonia.Layout.VerticalAlignment value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.VerticalContentAlignmentProperty, ps, () => control.VerticalContentAlignment = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T VerticalContentAlignment<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.FAComboBox 
@@ -297,9 +238,8 @@ public static T VerticalContentAlignment<T>(this T control, AvaloniaProperty ava
    => control._set(FluentAvalonia.UI.Controls.FAComboBox.VerticalContentAlignmentProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T VerticalContentAlignment<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Layout.VerticalAlignment> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.VerticalContentAlignmentProperty, ps, () => control.VerticalContentAlignment = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T VerticalContentAlignment<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Layout.VerticalAlignment> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAComboBox 
+=> control._setEx(FluentAvalonia.UI.Controls.FAComboBox.VerticalContentAlignmentProperty, ps, () => control.VerticalContentAlignment = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
@@ -331,7 +271,7 @@ public static T OnTextSubmitted<T>(this T control, Action<FluentAvalonia.UI.Cont
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> MaxDropDownHeight<T>(this Style<T> style, System.Double value) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> style._addSetter(FluentAvalonia.UI.Controls.FAComboBox.MaxDropDownHeightProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.FAComboBox.MaxDropDownHeightProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> MaxDropDownHeight<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.FAComboBox 
@@ -342,7 +282,7 @@ public static Style<T> MaxDropDownHeight<T>(this Style<T> style, IBinding bindin
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsEditable<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> style._addSetter(FluentAvalonia.UI.Controls.FAComboBox.IsEditableProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.FAComboBox.IsEditableProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsEditable<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.FAComboBox 
@@ -353,7 +293,7 @@ public static Style<T> IsEditable<T>(this Style<T> style, IBinding binding) wher
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsDropDownOpen<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> style._addSetter(FluentAvalonia.UI.Controls.FAComboBox.IsDropDownOpenProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.FAComboBox.IsDropDownOpenProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsDropDownOpen<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.FAComboBox 
@@ -364,7 +304,7 @@ public static Style<T> IsDropDownOpen<T>(this Style<T> style, IBinding binding) 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> PlaceholderText<T>(this Style<T> style, System.String value) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> style._addSetter(FluentAvalonia.UI.Controls.FAComboBox.PlaceholderTextProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.FAComboBox.PlaceholderTextProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> PlaceholderText<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.FAComboBox 
@@ -375,7 +315,7 @@ public static Style<T> PlaceholderText<T>(this Style<T> style, IBinding binding)
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> SelectionChangedTrigger<T>(this Style<T> style, FluentAvalonia.UI.Controls.FAComboBoxSelectionChangedTrigger value) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> style._addSetter(FluentAvalonia.UI.Controls.FAComboBox.SelectionChangedTriggerProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.FAComboBox.SelectionChangedTriggerProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> SelectionChangedTrigger<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.FAComboBox 
@@ -386,7 +326,7 @@ public static Style<T> SelectionChangedTrigger<T>(this Style<T> style, IBinding 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> PlaceholderForeground<T>(this Style<T> style, Avalonia.Media.IBrush value) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> style._addSetter(FluentAvalonia.UI.Controls.FAComboBox.PlaceholderForegroundProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.FAComboBox.PlaceholderForegroundProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> PlaceholderForeground<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.FAComboBox 
@@ -397,7 +337,7 @@ public static Style<T> PlaceholderForeground<T>(this Style<T> style, IBinding bi
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> TextBoxTheme<T>(this Style<T> style, Avalonia.Styling.ControlTheme value) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> style._addSetter(FluentAvalonia.UI.Controls.FAComboBox.TextBoxThemeProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.FAComboBox.TextBoxThemeProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> TextBoxTheme<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.FAComboBox 
@@ -408,7 +348,7 @@ public static Style<T> TextBoxTheme<T>(this Style<T> style, IBinding binding) wh
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Text<T>(this Style<T> style, System.String value) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> style._addSetter(FluentAvalonia.UI.Controls.FAComboBox.TextProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.FAComboBox.TextProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Text<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.FAComboBox 
@@ -419,7 +359,7 @@ public static Style<T> Text<T>(this Style<T> style, IBinding binding) where T : 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> HorizontalContentAlignment<T>(this Style<T> style, Avalonia.Layout.HorizontalAlignment value) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> style._addSetter(FluentAvalonia.UI.Controls.FAComboBox.HorizontalContentAlignmentProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.FAComboBox.HorizontalContentAlignmentProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> HorizontalContentAlignment<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.FAComboBox 
@@ -430,7 +370,7 @@ public static Style<T> HorizontalContentAlignment<T>(this Style<T> style, IBindi
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> VerticalContentAlignment<T>(this Style<T> style, Avalonia.Layout.VerticalAlignment value) where T : FluentAvalonia.UI.Controls.FAComboBox 
-=> style._addSetter(FluentAvalonia.UI.Controls.FAComboBox.VerticalContentAlignmentProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.FAComboBox.VerticalContentAlignmentProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> VerticalContentAlignment<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.FAComboBox 

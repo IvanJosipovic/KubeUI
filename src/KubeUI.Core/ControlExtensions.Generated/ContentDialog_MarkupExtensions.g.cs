@@ -14,18 +14,13 @@ public static partial class ContentDialog_MarkupExtensions
 //================= Properties ======================//
  // CloseButtonCommand
 
-/*ValueSetterGenerator*/
-public static T CloseButtonCommand<T>(this T control, System.Windows.Input.ICommand value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._set(() => control.CloseButtonCommand = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T CloseButtonCommand<T>(this T control, Func<System.Windows.Input.ICommand> func, Action<System.Windows.Input.ICommand>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-   => control._set(FluentAvalonia.UI.Controls.ContentDialog.CloseButtonCommandProperty!, func, onChanged, expression);
+public static T CloseButtonCommand<T>(this T control, Func<System.Windows.Input.ICommand> func, Action<System.Windows.Input.ICommand>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+   => control._set(FluentAvalonia.UI.Controls.ContentDialog.CloseButtonCommandProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T CloseButtonCommand<T>(this T control,System.Windows.Input.ICommand value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.CloseButtonCommandProperty, ps, () => control.CloseButtonCommand = value!, bindingMode, converter, bindingSource);
+public static T CloseButtonCommand<T>(this T control,System.Windows.Input.ICommand value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.CloseButtonCommandProperty, ps, () => control.CloseButtonCommand = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T CloseButtonCommand<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -36,25 +31,19 @@ public static T CloseButtonCommand<T>(this T control, AvaloniaProperty avaloniaP
    => control._set(FluentAvalonia.UI.Controls.ContentDialog.CloseButtonCommandProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T CloseButtonCommand<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Windows.Input.ICommand> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.CloseButtonCommandProperty, ps, () => control.CloseButtonCommand = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T CloseButtonCommand<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Windows.Input.ICommand> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.CloseButtonCommandProperty, ps, () => control.CloseButtonCommand = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // CloseButtonCommandParameter
 
-/*ValueSetterGenerator*/
-public static T CloseButtonCommandParameter<T>(this T control, System.Object value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._set(() => control.CloseButtonCommandParameter = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T CloseButtonCommandParameter<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-   => control._set(FluentAvalonia.UI.Controls.ContentDialog.CloseButtonCommandParameterProperty!, func, onChanged, expression);
+public static T CloseButtonCommandParameter<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+   => control._set(FluentAvalonia.UI.Controls.ContentDialog.CloseButtonCommandParameterProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T CloseButtonCommandParameter<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.CloseButtonCommandParameterProperty, ps, () => control.CloseButtonCommandParameter = value!, bindingMode, converter, bindingSource);
+public static T CloseButtonCommandParameter<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.CloseButtonCommandParameterProperty, ps, () => control.CloseButtonCommandParameter = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T CloseButtonCommandParameter<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -65,25 +54,19 @@ public static T CloseButtonCommandParameter<T>(this T control, AvaloniaProperty 
    => control._set(FluentAvalonia.UI.Controls.ContentDialog.CloseButtonCommandParameterProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T CloseButtonCommandParameter<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.CloseButtonCommandParameterProperty, ps, () => control.CloseButtonCommandParameter = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T CloseButtonCommandParameter<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.CloseButtonCommandParameterProperty, ps, () => control.CloseButtonCommandParameter = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // CloseButtonText
 
-/*ValueSetterGenerator*/
-public static T CloseButtonText<T>(this T control, System.String value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._set(() => control.CloseButtonText = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T CloseButtonText<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-   => control._set(FluentAvalonia.UI.Controls.ContentDialog.CloseButtonTextProperty!, func, onChanged, expression);
+public static T CloseButtonText<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+   => control._set(FluentAvalonia.UI.Controls.ContentDialog.CloseButtonTextProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T CloseButtonText<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.CloseButtonTextProperty, ps, () => control.CloseButtonText = value!, bindingMode, converter, bindingSource);
+public static T CloseButtonText<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.CloseButtonTextProperty, ps, () => control.CloseButtonText = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T CloseButtonText<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -94,25 +77,19 @@ public static T CloseButtonText<T>(this T control, AvaloniaProperty avaloniaProp
    => control._set(FluentAvalonia.UI.Controls.ContentDialog.CloseButtonTextProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T CloseButtonText<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.CloseButtonTextProperty, ps, () => control.CloseButtonText = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T CloseButtonText<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.CloseButtonTextProperty, ps, () => control.CloseButtonText = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // DefaultButton
 
-/*ValueSetterGenerator*/
-public static T DefaultButton<T>(this T control, FluentAvalonia.UI.Controls.ContentDialogButton value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._set(() => control.DefaultButton = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T DefaultButton<T>(this T control, Func<FluentAvalonia.UI.Controls.ContentDialogButton> func, Action<FluentAvalonia.UI.Controls.ContentDialogButton>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-   => control._set(FluentAvalonia.UI.Controls.ContentDialog.DefaultButtonProperty!, func, onChanged, expression);
+public static T DefaultButton<T>(this T control, Func<FluentAvalonia.UI.Controls.ContentDialogButton> func, Action<FluentAvalonia.UI.Controls.ContentDialogButton>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+   => control._set(FluentAvalonia.UI.Controls.ContentDialog.DefaultButtonProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T DefaultButton<T>(this T control,FluentAvalonia.UI.Controls.ContentDialogButton value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.DefaultButtonProperty, ps, () => control.DefaultButton = value!, bindingMode, converter, bindingSource);
+public static T DefaultButton<T>(this T control,FluentAvalonia.UI.Controls.ContentDialogButton value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.DefaultButtonProperty, ps, () => control.DefaultButton = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T DefaultButton<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -123,25 +100,19 @@ public static T DefaultButton<T>(this T control, AvaloniaProperty avaloniaProper
    => control._set(FluentAvalonia.UI.Controls.ContentDialog.DefaultButtonProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T DefaultButton<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.ContentDialogButton> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.DefaultButtonProperty, ps, () => control.DefaultButton = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T DefaultButton<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.ContentDialogButton> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.DefaultButtonProperty, ps, () => control.DefaultButton = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // IsPrimaryButtonEnabled
 
-/*ValueSetterGenerator*/
-public static T IsPrimaryButtonEnabled<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._set(() => control.IsPrimaryButtonEnabled = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IsPrimaryButtonEnabled<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-   => control._set(FluentAvalonia.UI.Controls.ContentDialog.IsPrimaryButtonEnabledProperty!, func, onChanged, expression);
+public static T IsPrimaryButtonEnabled<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+   => control._set(FluentAvalonia.UI.Controls.ContentDialog.IsPrimaryButtonEnabledProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IsPrimaryButtonEnabled<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.IsPrimaryButtonEnabledProperty, ps, () => control.IsPrimaryButtonEnabled = value!, bindingMode, converter, bindingSource);
+public static T IsPrimaryButtonEnabled<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.IsPrimaryButtonEnabledProperty, ps, () => control.IsPrimaryButtonEnabled = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsPrimaryButtonEnabled<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -152,25 +123,19 @@ public static T IsPrimaryButtonEnabled<T>(this T control, AvaloniaProperty avalo
    => control._set(FluentAvalonia.UI.Controls.ContentDialog.IsPrimaryButtonEnabledProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IsPrimaryButtonEnabled<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.IsPrimaryButtonEnabledProperty, ps, () => control.IsPrimaryButtonEnabled = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IsPrimaryButtonEnabled<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.IsPrimaryButtonEnabledProperty, ps, () => control.IsPrimaryButtonEnabled = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // IsSecondaryButtonEnabled
 
-/*ValueSetterGenerator*/
-public static T IsSecondaryButtonEnabled<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._set(() => control.IsSecondaryButtonEnabled = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IsSecondaryButtonEnabled<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-   => control._set(FluentAvalonia.UI.Controls.ContentDialog.IsSecondaryButtonEnabledProperty!, func, onChanged, expression);
+public static T IsSecondaryButtonEnabled<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+   => control._set(FluentAvalonia.UI.Controls.ContentDialog.IsSecondaryButtonEnabledProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IsSecondaryButtonEnabled<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.IsSecondaryButtonEnabledProperty, ps, () => control.IsSecondaryButtonEnabled = value!, bindingMode, converter, bindingSource);
+public static T IsSecondaryButtonEnabled<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.IsSecondaryButtonEnabledProperty, ps, () => control.IsSecondaryButtonEnabled = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsSecondaryButtonEnabled<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -181,25 +146,19 @@ public static T IsSecondaryButtonEnabled<T>(this T control, AvaloniaProperty ava
    => control._set(FluentAvalonia.UI.Controls.ContentDialog.IsSecondaryButtonEnabledProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IsSecondaryButtonEnabled<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.IsSecondaryButtonEnabledProperty, ps, () => control.IsSecondaryButtonEnabled = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IsSecondaryButtonEnabled<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.IsSecondaryButtonEnabledProperty, ps, () => control.IsSecondaryButtonEnabled = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // PrimaryButtonCommand
 
-/*ValueSetterGenerator*/
-public static T PrimaryButtonCommand<T>(this T control, System.Windows.Input.ICommand value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._set(() => control.PrimaryButtonCommand = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T PrimaryButtonCommand<T>(this T control, Func<System.Windows.Input.ICommand> func, Action<System.Windows.Input.ICommand>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-   => control._set(FluentAvalonia.UI.Controls.ContentDialog.PrimaryButtonCommandProperty!, func, onChanged, expression);
+public static T PrimaryButtonCommand<T>(this T control, Func<System.Windows.Input.ICommand> func, Action<System.Windows.Input.ICommand>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+   => control._set(FluentAvalonia.UI.Controls.ContentDialog.PrimaryButtonCommandProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T PrimaryButtonCommand<T>(this T control,System.Windows.Input.ICommand value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.PrimaryButtonCommandProperty, ps, () => control.PrimaryButtonCommand = value!, bindingMode, converter, bindingSource);
+public static T PrimaryButtonCommand<T>(this T control,System.Windows.Input.ICommand value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.PrimaryButtonCommandProperty, ps, () => control.PrimaryButtonCommand = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T PrimaryButtonCommand<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -210,25 +169,19 @@ public static T PrimaryButtonCommand<T>(this T control, AvaloniaProperty avaloni
    => control._set(FluentAvalonia.UI.Controls.ContentDialog.PrimaryButtonCommandProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T PrimaryButtonCommand<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Windows.Input.ICommand> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.PrimaryButtonCommandProperty, ps, () => control.PrimaryButtonCommand = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T PrimaryButtonCommand<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Windows.Input.ICommand> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.PrimaryButtonCommandProperty, ps, () => control.PrimaryButtonCommand = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // PrimaryButtonCommandParameter
 
-/*ValueSetterGenerator*/
-public static T PrimaryButtonCommandParameter<T>(this T control, System.Object value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._set(() => control.PrimaryButtonCommandParameter = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T PrimaryButtonCommandParameter<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-   => control._set(FluentAvalonia.UI.Controls.ContentDialog.PrimaryButtonCommandParameterProperty!, func, onChanged, expression);
+public static T PrimaryButtonCommandParameter<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+   => control._set(FluentAvalonia.UI.Controls.ContentDialog.PrimaryButtonCommandParameterProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T PrimaryButtonCommandParameter<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.PrimaryButtonCommandParameterProperty, ps, () => control.PrimaryButtonCommandParameter = value!, bindingMode, converter, bindingSource);
+public static T PrimaryButtonCommandParameter<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.PrimaryButtonCommandParameterProperty, ps, () => control.PrimaryButtonCommandParameter = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T PrimaryButtonCommandParameter<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -239,25 +192,19 @@ public static T PrimaryButtonCommandParameter<T>(this T control, AvaloniaPropert
    => control._set(FluentAvalonia.UI.Controls.ContentDialog.PrimaryButtonCommandParameterProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T PrimaryButtonCommandParameter<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.PrimaryButtonCommandParameterProperty, ps, () => control.PrimaryButtonCommandParameter = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T PrimaryButtonCommandParameter<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.PrimaryButtonCommandParameterProperty, ps, () => control.PrimaryButtonCommandParameter = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // PrimaryButtonText
 
-/*ValueSetterGenerator*/
-public static T PrimaryButtonText<T>(this T control, System.String value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._set(() => control.PrimaryButtonText = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T PrimaryButtonText<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-   => control._set(FluentAvalonia.UI.Controls.ContentDialog.PrimaryButtonTextProperty!, func, onChanged, expression);
+public static T PrimaryButtonText<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+   => control._set(FluentAvalonia.UI.Controls.ContentDialog.PrimaryButtonTextProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T PrimaryButtonText<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.PrimaryButtonTextProperty, ps, () => control.PrimaryButtonText = value!, bindingMode, converter, bindingSource);
+public static T PrimaryButtonText<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.PrimaryButtonTextProperty, ps, () => control.PrimaryButtonText = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T PrimaryButtonText<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -268,25 +215,19 @@ public static T PrimaryButtonText<T>(this T control, AvaloniaProperty avaloniaPr
    => control._set(FluentAvalonia.UI.Controls.ContentDialog.PrimaryButtonTextProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T PrimaryButtonText<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.PrimaryButtonTextProperty, ps, () => control.PrimaryButtonText = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T PrimaryButtonText<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.PrimaryButtonTextProperty, ps, () => control.PrimaryButtonText = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // SecondaryButtonCommand
 
-/*ValueSetterGenerator*/
-public static T SecondaryButtonCommand<T>(this T control, System.Windows.Input.ICommand value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._set(() => control.SecondaryButtonCommand = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T SecondaryButtonCommand<T>(this T control, Func<System.Windows.Input.ICommand> func, Action<System.Windows.Input.ICommand>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-   => control._set(FluentAvalonia.UI.Controls.ContentDialog.SecondaryButtonCommandProperty!, func, onChanged, expression);
+public static T SecondaryButtonCommand<T>(this T control, Func<System.Windows.Input.ICommand> func, Action<System.Windows.Input.ICommand>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+   => control._set(FluentAvalonia.UI.Controls.ContentDialog.SecondaryButtonCommandProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T SecondaryButtonCommand<T>(this T control,System.Windows.Input.ICommand value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.SecondaryButtonCommandProperty, ps, () => control.SecondaryButtonCommand = value!, bindingMode, converter, bindingSource);
+public static T SecondaryButtonCommand<T>(this T control,System.Windows.Input.ICommand value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.SecondaryButtonCommandProperty, ps, () => control.SecondaryButtonCommand = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T SecondaryButtonCommand<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -297,25 +238,19 @@ public static T SecondaryButtonCommand<T>(this T control, AvaloniaProperty avalo
    => control._set(FluentAvalonia.UI.Controls.ContentDialog.SecondaryButtonCommandProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T SecondaryButtonCommand<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Windows.Input.ICommand> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.SecondaryButtonCommandProperty, ps, () => control.SecondaryButtonCommand = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T SecondaryButtonCommand<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Windows.Input.ICommand> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.SecondaryButtonCommandProperty, ps, () => control.SecondaryButtonCommand = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // SecondaryButtonCommandParameter
 
-/*ValueSetterGenerator*/
-public static T SecondaryButtonCommandParameter<T>(this T control, System.Object value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._set(() => control.SecondaryButtonCommandParameter = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T SecondaryButtonCommandParameter<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-   => control._set(FluentAvalonia.UI.Controls.ContentDialog.SecondaryButtonCommandParameterProperty!, func, onChanged, expression);
+public static T SecondaryButtonCommandParameter<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+   => control._set(FluentAvalonia.UI.Controls.ContentDialog.SecondaryButtonCommandParameterProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T SecondaryButtonCommandParameter<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.SecondaryButtonCommandParameterProperty, ps, () => control.SecondaryButtonCommandParameter = value!, bindingMode, converter, bindingSource);
+public static T SecondaryButtonCommandParameter<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.SecondaryButtonCommandParameterProperty, ps, () => control.SecondaryButtonCommandParameter = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T SecondaryButtonCommandParameter<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -326,25 +261,19 @@ public static T SecondaryButtonCommandParameter<T>(this T control, AvaloniaPrope
    => control._set(FluentAvalonia.UI.Controls.ContentDialog.SecondaryButtonCommandParameterProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T SecondaryButtonCommandParameter<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.SecondaryButtonCommandParameterProperty, ps, () => control.SecondaryButtonCommandParameter = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T SecondaryButtonCommandParameter<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.SecondaryButtonCommandParameterProperty, ps, () => control.SecondaryButtonCommandParameter = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // SecondaryButtonText
 
-/*ValueSetterGenerator*/
-public static T SecondaryButtonText<T>(this T control, System.String value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._set(() => control.SecondaryButtonText = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T SecondaryButtonText<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-   => control._set(FluentAvalonia.UI.Controls.ContentDialog.SecondaryButtonTextProperty!, func, onChanged, expression);
+public static T SecondaryButtonText<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+   => control._set(FluentAvalonia.UI.Controls.ContentDialog.SecondaryButtonTextProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T SecondaryButtonText<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.SecondaryButtonTextProperty, ps, () => control.SecondaryButtonText = value!, bindingMode, converter, bindingSource);
+public static T SecondaryButtonText<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.SecondaryButtonTextProperty, ps, () => control.SecondaryButtonText = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T SecondaryButtonText<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -355,25 +284,19 @@ public static T SecondaryButtonText<T>(this T control, AvaloniaProperty avalonia
    => control._set(FluentAvalonia.UI.Controls.ContentDialog.SecondaryButtonTextProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T SecondaryButtonText<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.SecondaryButtonTextProperty, ps, () => control.SecondaryButtonText = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T SecondaryButtonText<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.SecondaryButtonTextProperty, ps, () => control.SecondaryButtonText = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // Title
 
-/*ValueSetterGenerator*/
-public static T Title<T>(this T control, System.Object value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._set(() => control.Title = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T Title<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-   => control._set(FluentAvalonia.UI.Controls.ContentDialog.TitleProperty!, func, onChanged, expression);
+public static T Title<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+   => control._set(FluentAvalonia.UI.Controls.ContentDialog.TitleProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T Title<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.TitleProperty, ps, () => control.Title = value!, bindingMode, converter, bindingSource);
+public static T Title<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.TitleProperty, ps, () => control.Title = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Title<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -384,25 +307,19 @@ public static T Title<T>(this T control, AvaloniaProperty avaloniaProperty, Bind
    => control._set(FluentAvalonia.UI.Controls.ContentDialog.TitleProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T Title<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.TitleProperty, ps, () => control.Title = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T Title<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.TitleProperty, ps, () => control.Title = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // TitleTemplate
 
-/*ValueSetterGenerator*/
-public static T TitleTemplate<T>(this T control, Avalonia.Controls.Templates.IDataTemplate value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._set(() => control.TitleTemplate = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T TitleTemplate<T>(this T control, Func<Avalonia.Controls.Templates.IDataTemplate> func, Action<Avalonia.Controls.Templates.IDataTemplate>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-   => control._set(FluentAvalonia.UI.Controls.ContentDialog.TitleTemplateProperty!, func, onChanged, expression);
+public static T TitleTemplate<T>(this T control, Func<Avalonia.Controls.Templates.IDataTemplate> func, Action<Avalonia.Controls.Templates.IDataTemplate>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+   => control._set(FluentAvalonia.UI.Controls.ContentDialog.TitleTemplateProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T TitleTemplate<T>(this T control,Avalonia.Controls.Templates.IDataTemplate value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.TitleTemplateProperty, ps, () => control.TitleTemplate = value!, bindingMode, converter, bindingSource);
+public static T TitleTemplate<T>(this T control,Avalonia.Controls.Templates.IDataTemplate value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.TitleTemplateProperty, ps, () => control.TitleTemplate = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T TitleTemplate<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -413,25 +330,19 @@ public static T TitleTemplate<T>(this T control, AvaloniaProperty avaloniaProper
    => control._set(FluentAvalonia.UI.Controls.ContentDialog.TitleTemplateProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T TitleTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Templates.IDataTemplate> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.TitleTemplateProperty, ps, () => control.TitleTemplate = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T TitleTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Templates.IDataTemplate> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.TitleTemplateProperty, ps, () => control.TitleTemplate = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // FullSizeDesired
 
-/*ValueSetterGenerator*/
-public static T FullSizeDesired<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._set(() => control.FullSizeDesired = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T FullSizeDesired<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-   => control._set(FluentAvalonia.UI.Controls.ContentDialog.FullSizeDesiredProperty!, func, onChanged, expression);
+public static T FullSizeDesired<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+   => control._set(FluentAvalonia.UI.Controls.ContentDialog.FullSizeDesiredProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T FullSizeDesired<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.FullSizeDesiredProperty, ps, () => control.FullSizeDesired = value!, bindingMode, converter, bindingSource);
+public static T FullSizeDesired<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.FullSizeDesiredProperty, ps, () => control.FullSizeDesired = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T FullSizeDesired<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -442,9 +353,8 @@ public static T FullSizeDesired<T>(this T control, AvaloniaProperty avaloniaProp
    => control._set(FluentAvalonia.UI.Controls.ContentDialog.FullSizeDesiredProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T FullSizeDesired<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.FullSizeDesiredProperty, ps, () => control.FullSizeDesired = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T FullSizeDesired<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ContentDialog 
+=> control._setEx(FluentAvalonia.UI.Controls.ContentDialog.FullSizeDesiredProperty, ps, () => control.FullSizeDesired = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
@@ -504,7 +414,7 @@ public static T OnCloseButtonClick<T>(this T control, Action<FluentAvalonia.UI.C
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> CloseButtonCommand<T>(this Style<T> style, System.Windows.Input.ICommand value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.CloseButtonCommandProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.CloseButtonCommandProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> CloseButtonCommand<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -515,7 +425,7 @@ public static Style<T> CloseButtonCommand<T>(this Style<T> style, IBinding bindi
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> CloseButtonCommandParameter<T>(this Style<T> style, System.Object value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.CloseButtonCommandParameterProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.CloseButtonCommandParameterProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> CloseButtonCommandParameter<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -526,7 +436,7 @@ public static Style<T> CloseButtonCommandParameter<T>(this Style<T> style, IBind
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> CloseButtonText<T>(this Style<T> style, System.String value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.CloseButtonTextProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.CloseButtonTextProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> CloseButtonText<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -537,7 +447,7 @@ public static Style<T> CloseButtonText<T>(this Style<T> style, IBinding binding)
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> DefaultButton<T>(this Style<T> style, FluentAvalonia.UI.Controls.ContentDialogButton value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.DefaultButtonProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.DefaultButtonProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> DefaultButton<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -548,7 +458,7 @@ public static Style<T> DefaultButton<T>(this Style<T> style, IBinding binding) w
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsPrimaryButtonEnabled<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.IsPrimaryButtonEnabledProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.IsPrimaryButtonEnabledProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsPrimaryButtonEnabled<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -559,7 +469,7 @@ public static Style<T> IsPrimaryButtonEnabled<T>(this Style<T> style, IBinding b
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsSecondaryButtonEnabled<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.IsSecondaryButtonEnabledProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.IsSecondaryButtonEnabledProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsSecondaryButtonEnabled<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -570,7 +480,7 @@ public static Style<T> IsSecondaryButtonEnabled<T>(this Style<T> style, IBinding
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> PrimaryButtonCommand<T>(this Style<T> style, System.Windows.Input.ICommand value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.PrimaryButtonCommandProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.PrimaryButtonCommandProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> PrimaryButtonCommand<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -581,7 +491,7 @@ public static Style<T> PrimaryButtonCommand<T>(this Style<T> style, IBinding bin
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> PrimaryButtonCommandParameter<T>(this Style<T> style, System.Object value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.PrimaryButtonCommandParameterProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.PrimaryButtonCommandParameterProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> PrimaryButtonCommandParameter<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -592,7 +502,7 @@ public static Style<T> PrimaryButtonCommandParameter<T>(this Style<T> style, IBi
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> PrimaryButtonText<T>(this Style<T> style, System.String value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.PrimaryButtonTextProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.PrimaryButtonTextProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> PrimaryButtonText<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -603,7 +513,7 @@ public static Style<T> PrimaryButtonText<T>(this Style<T> style, IBinding bindin
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> SecondaryButtonCommand<T>(this Style<T> style, System.Windows.Input.ICommand value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.SecondaryButtonCommandProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.SecondaryButtonCommandProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> SecondaryButtonCommand<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -614,7 +524,7 @@ public static Style<T> SecondaryButtonCommand<T>(this Style<T> style, IBinding b
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> SecondaryButtonCommandParameter<T>(this Style<T> style, System.Object value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.SecondaryButtonCommandParameterProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.SecondaryButtonCommandParameterProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> SecondaryButtonCommandParameter<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -625,7 +535,7 @@ public static Style<T> SecondaryButtonCommandParameter<T>(this Style<T> style, I
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> SecondaryButtonText<T>(this Style<T> style, System.String value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.SecondaryButtonTextProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.SecondaryButtonTextProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> SecondaryButtonText<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -636,7 +546,7 @@ public static Style<T> SecondaryButtonText<T>(this Style<T> style, IBinding bind
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Title<T>(this Style<T> style, System.Object value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.TitleProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.TitleProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Title<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -647,7 +557,7 @@ public static Style<T> Title<T>(this Style<T> style, IBinding binding) where T :
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> TitleTemplate<T>(this Style<T> style, Avalonia.Controls.Templates.IDataTemplate value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.TitleTemplateProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.TitleTemplateProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> TitleTemplate<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
@@ -658,7 +568,7 @@ public static Style<T> TitleTemplate<T>(this Style<T> style, IBinding binding) w
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> FullSizeDesired<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.ContentDialog 
-=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.FullSizeDesiredProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.ContentDialog.FullSizeDesiredProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> FullSizeDesired<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ContentDialog 
