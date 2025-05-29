@@ -12,7 +12,7 @@ public sealed class ClusterSettingsView : MyViewBase<ClusterSettingsViewModel>
                     .FontSize(25)
                     .Text($"{vm.Cluster.Name} Settings"),
                 new Grid()
-                    .IsEnabled(@vm.Cluster.ListNamespaces, converter: Utilities.InverseBooleanConverter)
+                    .IsEnabled(() => !vm.Cluster.ListNamespaces)
                     .Cols("*,2*")
                     .ToolTip("Manually specified namespaces")
                     .Children([

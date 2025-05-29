@@ -14,13 +14,18 @@ public static partial class TeachingTip_MarkupExtensions
 //================= Properties ======================//
  // Title
 
+/*ValueSetterGenerator*/
+public static T Title<T>(this T control, System.String value) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._set(() => control.Title = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T Title<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-   => control._set(FluentAvalonia.UI.Controls.TeachingTip.TitleProperty, func, onChanged, expression);
+public static T Title<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+   => control._set(FluentAvalonia.UI.Controls.TeachingTip.TitleProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T Title<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.TitleProperty, ps, () => control.Title = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Title<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.TitleProperty, ps, () => control.Title = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Title<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -31,19 +36,25 @@ public static T Title<T>(this T control, AvaloniaProperty avaloniaProperty, Bind
    => control._set(FluentAvalonia.UI.Controls.TeachingTip.TitleProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T Title<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.TitleProperty, ps, () => control.Title = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Title<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.TitleProperty, ps, () => control.Title = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // Subtitle
 
+/*ValueSetterGenerator*/
+public static T Subtitle<T>(this T control, System.String value) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._set(() => control.Subtitle = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T Subtitle<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-   => control._set(FluentAvalonia.UI.Controls.TeachingTip.SubtitleProperty, func, onChanged, expression);
+public static T Subtitle<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+   => control._set(FluentAvalonia.UI.Controls.TeachingTip.SubtitleProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T Subtitle<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.SubtitleProperty, ps, () => control.Subtitle = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Subtitle<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.SubtitleProperty, ps, () => control.Subtitle = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Subtitle<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -54,19 +65,25 @@ public static T Subtitle<T>(this T control, AvaloniaProperty avaloniaProperty, B
    => control._set(FluentAvalonia.UI.Controls.TeachingTip.SubtitleProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T Subtitle<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.SubtitleProperty, ps, () => control.Subtitle = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Subtitle<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.SubtitleProperty, ps, () => control.Subtitle = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // IsOpen
 
+/*ValueSetterGenerator*/
+public static T IsOpen<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._set(() => control.IsOpen = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T IsOpen<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-   => control._set(FluentAvalonia.UI.Controls.TeachingTip.IsOpenProperty, func, onChanged, expression);
+public static T IsOpen<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+   => control._set(FluentAvalonia.UI.Controls.TeachingTip.IsOpenProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T IsOpen<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.IsOpenProperty, ps, () => control.IsOpen = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IsOpen<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.IsOpenProperty, ps, () => control.IsOpen = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsOpen<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -77,19 +94,25 @@ public static T IsOpen<T>(this T control, AvaloniaProperty avaloniaProperty, Bin
    => control._set(FluentAvalonia.UI.Controls.TeachingTip.IsOpenProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T IsOpen<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.IsOpenProperty, ps, () => control.IsOpen = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IsOpen<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.IsOpenProperty, ps, () => control.IsOpen = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // Target
 
+/*ValueSetterGenerator*/
+public static T Target<T>(this T control, Avalonia.Controls.Control value) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._set(() => control.Target = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T Target<T>(this T control, Func<Avalonia.Controls.Control> func, Action<Avalonia.Controls.Control>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-   => control._set(FluentAvalonia.UI.Controls.TeachingTip.TargetProperty, func, onChanged, expression);
+public static T Target<T>(this T control, Func<Avalonia.Controls.Control> func, Action<Avalonia.Controls.Control>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+   => control._set(FluentAvalonia.UI.Controls.TeachingTip.TargetProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T Target<T>(this T control,Avalonia.Controls.Control value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.TargetProperty, ps, () => control.Target = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Target<T>(this T control,Avalonia.Controls.Control value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.TargetProperty, ps, () => control.Target = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Target<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -100,19 +123,25 @@ public static T Target<T>(this T control, AvaloniaProperty avaloniaProperty, Bin
    => control._set(FluentAvalonia.UI.Controls.TeachingTip.TargetProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T Target<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Control> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.TargetProperty, ps, () => control.Target = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Target<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Control> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.TargetProperty, ps, () => control.Target = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // TailVisibility
 
+/*ValueSetterGenerator*/
+public static T TailVisibility<T>(this T control, FluentAvalonia.UI.Controls.TeachingTipTailVisibility value) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._set(() => control.TailVisibility = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T TailVisibility<T>(this T control, Func<FluentAvalonia.UI.Controls.TeachingTipTailVisibility> func, Action<FluentAvalonia.UI.Controls.TeachingTipTailVisibility>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-   => control._set(FluentAvalonia.UI.Controls.TeachingTip.TailVisibilityProperty, func, onChanged, expression);
+public static T TailVisibility<T>(this T control, Func<FluentAvalonia.UI.Controls.TeachingTipTailVisibility> func, Action<FluentAvalonia.UI.Controls.TeachingTipTailVisibility>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+   => control._set(FluentAvalonia.UI.Controls.TeachingTip.TailVisibilityProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T TailVisibility<T>(this T control,FluentAvalonia.UI.Controls.TeachingTipTailVisibility value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.TailVisibilityProperty, ps, () => control.TailVisibility = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T TailVisibility<T>(this T control,FluentAvalonia.UI.Controls.TeachingTipTailVisibility value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.TailVisibilityProperty, ps, () => control.TailVisibility = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T TailVisibility<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -123,19 +152,25 @@ public static T TailVisibility<T>(this T control, AvaloniaProperty avaloniaPrope
    => control._set(FluentAvalonia.UI.Controls.TeachingTip.TailVisibilityProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T TailVisibility<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.TeachingTipTailVisibility> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.TailVisibilityProperty, ps, () => control.TailVisibility = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T TailVisibility<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.TeachingTipTailVisibility> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.TailVisibilityProperty, ps, () => control.TailVisibility = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // ActionButtonContent
 
+/*ValueSetterGenerator*/
+public static T ActionButtonContent<T>(this T control, System.Object value) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._set(() => control.ActionButtonContent = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T ActionButtonContent<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-   => control._set(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonContentProperty, func, onChanged, expression);
+public static T ActionButtonContent<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+   => control._set(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonContentProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T ActionButtonContent<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonContentProperty, ps, () => control.ActionButtonContent = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T ActionButtonContent<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonContentProperty, ps, () => control.ActionButtonContent = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T ActionButtonContent<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -146,19 +181,25 @@ public static T ActionButtonContent<T>(this T control, AvaloniaProperty avalonia
    => control._set(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonContentProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T ActionButtonContent<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonContentProperty, ps, () => control.ActionButtonContent = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T ActionButtonContent<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonContentProperty, ps, () => control.ActionButtonContent = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // ActionButtonStyle
 
+/*ValueSetterGenerator*/
+public static T ActionButtonStyle<T>(this T control, Avalonia.Styling.ControlTheme value) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._set(() => control.ActionButtonStyle = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T ActionButtonStyle<T>(this T control, Func<Avalonia.Styling.ControlTheme> func, Action<Avalonia.Styling.ControlTheme>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-   => control._set(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonStyleProperty, func, onChanged, expression);
+public static T ActionButtonStyle<T>(this T control, Func<Avalonia.Styling.ControlTheme> func, Action<Avalonia.Styling.ControlTheme>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+   => control._set(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonStyleProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T ActionButtonStyle<T>(this T control,Avalonia.Styling.ControlTheme value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonStyleProperty, ps, () => control.ActionButtonStyle = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T ActionButtonStyle<T>(this T control,Avalonia.Styling.ControlTheme value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonStyleProperty, ps, () => control.ActionButtonStyle = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T ActionButtonStyle<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -169,19 +210,25 @@ public static T ActionButtonStyle<T>(this T control, AvaloniaProperty avaloniaPr
    => control._set(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonStyleProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T ActionButtonStyle<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Styling.ControlTheme> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonStyleProperty, ps, () => control.ActionButtonStyle = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T ActionButtonStyle<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Styling.ControlTheme> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonStyleProperty, ps, () => control.ActionButtonStyle = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // ActionButtonCommand
 
+/*ValueSetterGenerator*/
+public static T ActionButtonCommand<T>(this T control, System.Windows.Input.ICommand value) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._set(() => control.ActionButtonCommand = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T ActionButtonCommand<T>(this T control, Func<System.Windows.Input.ICommand> func, Action<System.Windows.Input.ICommand>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-   => control._set(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonCommandProperty, func, onChanged, expression);
+public static T ActionButtonCommand<T>(this T control, Func<System.Windows.Input.ICommand> func, Action<System.Windows.Input.ICommand>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+   => control._set(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonCommandProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T ActionButtonCommand<T>(this T control,System.Windows.Input.ICommand value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonCommandProperty, ps, () => control.ActionButtonCommand = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T ActionButtonCommand<T>(this T control,System.Windows.Input.ICommand value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonCommandProperty, ps, () => control.ActionButtonCommand = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T ActionButtonCommand<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -192,19 +239,25 @@ public static T ActionButtonCommand<T>(this T control, AvaloniaProperty avalonia
    => control._set(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonCommandProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T ActionButtonCommand<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Windows.Input.ICommand> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonCommandProperty, ps, () => control.ActionButtonCommand = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T ActionButtonCommand<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Windows.Input.ICommand> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonCommandProperty, ps, () => control.ActionButtonCommand = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // ActionButtonCommandParameter
 
+/*ValueSetterGenerator*/
+public static T ActionButtonCommandParameter<T>(this T control, System.Object value) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._set(() => control.ActionButtonCommandParameter = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T ActionButtonCommandParameter<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-   => control._set(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonCommandParameterProperty, func, onChanged, expression);
+public static T ActionButtonCommandParameter<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+   => control._set(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonCommandParameterProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T ActionButtonCommandParameter<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonCommandParameterProperty, ps, () => control.ActionButtonCommandParameter = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T ActionButtonCommandParameter<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonCommandParameterProperty, ps, () => control.ActionButtonCommandParameter = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T ActionButtonCommandParameter<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -215,19 +268,25 @@ public static T ActionButtonCommandParameter<T>(this T control, AvaloniaProperty
    => control._set(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonCommandParameterProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T ActionButtonCommandParameter<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonCommandParameterProperty, ps, () => control.ActionButtonCommandParameter = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T ActionButtonCommandParameter<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonCommandParameterProperty, ps, () => control.ActionButtonCommandParameter = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // CloseButtonContent
 
+/*ValueSetterGenerator*/
+public static T CloseButtonContent<T>(this T control, System.Object value) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._set(() => control.CloseButtonContent = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T CloseButtonContent<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-   => control._set(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonContentProperty, func, onChanged, expression);
+public static T CloseButtonContent<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+   => control._set(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonContentProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T CloseButtonContent<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonContentProperty, ps, () => control.CloseButtonContent = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T CloseButtonContent<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonContentProperty, ps, () => control.CloseButtonContent = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T CloseButtonContent<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -238,19 +297,25 @@ public static T CloseButtonContent<T>(this T control, AvaloniaProperty avaloniaP
    => control._set(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonContentProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T CloseButtonContent<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonContentProperty, ps, () => control.CloseButtonContent = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T CloseButtonContent<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonContentProperty, ps, () => control.CloseButtonContent = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // CloseButtonStyle
 
+/*ValueSetterGenerator*/
+public static T CloseButtonStyle<T>(this T control, Avalonia.Styling.ControlTheme value) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._set(() => control.CloseButtonStyle = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T CloseButtonStyle<T>(this T control, Func<Avalonia.Styling.ControlTheme> func, Action<Avalonia.Styling.ControlTheme>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-   => control._set(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonStyleProperty, func, onChanged, expression);
+public static T CloseButtonStyle<T>(this T control, Func<Avalonia.Styling.ControlTheme> func, Action<Avalonia.Styling.ControlTheme>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+   => control._set(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonStyleProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T CloseButtonStyle<T>(this T control,Avalonia.Styling.ControlTheme value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonStyleProperty, ps, () => control.CloseButtonStyle = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T CloseButtonStyle<T>(this T control,Avalonia.Styling.ControlTheme value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonStyleProperty, ps, () => control.CloseButtonStyle = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T CloseButtonStyle<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -261,19 +326,25 @@ public static T CloseButtonStyle<T>(this T control, AvaloniaProperty avaloniaPro
    => control._set(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonStyleProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T CloseButtonStyle<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Styling.ControlTheme> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonStyleProperty, ps, () => control.CloseButtonStyle = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T CloseButtonStyle<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Styling.ControlTheme> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonStyleProperty, ps, () => control.CloseButtonStyle = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // CloseButtonCommand
 
+/*ValueSetterGenerator*/
+public static T CloseButtonCommand<T>(this T control, System.Windows.Input.ICommand value) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._set(() => control.CloseButtonCommand = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T CloseButtonCommand<T>(this T control, Func<System.Windows.Input.ICommand> func, Action<System.Windows.Input.ICommand>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-   => control._set(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonCommandProperty, func, onChanged, expression);
+public static T CloseButtonCommand<T>(this T control, Func<System.Windows.Input.ICommand> func, Action<System.Windows.Input.ICommand>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+   => control._set(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonCommandProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T CloseButtonCommand<T>(this T control,System.Windows.Input.ICommand value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonCommandProperty, ps, () => control.CloseButtonCommand = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T CloseButtonCommand<T>(this T control,System.Windows.Input.ICommand value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonCommandProperty, ps, () => control.CloseButtonCommand = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T CloseButtonCommand<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -284,19 +355,25 @@ public static T CloseButtonCommand<T>(this T control, AvaloniaProperty avaloniaP
    => control._set(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonCommandProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T CloseButtonCommand<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Windows.Input.ICommand> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonCommandProperty, ps, () => control.CloseButtonCommand = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T CloseButtonCommand<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Windows.Input.ICommand> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonCommandProperty, ps, () => control.CloseButtonCommand = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // CloseButtonCommandParameter
 
+/*ValueSetterGenerator*/
+public static T CloseButtonCommandParameter<T>(this T control, System.Object value) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._set(() => control.CloseButtonCommandParameter = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T CloseButtonCommandParameter<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-   => control._set(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonCommandParameterProperty, func, onChanged, expression);
+public static T CloseButtonCommandParameter<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+   => control._set(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonCommandParameterProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T CloseButtonCommandParameter<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonCommandParameterProperty, ps, () => control.CloseButtonCommandParameter = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T CloseButtonCommandParameter<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonCommandParameterProperty, ps, () => control.CloseButtonCommandParameter = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T CloseButtonCommandParameter<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -307,28 +384,34 @@ public static T CloseButtonCommandParameter<T>(this T control, AvaloniaProperty 
    => control._set(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonCommandParameterProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T CloseButtonCommandParameter<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonCommandParameterProperty, ps, () => control.CloseButtonCommandParameter = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T CloseButtonCommandParameter<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonCommandParameterProperty, ps, () => control.CloseButtonCommandParameter = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // PlacementMargin
 
-/*BindFromExpressionSetterGenerator*/
-public static T PlacementMargin<T>(this T control, Func<Avalonia.Thickness> func, Action<Avalonia.Thickness>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-   => control._set(FluentAvalonia.UI.Controls.TeachingTip.PlacementMarginProperty, func, onChanged, expression);
+/*ValueSetterGenerator*/
+public static T PlacementMargin<T>(this T control, Avalonia.Thickness value) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._set(() => control.PlacementMargin = value!);
 
-/*MagicalSetterGenerator*/
-public static T PlacementMargin<T>(this T control,Avalonia.Thickness value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.PlacementMarginProperty, ps, () => control.PlacementMargin = value, bindingMode, converter, bindingSource);
+/*BindFromExpressionSetterGenerator*/
+public static T PlacementMargin<T>(this T control, Func<Avalonia.Thickness> func, Action<Avalonia.Thickness>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+   => control._set(FluentAvalonia.UI.Controls.TeachingTip.PlacementMarginProperty!, func, onChanged, expression);
 
 /*ValueOverloadsSetterGenerator*/
 
-public static T PlacementMargin<T>(this T control, System.Double uniformLength = default) where T : FluentAvalonia.UI.Controls.TeachingTip 
+public static T PlacementMargin<T>(this T control, System.Double uniformLength = default!) where T : FluentAvalonia.UI.Controls.TeachingTip 
    => control._set(() => control.PlacementMargin = new Avalonia.Thickness(uniformLength));
-public static T PlacementMargin<T>(this T control, System.Double horizontal = default, System.Double vertical = default) where T : FluentAvalonia.UI.Controls.TeachingTip 
+public static T PlacementMargin<T>(this T control, System.Double horizontal = default!, System.Double vertical = default!) where T : FluentAvalonia.UI.Controls.TeachingTip 
    => control._set(() => control.PlacementMargin = new Avalonia.Thickness(horizontal, vertical));
-public static T PlacementMargin<T>(this T control, System.Double left = default, System.Double top = default, System.Double right = default, System.Double bottom = default) where T : FluentAvalonia.UI.Controls.TeachingTip 
+public static T PlacementMargin<T>(this T control, System.Double left = default!, System.Double top = default!, System.Double right = default!, System.Double bottom = default!) where T : FluentAvalonia.UI.Controls.TeachingTip 
    => control._set(() => control.PlacementMargin = new Avalonia.Thickness(left, top, right, bottom));
+
+/*MagicalSetterGenerator*/
+[Obsolete]
+public static T PlacementMargin<T>(this T control,Avalonia.Thickness value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.PlacementMarginProperty, ps, () => control.PlacementMargin = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T PlacementMargin<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -339,19 +422,25 @@ public static T PlacementMargin<T>(this T control, AvaloniaProperty avaloniaProp
    => control._set(FluentAvalonia.UI.Controls.TeachingTip.PlacementMarginProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T PlacementMargin<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Thickness> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.PlacementMarginProperty, ps, () => control.PlacementMargin = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T PlacementMargin<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Thickness> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.PlacementMarginProperty, ps, () => control.PlacementMargin = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // ShouldConstrainToRootBounds
 
+/*ValueSetterGenerator*/
+public static T ShouldConstrainToRootBounds<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._set(() => control.ShouldConstrainToRootBounds = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T ShouldConstrainToRootBounds<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-   => control._set(FluentAvalonia.UI.Controls.TeachingTip.ShouldConstrainToRootBoundsProperty, func, onChanged, expression);
+public static T ShouldConstrainToRootBounds<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+   => control._set(FluentAvalonia.UI.Controls.TeachingTip.ShouldConstrainToRootBoundsProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T ShouldConstrainToRootBounds<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.ShouldConstrainToRootBoundsProperty, ps, () => control.ShouldConstrainToRootBounds = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T ShouldConstrainToRootBounds<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.ShouldConstrainToRootBoundsProperty, ps, () => control.ShouldConstrainToRootBounds = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T ShouldConstrainToRootBounds<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -362,19 +451,25 @@ public static T ShouldConstrainToRootBounds<T>(this T control, AvaloniaProperty 
    => control._set(FluentAvalonia.UI.Controls.TeachingTip.ShouldConstrainToRootBoundsProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T ShouldConstrainToRootBounds<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.ShouldConstrainToRootBoundsProperty, ps, () => control.ShouldConstrainToRootBounds = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T ShouldConstrainToRootBounds<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.ShouldConstrainToRootBoundsProperty, ps, () => control.ShouldConstrainToRootBounds = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // IsLightDismissEnabled
 
+/*ValueSetterGenerator*/
+public static T IsLightDismissEnabled<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._set(() => control.IsLightDismissEnabled = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T IsLightDismissEnabled<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-   => control._set(FluentAvalonia.UI.Controls.TeachingTip.IsLightDismissEnabledProperty, func, onChanged, expression);
+public static T IsLightDismissEnabled<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+   => control._set(FluentAvalonia.UI.Controls.TeachingTip.IsLightDismissEnabledProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T IsLightDismissEnabled<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.IsLightDismissEnabledProperty, ps, () => control.IsLightDismissEnabled = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IsLightDismissEnabled<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.IsLightDismissEnabledProperty, ps, () => control.IsLightDismissEnabled = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsLightDismissEnabled<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -385,19 +480,25 @@ public static T IsLightDismissEnabled<T>(this T control, AvaloniaProperty avalon
    => control._set(FluentAvalonia.UI.Controls.TeachingTip.IsLightDismissEnabledProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T IsLightDismissEnabled<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.IsLightDismissEnabledProperty, ps, () => control.IsLightDismissEnabled = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IsLightDismissEnabled<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.IsLightDismissEnabledProperty, ps, () => control.IsLightDismissEnabled = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // PreferredPlacement
 
+/*ValueSetterGenerator*/
+public static T PreferredPlacement<T>(this T control, FluentAvalonia.UI.Controls.TeachingTipPlacementMode value) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._set(() => control.PreferredPlacement = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T PreferredPlacement<T>(this T control, Func<FluentAvalonia.UI.Controls.TeachingTipPlacementMode> func, Action<FluentAvalonia.UI.Controls.TeachingTipPlacementMode>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-   => control._set(FluentAvalonia.UI.Controls.TeachingTip.PreferredPlacementProperty, func, onChanged, expression);
+public static T PreferredPlacement<T>(this T control, Func<FluentAvalonia.UI.Controls.TeachingTipPlacementMode> func, Action<FluentAvalonia.UI.Controls.TeachingTipPlacementMode>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+   => control._set(FluentAvalonia.UI.Controls.TeachingTip.PreferredPlacementProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T PreferredPlacement<T>(this T control,FluentAvalonia.UI.Controls.TeachingTipPlacementMode value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.PreferredPlacementProperty, ps, () => control.PreferredPlacement = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T PreferredPlacement<T>(this T control,FluentAvalonia.UI.Controls.TeachingTipPlacementMode value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.PreferredPlacementProperty, ps, () => control.PreferredPlacement = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T PreferredPlacement<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -408,19 +509,25 @@ public static T PreferredPlacement<T>(this T control, AvaloniaProperty avaloniaP
    => control._set(FluentAvalonia.UI.Controls.TeachingTip.PreferredPlacementProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T PreferredPlacement<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.TeachingTipPlacementMode> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.PreferredPlacementProperty, ps, () => control.PreferredPlacement = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T PreferredPlacement<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.TeachingTipPlacementMode> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.PreferredPlacementProperty, ps, () => control.PreferredPlacement = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // HeroContentPlacement
 
+/*ValueSetterGenerator*/
+public static T HeroContentPlacement<T>(this T control, FluentAvalonia.UI.Controls.TeachingTipHeroContentPlacementMode value) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._set(() => control.HeroContentPlacement = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T HeroContentPlacement<T>(this T control, Func<FluentAvalonia.UI.Controls.TeachingTipHeroContentPlacementMode> func, Action<FluentAvalonia.UI.Controls.TeachingTipHeroContentPlacementMode>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-   => control._set(FluentAvalonia.UI.Controls.TeachingTip.HeroContentPlacementProperty, func, onChanged, expression);
+public static T HeroContentPlacement<T>(this T control, Func<FluentAvalonia.UI.Controls.TeachingTipHeroContentPlacementMode> func, Action<FluentAvalonia.UI.Controls.TeachingTipHeroContentPlacementMode>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+   => control._set(FluentAvalonia.UI.Controls.TeachingTip.HeroContentPlacementProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T HeroContentPlacement<T>(this T control,FluentAvalonia.UI.Controls.TeachingTipHeroContentPlacementMode value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.HeroContentPlacementProperty, ps, () => control.HeroContentPlacement = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T HeroContentPlacement<T>(this T control,FluentAvalonia.UI.Controls.TeachingTipHeroContentPlacementMode value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.HeroContentPlacementProperty, ps, () => control.HeroContentPlacement = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T HeroContentPlacement<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -431,19 +538,25 @@ public static T HeroContentPlacement<T>(this T control, AvaloniaProperty avaloni
    => control._set(FluentAvalonia.UI.Controls.TeachingTip.HeroContentPlacementProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T HeroContentPlacement<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.TeachingTipHeroContentPlacementMode> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.HeroContentPlacementProperty, ps, () => control.HeroContentPlacement = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T HeroContentPlacement<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.TeachingTipHeroContentPlacementMode> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.HeroContentPlacementProperty, ps, () => control.HeroContentPlacement = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // HeroContent
 
+/*ValueSetterGenerator*/
+public static T HeroContent<T>(this T control, Avalonia.Controls.Control value) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._set(() => control.HeroContent = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T HeroContent<T>(this T control, Func<Avalonia.Controls.Control> func, Action<Avalonia.Controls.Control>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-   => control._set(FluentAvalonia.UI.Controls.TeachingTip.HeroContentProperty, func, onChanged, expression);
+public static T HeroContent<T>(this T control, Func<Avalonia.Controls.Control> func, Action<Avalonia.Controls.Control>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+   => control._set(FluentAvalonia.UI.Controls.TeachingTip.HeroContentProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T HeroContent<T>(this T control,Avalonia.Controls.Control value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.HeroContentProperty, ps, () => control.HeroContent = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T HeroContent<T>(this T control,Avalonia.Controls.Control value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.HeroContentProperty, ps, () => control.HeroContent = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T HeroContent<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -454,19 +567,25 @@ public static T HeroContent<T>(this T control, AvaloniaProperty avaloniaProperty
    => control._set(FluentAvalonia.UI.Controls.TeachingTip.HeroContentProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T HeroContent<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Control> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.HeroContentProperty, ps, () => control.HeroContent = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T HeroContent<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Control> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.HeroContentProperty, ps, () => control.HeroContent = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // IconSource
 
+/*ValueSetterGenerator*/
+public static T IconSource<T>(this T control, FluentAvalonia.UI.Controls.IconSource value) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._set(() => control.IconSource = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T IconSource<T>(this T control, Func<FluentAvalonia.UI.Controls.IconSource> func, Action<FluentAvalonia.UI.Controls.IconSource>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-   => control._set(FluentAvalonia.UI.Controls.TeachingTip.IconSourceProperty, func, onChanged, expression);
+public static T IconSource<T>(this T control, Func<FluentAvalonia.UI.Controls.IconSource> func, Action<FluentAvalonia.UI.Controls.IconSource>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+   => control._set(FluentAvalonia.UI.Controls.TeachingTip.IconSourceProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T IconSource<T>(this T control,FluentAvalonia.UI.Controls.IconSource value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.IconSourceProperty, ps, () => control.IconSource = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IconSource<T>(this T control,FluentAvalonia.UI.Controls.IconSource value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.IconSourceProperty, ps, () => control.IconSource = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IconSource<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -477,8 +596,9 @@ public static T IconSource<T>(this T control, AvaloniaProperty avaloniaProperty,
    => control._set(FluentAvalonia.UI.Controls.TeachingTip.IconSourceProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T IconSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.IconSource> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.IconSourceProperty, ps, () => control.IconSource = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IconSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.IconSource> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TeachingTip 
+=> control._setEx(FluentAvalonia.UI.Controls.TeachingTip.IconSourceProperty, ps, () => control.IconSource = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
 
@@ -517,7 +637,7 @@ public static T OnClosed<T>(this T control, Action<FluentAvalonia.UI.Controls.Te
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Title<T>(this Style<T> style, System.String value) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.TitleProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.TitleProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Title<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -528,7 +648,7 @@ public static Style<T> Title<T>(this Style<T> style, IBinding binding) where T :
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Subtitle<T>(this Style<T> style, System.String value) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.SubtitleProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.SubtitleProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Subtitle<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -539,7 +659,7 @@ public static Style<T> Subtitle<T>(this Style<T> style, IBinding binding) where 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsOpen<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.IsOpenProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.IsOpenProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsOpen<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -550,7 +670,7 @@ public static Style<T> IsOpen<T>(this Style<T> style, IBinding binding) where T 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Target<T>(this Style<T> style, Avalonia.Controls.Control value) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.TargetProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.TargetProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Target<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -561,7 +681,7 @@ public static Style<T> Target<T>(this Style<T> style, IBinding binding) where T 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> TailVisibility<T>(this Style<T> style, FluentAvalonia.UI.Controls.TeachingTipTailVisibility value) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.TailVisibilityProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.TailVisibilityProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> TailVisibility<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -572,7 +692,7 @@ public static Style<T> TailVisibility<T>(this Style<T> style, IBinding binding) 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> ActionButtonContent<T>(this Style<T> style, System.Object value) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonContentProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonContentProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> ActionButtonContent<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -583,7 +703,7 @@ public static Style<T> ActionButtonContent<T>(this Style<T> style, IBinding bind
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> ActionButtonStyle<T>(this Style<T> style, Avalonia.Styling.ControlTheme value) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonStyleProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonStyleProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> ActionButtonStyle<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -594,7 +714,7 @@ public static Style<T> ActionButtonStyle<T>(this Style<T> style, IBinding bindin
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> ActionButtonCommand<T>(this Style<T> style, System.Windows.Input.ICommand value) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonCommandProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonCommandProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> ActionButtonCommand<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -605,7 +725,7 @@ public static Style<T> ActionButtonCommand<T>(this Style<T> style, IBinding bind
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> ActionButtonCommandParameter<T>(this Style<T> style, System.Object value) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonCommandParameterProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.ActionButtonCommandParameterProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> ActionButtonCommandParameter<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -616,7 +736,7 @@ public static Style<T> ActionButtonCommandParameter<T>(this Style<T> style, IBin
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> CloseButtonContent<T>(this Style<T> style, System.Object value) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonContentProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonContentProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> CloseButtonContent<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -627,7 +747,7 @@ public static Style<T> CloseButtonContent<T>(this Style<T> style, IBinding bindi
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> CloseButtonStyle<T>(this Style<T> style, Avalonia.Styling.ControlTheme value) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonStyleProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonStyleProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> CloseButtonStyle<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -638,7 +758,7 @@ public static Style<T> CloseButtonStyle<T>(this Style<T> style, IBinding binding
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> CloseButtonCommand<T>(this Style<T> style, System.Windows.Input.ICommand value) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonCommandProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonCommandProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> CloseButtonCommand<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -649,7 +769,7 @@ public static Style<T> CloseButtonCommand<T>(this Style<T> style, IBinding bindi
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> CloseButtonCommandParameter<T>(this Style<T> style, System.Object value) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonCommandParameterProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.CloseButtonCommandParameterProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> CloseButtonCommandParameter<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -660,7 +780,7 @@ public static Style<T> CloseButtonCommandParameter<T>(this Style<T> style, IBind
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> PlacementMargin<T>(this Style<T> style, Avalonia.Thickness value) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.PlacementMarginProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.PlacementMarginProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> PlacementMargin<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -677,7 +797,7 @@ public static Style<T> PlacementMargin<T>(this Style<T> style, System.Double uni
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> ShouldConstrainToRootBounds<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.ShouldConstrainToRootBoundsProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.ShouldConstrainToRootBoundsProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> ShouldConstrainToRootBounds<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -688,7 +808,7 @@ public static Style<T> ShouldConstrainToRootBounds<T>(this Style<T> style, IBind
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsLightDismissEnabled<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.IsLightDismissEnabledProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.IsLightDismissEnabledProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsLightDismissEnabled<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -699,7 +819,7 @@ public static Style<T> IsLightDismissEnabled<T>(this Style<T> style, IBinding bi
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> PreferredPlacement<T>(this Style<T> style, FluentAvalonia.UI.Controls.TeachingTipPlacementMode value) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.PreferredPlacementProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.PreferredPlacementProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> PreferredPlacement<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -710,7 +830,7 @@ public static Style<T> PreferredPlacement<T>(this Style<T> style, IBinding bindi
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> HeroContentPlacement<T>(this Style<T> style, FluentAvalonia.UI.Controls.TeachingTipHeroContentPlacementMode value) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.HeroContentPlacementProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.HeroContentPlacementProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> HeroContentPlacement<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -721,7 +841,7 @@ public static Style<T> HeroContentPlacement<T>(this Style<T> style, IBinding bin
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> HeroContent<T>(this Style<T> style, Avalonia.Controls.Control value) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.HeroContentProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.HeroContentProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> HeroContent<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 
@@ -732,7 +852,7 @@ public static Style<T> HeroContent<T>(this Style<T> style, IBinding binding) whe
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IconSource<T>(this Style<T> style, FluentAvalonia.UI.Controls.IconSource value) where T : FluentAvalonia.UI.Controls.TeachingTip 
-=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.IconSourceProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.TeachingTip.IconSourceProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IconSource<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.TeachingTip 

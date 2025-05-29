@@ -14,6 +14,6 @@ public sealed class ClusterErrorView : MyViewBase<ClusterErrorViewModel>
                     .TextWrapping(TextWrapping.Wrap)
                     .Row(1)
                     .Padding(5,0,0,0)
-                    .Text(@vm.Error)
+                    .Text(vm.Error)
                 ]);
 }

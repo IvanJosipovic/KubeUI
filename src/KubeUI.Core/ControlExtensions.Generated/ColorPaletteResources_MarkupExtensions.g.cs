@@ -14,13 +14,18 @@ public static partial class ColorPaletteResources_MarkupExtensions
 //================= Properties ======================//
  // Accent
 
+/*ValueSetterGenerator*/
+public static T Accent<T>(this T control, Avalonia.Media.Color value) where T : Avalonia.Themes.Fluent.ColorPaletteResources 
+=> control._set(() => control.Accent = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T Accent<T>(this T control, Func<Avalonia.Media.Color> func, Action<Avalonia.Media.Color>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Avalonia.Themes.Fluent.ColorPaletteResources 
-   => control._set(Avalonia.Themes.Fluent.ColorPaletteResources.AccentProperty, func, onChanged, expression);
+public static T Accent<T>(this T control, Func<Avalonia.Media.Color> func, Action<Avalonia.Media.Color>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Avalonia.Themes.Fluent.ColorPaletteResources 
+   => control._set(Avalonia.Themes.Fluent.ColorPaletteResources.AccentProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T Accent<T>(this T control,Avalonia.Media.Color value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Avalonia.Themes.Fluent.ColorPaletteResources 
-=> control._setEx(Avalonia.Themes.Fluent.ColorPaletteResources.AccentProperty, ps, () => control.Accent = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Accent<T>(this T control,Avalonia.Media.Color value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Avalonia.Themes.Fluent.ColorPaletteResources 
+=> control._setEx(Avalonia.Themes.Fluent.ColorPaletteResources.AccentProperty, ps, () => control.Accent = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Accent<T>(this T control, IBinding binding) where T : Avalonia.Themes.Fluent.ColorPaletteResources 
@@ -31,8 +36,9 @@ public static T Accent<T>(this T control, AvaloniaProperty avaloniaProperty, Bin
    => control._set(Avalonia.Themes.Fluent.ColorPaletteResources.AccentProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T Accent<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.Color> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Avalonia.Themes.Fluent.ColorPaletteResources 
-=> control._setEx(Avalonia.Themes.Fluent.ColorPaletteResources.AccentProperty, ps, () => control.Accent = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Accent<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.Color> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Avalonia.Themes.Fluent.ColorPaletteResources 
+=> control._setEx(Avalonia.Themes.Fluent.ColorPaletteResources.AccentProperty, ps, () => control.Accent = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
 

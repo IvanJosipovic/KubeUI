@@ -107,7 +107,7 @@ public sealed class ClusterView : MyViewBase<ClusterViewModel>
             new PieChart()
                 .Row(0).Col(1)
                 .Title(SetTitle("Memory"))
-                .MaxValue(@vm.MemoryCapacity.Value.Value)
+                .MaxValue(vm.MemoryCapacity.Value.Value)
                 .Series(GaugeGenerator.BuildSolidGauge(
                             new GaugeItem(vm.MemoryCapacity, series => {
                                 SetSeries("Capacity", series);
@@ -140,7 +140,7 @@ public sealed class ClusterView : MyViewBase<ClusterViewModel>
             new PieChart()
                 .Row(0).Col(2)
                 .Title(SetTitle("Pods"))
-                .MaxValue(@vm.MaxPods.Value.Value)
+                .MaxValue(vm.MaxPods.Value.Value)
                 .Series(GaugeGenerator.BuildSolidGauge(
                             new GaugeItem(vm.MaxPods, series => SetSeries("Capacity", series)),
                             new GaugeItem(vm.TotalPods, series => SetSeries("Count", series))

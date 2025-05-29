@@ -95,15 +95,6 @@ public static class Utilities
         return control._set(Avalonia.Controls.ToolTip.TipProperty, avaloniaProperty, bindingMode, converter, overrideView);
     }
 
-    public static TControl SetVal<TControl, TValue>(this TControl control, AvaloniaProperty property, TValue? value, BindingMode? bindingMode = null, FuncValueConverter<TValue, object>? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where TControl : Control
-    {
-        if (converter != null)
-        {
-            return control._setEx(property, ps, () => control[property] = converter.TryConvert(value), bindingMode, converter, bindingSource);
-        }
-        return control._setEx(property, ps, () => control[property] = value, bindingMode, converter, bindingSource);
-    }
-
     public static TControl KeyBindings<TControl>(this TControl container, params KeyBinding[] items) where TControl : Control
     {
         container.KeyBindings.AddRange(items);

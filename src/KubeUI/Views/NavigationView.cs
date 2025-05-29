@@ -27,9 +27,10 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
             .Setter(Control.MarginProperty, new Thickness(0,0,4,0))
         ];
 
-    protected override object Build(NavigationViewModel? vm) =>
-        new TreeView()
-            .ItemsSource(@vm.ClusterManager.Clusters)
+    protected override object Build(NavigationViewModel? vm)
+    {
+        return new TreeView()
+            .ItemsSource(vm.ClusterManager.Clusters)
             .AutoScrollToSelectedItem(false)
             .OnSelectionChanged((e) =>
             {
@@ -86,16 +87,21 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
                         .Classes("navigation-view-stack-panel")
                         .Children([
                             new PathIcon()
-                                .Data(@vm.StyleIcon, s_resoureConverter)
-                                //.IsVisible(vm.StyleIcon,)
-                                .IsVisible(@vm.StyleIcon, Utilities.NotNullConverter),
+                                .Data((Geometry)Application.Current.FindResource(vm.StyleIcon))
+                                //.Data(@vm.StyleIcon, s_resoureConverter)
+                                //.IsVisible(() => !string.IsNullOrEmpty(vm.StyleIcon))
+                                //.IsVisible(@vm.StyleIcon, Utilities.NotNullConverter)
+                                ,
                             new Avalonia.Svg.Skia.Svg(new Uri("avares://KubeUI/"))
-                                .Path(@vm.SvgIcon)
-                                .IsVisible(@vm.SvgIcon, Utilities.NotNullConverter),
+                                .Path(vm.SvgIcon)
+                                //.IsVisible(() => !string.IsNullOrEmpty(vm.SvgIcon))
+                                //.IsVisible(@vm.SvgIcon, Utilities.NotNullConverter)
+                                ,
                             new TextBlock()
                                 .Text(@vm.Name)
                             ])
                 ,(x) => x.NavigationItems),
             ])
         ;
+    }
 }

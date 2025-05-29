@@ -24,5 +24,5 @@ public abstract class MyViewBase<TViewModel> : ViewBase
 
     protected abstract object Build(TViewModel? vm);
 
-    protected override object Build() => Build((TViewModel)DataContext);
+    protected override object Build() => Build(ViewModel);
 }

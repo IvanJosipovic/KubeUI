@@ -54,6 +54,6 @@ public sealed class MainView : MyViewBase<MainViewModel>
                 new DockControl()
                     .Row(1)
                     .Margin(4)
-                    .Layout(@vm.Layout)
+                    .Layout(vm.Layout)
             ]);
 }
