@@ -1,6 +1,4 @@
-﻿using Avalonia.Data.Converters;
-
-namespace KubeUI.Views;
+﻿namespace KubeUI.Views;
 
 public sealed class SettingsView : MyViewBase<SettingsViewModel>
 {
@@ -19,18 +17,18 @@ public sealed class SettingsView : MyViewBase<SettingsViewModel>
                                 new RadioButton()
                                     .GroupName(nameof(Settings.Theme))
                                     .Content("Default")
-                                    .OnTapped((x) => {vm.SettingsService.Settings.Theme = LocalThemeVariant.Default;})
-                                    .IsChecked(@vm.SettingsService.Settings.Theme, converter: new FuncValueConverter<LocalThemeVariant, bool?>((x) => x == LocalThemeVariant.Default)),
+                                    .OnTapped((x) => vm.SettingsService.Settings.Theme = LocalThemeVariant.Default)
+                                    .IsChecked(() => vm.SettingsService.Settings.Theme == LocalThemeVariant.Default),
                                 new RadioButton()
                                     .GroupName(nameof(Settings.Theme))
                                     .Content("Light")
-                                    .OnTapped((x) => {vm.SettingsService.Settings.Theme = LocalThemeVariant.Light;})
-                                    .IsChecked(@vm.SettingsService.Settings.Theme, converter: new FuncValueConverter<LocalThemeVariant, bool?>((x) => x == LocalThemeVariant.Light)),
+                                    .OnTapped((x) => vm.SettingsService.Settings.Theme = LocalThemeVariant.Light)
+                                    .IsChecked(() => vm.SettingsService.Settings.Theme == LocalThemeVariant.Light),
                                 new RadioButton()
                                     .GroupName(nameof(Settings.Theme))
                                     .Content("Dark")
-                                    .OnTapped((x) => {vm.SettingsService.Settings.Theme = LocalThemeVariant.Dark;})
-                                    .IsChecked(@vm.SettingsService.Settings.Theme, converter: new FuncValueConverter<LocalThemeVariant, bool?>((x) => x == LocalThemeVariant.Dark)),
+                                    .OnTapped((x) => vm.SettingsService.Settings.Theme = LocalThemeVariant.Dark)
+                                    .IsChecked(() => vm.SettingsService.Settings.Theme == LocalThemeVariant.Dark),
                                 ]),
                         ]),
                 new Grid()
@@ -42,7 +40,7 @@ public sealed class SettingsView : MyViewBase<SettingsViewModel>
                             .Content("Enable Local File Logging (Restart Required)"),
                         new CheckBox()
                             .Col(1)
-                            .IsChecked(@vm.SettingsService.Settings.LoggingEnabled),
+                            .IsChecked(() => vm.SettingsService.Settings.LoggingEnabled, (x) => vm.SettingsService.Settings.LoggingEnabled = x.GetValueOrDefault()),
                         ]),
                 new Grid()
                     .Cols("*,2*")
@@ -53,7 +51,7 @@ public sealed class SettingsView : MyViewBase<SettingsViewModel>
                             .Content("Enable Telemetry (Restart Required)"),
                         new CheckBox()
                             .Col(1)
-                            .IsChecked(@vm.SettingsService.Settings.TelemetryEnabled),
+                            .IsChecked(() => vm.SettingsService.Settings.TelemetryEnabled, (x) => vm.SettingsService.Settings.TelemetryEnabled = x.GetValueOrDefault()),
                         ]),
                 new Grid()
                     .Cols("*,2*")
@@ -65,7 +63,7 @@ public sealed class SettingsView : MyViewBase<SettingsViewModel>
                         new CheckBox()
                             .Col(1)
                             .IsEnabled(false)
-                            .IsChecked(@vm.SettingsService.Settings.PreReleaseChannel),
+                            .IsChecked(() => vm.SettingsService.Settings.PreReleaseChannel, (x) => vm.SettingsService.Settings.TelemetryEnabled = x.GetValueOrDefault()),
                         ]),
                 new Grid()
                     .Cols("*,2*")
@@ -76,7 +74,7 @@ public sealed class SettingsView : MyViewBase<SettingsViewModel>
                             .Content("Font Size"),
                         new NumericUpDown()
                             .Col(1)
-                            .Value(@vm.SettingsService.Settings.FontSize),
+                            .Value(() => vm.SettingsService.Settings.FontSize, (x) => vm.SettingsService.Settings.FontSize = x.GetValueOrDefault()),
                         ]),
                 new Grid()
                     .Cols("*,2*")
@@ -87,7 +85,7 @@ public sealed class SettingsView : MyViewBase<SettingsViewModel>
                             .Content("Console/Logs/Yaml Font Size"),
                         new NumericUpDown()
                             .Col(1)
-                            .Value(@vm.SettingsService.Settings.ConsoleFontSize),
+                            .Value(() => vm.SettingsService.Settings.ConsoleFontSize, (x) => vm.SettingsService.Settings.ConsoleFontSize = x.GetValueOrDefault()),
                         ]),
                 new Grid()
                     .Cols("*,2*")
@@ -98,7 +96,7 @@ public sealed class SettingsView : MyViewBase<SettingsViewModel>
                             .Content("List Row Height"),
                         new NumericUpDown()
                             .Col(1)
-                            .Value(@vm.SettingsService.Settings.ListRowHeight),
+                            .Value(() => vm.SettingsService.Settings.ListRowHeight, (x) => vm.SettingsService.Settings.ListRowHeight = x.GetValueOrDefault()),
                         ]),
         ]);
 }

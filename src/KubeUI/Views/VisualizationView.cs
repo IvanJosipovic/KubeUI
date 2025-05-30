@@ -25,7 +25,7 @@ public sealed class VisualizationView : MyViewBase<VisualizationViewModel>
                     .HorizontalAlignment(HorizontalAlignment.Left)
                     .Children([
                         new ToggleButton()
-                            .IsChecked(@vm.HideNoise)
+                            .IsChecked(vm.HideNoise)
                             .ToolTip("Hide noisy resources like inactive Replica Sets")
                             .Content(new PathIcon() { Data = (Geometry)Application.Current.FindResource("eye_hide_regular") }),
                         new Label()
@@ -44,13 +44,13 @@ public sealed class VisualizationView : MyViewBase<VisualizationViewModel>
                             .Width(300)
                             .MaxHeight(20)
                             .Classes("ClearButton")
-                            .ItemsSource(@vm.Cluster.Namespaces.Values)
-                            .SelectedItems(@vm.Cluster.SelectedNamespaces)
+                            .ItemsSource(vm.Cluster.Namespaces.Values)
+                            .SelectedItems(() => vm.Cluster.SelectedNamespaces, x => vm.Cluster.SelectedNamespaces = (ObservableCollection<V1Namespace>)x)
                             .SelectedItemTemplate(new FuncDataTemplate<V1Namespace>((x,y) => new Label().Content(@x.Metadata.Name)))
                             .ItemTemplate(new FuncDataTemplate<V1Namespace>((x,y) => new Label().Content(@x.Metadata.Name)))
                     ]),
                 new Editor()
                     .Row(1)
-                    .DrawingSource(@vm.Drawing),
+                    .DrawingSource(vm.Drawing),
             ]);
 }

@@ -325,14 +325,16 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                         new Button()
                             .Col(0)
                             .Command(vm.ResourceConfig.NewResourceCommand)
-                            .IsVisible(@vm.ResourceConfig.ShowNewResource)
+                            .IsVisible(vm.ResourceConfig.ShowNewResource)
                             .ToolTip(Assets.Resources.ResourceListView_NewResource)
                             .Content(new PathIcon() { Data = (Geometry)Application.Current.FindResource("add_square_regular") }),
                         new Label()
                             .Col(1)
                             .Width(200)
                             .VerticalContentAlignment(VerticalAlignment.Center)
-                            .Content(@vm.DataGridObjects.Count, null, new FuncValueConverter<int, string>((x) => string.Format("Items: {0}", x))),
+                            //.Content(() => $"Items: {vm.DataGridObjects.Count}", (x) => {})
+                            .Content(vm.DataGridObjects.Count, BindingMode.OneWay, new FuncValueConverter<int, string>((x) => string.Format("Items: {0}", x)))
+                            ,
                         new Grid()
                             .Col(2)
                             .HorizontalAlignment(HorizontalAlignment.Right)
@@ -345,7 +347,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                                     .HorizontalAlignment(HorizontalAlignment.Right)
                                     .VerticalAlignment(VerticalAlignment.Stretch)
                                     .VerticalContentAlignment(VerticalAlignment.Center)
-                                    .Text(vm.SearchQuery)
+                                    .Text(() => vm.SearchQuery, x => vm.SearchQuery = x)
                                     .Watermark("Search"),
 
                                 new MultiComboBox()
