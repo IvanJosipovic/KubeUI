@@ -224,12 +224,12 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
 
         Application.Current.ActualThemeVariantChanged -= Current_ActualThemeVariantChanged;
 
-        ViewModel.AllFoldings = _foldingManager.AllFoldings.Select(x =>
+        ViewModel.AllFoldings = [.. _foldingManager.AllFoldings.Select(x =>
         {
             var tag = (NewFolding)x.Tag;
             tag.DefaultClosed = x.IsFolded;
             return tag;
-        }).ToList();
+        })];
 
         FoldingManager.Uninstall(_foldingManager);
     }

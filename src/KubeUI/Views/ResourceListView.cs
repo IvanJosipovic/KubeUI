@@ -333,6 +333,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                             .Width(200)
                             .VerticalContentAlignment(VerticalAlignment.Center)
                             //.Content(() => $"Items: {vm.DataGridObjects.Count}", (x) => {})
+                            .Content(new FuncBinding<ResourceListViewModel<T>>(x => x.DataGridObjects.Count))
                             .Content(vm.DataGridObjects.Count, BindingMode.OneWay, new FuncValueConverter<int, string>((x) => string.Format("Items: {0}", x)))
                             ,
                         new Grid()
@@ -357,8 +358,8 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                                     .HorizontalAlignment(HorizontalAlignment.Right)
                                     .Classes("ClearButton")
                                     .IsVisible(vm.ResourceConfig.IsNamespaced)
-                                    .ItemsSource(vm.Cluster.Namespaces.Values)
-                                    .SelectedItems(vm.Cluster.SelectedNamespaces)
+                                    .ItemsSource(new FuncBinding<ResourceListViewModel<T>>(x => x.Cluster.Namespaces.Values))
+                                    .SelectedItems(() => vm.Cluster.SelectedNamespaces, x => vm.Cluster.SelectedNamespaces = (ObservableCollection<V1Namespace>)x)
                                     .SelectedItemTemplate(new FuncDataTemplate<V1Namespace?>((x,y) => new Label().Content(@x?.Metadata.Name)))
                                     .ItemTemplate(new FuncDataTemplate<V1Namespace?>((x,y) => new Label().Content(@x?.Metadata.Name)))
                                     .Watermark(Assets.Resources.ResourceListView_SelectNamespace)
@@ -367,7 +368,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                 new DataGrid()
                     .Ref(out _grid)
                     .Row(1)
-                    .ItemsSource(() => vm.DataGridObjects)
+                    .ItemsSource(new FuncBinding<ResourceListViewModel<T>>(x => x.DataGridObjects))
                     .SelectedItem(() => vm.SelectedItem, (x) => { if (x != null) vm.SelectedItem = (KeyValuePair<NamespacedName, T>)x; })
                     .CanUserReorderColumns(true)
                     .CanUserResizeColumns(true)
@@ -393,7 +394,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                         new KeyBinding()
                             .Gesture(new KeyGesture(Key.Enter))
                             .Command(vm.ResourceConfig.ViewCommand)
-                            .CommandParameter(new Binding("SelectedItem.Value") { Source = vm }),
+                            .CommandParameter(new FuncBinding<ResourceListViewModel<T>>(x => x.SelectedItem.Value) { Source = vm }),
                         ])
                     .Styles([
                         new Style<DataGridCell>()
