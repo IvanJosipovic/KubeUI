@@ -9,13 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="11.3.0" />
+    <PackageReference Include="Avalonia" Version="11.3.1" />
     <PackageReference Include="Avalonia.AvaloniaEdit" Version="11.3.0" />
-    <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.3.0" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.0" />
-    <PackageReference Include="Avalonia.Markup.Declarative" Version="11.3.0-beta05" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.3.1" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.1" />
+    <PackageReference Include="Avalonia.Markup.Declarative" Version="11.3.0-beta06" />
     <PackageReference Include="Avalonia.Svg.Skia" Version="11.3.0" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.0" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.1" />
     <PackageReference Include="AvaloniaEdit.TextMate" Version="11.3.0" />
     <PackageReference Include="AvaloniaTerminal" Version="1.0.0-alpha.3" />
     <PackageReference Include="Dock.Avalonia" Version="11.3.0.2" />
@@ -23,16 +23,16 @@
     <PackageReference Include="FluentAvaloniaUI" Version="2.3.0" />
     <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia" Version="2.1.0" />
     <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia.Fluent" Version="2.1.0" />
-    <PackageReference Include="Irihi.Ursa" Version="1.11.0" />
-    <PackageReference Include="Irihi.Ursa.Themes.Semi" Version="1.11.0" />
+    <PackageReference Include="Irihi.Ursa" Version="1.11.1" />
+    <PackageReference Include="Irihi.Ursa.Themes.Semi" Version="1.11.1" />
     <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.0.0-rc5.4" />
     <PackageReference Include="NodeEditorAvalonia" Version="11.2.0" />
     <PackageReference Include="NodeEditorAvalonia.Mvvm" Version="11.2.0" />
-    <PackageReference Include="Semi.Avalonia" Version="11.2.1.7" />
-    <PackageReference Include="System.Text.Json" Version=" 9.0.5" />
+    <PackageReference Include="Semi.Avalonia" Version="11.2.1.8" />
+    <PackageReference Include="System.Text.Json" Version=" 9.0.6" />
 
     <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.3.0" />
+    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.3.1" />
 
     <!--Resolves version conflict in Avalonia Diagnostics -->
     <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />

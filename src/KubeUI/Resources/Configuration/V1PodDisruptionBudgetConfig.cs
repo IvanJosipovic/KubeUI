@@ -14,7 +14,7 @@ public sealed partial class V1PodDisruptionBudgetConfig : ResourceConfigBase<V1P
             NamespaceColumn(),
             new ResourceListColumn<V1PodDisruptionBudget, IntstrIntOrString>()
             {
-                Name = "Min Avalilable",
+                Name = "Min Available",
                 Display = x => x.Spec.MinAvailable != null ? x.Spec.MinAvailable.Value : "",
                 Field = x => x.Spec.MinAvailable,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)

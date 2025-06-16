@@ -99,14 +99,26 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                 {
                     if (columnDefinition.Sort != SortDirection.None)
                     {
-                        Dispatcher.UIThread.Post(() => column.Sort(columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending));
+                        Dispatcher.UIThread.Post(() =>
+                        {
+                            if (column != null && columnDefinition != null)
+                            {
+                                column.Sort(columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending);
+                            }
+                        });
                     }
                 }
                 else
                 {
                     if (column.Header.ToString() == ViewModel.SortColumnName)
                     {
-                        Dispatcher.UIThread.Post(() => column.Sort(ViewModel.SortDirection == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending));
+                        Dispatcher.UIThread.Post(() =>
+                        {
+                            if (ViewModel != null)
+                            {
+                                column.Sort(ViewModel.SortDirection == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending);
+                            }
+                        });
                     }
                 }
             }

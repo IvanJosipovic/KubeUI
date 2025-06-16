@@ -28,7 +28,7 @@ public interface IResourceInformer<TResource> : IResourceInformer where TResourc
 {
     /// <summary>
     /// Registers a callback for change notification. To ensure no events are missed the registration
-    /// may be created in the constructor of a dependant <see cref="IHostedService"/>. The returned
+    /// may be created in the constructor of a dependent <see cref="IHostedService"/>. The returned
     /// registration should be disposed when the receiver is ending its work.
     /// </summary>
     /// <param name="callback">The delegate that is invoked with each resource notification.</param>
@@ -49,7 +49,7 @@ public interface IResourceInformer
 
     /// <summary>
     /// Registers a callback for change notification. To ensure no events are missed the registration
-    /// may be created in the constructor of a dependant <see cref="IHostedService"/>. The returned
+    /// may be created in the constructor of a dependent <see cref="IHostedService"/>. The returned
     /// registration should be disposed when the receiver is ending its work.
     /// </summary>
     /// <param name="callback">The delegate that is invoked with each resource notification.</param>
