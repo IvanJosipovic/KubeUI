@@ -63,8 +63,8 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Swordfish.NET.CollectionsV3" Version="3.3.15" />
-    <PackageReference Include="TextMateSharp" Version="1.0.69" />
-    <PackageReference Include="TextMateSharp.Grammars" Version="1.0.69" />
+    <PackageReference Include="TextMateSharp" Version="1.0.70" />
+    <PackageReference Include="TextMateSharp.Grammars" Version="1.0.70" />
     <PackageReference Include="Velopack" Version="0.0.1298" />
     <PackageReference Include="YamlDotNet.System.Text.Json" Version="1.6.6" />
   </ItemGroup>
