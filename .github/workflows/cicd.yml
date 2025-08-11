@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: 'true'
 
@@ -64,7 +64,7 @@ jobs:
       new_release_version: ${{ (steps.semantic.outputs.new_release_published && steps.semantic.outputs.new_release_version) || '0.0.1' }}
       new_release_notes: ${{ steps.semantic.outputs.new_release_notes }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: Semantic Release
       uses: cycjimmy/semantic-release-action@v4
@@ -107,7 +107,7 @@ jobs:
             runs-on: macos-latest
             packParam: --icon ../KubeUI/Assets/icon.icns --plist info.plist
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: 'true'
 
@@ -203,7 +203,7 @@ jobs:
     needs: [semantic-release, publish-matrix]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: Download artifacts
       uses: actions/download-artifact@v5
