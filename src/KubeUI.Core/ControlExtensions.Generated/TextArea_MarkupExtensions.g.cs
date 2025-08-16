@@ -14,13 +14,18 @@ public static partial class TextArea_MarkupExtensions
 //================= Properties ======================//
  // Watermark
 
+/*ValueSetterGenerator*/
+public static T Watermark<T>(this T control, System.String value) where T : AvaloniaEdit.Editing.TextArea 
+=> control._set(() => control.Watermark = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T Watermark<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.Editing.TextArea 
-   => control._set(AvaloniaEdit.Editing.TextArea.WatermarkProperty, func, onChanged, expression);
+public static T Watermark<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.Editing.TextArea 
+   => control._set(AvaloniaEdit.Editing.TextArea.WatermarkProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T Watermark<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
-=> control._setEx(AvaloniaEdit.Editing.TextArea.WatermarkProperty, ps, () => control.Watermark = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Watermark<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
+=> control._setEx(AvaloniaEdit.Editing.TextArea.WatermarkProperty, ps, () => control.Watermark = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Watermark<T>(this T control, IBinding binding) where T : AvaloniaEdit.Editing.TextArea 
@@ -31,19 +36,25 @@ public static T Watermark<T>(this T control, AvaloniaProperty avaloniaProperty, 
    => control._set(AvaloniaEdit.Editing.TextArea.WatermarkProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T Watermark<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
-=> control._setEx(AvaloniaEdit.Editing.TextArea.WatermarkProperty, ps, () => control.Watermark = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Watermark<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
+=> control._setEx(AvaloniaEdit.Editing.TextArea.WatermarkProperty, ps, () => control.Watermark = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // Document
 
+/*ValueSetterGenerator*/
+public static T Document<T>(this T control, AvaloniaEdit.Document.TextDocument value) where T : AvaloniaEdit.Editing.TextArea 
+=> control._set(() => control.Document = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T Document<T>(this T control, Func<AvaloniaEdit.Document.TextDocument> func, Action<AvaloniaEdit.Document.TextDocument>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.Editing.TextArea 
-   => control._set(AvaloniaEdit.Editing.TextArea.DocumentProperty, func, onChanged, expression);
+public static T Document<T>(this T control, Func<AvaloniaEdit.Document.TextDocument> func, Action<AvaloniaEdit.Document.TextDocument>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.Editing.TextArea 
+   => control._set(AvaloniaEdit.Editing.TextArea.DocumentProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T Document<T>(this T control,AvaloniaEdit.Document.TextDocument value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
-=> control._setEx(AvaloniaEdit.Editing.TextArea.DocumentProperty, ps, () => control.Document = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Document<T>(this T control,AvaloniaEdit.Document.TextDocument value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
+=> control._setEx(AvaloniaEdit.Editing.TextArea.DocumentProperty, ps, () => control.Document = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Document<T>(this T control, IBinding binding) where T : AvaloniaEdit.Editing.TextArea 
@@ -54,19 +65,25 @@ public static T Document<T>(this T control, AvaloniaProperty avaloniaProperty, B
    => control._set(AvaloniaEdit.Editing.TextArea.DocumentProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T Document<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, AvaloniaEdit.Document.TextDocument> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
-=> control._setEx(AvaloniaEdit.Editing.TextArea.DocumentProperty, ps, () => control.Document = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Document<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, AvaloniaEdit.Document.TextDocument> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
+=> control._setEx(AvaloniaEdit.Editing.TextArea.DocumentProperty, ps, () => control.Document = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // Options
 
+/*ValueSetterGenerator*/
+public static T Options<T>(this T control, AvaloniaEdit.TextEditorOptions value) where T : AvaloniaEdit.Editing.TextArea 
+=> control._set(() => control.Options = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T Options<T>(this T control, Func<AvaloniaEdit.TextEditorOptions> func, Action<AvaloniaEdit.TextEditorOptions>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.Editing.TextArea 
-   => control._set(AvaloniaEdit.Editing.TextArea.OptionsProperty, func, onChanged, expression);
+public static T Options<T>(this T control, Func<AvaloniaEdit.TextEditorOptions> func, Action<AvaloniaEdit.TextEditorOptions>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.Editing.TextArea 
+   => control._set(AvaloniaEdit.Editing.TextArea.OptionsProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T Options<T>(this T control,AvaloniaEdit.TextEditorOptions value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
-=> control._setEx(AvaloniaEdit.Editing.TextArea.OptionsProperty, ps, () => control.Options = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Options<T>(this T control,AvaloniaEdit.TextEditorOptions value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
+=> control._setEx(AvaloniaEdit.Editing.TextArea.OptionsProperty, ps, () => control.Options = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Options<T>(this T control, IBinding binding) where T : AvaloniaEdit.Editing.TextArea 
@@ -77,19 +94,25 @@ public static T Options<T>(this T control, AvaloniaProperty avaloniaProperty, Bi
    => control._set(AvaloniaEdit.Editing.TextArea.OptionsProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T Options<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, AvaloniaEdit.TextEditorOptions> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
-=> control._setEx(AvaloniaEdit.Editing.TextArea.OptionsProperty, ps, () => control.Options = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Options<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, AvaloniaEdit.TextEditorOptions> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
+=> control._setEx(AvaloniaEdit.Editing.TextArea.OptionsProperty, ps, () => control.Options = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // SelectionBrush
 
+/*ValueSetterGenerator*/
+public static T SelectionBrush<T>(this T control, Avalonia.Media.IBrush value) where T : AvaloniaEdit.Editing.TextArea 
+=> control._set(() => control.SelectionBrush = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T SelectionBrush<T>(this T control, Func<Avalonia.Media.IBrush> func, Action<Avalonia.Media.IBrush>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.Editing.TextArea 
-   => control._set(AvaloniaEdit.Editing.TextArea.SelectionBrushProperty, func, onChanged, expression);
+public static T SelectionBrush<T>(this T control, Func<Avalonia.Media.IBrush> func, Action<Avalonia.Media.IBrush>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.Editing.TextArea 
+   => control._set(AvaloniaEdit.Editing.TextArea.SelectionBrushProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T SelectionBrush<T>(this T control,Avalonia.Media.IBrush value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
-=> control._setEx(AvaloniaEdit.Editing.TextArea.SelectionBrushProperty, ps, () => control.SelectionBrush = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T SelectionBrush<T>(this T control,Avalonia.Media.IBrush value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
+=> control._setEx(AvaloniaEdit.Editing.TextArea.SelectionBrushProperty, ps, () => control.SelectionBrush = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T SelectionBrush<T>(this T control, IBinding binding) where T : AvaloniaEdit.Editing.TextArea 
@@ -100,19 +123,25 @@ public static T SelectionBrush<T>(this T control, AvaloniaProperty avaloniaPrope
    => control._set(AvaloniaEdit.Editing.TextArea.SelectionBrushProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T SelectionBrush<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IBrush> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
-=> control._setEx(AvaloniaEdit.Editing.TextArea.SelectionBrushProperty, ps, () => control.SelectionBrush = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T SelectionBrush<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IBrush> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
+=> control._setEx(AvaloniaEdit.Editing.TextArea.SelectionBrushProperty, ps, () => control.SelectionBrush = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // SelectionForeground
 
+/*ValueSetterGenerator*/
+public static T SelectionForeground<T>(this T control, Avalonia.Media.IBrush value) where T : AvaloniaEdit.Editing.TextArea 
+=> control._set(() => control.SelectionForeground = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T SelectionForeground<T>(this T control, Func<Avalonia.Media.IBrush> func, Action<Avalonia.Media.IBrush>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.Editing.TextArea 
-   => control._set(AvaloniaEdit.Editing.TextArea.SelectionForegroundProperty, func, onChanged, expression);
+public static T SelectionForeground<T>(this T control, Func<Avalonia.Media.IBrush> func, Action<Avalonia.Media.IBrush>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.Editing.TextArea 
+   => control._set(AvaloniaEdit.Editing.TextArea.SelectionForegroundProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T SelectionForeground<T>(this T control,Avalonia.Media.IBrush value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
-=> control._setEx(AvaloniaEdit.Editing.TextArea.SelectionForegroundProperty, ps, () => control.SelectionForeground = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T SelectionForeground<T>(this T control,Avalonia.Media.IBrush value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
+=> control._setEx(AvaloniaEdit.Editing.TextArea.SelectionForegroundProperty, ps, () => control.SelectionForeground = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T SelectionForeground<T>(this T control, IBinding binding) where T : AvaloniaEdit.Editing.TextArea 
@@ -123,19 +152,25 @@ public static T SelectionForeground<T>(this T control, AvaloniaProperty avalonia
    => control._set(AvaloniaEdit.Editing.TextArea.SelectionForegroundProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T SelectionForeground<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IBrush> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
-=> control._setEx(AvaloniaEdit.Editing.TextArea.SelectionForegroundProperty, ps, () => control.SelectionForeground = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T SelectionForeground<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IBrush> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
+=> control._setEx(AvaloniaEdit.Editing.TextArea.SelectionForegroundProperty, ps, () => control.SelectionForeground = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // SelectionBorder
 
+/*ValueSetterGenerator*/
+public static T SelectionBorder<T>(this T control, Avalonia.Media.Pen value) where T : AvaloniaEdit.Editing.TextArea 
+=> control._set(() => control.SelectionBorder = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T SelectionBorder<T>(this T control, Func<Avalonia.Media.Pen> func, Action<Avalonia.Media.Pen>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.Editing.TextArea 
-   => control._set(AvaloniaEdit.Editing.TextArea.SelectionBorderProperty, func, onChanged, expression);
+public static T SelectionBorder<T>(this T control, Func<Avalonia.Media.Pen> func, Action<Avalonia.Media.Pen>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.Editing.TextArea 
+   => control._set(AvaloniaEdit.Editing.TextArea.SelectionBorderProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T SelectionBorder<T>(this T control,Avalonia.Media.Pen value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
-=> control._setEx(AvaloniaEdit.Editing.TextArea.SelectionBorderProperty, ps, () => control.SelectionBorder = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T SelectionBorder<T>(this T control,Avalonia.Media.Pen value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
+=> control._setEx(AvaloniaEdit.Editing.TextArea.SelectionBorderProperty, ps, () => control.SelectionBorder = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T SelectionBorder<T>(this T control, IBinding binding) where T : AvaloniaEdit.Editing.TextArea 
@@ -146,19 +181,25 @@ public static T SelectionBorder<T>(this T control, AvaloniaProperty avaloniaProp
    => control._set(AvaloniaEdit.Editing.TextArea.SelectionBorderProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T SelectionBorder<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.Pen> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
-=> control._setEx(AvaloniaEdit.Editing.TextArea.SelectionBorderProperty, ps, () => control.SelectionBorder = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T SelectionBorder<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.Pen> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
+=> control._setEx(AvaloniaEdit.Editing.TextArea.SelectionBorderProperty, ps, () => control.SelectionBorder = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // SelectionCornerRadius
 
+/*ValueSetterGenerator*/
+public static T SelectionCornerRadius<T>(this T control, System.Double value) where T : AvaloniaEdit.Editing.TextArea 
+=> control._set(() => control.SelectionCornerRadius = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T SelectionCornerRadius<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.Editing.TextArea 
-   => control._set(AvaloniaEdit.Editing.TextArea.SelectionCornerRadiusProperty, func, onChanged, expression);
+public static T SelectionCornerRadius<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.Editing.TextArea 
+   => control._set(AvaloniaEdit.Editing.TextArea.SelectionCornerRadiusProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T SelectionCornerRadius<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
-=> control._setEx(AvaloniaEdit.Editing.TextArea.SelectionCornerRadiusProperty, ps, () => control.SelectionCornerRadius = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T SelectionCornerRadius<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
+=> control._setEx(AvaloniaEdit.Editing.TextArea.SelectionCornerRadiusProperty, ps, () => control.SelectionCornerRadius = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T SelectionCornerRadius<T>(this T control, IBinding binding) where T : AvaloniaEdit.Editing.TextArea 
@@ -169,19 +210,25 @@ public static T SelectionCornerRadius<T>(this T control, AvaloniaProperty avalon
    => control._set(AvaloniaEdit.Editing.TextArea.SelectionCornerRadiusProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T SelectionCornerRadius<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
-=> control._setEx(AvaloniaEdit.Editing.TextArea.SelectionCornerRadiusProperty, ps, () => control.SelectionCornerRadius = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T SelectionCornerRadius<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
+=> control._setEx(AvaloniaEdit.Editing.TextArea.SelectionCornerRadiusProperty, ps, () => control.SelectionCornerRadius = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // RightClickMovesCaret
 
+/*ValueSetterGenerator*/
+public static T RightClickMovesCaret<T>(this T control, System.Boolean value) where T : AvaloniaEdit.Editing.TextArea 
+=> control._set(() => control.RightClickMovesCaret = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T RightClickMovesCaret<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.Editing.TextArea 
-   => control._set(AvaloniaEdit.Editing.TextArea.RightClickMovesCaretProperty, func, onChanged, expression);
+public static T RightClickMovesCaret<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.Editing.TextArea 
+   => control._set(AvaloniaEdit.Editing.TextArea.RightClickMovesCaretProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T RightClickMovesCaret<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
-=> control._setEx(AvaloniaEdit.Editing.TextArea.RightClickMovesCaretProperty, ps, () => control.RightClickMovesCaret = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T RightClickMovesCaret<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
+=> control._setEx(AvaloniaEdit.Editing.TextArea.RightClickMovesCaretProperty, ps, () => control.RightClickMovesCaret = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T RightClickMovesCaret<T>(this T control, IBinding binding) where T : AvaloniaEdit.Editing.TextArea 
@@ -192,19 +239,25 @@ public static T RightClickMovesCaret<T>(this T control, AvaloniaProperty avaloni
    => control._set(AvaloniaEdit.Editing.TextArea.RightClickMovesCaretProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T RightClickMovesCaret<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
-=> control._setEx(AvaloniaEdit.Editing.TextArea.RightClickMovesCaretProperty, ps, () => control.RightClickMovesCaret = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T RightClickMovesCaret<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
+=> control._setEx(AvaloniaEdit.Editing.TextArea.RightClickMovesCaretProperty, ps, () => control.RightClickMovesCaret = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // IndentationStrategy
 
+/*ValueSetterGenerator*/
+public static T IndentationStrategy<T>(this T control, AvaloniaEdit.Indentation.IIndentationStrategy value) where T : AvaloniaEdit.Editing.TextArea 
+=> control._set(() => control.IndentationStrategy = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T IndentationStrategy<T>(this T control, Func<AvaloniaEdit.Indentation.IIndentationStrategy> func, Action<AvaloniaEdit.Indentation.IIndentationStrategy>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.Editing.TextArea 
-   => control._set(AvaloniaEdit.Editing.TextArea.IndentationStrategyProperty, func, onChanged, expression);
+public static T IndentationStrategy<T>(this T control, Func<AvaloniaEdit.Indentation.IIndentationStrategy> func, Action<AvaloniaEdit.Indentation.IIndentationStrategy>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.Editing.TextArea 
+   => control._set(AvaloniaEdit.Editing.TextArea.IndentationStrategyProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T IndentationStrategy<T>(this T control,AvaloniaEdit.Indentation.IIndentationStrategy value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
-=> control._setEx(AvaloniaEdit.Editing.TextArea.IndentationStrategyProperty, ps, () => control.IndentationStrategy = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IndentationStrategy<T>(this T control,AvaloniaEdit.Indentation.IIndentationStrategy value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
+=> control._setEx(AvaloniaEdit.Editing.TextArea.IndentationStrategyProperty, ps, () => control.IndentationStrategy = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IndentationStrategy<T>(this T control, IBinding binding) where T : AvaloniaEdit.Editing.TextArea 
@@ -215,19 +268,25 @@ public static T IndentationStrategy<T>(this T control, AvaloniaProperty avalonia
    => control._set(AvaloniaEdit.Editing.TextArea.IndentationStrategyProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T IndentationStrategy<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, AvaloniaEdit.Indentation.IIndentationStrategy> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
-=> control._setEx(AvaloniaEdit.Editing.TextArea.IndentationStrategyProperty, ps, () => control.IndentationStrategy = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IndentationStrategy<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, AvaloniaEdit.Indentation.IIndentationStrategy> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
+=> control._setEx(AvaloniaEdit.Editing.TextArea.IndentationStrategyProperty, ps, () => control.IndentationStrategy = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // OverstrikeMode
 
+/*ValueSetterGenerator*/
+public static T OverstrikeMode<T>(this T control, System.Boolean value) where T : AvaloniaEdit.Editing.TextArea 
+=> control._set(() => control.OverstrikeMode = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T OverstrikeMode<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : AvaloniaEdit.Editing.TextArea 
-   => control._set(AvaloniaEdit.Editing.TextArea.OverstrikeModeProperty, func, onChanged, expression);
+public static T OverstrikeMode<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : AvaloniaEdit.Editing.TextArea 
+   => control._set(AvaloniaEdit.Editing.TextArea.OverstrikeModeProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T OverstrikeMode<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
-=> control._setEx(AvaloniaEdit.Editing.TextArea.OverstrikeModeProperty, ps, () => control.OverstrikeMode = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T OverstrikeMode<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
+=> control._setEx(AvaloniaEdit.Editing.TextArea.OverstrikeModeProperty, ps, () => control.OverstrikeMode = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T OverstrikeMode<T>(this T control, IBinding binding) where T : AvaloniaEdit.Editing.TextArea 
@@ -238,8 +297,9 @@ public static T OverstrikeMode<T>(this T control, AvaloniaProperty avaloniaPrope
    => control._set(AvaloniaEdit.Editing.TextArea.OverstrikeModeProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T OverstrikeMode<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
-=> control._setEx(AvaloniaEdit.Editing.TextArea.OverstrikeModeProperty, ps, () => control.OverstrikeMode = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T OverstrikeMode<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : AvaloniaEdit.Editing.TextArea 
+=> control._setEx(AvaloniaEdit.Editing.TextArea.OverstrikeModeProperty, ps, () => control.OverstrikeMode = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
 
@@ -299,7 +359,7 @@ public static T OnTextCopied<T>(this T control, Action<AvaloniaEdit.Editing.Text
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Watermark<T>(this Style<T> style, System.String value) where T : AvaloniaEdit.Editing.TextArea 
-=> style._addSetter(AvaloniaEdit.Editing.TextArea.WatermarkProperty, value);
+=> style._addSetter(AvaloniaEdit.Editing.TextArea.WatermarkProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Watermark<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.Editing.TextArea 
@@ -310,7 +370,7 @@ public static Style<T> Watermark<T>(this Style<T> style, IBinding binding) where
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Document<T>(this Style<T> style, AvaloniaEdit.Document.TextDocument value) where T : AvaloniaEdit.Editing.TextArea 
-=> style._addSetter(AvaloniaEdit.Editing.TextArea.DocumentProperty, value);
+=> style._addSetter(AvaloniaEdit.Editing.TextArea.DocumentProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Document<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.Editing.TextArea 
@@ -321,7 +381,7 @@ public static Style<T> Document<T>(this Style<T> style, IBinding binding) where 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Options<T>(this Style<T> style, AvaloniaEdit.TextEditorOptions value) where T : AvaloniaEdit.Editing.TextArea 
-=> style._addSetter(AvaloniaEdit.Editing.TextArea.OptionsProperty, value);
+=> style._addSetter(AvaloniaEdit.Editing.TextArea.OptionsProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Options<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.Editing.TextArea 
@@ -332,7 +392,7 @@ public static Style<T> Options<T>(this Style<T> style, IBinding binding) where T
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> SelectionBrush<T>(this Style<T> style, Avalonia.Media.IBrush value) where T : AvaloniaEdit.Editing.TextArea 
-=> style._addSetter(AvaloniaEdit.Editing.TextArea.SelectionBrushProperty, value);
+=> style._addSetter(AvaloniaEdit.Editing.TextArea.SelectionBrushProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> SelectionBrush<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.Editing.TextArea 
@@ -343,7 +403,7 @@ public static Style<T> SelectionBrush<T>(this Style<T> style, IBinding binding) 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> SelectionForeground<T>(this Style<T> style, Avalonia.Media.IBrush value) where T : AvaloniaEdit.Editing.TextArea 
-=> style._addSetter(AvaloniaEdit.Editing.TextArea.SelectionForegroundProperty, value);
+=> style._addSetter(AvaloniaEdit.Editing.TextArea.SelectionForegroundProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> SelectionForeground<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.Editing.TextArea 
@@ -354,7 +414,7 @@ public static Style<T> SelectionForeground<T>(this Style<T> style, IBinding bind
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> SelectionBorder<T>(this Style<T> style, Avalonia.Media.Pen value) where T : AvaloniaEdit.Editing.TextArea 
-=> style._addSetter(AvaloniaEdit.Editing.TextArea.SelectionBorderProperty, value);
+=> style._addSetter(AvaloniaEdit.Editing.TextArea.SelectionBorderProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> SelectionBorder<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.Editing.TextArea 
@@ -365,7 +425,7 @@ public static Style<T> SelectionBorder<T>(this Style<T> style, IBinding binding)
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> SelectionCornerRadius<T>(this Style<T> style, System.Double value) where T : AvaloniaEdit.Editing.TextArea 
-=> style._addSetter(AvaloniaEdit.Editing.TextArea.SelectionCornerRadiusProperty, value);
+=> style._addSetter(AvaloniaEdit.Editing.TextArea.SelectionCornerRadiusProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> SelectionCornerRadius<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.Editing.TextArea 
@@ -376,7 +436,7 @@ public static Style<T> SelectionCornerRadius<T>(this Style<T> style, IBinding bi
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> RightClickMovesCaret<T>(this Style<T> style, System.Boolean value) where T : AvaloniaEdit.Editing.TextArea 
-=> style._addSetter(AvaloniaEdit.Editing.TextArea.RightClickMovesCaretProperty, value);
+=> style._addSetter(AvaloniaEdit.Editing.TextArea.RightClickMovesCaretProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> RightClickMovesCaret<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.Editing.TextArea 
@@ -387,7 +447,7 @@ public static Style<T> RightClickMovesCaret<T>(this Style<T> style, IBinding bin
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IndentationStrategy<T>(this Style<T> style, AvaloniaEdit.Indentation.IIndentationStrategy value) where T : AvaloniaEdit.Editing.TextArea 
-=> style._addSetter(AvaloniaEdit.Editing.TextArea.IndentationStrategyProperty, value);
+=> style._addSetter(AvaloniaEdit.Editing.TextArea.IndentationStrategyProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IndentationStrategy<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.Editing.TextArea 
@@ -398,7 +458,7 @@ public static Style<T> IndentationStrategy<T>(this Style<T> style, IBinding bind
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> OverstrikeMode<T>(this Style<T> style, System.Boolean value) where T : AvaloniaEdit.Editing.TextArea 
-=> style._addSetter(AvaloniaEdit.Editing.TextArea.OverstrikeModeProperty, value);
+=> style._addSetter(AvaloniaEdit.Editing.TextArea.OverstrikeModeProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> OverstrikeMode<T>(this Style<T> style, IBinding binding) where T : AvaloniaEdit.Editing.TextArea 

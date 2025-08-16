@@ -14,13 +14,18 @@ public static partial class Frame_MarkupExtensions
 //================= Properties ======================//
  // SourcePageType
 
+/*ValueSetterGenerator*/
+public static T SourcePageType<T>(this T control, System.Type value) where T : FluentAvalonia.UI.Controls.Frame 
+=> control._set(() => control.SourcePageType = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T SourcePageType<T>(this T control, Func<System.Type> func, Action<System.Type>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.Frame 
-   => control._set(FluentAvalonia.UI.Controls.Frame.SourcePageTypeProperty, func, onChanged, expression);
+public static T SourcePageType<T>(this T control, Func<System.Type> func, Action<System.Type>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.Frame 
+   => control._set(FluentAvalonia.UI.Controls.Frame.SourcePageTypeProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T SourcePageType<T>(this T control,System.Type value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.Frame 
-=> control._setEx(FluentAvalonia.UI.Controls.Frame.SourcePageTypeProperty, ps, () => control.SourcePageType = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T SourcePageType<T>(this T control,System.Type value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.Frame 
+=> control._setEx(FluentAvalonia.UI.Controls.Frame.SourcePageTypeProperty, ps, () => control.SourcePageType = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T SourcePageType<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.Frame 
@@ -31,19 +36,25 @@ public static T SourcePageType<T>(this T control, AvaloniaProperty avaloniaPrope
    => control._set(FluentAvalonia.UI.Controls.Frame.SourcePageTypeProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T SourcePageType<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Type> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.Frame 
-=> control._setEx(FluentAvalonia.UI.Controls.Frame.SourcePageTypeProperty, ps, () => control.SourcePageType = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T SourcePageType<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Type> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.Frame 
+=> control._setEx(FluentAvalonia.UI.Controls.Frame.SourcePageTypeProperty, ps, () => control.SourcePageType = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // CacheSize
 
+/*ValueSetterGenerator*/
+public static T CacheSize<T>(this T control, System.Int32 value) where T : FluentAvalonia.UI.Controls.Frame 
+=> control._set(() => control.CacheSize = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T CacheSize<T>(this T control, Func<System.Int32> func, Action<System.Int32>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.Frame 
-   => control._set(FluentAvalonia.UI.Controls.Frame.CacheSizeProperty, func, onChanged, expression);
+public static T CacheSize<T>(this T control, Func<System.Int32> func, Action<System.Int32>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.Frame 
+   => control._set(FluentAvalonia.UI.Controls.Frame.CacheSizeProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T CacheSize<T>(this T control,System.Int32 value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.Frame 
-=> control._setEx(FluentAvalonia.UI.Controls.Frame.CacheSizeProperty, ps, () => control.CacheSize = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T CacheSize<T>(this T control,System.Int32 value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.Frame 
+=> control._setEx(FluentAvalonia.UI.Controls.Frame.CacheSizeProperty, ps, () => control.CacheSize = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T CacheSize<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.Frame 
@@ -54,19 +65,25 @@ public static T CacheSize<T>(this T control, AvaloniaProperty avaloniaProperty, 
    => control._set(FluentAvalonia.UI.Controls.Frame.CacheSizeProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T CacheSize<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Int32> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.Frame 
-=> control._setEx(FluentAvalonia.UI.Controls.Frame.CacheSizeProperty, ps, () => control.CacheSize = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T CacheSize<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Int32> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.Frame 
+=> control._setEx(FluentAvalonia.UI.Controls.Frame.CacheSizeProperty, ps, () => control.CacheSize = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // IsNavigationStackEnabled
 
+/*ValueSetterGenerator*/
+public static T IsNavigationStackEnabled<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.Frame 
+=> control._set(() => control.IsNavigationStackEnabled = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T IsNavigationStackEnabled<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.Frame 
-   => control._set(FluentAvalonia.UI.Controls.Frame.IsNavigationStackEnabledProperty, func, onChanged, expression);
+public static T IsNavigationStackEnabled<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.Frame 
+   => control._set(FluentAvalonia.UI.Controls.Frame.IsNavigationStackEnabledProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T IsNavigationStackEnabled<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.Frame 
-=> control._setEx(FluentAvalonia.UI.Controls.Frame.IsNavigationStackEnabledProperty, ps, () => control.IsNavigationStackEnabled = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IsNavigationStackEnabled<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.Frame 
+=> control._setEx(FluentAvalonia.UI.Controls.Frame.IsNavigationStackEnabledProperty, ps, () => control.IsNavigationStackEnabled = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsNavigationStackEnabled<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.Frame 
@@ -77,19 +94,25 @@ public static T IsNavigationStackEnabled<T>(this T control, AvaloniaProperty ava
    => control._set(FluentAvalonia.UI.Controls.Frame.IsNavigationStackEnabledProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T IsNavigationStackEnabled<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.Frame 
-=> control._setEx(FluentAvalonia.UI.Controls.Frame.IsNavigationStackEnabledProperty, ps, () => control.IsNavigationStackEnabled = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IsNavigationStackEnabled<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.Frame 
+=> control._setEx(FluentAvalonia.UI.Controls.Frame.IsNavigationStackEnabledProperty, ps, () => control.IsNavigationStackEnabled = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // NavigationPageFactory
 
+/*ValueSetterGenerator*/
+public static T NavigationPageFactory<T>(this T control, FluentAvalonia.UI.Controls.INavigationPageFactory value) where T : FluentAvalonia.UI.Controls.Frame 
+=> control._set(() => control.NavigationPageFactory = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T NavigationPageFactory<T>(this T control, Func<FluentAvalonia.UI.Controls.INavigationPageFactory> func, Action<FluentAvalonia.UI.Controls.INavigationPageFactory>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.Frame 
-   => control._set(FluentAvalonia.UI.Controls.Frame.NavigationPageFactoryProperty, func, onChanged, expression);
+public static T NavigationPageFactory<T>(this T control, Func<FluentAvalonia.UI.Controls.INavigationPageFactory> func, Action<FluentAvalonia.UI.Controls.INavigationPageFactory>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.Frame 
+   => control._set(FluentAvalonia.UI.Controls.Frame.NavigationPageFactoryProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T NavigationPageFactory<T>(this T control,FluentAvalonia.UI.Controls.INavigationPageFactory value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.Frame 
-=> control._setEx(FluentAvalonia.UI.Controls.Frame.NavigationPageFactoryProperty, ps, () => control.NavigationPageFactory = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T NavigationPageFactory<T>(this T control,FluentAvalonia.UI.Controls.INavigationPageFactory value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.Frame 
+=> control._setEx(FluentAvalonia.UI.Controls.Frame.NavigationPageFactoryProperty, ps, () => control.NavigationPageFactory = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T NavigationPageFactory<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.Frame 
@@ -100,8 +123,9 @@ public static T NavigationPageFactory<T>(this T control, AvaloniaProperty avalon
    => control._set(FluentAvalonia.UI.Controls.Frame.NavigationPageFactoryProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T NavigationPageFactory<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.INavigationPageFactory> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.Frame 
-=> control._setEx(FluentAvalonia.UI.Controls.Frame.NavigationPageFactoryProperty, ps, () => control.NavigationPageFactory = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T NavigationPageFactory<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.INavigationPageFactory> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.Frame 
+=> control._setEx(FluentAvalonia.UI.Controls.Frame.NavigationPageFactoryProperty, ps, () => control.NavigationPageFactory = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
 
@@ -140,7 +164,7 @@ public static T OnNavigationStopped<T>(this T control, Action<FluentAvalonia.UI.
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> SourcePageType<T>(this Style<T> style, System.Type value) where T : FluentAvalonia.UI.Controls.Frame 
-=> style._addSetter(FluentAvalonia.UI.Controls.Frame.SourcePageTypeProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.Frame.SourcePageTypeProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> SourcePageType<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.Frame 
@@ -151,7 +175,7 @@ public static Style<T> SourcePageType<T>(this Style<T> style, IBinding binding) 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> CacheSize<T>(this Style<T> style, System.Int32 value) where T : FluentAvalonia.UI.Controls.Frame 
-=> style._addSetter(FluentAvalonia.UI.Controls.Frame.CacheSizeProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.Frame.CacheSizeProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> CacheSize<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.Frame 
@@ -162,7 +186,7 @@ public static Style<T> CacheSize<T>(this Style<T> style, IBinding binding) where
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsNavigationStackEnabled<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.Frame 
-=> style._addSetter(FluentAvalonia.UI.Controls.Frame.IsNavigationStackEnabledProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.Frame.IsNavigationStackEnabledProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsNavigationStackEnabled<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.Frame 

@@ -14,13 +14,18 @@ public static partial class StackLayout_MarkupExtensions
 //================= Properties ======================//
  // Spacing
 
+/*ValueSetterGenerator*/
+public static T Spacing<T>(this T control, System.Double value) where T : FluentAvalonia.UI.Controls.StackLayout 
+=> control._set(() => control.Spacing = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T Spacing<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.StackLayout 
-   => control._set(FluentAvalonia.UI.Controls.StackLayout.SpacingProperty, func, onChanged, expression);
+public static T Spacing<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.StackLayout 
+   => control._set(FluentAvalonia.UI.Controls.StackLayout.SpacingProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T Spacing<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.StackLayout 
-=> control._setEx(FluentAvalonia.UI.Controls.StackLayout.SpacingProperty, ps, () => control.Spacing = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Spacing<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.StackLayout 
+=> control._setEx(FluentAvalonia.UI.Controls.StackLayout.SpacingProperty, ps, () => control.Spacing = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Spacing<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.StackLayout 
@@ -31,19 +36,25 @@ public static T Spacing<T>(this T control, AvaloniaProperty avaloniaProperty, Bi
    => control._set(FluentAvalonia.UI.Controls.StackLayout.SpacingProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T Spacing<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.StackLayout 
-=> control._setEx(FluentAvalonia.UI.Controls.StackLayout.SpacingProperty, ps, () => control.Spacing = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Spacing<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.StackLayout 
+=> control._setEx(FluentAvalonia.UI.Controls.StackLayout.SpacingProperty, ps, () => control.Spacing = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // Orientation
 
+/*ValueSetterGenerator*/
+public static T Orientation<T>(this T control, Avalonia.Layout.Orientation value) where T : FluentAvalonia.UI.Controls.StackLayout 
+=> control._set(() => control.Orientation = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T Orientation<T>(this T control, Func<Avalonia.Layout.Orientation> func, Action<Avalonia.Layout.Orientation>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.StackLayout 
-   => control._set(FluentAvalonia.UI.Controls.StackLayout.OrientationProperty, func, onChanged, expression);
+public static T Orientation<T>(this T control, Func<Avalonia.Layout.Orientation> func, Action<Avalonia.Layout.Orientation>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.StackLayout 
+   => control._set(FluentAvalonia.UI.Controls.StackLayout.OrientationProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T Orientation<T>(this T control,Avalonia.Layout.Orientation value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.StackLayout 
-=> control._setEx(FluentAvalonia.UI.Controls.StackLayout.OrientationProperty, ps, () => control.Orientation = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Orientation<T>(this T control,Avalonia.Layout.Orientation value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.StackLayout 
+=> control._setEx(FluentAvalonia.UI.Controls.StackLayout.OrientationProperty, ps, () => control.Orientation = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Orientation<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.StackLayout 
@@ -54,8 +65,9 @@ public static T Orientation<T>(this T control, AvaloniaProperty avaloniaProperty
    => control._set(FluentAvalonia.UI.Controls.StackLayout.OrientationProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T Orientation<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Layout.Orientation> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.StackLayout 
-=> control._setEx(FluentAvalonia.UI.Controls.StackLayout.OrientationProperty, ps, () => control.Orientation = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Orientation<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Layout.Orientation> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.StackLayout 
+=> control._setEx(FluentAvalonia.UI.Controls.StackLayout.OrientationProperty, ps, () => control.Orientation = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
 

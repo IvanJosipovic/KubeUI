@@ -14,13 +14,18 @@ public static partial class ItemsRepeater_MarkupExtensions
 //================= Properties ======================//
  // VerticalCacheLength
 
+/*ValueSetterGenerator*/
+public static T VerticalCacheLength<T>(this T control, System.Double value) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
+=> control._set(() => control.VerticalCacheLength = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T VerticalCacheLength<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
-   => control._set(FluentAvalonia.UI.Controls.ItemsRepeater.VerticalCacheLengthProperty, func, onChanged, expression);
+public static T VerticalCacheLength<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
+   => control._set(FluentAvalonia.UI.Controls.ItemsRepeater.VerticalCacheLengthProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T VerticalCacheLength<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
-=> control._setEx(FluentAvalonia.UI.Controls.ItemsRepeater.VerticalCacheLengthProperty, ps, () => control.VerticalCacheLength = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T VerticalCacheLength<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
+=> control._setEx(FluentAvalonia.UI.Controls.ItemsRepeater.VerticalCacheLengthProperty, ps, () => control.VerticalCacheLength = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T VerticalCacheLength<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
@@ -31,19 +36,25 @@ public static T VerticalCacheLength<T>(this T control, AvaloniaProperty avalonia
    => control._set(FluentAvalonia.UI.Controls.ItemsRepeater.VerticalCacheLengthProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T VerticalCacheLength<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
-=> control._setEx(FluentAvalonia.UI.Controls.ItemsRepeater.VerticalCacheLengthProperty, ps, () => control.VerticalCacheLength = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T VerticalCacheLength<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
+=> control._setEx(FluentAvalonia.UI.Controls.ItemsRepeater.VerticalCacheLengthProperty, ps, () => control.VerticalCacheLength = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // HorizontalCacheLength
 
+/*ValueSetterGenerator*/
+public static T HorizontalCacheLength<T>(this T control, System.Double value) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
+=> control._set(() => control.HorizontalCacheLength = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T HorizontalCacheLength<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
-   => control._set(FluentAvalonia.UI.Controls.ItemsRepeater.HorizontalCacheLengthProperty, func, onChanged, expression);
+public static T HorizontalCacheLength<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
+   => control._set(FluentAvalonia.UI.Controls.ItemsRepeater.HorizontalCacheLengthProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T HorizontalCacheLength<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
-=> control._setEx(FluentAvalonia.UI.Controls.ItemsRepeater.HorizontalCacheLengthProperty, ps, () => control.HorizontalCacheLength = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T HorizontalCacheLength<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
+=> control._setEx(FluentAvalonia.UI.Controls.ItemsRepeater.HorizontalCacheLengthProperty, ps, () => control.HorizontalCacheLength = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T HorizontalCacheLength<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
@@ -54,19 +65,25 @@ public static T HorizontalCacheLength<T>(this T control, AvaloniaProperty avalon
    => control._set(FluentAvalonia.UI.Controls.ItemsRepeater.HorizontalCacheLengthProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T HorizontalCacheLength<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
-=> control._setEx(FluentAvalonia.UI.Controls.ItemsRepeater.HorizontalCacheLengthProperty, ps, () => control.HorizontalCacheLength = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T HorizontalCacheLength<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
+=> control._setEx(FluentAvalonia.UI.Controls.ItemsRepeater.HorizontalCacheLengthProperty, ps, () => control.HorizontalCacheLength = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // Layout
 
+/*ValueSetterGenerator*/
+public static T Layout<T>(this T control, FluentAvalonia.UI.Controls.Layout value) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
+=> control._set(() => control.Layout = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T Layout<T>(this T control, Func<FluentAvalonia.UI.Controls.Layout> func, Action<FluentAvalonia.UI.Controls.Layout>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
-   => control._set(FluentAvalonia.UI.Controls.ItemsRepeater.LayoutProperty, func, onChanged, expression);
+public static T Layout<T>(this T control, Func<FluentAvalonia.UI.Controls.Layout> func, Action<FluentAvalonia.UI.Controls.Layout>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
+   => control._set(FluentAvalonia.UI.Controls.ItemsRepeater.LayoutProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T Layout<T>(this T control,FluentAvalonia.UI.Controls.Layout value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
-=> control._setEx(FluentAvalonia.UI.Controls.ItemsRepeater.LayoutProperty, ps, () => control.Layout = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Layout<T>(this T control,FluentAvalonia.UI.Controls.Layout value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
+=> control._setEx(FluentAvalonia.UI.Controls.ItemsRepeater.LayoutProperty, ps, () => control.Layout = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Layout<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
@@ -77,19 +94,25 @@ public static T Layout<T>(this T control, AvaloniaProperty avaloniaProperty, Bin
    => control._set(FluentAvalonia.UI.Controls.ItemsRepeater.LayoutProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T Layout<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.Layout> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
-=> control._setEx(FluentAvalonia.UI.Controls.ItemsRepeater.LayoutProperty, ps, () => control.Layout = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Layout<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.Layout> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
+=> control._setEx(FluentAvalonia.UI.Controls.ItemsRepeater.LayoutProperty, ps, () => control.Layout = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // ItemsSource
 
+/*ValueSetterGenerator*/
+public static T ItemsSource<T>(this T control, System.Object value) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
+=> control._set(() => control.ItemsSource = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T ItemsSource<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
-   => control._set(FluentAvalonia.UI.Controls.ItemsRepeater.ItemsSourceProperty, func, onChanged, expression);
+public static T ItemsSource<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
+   => control._set(FluentAvalonia.UI.Controls.ItemsRepeater.ItemsSourceProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T ItemsSource<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
-=> control._setEx(FluentAvalonia.UI.Controls.ItemsRepeater.ItemsSourceProperty, ps, () => control.ItemsSource = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T ItemsSource<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
+=> control._setEx(FluentAvalonia.UI.Controls.ItemsRepeater.ItemsSourceProperty, ps, () => control.ItemsSource = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T ItemsSource<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
@@ -100,19 +123,25 @@ public static T ItemsSource<T>(this T control, AvaloniaProperty avaloniaProperty
    => control._set(FluentAvalonia.UI.Controls.ItemsRepeater.ItemsSourceProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T ItemsSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
-=> control._setEx(FluentAvalonia.UI.Controls.ItemsRepeater.ItemsSourceProperty, ps, () => control.ItemsSource = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T ItemsSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
+=> control._setEx(FluentAvalonia.UI.Controls.ItemsRepeater.ItemsSourceProperty, ps, () => control.ItemsSource = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // ItemTemplate
 
+/*ValueSetterGenerator*/
+public static T ItemTemplate<T>(this T control, Avalonia.Controls.Templates.IDataTemplate value) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
+=> control._set(() => control.ItemTemplate = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T ItemTemplate<T>(this T control, Func<Avalonia.Controls.Templates.IDataTemplate> func, Action<Avalonia.Controls.Templates.IDataTemplate>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
-   => control._set(FluentAvalonia.UI.Controls.ItemsRepeater.ItemTemplateProperty, func, onChanged, expression);
+public static T ItemTemplate<T>(this T control, Func<Avalonia.Controls.Templates.IDataTemplate> func, Action<Avalonia.Controls.Templates.IDataTemplate>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
+   => control._set(FluentAvalonia.UI.Controls.ItemsRepeater.ItemTemplateProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T ItemTemplate<T>(this T control,Avalonia.Controls.Templates.IDataTemplate value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
-=> control._setEx(FluentAvalonia.UI.Controls.ItemsRepeater.ItemTemplateProperty, ps, () => control.ItemTemplate = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T ItemTemplate<T>(this T control,Avalonia.Controls.Templates.IDataTemplate value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
+=> control._setEx(FluentAvalonia.UI.Controls.ItemsRepeater.ItemTemplateProperty, ps, () => control.ItemTemplate = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T ItemTemplate<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
@@ -123,19 +152,25 @@ public static T ItemTemplate<T>(this T control, AvaloniaProperty avaloniaPropert
    => control._set(FluentAvalonia.UI.Controls.ItemsRepeater.ItemTemplateProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T ItemTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Templates.IDataTemplate> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
-=> control._setEx(FluentAvalonia.UI.Controls.ItemsRepeater.ItemTemplateProperty, ps, () => control.ItemTemplate = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T ItemTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Templates.IDataTemplate> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
+=> control._setEx(FluentAvalonia.UI.Controls.ItemsRepeater.ItemTemplateProperty, ps, () => control.ItemTemplate = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // ItemTransitionProvider
 
+/*ValueSetterGenerator*/
+public static T ItemTransitionProvider<T>(this T control, FluentAvalonia.UI.Controls.ItemCollectionTransitionProvider value) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
+=> control._set(() => control.ItemTransitionProvider = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T ItemTransitionProvider<T>(this T control, Func<FluentAvalonia.UI.Controls.ItemCollectionTransitionProvider> func, Action<FluentAvalonia.UI.Controls.ItemCollectionTransitionProvider>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
-   => control._set(FluentAvalonia.UI.Controls.ItemsRepeater.ItemTransitionProviderProperty, func, onChanged, expression);
+public static T ItemTransitionProvider<T>(this T control, Func<FluentAvalonia.UI.Controls.ItemCollectionTransitionProvider> func, Action<FluentAvalonia.UI.Controls.ItemCollectionTransitionProvider>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
+   => control._set(FluentAvalonia.UI.Controls.ItemsRepeater.ItemTransitionProviderProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T ItemTransitionProvider<T>(this T control,FluentAvalonia.UI.Controls.ItemCollectionTransitionProvider value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
-=> control._setEx(FluentAvalonia.UI.Controls.ItemsRepeater.ItemTransitionProviderProperty, ps, () => control.ItemTransitionProvider = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T ItemTransitionProvider<T>(this T control,FluentAvalonia.UI.Controls.ItemCollectionTransitionProvider value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
+=> control._setEx(FluentAvalonia.UI.Controls.ItemsRepeater.ItemTransitionProviderProperty, ps, () => control.ItemTransitionProvider = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T ItemTransitionProvider<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
@@ -146,8 +181,9 @@ public static T ItemTransitionProvider<T>(this T control, AvaloniaProperty avalo
    => control._set(FluentAvalonia.UI.Controls.ItemsRepeater.ItemTransitionProviderProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T ItemTransitionProvider<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.ItemCollectionTransitionProvider> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
-=> control._setEx(FluentAvalonia.UI.Controls.ItemsRepeater.ItemTransitionProviderProperty, ps, () => control.ItemTransitionProvider = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T ItemTransitionProvider<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.ItemCollectionTransitionProvider> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
+=> control._setEx(FluentAvalonia.UI.Controls.ItemsRepeater.ItemTransitionProviderProperty, ps, () => control.ItemTransitionProvider = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
 
@@ -186,7 +222,7 @@ public static T OnContainerContentChanging<T>(this T control, Action<FluentAvalo
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> VerticalCacheLength<T>(this Style<T> style, System.Double value) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
-=> style._addSetter(FluentAvalonia.UI.Controls.ItemsRepeater.VerticalCacheLengthProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.ItemsRepeater.VerticalCacheLengthProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> VerticalCacheLength<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
@@ -197,7 +233,7 @@ public static Style<T> VerticalCacheLength<T>(this Style<T> style, IBinding bind
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> HorizontalCacheLength<T>(this Style<T> style, System.Double value) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
-=> style._addSetter(FluentAvalonia.UI.Controls.ItemsRepeater.HorizontalCacheLengthProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.ItemsRepeater.HorizontalCacheLengthProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> HorizontalCacheLength<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
@@ -208,7 +244,7 @@ public static Style<T> HorizontalCacheLength<T>(this Style<T> style, IBinding bi
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Layout<T>(this Style<T> style, FluentAvalonia.UI.Controls.Layout value) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
-=> style._addSetter(FluentAvalonia.UI.Controls.ItemsRepeater.LayoutProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.ItemsRepeater.LayoutProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Layout<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
@@ -219,7 +255,7 @@ public static Style<T> Layout<T>(this Style<T> style, IBinding binding) where T 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> ItemsSource<T>(this Style<T> style, System.Object value) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
-=> style._addSetter(FluentAvalonia.UI.Controls.ItemsRepeater.ItemsSourceProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.ItemsRepeater.ItemsSourceProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> ItemsSource<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
@@ -230,7 +266,7 @@ public static Style<T> ItemsSource<T>(this Style<T> style, IBinding binding) whe
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> ItemTemplate<T>(this Style<T> style, Avalonia.Controls.Templates.IDataTemplate value) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
-=> style._addSetter(FluentAvalonia.UI.Controls.ItemsRepeater.ItemTemplateProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.ItemsRepeater.ItemTemplateProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> ItemTemplate<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
@@ -241,7 +277,7 @@ public static Style<T> ItemTemplate<T>(this Style<T> style, IBinding binding) wh
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> ItemTransitionProvider<T>(this Style<T> style, FluentAvalonia.UI.Controls.ItemCollectionTransitionProvider value) where T : FluentAvalonia.UI.Controls.ItemsRepeater 
-=> style._addSetter(FluentAvalonia.UI.Controls.ItemsRepeater.ItemTransitionProviderProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.ItemsRepeater.ItemTransitionProviderProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> ItemTransitionProvider<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.ItemsRepeater 

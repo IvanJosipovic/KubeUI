@@ -14,13 +14,18 @@ public static partial class TabViewListView_MarkupExtensions
 //================= Properties ======================//
  // CanReorderItems
 
+/*ValueSetterGenerator*/
+public static T CanReorderItems<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.Primitives.TabViewListView 
+=> control._set(() => control.CanReorderItems = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T CanReorderItems<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.Primitives.TabViewListView 
-   => control._set(FluentAvalonia.UI.Controls.Primitives.TabViewListView.CanReorderItemsProperty, func, onChanged, expression);
+public static T CanReorderItems<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.Primitives.TabViewListView 
+   => control._set(FluentAvalonia.UI.Controls.Primitives.TabViewListView.CanReorderItemsProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T CanReorderItems<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.Primitives.TabViewListView 
-=> control._setEx(FluentAvalonia.UI.Controls.Primitives.TabViewListView.CanReorderItemsProperty, ps, () => control.CanReorderItems = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T CanReorderItems<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.Primitives.TabViewListView 
+=> control._setEx(FluentAvalonia.UI.Controls.Primitives.TabViewListView.CanReorderItemsProperty, ps, () => control.CanReorderItems = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T CanReorderItems<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.Primitives.TabViewListView 
@@ -31,19 +36,25 @@ public static T CanReorderItems<T>(this T control, AvaloniaProperty avaloniaProp
    => control._set(FluentAvalonia.UI.Controls.Primitives.TabViewListView.CanReorderItemsProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T CanReorderItems<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.Primitives.TabViewListView 
-=> control._setEx(FluentAvalonia.UI.Controls.Primitives.TabViewListView.CanReorderItemsProperty, ps, () => control.CanReorderItems = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T CanReorderItems<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.Primitives.TabViewListView 
+=> control._setEx(FluentAvalonia.UI.Controls.Primitives.TabViewListView.CanReorderItemsProperty, ps, () => control.CanReorderItems = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // CanDragItems
 
+/*ValueSetterGenerator*/
+public static T CanDragItems<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.Primitives.TabViewListView 
+=> control._set(() => control.CanDragItems = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T CanDragItems<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.Primitives.TabViewListView 
-   => control._set(FluentAvalonia.UI.Controls.Primitives.TabViewListView.CanDragItemsProperty, func, onChanged, expression);
+public static T CanDragItems<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.Primitives.TabViewListView 
+   => control._set(FluentAvalonia.UI.Controls.Primitives.TabViewListView.CanDragItemsProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T CanDragItems<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.Primitives.TabViewListView 
-=> control._setEx(FluentAvalonia.UI.Controls.Primitives.TabViewListView.CanDragItemsProperty, ps, () => control.CanDragItems = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T CanDragItems<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.Primitives.TabViewListView 
+=> control._setEx(FluentAvalonia.UI.Controls.Primitives.TabViewListView.CanDragItemsProperty, ps, () => control.CanDragItems = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T CanDragItems<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.Primitives.TabViewListView 
@@ -54,8 +65,9 @@ public static T CanDragItems<T>(this T control, AvaloniaProperty avaloniaPropert
    => control._set(FluentAvalonia.UI.Controls.Primitives.TabViewListView.CanDragItemsProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T CanDragItems<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.Primitives.TabViewListView 
-=> control._setEx(FluentAvalonia.UI.Controls.Primitives.TabViewListView.CanDragItemsProperty, ps, () => control.CanDragItems = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T CanDragItems<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.Primitives.TabViewListView 
+=> control._setEx(FluentAvalonia.UI.Controls.Primitives.TabViewListView.CanDragItemsProperty, ps, () => control.CanDragItems = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
 
@@ -94,7 +106,7 @@ public static T OnDragItemsCompleted<T>(this T control, Action<FluentAvalonia.UI
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> CanReorderItems<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.Primitives.TabViewListView 
-=> style._addSetter(FluentAvalonia.UI.Controls.Primitives.TabViewListView.CanReorderItemsProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.Primitives.TabViewListView.CanReorderItemsProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> CanReorderItems<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.Primitives.TabViewListView 
@@ -105,7 +117,7 @@ public static Style<T> CanReorderItems<T>(this Style<T> style, IBinding binding)
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> CanDragItems<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.Primitives.TabViewListView 
-=> style._addSetter(FluentAvalonia.UI.Controls.Primitives.TabViewListView.CanDragItemsProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.Primitives.TabViewListView.CanDragItemsProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> CanDragItems<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.Primitives.TabViewListView 

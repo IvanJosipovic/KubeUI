@@ -14,13 +14,18 @@ public static partial class PinPressedBehavior_MarkupExtensions
 //================= Properties ======================//
  // PinSource
 
+/*ValueSetterGenerator*/
+public static T PinSource<T>(this T control, NodeEditor.Model.IPin value) where T : NodeEditor.Behaviors.PinPressedBehavior 
+=> control._set(() => control.PinSource = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T PinSource<T>(this T control, Func<NodeEditor.Model.IPin> func, Action<NodeEditor.Model.IPin>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Behaviors.PinPressedBehavior 
-   => control._set(NodeEditor.Behaviors.PinPressedBehavior.PinSourceProperty, func, onChanged, expression);
+public static T PinSource<T>(this T control, Func<NodeEditor.Model.IPin> func, Action<NodeEditor.Model.IPin>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : NodeEditor.Behaviors.PinPressedBehavior 
+   => control._set(NodeEditor.Behaviors.PinPressedBehavior.PinSourceProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T PinSource<T>(this T control,NodeEditor.Model.IPin value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Behaviors.PinPressedBehavior 
-=> control._setEx(NodeEditor.Behaviors.PinPressedBehavior.PinSourceProperty, ps, () => control.PinSource = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T PinSource<T>(this T control,NodeEditor.Model.IPin value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Behaviors.PinPressedBehavior 
+=> control._setEx(NodeEditor.Behaviors.PinPressedBehavior.PinSourceProperty, ps, () => control.PinSource = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T PinSource<T>(this T control, IBinding binding) where T : NodeEditor.Behaviors.PinPressedBehavior 
@@ -31,8 +36,9 @@ public static T PinSource<T>(this T control, AvaloniaProperty avaloniaProperty, 
    => control._set(NodeEditor.Behaviors.PinPressedBehavior.PinSourceProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T PinSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, NodeEditor.Model.IPin> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Behaviors.PinPressedBehavior 
-=> control._setEx(NodeEditor.Behaviors.PinPressedBehavior.PinSourceProperty, ps, () => control.PinSource = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T PinSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, NodeEditor.Model.IPin> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Behaviors.PinPressedBehavior 
+=> control._setEx(NodeEditor.Behaviors.PinPressedBehavior.PinSourceProperty, ps, () => control.PinSource = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
 
