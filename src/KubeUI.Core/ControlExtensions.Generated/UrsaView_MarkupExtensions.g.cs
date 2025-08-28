@@ -14,13 +14,18 @@ public static partial class UrsaView_MarkupExtensions
 //================= Properties ======================//
  // IsTitleBarVisible
 
+/*ValueSetterGenerator*/
+public static T IsTitleBarVisible<T>(this T control, System.Boolean value) where T : Ursa.Controls.UrsaView 
+=> control._set(() => control.IsTitleBarVisible = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T IsTitleBarVisible<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.UrsaView 
-   => control._set(Ursa.Controls.UrsaView.IsTitleBarVisibleProperty, func, onChanged, expression);
+public static T IsTitleBarVisible<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Ursa.Controls.UrsaView 
+   => control._set(Ursa.Controls.UrsaView.IsTitleBarVisibleProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T IsTitleBarVisible<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.UrsaView 
-=> control._setEx(Ursa.Controls.UrsaView.IsTitleBarVisibleProperty, ps, () => control.IsTitleBarVisible = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IsTitleBarVisible<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.UrsaView 
+=> control._setEx(Ursa.Controls.UrsaView.IsTitleBarVisibleProperty, ps, () => control.IsTitleBarVisible = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsTitleBarVisible<T>(this T control, IBinding binding) where T : Ursa.Controls.UrsaView 
@@ -31,19 +36,25 @@ public static T IsTitleBarVisible<T>(this T control, AvaloniaProperty avaloniaPr
    => control._set(Ursa.Controls.UrsaView.IsTitleBarVisibleProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T IsTitleBarVisible<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.UrsaView 
-=> control._setEx(Ursa.Controls.UrsaView.IsTitleBarVisibleProperty, ps, () => control.IsTitleBarVisible = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IsTitleBarVisible<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.UrsaView 
+=> control._setEx(Ursa.Controls.UrsaView.IsTitleBarVisibleProperty, ps, () => control.IsTitleBarVisible = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // LeftContent
 
+/*ValueSetterGenerator*/
+public static T LeftContent<T>(this T control, System.Object value) where T : Ursa.Controls.UrsaView 
+=> control._set(() => control.LeftContent = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T LeftContent<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.UrsaView 
-   => control._set(Ursa.Controls.UrsaView.LeftContentProperty, func, onChanged, expression);
+public static T LeftContent<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Ursa.Controls.UrsaView 
+   => control._set(Ursa.Controls.UrsaView.LeftContentProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T LeftContent<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.UrsaView 
-=> control._setEx(Ursa.Controls.UrsaView.LeftContentProperty, ps, () => control.LeftContent = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T LeftContent<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.UrsaView 
+=> control._setEx(Ursa.Controls.UrsaView.LeftContentProperty, ps, () => control.LeftContent = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T LeftContent<T>(this T control, IBinding binding) where T : Ursa.Controls.UrsaView 
@@ -54,19 +65,25 @@ public static T LeftContent<T>(this T control, AvaloniaProperty avaloniaProperty
    => control._set(Ursa.Controls.UrsaView.LeftContentProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T LeftContent<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.UrsaView 
-=> control._setEx(Ursa.Controls.UrsaView.LeftContentProperty, ps, () => control.LeftContent = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T LeftContent<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.UrsaView 
+=> control._setEx(Ursa.Controls.UrsaView.LeftContentProperty, ps, () => control.LeftContent = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // RightContent
 
+/*ValueSetterGenerator*/
+public static T RightContent<T>(this T control, System.Object value) where T : Ursa.Controls.UrsaView 
+=> control._set(() => control.RightContent = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T RightContent<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.UrsaView 
-   => control._set(Ursa.Controls.UrsaView.RightContentProperty, func, onChanged, expression);
+public static T RightContent<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Ursa.Controls.UrsaView 
+   => control._set(Ursa.Controls.UrsaView.RightContentProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T RightContent<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.UrsaView 
-=> control._setEx(Ursa.Controls.UrsaView.RightContentProperty, ps, () => control.RightContent = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T RightContent<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.UrsaView 
+=> control._setEx(Ursa.Controls.UrsaView.RightContentProperty, ps, () => control.RightContent = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T RightContent<T>(this T control, IBinding binding) where T : Ursa.Controls.UrsaView 
@@ -77,19 +94,25 @@ public static T RightContent<T>(this T control, AvaloniaProperty avaloniaPropert
    => control._set(Ursa.Controls.UrsaView.RightContentProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T RightContent<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.UrsaView 
-=> control._setEx(Ursa.Controls.UrsaView.RightContentProperty, ps, () => control.RightContent = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T RightContent<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.UrsaView 
+=> control._setEx(Ursa.Controls.UrsaView.RightContentProperty, ps, () => control.RightContent = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // TitleBarContent
 
+/*ValueSetterGenerator*/
+public static T TitleBarContent<T>(this T control, System.Object value) where T : Ursa.Controls.UrsaView 
+=> control._set(() => control.TitleBarContent = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T TitleBarContent<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.UrsaView 
-   => control._set(Ursa.Controls.UrsaView.TitleBarContentProperty, func, onChanged, expression);
+public static T TitleBarContent<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Ursa.Controls.UrsaView 
+   => control._set(Ursa.Controls.UrsaView.TitleBarContentProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T TitleBarContent<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.UrsaView 
-=> control._setEx(Ursa.Controls.UrsaView.TitleBarContentProperty, ps, () => control.TitleBarContent = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T TitleBarContent<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.UrsaView 
+=> control._setEx(Ursa.Controls.UrsaView.TitleBarContentProperty, ps, () => control.TitleBarContent = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T TitleBarContent<T>(this T control, IBinding binding) where T : Ursa.Controls.UrsaView 
@@ -100,28 +123,34 @@ public static T TitleBarContent<T>(this T control, AvaloniaProperty avaloniaProp
    => control._set(Ursa.Controls.UrsaView.TitleBarContentProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T TitleBarContent<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.UrsaView 
-=> control._setEx(Ursa.Controls.UrsaView.TitleBarContentProperty, ps, () => control.TitleBarContent = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T TitleBarContent<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.UrsaView 
+=> control._setEx(Ursa.Controls.UrsaView.TitleBarContentProperty, ps, () => control.TitleBarContent = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // TitleBarMargin
 
-/*BindFromExpressionSetterGenerator*/
-public static T TitleBarMargin<T>(this T control, Func<Avalonia.Thickness> func, Action<Avalonia.Thickness>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.UrsaView 
-   => control._set(Ursa.Controls.UrsaView.TitleBarMarginProperty, func, onChanged, expression);
+/*ValueSetterGenerator*/
+public static T TitleBarMargin<T>(this T control, Avalonia.Thickness value) where T : Ursa.Controls.UrsaView 
+=> control._set(() => control.TitleBarMargin = value!);
 
-/*MagicalSetterGenerator*/
-public static T TitleBarMargin<T>(this T control,Avalonia.Thickness value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.UrsaView 
-=> control._setEx(Ursa.Controls.UrsaView.TitleBarMarginProperty, ps, () => control.TitleBarMargin = value, bindingMode, converter, bindingSource);
+/*BindFromExpressionSetterGenerator*/
+public static T TitleBarMargin<T>(this T control, Func<Avalonia.Thickness> func, Action<Avalonia.Thickness>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Ursa.Controls.UrsaView 
+   => control._set(Ursa.Controls.UrsaView.TitleBarMarginProperty!, func, onChanged, expression);
 
 /*ValueOverloadsSetterGenerator*/
 
-public static T TitleBarMargin<T>(this T control, System.Double uniformLength = default) where T : Ursa.Controls.UrsaView 
+public static T TitleBarMargin<T>(this T control, System.Double uniformLength = default!) where T : Ursa.Controls.UrsaView 
    => control._set(() => control.TitleBarMargin = new Avalonia.Thickness(uniformLength));
-public static T TitleBarMargin<T>(this T control, System.Double horizontal = default, System.Double vertical = default) where T : Ursa.Controls.UrsaView 
+public static T TitleBarMargin<T>(this T control, System.Double horizontal = default!, System.Double vertical = default!) where T : Ursa.Controls.UrsaView 
    => control._set(() => control.TitleBarMargin = new Avalonia.Thickness(horizontal, vertical));
-public static T TitleBarMargin<T>(this T control, System.Double left = default, System.Double top = default, System.Double right = default, System.Double bottom = default) where T : Ursa.Controls.UrsaView 
+public static T TitleBarMargin<T>(this T control, System.Double left = default!, System.Double top = default!, System.Double right = default!, System.Double bottom = default!) where T : Ursa.Controls.UrsaView 
    => control._set(() => control.TitleBarMargin = new Avalonia.Thickness(left, top, right, bottom));
+
+/*MagicalSetterGenerator*/
+[Obsolete]
+public static T TitleBarMargin<T>(this T control,Avalonia.Thickness value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.UrsaView 
+=> control._setEx(Ursa.Controls.UrsaView.TitleBarMarginProperty, ps, () => control.TitleBarMargin = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T TitleBarMargin<T>(this T control, IBinding binding) where T : Ursa.Controls.UrsaView 
@@ -132,8 +161,9 @@ public static T TitleBarMargin<T>(this T control, AvaloniaProperty avaloniaPrope
    => control._set(Ursa.Controls.UrsaView.TitleBarMarginProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T TitleBarMargin<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Thickness> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.UrsaView 
-=> control._setEx(Ursa.Controls.UrsaView.TitleBarMarginProperty, ps, () => control.TitleBarMargin = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T TitleBarMargin<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Thickness> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.UrsaView 
+=> control._setEx(Ursa.Controls.UrsaView.TitleBarMarginProperty, ps, () => control.TitleBarMargin = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
 
@@ -142,7 +172,7 @@ public static T TitleBarMargin<TValue,T>(this T control, TValue value, FuncValue
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsTitleBarVisible<T>(this Style<T> style, System.Boolean value) where T : Ursa.Controls.UrsaView 
-=> style._addSetter(Ursa.Controls.UrsaView.IsTitleBarVisibleProperty, value);
+=> style._addSetter(Ursa.Controls.UrsaView.IsTitleBarVisibleProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsTitleBarVisible<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.UrsaView 
@@ -153,7 +183,7 @@ public static Style<T> IsTitleBarVisible<T>(this Style<T> style, IBinding bindin
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> LeftContent<T>(this Style<T> style, System.Object value) where T : Ursa.Controls.UrsaView 
-=> style._addSetter(Ursa.Controls.UrsaView.LeftContentProperty, value);
+=> style._addSetter(Ursa.Controls.UrsaView.LeftContentProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> LeftContent<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.UrsaView 
@@ -164,7 +194,7 @@ public static Style<T> LeftContent<T>(this Style<T> style, IBinding binding) whe
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> RightContent<T>(this Style<T> style, System.Object value) where T : Ursa.Controls.UrsaView 
-=> style._addSetter(Ursa.Controls.UrsaView.RightContentProperty, value);
+=> style._addSetter(Ursa.Controls.UrsaView.RightContentProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> RightContent<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.UrsaView 
@@ -175,7 +205,7 @@ public static Style<T> RightContent<T>(this Style<T> style, IBinding binding) wh
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> TitleBarContent<T>(this Style<T> style, System.Object value) where T : Ursa.Controls.UrsaView 
-=> style._addSetter(Ursa.Controls.UrsaView.TitleBarContentProperty, value);
+=> style._addSetter(Ursa.Controls.UrsaView.TitleBarContentProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> TitleBarContent<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.UrsaView 
@@ -186,7 +216,7 @@ public static Style<T> TitleBarContent<T>(this Style<T> style, IBinding binding)
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> TitleBarMargin<T>(this Style<T> style, Avalonia.Thickness value) where T : Ursa.Controls.UrsaView 
-=> style._addSetter(Ursa.Controls.UrsaView.TitleBarMarginProperty, value);
+=> style._addSetter(Ursa.Controls.UrsaView.TitleBarMarginProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> TitleBarMargin<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.UrsaView 

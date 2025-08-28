@@ -14,13 +14,18 @@ public static partial class FAIconElement_MarkupExtensions
 //================= Properties ======================//
  // Foreground
 
+/*ValueSetterGenerator*/
+public static T Foreground<T>(this T control, Avalonia.Media.IBrush value) where T : FluentAvalonia.UI.Controls.FAIconElement 
+=> control._set(() => control.Foreground = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T Foreground<T>(this T control, Func<Avalonia.Media.IBrush> func, Action<Avalonia.Media.IBrush>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.FAIconElement 
-   => control._set(FluentAvalonia.UI.Controls.FAIconElement.ForegroundProperty, func, onChanged, expression);
+public static T Foreground<T>(this T control, Func<Avalonia.Media.IBrush> func, Action<Avalonia.Media.IBrush>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.FAIconElement 
+   => control._set(FluentAvalonia.UI.Controls.FAIconElement.ForegroundProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T Foreground<T>(this T control,Avalonia.Media.IBrush value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAIconElement 
-=> control._setEx(FluentAvalonia.UI.Controls.FAIconElement.ForegroundProperty, ps, () => control.Foreground = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Foreground<T>(this T control,Avalonia.Media.IBrush value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAIconElement 
+=> control._setEx(FluentAvalonia.UI.Controls.FAIconElement.ForegroundProperty, ps, () => control.Foreground = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Foreground<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.FAIconElement 
@@ -31,8 +36,9 @@ public static T Foreground<T>(this T control, AvaloniaProperty avaloniaProperty,
    => control._set(FluentAvalonia.UI.Controls.FAIconElement.ForegroundProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T Foreground<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IBrush> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAIconElement 
-=> control._setEx(FluentAvalonia.UI.Controls.FAIconElement.ForegroundProperty, ps, () => control.Foreground = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T Foreground<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.IBrush> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAIconElement 
+=> control._setEx(FluentAvalonia.UI.Controls.FAIconElement.ForegroundProperty, ps, () => control.Foreground = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
 
@@ -41,7 +47,7 @@ public static T Foreground<TValue,T>(this T control, TValue value, FuncValueConv
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Foreground<T>(this Style<T> style, Avalonia.Media.IBrush value) where T : FluentAvalonia.UI.Controls.FAIconElement 
-=> style._addSetter(FluentAvalonia.UI.Controls.FAIconElement.ForegroundProperty, value);
+=> style._addSetter(FluentAvalonia.UI.Controls.FAIconElement.ForegroundProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Foreground<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.FAIconElement 

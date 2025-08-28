@@ -14,13 +14,18 @@ public static partial class ToolChromeControl_MarkupExtensions
 //================= Properties ======================//
  // IsActive
 
+/*ValueSetterGenerator*/
+public static T IsActive<T>(this T control, System.Boolean value) where T : Dock.Avalonia.Controls.ToolChromeControl 
+=> control._set(() => control.IsActive = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T IsActive<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Dock.Avalonia.Controls.ToolChromeControl 
-   => control._set(Dock.Avalonia.Controls.ToolChromeControl.IsActiveProperty, func, onChanged, expression);
+public static T IsActive<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Dock.Avalonia.Controls.ToolChromeControl 
+   => control._set(Dock.Avalonia.Controls.ToolChromeControl.IsActiveProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T IsActive<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.ToolChromeControl 
-=> control._setEx(Dock.Avalonia.Controls.ToolChromeControl.IsActiveProperty, ps, () => control.IsActive = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IsActive<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.ToolChromeControl 
+=> control._setEx(Dock.Avalonia.Controls.ToolChromeControl.IsActiveProperty, ps, () => control.IsActive = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsActive<T>(this T control, IBinding binding) where T : Dock.Avalonia.Controls.ToolChromeControl 
@@ -31,19 +36,25 @@ public static T IsActive<T>(this T control, AvaloniaProperty avaloniaProperty, B
    => control._set(Dock.Avalonia.Controls.ToolChromeControl.IsActiveProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T IsActive<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.ToolChromeControl 
-=> control._setEx(Dock.Avalonia.Controls.ToolChromeControl.IsActiveProperty, ps, () => control.IsActive = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IsActive<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.ToolChromeControl 
+=> control._setEx(Dock.Avalonia.Controls.ToolChromeControl.IsActiveProperty, ps, () => control.IsActive = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // IsPinned
 
+/*ValueSetterGenerator*/
+public static T IsPinned<T>(this T control, System.Boolean value) where T : Dock.Avalonia.Controls.ToolChromeControl 
+=> control._set(() => control.IsPinned = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T IsPinned<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Dock.Avalonia.Controls.ToolChromeControl 
-   => control._set(Dock.Avalonia.Controls.ToolChromeControl.IsPinnedProperty, func, onChanged, expression);
+public static T IsPinned<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Dock.Avalonia.Controls.ToolChromeControl 
+   => control._set(Dock.Avalonia.Controls.ToolChromeControl.IsPinnedProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T IsPinned<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.ToolChromeControl 
-=> control._setEx(Dock.Avalonia.Controls.ToolChromeControl.IsPinnedProperty, ps, () => control.IsPinned = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IsPinned<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.ToolChromeControl 
+=> control._setEx(Dock.Avalonia.Controls.ToolChromeControl.IsPinnedProperty, ps, () => control.IsPinned = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsPinned<T>(this T control, IBinding binding) where T : Dock.Avalonia.Controls.ToolChromeControl 
@@ -54,19 +65,25 @@ public static T IsPinned<T>(this T control, AvaloniaProperty avaloniaProperty, B
    => control._set(Dock.Avalonia.Controls.ToolChromeControl.IsPinnedProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T IsPinned<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.ToolChromeControl 
-=> control._setEx(Dock.Avalonia.Controls.ToolChromeControl.IsPinnedProperty, ps, () => control.IsPinned = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IsPinned<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.ToolChromeControl 
+=> control._setEx(Dock.Avalonia.Controls.ToolChromeControl.IsPinnedProperty, ps, () => control.IsPinned = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // IsFloating
 
+/*ValueSetterGenerator*/
+public static T IsFloating<T>(this T control, System.Boolean value) where T : Dock.Avalonia.Controls.ToolChromeControl 
+=> control._set(() => control.IsFloating = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T IsFloating<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Dock.Avalonia.Controls.ToolChromeControl 
-   => control._set(Dock.Avalonia.Controls.ToolChromeControl.IsFloatingProperty, func, onChanged, expression);
+public static T IsFloating<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Dock.Avalonia.Controls.ToolChromeControl 
+   => control._set(Dock.Avalonia.Controls.ToolChromeControl.IsFloatingProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T IsFloating<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.ToolChromeControl 
-=> control._setEx(Dock.Avalonia.Controls.ToolChromeControl.IsFloatingProperty, ps, () => control.IsFloating = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IsFloating<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.ToolChromeControl 
+=> control._setEx(Dock.Avalonia.Controls.ToolChromeControl.IsFloatingProperty, ps, () => control.IsFloating = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsFloating<T>(this T control, IBinding binding) where T : Dock.Avalonia.Controls.ToolChromeControl 
@@ -77,19 +94,25 @@ public static T IsFloating<T>(this T control, AvaloniaProperty avaloniaProperty,
    => control._set(Dock.Avalonia.Controls.ToolChromeControl.IsFloatingProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T IsFloating<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.ToolChromeControl 
-=> control._setEx(Dock.Avalonia.Controls.ToolChromeControl.IsFloatingProperty, ps, () => control.IsFloating = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IsFloating<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.ToolChromeControl 
+=> control._setEx(Dock.Avalonia.Controls.ToolChromeControl.IsFloatingProperty, ps, () => control.IsFloating = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
  // IsMaximized
 
+/*ValueSetterGenerator*/
+public static T IsMaximized<T>(this T control, System.Boolean value) where T : Dock.Avalonia.Controls.ToolChromeControl 
+=> control._set(() => control.IsMaximized = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T IsMaximized<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Dock.Avalonia.Controls.ToolChromeControl 
-   => control._set(Dock.Avalonia.Controls.ToolChromeControl.IsMaximizedProperty, func, onChanged, expression);
+public static T IsMaximized<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Dock.Avalonia.Controls.ToolChromeControl 
+   => control._set(Dock.Avalonia.Controls.ToolChromeControl.IsMaximizedProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T IsMaximized<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.ToolChromeControl 
-=> control._setEx(Dock.Avalonia.Controls.ToolChromeControl.IsMaximizedProperty, ps, () => control.IsMaximized = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IsMaximized<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.ToolChromeControl 
+=> control._setEx(Dock.Avalonia.Controls.ToolChromeControl.IsMaximizedProperty, ps, () => control.IsMaximized = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsMaximized<T>(this T control, IBinding binding) where T : Dock.Avalonia.Controls.ToolChromeControl 
@@ -100,8 +123,9 @@ public static T IsMaximized<T>(this T control, AvaloniaProperty avaloniaProperty
    => control._set(Dock.Avalonia.Controls.ToolChromeControl.IsMaximizedProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T IsMaximized<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.ToolChromeControl 
-=> control._setEx(Dock.Avalonia.Controls.ToolChromeControl.IsMaximizedProperty, ps, () => control.IsMaximized = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IsMaximized<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.ToolChromeControl 
+=> control._setEx(Dock.Avalonia.Controls.ToolChromeControl.IsMaximizedProperty, ps, () => control.IsMaximized = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
 
@@ -110,7 +134,7 @@ public static T IsMaximized<TValue,T>(this T control, TValue value, FuncValueCon
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsActive<T>(this Style<T> style, System.Boolean value) where T : Dock.Avalonia.Controls.ToolChromeControl 
-=> style._addSetter(Dock.Avalonia.Controls.ToolChromeControl.IsActiveProperty, value);
+=> style._addSetter(Dock.Avalonia.Controls.ToolChromeControl.IsActiveProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsActive<T>(this Style<T> style, IBinding binding) where T : Dock.Avalonia.Controls.ToolChromeControl 
@@ -121,7 +145,7 @@ public static Style<T> IsActive<T>(this Style<T> style, IBinding binding) where 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsPinned<T>(this Style<T> style, System.Boolean value) where T : Dock.Avalonia.Controls.ToolChromeControl 
-=> style._addSetter(Dock.Avalonia.Controls.ToolChromeControl.IsPinnedProperty, value);
+=> style._addSetter(Dock.Avalonia.Controls.ToolChromeControl.IsPinnedProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsPinned<T>(this Style<T> style, IBinding binding) where T : Dock.Avalonia.Controls.ToolChromeControl 
@@ -132,7 +156,7 @@ public static Style<T> IsPinned<T>(this Style<T> style, IBinding binding) where 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsFloating<T>(this Style<T> style, System.Boolean value) where T : Dock.Avalonia.Controls.ToolChromeControl 
-=> style._addSetter(Dock.Avalonia.Controls.ToolChromeControl.IsFloatingProperty, value);
+=> style._addSetter(Dock.Avalonia.Controls.ToolChromeControl.IsFloatingProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsFloating<T>(this Style<T> style, IBinding binding) where T : Dock.Avalonia.Controls.ToolChromeControl 
@@ -143,7 +167,7 @@ public static Style<T> IsFloating<T>(this Style<T> style, IBinding binding) wher
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsMaximized<T>(this Style<T> style, System.Boolean value) where T : Dock.Avalonia.Controls.ToolChromeControl 
-=> style._addSetter(Dock.Avalonia.Controls.ToolChromeControl.IsMaximizedProperty, value);
+=> style._addSetter(Dock.Avalonia.Controls.ToolChromeControl.IsMaximizedProperty!, value!);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsMaximized<T>(this Style<T> style, IBinding binding) where T : Dock.Avalonia.Controls.ToolChromeControl 
