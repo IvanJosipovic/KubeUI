@@ -44,27 +44,27 @@
     <PackageReference Include="DynamicData" Version="9.4.1" />
     <PackageReference Include="Humanizer" Version="2.14.1" />
     <PackageReference Include="JsonPathLINQ" Version="1.0.0-alpha.11" />
-    <PackageReference Include="KubernetesClient" Version="17.0.4" />
+    <PackageReference Include="KubernetesClient" Version="17.0.14" />
     <PackageReference Include="KubernetesCRDModelGen" Version="1.0.0-alpha.527" />
     <PackageReference Include="Markdig" Version="0.41.3" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.6" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.8" />
     <PackageReference Include="NReco.Logging.File" Version="1.2.2" />
     <PackageReference Include="OpenTelemetry" Version="1.12.0" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.12.0" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.12.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Process" Version="1.12.0-beta.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.12.0" />
-    <PackageReference Include="roslynator.analyzers" Version="4.13.1">
+    <PackageReference Include="roslynator.analyzers" Version="4.14.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="ServiceScan.SourceGenerator" Version="2.1.2">
+    <PackageReference Include="ServiceScan.SourceGenerator" Version="2.3.2">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Swordfish.NET.CollectionsV3" Version="3.3.15" />
-    <PackageReference Include="TextMateSharp" Version="1.0.69" />
-    <PackageReference Include="TextMateSharp.Grammars" Version="1.0.69" />
+    <PackageReference Include="Swordfish.NET.CollectionsV3" Version="3.3.16" />
+    <PackageReference Include="TextMateSharp" Version="1.0.70" />
+    <PackageReference Include="TextMateSharp.Grammars" Version="1.0.70" />
     <PackageReference Include="Velopack" Version="0.0.1298" />
     <PackageReference Include="YamlDotNet.System.Text.Json" Version="1.6.6" />
   </ItemGroup>
