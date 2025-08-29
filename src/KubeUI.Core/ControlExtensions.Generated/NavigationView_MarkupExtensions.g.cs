@@ -14,18 +14,13 @@ public static partial class NavigationView_MarkupExtensions
 //================= Properties ======================//
  // AlwaysShowHeader
 
-/*ValueSetterGenerator*/
-public static T AlwaysShowHeader<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._set(() => control.AlwaysShowHeader = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T AlwaysShowHeader<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-   => control._set(FluentAvalonia.UI.Controls.NavigationView.AlwaysShowHeaderProperty!, func, onChanged, expression);
+public static T AlwaysShowHeader<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+   => control._set(FluentAvalonia.UI.Controls.NavigationView.AlwaysShowHeaderProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T AlwaysShowHeader<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.AlwaysShowHeaderProperty, ps, () => control.AlwaysShowHeader = value!, bindingMode, converter, bindingSource);
+public static T AlwaysShowHeader<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.AlwaysShowHeaderProperty, ps, () => control.AlwaysShowHeader = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T AlwaysShowHeader<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -36,25 +31,19 @@ public static T AlwaysShowHeader<T>(this T control, AvaloniaProperty avaloniaPro
    => control._set(FluentAvalonia.UI.Controls.NavigationView.AlwaysShowHeaderProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T AlwaysShowHeader<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.AlwaysShowHeaderProperty, ps, () => control.AlwaysShowHeader = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T AlwaysShowHeader<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.AlwaysShowHeaderProperty, ps, () => control.AlwaysShowHeader = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // AutoCompleteBox
 
-/*ValueSetterGenerator*/
-public static T AutoCompleteBox<T>(this T control, Avalonia.Controls.AutoCompleteBox value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._set(() => control.AutoCompleteBox = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T AutoCompleteBox<T>(this T control, Func<Avalonia.Controls.AutoCompleteBox> func, Action<Avalonia.Controls.AutoCompleteBox>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-   => control._set(FluentAvalonia.UI.Controls.NavigationView.AutoCompleteBoxProperty!, func, onChanged, expression);
+public static T AutoCompleteBox<T>(this T control, Func<Avalonia.Controls.AutoCompleteBox> func, Action<Avalonia.Controls.AutoCompleteBox>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+   => control._set(FluentAvalonia.UI.Controls.NavigationView.AutoCompleteBoxProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T AutoCompleteBox<T>(this T control,Avalonia.Controls.AutoCompleteBox value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.AutoCompleteBoxProperty, ps, () => control.AutoCompleteBox = value!, bindingMode, converter, bindingSource);
+public static T AutoCompleteBox<T>(this T control,Avalonia.Controls.AutoCompleteBox value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.AutoCompleteBoxProperty, ps, () => control.AutoCompleteBox = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T AutoCompleteBox<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -65,25 +54,19 @@ public static T AutoCompleteBox<T>(this T control, AvaloniaProperty avaloniaProp
    => control._set(FluentAvalonia.UI.Controls.NavigationView.AutoCompleteBoxProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T AutoCompleteBox<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.AutoCompleteBox> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.AutoCompleteBoxProperty, ps, () => control.AutoCompleteBox = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T AutoCompleteBox<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.AutoCompleteBox> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.AutoCompleteBoxProperty, ps, () => control.AutoCompleteBox = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // CompactModeThresholdWidth
 
-/*ValueSetterGenerator*/
-public static T CompactModeThresholdWidth<T>(this T control, System.Double value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._set(() => control.CompactModeThresholdWidth = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T CompactModeThresholdWidth<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-   => control._set(FluentAvalonia.UI.Controls.NavigationView.CompactModeThresholdWidthProperty!, func, onChanged, expression);
+public static T CompactModeThresholdWidth<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+   => control._set(FluentAvalonia.UI.Controls.NavigationView.CompactModeThresholdWidthProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T CompactModeThresholdWidth<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.CompactModeThresholdWidthProperty, ps, () => control.CompactModeThresholdWidth = value!, bindingMode, converter, bindingSource);
+public static T CompactModeThresholdWidth<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.CompactModeThresholdWidthProperty, ps, () => control.CompactModeThresholdWidth = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T CompactModeThresholdWidth<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -94,25 +77,19 @@ public static T CompactModeThresholdWidth<T>(this T control, AvaloniaProperty av
    => control._set(FluentAvalonia.UI.Controls.NavigationView.CompactModeThresholdWidthProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T CompactModeThresholdWidth<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.CompactModeThresholdWidthProperty, ps, () => control.CompactModeThresholdWidth = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T CompactModeThresholdWidth<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.CompactModeThresholdWidthProperty, ps, () => control.CompactModeThresholdWidth = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // CompactPaneLength
 
-/*ValueSetterGenerator*/
-public static T CompactPaneLength<T>(this T control, System.Double value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._set(() => control.CompactPaneLength = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T CompactPaneLength<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-   => control._set(FluentAvalonia.UI.Controls.NavigationView.CompactPaneLengthProperty!, func, onChanged, expression);
+public static T CompactPaneLength<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+   => control._set(FluentAvalonia.UI.Controls.NavigationView.CompactPaneLengthProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T CompactPaneLength<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.CompactPaneLengthProperty, ps, () => control.CompactPaneLength = value!, bindingMode, converter, bindingSource);
+public static T CompactPaneLength<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.CompactPaneLengthProperty, ps, () => control.CompactPaneLength = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T CompactPaneLength<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -123,25 +100,19 @@ public static T CompactPaneLength<T>(this T control, AvaloniaProperty avaloniaPr
    => control._set(FluentAvalonia.UI.Controls.NavigationView.CompactPaneLengthProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T CompactPaneLength<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.CompactPaneLengthProperty, ps, () => control.CompactPaneLength = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T CompactPaneLength<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.CompactPaneLengthProperty, ps, () => control.CompactPaneLength = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // ContentOverlay
 
-/*ValueSetterGenerator*/
-public static T ContentOverlay<T>(this T control, Avalonia.Controls.Control value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._set(() => control.ContentOverlay = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T ContentOverlay<T>(this T control, Func<Avalonia.Controls.Control> func, Action<Avalonia.Controls.Control>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-   => control._set(FluentAvalonia.UI.Controls.NavigationView.ContentOverlayProperty!, func, onChanged, expression);
+public static T ContentOverlay<T>(this T control, Func<Avalonia.Controls.Control> func, Action<Avalonia.Controls.Control>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+   => control._set(FluentAvalonia.UI.Controls.NavigationView.ContentOverlayProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T ContentOverlay<T>(this T control,Avalonia.Controls.Control value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.ContentOverlayProperty, ps, () => control.ContentOverlay = value!, bindingMode, converter, bindingSource);
+public static T ContentOverlay<T>(this T control,Avalonia.Controls.Control value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.ContentOverlayProperty, ps, () => control.ContentOverlay = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T ContentOverlay<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -152,25 +123,19 @@ public static T ContentOverlay<T>(this T control, AvaloniaProperty avaloniaPrope
    => control._set(FluentAvalonia.UI.Controls.NavigationView.ContentOverlayProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T ContentOverlay<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Control> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.ContentOverlayProperty, ps, () => control.ContentOverlay = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T ContentOverlay<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Control> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.ContentOverlayProperty, ps, () => control.ContentOverlay = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // ExpandedModeThresholdWidth
 
-/*ValueSetterGenerator*/
-public static T ExpandedModeThresholdWidth<T>(this T control, System.Double value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._set(() => control.ExpandedModeThresholdWidth = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T ExpandedModeThresholdWidth<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-   => control._set(FluentAvalonia.UI.Controls.NavigationView.ExpandedModeThresholdWidthProperty!, func, onChanged, expression);
+public static T ExpandedModeThresholdWidth<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+   => control._set(FluentAvalonia.UI.Controls.NavigationView.ExpandedModeThresholdWidthProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T ExpandedModeThresholdWidth<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.ExpandedModeThresholdWidthProperty, ps, () => control.ExpandedModeThresholdWidth = value!, bindingMode, converter, bindingSource);
+public static T ExpandedModeThresholdWidth<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.ExpandedModeThresholdWidthProperty, ps, () => control.ExpandedModeThresholdWidth = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T ExpandedModeThresholdWidth<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -181,25 +146,19 @@ public static T ExpandedModeThresholdWidth<T>(this T control, AvaloniaProperty a
    => control._set(FluentAvalonia.UI.Controls.NavigationView.ExpandedModeThresholdWidthProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T ExpandedModeThresholdWidth<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.ExpandedModeThresholdWidthProperty, ps, () => control.ExpandedModeThresholdWidth = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T ExpandedModeThresholdWidth<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.ExpandedModeThresholdWidthProperty, ps, () => control.ExpandedModeThresholdWidth = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // FooterMenuItemsSource
 
-/*ValueSetterGenerator*/
-public static T FooterMenuItemsSource<T>(this T control, System.Collections.IEnumerable value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._set(() => control.FooterMenuItemsSource = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T FooterMenuItemsSource<T>(this T control, Func<System.Collections.IEnumerable> func, Action<System.Collections.IEnumerable>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-   => control._set(FluentAvalonia.UI.Controls.NavigationView.FooterMenuItemsSourceProperty!, func, onChanged, expression);
+public static T FooterMenuItemsSource<T>(this T control, Func<System.Collections.IEnumerable> func, Action<System.Collections.IEnumerable>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+   => control._set(FluentAvalonia.UI.Controls.NavigationView.FooterMenuItemsSourceProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T FooterMenuItemsSource<T>(this T control,System.Collections.IEnumerable value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.FooterMenuItemsSourceProperty, ps, () => control.FooterMenuItemsSource = value!, bindingMode, converter, bindingSource);
+public static T FooterMenuItemsSource<T>(this T control,System.Collections.IEnumerable value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.FooterMenuItemsSourceProperty, ps, () => control.FooterMenuItemsSource = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T FooterMenuItemsSource<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -210,25 +169,19 @@ public static T FooterMenuItemsSource<T>(this T control, AvaloniaProperty avalon
    => control._set(FluentAvalonia.UI.Controls.NavigationView.FooterMenuItemsSourceProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T FooterMenuItemsSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Collections.IEnumerable> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.FooterMenuItemsSourceProperty, ps, () => control.FooterMenuItemsSource = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T FooterMenuItemsSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Collections.IEnumerable> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.FooterMenuItemsSourceProperty, ps, () => control.FooterMenuItemsSource = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // IsBackButtonVisible
 
-/*ValueSetterGenerator*/
-public static T IsBackButtonVisible<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._set(() => control.IsBackButtonVisible = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IsBackButtonVisible<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-   => control._set(FluentAvalonia.UI.Controls.NavigationView.IsBackButtonVisibleProperty!, func, onChanged, expression);
+public static T IsBackButtonVisible<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+   => control._set(FluentAvalonia.UI.Controls.NavigationView.IsBackButtonVisibleProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IsBackButtonVisible<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.IsBackButtonVisibleProperty, ps, () => control.IsBackButtonVisible = value!, bindingMode, converter, bindingSource);
+public static T IsBackButtonVisible<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.IsBackButtonVisibleProperty, ps, () => control.IsBackButtonVisible = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsBackButtonVisible<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -239,25 +192,19 @@ public static T IsBackButtonVisible<T>(this T control, AvaloniaProperty avalonia
    => control._set(FluentAvalonia.UI.Controls.NavigationView.IsBackButtonVisibleProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IsBackButtonVisible<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.IsBackButtonVisibleProperty, ps, () => control.IsBackButtonVisible = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IsBackButtonVisible<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.IsBackButtonVisibleProperty, ps, () => control.IsBackButtonVisible = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // IsBackEnabled
 
-/*ValueSetterGenerator*/
-public static T IsBackEnabled<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._set(() => control.IsBackEnabled = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IsBackEnabled<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-   => control._set(FluentAvalonia.UI.Controls.NavigationView.IsBackEnabledProperty!, func, onChanged, expression);
+public static T IsBackEnabled<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+   => control._set(FluentAvalonia.UI.Controls.NavigationView.IsBackEnabledProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IsBackEnabled<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.IsBackEnabledProperty, ps, () => control.IsBackEnabled = value!, bindingMode, converter, bindingSource);
+public static T IsBackEnabled<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.IsBackEnabledProperty, ps, () => control.IsBackEnabled = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsBackEnabled<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -268,25 +215,19 @@ public static T IsBackEnabled<T>(this T control, AvaloniaProperty avaloniaProper
    => control._set(FluentAvalonia.UI.Controls.NavigationView.IsBackEnabledProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IsBackEnabled<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.IsBackEnabledProperty, ps, () => control.IsBackEnabled = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IsBackEnabled<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.IsBackEnabledProperty, ps, () => control.IsBackEnabled = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // IsPaneOpen
 
-/*ValueSetterGenerator*/
-public static T IsPaneOpen<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._set(() => control.IsPaneOpen = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IsPaneOpen<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-   => control._set(FluentAvalonia.UI.Controls.NavigationView.IsPaneOpenProperty!, func, onChanged, expression);
+public static T IsPaneOpen<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+   => control._set(FluentAvalonia.UI.Controls.NavigationView.IsPaneOpenProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IsPaneOpen<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.IsPaneOpenProperty, ps, () => control.IsPaneOpen = value!, bindingMode, converter, bindingSource);
+public static T IsPaneOpen<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.IsPaneOpenProperty, ps, () => control.IsPaneOpen = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsPaneOpen<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -297,25 +238,19 @@ public static T IsPaneOpen<T>(this T control, AvaloniaProperty avaloniaProperty,
    => control._set(FluentAvalonia.UI.Controls.NavigationView.IsPaneOpenProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IsPaneOpen<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.IsPaneOpenProperty, ps, () => control.IsPaneOpen = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IsPaneOpen<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.IsPaneOpenProperty, ps, () => control.IsPaneOpen = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // IsPaneToggleButtonVisible
 
-/*ValueSetterGenerator*/
-public static T IsPaneToggleButtonVisible<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._set(() => control.IsPaneToggleButtonVisible = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IsPaneToggleButtonVisible<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-   => control._set(FluentAvalonia.UI.Controls.NavigationView.IsPaneToggleButtonVisibleProperty!, func, onChanged, expression);
+public static T IsPaneToggleButtonVisible<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+   => control._set(FluentAvalonia.UI.Controls.NavigationView.IsPaneToggleButtonVisibleProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IsPaneToggleButtonVisible<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.IsPaneToggleButtonVisibleProperty, ps, () => control.IsPaneToggleButtonVisible = value!, bindingMode, converter, bindingSource);
+public static T IsPaneToggleButtonVisible<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.IsPaneToggleButtonVisibleProperty, ps, () => control.IsPaneToggleButtonVisible = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsPaneToggleButtonVisible<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -326,25 +261,19 @@ public static T IsPaneToggleButtonVisible<T>(this T control, AvaloniaProperty av
    => control._set(FluentAvalonia.UI.Controls.NavigationView.IsPaneToggleButtonVisibleProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IsPaneToggleButtonVisible<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.IsPaneToggleButtonVisibleProperty, ps, () => control.IsPaneToggleButtonVisible = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IsPaneToggleButtonVisible<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.IsPaneToggleButtonVisibleProperty, ps, () => control.IsPaneToggleButtonVisible = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // IsPaneVisible
 
-/*ValueSetterGenerator*/
-public static T IsPaneVisible<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._set(() => control.IsPaneVisible = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IsPaneVisible<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-   => control._set(FluentAvalonia.UI.Controls.NavigationView.IsPaneVisibleProperty!, func, onChanged, expression);
+public static T IsPaneVisible<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+   => control._set(FluentAvalonia.UI.Controls.NavigationView.IsPaneVisibleProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IsPaneVisible<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.IsPaneVisibleProperty, ps, () => control.IsPaneVisible = value!, bindingMode, converter, bindingSource);
+public static T IsPaneVisible<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.IsPaneVisibleProperty, ps, () => control.IsPaneVisible = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsPaneVisible<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -355,25 +284,19 @@ public static T IsPaneVisible<T>(this T control, AvaloniaProperty avaloniaProper
    => control._set(FluentAvalonia.UI.Controls.NavigationView.IsPaneVisibleProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IsPaneVisible<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.IsPaneVisibleProperty, ps, () => control.IsPaneVisible = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IsPaneVisible<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.IsPaneVisibleProperty, ps, () => control.IsPaneVisible = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // IsSettingsVisible
 
-/*ValueSetterGenerator*/
-public static T IsSettingsVisible<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._set(() => control.IsSettingsVisible = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IsSettingsVisible<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-   => control._set(FluentAvalonia.UI.Controls.NavigationView.IsSettingsVisibleProperty!, func, onChanged, expression);
+public static T IsSettingsVisible<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+   => control._set(FluentAvalonia.UI.Controls.NavigationView.IsSettingsVisibleProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IsSettingsVisible<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.IsSettingsVisibleProperty, ps, () => control.IsSettingsVisible = value!, bindingMode, converter, bindingSource);
+public static T IsSettingsVisible<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.IsSettingsVisibleProperty, ps, () => control.IsSettingsVisible = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsSettingsVisible<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -384,25 +307,19 @@ public static T IsSettingsVisible<T>(this T control, AvaloniaProperty avaloniaPr
    => control._set(FluentAvalonia.UI.Controls.NavigationView.IsSettingsVisibleProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IsSettingsVisible<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.IsSettingsVisibleProperty, ps, () => control.IsSettingsVisible = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IsSettingsVisible<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.IsSettingsVisibleProperty, ps, () => control.IsSettingsVisible = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // MenuItems
 
-/*ValueSetterGenerator*/
-public static T MenuItems<T>(this T control, System.Collections.Generic.IList<System.Object> value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._set(() => control.MenuItems = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T MenuItems<T>(this T control, Func<System.Collections.Generic.IList<System.Object>> func, Action<System.Collections.Generic.IList<System.Object>>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-   => control._set(FluentAvalonia.UI.Controls.NavigationView.MenuItemsProperty!, func, onChanged, expression);
+public static T MenuItems<T>(this T control, Func<System.Collections.Generic.IList<System.Object>> func, Action<System.Collections.Generic.IList<System.Object>>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+   => control._set(FluentAvalonia.UI.Controls.NavigationView.MenuItemsProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T MenuItems<T>(this T control,System.Collections.Generic.IList<System.Object> value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.MenuItemsProperty, ps, () => control.MenuItems = value!, bindingMode, converter, bindingSource);
+public static T MenuItems<T>(this T control,System.Collections.Generic.IList<System.Object> value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.MenuItemsProperty, ps, () => control.MenuItems = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T MenuItems<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -413,25 +330,19 @@ public static T MenuItems<T>(this T control, AvaloniaProperty avaloniaProperty, 
    => control._set(FluentAvalonia.UI.Controls.NavigationView.MenuItemsProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T MenuItems<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Collections.Generic.IList<System.Object>> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.MenuItemsProperty, ps, () => control.MenuItems = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T MenuItems<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Collections.Generic.IList<System.Object>> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.MenuItemsProperty, ps, () => control.MenuItems = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // MenuItemsSource
 
-/*ValueSetterGenerator*/
-public static T MenuItemsSource<T>(this T control, System.Collections.IEnumerable value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._set(() => control.MenuItemsSource = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T MenuItemsSource<T>(this T control, Func<System.Collections.IEnumerable> func, Action<System.Collections.IEnumerable>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-   => control._set(FluentAvalonia.UI.Controls.NavigationView.MenuItemsSourceProperty!, func, onChanged, expression);
+public static T MenuItemsSource<T>(this T control, Func<System.Collections.IEnumerable> func, Action<System.Collections.IEnumerable>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+   => control._set(FluentAvalonia.UI.Controls.NavigationView.MenuItemsSourceProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T MenuItemsSource<T>(this T control,System.Collections.IEnumerable value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.MenuItemsSourceProperty, ps, () => control.MenuItemsSource = value!, bindingMode, converter, bindingSource);
+public static T MenuItemsSource<T>(this T control,System.Collections.IEnumerable value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.MenuItemsSourceProperty, ps, () => control.MenuItemsSource = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T MenuItemsSource<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -442,25 +353,19 @@ public static T MenuItemsSource<T>(this T control, AvaloniaProperty avaloniaProp
    => control._set(FluentAvalonia.UI.Controls.NavigationView.MenuItemsSourceProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T MenuItemsSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Collections.IEnumerable> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.MenuItemsSourceProperty, ps, () => control.MenuItemsSource = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T MenuItemsSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Collections.IEnumerable> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.MenuItemsSourceProperty, ps, () => control.MenuItemsSource = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // MenuItemTemplate
 
-/*ValueSetterGenerator*/
-public static T MenuItemTemplate<T>(this T control, Avalonia.Controls.Templates.IDataTemplate value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._set(() => control.MenuItemTemplate = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T MenuItemTemplate<T>(this T control, Func<Avalonia.Controls.Templates.IDataTemplate> func, Action<Avalonia.Controls.Templates.IDataTemplate>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-   => control._set(FluentAvalonia.UI.Controls.NavigationView.MenuItemTemplateProperty!, func, onChanged, expression);
+public static T MenuItemTemplate<T>(this T control, Func<Avalonia.Controls.Templates.IDataTemplate> func, Action<Avalonia.Controls.Templates.IDataTemplate>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+   => control._set(FluentAvalonia.UI.Controls.NavigationView.MenuItemTemplateProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T MenuItemTemplate<T>(this T control,Avalonia.Controls.Templates.IDataTemplate value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.MenuItemTemplateProperty, ps, () => control.MenuItemTemplate = value!, bindingMode, converter, bindingSource);
+public static T MenuItemTemplate<T>(this T control,Avalonia.Controls.Templates.IDataTemplate value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.MenuItemTemplateProperty, ps, () => control.MenuItemTemplate = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T MenuItemTemplate<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -471,25 +376,19 @@ public static T MenuItemTemplate<T>(this T control, AvaloniaProperty avaloniaPro
    => control._set(FluentAvalonia.UI.Controls.NavigationView.MenuItemTemplateProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T MenuItemTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Templates.IDataTemplate> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.MenuItemTemplateProperty, ps, () => control.MenuItemTemplate = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T MenuItemTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Templates.IDataTemplate> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.MenuItemTemplateProperty, ps, () => control.MenuItemTemplate = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // MenuItemTemplateSelector
 
-/*ValueSetterGenerator*/
-public static T MenuItemTemplateSelector<T>(this T control, FluentAvalonia.UI.Controls.DataTemplateSelector value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._set(() => control.MenuItemTemplateSelector = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T MenuItemTemplateSelector<T>(this T control, Func<FluentAvalonia.UI.Controls.DataTemplateSelector> func, Action<FluentAvalonia.UI.Controls.DataTemplateSelector>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-   => control._set(FluentAvalonia.UI.Controls.NavigationView.MenuItemTemplateSelectorProperty!, func, onChanged, expression);
+public static T MenuItemTemplateSelector<T>(this T control, Func<FluentAvalonia.UI.Controls.DataTemplateSelector> func, Action<FluentAvalonia.UI.Controls.DataTemplateSelector>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+   => control._set(FluentAvalonia.UI.Controls.NavigationView.MenuItemTemplateSelectorProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T MenuItemTemplateSelector<T>(this T control,FluentAvalonia.UI.Controls.DataTemplateSelector value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.MenuItemTemplateSelectorProperty, ps, () => control.MenuItemTemplateSelector = value!, bindingMode, converter, bindingSource);
+public static T MenuItemTemplateSelector<T>(this T control,FluentAvalonia.UI.Controls.DataTemplateSelector value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.MenuItemTemplateSelectorProperty, ps, () => control.MenuItemTemplateSelector = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T MenuItemTemplateSelector<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -500,25 +399,19 @@ public static T MenuItemTemplateSelector<T>(this T control, AvaloniaProperty ava
    => control._set(FluentAvalonia.UI.Controls.NavigationView.MenuItemTemplateSelectorProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T MenuItemTemplateSelector<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.DataTemplateSelector> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.MenuItemTemplateSelectorProperty, ps, () => control.MenuItemTemplateSelector = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T MenuItemTemplateSelector<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.DataTemplateSelector> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.MenuItemTemplateSelectorProperty, ps, () => control.MenuItemTemplateSelector = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // OpenPaneLength
 
-/*ValueSetterGenerator*/
-public static T OpenPaneLength<T>(this T control, System.Double value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._set(() => control.OpenPaneLength = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T OpenPaneLength<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-   => control._set(FluentAvalonia.UI.Controls.NavigationView.OpenPaneLengthProperty!, func, onChanged, expression);
+public static T OpenPaneLength<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+   => control._set(FluentAvalonia.UI.Controls.NavigationView.OpenPaneLengthProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T OpenPaneLength<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.OpenPaneLengthProperty, ps, () => control.OpenPaneLength = value!, bindingMode, converter, bindingSource);
+public static T OpenPaneLength<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.OpenPaneLengthProperty, ps, () => control.OpenPaneLength = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T OpenPaneLength<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -529,25 +422,19 @@ public static T OpenPaneLength<T>(this T control, AvaloniaProperty avaloniaPrope
    => control._set(FluentAvalonia.UI.Controls.NavigationView.OpenPaneLengthProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T OpenPaneLength<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.OpenPaneLengthProperty, ps, () => control.OpenPaneLength = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T OpenPaneLength<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.OpenPaneLengthProperty, ps, () => control.OpenPaneLength = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // PaneCustomContent
 
-/*ValueSetterGenerator*/
-public static T PaneCustomContent<T>(this T control, Avalonia.Controls.Control value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._set(() => control.PaneCustomContent = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T PaneCustomContent<T>(this T control, Func<Avalonia.Controls.Control> func, Action<Avalonia.Controls.Control>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-   => control._set(FluentAvalonia.UI.Controls.NavigationView.PaneCustomContentProperty!, func, onChanged, expression);
+public static T PaneCustomContent<T>(this T control, Func<Avalonia.Controls.Control> func, Action<Avalonia.Controls.Control>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+   => control._set(FluentAvalonia.UI.Controls.NavigationView.PaneCustomContentProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T PaneCustomContent<T>(this T control,Avalonia.Controls.Control value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.PaneCustomContentProperty, ps, () => control.PaneCustomContent = value!, bindingMode, converter, bindingSource);
+public static T PaneCustomContent<T>(this T control,Avalonia.Controls.Control value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.PaneCustomContentProperty, ps, () => control.PaneCustomContent = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T PaneCustomContent<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -558,25 +445,19 @@ public static T PaneCustomContent<T>(this T control, AvaloniaProperty avaloniaPr
    => control._set(FluentAvalonia.UI.Controls.NavigationView.PaneCustomContentProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T PaneCustomContent<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Control> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.PaneCustomContentProperty, ps, () => control.PaneCustomContent = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T PaneCustomContent<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Control> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.PaneCustomContentProperty, ps, () => control.PaneCustomContent = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // PaneDisplayMode
 
-/*ValueSetterGenerator*/
-public static T PaneDisplayMode<T>(this T control, FluentAvalonia.UI.Controls.NavigationViewPaneDisplayMode value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._set(() => control.PaneDisplayMode = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T PaneDisplayMode<T>(this T control, Func<FluentAvalonia.UI.Controls.NavigationViewPaneDisplayMode> func, Action<FluentAvalonia.UI.Controls.NavigationViewPaneDisplayMode>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-   => control._set(FluentAvalonia.UI.Controls.NavigationView.PaneDisplayModeProperty!, func, onChanged, expression);
+public static T PaneDisplayMode<T>(this T control, Func<FluentAvalonia.UI.Controls.NavigationViewPaneDisplayMode> func, Action<FluentAvalonia.UI.Controls.NavigationViewPaneDisplayMode>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+   => control._set(FluentAvalonia.UI.Controls.NavigationView.PaneDisplayModeProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T PaneDisplayMode<T>(this T control,FluentAvalonia.UI.Controls.NavigationViewPaneDisplayMode value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.PaneDisplayModeProperty, ps, () => control.PaneDisplayMode = value!, bindingMode, converter, bindingSource);
+public static T PaneDisplayMode<T>(this T control,FluentAvalonia.UI.Controls.NavigationViewPaneDisplayMode value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.PaneDisplayModeProperty, ps, () => control.PaneDisplayMode = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T PaneDisplayMode<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -587,25 +468,19 @@ public static T PaneDisplayMode<T>(this T control, AvaloniaProperty avaloniaProp
    => control._set(FluentAvalonia.UI.Controls.NavigationView.PaneDisplayModeProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T PaneDisplayMode<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.NavigationViewPaneDisplayMode> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.PaneDisplayModeProperty, ps, () => control.PaneDisplayMode = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T PaneDisplayMode<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.NavigationViewPaneDisplayMode> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.PaneDisplayModeProperty, ps, () => control.PaneDisplayMode = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // PaneFooter
 
-/*ValueSetterGenerator*/
-public static T PaneFooter<T>(this T control, Avalonia.Controls.Control value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._set(() => control.PaneFooter = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T PaneFooter<T>(this T control, Func<Avalonia.Controls.Control> func, Action<Avalonia.Controls.Control>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-   => control._set(FluentAvalonia.UI.Controls.NavigationView.PaneFooterProperty!, func, onChanged, expression);
+public static T PaneFooter<T>(this T control, Func<Avalonia.Controls.Control> func, Action<Avalonia.Controls.Control>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+   => control._set(FluentAvalonia.UI.Controls.NavigationView.PaneFooterProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T PaneFooter<T>(this T control,Avalonia.Controls.Control value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.PaneFooterProperty, ps, () => control.PaneFooter = value!, bindingMode, converter, bindingSource);
+public static T PaneFooter<T>(this T control,Avalonia.Controls.Control value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.PaneFooterProperty, ps, () => control.PaneFooter = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T PaneFooter<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -616,25 +491,19 @@ public static T PaneFooter<T>(this T control, AvaloniaProperty avaloniaProperty,
    => control._set(FluentAvalonia.UI.Controls.NavigationView.PaneFooterProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T PaneFooter<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Control> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.PaneFooterProperty, ps, () => control.PaneFooter = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T PaneFooter<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Control> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.PaneFooterProperty, ps, () => control.PaneFooter = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // PaneHeader
 
-/*ValueSetterGenerator*/
-public static T PaneHeader<T>(this T control, Avalonia.Controls.Control value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._set(() => control.PaneHeader = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T PaneHeader<T>(this T control, Func<Avalonia.Controls.Control> func, Action<Avalonia.Controls.Control>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-   => control._set(FluentAvalonia.UI.Controls.NavigationView.PaneHeaderProperty!, func, onChanged, expression);
+public static T PaneHeader<T>(this T control, Func<Avalonia.Controls.Control> func, Action<Avalonia.Controls.Control>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+   => control._set(FluentAvalonia.UI.Controls.NavigationView.PaneHeaderProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T PaneHeader<T>(this T control,Avalonia.Controls.Control value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.PaneHeaderProperty, ps, () => control.PaneHeader = value!, bindingMode, converter, bindingSource);
+public static T PaneHeader<T>(this T control,Avalonia.Controls.Control value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.PaneHeaderProperty, ps, () => control.PaneHeader = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T PaneHeader<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -645,25 +514,19 @@ public static T PaneHeader<T>(this T control, AvaloniaProperty avaloniaProperty,
    => control._set(FluentAvalonia.UI.Controls.NavigationView.PaneHeaderProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T PaneHeader<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Control> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.PaneHeaderProperty, ps, () => control.PaneHeader = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T PaneHeader<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Control> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.PaneHeaderProperty, ps, () => control.PaneHeader = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // PaneTitle
 
-/*ValueSetterGenerator*/
-public static T PaneTitle<T>(this T control, System.String value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._set(() => control.PaneTitle = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T PaneTitle<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-   => control._set(FluentAvalonia.UI.Controls.NavigationView.PaneTitleProperty!, func, onChanged, expression);
+public static T PaneTitle<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+   => control._set(FluentAvalonia.UI.Controls.NavigationView.PaneTitleProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T PaneTitle<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.PaneTitleProperty, ps, () => control.PaneTitle = value!, bindingMode, converter, bindingSource);
+public static T PaneTitle<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.PaneTitleProperty, ps, () => control.PaneTitle = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T PaneTitle<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -674,25 +537,19 @@ public static T PaneTitle<T>(this T control, AvaloniaProperty avaloniaProperty, 
    => control._set(FluentAvalonia.UI.Controls.NavigationView.PaneTitleProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T PaneTitle<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.PaneTitleProperty, ps, () => control.PaneTitle = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T PaneTitle<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.PaneTitleProperty, ps, () => control.PaneTitle = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // SelectedItem
 
-/*ValueSetterGenerator*/
-public static T SelectedItem<T>(this T control, System.Object value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._set(() => control.SelectedItem = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T SelectedItem<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-   => control._set(FluentAvalonia.UI.Controls.NavigationView.SelectedItemProperty!, func, onChanged, expression);
+public static T SelectedItem<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+   => control._set(FluentAvalonia.UI.Controls.NavigationView.SelectedItemProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T SelectedItem<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.SelectedItemProperty, ps, () => control.SelectedItem = value!, bindingMode, converter, bindingSource);
+public static T SelectedItem<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.SelectedItemProperty, ps, () => control.SelectedItem = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T SelectedItem<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -703,25 +560,19 @@ public static T SelectedItem<T>(this T control, AvaloniaProperty avaloniaPropert
    => control._set(FluentAvalonia.UI.Controls.NavigationView.SelectedItemProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T SelectedItem<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.SelectedItemProperty, ps, () => control.SelectedItem = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T SelectedItem<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.SelectedItemProperty, ps, () => control.SelectedItem = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // SelectionFollowsFocus
 
-/*ValueSetterGenerator*/
-public static T SelectionFollowsFocus<T>(this T control, System.Boolean value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._set(() => control.SelectionFollowsFocus = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T SelectionFollowsFocus<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-   => control._set(FluentAvalonia.UI.Controls.NavigationView.SelectionFollowsFocusProperty!, func, onChanged, expression);
+public static T SelectionFollowsFocus<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+   => control._set(FluentAvalonia.UI.Controls.NavigationView.SelectionFollowsFocusProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T SelectionFollowsFocus<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.SelectionFollowsFocusProperty, ps, () => control.SelectionFollowsFocus = value!, bindingMode, converter, bindingSource);
+public static T SelectionFollowsFocus<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.SelectionFollowsFocusProperty, ps, () => control.SelectionFollowsFocus = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T SelectionFollowsFocus<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -732,9 +583,8 @@ public static T SelectionFollowsFocus<T>(this T control, AvaloniaProperty avalon
    => control._set(FluentAvalonia.UI.Controls.NavigationView.SelectionFollowsFocusProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T SelectionFollowsFocus<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.SelectionFollowsFocusProperty, ps, () => control.SelectionFollowsFocus = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T SelectionFollowsFocus<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.NavigationView 
+=> control._setEx(FluentAvalonia.UI.Controls.NavigationView.SelectionFollowsFocusProperty, ps, () => control.SelectionFollowsFocus = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
@@ -815,7 +665,7 @@ public static T OnItemCollapsed<T>(this T control, Action<FluentAvalonia.UI.Cont
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> AlwaysShowHeader<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.AlwaysShowHeaderProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.AlwaysShowHeaderProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> AlwaysShowHeader<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -826,7 +676,7 @@ public static Style<T> AlwaysShowHeader<T>(this Style<T> style, IBinding binding
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> AutoCompleteBox<T>(this Style<T> style, Avalonia.Controls.AutoCompleteBox value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.AutoCompleteBoxProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.AutoCompleteBoxProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> AutoCompleteBox<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -837,7 +687,7 @@ public static Style<T> AutoCompleteBox<T>(this Style<T> style, IBinding binding)
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> CompactModeThresholdWidth<T>(this Style<T> style, System.Double value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.CompactModeThresholdWidthProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.CompactModeThresholdWidthProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> CompactModeThresholdWidth<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -848,7 +698,7 @@ public static Style<T> CompactModeThresholdWidth<T>(this Style<T> style, IBindin
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> CompactPaneLength<T>(this Style<T> style, System.Double value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.CompactPaneLengthProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.CompactPaneLengthProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> CompactPaneLength<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -859,7 +709,7 @@ public static Style<T> CompactPaneLength<T>(this Style<T> style, IBinding bindin
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> ContentOverlay<T>(this Style<T> style, Avalonia.Controls.Control value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.ContentOverlayProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.ContentOverlayProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> ContentOverlay<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -870,7 +720,7 @@ public static Style<T> ContentOverlay<T>(this Style<T> style, IBinding binding) 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> ExpandedModeThresholdWidth<T>(this Style<T> style, System.Double value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.ExpandedModeThresholdWidthProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.ExpandedModeThresholdWidthProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> ExpandedModeThresholdWidth<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -881,7 +731,7 @@ public static Style<T> ExpandedModeThresholdWidth<T>(this Style<T> style, IBindi
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> FooterMenuItemsSource<T>(this Style<T> style, System.Collections.IEnumerable value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.FooterMenuItemsSourceProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.FooterMenuItemsSourceProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> FooterMenuItemsSource<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -892,7 +742,7 @@ public static Style<T> FooterMenuItemsSource<T>(this Style<T> style, IBinding bi
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsBackButtonVisible<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.IsBackButtonVisibleProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.IsBackButtonVisibleProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsBackButtonVisible<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -903,7 +753,7 @@ public static Style<T> IsBackButtonVisible<T>(this Style<T> style, IBinding bind
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsBackEnabled<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.IsBackEnabledProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.IsBackEnabledProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsBackEnabled<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -914,7 +764,7 @@ public static Style<T> IsBackEnabled<T>(this Style<T> style, IBinding binding) w
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsPaneOpen<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.IsPaneOpenProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.IsPaneOpenProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsPaneOpen<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -925,7 +775,7 @@ public static Style<T> IsPaneOpen<T>(this Style<T> style, IBinding binding) wher
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsPaneToggleButtonVisible<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.IsPaneToggleButtonVisibleProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.IsPaneToggleButtonVisibleProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsPaneToggleButtonVisible<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -936,7 +786,7 @@ public static Style<T> IsPaneToggleButtonVisible<T>(this Style<T> style, IBindin
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsPaneVisible<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.IsPaneVisibleProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.IsPaneVisibleProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsPaneVisible<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -947,7 +797,7 @@ public static Style<T> IsPaneVisible<T>(this Style<T> style, IBinding binding) w
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsSettingsVisible<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.IsSettingsVisibleProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.IsSettingsVisibleProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsSettingsVisible<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -958,7 +808,7 @@ public static Style<T> IsSettingsVisible<T>(this Style<T> style, IBinding bindin
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> MenuItemsSource<T>(this Style<T> style, System.Collections.IEnumerable value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.MenuItemsSourceProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.MenuItemsSourceProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> MenuItemsSource<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -969,7 +819,7 @@ public static Style<T> MenuItemsSource<T>(this Style<T> style, IBinding binding)
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> MenuItemTemplate<T>(this Style<T> style, Avalonia.Controls.Templates.IDataTemplate value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.MenuItemTemplateProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.MenuItemTemplateProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> MenuItemTemplate<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -980,7 +830,7 @@ public static Style<T> MenuItemTemplate<T>(this Style<T> style, IBinding binding
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> MenuItemTemplateSelector<T>(this Style<T> style, FluentAvalonia.UI.Controls.DataTemplateSelector value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.MenuItemTemplateSelectorProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.MenuItemTemplateSelectorProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> MenuItemTemplateSelector<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -991,7 +841,7 @@ public static Style<T> MenuItemTemplateSelector<T>(this Style<T> style, IBinding
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> OpenPaneLength<T>(this Style<T> style, System.Double value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.OpenPaneLengthProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.OpenPaneLengthProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> OpenPaneLength<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -1002,7 +852,7 @@ public static Style<T> OpenPaneLength<T>(this Style<T> style, IBinding binding) 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> PaneCustomContent<T>(this Style<T> style, Avalonia.Controls.Control value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.PaneCustomContentProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.PaneCustomContentProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> PaneCustomContent<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -1013,7 +863,7 @@ public static Style<T> PaneCustomContent<T>(this Style<T> style, IBinding bindin
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> PaneDisplayMode<T>(this Style<T> style, FluentAvalonia.UI.Controls.NavigationViewPaneDisplayMode value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.PaneDisplayModeProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.PaneDisplayModeProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> PaneDisplayMode<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -1024,7 +874,7 @@ public static Style<T> PaneDisplayMode<T>(this Style<T> style, IBinding binding)
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> PaneFooter<T>(this Style<T> style, Avalonia.Controls.Control value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.PaneFooterProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.PaneFooterProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> PaneFooter<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -1035,7 +885,7 @@ public static Style<T> PaneFooter<T>(this Style<T> style, IBinding binding) wher
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> PaneHeader<T>(this Style<T> style, Avalonia.Controls.Control value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.PaneHeaderProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.PaneHeaderProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> PaneHeader<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -1046,7 +896,7 @@ public static Style<T> PaneHeader<T>(this Style<T> style, IBinding binding) wher
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> PaneTitle<T>(this Style<T> style, System.String value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.PaneTitleProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.PaneTitleProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> PaneTitle<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 
@@ -1057,7 +907,7 @@ public static Style<T> PaneTitle<T>(this Style<T> style, IBinding binding) where
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> SelectionFollowsFocus<T>(this Style<T> style, System.Boolean value) where T : FluentAvalonia.UI.Controls.NavigationView 
-=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.SelectionFollowsFocusProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.NavigationView.SelectionFollowsFocusProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> SelectionFollowsFocus<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.NavigationView 

@@ -14,18 +14,13 @@ public static partial class TitleBar_MarkupExtensions
 //================= Properties ======================//
  // LeftContent
 
-/*ValueSetterGenerator*/
-public static T LeftContent<T>(this T control, System.Object value) where T : Ursa.Controls.TitleBar 
-=> control._set(() => control.LeftContent = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T LeftContent<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Ursa.Controls.TitleBar 
-   => control._set(Ursa.Controls.TitleBar.LeftContentProperty!, func, onChanged, expression);
+public static T LeftContent<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.TitleBar 
+   => control._set(Ursa.Controls.TitleBar.LeftContentProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T LeftContent<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.TitleBar 
-=> control._setEx(Ursa.Controls.TitleBar.LeftContentProperty, ps, () => control.LeftContent = value!, bindingMode, converter, bindingSource);
+public static T LeftContent<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.TitleBar 
+=> control._setEx(Ursa.Controls.TitleBar.LeftContentProperty, ps, () => control.LeftContent = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T LeftContent<T>(this T control, IBinding binding) where T : Ursa.Controls.TitleBar 
@@ -36,25 +31,19 @@ public static T LeftContent<T>(this T control, AvaloniaProperty avaloniaProperty
    => control._set(Ursa.Controls.TitleBar.LeftContentProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T LeftContent<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.TitleBar 
-=> control._setEx(Ursa.Controls.TitleBar.LeftContentProperty, ps, () => control.LeftContent = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T LeftContent<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.TitleBar 
+=> control._setEx(Ursa.Controls.TitleBar.LeftContentProperty, ps, () => control.LeftContent = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // RightContent
 
-/*ValueSetterGenerator*/
-public static T RightContent<T>(this T control, System.Object value) where T : Ursa.Controls.TitleBar 
-=> control._set(() => control.RightContent = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T RightContent<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Ursa.Controls.TitleBar 
-   => control._set(Ursa.Controls.TitleBar.RightContentProperty!, func, onChanged, expression);
+public static T RightContent<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.TitleBar 
+   => control._set(Ursa.Controls.TitleBar.RightContentProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T RightContent<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.TitleBar 
-=> control._setEx(Ursa.Controls.TitleBar.RightContentProperty, ps, () => control.RightContent = value!, bindingMode, converter, bindingSource);
+public static T RightContent<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.TitleBar 
+=> control._setEx(Ursa.Controls.TitleBar.RightContentProperty, ps, () => control.RightContent = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T RightContent<T>(this T control, IBinding binding) where T : Ursa.Controls.TitleBar 
@@ -65,25 +54,19 @@ public static T RightContent<T>(this T control, AvaloniaProperty avaloniaPropert
    => control._set(Ursa.Controls.TitleBar.RightContentProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T RightContent<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.TitleBar 
-=> control._setEx(Ursa.Controls.TitleBar.RightContentProperty, ps, () => control.RightContent = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T RightContent<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.TitleBar 
+=> control._setEx(Ursa.Controls.TitleBar.RightContentProperty, ps, () => control.RightContent = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // IsTitleVisible
 
-/*ValueSetterGenerator*/
-public static T IsTitleVisible<T>(this T control, System.Boolean value) where T : Ursa.Controls.TitleBar 
-=> control._set(() => control.IsTitleVisible = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IsTitleVisible<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Ursa.Controls.TitleBar 
-   => control._set(Ursa.Controls.TitleBar.IsTitleVisibleProperty!, func, onChanged, expression);
+public static T IsTitleVisible<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.TitleBar 
+   => control._set(Ursa.Controls.TitleBar.IsTitleVisibleProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IsTitleVisible<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.TitleBar 
-=> control._setEx(Ursa.Controls.TitleBar.IsTitleVisibleProperty, ps, () => control.IsTitleVisible = value!, bindingMode, converter, bindingSource);
+public static T IsTitleVisible<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.TitleBar 
+=> control._setEx(Ursa.Controls.TitleBar.IsTitleVisibleProperty, ps, () => control.IsTitleVisible = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsTitleVisible<T>(this T control, IBinding binding) where T : Ursa.Controls.TitleBar 
@@ -94,25 +77,19 @@ public static T IsTitleVisible<T>(this T control, AvaloniaProperty avaloniaPrope
    => control._set(Ursa.Controls.TitleBar.IsTitleVisibleProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IsTitleVisible<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.TitleBar 
-=> control._setEx(Ursa.Controls.TitleBar.IsTitleVisibleProperty, ps, () => control.IsTitleVisible = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IsTitleVisible<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.TitleBar 
+=> control._setEx(Ursa.Controls.TitleBar.IsTitleVisibleProperty, ps, () => control.IsTitleVisible = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // IsTitleBarHitTestVisible
 
-/*ValueSetterGenerator*/
-public static T IsTitleBarHitTestVisible<T>(this T control, System.Boolean value) where T : Ursa.Controls.TitleBar 
-=> control._set(() => control.IsTitleBarHitTestVisible = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IsTitleBarHitTestVisible<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Ursa.Controls.TitleBar 
-   => control._set(Ursa.Controls.TitleBar.IsTitleBarHitTestVisibleProperty!, func, onChanged, expression);
+public static T IsTitleBarHitTestVisible<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Ursa.Controls.TitleBar 
+   => control._set(Ursa.Controls.TitleBar.IsTitleBarHitTestVisibleProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IsTitleBarHitTestVisible<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.TitleBar 
-=> control._setEx(Ursa.Controls.TitleBar.IsTitleBarHitTestVisibleProperty, ps, () => control.IsTitleBarHitTestVisible = value!, bindingMode, converter, bindingSource);
+public static T IsTitleBarHitTestVisible<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.TitleBar 
+=> control._setEx(Ursa.Controls.TitleBar.IsTitleBarHitTestVisibleProperty, ps, () => control.IsTitleBarHitTestVisible = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsTitleBarHitTestVisible<T>(this T control, IBinding binding) where T : Ursa.Controls.TitleBar 
@@ -123,9 +100,8 @@ public static T IsTitleBarHitTestVisible<T>(this T control, AvaloniaProperty ava
    => control._set(Ursa.Controls.TitleBar.IsTitleBarHitTestVisibleProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IsTitleBarHitTestVisible<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Ursa.Controls.TitleBar 
-=> control._setEx(Ursa.Controls.TitleBar.IsTitleBarHitTestVisibleProperty, ps, () => control.IsTitleBarHitTestVisible = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IsTitleBarHitTestVisible<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Ursa.Controls.TitleBar 
+=> control._setEx(Ursa.Controls.TitleBar.IsTitleBarHitTestVisibleProperty, ps, () => control.IsTitleBarHitTestVisible = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
@@ -133,12 +109,12 @@ public static T IsTitleBarHitTestVisible<TValue,T>(this T control, TValue value,
  // IsTitleBarHitTestVisible
 
 /*AttachedPropertyMagicalSetterGenerator*/
-public static T TitleBar_IsTitleBarHitTestVisible<T>(this T control, System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Avalonia.Controls.Window
+public static T TitleBar_IsTitleBarHitTestVisible<T>(this T control, System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Avalonia.Controls.Window
  => control._setEx(Ursa.Controls.TitleBar.IsTitleBarHitTestVisibleProperty, ps, () => Ursa.Controls.TitleBar.SetIsTitleBarHitTestVisible(control, value), bindingMode, converter, bindingSource);
 
 /*AttachedPropertyBindFromExpressionSetterGenerator*/
-public static T TitleBar_IsTitleBarHitTestVisible<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Avalonia.Controls.Window 
-   => control._set(Ursa.Controls.TitleBar.IsTitleBarHitTestVisibleProperty!, func, onChanged, expression);
+public static T TitleBar_IsTitleBarHitTestVisible<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Avalonia.Controls.Window 
+   => control._set(Ursa.Controls.TitleBar.IsTitleBarHitTestVisibleProperty, func, onChanged, expression);
 
 
 
@@ -147,7 +123,7 @@ public static T TitleBar_IsTitleBarHitTestVisible<T>(this T control, Func<System
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> LeftContent<T>(this Style<T> style, System.Object value) where T : Ursa.Controls.TitleBar 
-=> style._addSetter(Ursa.Controls.TitleBar.LeftContentProperty!, value!);
+=> style._addSetter(Ursa.Controls.TitleBar.LeftContentProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> LeftContent<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.TitleBar 
@@ -158,7 +134,7 @@ public static Style<T> LeftContent<T>(this Style<T> style, IBinding binding) whe
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> RightContent<T>(this Style<T> style, System.Object value) where T : Ursa.Controls.TitleBar 
-=> style._addSetter(Ursa.Controls.TitleBar.RightContentProperty!, value!);
+=> style._addSetter(Ursa.Controls.TitleBar.RightContentProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> RightContent<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.TitleBar 
@@ -169,7 +145,7 @@ public static Style<T> RightContent<T>(this Style<T> style, IBinding binding) wh
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsTitleVisible<T>(this Style<T> style, System.Boolean value) where T : Ursa.Controls.TitleBar 
-=> style._addSetter(Ursa.Controls.TitleBar.IsTitleVisibleProperty!, value!);
+=> style._addSetter(Ursa.Controls.TitleBar.IsTitleVisibleProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsTitleVisible<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.TitleBar 
@@ -180,7 +156,7 @@ public static Style<T> IsTitleVisible<T>(this Style<T> style, IBinding binding) 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IsTitleBarHitTestVisible<T>(this Style<T> style, System.Boolean value) where T : Ursa.Controls.TitleBar 
-=> style._addSetter(Ursa.Controls.TitleBar.IsTitleBarHitTestVisibleProperty!, value!);
+=> style._addSetter(Ursa.Controls.TitleBar.IsTitleBarHitTestVisibleProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsTitleBarHitTestVisible<T>(this Style<T> style, IBinding binding) where T : Ursa.Controls.TitleBar 

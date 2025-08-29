@@ -14,18 +14,13 @@ public static partial class MenuFlyoutItem_MarkupExtensions
 //================= Properties ======================//
  // Text
 
-/*ValueSetterGenerator*/
-public static T Text<T>(this T control, System.String value) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-=> control._set(() => control.Text = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T Text<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-   => control._set(FluentAvalonia.UI.Controls.MenuFlyoutItem.TextProperty!, func, onChanged, expression);
+public static T Text<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
+   => control._set(FluentAvalonia.UI.Controls.MenuFlyoutItem.TextProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T Text<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-=> control._setEx(FluentAvalonia.UI.Controls.MenuFlyoutItem.TextProperty, ps, () => control.Text = value!, bindingMode, converter, bindingSource);
+public static T Text<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
+=> control._setEx(FluentAvalonia.UI.Controls.MenuFlyoutItem.TextProperty, ps, () => control.Text = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Text<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
@@ -36,25 +31,19 @@ public static T Text<T>(this T control, AvaloniaProperty avaloniaProperty, Bindi
    => control._set(FluentAvalonia.UI.Controls.MenuFlyoutItem.TextProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T Text<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-=> control._setEx(FluentAvalonia.UI.Controls.MenuFlyoutItem.TextProperty, ps, () => control.Text = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T Text<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
+=> control._setEx(FluentAvalonia.UI.Controls.MenuFlyoutItem.TextProperty, ps, () => control.Text = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // IconSource
 
-/*ValueSetterGenerator*/
-public static T IconSource<T>(this T control, FluentAvalonia.UI.Controls.IconSource value) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-=> control._set(() => control.IconSource = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IconSource<T>(this T control, Func<FluentAvalonia.UI.Controls.IconSource> func, Action<FluentAvalonia.UI.Controls.IconSource>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-   => control._set(FluentAvalonia.UI.Controls.MenuFlyoutItem.IconSourceProperty!, func, onChanged, expression);
+public static T IconSource<T>(this T control, Func<FluentAvalonia.UI.Controls.IconSource> func, Action<FluentAvalonia.UI.Controls.IconSource>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
+   => control._set(FluentAvalonia.UI.Controls.MenuFlyoutItem.IconSourceProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IconSource<T>(this T control,FluentAvalonia.UI.Controls.IconSource value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-=> control._setEx(FluentAvalonia.UI.Controls.MenuFlyoutItem.IconSourceProperty, ps, () => control.IconSource = value!, bindingMode, converter, bindingSource);
+public static T IconSource<T>(this T control,FluentAvalonia.UI.Controls.IconSource value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
+=> control._setEx(FluentAvalonia.UI.Controls.MenuFlyoutItem.IconSourceProperty, ps, () => control.IconSource = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IconSource<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
@@ -65,25 +54,19 @@ public static T IconSource<T>(this T control, AvaloniaProperty avaloniaProperty,
    => control._set(FluentAvalonia.UI.Controls.MenuFlyoutItem.IconSourceProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IconSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.IconSource> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-=> control._setEx(FluentAvalonia.UI.Controls.MenuFlyoutItem.IconSourceProperty, ps, () => control.IconSource = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IconSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.IconSource> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
+=> control._setEx(FluentAvalonia.UI.Controls.MenuFlyoutItem.IconSourceProperty, ps, () => control.IconSource = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // Command
 
-/*ValueSetterGenerator*/
-public static T Command<T>(this T control, System.Windows.Input.ICommand value) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-=> control._set(() => control.Command = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T Command<T>(this T control, Func<System.Windows.Input.ICommand> func, Action<System.Windows.Input.ICommand>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-   => control._set(FluentAvalonia.UI.Controls.MenuFlyoutItem.CommandProperty!, func, onChanged, expression);
+public static T Command<T>(this T control, Func<System.Windows.Input.ICommand> func, Action<System.Windows.Input.ICommand>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
+   => control._set(FluentAvalonia.UI.Controls.MenuFlyoutItem.CommandProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T Command<T>(this T control,System.Windows.Input.ICommand value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-=> control._setEx(FluentAvalonia.UI.Controls.MenuFlyoutItem.CommandProperty, ps, () => control.Command = value!, bindingMode, converter, bindingSource);
+public static T Command<T>(this T control,System.Windows.Input.ICommand value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
+=> control._setEx(FluentAvalonia.UI.Controls.MenuFlyoutItem.CommandProperty, ps, () => control.Command = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Command<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
@@ -94,25 +77,19 @@ public static T Command<T>(this T control, AvaloniaProperty avaloniaProperty, Bi
    => control._set(FluentAvalonia.UI.Controls.MenuFlyoutItem.CommandProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T Command<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Windows.Input.ICommand> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-=> control._setEx(FluentAvalonia.UI.Controls.MenuFlyoutItem.CommandProperty, ps, () => control.Command = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T Command<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Windows.Input.ICommand> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
+=> control._setEx(FluentAvalonia.UI.Controls.MenuFlyoutItem.CommandProperty, ps, () => control.Command = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // CommandParameter
 
-/*ValueSetterGenerator*/
-public static T CommandParameter<T>(this T control, System.Object value) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-=> control._set(() => control.CommandParameter = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T CommandParameter<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-   => control._set(FluentAvalonia.UI.Controls.MenuFlyoutItem.CommandParameterProperty!, func, onChanged, expression);
+public static T CommandParameter<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
+   => control._set(FluentAvalonia.UI.Controls.MenuFlyoutItem.CommandParameterProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T CommandParameter<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-=> control._setEx(FluentAvalonia.UI.Controls.MenuFlyoutItem.CommandParameterProperty, ps, () => control.CommandParameter = value!, bindingMode, converter, bindingSource);
+public static T CommandParameter<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
+=> control._setEx(FluentAvalonia.UI.Controls.MenuFlyoutItem.CommandParameterProperty, ps, () => control.CommandParameter = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T CommandParameter<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
@@ -123,25 +100,19 @@ public static T CommandParameter<T>(this T control, AvaloniaProperty avaloniaPro
    => control._set(FluentAvalonia.UI.Controls.MenuFlyoutItem.CommandParameterProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T CommandParameter<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-=> control._setEx(FluentAvalonia.UI.Controls.MenuFlyoutItem.CommandParameterProperty, ps, () => control.CommandParameter = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T CommandParameter<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
+=> control._setEx(FluentAvalonia.UI.Controls.MenuFlyoutItem.CommandParameterProperty, ps, () => control.CommandParameter = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // HotKey
 
-/*ValueSetterGenerator*/
-public static T HotKey<T>(this T control, Avalonia.Input.KeyGesture value) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-=> control._set(() => control.HotKey = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T HotKey<T>(this T control, Func<Avalonia.Input.KeyGesture> func, Action<Avalonia.Input.KeyGesture>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-   => control._set(FluentAvalonia.UI.Controls.MenuFlyoutItem.HotKeyProperty!, func, onChanged, expression);
+public static T HotKey<T>(this T control, Func<Avalonia.Input.KeyGesture> func, Action<Avalonia.Input.KeyGesture>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
+   => control._set(FluentAvalonia.UI.Controls.MenuFlyoutItem.HotKeyProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T HotKey<T>(this T control,Avalonia.Input.KeyGesture value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-=> control._setEx(FluentAvalonia.UI.Controls.MenuFlyoutItem.HotKeyProperty, ps, () => control.HotKey = value!, bindingMode, converter, bindingSource);
+public static T HotKey<T>(this T control,Avalonia.Input.KeyGesture value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
+=> control._setEx(FluentAvalonia.UI.Controls.MenuFlyoutItem.HotKeyProperty, ps, () => control.HotKey = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T HotKey<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
@@ -152,25 +123,19 @@ public static T HotKey<T>(this T control, AvaloniaProperty avaloniaProperty, Bin
    => control._set(FluentAvalonia.UI.Controls.MenuFlyoutItem.HotKeyProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T HotKey<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Input.KeyGesture> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-=> control._setEx(FluentAvalonia.UI.Controls.MenuFlyoutItem.HotKeyProperty, ps, () => control.HotKey = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T HotKey<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Input.KeyGesture> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
+=> control._setEx(FluentAvalonia.UI.Controls.MenuFlyoutItem.HotKeyProperty, ps, () => control.HotKey = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // InputGesture
 
-/*ValueSetterGenerator*/
-public static T InputGesture<T>(this T control, Avalonia.Input.KeyGesture value) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-=> control._set(() => control.InputGesture = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T InputGesture<T>(this T control, Func<Avalonia.Input.KeyGesture> func, Action<Avalonia.Input.KeyGesture>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-   => control._set(FluentAvalonia.UI.Controls.MenuFlyoutItem.InputGestureProperty!, func, onChanged, expression);
+public static T InputGesture<T>(this T control, Func<Avalonia.Input.KeyGesture> func, Action<Avalonia.Input.KeyGesture>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
+   => control._set(FluentAvalonia.UI.Controls.MenuFlyoutItem.InputGestureProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T InputGesture<T>(this T control,Avalonia.Input.KeyGesture value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-=> control._setEx(FluentAvalonia.UI.Controls.MenuFlyoutItem.InputGestureProperty, ps, () => control.InputGesture = value!, bindingMode, converter, bindingSource);
+public static T InputGesture<T>(this T control,Avalonia.Input.KeyGesture value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
+=> control._setEx(FluentAvalonia.UI.Controls.MenuFlyoutItem.InputGestureProperty, ps, () => control.InputGesture = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T InputGesture<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
@@ -181,9 +146,8 @@ public static T InputGesture<T>(this T control, AvaloniaProperty avaloniaPropert
    => control._set(FluentAvalonia.UI.Controls.MenuFlyoutItem.InputGestureProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T InputGesture<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Input.KeyGesture> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-=> control._setEx(FluentAvalonia.UI.Controls.MenuFlyoutItem.InputGestureProperty, ps, () => control.InputGesture = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T InputGesture<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Input.KeyGesture> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
+=> control._setEx(FluentAvalonia.UI.Controls.MenuFlyoutItem.InputGestureProperty, ps, () => control.InputGesture = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
@@ -191,10 +155,10 @@ public static T InputGesture<TValue,T>(this T control, TValue value, FuncValueCo
  // Click
 
 /*ActionToEventGenerator*/
-public static T OnClick<T>(this T control, Action<Avalonia.Interactivity.RoutedEventArgs> action, Avalonia.Interactivity.RoutingStrategies? routes = null) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
+public static T OnClick<T>(this T control, Action<Avalonia.Interactivity.RoutedEventArgs> action, Avalonia.Interactivity.RoutingStrategies routes = Avalonia.Interactivity.RoutingStrategies.Tunnel | Avalonia.Interactivity.RoutingStrategies.Bubble) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
 {
-  control.AddHandler(FluentAvalonia.UI.Controls.MenuFlyoutItem.ClickEvent, (_, args) => action(args), routes ?? FluentAvalonia.UI.Controls.MenuFlyoutItem.ClickEvent.RoutingStrategies);
-  return control;
+  control.AddHandler(FluentAvalonia.UI.Controls.MenuFlyoutItem.ClickEvent, (_, args) => action(args), routes);
+  return control; 
 }
 
 
@@ -205,7 +169,7 @@ public static T OnClick<T>(this T control, Action<Avalonia.Interactivity.RoutedE
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Text<T>(this Style<T> style, System.String value) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-=> style._addSetter(FluentAvalonia.UI.Controls.MenuFlyoutItem.TextProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.MenuFlyoutItem.TextProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Text<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
@@ -216,7 +180,7 @@ public static Style<T> Text<T>(this Style<T> style, IBinding binding) where T : 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IconSource<T>(this Style<T> style, FluentAvalonia.UI.Controls.IconSource value) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-=> style._addSetter(FluentAvalonia.UI.Controls.MenuFlyoutItem.IconSourceProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.MenuFlyoutItem.IconSourceProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IconSource<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
@@ -227,7 +191,7 @@ public static Style<T> IconSource<T>(this Style<T> style, IBinding binding) wher
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Command<T>(this Style<T> style, System.Windows.Input.ICommand value) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-=> style._addSetter(FluentAvalonia.UI.Controls.MenuFlyoutItem.CommandProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.MenuFlyoutItem.CommandProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Command<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
@@ -238,7 +202,7 @@ public static Style<T> Command<T>(this Style<T> style, IBinding binding) where T
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> CommandParameter<T>(this Style<T> style, System.Object value) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-=> style._addSetter(FluentAvalonia.UI.Controls.MenuFlyoutItem.CommandParameterProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.MenuFlyoutItem.CommandParameterProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> CommandParameter<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
@@ -249,7 +213,7 @@ public static Style<T> CommandParameter<T>(this Style<T> style, IBinding binding
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> HotKey<T>(this Style<T> style, Avalonia.Input.KeyGesture value) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-=> style._addSetter(FluentAvalonia.UI.Controls.MenuFlyoutItem.HotKeyProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.MenuFlyoutItem.HotKeyProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> HotKey<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
@@ -260,7 +224,7 @@ public static Style<T> HotKey<T>(this Style<T> style, IBinding binding) where T 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> InputGesture<T>(this Style<T> style, Avalonia.Input.KeyGesture value) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 
-=> style._addSetter(FluentAvalonia.UI.Controls.MenuFlyoutItem.InputGestureProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.MenuFlyoutItem.InputGestureProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> InputGesture<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.MenuFlyoutItem 

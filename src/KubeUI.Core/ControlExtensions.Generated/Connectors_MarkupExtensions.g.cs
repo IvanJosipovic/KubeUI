@@ -14,18 +14,13 @@ public static partial class Connectors_MarkupExtensions
 //================= Properties ======================//
  // DrawingSource
 
-/*ValueSetterGenerator*/
-public static T DrawingSource<T>(this T control, NodeEditor.Model.IDrawingNode value) where T : NodeEditor.Controls.Connectors 
-=> control._set(() => control.DrawingSource = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T DrawingSource<T>(this T control, Func<NodeEditor.Model.IDrawingNode> func, Action<NodeEditor.Model.IDrawingNode>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : NodeEditor.Controls.Connectors 
-   => control._set(NodeEditor.Controls.Connectors.DrawingSourceProperty!, func, onChanged, expression);
+public static T DrawingSource<T>(this T control, Func<NodeEditor.Model.IDrawingNode> func, Action<NodeEditor.Model.IDrawingNode>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Controls.Connectors 
+   => control._set(NodeEditor.Controls.Connectors.DrawingSourceProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T DrawingSource<T>(this T control,NodeEditor.Model.IDrawingNode value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.Connectors 
-=> control._setEx(NodeEditor.Controls.Connectors.DrawingSourceProperty, ps, () => control.DrawingSource = value!, bindingMode, converter, bindingSource);
+public static T DrawingSource<T>(this T control,NodeEditor.Model.IDrawingNode value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.Connectors 
+=> control._setEx(NodeEditor.Controls.Connectors.DrawingSourceProperty, ps, () => control.DrawingSource = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T DrawingSource<T>(this T control, IBinding binding) where T : NodeEditor.Controls.Connectors 
@@ -36,9 +31,8 @@ public static T DrawingSource<T>(this T control, AvaloniaProperty avaloniaProper
    => control._set(NodeEditor.Controls.Connectors.DrawingSourceProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T DrawingSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, NodeEditor.Model.IDrawingNode> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.Connectors 
-=> control._setEx(NodeEditor.Controls.Connectors.DrawingSourceProperty, ps, () => control.DrawingSource = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T DrawingSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, NodeEditor.Model.IDrawingNode> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.Connectors 
+=> control._setEx(NodeEditor.Controls.Connectors.DrawingSourceProperty, ps, () => control.DrawingSource = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
@@ -47,7 +41,7 @@ public static T DrawingSource<TValue,T>(this T control, TValue value, FuncValueC
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> DrawingSource<T>(this Style<T> style, NodeEditor.Model.IDrawingNode value) where T : NodeEditor.Controls.Connectors 
-=> style._addSetter(NodeEditor.Controls.Connectors.DrawingSourceProperty!, value!);
+=> style._addSetter(NodeEditor.Controls.Connectors.DrawingSourceProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> DrawingSource<T>(this Style<T> style, IBinding binding) where T : NodeEditor.Controls.Connectors 

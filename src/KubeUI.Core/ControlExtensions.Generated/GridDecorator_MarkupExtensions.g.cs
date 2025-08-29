@@ -14,18 +14,13 @@ public static partial class GridDecorator_MarkupExtensions
 //================= Properties ======================//
  // EnableGrid
 
-/*ValueSetterGenerator*/
-public static T EnableGrid<T>(this T control, System.Boolean value) where T : NodeEditor.Controls.GridDecorator 
-=> control._set(() => control.EnableGrid = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T EnableGrid<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : NodeEditor.Controls.GridDecorator 
-   => control._set(NodeEditor.Controls.GridDecorator.EnableGridProperty!, func, onChanged, expression);
+public static T EnableGrid<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Controls.GridDecorator 
+   => control._set(NodeEditor.Controls.GridDecorator.EnableGridProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T EnableGrid<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.GridDecorator 
-=> control._setEx(NodeEditor.Controls.GridDecorator.EnableGridProperty, ps, () => control.EnableGrid = value!, bindingMode, converter, bindingSource);
+public static T EnableGrid<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.GridDecorator 
+=> control._setEx(NodeEditor.Controls.GridDecorator.EnableGridProperty, ps, () => control.EnableGrid = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T EnableGrid<T>(this T control, IBinding binding) where T : NodeEditor.Controls.GridDecorator 
@@ -36,25 +31,19 @@ public static T EnableGrid<T>(this T control, AvaloniaProperty avaloniaProperty,
    => control._set(NodeEditor.Controls.GridDecorator.EnableGridProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T EnableGrid<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.GridDecorator 
-=> control._setEx(NodeEditor.Controls.GridDecorator.EnableGridProperty, ps, () => control.EnableGrid = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T EnableGrid<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.GridDecorator 
+=> control._setEx(NodeEditor.Controls.GridDecorator.EnableGridProperty, ps, () => control.EnableGrid = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // GridCellWidth
 
-/*ValueSetterGenerator*/
-public static T GridCellWidth<T>(this T control, System.Double value) where T : NodeEditor.Controls.GridDecorator 
-=> control._set(() => control.GridCellWidth = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T GridCellWidth<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : NodeEditor.Controls.GridDecorator 
-   => control._set(NodeEditor.Controls.GridDecorator.GridCellWidthProperty!, func, onChanged, expression);
+public static T GridCellWidth<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Controls.GridDecorator 
+   => control._set(NodeEditor.Controls.GridDecorator.GridCellWidthProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T GridCellWidth<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.GridDecorator 
-=> control._setEx(NodeEditor.Controls.GridDecorator.GridCellWidthProperty, ps, () => control.GridCellWidth = value!, bindingMode, converter, bindingSource);
+public static T GridCellWidth<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.GridDecorator 
+=> control._setEx(NodeEditor.Controls.GridDecorator.GridCellWidthProperty, ps, () => control.GridCellWidth = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T GridCellWidth<T>(this T control, IBinding binding) where T : NodeEditor.Controls.GridDecorator 
@@ -65,25 +54,19 @@ public static T GridCellWidth<T>(this T control, AvaloniaProperty avaloniaProper
    => control._set(NodeEditor.Controls.GridDecorator.GridCellWidthProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T GridCellWidth<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.GridDecorator 
-=> control._setEx(NodeEditor.Controls.GridDecorator.GridCellWidthProperty, ps, () => control.GridCellWidth = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T GridCellWidth<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.GridDecorator 
+=> control._setEx(NodeEditor.Controls.GridDecorator.GridCellWidthProperty, ps, () => control.GridCellWidth = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // GridCellHeight
 
-/*ValueSetterGenerator*/
-public static T GridCellHeight<T>(this T control, System.Double value) where T : NodeEditor.Controls.GridDecorator 
-=> control._set(() => control.GridCellHeight = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T GridCellHeight<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : NodeEditor.Controls.GridDecorator 
-   => control._set(NodeEditor.Controls.GridDecorator.GridCellHeightProperty!, func, onChanged, expression);
+public static T GridCellHeight<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Controls.GridDecorator 
+   => control._set(NodeEditor.Controls.GridDecorator.GridCellHeightProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T GridCellHeight<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.GridDecorator 
-=> control._setEx(NodeEditor.Controls.GridDecorator.GridCellHeightProperty, ps, () => control.GridCellHeight = value!, bindingMode, converter, bindingSource);
+public static T GridCellHeight<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.GridDecorator 
+=> control._setEx(NodeEditor.Controls.GridDecorator.GridCellHeightProperty, ps, () => control.GridCellHeight = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T GridCellHeight<T>(this T control, IBinding binding) where T : NodeEditor.Controls.GridDecorator 
@@ -94,9 +77,8 @@ public static T GridCellHeight<T>(this T control, AvaloniaProperty avaloniaPrope
    => control._set(NodeEditor.Controls.GridDecorator.GridCellHeightProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T GridCellHeight<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.GridDecorator 
-=> control._setEx(NodeEditor.Controls.GridDecorator.GridCellHeightProperty, ps, () => control.GridCellHeight = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T GridCellHeight<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.GridDecorator 
+=> control._setEx(NodeEditor.Controls.GridDecorator.GridCellHeightProperty, ps, () => control.GridCellHeight = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
@@ -105,7 +87,7 @@ public static T GridCellHeight<TValue,T>(this T control, TValue value, FuncValue
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> EnableGrid<T>(this Style<T> style, System.Boolean value) where T : NodeEditor.Controls.GridDecorator 
-=> style._addSetter(NodeEditor.Controls.GridDecorator.EnableGridProperty!, value!);
+=> style._addSetter(NodeEditor.Controls.GridDecorator.EnableGridProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> EnableGrid<T>(this Style<T> style, IBinding binding) where T : NodeEditor.Controls.GridDecorator 
@@ -116,7 +98,7 @@ public static Style<T> EnableGrid<T>(this Style<T> style, IBinding binding) wher
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> GridCellWidth<T>(this Style<T> style, System.Double value) where T : NodeEditor.Controls.GridDecorator 
-=> style._addSetter(NodeEditor.Controls.GridDecorator.GridCellWidthProperty!, value!);
+=> style._addSetter(NodeEditor.Controls.GridDecorator.GridCellWidthProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> GridCellWidth<T>(this Style<T> style, IBinding binding) where T : NodeEditor.Controls.GridDecorator 
@@ -127,7 +109,7 @@ public static Style<T> GridCellWidth<T>(this Style<T> style, IBinding binding) w
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> GridCellHeight<T>(this Style<T> style, System.Double value) where T : NodeEditor.Controls.GridDecorator 
-=> style._addSetter(NodeEditor.Controls.GridDecorator.GridCellHeightProperty!, value!);
+=> style._addSetter(NodeEditor.Controls.GridDecorator.GridCellHeightProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> GridCellHeight<T>(this Style<T> style, IBinding binding) where T : NodeEditor.Controls.GridDecorator 

@@ -14,18 +14,13 @@ public static partial class Pin_MarkupExtensions
 //================= Properties ======================//
  // PinSource
 
-/*ValueSetterGenerator*/
-public static T PinSource<T>(this T control, NodeEditor.Model.IPin value) where T : NodeEditor.Controls.Pin 
-=> control._set(() => control.PinSource = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T PinSource<T>(this T control, Func<NodeEditor.Model.IPin> func, Action<NodeEditor.Model.IPin>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : NodeEditor.Controls.Pin 
-   => control._set(NodeEditor.Controls.Pin.PinSourceProperty!, func, onChanged, expression);
+public static T PinSource<T>(this T control, Func<NodeEditor.Model.IPin> func, Action<NodeEditor.Model.IPin>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Controls.Pin 
+   => control._set(NodeEditor.Controls.Pin.PinSourceProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T PinSource<T>(this T control,NodeEditor.Model.IPin value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.Pin 
-=> control._setEx(NodeEditor.Controls.Pin.PinSourceProperty, ps, () => control.PinSource = value!, bindingMode, converter, bindingSource);
+public static T PinSource<T>(this T control,NodeEditor.Model.IPin value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.Pin 
+=> control._setEx(NodeEditor.Controls.Pin.PinSourceProperty, ps, () => control.PinSource = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T PinSource<T>(this T control, IBinding binding) where T : NodeEditor.Controls.Pin 
@@ -36,25 +31,19 @@ public static T PinSource<T>(this T control, AvaloniaProperty avaloniaProperty, 
    => control._set(NodeEditor.Controls.Pin.PinSourceProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T PinSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, NodeEditor.Model.IPin> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.Pin 
-=> control._setEx(NodeEditor.Controls.Pin.PinSourceProperty, ps, () => control.PinSource = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T PinSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, NodeEditor.Model.IPin> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.Pin 
+=> control._setEx(NodeEditor.Controls.Pin.PinSourceProperty, ps, () => control.PinSource = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // Alignment
 
-/*ValueSetterGenerator*/
-public static T Alignment<T>(this T control, NodeEditor.Model.PinAlignment value) where T : NodeEditor.Controls.Pin 
-=> control._set(() => control.Alignment = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T Alignment<T>(this T control, Func<NodeEditor.Model.PinAlignment> func, Action<NodeEditor.Model.PinAlignment>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : NodeEditor.Controls.Pin 
-   => control._set(NodeEditor.Controls.Pin.AlignmentProperty!, func, onChanged, expression);
+public static T Alignment<T>(this T control, Func<NodeEditor.Model.PinAlignment> func, Action<NodeEditor.Model.PinAlignment>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Controls.Pin 
+   => control._set(NodeEditor.Controls.Pin.AlignmentProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T Alignment<T>(this T control,NodeEditor.Model.PinAlignment value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.Pin 
-=> control._setEx(NodeEditor.Controls.Pin.AlignmentProperty, ps, () => control.Alignment = value!, bindingMode, converter, bindingSource);
+public static T Alignment<T>(this T control,NodeEditor.Model.PinAlignment value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.Pin 
+=> control._setEx(NodeEditor.Controls.Pin.AlignmentProperty, ps, () => control.Alignment = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Alignment<T>(this T control, IBinding binding) where T : NodeEditor.Controls.Pin 
@@ -65,25 +54,19 @@ public static T Alignment<T>(this T control, AvaloniaProperty avaloniaProperty, 
    => control._set(NodeEditor.Controls.Pin.AlignmentProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T Alignment<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, NodeEditor.Model.PinAlignment> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.Pin 
-=> control._setEx(NodeEditor.Controls.Pin.AlignmentProperty, ps, () => control.Alignment = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T Alignment<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, NodeEditor.Model.PinAlignment> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.Pin 
+=> control._setEx(NodeEditor.Controls.Pin.AlignmentProperty, ps, () => control.Alignment = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // Id
 
-/*ValueSetterGenerator*/
-public static T Id<T>(this T control, System.String value) where T : NodeEditor.Controls.Pin 
-=> control._set(() => control.Id = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T Id<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : NodeEditor.Controls.Pin 
-   => control._set(NodeEditor.Controls.Pin.IdProperty!, func, onChanged, expression);
+public static T Id<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Controls.Pin 
+   => control._set(NodeEditor.Controls.Pin.IdProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T Id<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.Pin 
-=> control._setEx(NodeEditor.Controls.Pin.IdProperty, ps, () => control.Id = value!, bindingMode, converter, bindingSource);
+public static T Id<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.Pin 
+=> control._setEx(NodeEditor.Controls.Pin.IdProperty, ps, () => control.Id = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Id<T>(this T control, IBinding binding) where T : NodeEditor.Controls.Pin 
@@ -94,9 +77,8 @@ public static T Id<T>(this T control, AvaloniaProperty avaloniaProperty, Binding
    => control._set(NodeEditor.Controls.Pin.IdProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T Id<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.Pin 
-=> control._setEx(NodeEditor.Controls.Pin.IdProperty, ps, () => control.Id = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T Id<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.Pin 
+=> control._setEx(NodeEditor.Controls.Pin.IdProperty, ps, () => control.Id = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
@@ -105,7 +87,7 @@ public static T Id<TValue,T>(this T control, TValue value, FuncValueConverter<TV
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> PinSource<T>(this Style<T> style, NodeEditor.Model.IPin value) where T : NodeEditor.Controls.Pin 
-=> style._addSetter(NodeEditor.Controls.Pin.PinSourceProperty!, value!);
+=> style._addSetter(NodeEditor.Controls.Pin.PinSourceProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> PinSource<T>(this Style<T> style, IBinding binding) where T : NodeEditor.Controls.Pin 
@@ -116,7 +98,7 @@ public static Style<T> PinSource<T>(this Style<T> style, IBinding binding) where
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Alignment<T>(this Style<T> style, NodeEditor.Model.PinAlignment value) where T : NodeEditor.Controls.Pin 
-=> style._addSetter(NodeEditor.Controls.Pin.AlignmentProperty!, value!);
+=> style._addSetter(NodeEditor.Controls.Pin.AlignmentProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Alignment<T>(this Style<T> style, IBinding binding) where T : NodeEditor.Controls.Pin 
@@ -127,7 +109,7 @@ public static Style<T> Alignment<T>(this Style<T> style, IBinding binding) where
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Id<T>(this Style<T> style, System.String value) where T : NodeEditor.Controls.Pin 
-=> style._addSetter(NodeEditor.Controls.Pin.IdProperty!, value!);
+=> style._addSetter(NodeEditor.Controls.Pin.IdProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Id<T>(this Style<T> style, IBinding binding) where T : NodeEditor.Controls.Pin 
