@@ -47,6 +47,7 @@ public class DockFactory : Factory
             Dock = DockMode.Center,
             Id = "Documents",
             IsCollapsable = false,
+            Proportion = 0.8,
             VisibleDockables = CreateList<IDockable>(home)
         };
 
