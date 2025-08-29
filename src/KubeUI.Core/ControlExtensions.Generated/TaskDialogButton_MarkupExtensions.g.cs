@@ -14,18 +14,13 @@ public static partial class TaskDialogButton_MarkupExtensions
 //================= Properties ======================//
  // IconSource
 
-/*ValueSetterGenerator*/
-public static T IconSource<T>(this T control, FluentAvalonia.UI.Controls.IconSource value) where T : FluentAvalonia.UI.Controls.TaskDialogButton 
-=> control._set(() => control.IconSource = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IconSource<T>(this T control, Func<FluentAvalonia.UI.Controls.IconSource> func, Action<FluentAvalonia.UI.Controls.IconSource>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialogButton 
-   => control._set(FluentAvalonia.UI.Controls.TaskDialogButton.IconSourceProperty!, func, onChanged, expression);
+public static T IconSource<T>(this T control, Func<FluentAvalonia.UI.Controls.IconSource> func, Action<FluentAvalonia.UI.Controls.IconSource>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialogButton 
+   => control._set(FluentAvalonia.UI.Controls.TaskDialogButton.IconSourceProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IconSource<T>(this T control,FluentAvalonia.UI.Controls.IconSource value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialogButton 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialogButton.IconSourceProperty, ps, () => control.IconSource = value!, bindingMode, converter, bindingSource);
+public static T IconSource<T>(this T control,FluentAvalonia.UI.Controls.IconSource value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialogButton 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialogButton.IconSourceProperty, ps, () => control.IconSource = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IconSource<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialogButton 
@@ -36,25 +31,19 @@ public static T IconSource<T>(this T control, AvaloniaProperty avaloniaProperty,
    => control._set(FluentAvalonia.UI.Controls.TaskDialogButton.IconSourceProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IconSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.IconSource> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialogButton 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialogButton.IconSourceProperty, ps, () => control.IconSource = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IconSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.IconSource> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialogButton 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialogButton.IconSourceProperty, ps, () => control.IconSource = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // Command
 
-/*ValueSetterGenerator*/
-public static T Command<T>(this T control, System.Windows.Input.ICommand value) where T : FluentAvalonia.UI.Controls.TaskDialogButton 
-=> control._set(() => control.Command = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T Command<T>(this T control, Func<System.Windows.Input.ICommand> func, Action<System.Windows.Input.ICommand>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialogButton 
-   => control._set(FluentAvalonia.UI.Controls.TaskDialogButton.CommandProperty!, func, onChanged, expression);
+public static T Command<T>(this T control, Func<System.Windows.Input.ICommand> func, Action<System.Windows.Input.ICommand>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialogButton 
+   => control._set(FluentAvalonia.UI.Controls.TaskDialogButton.CommandProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T Command<T>(this T control,System.Windows.Input.ICommand value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialogButton 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialogButton.CommandProperty, ps, () => control.Command = value!, bindingMode, converter, bindingSource);
+public static T Command<T>(this T control,System.Windows.Input.ICommand value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialogButton 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialogButton.CommandProperty, ps, () => control.Command = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Command<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialogButton 
@@ -65,25 +54,19 @@ public static T Command<T>(this T control, AvaloniaProperty avaloniaProperty, Bi
    => control._set(FluentAvalonia.UI.Controls.TaskDialogButton.CommandProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T Command<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Windows.Input.ICommand> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialogButton 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialogButton.CommandProperty, ps, () => control.Command = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T Command<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Windows.Input.ICommand> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialogButton 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialogButton.CommandProperty, ps, () => control.Command = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // CommandParameter
 
-/*ValueSetterGenerator*/
-public static T CommandParameter<T>(this T control, System.Object value) where T : FluentAvalonia.UI.Controls.TaskDialogButton 
-=> control._set(() => control.CommandParameter = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T CommandParameter<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialogButton 
-   => control._set(FluentAvalonia.UI.Controls.TaskDialogButton.CommandParameterProperty!, func, onChanged, expression);
+public static T CommandParameter<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.TaskDialogButton 
+   => control._set(FluentAvalonia.UI.Controls.TaskDialogButton.CommandParameterProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T CommandParameter<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialogButton 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialogButton.CommandParameterProperty, ps, () => control.CommandParameter = value!, bindingMode, converter, bindingSource);
+public static T CommandParameter<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialogButton 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialogButton.CommandParameterProperty, ps, () => control.CommandParameter = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T CommandParameter<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.TaskDialogButton 
@@ -94,9 +77,8 @@ public static T CommandParameter<T>(this T control, AvaloniaProperty avaloniaPro
    => control._set(FluentAvalonia.UI.Controls.TaskDialogButton.CommandParameterProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T CommandParameter<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialogButton 
-=> control._setEx(FluentAvalonia.UI.Controls.TaskDialogButton.CommandParameterProperty, ps, () => control.CommandParameter = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T CommandParameter<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.TaskDialogButton 
+=> control._setEx(FluentAvalonia.UI.Controls.TaskDialogButton.CommandParameterProperty, ps, () => control.CommandParameter = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 

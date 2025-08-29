@@ -14,18 +14,13 @@ public static partial class DrawingNodeProperties_MarkupExtensions
 //================= Properties ======================//
  // EnableSnap
 
-/*ValueSetterGenerator*/
-public static T EnableSnap<T>(this T control, System.Boolean value) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> control._set(() => control.EnableSnap = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T EnableSnap<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : NodeEditor.Controls.DrawingNodeProperties 
-   => control._set(NodeEditor.Controls.DrawingNodeProperties.EnableSnapProperty!, func, onChanged, expression);
+public static T EnableSnap<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Controls.DrawingNodeProperties 
+   => control._set(NodeEditor.Controls.DrawingNodeProperties.EnableSnapProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T EnableSnap<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.EnableSnapProperty, ps, () => control.EnableSnap = value!, bindingMode, converter, bindingSource);
+public static T EnableSnap<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
+=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.EnableSnapProperty, ps, () => control.EnableSnap = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T EnableSnap<T>(this T control, IBinding binding) where T : NodeEditor.Controls.DrawingNodeProperties 
@@ -36,25 +31,19 @@ public static T EnableSnap<T>(this T control, AvaloniaProperty avaloniaProperty,
    => control._set(NodeEditor.Controls.DrawingNodeProperties.EnableSnapProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T EnableSnap<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.EnableSnapProperty, ps, () => control.EnableSnap = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T EnableSnap<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
+=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.EnableSnapProperty, ps, () => control.EnableSnap = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // SnapX
 
-/*ValueSetterGenerator*/
-public static T SnapX<T>(this T control, System.Double value) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> control._set(() => control.SnapX = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T SnapX<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : NodeEditor.Controls.DrawingNodeProperties 
-   => control._set(NodeEditor.Controls.DrawingNodeProperties.SnapXProperty!, func, onChanged, expression);
+public static T SnapX<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Controls.DrawingNodeProperties 
+   => control._set(NodeEditor.Controls.DrawingNodeProperties.SnapXProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T SnapX<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.SnapXProperty, ps, () => control.SnapX = value!, bindingMode, converter, bindingSource);
+public static T SnapX<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
+=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.SnapXProperty, ps, () => control.SnapX = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T SnapX<T>(this T control, IBinding binding) where T : NodeEditor.Controls.DrawingNodeProperties 
@@ -65,25 +54,19 @@ public static T SnapX<T>(this T control, AvaloniaProperty avaloniaProperty, Bind
    => control._set(NodeEditor.Controls.DrawingNodeProperties.SnapXProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T SnapX<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.SnapXProperty, ps, () => control.SnapX = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T SnapX<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
+=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.SnapXProperty, ps, () => control.SnapX = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // SnapY
 
-/*ValueSetterGenerator*/
-public static T SnapY<T>(this T control, System.Double value) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> control._set(() => control.SnapY = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T SnapY<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : NodeEditor.Controls.DrawingNodeProperties 
-   => control._set(NodeEditor.Controls.DrawingNodeProperties.SnapYProperty!, func, onChanged, expression);
+public static T SnapY<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Controls.DrawingNodeProperties 
+   => control._set(NodeEditor.Controls.DrawingNodeProperties.SnapYProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T SnapY<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.SnapYProperty, ps, () => control.SnapY = value!, bindingMode, converter, bindingSource);
+public static T SnapY<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
+=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.SnapYProperty, ps, () => control.SnapY = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T SnapY<T>(this T control, IBinding binding) where T : NodeEditor.Controls.DrawingNodeProperties 
@@ -94,25 +77,19 @@ public static T SnapY<T>(this T control, AvaloniaProperty avaloniaProperty, Bind
    => control._set(NodeEditor.Controls.DrawingNodeProperties.SnapYProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T SnapY<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.SnapYProperty, ps, () => control.SnapY = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T SnapY<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
+=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.SnapYProperty, ps, () => control.SnapY = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // EnableGrid
 
-/*ValueSetterGenerator*/
-public static T EnableGrid<T>(this T control, System.Boolean value) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> control._set(() => control.EnableGrid = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T EnableGrid<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : NodeEditor.Controls.DrawingNodeProperties 
-   => control._set(NodeEditor.Controls.DrawingNodeProperties.EnableGridProperty!, func, onChanged, expression);
+public static T EnableGrid<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Controls.DrawingNodeProperties 
+   => control._set(NodeEditor.Controls.DrawingNodeProperties.EnableGridProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T EnableGrid<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.EnableGridProperty, ps, () => control.EnableGrid = value!, bindingMode, converter, bindingSource);
+public static T EnableGrid<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
+=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.EnableGridProperty, ps, () => control.EnableGrid = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T EnableGrid<T>(this T control, IBinding binding) where T : NodeEditor.Controls.DrawingNodeProperties 
@@ -123,25 +100,19 @@ public static T EnableGrid<T>(this T control, AvaloniaProperty avaloniaProperty,
    => control._set(NodeEditor.Controls.DrawingNodeProperties.EnableGridProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T EnableGrid<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.EnableGridProperty, ps, () => control.EnableGrid = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T EnableGrid<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
+=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.EnableGridProperty, ps, () => control.EnableGrid = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // GridCellWidth
 
-/*ValueSetterGenerator*/
-public static T GridCellWidth<T>(this T control, System.Double value) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> control._set(() => control.GridCellWidth = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T GridCellWidth<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : NodeEditor.Controls.DrawingNodeProperties 
-   => control._set(NodeEditor.Controls.DrawingNodeProperties.GridCellWidthProperty!, func, onChanged, expression);
+public static T GridCellWidth<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Controls.DrawingNodeProperties 
+   => control._set(NodeEditor.Controls.DrawingNodeProperties.GridCellWidthProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T GridCellWidth<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.GridCellWidthProperty, ps, () => control.GridCellWidth = value!, bindingMode, converter, bindingSource);
+public static T GridCellWidth<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
+=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.GridCellWidthProperty, ps, () => control.GridCellWidth = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T GridCellWidth<T>(this T control, IBinding binding) where T : NodeEditor.Controls.DrawingNodeProperties 
@@ -152,25 +123,19 @@ public static T GridCellWidth<T>(this T control, AvaloniaProperty avaloniaProper
    => control._set(NodeEditor.Controls.DrawingNodeProperties.GridCellWidthProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T GridCellWidth<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.GridCellWidthProperty, ps, () => control.GridCellWidth = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T GridCellWidth<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
+=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.GridCellWidthProperty, ps, () => control.GridCellWidth = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // GridCellHeight
 
-/*ValueSetterGenerator*/
-public static T GridCellHeight<T>(this T control, System.Double value) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> control._set(() => control.GridCellHeight = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T GridCellHeight<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : NodeEditor.Controls.DrawingNodeProperties 
-   => control._set(NodeEditor.Controls.DrawingNodeProperties.GridCellHeightProperty!, func, onChanged, expression);
+public static T GridCellHeight<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Controls.DrawingNodeProperties 
+   => control._set(NodeEditor.Controls.DrawingNodeProperties.GridCellHeightProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T GridCellHeight<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.GridCellHeightProperty, ps, () => control.GridCellHeight = value!, bindingMode, converter, bindingSource);
+public static T GridCellHeight<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
+=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.GridCellHeightProperty, ps, () => control.GridCellHeight = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T GridCellHeight<T>(this T control, IBinding binding) where T : NodeEditor.Controls.DrawingNodeProperties 
@@ -181,25 +146,19 @@ public static T GridCellHeight<T>(this T control, AvaloniaProperty avaloniaPrope
    => control._set(NodeEditor.Controls.DrawingNodeProperties.GridCellHeightProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T GridCellHeight<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.GridCellHeightProperty, ps, () => control.GridCellHeight = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T GridCellHeight<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
+=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.GridCellHeightProperty, ps, () => control.GridCellHeight = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // DrawingWidth
 
-/*ValueSetterGenerator*/
-public static T DrawingWidth<T>(this T control, System.Double value) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> control._set(() => control.DrawingWidth = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T DrawingWidth<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : NodeEditor.Controls.DrawingNodeProperties 
-   => control._set(NodeEditor.Controls.DrawingNodeProperties.DrawingWidthProperty!, func, onChanged, expression);
+public static T DrawingWidth<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Controls.DrawingNodeProperties 
+   => control._set(NodeEditor.Controls.DrawingNodeProperties.DrawingWidthProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T DrawingWidth<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.DrawingWidthProperty, ps, () => control.DrawingWidth = value!, bindingMode, converter, bindingSource);
+public static T DrawingWidth<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
+=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.DrawingWidthProperty, ps, () => control.DrawingWidth = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T DrawingWidth<T>(this T control, IBinding binding) where T : NodeEditor.Controls.DrawingNodeProperties 
@@ -210,25 +169,19 @@ public static T DrawingWidth<T>(this T control, AvaloniaProperty avaloniaPropert
    => control._set(NodeEditor.Controls.DrawingNodeProperties.DrawingWidthProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T DrawingWidth<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.DrawingWidthProperty, ps, () => control.DrawingWidth = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T DrawingWidth<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
+=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.DrawingWidthProperty, ps, () => control.DrawingWidth = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // DrawingHeight
 
-/*ValueSetterGenerator*/
-public static T DrawingHeight<T>(this T control, System.Double value) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> control._set(() => control.DrawingHeight = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T DrawingHeight<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : NodeEditor.Controls.DrawingNodeProperties 
-   => control._set(NodeEditor.Controls.DrawingNodeProperties.DrawingHeightProperty!, func, onChanged, expression);
+public static T DrawingHeight<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Controls.DrawingNodeProperties 
+   => control._set(NodeEditor.Controls.DrawingNodeProperties.DrawingHeightProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T DrawingHeight<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.DrawingHeightProperty, ps, () => control.DrawingHeight = value!, bindingMode, converter, bindingSource);
+public static T DrawingHeight<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
+=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.DrawingHeightProperty, ps, () => control.DrawingHeight = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T DrawingHeight<T>(this T control, IBinding binding) where T : NodeEditor.Controls.DrawingNodeProperties 
@@ -239,9 +192,8 @@ public static T DrawingHeight<T>(this T control, AvaloniaProperty avaloniaProper
    => control._set(NodeEditor.Controls.DrawingNodeProperties.DrawingHeightProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T DrawingHeight<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.DrawingHeightProperty, ps, () => control.DrawingHeight = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T DrawingHeight<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.DrawingNodeProperties 
+=> control._setEx(NodeEditor.Controls.DrawingNodeProperties.DrawingHeightProperty, ps, () => control.DrawingHeight = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
@@ -250,7 +202,7 @@ public static T DrawingHeight<TValue,T>(this T control, TValue value, FuncValueC
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> EnableSnap<T>(this Style<T> style, System.Boolean value) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> style._addSetter(NodeEditor.Controls.DrawingNodeProperties.EnableSnapProperty!, value!);
+=> style._addSetter(NodeEditor.Controls.DrawingNodeProperties.EnableSnapProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> EnableSnap<T>(this Style<T> style, IBinding binding) where T : NodeEditor.Controls.DrawingNodeProperties 
@@ -261,7 +213,7 @@ public static Style<T> EnableSnap<T>(this Style<T> style, IBinding binding) wher
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> SnapX<T>(this Style<T> style, System.Double value) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> style._addSetter(NodeEditor.Controls.DrawingNodeProperties.SnapXProperty!, value!);
+=> style._addSetter(NodeEditor.Controls.DrawingNodeProperties.SnapXProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> SnapX<T>(this Style<T> style, IBinding binding) where T : NodeEditor.Controls.DrawingNodeProperties 
@@ -272,7 +224,7 @@ public static Style<T> SnapX<T>(this Style<T> style, IBinding binding) where T :
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> SnapY<T>(this Style<T> style, System.Double value) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> style._addSetter(NodeEditor.Controls.DrawingNodeProperties.SnapYProperty!, value!);
+=> style._addSetter(NodeEditor.Controls.DrawingNodeProperties.SnapYProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> SnapY<T>(this Style<T> style, IBinding binding) where T : NodeEditor.Controls.DrawingNodeProperties 
@@ -283,7 +235,7 @@ public static Style<T> SnapY<T>(this Style<T> style, IBinding binding) where T :
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> EnableGrid<T>(this Style<T> style, System.Boolean value) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> style._addSetter(NodeEditor.Controls.DrawingNodeProperties.EnableGridProperty!, value!);
+=> style._addSetter(NodeEditor.Controls.DrawingNodeProperties.EnableGridProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> EnableGrid<T>(this Style<T> style, IBinding binding) where T : NodeEditor.Controls.DrawingNodeProperties 
@@ -294,7 +246,7 @@ public static Style<T> EnableGrid<T>(this Style<T> style, IBinding binding) wher
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> GridCellWidth<T>(this Style<T> style, System.Double value) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> style._addSetter(NodeEditor.Controls.DrawingNodeProperties.GridCellWidthProperty!, value!);
+=> style._addSetter(NodeEditor.Controls.DrawingNodeProperties.GridCellWidthProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> GridCellWidth<T>(this Style<T> style, IBinding binding) where T : NodeEditor.Controls.DrawingNodeProperties 
@@ -305,7 +257,7 @@ public static Style<T> GridCellWidth<T>(this Style<T> style, IBinding binding) w
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> GridCellHeight<T>(this Style<T> style, System.Double value) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> style._addSetter(NodeEditor.Controls.DrawingNodeProperties.GridCellHeightProperty!, value!);
+=> style._addSetter(NodeEditor.Controls.DrawingNodeProperties.GridCellHeightProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> GridCellHeight<T>(this Style<T> style, IBinding binding) where T : NodeEditor.Controls.DrawingNodeProperties 
@@ -316,7 +268,7 @@ public static Style<T> GridCellHeight<T>(this Style<T> style, IBinding binding) 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> DrawingWidth<T>(this Style<T> style, System.Double value) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> style._addSetter(NodeEditor.Controls.DrawingNodeProperties.DrawingWidthProperty!, value!);
+=> style._addSetter(NodeEditor.Controls.DrawingNodeProperties.DrawingWidthProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> DrawingWidth<T>(this Style<T> style, IBinding binding) where T : NodeEditor.Controls.DrawingNodeProperties 
@@ -327,7 +279,7 @@ public static Style<T> DrawingWidth<T>(this Style<T> style, IBinding binding) wh
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> DrawingHeight<T>(this Style<T> style, System.Double value) where T : NodeEditor.Controls.DrawingNodeProperties 
-=> style._addSetter(NodeEditor.Controls.DrawingNodeProperties.DrawingHeightProperty!, value!);
+=> style._addSetter(NodeEditor.Controls.DrawingNodeProperties.DrawingHeightProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> DrawingHeight<T>(this Style<T> style, IBinding binding) where T : NodeEditor.Controls.DrawingNodeProperties 

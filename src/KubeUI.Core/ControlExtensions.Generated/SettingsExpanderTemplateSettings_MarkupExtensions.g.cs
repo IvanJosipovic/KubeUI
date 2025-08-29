@@ -14,18 +14,13 @@ public static partial class SettingsExpanderTemplateSettings_MarkupExtensions
 //================= Properties ======================//
  // Icon
 
-/*ValueSetterGenerator*/
-public static T Icon<T>(this T control, FluentAvalonia.UI.Controls.FAIconElement value) where T : FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings 
-=> control._set(() => control.Icon = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T Icon<T>(this T control, Func<FluentAvalonia.UI.Controls.FAIconElement> func, Action<FluentAvalonia.UI.Controls.FAIconElement>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings 
-   => control._set(FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings.IconProperty!, func, onChanged, expression);
+public static T Icon<T>(this T control, Func<FluentAvalonia.UI.Controls.FAIconElement> func, Action<FluentAvalonia.UI.Controls.FAIconElement>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings 
+   => control._set(FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings.IconProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T Icon<T>(this T control,FluentAvalonia.UI.Controls.FAIconElement value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings 
-=> control._setEx(FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings.IconProperty, ps, () => control.Icon = value!, bindingMode, converter, bindingSource);
+public static T Icon<T>(this T control,FluentAvalonia.UI.Controls.FAIconElement value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings 
+=> control._setEx(FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings.IconProperty, ps, () => control.Icon = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Icon<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings 
@@ -36,25 +31,19 @@ public static T Icon<T>(this T control, AvaloniaProperty avaloniaProperty, Bindi
    => control._set(FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings.IconProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T Icon<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.FAIconElement> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings 
-=> control._setEx(FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings.IconProperty, ps, () => control.Icon = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T Icon<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.FAIconElement> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings 
+=> control._setEx(FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings.IconProperty, ps, () => control.Icon = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // ActionIcon
 
-/*ValueSetterGenerator*/
-public static T ActionIcon<T>(this T control, FluentAvalonia.UI.Controls.FAIconElement value) where T : FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings 
-=> control._set(() => control.ActionIcon = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T ActionIcon<T>(this T control, Func<FluentAvalonia.UI.Controls.FAIconElement> func, Action<FluentAvalonia.UI.Controls.FAIconElement>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings 
-   => control._set(FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings.ActionIconProperty!, func, onChanged, expression);
+public static T ActionIcon<T>(this T control, Func<FluentAvalonia.UI.Controls.FAIconElement> func, Action<FluentAvalonia.UI.Controls.FAIconElement>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings 
+   => control._set(FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings.ActionIconProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T ActionIcon<T>(this T control,FluentAvalonia.UI.Controls.FAIconElement value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings 
-=> control._setEx(FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings.ActionIconProperty, ps, () => control.ActionIcon = value!, bindingMode, converter, bindingSource);
+public static T ActionIcon<T>(this T control,FluentAvalonia.UI.Controls.FAIconElement value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings 
+=> control._setEx(FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings.ActionIconProperty, ps, () => control.ActionIcon = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T ActionIcon<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings 
@@ -65,9 +54,8 @@ public static T ActionIcon<T>(this T control, AvaloniaProperty avaloniaProperty,
    => control._set(FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings.ActionIconProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T ActionIcon<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.FAIconElement> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings 
-=> control._setEx(FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings.ActionIconProperty, ps, () => control.ActionIcon = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T ActionIcon<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.FAIconElement> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings 
+=> control._setEx(FluentAvalonia.UI.Controls.SettingsExpanderTemplateSettings.ActionIconProperty, ps, () => control.ActionIcon = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
