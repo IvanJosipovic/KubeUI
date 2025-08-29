@@ -219,19 +219,21 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
 
     protected override void OnUnloaded(RoutedEventArgs e)
     {
+        _textMateInstallation.Dispose();
         GetOffset();
-        base.OnUnloaded(e);
 
         Application.Current.ActualThemeVariantChanged -= Current_ActualThemeVariantChanged;
 
-        ViewModel.AllFoldings = _foldingManager.AllFoldings.Select(x =>
+        ViewModel.AllFoldings = [.. _foldingManager.AllFoldings.Select(x =>
         {
             var tag = (NewFolding)x.Tag;
             tag.DefaultClosed = x.IsFolded;
             return tag;
-        }).ToList();
+        })];
 
         FoldingManager.Uninstall(_foldingManager);
+
+        base.OnUnloaded(e);
     }
 }
 
@@ -240,8 +242,13 @@ file static class YamlFoldingStrategy
     /// <summary>
     /// Create <see cref="NewFolding" />s for the specified document and updates the folding manager with them.
     /// </summary>
-    public static void UpdateFoldings(FoldingManager manager, TextDocument document)
+    public static void UpdateFoldings(FoldingManager? manager, TextDocument? document)
     {
+        if (manager == null || document == null)
+        {
+            return;
+        }
+
         var newFoldings = CreateNewFoldings(document, out var firstErrorOffset);
         manager.UpdateFoldings(newFoldings, firstErrorOffset);
     }
