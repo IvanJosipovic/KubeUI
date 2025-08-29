@@ -84,8 +84,14 @@ public static class KubernetesYaml
             throw new InvalidOperationException(parser.Current?.ToString());
         }
 
-        public void WriteYaml(IEmitter emitter, object value, Type type, ObjectSerializer serializer)
+        public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
         {
+            if (value == null)
+            {
+                emitter.Emit(new Scalar(AnchorName.Empty, TagName.Empty, string.Empty, ScalarStyle.Any, true, true));
+                return;
+            }
+
             var obj = (byte[])value;
             var strValue = Encoding.UTF8.GetString(obj);
 
