@@ -219,10 +219,11 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
 
     protected override void OnUnloaded(RoutedEventArgs e)
     {
-        _textMateInstallation.Dispose();
-        GetOffset();
-
         Application.Current.ActualThemeVariantChanged -= Current_ActualThemeVariantChanged;
+
+        _textMateInstallation.Dispose();
+
+        GetOffset();
 
         ViewModel.AllFoldings = [.. _foldingManager.AllFoldings.Select(x =>
         {
