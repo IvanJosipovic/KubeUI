@@ -10,6 +10,7 @@ using KubeUI.Resources;
 using Avalonia.Input;
 using Avalonia.VisualTree;
 using KubeUI.Controls;
+using Avalonia.Controls.Primitives;
 
 namespace KubeUI.Views;
 
@@ -156,7 +157,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
         }
         else if (menu.HeaderBinding != null)
         {
-            menuItem.Bind(Avalonia.Controls.Primitives.HeaderedSelectingItemsControl.HeaderProperty, menu.HeaderBinding);
+            menuItem.Bind(HeaderedSelectingItemsControl.HeaderProperty, menu.HeaderBinding);
         }
 
         if (!string.IsNullOrEmpty(menu.CommandPath))
@@ -410,7 +411,6 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                         new Style<DataGridColumnHeader>()
                             .Setter(DataGridColumnHeader.FontSizeProperty, Convert.ToDouble(_settingsService.Settings.FontSize))
                             .Setter(DataGridColumnHeader.MinHeightProperty, Convert.ToDouble(_settingsService.Settings.ListRowHeight)),
-
                     ]),
             ]);
 

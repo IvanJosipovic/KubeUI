@@ -14,18 +14,13 @@ public static partial class Toolbox_MarkupExtensions
 //================= Properties ======================//
  // TemplatesSource
 
-/*ValueSetterGenerator*/
-public static T TemplatesSource<T>(this T control, System.Collections.Generic.IEnumerable<NodeEditor.Model.INodeTemplate> value) where T : NodeEditor.Controls.Toolbox 
-=> control._set(() => control.TemplatesSource = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T TemplatesSource<T>(this T control, Func<System.Collections.Generic.IEnumerable<NodeEditor.Model.INodeTemplate>> func, Action<System.Collections.Generic.IEnumerable<NodeEditor.Model.INodeTemplate>>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : NodeEditor.Controls.Toolbox 
-   => control._set(NodeEditor.Controls.Toolbox.TemplatesSourceProperty!, func, onChanged, expression);
+public static T TemplatesSource<T>(this T control, Func<System.Collections.Generic.IEnumerable<NodeEditor.Model.INodeTemplate>> func, Action<System.Collections.Generic.IEnumerable<NodeEditor.Model.INodeTemplate>>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Controls.Toolbox 
+   => control._set(NodeEditor.Controls.Toolbox.TemplatesSourceProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T TemplatesSource<T>(this T control,System.Collections.Generic.IEnumerable<NodeEditor.Model.INodeTemplate> value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.Toolbox 
-=> control._setEx(NodeEditor.Controls.Toolbox.TemplatesSourceProperty, ps, () => control.TemplatesSource = value!, bindingMode, converter, bindingSource);
+public static T TemplatesSource<T>(this T control,System.Collections.Generic.IEnumerable<NodeEditor.Model.INodeTemplate> value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.Toolbox 
+=> control._setEx(NodeEditor.Controls.Toolbox.TemplatesSourceProperty, ps, () => control.TemplatesSource = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T TemplatesSource<T>(this T control, IBinding binding) where T : NodeEditor.Controls.Toolbox 
@@ -36,9 +31,8 @@ public static T TemplatesSource<T>(this T control, AvaloniaProperty avaloniaProp
    => control._set(NodeEditor.Controls.Toolbox.TemplatesSourceProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T TemplatesSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Collections.Generic.IEnumerable<NodeEditor.Model.INodeTemplate>> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Controls.Toolbox 
-=> control._setEx(NodeEditor.Controls.Toolbox.TemplatesSourceProperty, ps, () => control.TemplatesSource = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T TemplatesSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Collections.Generic.IEnumerable<NodeEditor.Model.INodeTemplate>> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Controls.Toolbox 
+=> control._setEx(NodeEditor.Controls.Toolbox.TemplatesSourceProperty, ps, () => control.TemplatesSource = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
@@ -47,7 +41,7 @@ public static T TemplatesSource<TValue,T>(this T control, TValue value, FuncValu
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> TemplatesSource<T>(this Style<T> style, System.Collections.Generic.IEnumerable<NodeEditor.Model.INodeTemplate> value) where T : NodeEditor.Controls.Toolbox 
-=> style._addSetter(NodeEditor.Controls.Toolbox.TemplatesSourceProperty!, value!);
+=> style._addSetter(NodeEditor.Controls.Toolbox.TemplatesSourceProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> TemplatesSource<T>(this Style<T> style, IBinding binding) where T : NodeEditor.Controls.Toolbox 

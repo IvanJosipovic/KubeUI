@@ -26,6 +26,7 @@ public class DockFactory : Factory
         var nav = Application.Current.GetRequiredService<NavigationViewModel>();
         nav.CanClose = false;
         nav.CanFloat = false;
+        nav.CanDrag = false;
 
         var leftDock = new ToolDock
         {
@@ -124,23 +125,6 @@ public class DockFactory : Factory
     }
 
     /// <summary>
-    /// Prevents Navigation from being moved
-    /// </summary>
-    /// <param name="sourceDock"></param>
-    /// <param name="targetDock"></param>
-    /// <param name="sourceDockable"></param>
-    /// <param name="targetDockable"></param>
-    public override void MoveDockable(IDock sourceDock, IDock targetDock, IDockable sourceDockable, IDockable? targetDockable)
-    {
-        if (sourceDockable.Id == "Navigation")
-        {
-            return;
-        }
-
-        base.MoveDockable(sourceDock, targetDock, sourceDockable, targetDockable);
-    }
-
-    /// <summary>
     /// Runs dispose on closed Dockables
     /// </summary>
     /// <param name="dockable"></param>
@@ -167,6 +151,21 @@ public class DockFactory : Factory
         }
 
         base.RemoveDockable(dockable, collapse);
+    }
+
+    public override void SplitToDock(IDock dock, IDockable dockable, DockOperation operation)
+    {
+        // Fixes proportion of dockable when splitting
+        if (dock.Owner is ProportionalDock)
+        {
+            if (dock.Proportion == 1)
+            {
+                dock.Proportion = 0.4;
+                dockable.Proportion = 0.6;
+            }
+        }
+
+        base.SplitToDock(dock, dockable, operation);
     }
 }
 

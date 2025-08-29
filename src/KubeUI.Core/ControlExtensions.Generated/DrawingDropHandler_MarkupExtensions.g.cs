@@ -14,18 +14,13 @@ public static partial class DrawingDropHandler_MarkupExtensions
 //================= Properties ======================//
  // DrawingSource
 
-/*ValueSetterGenerator*/
-public static T DrawingSource<T>(this T control, NodeEditor.Model.IDrawingNode value) where T : NodeEditor.Behaviors.DrawingDropHandler 
-=> control._set(() => control.DrawingSource = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T DrawingSource<T>(this T control, Func<NodeEditor.Model.IDrawingNode> func, Action<NodeEditor.Model.IDrawingNode>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : NodeEditor.Behaviors.DrawingDropHandler 
-   => control._set(NodeEditor.Behaviors.DrawingDropHandler.DrawingSourceProperty!, func, onChanged, expression);
+public static T DrawingSource<T>(this T control, Func<NodeEditor.Model.IDrawingNode> func, Action<NodeEditor.Model.IDrawingNode>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Behaviors.DrawingDropHandler 
+   => control._set(NodeEditor.Behaviors.DrawingDropHandler.DrawingSourceProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T DrawingSource<T>(this T control,NodeEditor.Model.IDrawingNode value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Behaviors.DrawingDropHandler 
-=> control._setEx(NodeEditor.Behaviors.DrawingDropHandler.DrawingSourceProperty, ps, () => control.DrawingSource = value!, bindingMode, converter, bindingSource);
+public static T DrawingSource<T>(this T control,NodeEditor.Model.IDrawingNode value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Behaviors.DrawingDropHandler 
+=> control._setEx(NodeEditor.Behaviors.DrawingDropHandler.DrawingSourceProperty, ps, () => control.DrawingSource = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T DrawingSource<T>(this T control, IBinding binding) where T : NodeEditor.Behaviors.DrawingDropHandler 
@@ -36,25 +31,19 @@ public static T DrawingSource<T>(this T control, AvaloniaProperty avaloniaProper
    => control._set(NodeEditor.Behaviors.DrawingDropHandler.DrawingSourceProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T DrawingSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, NodeEditor.Model.IDrawingNode> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Behaviors.DrawingDropHandler 
-=> control._setEx(NodeEditor.Behaviors.DrawingDropHandler.DrawingSourceProperty, ps, () => control.DrawingSource = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T DrawingSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, NodeEditor.Model.IDrawingNode> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Behaviors.DrawingDropHandler 
+=> control._setEx(NodeEditor.Behaviors.DrawingDropHandler.DrawingSourceProperty, ps, () => control.DrawingSource = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // RelativeTo
 
-/*ValueSetterGenerator*/
-public static T RelativeTo<T>(this T control, Avalonia.Controls.Control value) where T : NodeEditor.Behaviors.DrawingDropHandler 
-=> control._set(() => control.RelativeTo = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T RelativeTo<T>(this T control, Func<Avalonia.Controls.Control> func, Action<Avalonia.Controls.Control>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : NodeEditor.Behaviors.DrawingDropHandler 
-   => control._set(NodeEditor.Behaviors.DrawingDropHandler.RelativeToProperty!, func, onChanged, expression);
+public static T RelativeTo<T>(this T control, Func<Avalonia.Controls.Control> func, Action<Avalonia.Controls.Control>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : NodeEditor.Behaviors.DrawingDropHandler 
+   => control._set(NodeEditor.Behaviors.DrawingDropHandler.RelativeToProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T RelativeTo<T>(this T control,Avalonia.Controls.Control value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Behaviors.DrawingDropHandler 
-=> control._setEx(NodeEditor.Behaviors.DrawingDropHandler.RelativeToProperty, ps, () => control.RelativeTo = value!, bindingMode, converter, bindingSource);
+public static T RelativeTo<T>(this T control,Avalonia.Controls.Control value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Behaviors.DrawingDropHandler 
+=> control._setEx(NodeEditor.Behaviors.DrawingDropHandler.RelativeToProperty, ps, () => control.RelativeTo = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T RelativeTo<T>(this T control, IBinding binding) where T : NodeEditor.Behaviors.DrawingDropHandler 
@@ -65,9 +54,8 @@ public static T RelativeTo<T>(this T control, AvaloniaProperty avaloniaProperty,
    => control._set(NodeEditor.Behaviors.DrawingDropHandler.RelativeToProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T RelativeTo<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Control> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : NodeEditor.Behaviors.DrawingDropHandler 
-=> control._setEx(NodeEditor.Behaviors.DrawingDropHandler.RelativeToProperty, ps, () => control.RelativeTo = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T RelativeTo<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Control> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : NodeEditor.Behaviors.DrawingDropHandler 
+=> control._setEx(NodeEditor.Behaviors.DrawingDropHandler.RelativeToProperty, ps, () => control.RelativeTo = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 

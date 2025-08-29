@@ -14,18 +14,13 @@ public static partial class TaskDialogButtonsPanel_MarkupExtensions
 //================= Properties ======================//
  // Spacing
 
-/*ValueSetterGenerator*/
-public static T Spacing<T>(this T control, System.Double value) where T : FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonsPanel 
-=> control._set(() => control.Spacing = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T Spacing<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonsPanel 
-   => control._set(FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonsPanel.SpacingProperty!, func, onChanged, expression);
+public static T Spacing<T>(this T control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonsPanel 
+   => control._set(FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonsPanel.SpacingProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T Spacing<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonsPanel 
-=> control._setEx(FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonsPanel.SpacingProperty, ps, () => control.Spacing = value!, bindingMode, converter, bindingSource);
+public static T Spacing<T>(this T control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonsPanel 
+=> control._setEx(FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonsPanel.SpacingProperty, ps, () => control.Spacing = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Spacing<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonsPanel 
@@ -36,9 +31,8 @@ public static T Spacing<T>(this T control, AvaloniaProperty avaloniaProperty, Bi
    => control._set(FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonsPanel.SpacingProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T Spacing<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonsPanel 
-=> control._setEx(FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonsPanel.SpacingProperty, ps, () => control.Spacing = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T Spacing<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonsPanel 
+=> control._setEx(FluentAvalonia.UI.Controls.Primitives.TaskDialogButtonsPanel.SpacingProperty, ps, () => control.Spacing = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 

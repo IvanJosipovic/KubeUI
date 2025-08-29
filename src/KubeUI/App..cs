@@ -5,7 +5,7 @@ using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Styling;
-using Dock.Avalonia.Themes;
+using Dock.Avalonia.Themes.Fluent;
 using FluentAvalonia.Styling;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia;

@@ -1,0 +1,52 @@
+#nullable enable
+using Avalonia.Data;
+using Avalonia.Data.Converters;
+using System;
+using System.Linq.Expressions;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+
+namespace Avalonia.Markup.Declarative;
+[global::System.CodeDom.Compiler.GeneratedCode("AvaloniaExtensionGenerator", "1.0.0.0")]
+[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+public static partial class DockTargetBase_MarkupExtensions
+{
+//================= Properties ======================//
+ // ShowIndicatorsOnly
+
+/*BindFromExpressionSetterGenerator*/
+public static T ShowIndicatorsOnly<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Dock.Avalonia.Controls.DockTargetBase 
+   => control._set(Dock.Avalonia.Controls.DockTargetBase.ShowIndicatorsOnlyProperty, func, onChanged, expression);
+
+/*MagicalSetterGenerator*/
+public static T ShowIndicatorsOnly<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.DockTargetBase 
+=> control._setEx(Dock.Avalonia.Controls.DockTargetBase.ShowIndicatorsOnlyProperty, ps, () => control.ShowIndicatorsOnly = value, bindingMode, converter, bindingSource);
+
+/*BindSetterGenerator*/
+public static T ShowIndicatorsOnly<T>(this T control, IBinding binding) where T : Dock.Avalonia.Controls.DockTargetBase 
+   => control._set(Dock.Avalonia.Controls.DockTargetBase.ShowIndicatorsOnlyProperty, binding);
+
+/*AvaloniaPropertyBindSetterGenerator*/
+public static T ShowIndicatorsOnly<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Dock.Avalonia.Controls.DockTargetBase 
+   => control._set(Dock.Avalonia.Controls.DockTargetBase.ShowIndicatorsOnlyProperty, avaloniaProperty, bindingMode, converter, overrideView);
+
+/*MagicalSetterWithConverterGenerator*/
+public static T ShowIndicatorsOnly<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.DockTargetBase 
+=> control._setEx(Dock.Avalonia.Controls.DockTargetBase.ShowIndicatorsOnlyProperty, ps, () => control.ShowIndicatorsOnly = converter.TryConvert(value), bindingMode, converter, bindingSource);
+
+
+
+//================= Styles ======================//
+ // ShowIndicatorsOnly
+
+/*ValueStyleSetterGenerator*/
+public static Style<T> ShowIndicatorsOnly<T>(this Style<T> style, System.Boolean value) where T : Dock.Avalonia.Controls.DockTargetBase 
+=> style._addSetter(Dock.Avalonia.Controls.DockTargetBase.ShowIndicatorsOnlyProperty, value);
+
+/*BindingStyleSetterGenerator*/
+public static Style<T> ShowIndicatorsOnly<T>(this Style<T> style, IBinding binding) where T : Dock.Avalonia.Controls.DockTargetBase 
+=> style._addSetter(Dock.Avalonia.Controls.DockTargetBase.ShowIndicatorsOnlyProperty, binding);
+
+
+
+}
