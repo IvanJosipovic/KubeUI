@@ -14,18 +14,13 @@ public static partial class DataGridDetailsPresenter_MarkupExtensions
 //================= Properties ======================//
  // ContentHeight
 
-/*ValueSetterGenerator*/
-public static Avalonia.Controls.Primitives.DataGridDetailsPresenter ContentHeight(this Avalonia.Controls.Primitives.DataGridDetailsPresenter control, System.Double value)  
-=> control._set(() => control.ContentHeight = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static Avalonia.Controls.Primitives.DataGridDetailsPresenter ContentHeight(this Avalonia.Controls.Primitives.DataGridDetailsPresenter control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null)  
-   => control._set(Avalonia.Controls.Primitives.DataGridDetailsPresenter.ContentHeightProperty!, func, onChanged, expression);
+public static Avalonia.Controls.Primitives.DataGridDetailsPresenter ContentHeight(this Avalonia.Controls.Primitives.DataGridDetailsPresenter control, Func<System.Double> func, Action<System.Double>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null)  
+   => control._set(Avalonia.Controls.Primitives.DataGridDetailsPresenter.ContentHeightProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static Avalonia.Controls.Primitives.DataGridDetailsPresenter ContentHeight(this Avalonia.Controls.Primitives.DataGridDetailsPresenter control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null)  
-=> control._setEx(Avalonia.Controls.Primitives.DataGridDetailsPresenter.ContentHeightProperty, ps, () => control.ContentHeight = value!, bindingMode, converter, bindingSource);
+public static Avalonia.Controls.Primitives.DataGridDetailsPresenter ContentHeight(this Avalonia.Controls.Primitives.DataGridDetailsPresenter control,System.Double value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null)  
+=> control._setEx(Avalonia.Controls.Primitives.DataGridDetailsPresenter.ContentHeightProperty, ps, () => control.ContentHeight = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static Avalonia.Controls.Primitives.DataGridDetailsPresenter ContentHeight(this Avalonia.Controls.Primitives.DataGridDetailsPresenter control, IBinding binding)  
@@ -36,9 +31,8 @@ public static Avalonia.Controls.Primitives.DataGridDetailsPresenter ContentHeigh
    => control._set(Avalonia.Controls.Primitives.DataGridDetailsPresenter.ContentHeightProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static Avalonia.Controls.Primitives.DataGridDetailsPresenter ContentHeight<TValue>(this Avalonia.Controls.Primitives.DataGridDetailsPresenter control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null)  
-=> control._setEx(Avalonia.Controls.Primitives.DataGridDetailsPresenter.ContentHeightProperty, ps, () => control.ContentHeight = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static Avalonia.Controls.Primitives.DataGridDetailsPresenter ContentHeight<TValue>(this Avalonia.Controls.Primitives.DataGridDetailsPresenter control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null)  
+=> control._setEx(Avalonia.Controls.Primitives.DataGridDetailsPresenter.ContentHeightProperty, ps, () => control.ContentHeight = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
@@ -47,7 +41,7 @@ public static Avalonia.Controls.Primitives.DataGridDetailsPresenter ContentHeigh
 
 /*ValueStyleSetterGenerator*/
 public static Style<Avalonia.Controls.Primitives.DataGridDetailsPresenter> ContentHeight(this Style<Avalonia.Controls.Primitives.DataGridDetailsPresenter> style, System.Double value)  
-=> style._addSetter(Avalonia.Controls.Primitives.DataGridDetailsPresenter.ContentHeightProperty!, value!);
+=> style._addSetter(Avalonia.Controls.Primitives.DataGridDetailsPresenter.ContentHeightProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<Avalonia.Controls.Primitives.DataGridDetailsPresenter> ContentHeight(this Style<Avalonia.Controls.Primitives.DataGridDetailsPresenter> style, IBinding binding)  

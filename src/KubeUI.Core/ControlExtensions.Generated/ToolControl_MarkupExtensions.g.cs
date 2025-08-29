@@ -43,18 +43,13 @@ public static T IconTemplate<TValue,T>(this T control, TValue value, FuncValueCo
 
  // HeaderTemplate
 
-/*ValueSetterGenerator*/
-public static T HeaderTemplate<T>(this T control, Avalonia.Controls.Templates.IDataTemplate value) where T : Dock.Avalonia.Controls.ToolControl 
-=> control._set(() => control.HeaderTemplate = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T HeaderTemplate<T>(this T control, Func<Avalonia.Controls.Templates.IDataTemplate> func, Action<Avalonia.Controls.Templates.IDataTemplate>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Dock.Avalonia.Controls.ToolControl 
-   => control._set(Dock.Avalonia.Controls.ToolControl.HeaderTemplateProperty!, func, onChanged, expression);
+public static T HeaderTemplate<T>(this T control, Func<Avalonia.Controls.Templates.IDataTemplate> func, Action<Avalonia.Controls.Templates.IDataTemplate>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Dock.Avalonia.Controls.ToolControl 
+   => control._set(Dock.Avalonia.Controls.ToolControl.HeaderTemplateProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T HeaderTemplate<T>(this T control,Avalonia.Controls.Templates.IDataTemplate value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.ToolControl 
-=> control._setEx(Dock.Avalonia.Controls.ToolControl.HeaderTemplateProperty, ps, () => control.HeaderTemplate = value!, bindingMode, converter, bindingSource);
+public static T HeaderTemplate<T>(this T control,Avalonia.Controls.Templates.IDataTemplate value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.ToolControl 
+=> control._setEx(Dock.Avalonia.Controls.ToolControl.HeaderTemplateProperty, ps, () => control.HeaderTemplate = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T HeaderTemplate<T>(this T control, IBinding binding) where T : Dock.Avalonia.Controls.ToolControl 
@@ -65,9 +60,8 @@ public static T HeaderTemplate<T>(this T control, AvaloniaProperty avaloniaPrope
    => control._set(Dock.Avalonia.Controls.ToolControl.HeaderTemplateProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T HeaderTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Templates.IDataTemplate> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.ToolControl 
-=> control._setEx(Dock.Avalonia.Controls.ToolControl.HeaderTemplateProperty, ps, () => control.HeaderTemplate = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T HeaderTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Templates.IDataTemplate> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.ToolControl 
+=> control._setEx(Dock.Avalonia.Controls.ToolControl.HeaderTemplateProperty, ps, () => control.HeaderTemplate = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // ModifiedTemplate
@@ -116,7 +110,7 @@ public static Style<T> IconTemplate<T>(this Style<T> style, IBinding binding) wh
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> HeaderTemplate<T>(this Style<T> style, Avalonia.Controls.Templates.IDataTemplate value) where T : Dock.Avalonia.Controls.ToolControl 
-=> style._addSetter(Dock.Avalonia.Controls.ToolControl.HeaderTemplateProperty!, value!);
+=> style._addSetter(Dock.Avalonia.Controls.ToolControl.HeaderTemplateProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> HeaderTemplate<T>(this Style<T> style, IBinding binding) where T : Dock.Avalonia.Controls.ToolControl 

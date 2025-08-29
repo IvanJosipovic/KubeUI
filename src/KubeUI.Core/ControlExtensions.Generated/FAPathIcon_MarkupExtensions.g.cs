@@ -14,18 +14,13 @@ public static partial class FAPathIcon_MarkupExtensions
 //================= Properties ======================//
  // Data
 
-/*ValueSetterGenerator*/
-public static T Data<T>(this T control, Avalonia.Media.Geometry value) where T : FluentAvalonia.UI.Controls.FAPathIcon 
-=> control._set(() => control.Data = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T Data<T>(this T control, Func<Avalonia.Media.Geometry> func, Action<Avalonia.Media.Geometry>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.FAPathIcon 
-   => control._set(FluentAvalonia.UI.Controls.FAPathIcon.DataProperty!, func, onChanged, expression);
+public static T Data<T>(this T control, Func<Avalonia.Media.Geometry> func, Action<Avalonia.Media.Geometry>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.FAPathIcon 
+   => control._set(FluentAvalonia.UI.Controls.FAPathIcon.DataProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T Data<T>(this T control,Avalonia.Media.Geometry value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAPathIcon 
-=> control._setEx(FluentAvalonia.UI.Controls.FAPathIcon.DataProperty, ps, () => control.Data = value!, bindingMode, converter, bindingSource);
+public static T Data<T>(this T control,Avalonia.Media.Geometry value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAPathIcon 
+=> control._setEx(FluentAvalonia.UI.Controls.FAPathIcon.DataProperty, ps, () => control.Data = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Data<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.FAPathIcon 
@@ -36,25 +31,19 @@ public static T Data<T>(this T control, AvaloniaProperty avaloniaProperty, Bindi
    => control._set(FluentAvalonia.UI.Controls.FAPathIcon.DataProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T Data<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.Geometry> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAPathIcon 
-=> control._setEx(FluentAvalonia.UI.Controls.FAPathIcon.DataProperty, ps, () => control.Data = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T Data<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.Geometry> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAPathIcon 
+=> control._setEx(FluentAvalonia.UI.Controls.FAPathIcon.DataProperty, ps, () => control.Data = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // Stretch
 
-/*ValueSetterGenerator*/
-public static T Stretch<T>(this T control, Avalonia.Media.Stretch value) where T : FluentAvalonia.UI.Controls.FAPathIcon 
-=> control._set(() => control.Stretch = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T Stretch<T>(this T control, Func<Avalonia.Media.Stretch> func, Action<Avalonia.Media.Stretch>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.FAPathIcon 
-   => control._set(FluentAvalonia.UI.Controls.FAPathIcon.StretchProperty!, func, onChanged, expression);
+public static T Stretch<T>(this T control, Func<Avalonia.Media.Stretch> func, Action<Avalonia.Media.Stretch>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.FAPathIcon 
+   => control._set(FluentAvalonia.UI.Controls.FAPathIcon.StretchProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T Stretch<T>(this T control,Avalonia.Media.Stretch value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAPathIcon 
-=> control._setEx(FluentAvalonia.UI.Controls.FAPathIcon.StretchProperty, ps, () => control.Stretch = value!, bindingMode, converter, bindingSource);
+public static T Stretch<T>(this T control,Avalonia.Media.Stretch value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAPathIcon 
+=> control._setEx(FluentAvalonia.UI.Controls.FAPathIcon.StretchProperty, ps, () => control.Stretch = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Stretch<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.FAPathIcon 
@@ -65,25 +54,19 @@ public static T Stretch<T>(this T control, AvaloniaProperty avaloniaProperty, Bi
    => control._set(FluentAvalonia.UI.Controls.FAPathIcon.StretchProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T Stretch<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.Stretch> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAPathIcon 
-=> control._setEx(FluentAvalonia.UI.Controls.FAPathIcon.StretchProperty, ps, () => control.Stretch = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T Stretch<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.Stretch> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAPathIcon 
+=> control._setEx(FluentAvalonia.UI.Controls.FAPathIcon.StretchProperty, ps, () => control.Stretch = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // StretchDirection
 
-/*ValueSetterGenerator*/
-public static T StretchDirection<T>(this T control, Avalonia.Media.StretchDirection value) where T : FluentAvalonia.UI.Controls.FAPathIcon 
-=> control._set(() => control.StretchDirection = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T StretchDirection<T>(this T control, Func<Avalonia.Media.StretchDirection> func, Action<Avalonia.Media.StretchDirection>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.FAPathIcon 
-   => control._set(FluentAvalonia.UI.Controls.FAPathIcon.StretchDirectionProperty!, func, onChanged, expression);
+public static T StretchDirection<T>(this T control, Func<Avalonia.Media.StretchDirection> func, Action<Avalonia.Media.StretchDirection>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.FAPathIcon 
+   => control._set(FluentAvalonia.UI.Controls.FAPathIcon.StretchDirectionProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T StretchDirection<T>(this T control,Avalonia.Media.StretchDirection value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAPathIcon 
-=> control._setEx(FluentAvalonia.UI.Controls.FAPathIcon.StretchDirectionProperty, ps, () => control.StretchDirection = value!, bindingMode, converter, bindingSource);
+public static T StretchDirection<T>(this T control,Avalonia.Media.StretchDirection value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAPathIcon 
+=> control._setEx(FluentAvalonia.UI.Controls.FAPathIcon.StretchDirectionProperty, ps, () => control.StretchDirection = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T StretchDirection<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.FAPathIcon 
@@ -94,9 +77,8 @@ public static T StretchDirection<T>(this T control, AvaloniaProperty avaloniaPro
    => control._set(FluentAvalonia.UI.Controls.FAPathIcon.StretchDirectionProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T StretchDirection<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.StretchDirection> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.FAPathIcon 
-=> control._setEx(FluentAvalonia.UI.Controls.FAPathIcon.StretchDirectionProperty, ps, () => control.StretchDirection = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T StretchDirection<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Media.StretchDirection> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.FAPathIcon 
+=> control._setEx(FluentAvalonia.UI.Controls.FAPathIcon.StretchDirectionProperty, ps, () => control.StretchDirection = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
@@ -105,7 +87,7 @@ public static T StretchDirection<TValue,T>(this T control, TValue value, FuncVal
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Data<T>(this Style<T> style, Avalonia.Media.Geometry value) where T : FluentAvalonia.UI.Controls.FAPathIcon 
-=> style._addSetter(FluentAvalonia.UI.Controls.FAPathIcon.DataProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.FAPathIcon.DataProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Data<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.FAPathIcon 
@@ -116,7 +98,7 @@ public static Style<T> Data<T>(this Style<T> style, IBinding binding) where T : 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Stretch<T>(this Style<T> style, Avalonia.Media.Stretch value) where T : FluentAvalonia.UI.Controls.FAPathIcon 
-=> style._addSetter(FluentAvalonia.UI.Controls.FAPathIcon.StretchProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.FAPathIcon.StretchProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Stretch<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.FAPathIcon 
@@ -127,7 +109,7 @@ public static Style<T> Stretch<T>(this Style<T> style, IBinding binding) where T
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> StretchDirection<T>(this Style<T> style, Avalonia.Media.StretchDirection value) where T : FluentAvalonia.UI.Controls.FAPathIcon 
-=> style._addSetter(FluentAvalonia.UI.Controls.FAPathIcon.StretchDirectionProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.FAPathIcon.StretchDirectionProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> StretchDirection<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.FAPathIcon 

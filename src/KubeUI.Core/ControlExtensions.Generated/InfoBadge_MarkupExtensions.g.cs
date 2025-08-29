@@ -14,18 +14,13 @@ public static partial class InfoBadge_MarkupExtensions
 //================= Properties ======================//
  // Value
 
-/*ValueSetterGenerator*/
-public static T Value<T>(this T control, System.Int32 value) where T : FluentAvalonia.UI.Controls.InfoBadge 
-=> control._set(() => control.Value = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T Value<T>(this T control, Func<System.Int32> func, Action<System.Int32>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.InfoBadge 
-   => control._set(FluentAvalonia.UI.Controls.InfoBadge.ValueProperty!, func, onChanged, expression);
+public static T Value<T>(this T control, Func<System.Int32> func, Action<System.Int32>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.InfoBadge 
+   => control._set(FluentAvalonia.UI.Controls.InfoBadge.ValueProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T Value<T>(this T control,System.Int32 value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBadge 
-=> control._setEx(FluentAvalonia.UI.Controls.InfoBadge.ValueProperty, ps, () => control.Value = value!, bindingMode, converter, bindingSource);
+public static T Value<T>(this T control,System.Int32 value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBadge 
+=> control._setEx(FluentAvalonia.UI.Controls.InfoBadge.ValueProperty, ps, () => control.Value = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T Value<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.InfoBadge 
@@ -36,25 +31,19 @@ public static T Value<T>(this T control, AvaloniaProperty avaloniaProperty, Bind
    => control._set(FluentAvalonia.UI.Controls.InfoBadge.ValueProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T Value<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Int32> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBadge 
-=> control._setEx(FluentAvalonia.UI.Controls.InfoBadge.ValueProperty, ps, () => control.Value = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T Value<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Int32> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBadge 
+=> control._setEx(FluentAvalonia.UI.Controls.InfoBadge.ValueProperty, ps, () => control.Value = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // IconSource
 
-/*ValueSetterGenerator*/
-public static T IconSource<T>(this T control, FluentAvalonia.UI.Controls.IconSource value) where T : FluentAvalonia.UI.Controls.InfoBadge 
-=> control._set(() => control.IconSource = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IconSource<T>(this T control, Func<FluentAvalonia.UI.Controls.IconSource> func, Action<FluentAvalonia.UI.Controls.IconSource>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : FluentAvalonia.UI.Controls.InfoBadge 
-   => control._set(FluentAvalonia.UI.Controls.InfoBadge.IconSourceProperty!, func, onChanged, expression);
+public static T IconSource<T>(this T control, Func<FluentAvalonia.UI.Controls.IconSource> func, Action<FluentAvalonia.UI.Controls.IconSource>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : FluentAvalonia.UI.Controls.InfoBadge 
+   => control._set(FluentAvalonia.UI.Controls.InfoBadge.IconSourceProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IconSource<T>(this T control,FluentAvalonia.UI.Controls.IconSource value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBadge 
-=> control._setEx(FluentAvalonia.UI.Controls.InfoBadge.IconSourceProperty, ps, () => control.IconSource = value!, bindingMode, converter, bindingSource);
+public static T IconSource<T>(this T control,FluentAvalonia.UI.Controls.IconSource value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBadge 
+=> control._setEx(FluentAvalonia.UI.Controls.InfoBadge.IconSourceProperty, ps, () => control.IconSource = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IconSource<T>(this T control, IBinding binding) where T : FluentAvalonia.UI.Controls.InfoBadge 
@@ -65,9 +54,8 @@ public static T IconSource<T>(this T control, AvaloniaProperty avaloniaProperty,
    => control._set(FluentAvalonia.UI.Controls.InfoBadge.IconSourceProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IconSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.IconSource> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBadge 
-=> control._setEx(FluentAvalonia.UI.Controls.InfoBadge.IconSourceProperty, ps, () => control.IconSource = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IconSource<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, FluentAvalonia.UI.Controls.IconSource> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : FluentAvalonia.UI.Controls.InfoBadge 
+=> control._setEx(FluentAvalonia.UI.Controls.InfoBadge.IconSourceProperty, ps, () => control.IconSource = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
@@ -76,7 +64,7 @@ public static T IconSource<TValue,T>(this T control, TValue value, FuncValueConv
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> Value<T>(this Style<T> style, System.Int32 value) where T : FluentAvalonia.UI.Controls.InfoBadge 
-=> style._addSetter(FluentAvalonia.UI.Controls.InfoBadge.ValueProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.InfoBadge.ValueProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> Value<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.InfoBadge 
@@ -87,7 +75,7 @@ public static Style<T> Value<T>(this Style<T> style, IBinding binding) where T :
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IconSource<T>(this Style<T> style, FluentAvalonia.UI.Controls.IconSource value) where T : FluentAvalonia.UI.Controls.InfoBadge 
-=> style._addSetter(FluentAvalonia.UI.Controls.InfoBadge.IconSourceProperty!, value!);
+=> style._addSetter(FluentAvalonia.UI.Controls.InfoBadge.IconSourceProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IconSource<T>(this Style<T> style, IBinding binding) where T : FluentAvalonia.UI.Controls.InfoBadge 
