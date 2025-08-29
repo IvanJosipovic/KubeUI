@@ -58,6 +58,75 @@ public static T IsActive<TValue,T>(this T control, TValue value, FuncValueConver
 => control._setEx(Dock.Avalonia.Controls.DocumentTabStrip.IsActiveProperty, ps, () => control.IsActive = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
+ // EnableWindowDrag
+
+/*BindFromExpressionSetterGenerator*/
+public static T EnableWindowDrag<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Dock.Avalonia.Controls.DocumentTabStrip 
+   => control._set(Dock.Avalonia.Controls.DocumentTabStrip.EnableWindowDragProperty, func, onChanged, expression);
+
+/*MagicalSetterGenerator*/
+public static T EnableWindowDrag<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.DocumentTabStrip 
+=> control._setEx(Dock.Avalonia.Controls.DocumentTabStrip.EnableWindowDragProperty, ps, () => control.EnableWindowDrag = value, bindingMode, converter, bindingSource);
+
+/*BindSetterGenerator*/
+public static T EnableWindowDrag<T>(this T control, IBinding binding) where T : Dock.Avalonia.Controls.DocumentTabStrip 
+   => control._set(Dock.Avalonia.Controls.DocumentTabStrip.EnableWindowDragProperty, binding);
+
+/*AvaloniaPropertyBindSetterGenerator*/
+public static T EnableWindowDrag<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Dock.Avalonia.Controls.DocumentTabStrip 
+   => control._set(Dock.Avalonia.Controls.DocumentTabStrip.EnableWindowDragProperty, avaloniaProperty, bindingMode, converter, overrideView);
+
+/*MagicalSetterWithConverterGenerator*/
+public static T EnableWindowDrag<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.DocumentTabStrip 
+=> control._setEx(Dock.Avalonia.Controls.DocumentTabStrip.EnableWindowDragProperty, ps, () => control.EnableWindowDrag = converter.TryConvert(value), bindingMode, converter, bindingSource);
+
+
+ // Orientation
+
+/*BindFromExpressionSetterGenerator*/
+public static T Orientation<T>(this T control, Func<Avalonia.Layout.Orientation> func, Action<Avalonia.Layout.Orientation>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Dock.Avalonia.Controls.DocumentTabStrip 
+   => control._set(Dock.Avalonia.Controls.DocumentTabStrip.OrientationProperty, func, onChanged, expression);
+
+/*MagicalSetterGenerator*/
+public static T Orientation<T>(this T control,Avalonia.Layout.Orientation value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.DocumentTabStrip 
+=> control._setEx(Dock.Avalonia.Controls.DocumentTabStrip.OrientationProperty, ps, () => control.Orientation = value, bindingMode, converter, bindingSource);
+
+/*BindSetterGenerator*/
+public static T Orientation<T>(this T control, IBinding binding) where T : Dock.Avalonia.Controls.DocumentTabStrip 
+   => control._set(Dock.Avalonia.Controls.DocumentTabStrip.OrientationProperty, binding);
+
+/*AvaloniaPropertyBindSetterGenerator*/
+public static T Orientation<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Dock.Avalonia.Controls.DocumentTabStrip 
+   => control._set(Dock.Avalonia.Controls.DocumentTabStrip.OrientationProperty, avaloniaProperty, bindingMode, converter, overrideView);
+
+/*MagicalSetterWithConverterGenerator*/
+public static T Orientation<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Layout.Orientation> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.DocumentTabStrip 
+=> control._setEx(Dock.Avalonia.Controls.DocumentTabStrip.OrientationProperty, ps, () => control.Orientation = converter.TryConvert(value), bindingMode, converter, bindingSource);
+
+
+ // CreateButtonTheme
+
+/*BindFromExpressionSetterGenerator*/
+public static T CreateButtonTheme<T>(this T control, Func<Avalonia.Styling.ControlTheme> func, Action<Avalonia.Styling.ControlTheme>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Dock.Avalonia.Controls.DocumentTabStrip 
+   => control._set(Dock.Avalonia.Controls.DocumentTabStrip.CreateButtonThemeProperty, func, onChanged, expression);
+
+/*MagicalSetterGenerator*/
+public static T CreateButtonTheme<T>(this T control,Avalonia.Styling.ControlTheme value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.DocumentTabStrip 
+=> control._setEx(Dock.Avalonia.Controls.DocumentTabStrip.CreateButtonThemeProperty, ps, () => control.CreateButtonTheme = value, bindingMode, converter, bindingSource);
+
+/*BindSetterGenerator*/
+public static T CreateButtonTheme<T>(this T control, IBinding binding) where T : Dock.Avalonia.Controls.DocumentTabStrip 
+   => control._set(Dock.Avalonia.Controls.DocumentTabStrip.CreateButtonThemeProperty, binding);
+
+/*AvaloniaPropertyBindSetterGenerator*/
+public static T CreateButtonTheme<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Dock.Avalonia.Controls.DocumentTabStrip 
+   => control._set(Dock.Avalonia.Controls.DocumentTabStrip.CreateButtonThemeProperty, avaloniaProperty, bindingMode, converter, overrideView);
+
+/*MagicalSetterWithConverterGenerator*/
+public static T CreateButtonTheme<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Styling.ControlTheme> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.DocumentTabStrip 
+=> control._setEx(Dock.Avalonia.Controls.DocumentTabStrip.CreateButtonThemeProperty, ps, () => control.CreateButtonTheme = converter.TryConvert(value), bindingMode, converter, bindingSource);
+
+
 
 //================= Styles ======================//
  // CanCreateItem
@@ -80,6 +149,39 @@ public static Style<T> IsActive<T>(this Style<T> style, System.Boolean value) wh
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsActive<T>(this Style<T> style, IBinding binding) where T : Dock.Avalonia.Controls.DocumentTabStrip 
 => style._addSetter(Dock.Avalonia.Controls.DocumentTabStrip.IsActiveProperty, binding);
+
+
+ // EnableWindowDrag
+
+/*ValueStyleSetterGenerator*/
+public static Style<T> EnableWindowDrag<T>(this Style<T> style, System.Boolean value) where T : Dock.Avalonia.Controls.DocumentTabStrip 
+=> style._addSetter(Dock.Avalonia.Controls.DocumentTabStrip.EnableWindowDragProperty, value);
+
+/*BindingStyleSetterGenerator*/
+public static Style<T> EnableWindowDrag<T>(this Style<T> style, IBinding binding) where T : Dock.Avalonia.Controls.DocumentTabStrip 
+=> style._addSetter(Dock.Avalonia.Controls.DocumentTabStrip.EnableWindowDragProperty, binding);
+
+
+ // Orientation
+
+/*ValueStyleSetterGenerator*/
+public static Style<T> Orientation<T>(this Style<T> style, Avalonia.Layout.Orientation value) where T : Dock.Avalonia.Controls.DocumentTabStrip 
+=> style._addSetter(Dock.Avalonia.Controls.DocumentTabStrip.OrientationProperty, value);
+
+/*BindingStyleSetterGenerator*/
+public static Style<T> Orientation<T>(this Style<T> style, IBinding binding) where T : Dock.Avalonia.Controls.DocumentTabStrip 
+=> style._addSetter(Dock.Avalonia.Controls.DocumentTabStrip.OrientationProperty, binding);
+
+
+ // CreateButtonTheme
+
+/*ValueStyleSetterGenerator*/
+public static Style<T> CreateButtonTheme<T>(this Style<T> style, Avalonia.Styling.ControlTheme value) where T : Dock.Avalonia.Controls.DocumentTabStrip 
+=> style._addSetter(Dock.Avalonia.Controls.DocumentTabStrip.CreateButtonThemeProperty, value);
+
+/*BindingStyleSetterGenerator*/
+public static Style<T> CreateButtonTheme<T>(this Style<T> style, IBinding binding) where T : Dock.Avalonia.Controls.DocumentTabStrip 
+=> style._addSetter(Dock.Avalonia.Controls.DocumentTabStrip.CreateButtonThemeProperty, binding);
 
 
 
