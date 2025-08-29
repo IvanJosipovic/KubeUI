@@ -137,7 +137,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         }
     ];
 
-    public IList<(Cluster.Verb verb, string? subResource)> DefaultPermissions() => [
+    public IList<(Verb verb, string? subResource)> DefaultPermissions() => [
         (Verb.Create, null),
         (Verb.Delete, null),
         (Verb.Get, null),

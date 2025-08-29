@@ -10,6 +10,7 @@ using KubeUI.Resources;
 using Avalonia.Input;
 using Avalonia.VisualTree;
 using KubeUI.Controls;
+using Avalonia.Controls.Primitives;
 
 namespace KubeUI.Views;
 
@@ -156,12 +157,12 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
         }
         else if (menu.HeaderBinding != null)
         {
-            menuItem.Bind(Avalonia.Controls.Primitives.HeaderedSelectingItemsControl.HeaderProperty, menu.HeaderBinding);
+            menuItem.Bind(HeaderedSelectingItemsControl.HeaderProperty, menu.HeaderBinding);
         }
 
         if (!string.IsNullOrEmpty(menu.CommandPath))
         {
-            menuItem.Bind(MenuItem.CommandProperty, new Binding(nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + menu.CommandPath) { Source = DataContext });
+            menuItem.Bind(MenuItem.CommandProperty, new Binding(nameof(ResourceListViewModel<>.ResourceConfig) + "." + menu.CommandPath) { Source = DataContext });
         }
 
         if (!string.IsNullOrEmpty(menu.CommandParameterPath))
@@ -376,7 +377,6 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                     .Ref(out _grid)
                     .Row(1)
                     .ItemsSource(@vm.DataGridObjects, BindingMode.OneWay)
-                    .SelectedItem(@vm.SelectedItem)
                     .CanUserReorderColumns(true)
                     .CanUserResizeColumns(true)
                     .GridLinesVisibility(DataGridGridLinesVisibility.All)
@@ -410,7 +410,6 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                         new Style<DataGridColumnHeader>()
                             .Setter(DataGridColumnHeader.FontSizeProperty, Convert.ToDouble(_settingsService.Settings.FontSize))
                             .Setter(DataGridColumnHeader.MinHeightProperty, Convert.ToDouble(_settingsService.Settings.ListRowHeight)),
-
                     ]),
             ]);
 
