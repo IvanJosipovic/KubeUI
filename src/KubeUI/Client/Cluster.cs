@@ -1,22 +1,22 @@
-﻿using System.Net.Http.Json;
-using System.Reflection;
-using System.Xml;
+﻿using Avalonia.Collections;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
-using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using HanumanInstitute.MvvmDialogs;
 using Humanizer;
-using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
+using k8s;
 using KubernetesCRDModelGen;
 using KubeUI.Client.Informer;
 using KubeUI.Resources;
-using Avalonia.Collections;
-using YamlDotNet.Core;
-using YamlDotNet.Core.Events;
 using Swordfish.NET.Collections;
+using System.Net.Http.Json;
+using System.Reflection;
+using System.Xml;
+using YamlDotNet.Core.Events;
+using YamlDotNet.Core;
 
 namespace KubeUI.Client;
 
@@ -276,6 +276,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 {
                     _crdNavigationLink = nav;
                     nav.NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer());
+                    await Seed<V1CustomResourceDefinition>();
+                    nav.Objects = Objects[config.Kind].Items;
                 }
 
                 if (string.IsNullOrEmpty(config.Category))
@@ -381,8 +383,10 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 }
             }
         }
-
-        _seedLimiter.Release();
+        else
+        {
+            _seedLimiter.Release();
+        }
     }
 
     private ResourceInformerCallback<T> GetResourceInformerCallback<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
