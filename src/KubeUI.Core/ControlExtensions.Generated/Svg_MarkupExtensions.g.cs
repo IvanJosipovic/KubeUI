@@ -155,8 +155,6 @@ public static T EnableCache<T>(this T control, AvaloniaProperty avaloniaProperty
 [Obsolete]
 public static T EnableCache<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Avalonia.Svg.Skia.Svg 
 => control._setEx(Avalonia.Svg.Skia.Svg.EnableCacheProperty, ps, () => control.EnableCache = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
-<<<<<<< HEAD
-=======
 
 
  // Wireframe
@@ -302,7 +300,6 @@ public static T PanY<T>(this T control, AvaloniaProperty avaloniaProperty, Bindi
 [Obsolete]
 public static T PanY<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Double> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Avalonia.Svg.Skia.Svg 
 => control._setEx(Avalonia.Svg.Skia.Svg.PanYProperty, ps, () => control.PanY = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
->>>>>>> alpha
 
 
 

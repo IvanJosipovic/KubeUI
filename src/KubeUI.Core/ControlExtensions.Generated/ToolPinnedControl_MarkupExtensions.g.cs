@@ -12,35 +12,6 @@ namespace Avalonia.Markup.Declarative;
 public static partial class ToolPinnedControl_MarkupExtensions
 {
 //================= Properties ======================//
- // Items
-
-/*ValueSetterGenerator*/
-public static T Items<T>(this T control, System.Collections.IEnumerable value) where T : Dock.Avalonia.Controls.ToolPinnedControl 
-=> control._set(() => control.Items = value!);
-
-/*BindFromExpressionSetterGenerator*/
-public static T Items<T>(this T control, Func<System.Collections.IEnumerable> func, Action<System.Collections.IEnumerable>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Dock.Avalonia.Controls.ToolPinnedControl 
-   => control._set(Dock.Avalonia.Controls.ToolPinnedControl.ItemsProperty!, func, onChanged, expression);
-
-/*MagicalSetterGenerator*/
-[Obsolete]
-public static T Items<T>(this T control,System.Collections.IEnumerable value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.ToolPinnedControl 
-=> control._setEx(Dock.Avalonia.Controls.ToolPinnedControl.ItemsProperty, ps, () => control.Items = value!, bindingMode, converter, bindingSource);
-
-/*BindSetterGenerator*/
-public static T Items<T>(this T control, IBinding binding) where T : Dock.Avalonia.Controls.ToolPinnedControl 
-   => control._set(Dock.Avalonia.Controls.ToolPinnedControl.ItemsProperty, binding);
-
-/*AvaloniaPropertyBindSetterGenerator*/
-public static T Items<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Dock.Avalonia.Controls.ToolPinnedControl 
-   => control._set(Dock.Avalonia.Controls.ToolPinnedControl.ItemsProperty, avaloniaProperty, bindingMode, converter, overrideView);
-
-/*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T Items<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Collections.IEnumerable> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.ToolPinnedControl 
-=> control._setEx(Dock.Avalonia.Controls.ToolPinnedControl.ItemsProperty, ps, () => control.Items = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
-
-
  // Orientation
 
 /*ValueSetterGenerator*/

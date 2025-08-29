@@ -68,7 +68,6 @@ public static T ToolChromeControlsWholeWindow<T>(this T control, AvaloniaPropert
 [Obsolete]
 public static T ToolChromeControlsWholeWindow<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.HostWindow 
 => control._setEx(Dock.Avalonia.Controls.HostWindow.ToolChromeControlsWholeWindowProperty, ps, () => control.ToolChromeControlsWholeWindow = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
-<<<<<<< HEAD
 
 
  // DocumentChromeControlsWholeWindow
@@ -98,8 +97,6 @@ public static T DocumentChromeControlsWholeWindow<T>(this T control, AvaloniaPro
 [Obsolete]
 public static T DocumentChromeControlsWholeWindow<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.HostWindow 
 => control._setEx(Dock.Avalonia.Controls.HostWindow.DocumentChromeControlsWholeWindowProperty, ps, () => control.DocumentChromeControlsWholeWindow = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
-=======
->>>>>>> alpha
 
 
 

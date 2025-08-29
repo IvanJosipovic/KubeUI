@@ -12,7 +12,6 @@ namespace Avalonia.Markup.Declarative;
 public static partial class DragPreviewControl_MarkupExtensions
 {
 //================= Properties ======================//
-<<<<<<< HEAD
  // ContentTemplate
 
 /*ValueSetterGenerator*/
@@ -40,35 +39,6 @@ public static T ContentTemplate<T>(this T control, AvaloniaProperty avaloniaProp
 [Obsolete]
 public static T ContentTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Templates.IDataTemplate> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.DragPreviewControl 
 => control._setEx(Dock.Avalonia.Controls.DragPreviewControl.ContentTemplateProperty, ps, () => control.ContentTemplate = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
-=======
- // Title
-
-/*ValueSetterGenerator*/
-public static T Title<T>(this T control, System.String value) where T : Dock.Avalonia.Controls.DragPreviewControl 
-=> control._set(() => control.Title = value!);
-
-/*BindFromExpressionSetterGenerator*/
-public static T Title<T>(this T control, Func<System.String> func, Action<System.String>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Dock.Avalonia.Controls.DragPreviewControl 
-   => control._set(Dock.Avalonia.Controls.DragPreviewControl.TitleProperty!, func, onChanged, expression);
-
-/*MagicalSetterGenerator*/
-[Obsolete]
-public static T Title<T>(this T control,System.String value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.DragPreviewControl 
-=> control._setEx(Dock.Avalonia.Controls.DragPreviewControl.TitleProperty, ps, () => control.Title = value!, bindingMode, converter, bindingSource);
-
-/*BindSetterGenerator*/
-public static T Title<T>(this T control, IBinding binding) where T : Dock.Avalonia.Controls.DragPreviewControl 
-   => control._set(Dock.Avalonia.Controls.DragPreviewControl.TitleProperty, binding);
-
-/*AvaloniaPropertyBindSetterGenerator*/
-public static T Title<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Dock.Avalonia.Controls.DragPreviewControl 
-   => control._set(Dock.Avalonia.Controls.DragPreviewControl.TitleProperty, avaloniaProperty, bindingMode, converter, overrideView);
-
-/*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T Title<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.String> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.DragPreviewControl 
-=> control._setEx(Dock.Avalonia.Controls.DragPreviewControl.TitleProperty, ps, () => control.Title = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
->>>>>>> alpha
 
 
  // Status
@@ -102,7 +72,6 @@ public static T Status<TValue,T>(this T control, TValue value, FuncValueConverte
 
 
 //================= Styles ======================//
-<<<<<<< HEAD
  // ContentTemplate
 
 /*ValueStyleSetterGenerator*/
@@ -112,17 +81,6 @@ public static Style<T> ContentTemplate<T>(this Style<T> style, Avalonia.Controls
 /*BindingStyleSetterGenerator*/
 public static Style<T> ContentTemplate<T>(this Style<T> style, IBinding binding) where T : Dock.Avalonia.Controls.DragPreviewControl 
 => style._addSetter(Dock.Avalonia.Controls.DragPreviewControl.ContentTemplateProperty, binding);
-=======
- // Title
-
-/*ValueStyleSetterGenerator*/
-public static Style<T> Title<T>(this Style<T> style, System.String value) where T : Dock.Avalonia.Controls.DragPreviewControl 
-=> style._addSetter(Dock.Avalonia.Controls.DragPreviewControl.TitleProperty!, value!);
-
-/*BindingStyleSetterGenerator*/
-public static Style<T> Title<T>(this Style<T> style, IBinding binding) where T : Dock.Avalonia.Controls.DragPreviewControl 
-=> style._addSetter(Dock.Avalonia.Controls.DragPreviewControl.TitleProperty, binding);
->>>>>>> alpha
 
 
  // Status

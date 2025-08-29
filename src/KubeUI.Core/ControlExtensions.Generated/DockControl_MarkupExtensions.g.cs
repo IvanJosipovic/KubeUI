@@ -186,6 +186,35 @@ public static T IsDraggingDock<TValue,T>(this T control, TValue value, FuncValue
 => control._setEx(Dock.Avalonia.Controls.DockControl.IsDraggingDockProperty, ps, () => control.IsDraggingDock = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
+ // AutoCreateDataTemplates
+
+/*ValueSetterGenerator*/
+public static T AutoCreateDataTemplates<T>(this T control, System.Boolean value) where T : Dock.Avalonia.Controls.DockControl 
+=> control._set(() => control.AutoCreateDataTemplates = value!);
+
+/*BindFromExpressionSetterGenerator*/
+public static T AutoCreateDataTemplates<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Dock.Avalonia.Controls.DockControl 
+   => control._set(Dock.Avalonia.Controls.DockControl.AutoCreateDataTemplatesProperty!, func, onChanged, expression);
+
+/*MagicalSetterGenerator*/
+[Obsolete]
+public static T AutoCreateDataTemplates<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.DockControl 
+=> control._setEx(Dock.Avalonia.Controls.DockControl.AutoCreateDataTemplatesProperty, ps, () => control.AutoCreateDataTemplates = value!, bindingMode, converter, bindingSource);
+
+/*BindSetterGenerator*/
+public static T AutoCreateDataTemplates<T>(this T control, IBinding binding) where T : Dock.Avalonia.Controls.DockControl 
+   => control._set(Dock.Avalonia.Controls.DockControl.AutoCreateDataTemplatesProperty, binding);
+
+/*AvaloniaPropertyBindSetterGenerator*/
+public static T AutoCreateDataTemplates<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Dock.Avalonia.Controls.DockControl 
+   => control._set(Dock.Avalonia.Controls.DockControl.AutoCreateDataTemplatesProperty, avaloniaProperty, bindingMode, converter, overrideView);
+
+/*MagicalSetterWithConverterGenerator*/
+[Obsolete]
+public static T AutoCreateDataTemplates<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.DockControl 
+=> control._setEx(Dock.Avalonia.Controls.DockControl.AutoCreateDataTemplatesProperty, ps, () => control.AutoCreateDataTemplates = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+
+
 
 //================= Styles ======================//
  // Layout
@@ -252,6 +281,17 @@ public static Style<T> IsDraggingDock<T>(this Style<T> style, System.Boolean val
 /*BindingStyleSetterGenerator*/
 public static Style<T> IsDraggingDock<T>(this Style<T> style, IBinding binding) where T : Dock.Avalonia.Controls.DockControl 
 => style._addSetter(Dock.Avalonia.Controls.DockControl.IsDraggingDockProperty, binding);
+
+
+ // AutoCreateDataTemplates
+
+/*ValueStyleSetterGenerator*/
+public static Style<T> AutoCreateDataTemplates<T>(this Style<T> style, System.Boolean value) where T : Dock.Avalonia.Controls.DockControl 
+=> style._addSetter(Dock.Avalonia.Controls.DockControl.AutoCreateDataTemplatesProperty!, value!);
+
+/*BindingStyleSetterGenerator*/
+public static Style<T> AutoCreateDataTemplates<T>(this Style<T> style, IBinding binding) where T : Dock.Avalonia.Controls.DockControl 
+=> style._addSetter(Dock.Avalonia.Controls.DockControl.AutoCreateDataTemplatesProperty, binding);
 
 
 
