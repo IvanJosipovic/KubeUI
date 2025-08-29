@@ -162,7 +162,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
 
         if (!string.IsNullOrEmpty(menu.CommandPath))
         {
-            menuItem.Bind(MenuItem.CommandProperty, new Binding(nameof(ResourceListViewModel<>.ResourceConfig) + "." + menu.CommandPath) { Source = DataContext });
+            menuItem.Bind(MenuItem.CommandProperty, new Binding(nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + menu.CommandPath) { Source = DataContext });
         }
 
         if (!string.IsNullOrEmpty(menu.CommandParameterPath))
@@ -377,6 +377,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                     .Ref(out _grid)
                     .Row(1)
                     .ItemsSource(@vm.DataGridObjects, BindingMode.OneWay)
+                    .SelectedItem(@vm.SelectedItem)
                     .CanUserReorderColumns(true)
                     .CanUserResizeColumns(true)
                     .GridLinesVisibility(DataGridGridLinesVisibility.All)
