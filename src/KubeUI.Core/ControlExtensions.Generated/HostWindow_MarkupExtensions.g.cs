@@ -58,29 +58,6 @@ public static T ToolChromeControlsWholeWindow<TValue,T>(this T control, TValue v
 => control._setEx(Dock.Avalonia.Controls.HostWindow.ToolChromeControlsWholeWindowProperty, ps, () => control.ToolChromeControlsWholeWindow = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
- // DocumentChromeControlsWholeWindow
-
-/*BindFromExpressionSetterGenerator*/
-public static T DocumentChromeControlsWholeWindow<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Dock.Avalonia.Controls.HostWindow 
-   => control._set(Dock.Avalonia.Controls.HostWindow.DocumentChromeControlsWholeWindowProperty, func, onChanged, expression);
-
-/*MagicalSetterGenerator*/
-public static T DocumentChromeControlsWholeWindow<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.HostWindow 
-=> control._setEx(Dock.Avalonia.Controls.HostWindow.DocumentChromeControlsWholeWindowProperty, ps, () => control.DocumentChromeControlsWholeWindow = value, bindingMode, converter, bindingSource);
-
-/*BindSetterGenerator*/
-public static T DocumentChromeControlsWholeWindow<T>(this T control, IBinding binding) where T : Dock.Avalonia.Controls.HostWindow 
-   => control._set(Dock.Avalonia.Controls.HostWindow.DocumentChromeControlsWholeWindowProperty, binding);
-
-/*AvaloniaPropertyBindSetterGenerator*/
-public static T DocumentChromeControlsWholeWindow<T>(this T control, AvaloniaProperty avaloniaProperty, BindingMode? bindingMode = null, IValueConverter? converter = null, ViewBase? overrideView = null) where T : Dock.Avalonia.Controls.HostWindow 
-   => control._set(Dock.Avalonia.Controls.HostWindow.DocumentChromeControlsWholeWindowProperty, avaloniaProperty, bindingMode, converter, overrideView);
-
-/*MagicalSetterWithConverterGenerator*/
-public static T DocumentChromeControlsWholeWindow<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.HostWindow 
-=> control._setEx(Dock.Avalonia.Controls.HostWindow.DocumentChromeControlsWholeWindowProperty, ps, () => control.DocumentChromeControlsWholeWindow = converter.TryConvert(value), bindingMode, converter, bindingSource);
-
-
 
 //================= Styles ======================//
  // IsToolWindow
@@ -103,17 +80,6 @@ public static Style<T> ToolChromeControlsWholeWindow<T>(this Style<T> style, Sys
 /*BindingStyleSetterGenerator*/
 public static Style<T> ToolChromeControlsWholeWindow<T>(this Style<T> style, IBinding binding) where T : Dock.Avalonia.Controls.HostWindow 
 => style._addSetter(Dock.Avalonia.Controls.HostWindow.ToolChromeControlsWholeWindowProperty, binding);
-
-
- // DocumentChromeControlsWholeWindow
-
-/*ValueStyleSetterGenerator*/
-public static Style<T> DocumentChromeControlsWholeWindow<T>(this Style<T> style, System.Boolean value) where T : Dock.Avalonia.Controls.HostWindow 
-=> style._addSetter(Dock.Avalonia.Controls.HostWindow.DocumentChromeControlsWholeWindowProperty, value);
-
-/*BindingStyleSetterGenerator*/
-public static Style<T> DocumentChromeControlsWholeWindow<T>(this Style<T> style, IBinding binding) where T : Dock.Avalonia.Controls.HostWindow 
-=> style._addSetter(Dock.Avalonia.Controls.HostWindow.DocumentChromeControlsWholeWindowProperty, binding);
 
 
 
