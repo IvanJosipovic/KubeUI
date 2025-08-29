@@ -14,18 +14,13 @@ public static partial class DockTargetBase_MarkupExtensions
 //================= Properties ======================//
  // ShowIndicatorsOnly
 
-/*ValueSetterGenerator*/
-public static T ShowIndicatorsOnly<T>(this T control, System.Boolean value) where T : Dock.Avalonia.Controls.DockTargetBase 
-=> control._set(() => control.ShowIndicatorsOnly = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T ShowIndicatorsOnly<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Dock.Avalonia.Controls.DockTargetBase 
-   => control._set(Dock.Avalonia.Controls.DockTargetBase.ShowIndicatorsOnlyProperty!, func, onChanged, expression);
+public static T ShowIndicatorsOnly<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Dock.Avalonia.Controls.DockTargetBase 
+   => control._set(Dock.Avalonia.Controls.DockTargetBase.ShowIndicatorsOnlyProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T ShowIndicatorsOnly<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.DockTargetBase 
-=> control._setEx(Dock.Avalonia.Controls.DockTargetBase.ShowIndicatorsOnlyProperty, ps, () => control.ShowIndicatorsOnly = value!, bindingMode, converter, bindingSource);
+public static T ShowIndicatorsOnly<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.DockTargetBase 
+=> control._setEx(Dock.Avalonia.Controls.DockTargetBase.ShowIndicatorsOnlyProperty, ps, () => control.ShowIndicatorsOnly = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T ShowIndicatorsOnly<T>(this T control, IBinding binding) where T : Dock.Avalonia.Controls.DockTargetBase 
@@ -36,25 +31,19 @@ public static T ShowIndicatorsOnly<T>(this T control, AvaloniaProperty avaloniaP
    => control._set(Dock.Avalonia.Controls.DockTargetBase.ShowIndicatorsOnlyProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T ShowIndicatorsOnly<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.DockTargetBase 
-=> control._setEx(Dock.Avalonia.Controls.DockTargetBase.ShowIndicatorsOnlyProperty, ps, () => control.ShowIndicatorsOnly = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T ShowIndicatorsOnly<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.DockTargetBase 
+=> control._setEx(Dock.Avalonia.Controls.DockTargetBase.ShowIndicatorsOnlyProperty, ps, () => control.ShowIndicatorsOnly = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // ShowHorizontalTargets
 
-/*ValueSetterGenerator*/
-public static T ShowHorizontalTargets<T>(this T control, System.Boolean value) where T : Dock.Avalonia.Controls.DockTargetBase 
-=> control._set(() => control.ShowHorizontalTargets = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T ShowHorizontalTargets<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Dock.Avalonia.Controls.DockTargetBase 
-   => control._set(Dock.Avalonia.Controls.DockTargetBase.ShowHorizontalTargetsProperty!, func, onChanged, expression);
+public static T ShowHorizontalTargets<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Dock.Avalonia.Controls.DockTargetBase 
+   => control._set(Dock.Avalonia.Controls.DockTargetBase.ShowHorizontalTargetsProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T ShowHorizontalTargets<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.DockTargetBase 
-=> control._setEx(Dock.Avalonia.Controls.DockTargetBase.ShowHorizontalTargetsProperty, ps, () => control.ShowHorizontalTargets = value!, bindingMode, converter, bindingSource);
+public static T ShowHorizontalTargets<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.DockTargetBase 
+=> control._setEx(Dock.Avalonia.Controls.DockTargetBase.ShowHorizontalTargetsProperty, ps, () => control.ShowHorizontalTargets = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T ShowHorizontalTargets<T>(this T control, IBinding binding) where T : Dock.Avalonia.Controls.DockTargetBase 
@@ -65,25 +54,19 @@ public static T ShowHorizontalTargets<T>(this T control, AvaloniaProperty avalon
    => control._set(Dock.Avalonia.Controls.DockTargetBase.ShowHorizontalTargetsProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T ShowHorizontalTargets<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.DockTargetBase 
-=> control._setEx(Dock.Avalonia.Controls.DockTargetBase.ShowHorizontalTargetsProperty, ps, () => control.ShowHorizontalTargets = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T ShowHorizontalTargets<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.DockTargetBase 
+=> control._setEx(Dock.Avalonia.Controls.DockTargetBase.ShowHorizontalTargetsProperty, ps, () => control.ShowHorizontalTargets = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // ShowVerticalTargets
 
-/*ValueSetterGenerator*/
-public static T ShowVerticalTargets<T>(this T control, System.Boolean value) where T : Dock.Avalonia.Controls.DockTargetBase 
-=> control._set(() => control.ShowVerticalTargets = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T ShowVerticalTargets<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Dock.Avalonia.Controls.DockTargetBase 
-   => control._set(Dock.Avalonia.Controls.DockTargetBase.ShowVerticalTargetsProperty!, func, onChanged, expression);
+public static T ShowVerticalTargets<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Dock.Avalonia.Controls.DockTargetBase 
+   => control._set(Dock.Avalonia.Controls.DockTargetBase.ShowVerticalTargetsProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T ShowVerticalTargets<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.DockTargetBase 
-=> control._setEx(Dock.Avalonia.Controls.DockTargetBase.ShowVerticalTargetsProperty, ps, () => control.ShowVerticalTargets = value!, bindingMode, converter, bindingSource);
+public static T ShowVerticalTargets<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.DockTargetBase 
+=> control._setEx(Dock.Avalonia.Controls.DockTargetBase.ShowVerticalTargetsProperty, ps, () => control.ShowVerticalTargets = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T ShowVerticalTargets<T>(this T control, IBinding binding) where T : Dock.Avalonia.Controls.DockTargetBase 
@@ -94,9 +77,8 @@ public static T ShowVerticalTargets<T>(this T control, AvaloniaProperty avalonia
    => control._set(Dock.Avalonia.Controls.DockTargetBase.ShowVerticalTargetsProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T ShowVerticalTargets<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.DockTargetBase 
-=> control._setEx(Dock.Avalonia.Controls.DockTargetBase.ShowVerticalTargetsProperty, ps, () => control.ShowVerticalTargets = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T ShowVerticalTargets<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.DockTargetBase 
+=> control._setEx(Dock.Avalonia.Controls.DockTargetBase.ShowVerticalTargetsProperty, ps, () => control.ShowVerticalTargets = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
@@ -105,7 +87,7 @@ public static T ShowVerticalTargets<TValue,T>(this T control, TValue value, Func
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> ShowIndicatorsOnly<T>(this Style<T> style, System.Boolean value) where T : Dock.Avalonia.Controls.DockTargetBase 
-=> style._addSetter(Dock.Avalonia.Controls.DockTargetBase.ShowIndicatorsOnlyProperty!, value!);
+=> style._addSetter(Dock.Avalonia.Controls.DockTargetBase.ShowIndicatorsOnlyProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> ShowIndicatorsOnly<T>(this Style<T> style, IBinding binding) where T : Dock.Avalonia.Controls.DockTargetBase 
@@ -116,7 +98,7 @@ public static Style<T> ShowIndicatorsOnly<T>(this Style<T> style, IBinding bindi
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> ShowHorizontalTargets<T>(this Style<T> style, System.Boolean value) where T : Dock.Avalonia.Controls.DockTargetBase 
-=> style._addSetter(Dock.Avalonia.Controls.DockTargetBase.ShowHorizontalTargetsProperty!, value!);
+=> style._addSetter(Dock.Avalonia.Controls.DockTargetBase.ShowHorizontalTargetsProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> ShowHorizontalTargets<T>(this Style<T> style, IBinding binding) where T : Dock.Avalonia.Controls.DockTargetBase 
@@ -127,7 +109,7 @@ public static Style<T> ShowHorizontalTargets<T>(this Style<T> style, IBinding bi
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> ShowVerticalTargets<T>(this Style<T> style, System.Boolean value) where T : Dock.Avalonia.Controls.DockTargetBase 
-=> style._addSetter(Dock.Avalonia.Controls.DockTargetBase.ShowVerticalTargetsProperty!, value!);
+=> style._addSetter(Dock.Avalonia.Controls.DockTargetBase.ShowVerticalTargetsProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> ShowVerticalTargets<T>(this Style<T> style, IBinding binding) where T : Dock.Avalonia.Controls.DockTargetBase 

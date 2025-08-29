@@ -14,18 +14,13 @@ public static partial class ToolControl_MarkupExtensions
 //================= Properties ======================//
  // IconTemplate
 
-/*ValueSetterGenerator*/
-public static T IconTemplate<T>(this T control, System.Object value) where T : Dock.Avalonia.Controls.ToolControl 
-=> control._set(() => control.IconTemplate = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T IconTemplate<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Dock.Avalonia.Controls.ToolControl 
-   => control._set(Dock.Avalonia.Controls.ToolControl.IconTemplateProperty!, func, onChanged, expression);
+public static T IconTemplate<T>(this T control, Func<System.Object> func, Action<System.Object>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Dock.Avalonia.Controls.ToolControl 
+   => control._set(Dock.Avalonia.Controls.ToolControl.IconTemplateProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T IconTemplate<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.ToolControl 
-=> control._setEx(Dock.Avalonia.Controls.ToolControl.IconTemplateProperty, ps, () => control.IconTemplate = value!, bindingMode, converter, bindingSource);
+public static T IconTemplate<T>(this T control,System.Object value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.ToolControl 
+=> control._setEx(Dock.Avalonia.Controls.ToolControl.IconTemplateProperty, ps, () => control.IconTemplate = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IconTemplate<T>(this T control, IBinding binding) where T : Dock.Avalonia.Controls.ToolControl 
@@ -36,9 +31,8 @@ public static T IconTemplate<T>(this T control, AvaloniaProperty avaloniaPropert
    => control._set(Dock.Avalonia.Controls.ToolControl.IconTemplateProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T IconTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.ToolControl 
-=> control._setEx(Dock.Avalonia.Controls.ToolControl.IconTemplateProperty, ps, () => control.IconTemplate = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T IconTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.ToolControl 
+=> control._setEx(Dock.Avalonia.Controls.ToolControl.IconTemplateProperty, ps, () => control.IconTemplate = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
  // HeaderTemplate
@@ -66,18 +60,13 @@ public static T HeaderTemplate<TValue,T>(this T control, TValue value, FuncValue
 
  // ModifiedTemplate
 
-/*ValueSetterGenerator*/
-public static T ModifiedTemplate<T>(this T control, Avalonia.Controls.Templates.IDataTemplate value) where T : Dock.Avalonia.Controls.ToolControl 
-=> control._set(() => control.ModifiedTemplate = value!);
-
 /*BindFromExpressionSetterGenerator*/
-public static T ModifiedTemplate<T>(this T control, Func<Avalonia.Controls.Templates.IDataTemplate> func, Action<Avalonia.Controls.Templates.IDataTemplate>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Dock.Avalonia.Controls.ToolControl 
-   => control._set(Dock.Avalonia.Controls.ToolControl.ModifiedTemplateProperty!, func, onChanged, expression);
+public static T ModifiedTemplate<T>(this T control, Func<Avalonia.Controls.Templates.IDataTemplate> func, Action<Avalonia.Controls.Templates.IDataTemplate>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Dock.Avalonia.Controls.ToolControl 
+   => control._set(Dock.Avalonia.Controls.ToolControl.ModifiedTemplateProperty, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-[Obsolete]
-public static T ModifiedTemplate<T>(this T control,Avalonia.Controls.Templates.IDataTemplate value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.ToolControl 
-=> control._setEx(Dock.Avalonia.Controls.ToolControl.ModifiedTemplateProperty, ps, () => control.ModifiedTemplate = value!, bindingMode, converter, bindingSource);
+public static T ModifiedTemplate<T>(this T control,Avalonia.Controls.Templates.IDataTemplate value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.ToolControl 
+=> control._setEx(Dock.Avalonia.Controls.ToolControl.ModifiedTemplateProperty, ps, () => control.ModifiedTemplate = value, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T ModifiedTemplate<T>(this T control, IBinding binding) where T : Dock.Avalonia.Controls.ToolControl 
@@ -88,9 +77,8 @@ public static T ModifiedTemplate<T>(this T control, AvaloniaProperty avaloniaPro
    => control._set(Dock.Avalonia.Controls.ToolControl.ModifiedTemplateProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-[Obsolete]
-public static T ModifiedTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Templates.IDataTemplate> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.ToolControl 
-=> control._setEx(Dock.Avalonia.Controls.ToolControl.ModifiedTemplateProperty, ps, () => control.ModifiedTemplate = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+public static T ModifiedTemplate<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Controls.Templates.IDataTemplate> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Dock.Avalonia.Controls.ToolControl 
+=> control._setEx(Dock.Avalonia.Controls.ToolControl.ModifiedTemplateProperty, ps, () => control.ModifiedTemplate = converter.TryConvert(value), bindingMode, converter, bindingSource);
 
 
 
@@ -99,7 +87,7 @@ public static T ModifiedTemplate<TValue,T>(this T control, TValue value, FuncVal
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> IconTemplate<T>(this Style<T> style, System.Object value) where T : Dock.Avalonia.Controls.ToolControl 
-=> style._addSetter(Dock.Avalonia.Controls.ToolControl.IconTemplateProperty!, value!);
+=> style._addSetter(Dock.Avalonia.Controls.ToolControl.IconTemplateProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> IconTemplate<T>(this Style<T> style, IBinding binding) where T : Dock.Avalonia.Controls.ToolControl 
@@ -121,7 +109,7 @@ public static Style<T> HeaderTemplate<T>(this Style<T> style, IBinding binding) 
 
 /*ValueStyleSetterGenerator*/
 public static Style<T> ModifiedTemplate<T>(this Style<T> style, Avalonia.Controls.Templates.IDataTemplate value) where T : Dock.Avalonia.Controls.ToolControl 
-=> style._addSetter(Dock.Avalonia.Controls.ToolControl.ModifiedTemplateProperty!, value!);
+=> style._addSetter(Dock.Avalonia.Controls.ToolControl.ModifiedTemplateProperty, value);
 
 /*BindingStyleSetterGenerator*/
 public static Style<T> ModifiedTemplate<T>(this Style<T> style, IBinding binding) where T : Dock.Avalonia.Controls.ToolControl 
