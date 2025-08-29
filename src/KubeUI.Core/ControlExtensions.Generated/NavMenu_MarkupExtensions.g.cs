@@ -395,6 +395,20 @@ public static T OnSelectionChanged<T>(this T control, Action<Avalonia.Controls.S
 {
   control.AddHandler(Ursa.Controls.NavMenu.SelectionChangedEvent, (_, args) => action(args), routes ?? Ursa.Controls.NavMenu.SelectionChangedEvent.RoutingStrategies);
   return control;
+<<<<<<< HEAD
+=======
+}
+
+
+
+ // SelectionChanging
+
+/*ActionToEventGenerator*/
+public static T OnSelectionChanging<T>(this T control, Action<Ursa.Controls.SelectionChangingEventArgs> action, Avalonia.Interactivity.RoutingStrategies? routes = null) where T : Ursa.Controls.NavMenu 
+{
+  control.AddHandler(Ursa.Controls.NavMenu.SelectionChangingEvent, (_, args) => action(args), routes ?? Ursa.Controls.NavMenu.SelectionChangingEvent.RoutingStrategies);
+  return control;
+>>>>>>> alpha
 }
 
 

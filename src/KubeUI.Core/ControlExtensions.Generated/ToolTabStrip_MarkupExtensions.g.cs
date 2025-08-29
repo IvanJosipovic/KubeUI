@@ -18,7 +18,12 @@ public static partial class ToolTabStrip_MarkupExtensions
 public static T DockAdornerHost<T>(this T control, Avalonia.Controls.Control value) where T : Dock.Avalonia.Controls.ToolTabStrip 
 => control._set(() => control.DockAdornerHost = value!);
 
+/*ValueSetterGenerator*/
+public static T CanCreateItem<T>(this T control, System.Boolean value) where T : Dock.Avalonia.Controls.ToolTabStrip 
+=> control._set(() => control.CanCreateItem = value!);
+
 /*BindFromExpressionSetterGenerator*/
+<<<<<<< HEAD
 public static T DockAdornerHost<T>(this T control, Func<Avalonia.Controls.Control> func, Action<Avalonia.Controls.Control>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Dock.Avalonia.Controls.ToolTabStrip 
    => control._set(Dock.Avalonia.Controls.ToolTabStrip.DockAdornerHostProperty!, func, onChanged, expression);
 
@@ -53,6 +58,13 @@ public static T CanCreateItem<T>(this T control, Func<System.Boolean> func, Acti
 
 /*MagicalSetterGenerator*/
 [Obsolete]
+=======
+public static T CanCreateItem<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Dock.Avalonia.Controls.ToolTabStrip 
+   => control._set(Dock.Avalonia.Controls.ToolTabStrip.CanCreateItemProperty!, func, onChanged, expression);
+
+/*MagicalSetterGenerator*/
+[Obsolete]
+>>>>>>> alpha
 public static T CanCreateItem<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.ToolTabStrip 
 => control._setEx(Dock.Avalonia.Controls.ToolTabStrip.CanCreateItemProperty, ps, () => control.CanCreateItem = value!, bindingMode, converter, bindingSource);
 

@@ -68,6 +68,7 @@ public static T IsActive<T>(this T control, AvaloniaProperty avaloniaProperty, B
 [Obsolete]
 public static T IsActive<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.DocumentControl 
 => control._setEx(Dock.Avalonia.Controls.DocumentControl.IsActiveProperty, ps, () => control.IsActive = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+<<<<<<< HEAD
 
 
  // TabsLayout
@@ -97,6 +98,8 @@ public static T TabsLayout<T>(this T control, AvaloniaProperty avaloniaProperty,
 [Obsolete]
 public static T TabsLayout<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Dock.Model.Core.DocumentTabLayout> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.DocumentControl 
 => control._setEx(Dock.Avalonia.Controls.DocumentControl.TabsLayoutProperty, ps, () => control.TabsLayout = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+=======
+>>>>>>> alpha
 
 
 

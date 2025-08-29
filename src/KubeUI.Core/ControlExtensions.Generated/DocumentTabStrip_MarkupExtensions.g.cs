@@ -18,7 +18,12 @@ public static partial class DocumentTabStrip_MarkupExtensions
 public static T DockAdornerHost<T>(this T control, Avalonia.Controls.Control value) where T : Dock.Avalonia.Controls.DocumentTabStrip 
 => control._set(() => control.DockAdornerHost = value!);
 
+/*ValueSetterGenerator*/
+public static T CanCreateItem<T>(this T control, System.Boolean value) where T : Dock.Avalonia.Controls.DocumentTabStrip 
+=> control._set(() => control.CanCreateItem = value!);
+
 /*BindFromExpressionSetterGenerator*/
+<<<<<<< HEAD
 public static T DockAdornerHost<T>(this T control, Func<Avalonia.Controls.Control> func, Action<Avalonia.Controls.Control>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Dock.Avalonia.Controls.DocumentTabStrip 
    => control._set(Dock.Avalonia.Controls.DocumentTabStrip.DockAdornerHostProperty!, func, onChanged, expression);
 
@@ -53,6 +58,13 @@ public static T CanCreateItem<T>(this T control, Func<System.Boolean> func, Acti
 
 /*MagicalSetterGenerator*/
 [Obsolete]
+=======
+public static T CanCreateItem<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Dock.Avalonia.Controls.DocumentTabStrip 
+   => control._set(Dock.Avalonia.Controls.DocumentTabStrip.CanCreateItemProperty!, func, onChanged, expression);
+
+/*MagicalSetterGenerator*/
+[Obsolete]
+>>>>>>> alpha
 public static T CanCreateItem<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.DocumentTabStrip 
 => control._setEx(Dock.Avalonia.Controls.DocumentTabStrip.CanCreateItemProperty, ps, () => control.CanCreateItem = value!, bindingMode, converter, bindingSource);
 
@@ -97,6 +109,7 @@ public static T IsActive<T>(this T control, AvaloniaProperty avaloniaProperty, B
 [Obsolete]
 public static T IsActive<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.DocumentTabStrip 
 => control._setEx(Dock.Avalonia.Controls.DocumentTabStrip.IsActiveProperty, ps, () => control.IsActive = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+<<<<<<< HEAD
 
 
  // EnableWindowDrag
@@ -155,6 +168,8 @@ public static T Orientation<T>(this T control, AvaloniaProperty avaloniaProperty
 [Obsolete]
 public static T Orientation<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, Avalonia.Layout.Orientation> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Dock.Avalonia.Controls.DocumentTabStrip 
 => control._setEx(Dock.Avalonia.Controls.DocumentTabStrip.OrientationProperty, ps, () => control.Orientation = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
+=======
+>>>>>>> alpha
 
 
 
