@@ -18,7 +18,6 @@ public class DockFactory : Factory
 
     private IRootDock? _rootDock;
     private IToolDock? _leftDock;
-    private IToolDock? _rightDock;
     private IDocumentDock? _documentDock;
 
     public override IRootDock CreateLayout()
@@ -35,18 +34,9 @@ public class DockFactory : Factory
             Dock = DockMode.Left,
             Id = "LeftDock",
             Proportion = 0.2,
-            VisibleDockables = CreateList<IDockable>(nav),
+            VisibleDockables = CreateList<IDockable>(nav)
         };
 
-        var rightDock = new ToolDock
-        {
-            Alignment = Alignment.Right,
-            CanClose = false,
-            Dock = DockMode.Right,
-            Id = "RightDock",
-            Proportion = 0.3,
-            VisibleDockables = CreateList<IDockable>(),
-        };
 
         var home = Application.Current.GetRequiredService<HomeViewModel>();
 
@@ -57,19 +47,7 @@ public class DockFactory : Factory
             Dock = DockMode.Center,
             Id = "Documents",
             IsCollapsable = false,
-            VisibleDockables = CreateList<IDockable>(home),
-        };
-
-        var mainLayout2 = new ProportionalDock
-        {
-            CanClose = false,
-            Id = "DocumentPropDock",
-            IsCollapsable = false,
-            Orientation = Orientation.Vertical,
-            VisibleDockables = CreateList<IDockable>
-            (
-                documentDock
-            ),
+            VisibleDockables = CreateList<IDockable>(home)
         };
 
         var mainLayout = new ProportionalDock
@@ -80,9 +58,7 @@ public class DockFactory : Factory
             (
                 leftDock,
                 new ProportionalDockSplitter() { CanClose = false },
-                mainLayout2,
-                new ProportionalDockSplitter() {  CanClose = false },
-                rightDock
+                documentDock
             ),
         };
 
@@ -92,11 +68,11 @@ public class DockFactory : Factory
         rootDock.DefaultDockable = mainLayout;
         rootDock.VisibleDockables = CreateList<IDockable>(mainLayout);
         rootDock.IsCollapsable = false;
+        rootDock.EnableGlobalDocking = false;
 
         _documentDock = documentDock;
         _rootDock = rootDock;
         _leftDock = leftDock;
-        _rightDock = rightDock;
 
         return rootDock;
     }
@@ -113,7 +89,6 @@ public class DockFactory : Factory
             ["Root"] = () => _rootDock,
             ["Documents"] = () => _documentDock,
             ["LeftDock"] = () => _leftDock,
-            ["RightDock"] = () => _rightDock,
         };
 
         HostWindowLocator = new Dictionary<string, Func<IHostWindow?>>
@@ -155,17 +130,34 @@ public class DockFactory : Factory
 
     public override void SplitToDock(IDock dock, IDockable dockable, DockOperation operation)
     {
-        // Fixes proportion of dockable when splitting
-        if (dock.Owner is ProportionalDock)
-        {
-            if (dock.Proportion == 1)
-            {
-                dock.Proportion = 0.4;
-                dockable.Proportion = 0.6;
-            }
-        }
+        var orgProportion = dockable.Proportion;
 
         base.SplitToDock(dock, dockable, operation);
+
+        //Fixes proportion of dockable when splitting
+        if (dock.Owner is ProportionalDock)
+        {
+            if (orgProportion == 1 || orgProportion is double.NaN)
+            {
+                dockable.Proportion = 0.5;
+                dock.Proportion = 0.5;
+            }
+            else
+            {
+                dock.Proportion = 1 - orgProportion;
+                dockable.Proportion = orgProportion;
+            }
+        }
+    }
+
+    public override void DockAsDocument(IDockable dockable)
+    {
+        if (dockable.Id == "Navigation")
+        {
+            return;
+        }
+
+        base.DockAsDocument(dockable);
     }
 }
 
@@ -199,60 +191,84 @@ public static class FactoryExtensions
 
     public static bool AddToBottom(this IFactory factory, IDockable vm)
     {
-        var documents = factory.GetDockable<IDocumentDock>("Documents");
+        var documents = factory.GetDockable<IDocumentDock>("Documents")!;
+        IToolDock? bottomToolsDock = null;
 
-        if (documents.Owner is ProportionalDock propDock)
+        //find owners which are a IProportionalDock of Orientation Vertical which contains IDocumentDock
+        var props = factory.Find(x => x is ProportionalDock dock && dock.Orientation == Orientation.Vertical).Distinct();
+
+        foreach (var prop in props.Cast<ProportionalDock>())
         {
-            var tools = propDock.VisibleDockables.FirstOrDefault(x => x is IToolDock) as IToolDock;
-
-            if (tools == null)
+            var contains = prop.VisibleDockables?.Contains(documents);
+            if (contains == true)
             {
-                factory.AddDockable(propDock, factory.CreateProportionalDockSplitter());
+                bottomToolsDock = prop.VisibleDockables?.LastOrDefault(x => x is IToolDock) as IToolDock;
 
-                tools = factory.CreateToolDock();
-                tools.Alignment = Alignment.Bottom;
-
-                factory.AddDockable(propDock, tools);
+                if (bottomToolsDock != null)
+                {
+                    break;
+                }
             }
-
-            if (documents.Proportion == 1)
-            {
-                documents.Proportion = 0.4;
-                tools.Proportion = 0.6;
-            }
-
-            var existing = factory.FindDockableById(vm.Id);
-
-            if (existing != null)
-            {
-                factory.SetActiveDockable(existing);
-                factory.SetFocusedDockable(tools, existing);
-
-                return false;
-            }
-
-            factory.AddDockable(tools, vm);
-            factory.SetActiveDockable(vm);
-            factory.SetFocusedDockable(tools, vm);
-
-            return true;
         }
 
-        throw new NotImplementedException();
+
+
+        if (bottomToolsDock == null)
+        {
+            bottomToolsDock = factory.CreateToolDock();
+            bottomToolsDock.Alignment = Alignment.Bottom;
+            bottomToolsDock.Proportion = 0.4;
+
+            factory.SplitToDock(documents, bottomToolsDock, DockOperation.Bottom);
+        }
+
+        var existing = factory.FindDockableById(vm.Id);
+
+        if (existing != null)
+        {
+            factory.SetActiveDockable(existing);
+            factory.SetFocusedDockable(bottomToolsDock, existing);
+
+            return false;
+        }
+
+        factory.AddDockable(bottomToolsDock, vm);
+        factory.SetActiveDockable(vm);
+        factory.SetFocusedDockable(bottomToolsDock, vm);
+
+        return true;
     }
 
     public static bool AddToRight(this IFactory factory, IDockable vm)
     {
         var @new = true;
 
-        var rightDock = factory.GetDockable<IDock>("RightDock");
+        var rightDock = factory.FindDockableById("RightDock") as IToolDock;
+
+        if (rightDock == null)
+        {
+            var documents = factory.GetDockable<IDocumentDock>("Documents");
+
+            rightDock = new ToolDock
+            {
+                Alignment = Alignment.Right,
+                CanDrag = false,
+                Dock = DockMode.Right,
+                Id = "RightDock",
+                Proportion = 0.2,
+                VisibleDockables = factory.CreateList<IDockable>()
+            };
+
+            // We need to split the Documents
+            factory.SplitToDock(documents, rightDock, DockOperation.Right);
+        }
 
         var root = factory.GetDockable<IRootDock>("Root");
         var pinnedDoc = root.RightPinnedDockables?.FirstOrDefault(x => x.Id == vm.Id);
 
         if (pinnedDoc != null)
         {
-            factory.RemoveDockable(pinnedDoc, true);
+            factory.RemoveDockable(pinnedDoc, false);
             @new = false;
         }
 
@@ -260,20 +276,13 @@ public static class FactoryExtensions
 
         if (existingDock != null)
         {
-            factory.RemoveDockable(existingDock, true);
+            factory.RemoveDockable(existingDock, false);
             @new = false;
         }
 
         factory?.InsertDockable(rightDock, vm, 0);
         factory?.SetActiveDockable(vm);
         factory?.SetFocusedDockable(rightDock, vm);
-
-        var leftDock = factory.GetDockable<IDock>("LeftDock");
-
-        if (leftDock.Proportion == 0.2)
-        {
-            leftDock.Proportion = 0.3;
-        }
 
         return @new;
     }
