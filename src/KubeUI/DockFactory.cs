@@ -138,7 +138,7 @@ public class DockFactory : Factory
         //Fixes proportion of dockable when splitting
         if (dock.Owner is ProportionalDock)
         {
-            if (orgProportion == 1 || orgProportion is double.NaN)
+            if (orgProportion == 1 || double.IsNaN(orgProportion))
             {
                 dockable.Proportion = 0.5;
                 dock.Proportion = 0.5;
