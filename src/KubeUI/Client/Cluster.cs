@@ -88,6 +88,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
         ModelCache = modelCache;
         _generator = generator;
 
+        _generator.SetEnumSupport(false);
+
         var kubeAssemblyXmlDoc = new XmlDocument();
         kubeAssemblyXmlDoc.Load(typeof(Generator).Assembly.GetManifestResourceStream("runtime.KubernetesClient.xml"));
         ModelCache.AddToCache(typeof(V1Deployment).Assembly, kubeAssemblyXmlDoc);
