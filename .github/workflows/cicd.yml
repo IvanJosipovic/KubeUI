@@ -7,7 +7,6 @@ on:
       - 'main'
       - 'alpha'
       - 'beta'
-      - 'dev'
   pull_request:
     types: [opened, reopened, synchronize]
 
