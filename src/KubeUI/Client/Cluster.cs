@@ -44,6 +44,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private readonly SemaphoreSlim _seedLimiter = new(1);
 
+    private readonly SemaphoreSlim _crdGeneratorLimiter = new(16);
+
     public AvaloniaDictionary<GroupApiVersionKind, ContainerClass> Objects { get; } = new();
 
     private ResourceNavigationLink? _crdNavigationLink;
@@ -487,6 +489,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
         if (!ModelCache.CheckIfCRDExists(crd))
         {
+            await _crdGeneratorLimiter.WaitAsync();
+
             var assembly = _generator.GenerateAssembly(crd, "KubeUI.Models");
 
             if (assembly.Item1 == null || assembly.Item2 == null)
@@ -502,6 +506,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
             var genericMethod = _processCustomObjectMethod.MakeGenericMethod(resourceType);
             await (Task)genericMethod.Invoke(this, [crd]);
+
+            _crdGeneratorLimiter.Release();
         }
 
         Dispatcher.UIThread.Post(() => items[name] = crd, DispatcherPriority.Background);
