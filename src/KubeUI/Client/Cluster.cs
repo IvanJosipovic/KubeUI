@@ -514,7 +514,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         return true;
     }
 
-    private MethodInfo _processCustomObjectMethod = typeof(Cluster).GetMethod(nameof(ProcessCustomObject), BindingFlags.Instance | BindingFlags.NonPublic);
+    private static readonly MethodInfo _processCustomObjectMethod = typeof(Cluster).GetMethod(nameof(ProcessCustomObject), BindingFlags.Instance | BindingFlags.NonPublic);
 
     private async Task ProcessCustomObject<T>(V1CustomResourceDefinition crd) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
