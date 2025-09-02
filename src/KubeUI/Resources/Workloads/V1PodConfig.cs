@@ -58,7 +58,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 new ResourceListColumn<V1Pod, string>()
                 {
                     Name = "Status",
-                    Field = x => x.Status.Phase ?? "",
+                    Field = x => x.Status?.Conditions?.FirstOrDefault(x => x.Type == "Ready")?.Status == "True" ? "Running" : x.Status?.Conditions?.FirstOrDefault(x => x.Type == "Ready")?.Reason ?? "Unknown",
                     CustomControl = typeof(PodStatusCell),
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
