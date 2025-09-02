@@ -1,22 +1,22 @@
-﻿using Avalonia.Collections;
+﻿using System.Net.Http.Json;
+using System.Reflection;
+using System.Xml;
+using Avalonia.Collections;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
-using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using HanumanInstitute.MvvmDialogs;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using Humanizer;
+using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
-using k8s;
 using KubernetesCRDModelGen;
 using KubeUI.Client.Informer;
 using KubeUI.Resources;
 using Swordfish.NET.Collections;
-using System.Net.Http.Json;
-using System.Reflection;
-using System.Xml;
-using YamlDotNet.Core.Events;
 using YamlDotNet.Core;
+using YamlDotNet.Core.Events;
 
 namespace KubeUI.Client;
 
@@ -182,7 +182,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                     await InitMetrics();
 
-                    _ = Dispatcher.UIThread.Invoke(AddDefaultNavigation, DispatcherPriority.Background);
+                    Dispatcher.UIThread.Post(async () => await AddDefaultNavigation(), DispatcherPriority.Background);
                 }
                 catch (Exception ex)
                 {
@@ -416,85 +416,13 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 case WatchEventType.Added:
                     if (typeof(T) == typeof(V1CustomResourceDefinition))
                     {
-                        var crd = (item as V1CustomResourceDefinition);
-
-                        if (!ModelCache.CheckIfCRDExists(crd))
-                        {
-                            var assembly = _generator.GenerateAssembly(crd, "KubeUI.Models");
-
-                            if (assembly.Item1 == null || assembly.Item2 == null)
-                            {
-                                _logger.LogWarning("Unable to generate CRD for {name}", name);
-
-                                return;
-                            }
-
-                            ModelCache.AddToCache(assembly.Item1, assembly.Item2);
-
-                            var version = crd.Spec.Versions.First(x => x.Served && x.Storage);
-
-                            var resourceType = ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
-
-                            var api = GroupApiVersionKind.From(resourceType);
-
-                            if (GetAPIGroupDiscoveryListItem(api) == null)
-                            {
-                                APIGroupDiscoveryList = GetAPIGroupDiscoveryList(false).GetAwaiter().GetResult();
-                            }
-
-                            var task = UpdateCanIListWatchAnyNamespaceAsync(resourceType);
-
-                            if (task.GetAwaiter().GetResult())
-                            {
-                                //Generate new Resource Configuration
-                                var resourceConfigType = typeof(CustomResourceDefinitionResourceConfig<>).MakeGenericType(resourceType);
-
-                                var resourceConfig = Application.Current.GetRequiredService(resourceConfigType) as IResourceConfig;
-
-                                if (resourceConfig is IInitializeCluster init)
-                                {
-                                    init.Initialize(this);
-                                }
-
-                                resourceConfig.UpdatePermissions().GetAwaiter().GetResult();
-
-                                resourceConfigType.GetMethod(nameof(CustomResourceDefinitionResourceConfig<>.Generate)).Invoke(resourceConfig, [crd]);
-
-                                ResourceConfigs[api] = resourceConfig;
-
-                                var nav = new ResourceNavigationLink() { Name = crd.Spec.Names.Plural.Humanize(LetterCasing.Title), ControlType = resourceType, Cluster = this, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer()) };
-
-                                var fqdnlist = ConstructFQDNList(crd.Spec.Group);
-
-                                var list = _crdNavigationLink.NavigationItems;
-                                NavigationItem? navItem = null;
-
-                                foreach (var fqdn in fqdnlist)
-                                {
-                                    navItem = list.FirstOrDefault(x => x.Name == fqdn);
-
-                                    if (navItem != null)
-                                    {
-                                        list = navItem.NavigationItems;
-                                    }
-                                    else
-                                    {
-                                        navItem = new NavigationItem()
-                                        {
-                                            Name = fqdn,
-                                            NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer())
-                                        };
-                                        list.Add(navItem);
-                                        list = navItem.NavigationItems;
-                                    }
-                                }
-
-                                navItem!.NavigationItems.Add(nav);
-                            }
-                        }
+                        _ = Task.Run(() => ProcessNewCRD(item as V1CustomResourceDefinition));
+                    }
+                    else
+                    {
+                        Dispatcher.UIThread.Post(() => items[name] = item, DispatcherPriority.Background);
                     }
 
-                    Dispatcher.UIThread.Post(() => items[name] = item, DispatcherPriority.Background);
                     break;
                 case WatchEventType.Modified:
                     Dispatcher.UIThread.Post(() => items[name] = item, DispatcherPriority.Background);
@@ -549,6 +477,96 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
             OnChange?.Invoke(x, kind, item);
         });
+    }
+
+    private async Task<bool> ProcessNewCRD(V1CustomResourceDefinition crd)
+    {
+        var items = GetObjectDictionary<V1CustomResourceDefinition>();
+
+        var name = new NamespacedName(crd.Namespace(), crd.Name());
+
+        if (!ModelCache.CheckIfCRDExists(crd))
+        {
+            var assembly = _generator.GenerateAssembly(crd, "KubeUI.Models");
+
+            if (assembly.Item1 == null || assembly.Item2 == null)
+            {
+                _logger.LogWarning("Unable to generate CRD for {name}", crd.Name());
+                return false;
+            }
+
+            ModelCache.AddToCache(assembly.Item1, assembly.Item2);
+
+            var version = crd.Spec.Versions.First(x => x.Served && x.Storage);
+            var resourceType = ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
+
+            var genericMethod = _processCustomObjectMethod.MakeGenericMethod(resourceType);
+            await (Task)genericMethod.Invoke(this, [crd]);
+        }
+
+        Dispatcher.UIThread.Post(() => items[name] = crd, DispatcherPriority.Background);
+        return true;
+    }
+
+    private MethodInfo _processCustomObjectMethod = typeof(Cluster).GetMethod(nameof(ProcessCustomObject), BindingFlags.Instance | BindingFlags.NonPublic);
+
+    private async Task ProcessCustomObject<T>(V1CustomResourceDefinition crd) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        var api = GroupApiVersionKind.From<T>();
+
+        if (GetAPIGroupDiscoveryListItem(api) == null)
+        {
+            APIGroupDiscoveryList = await GetAPIGroupDiscoveryList(false);
+        }
+
+        var canI = await UpdateCanIListWatchAnyNamespaceAsync<T>();
+
+        if (canI)
+        {
+            //Generate new Resource Configuration
+            var resourceConfig = Application.Current.GetRequiredService<CustomResourceDefinitionResourceConfig<T>>();
+
+            resourceConfig.Initialize(this);
+
+            await resourceConfig.UpdatePermissions();
+
+            resourceConfig.Generate(crd);
+
+            ResourceConfigs[api] = resourceConfig;
+
+            Dispatcher.UIThread.Post(() => {
+                var nav = new ResourceNavigationLink() { Name = api.PluralName.Humanize(LetterCasing.Title), ControlType = typeof(T), Cluster = this, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer()) };
+
+                var fqdnlist = ConstructFQDNList(api.Group);
+
+                var list = _crdNavigationLink!.NavigationItems;
+                NavigationItem? navItem = null;
+
+                foreach (var fqdn in fqdnlist)
+                {
+                    navItem = list.FirstOrDefault(x => x.Name == fqdn);
+
+                    if (navItem != null)
+                    {
+                        list = navItem.NavigationItems;
+                    }
+                    else
+                    {
+                        navItem = new NavigationItem()
+                        {
+                            Name = fqdn,
+                            NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer())
+                        };
+
+                        list.Add(navItem);
+
+                        list = navItem.NavigationItems;
+                    }
+                }
+
+                navItem!.NavigationItems.Add(nav);
+            });
+        }
     }
 
     private static List<string> ConstructFQDNList(string domain)
@@ -808,7 +826,7 @@ public partial class ContainerClass : ObservableObject
     public partial List<IResourceInformer> Informers { get; set; } = [];
 
     [ObservableProperty]
-    public partial ICollection Items { get; set; }
+    public partial IDictionary Items { get; set; }
 
     [ObservableProperty]
     public partial bool Initialized { get; set; }
