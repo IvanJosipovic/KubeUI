@@ -182,7 +182,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                     await InitMetrics();
 
-                    await Dispatcher.UIThread.InvokeAsync(AddDefaultNavigation, DispatcherPriority.Background);
+                    _ = Dispatcher.UIThread.Invoke(AddDefaultNavigation, DispatcherPriority.Background);
                 }
                 catch (Exception ex)
                 {
@@ -264,29 +264,31 @@ public sealed partial class Cluster : ObservableObject, ICluster
             configs.Add(resourceConfig);
         }
 
-        foreach (var config in configs)
+        var updatePermissionTasks = ResourceConfigs.Select(x => x.Value.UpdatePermissions()).ToArray();
+
+        await Task.WhenAll(updatePermissionTasks);
+
+        foreach (var config in ResourceConfigs)
         {
-            await config.UpdatePermissions();
-
-            if (CanIAnyNamespace(config.Type, Verb.List) && CanIAnyNamespace(config.Type, Verb.Watch))
+            if (CanIAnyNamespace(config.Value.Type, Verb.List) && CanIAnyNamespace(config.Value.Type, Verb.Watch))
             {
-                var nav = new ResourceNavigationLink() { Name = config.Name, ControlType = config.Type, Cluster = this, Order = config.Order };
+                var nav = new ResourceNavigationLink() { Name = config.Value.Name, ControlType = config.Value.Type, Cluster = this, Order = config.Value.Order };
 
-                if (config.Type == typeof(V1CustomResourceDefinition))
+                if (config.Value.Type == typeof(V1CustomResourceDefinition))
                 {
                     _crdNavigationLink = nav;
                     nav.NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer());
                     await Seed<V1CustomResourceDefinition>();
-                    nav.Objects = Objects[config.Kind].Items;
+                    nav.Objects = Objects[config.Value.Kind].Items;
                 }
 
-                if (string.IsNullOrEmpty(config.Category))
+                if (string.IsNullOrEmpty(config.Value.Category))
                 {
                     NavigationItems.Add(nav);
                 }
                 else
                 {
-                    var category = NavigationItems.First(x => x.Name == config.Category);
+                    var category = NavigationItems.First(x => x.Name == config.Value.Category);
 
                     category.NavigationItems.Add(nav);
                 }
@@ -323,20 +325,24 @@ public sealed partial class Cluster : ObservableObject, ICluster
             container.Initialized = true;
             _seedLimiter.Release();
 
-            await GetSelfSubjectAccessReview(type, Verb.Create);
-            await GetSelfSubjectAccessReview(type, Verb.Delete);
-            await GetSelfSubjectAccessReview(type, Verb.Get);
-            await GetSelfSubjectAccessReview(type, Verb.List);
-            await GetSelfSubjectAccessReview(type, Verb.Patch);
-            await GetSelfSubjectAccessReview(type, Verb.Update);
-            await GetSelfSubjectAccessReview(type, Verb.Watch);
+            // Parallelize the self subject access review calls for cluster-scoped permissions
+            var reviewTasks = new[]
+            {
+                GetSelfSubjectAccessReview(type, Verb.Create),
+                GetSelfSubjectAccessReview(type, Verb.Delete),
+                GetSelfSubjectAccessReview(type, Verb.Get),
+                GetSelfSubjectAccessReview(type, Verb.List),
+                GetSelfSubjectAccessReview(type, Verb.Patch),
+                GetSelfSubjectAccessReview(type, Verb.Update),
+                GetSelfSubjectAccessReview(type, Verb.Watch)
+            };
+
+            await Task.WhenAll(reviewTasks);
 
             if (CanI(type, Verb.List) && CanI(type, Verb.Watch))
             {
                 var informer = new ResourceInformer<T>(_loggerFactory.CreateLogger<ResourceInformer<T>>(), Client);
-
                 container.Informers.Add(informer);
-
                 var inf = informer.Register(GetResourceInformerCallback<T>());
 
                 _ = Task.Run(() => informer.RunAsync(new CancellationToken()));
@@ -354,22 +360,28 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     return;
                 }
 
-                foreach (var item in GetObjectDictionary<V1Namespace>())
+                var namespaceDict = GetObjectDictionary<V1Namespace>();
+                foreach (var item in namespaceDict)
                 {
-                    await GetSelfSubjectAccessReview(type, Verb.Create, item.Value.Name());
-                    await GetSelfSubjectAccessReview(type, Verb.Delete, item.Value.Name());
-                    await GetSelfSubjectAccessReview(type, Verb.Get, item.Value.Name());
-                    await GetSelfSubjectAccessReview(type, Verb.List, item.Value.Name());
-                    await GetSelfSubjectAccessReview(type, Verb.Patch, item.Value.Name());
-                    await GetSelfSubjectAccessReview(type, Verb.Update, item.Value.Name());
-                    await GetSelfSubjectAccessReview(type, Verb.Watch, item.Value.Name());
-
-                    if (CanI(type, Verb.List, item.Value.Name()) && CanI(type, Verb.Watch, item.Value.Name()))
+                    string ns = item.Value.Name();
+                    // Parallelize the self subject access review calls for namespaced permissions
+                    var namespacedTasks = new[]
                     {
-                        var informer = new ResourceInformer<T>(_loggerFactory.CreateLogger<ResourceInformer<T>>(), Client, item.Value.Name());
+                        GetSelfSubjectAccessReview(type, Verb.Create, ns),
+                        GetSelfSubjectAccessReview(type, Verb.Delete, ns),
+                        GetSelfSubjectAccessReview(type, Verb.Get, ns),
+                        GetSelfSubjectAccessReview(type, Verb.List, ns),
+                        GetSelfSubjectAccessReview(type, Verb.Patch, ns),
+                        GetSelfSubjectAccessReview(type, Verb.Update, ns),
+                        GetSelfSubjectAccessReview(type, Verb.Watch, ns)
+                    };
 
+                    await Task.WhenAll(namespacedTasks);
+
+                    if (CanI(type, Verb.List, ns) && CanI(type, Verb.Watch, ns))
+                    {
+                        var informer = new ResourceInformer<T>(_loggerFactory.CreateLogger<ResourceInformer<T>>(), Client, ns);
                         container.Informers.Add(informer);
-
                         var inf = informer.Register(GetResourceInformerCallback<T>());
 
                         _ = Task.Run(() => informer.RunAsync(new CancellationToken()));
@@ -423,8 +435,12 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                             var resourceType = ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
 
-                            //todo add check if the type is already in the list
-                            APIGroupDiscoveryList = GetAPIGroupDiscoveryList(false).GetAwaiter().GetResult();
+                            var api = GroupApiVersionKind.From(resourceType);
+
+                            if (GetAPIGroupDiscoveryListItem(api) == null)
+                            {
+                                APIGroupDiscoveryList = GetAPIGroupDiscoveryList(false).GetAwaiter().GetResult();
+                            }
 
                             var task = UpdateCanIListWatchAnyNamespaceAsync(resourceType);
 
@@ -442,11 +458,11 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                                 resourceConfig.UpdatePermissions().GetAwaiter().GetResult();
 
-                                resourceConfigType.GetMethod(nameof(CustomResourceDefinitionResourceConfig<V1Pod>.Generate)).Invoke(resourceConfig, [crd]);
+                                resourceConfigType.GetMethod(nameof(CustomResourceDefinitionResourceConfig<>.Generate)).Invoke(resourceConfig, [crd]);
 
-                                ResourceConfigs[GroupApiVersionKind.From(resourceType)] = resourceConfig;
+                                ResourceConfigs[api] = resourceConfig;
 
-                                var nav = new ResourceNavigationLink() { Name = crd.Spec.Names.Kind.Humanize(LetterCasing.Title).Pluralize(), ControlType = resourceType, Cluster = this, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer()) };
+                                var nav = new ResourceNavigationLink() { Name = crd.Spec.Names.Plural.Humanize(LetterCasing.Title), ControlType = resourceType, Cluster = this, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer()) };
 
                                 var fqdnlist = ConstructFQDNList(crd.Spec.Group);
 
@@ -730,17 +746,29 @@ public sealed partial class Cluster : ObservableObject, ICluster
             }
         }
 
-        var group = APIGroupDiscoveryList.items.First(x => x.metadata.name == api.Group);
+        var ext = GetAPIGroupDiscoveryListItem(api);
 
-        var ver = group.versions.First(x => x.freshness == "Current" && x.version == api.ApiVersion);
+        return ext.scope == "Namespaced";
+    }
 
-        var ext = ver.resources.FirstOrDefault(z =>
+    public V2beta1APIGroupDiscoveryListItemVersionResource? GetAPIGroupDiscoveryListItem(GroupApiVersionKind api)
+    {
+        if (APIGroupDiscoveryList == null || APIGroupDiscoveryList.items == null)
+            return null;
+
+        var group = APIGroupDiscoveryList.items.FirstOrDefault(x => x.metadata.name == api.Group);
+        if (group == null || group.versions == null)
+            return null;
+
+        var version = group.versions.FirstOrDefault(x => x.freshness == "Current" && x.version == api.ApiVersion);
+        if (version == null || version.resources == null)
+            return null;
+
+        return version.resources.FirstOrDefault(z =>
             z.resource == api.PluralName &&
             z.singularResource == api.Kind.ToLower() &&
             z.responseKind.kind == api.Kind
         );
-
-        return ext.scope == "Namespaced";
     }
 
     public bool IsNamespaced<T>()
