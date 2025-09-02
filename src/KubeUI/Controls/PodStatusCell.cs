@@ -15,28 +15,28 @@ public sealed class PodStatusCell : MyViewBase<V1Pod>
             }
             else
             {
-                PrettyString = ViewModel.Status.Phase;
+                PrettyString = ViewModel.Status?.Conditions?.FirstOrDefault(x => x.Type == "Ready")?.Status == "True" ? "Running" : ViewModel.Status?.Conditions?.FirstOrDefault(x => x.Type == "Ready")?.Reason ?? "Unknown";
             }
 
-            if (PrettyString == "Failed")
-            {
-                _styles = [
-                    new Style<TextBlock>()
-                        .Setter(TextBlock.ForegroundProperty, Brushes.Orange),
-                    ];
-            }
-            else if (PrettyString == "Pending" || PrettyString == "Terminating")
+            if (PrettyString == "Pending" || PrettyString == "Terminating")
             {
                 _styles = [
                     new Style<TextBlock>()
                         .Setter(TextBlock.ForegroundProperty, Brushes.Yellow),
                     ];
             }
-            else if (PrettyString == "Running" || PrettyString == "Succeeded")
+            else if (PrettyString == "Running" || PrettyString == "PodCompleted")
             {
                 _styles = [
                     new Style<TextBlock>()
                         .Setter(TextBlock.ForegroundProperty, Brushes.LimeGreen),
+                    ];
+            }
+            else
+            {
+                _styles = [
+                    new Style<TextBlock>()
+                        .Setter(TextBlock.ForegroundProperty, Brushes.Orange),
                     ];
             }
         }
