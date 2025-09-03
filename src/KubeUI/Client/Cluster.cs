@@ -268,27 +268,27 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
         await Task.WhenAll(updatePermissionTasks);
 
-        foreach (var config in ResourceConfigs)
+        foreach (var config in configs)
         {
-            if (CanIAnyNamespace(config.Value.Type, Verb.List) && CanIAnyNamespace(config.Value.Type, Verb.Watch))
+            if (CanIAnyNamespace(config.Type, Verb.List) && CanIAnyNamespace(config.Type, Verb.Watch))
             {
-                var nav = new ResourceNavigationLink() { Name = config.Value.Name, ControlType = config.Value.Type, Cluster = this, Order = config.Value.Order };
+                var nav = new ResourceNavigationLink() { Name = config.Name, ControlType = config.Type, Cluster = this, Order = config.Order };
 
-                if (config.Value.Type == typeof(V1CustomResourceDefinition))
+                if (config.Type == typeof(V1CustomResourceDefinition))
                 {
                     _crdNavigationLink = nav;
                     nav.NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer());
                     await Seed<V1CustomResourceDefinition>();
-                    nav.Objects = Objects[config.Value.Kind].Items;
+                    nav.Objects = Objects[config.Kind].Items;
                 }
 
-                if (string.IsNullOrEmpty(config.Value.Category))
+                if (string.IsNullOrEmpty(config.Category))
                 {
                     NavigationItems.Add(nav);
                 }
                 else
                 {
-                    var category = NavigationItems.First(x => x.Name == config.Value.Category);
+                    var category = NavigationItems.First(x => x.Name == config.Category);
 
                     category.NavigationItems.Add(nav);
                 }
@@ -421,7 +421,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                         {
                             if (t.Exception != null)
                             {
-                                _logger.LogError("Exception in ProcessNewCRD: {exception}", t.Exception);
+                                _logger.LogError("Exception in ProcessNewCRD: {exception}", t.Exception.Flatten());
                             }
                             else
                             {
