@@ -1,15 +1,16 @@
-﻿using k8s.Models;
-using k8s;
-using KubeUI.Controls;
-using KubeUI.Client;
-using Humanizer;
+﻿using Avalonia.Controls.Notifications;
+using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
-using KubeUI.Client.Informer;
-using static KubeUI.Client.Cluster;
 using HanumanInstitute.MvvmDialogs;
-using Avalonia.Controls.Notifications;
-using Dock.Model.Core;
+using Humanizer;
+using k8s.Models;
+using k8s;
+using KubeUI.Client.Informer;
+using KubeUI.Client;
+using KubeUI.Controls;
+using System.Text.Json;
+using static KubeUI.Client.Cluster;
 
 namespace KubeUI.Resources;
 
@@ -224,6 +225,10 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
                 try
                 {
                     await Cluster.Delete<T>(item.Value);
+                }
+                catch (JsonException ex)
+                {
+                    _logger.LogWarning(ex, $"JsonException occurred while deleting resource {item.Key.Namespace}/{item.Key.Name}");
                 }
                 catch (Exception ex)
                 {
