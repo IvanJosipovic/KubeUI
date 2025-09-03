@@ -238,7 +238,7 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
     }
 }
 
-file static class YamlFoldingStrategy
+internal static class YamlFoldingStrategy
 {
     /// <summary>
     /// Create <see cref="NewFolding" />s for the specified document and updates the folding manager with them.
@@ -277,7 +277,7 @@ file static class YamlFoldingStrategy
                 var lineCount = i;
                 NewFolding? fold = null;
 
-                while (IsNextLineNested(lines, lineCount, currentLineIndent))
+                while (IsNextLineFoldable(lines, lineCount, currentLineIndent))
                 {
                     fold ??= new NewFolding
                     {
@@ -308,17 +308,24 @@ file static class YamlFoldingStrategy
         }
     }
 
-    private static bool IsNextLineNested(string[] lines, int i, int currentIndent)
+    private static bool IsNextLineFoldable(string[] lines, int i, int currentLineIndent)
     {
+        var currentLine = lines[i];
         var nextLine = i + 1 < lines.Length ? lines[i + 1] : null;
+
+        if (nextLine == null)
+        {
+            return false;
+        }
+
         var nextLineIndents = CountIndents(nextLine);
 
-        if (nextLine == "\n" || nextLine == "\r")
+        if (nextLine == "\n" || nextLine == "\r" || (nextLine.Substring(currentLineIndent, 1) == "-" && !currentLine.Trim(" ").StartsWith("-")) )
         {
             return true;
         }
 
-        return nextLine != null && nextLineIndents > currentIndent;
+        return nextLineIndents > currentLineIndent;
     }
 
     private static int CountIndents(string line)

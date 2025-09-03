@@ -62,7 +62,7 @@ public static class KubernetesYaml
             return type == typeof(byte[]);
         }
 
-        public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
+        public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
         {
             if (parser?.Current is Scalar scalar)
             {
@@ -88,23 +88,13 @@ public static class KubernetesYaml
         {
             if (value == null)
             {
-                emitter.Emit(new Scalar(AnchorName.Empty, TagName.Empty, string.Empty, ScalarStyle.Any, true, true));
+                emitter.Emit(new Scalar(string.Empty));
                 return;
             }
 
             var obj = (byte[])value;
-            var strValue = Encoding.UTF8.GetString(obj);
-
-            // Check if the string is multi-line by looking for a newline character.
-            var scalarStyle = strValue.Contains('\n') ? ScalarStyle.Literal : ScalarStyle.Any;
-
-            emitter.Emit(new Scalar(
-                AnchorName.Empty,
-                TagName.Empty,
-                strValue,
-                scalarStyle,
-                true,
-                true));
+            var encoded = Convert.ToBase64String(obj);
+            emitter.Emit(new Scalar(encoded));
         }
     }
 
