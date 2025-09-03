@@ -1,5 +1,6 @@
 ﻿using System.Net.Http.Json;
 using System.Reflection;
+using System.Threading.RateLimiting;
 using System.Xml;
 using Avalonia.Collections;
 using Dock.Model.Controls;
@@ -14,6 +15,8 @@ using k8s.Models;
 using KubernetesCRDModelGen;
 using KubeUI.Client.Informer;
 using KubeUI.Resources;
+using Microsoft.Extensions.Http.Resilience;
+using Polly;
 using Swordfish.NET.Collections;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
@@ -119,7 +122,16 @@ public sealed partial class Cluster : ObservableObject, ICluster
                         config = KubernetesClientConfiguration.BuildConfigFromConfigFile(KubeConfigPath, Name);
                     }
 
-                    Client = new Kubernetes(config);
+                    // build a custom pipeline for HTTP calls
+                    var pipe = new ResiliencePipelineBuilder<HttpResponseMessage>()
+                        .AddRetry(new HttpRetryStrategyOptions { MaxRetryAttempts = 5, BackoffType = DelayBackoffType.Exponential })
+                        .AddRateLimiter(new ConcurrencyLimiter(new ConcurrencyLimiterOptions() { PermitLimit = 12, QueueLimit = int.MaxValue}))
+                        .AddTimeout(TimeSpan.FromSeconds(30))
+                        .Build();
+
+                    var handler = new ResilienceHandler(pipe);
+
+                    Client = new Kubernetes(config, handler);
 
                     NativeAPIGroupDiscoveryList = await GetAPIGroupDiscoveryList();
 
