@@ -31,6 +31,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="KubeUI.Tests" />
     <ProjectCapability Include="Avalonia" />
     <TrimmerRootAssembly Include="Avalonia.Themes.Fluent" />
   </ItemGroup>
