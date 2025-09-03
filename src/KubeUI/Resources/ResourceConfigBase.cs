@@ -199,7 +199,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public bool CanNewResource()
     {
-        return Cluster.CanIAnyNamespace(typeof(T), Verb.Create);
+        return Cluster.CanIAnyNamespace<T>(Verb.Create);
     }
 
     [RelayCommand(CanExecute = nameof(CanDelete))]

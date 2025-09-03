@@ -1,0 +1,36 @@
+{
+    "name": ".NET in Codespaces",
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "features": {
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+        "ghcr.io/devcontainers/features/powershell:1": {},
+        "ghcr.io/devcontainers/features/common-utils:2": {},
+        "ghcr.io/devcontainers/features/dotnet:2": "latest",
+        "ghcr.io/devcontainers/features/git-lfs:1": {}
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "GitHub.copilot",
+                "GitHub.vscode-github-actions",
+                "ms-dotnettools.csdevkit",
+                "avaloniateam.vscode-avalonia",
+                "ms-vscode.PowerShell"
+            ]
+        }
+    },
+    "forwardPorts": [
+    ],
+    "postCreateCommand": "dotnet restore",
+    "hostRequirements": {
+        "memory": "8gb",
+        "cpus": 4
+    },
+    "remoteEnv": {
+        "DOTNET_MULTILEVEL_LOOKUP": "0",
+        "TARGET": "net9.0"
+    },
+    "portsAttributes": {
+    },
+    "remoteUser": "root"
+}
