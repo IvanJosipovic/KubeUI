@@ -750,11 +750,14 @@ public sealed partial class Cluster : ObservableObject, ICluster
     {
         var api = GroupApiVersionKind.From(type);
 
-        var native = GetAPIGroupDiscoveryListItem(api, true);
-
-        if (native != null)
+        if (string.IsNullOrEmpty(api.Group))
         {
-            return native.scope == "Namespaced";
+            var native = GetAPIGroupDiscoveryListItem(api, true);
+
+            if (native != null)
+            {
+                return native.scope == "Namespaced";
+            }
         }
 
         var ext = GetAPIGroupDiscoveryListItem(api);
