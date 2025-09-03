@@ -416,9 +416,17 @@ public sealed partial class Cluster : ObservableObject, ICluster
             switch (x)
             {
                 case WatchEventType.Added:
-                    if (typeof(T) == typeof(V1CustomResourceDefinition))
+                    if (item is V1CustomResourceDefinition crd)
                     {
-                        _ = Task.Run(() => ProcessNewCRD(item as V1CustomResourceDefinition));
+                        _ = Task.Run(() => ProcessNewCRD(crd))
+                        .ContinueWith(t =>
+                        {
+                            if (t.Exception != null)
+                            {
+                                _logger.LogError("Exception in ProcessNewCRD: {exception}", t.Exception);
+                            }
+                        }, TaskContinuationOptions.OnlyOnFaulted)
+                        .ContinueWith(_ => Dispatcher.UIThread.Post(() => items[name] = item, DispatcherPriority.Background));
                     }
                     else
                     {
@@ -431,18 +439,13 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     break;
                 case WatchEventType.Deleted:
                     Dispatcher.UIThread.Post(() => items.Remove(name), DispatcherPriority.Background);
-
-                    if (typeof(T) == typeof(V1CustomResourceDefinition))
+                    if (item is V1CustomResourceDefinition crd2)
                     {
-                        var crd = (item as V1CustomResourceDefinition);
-
                         APIGroupDiscoveryList = GetAPIGroupDiscoveryList(false).GetAwaiter().GetResult();
 
-                        var title = Name = crd.Spec.Names.Kind.Humanize(LetterCasing.Title);
+                        var title = Name = crd2.Spec.Names.Kind.Humanize(LetterCasing.Title);
 
-                        var group = crd.Spec.Group;
-
-                        var fqdnlist = ConstructFQDNList(group);
+                        var fqdnlist = ConstructFQDNList(crd2.Spec.Group);
                         var list = _crdNavigationLink.NavigationItems;
 
                         NavigationItem? navItem = null;
@@ -469,7 +472,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
                             }
                         }
                     }
-
                     break;
                 case WatchEventType.Error:
                     break;
@@ -483,13 +485,9 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private async Task<bool> ProcessNewCRD(V1CustomResourceDefinition crd)
     {
-        var items = GetObjectDictionary<V1CustomResourceDefinition>();
-
-        var name = new NamespacedName(crd.Namespace(), crd.Name());
-
         if (!ModelCache.CheckIfCRDExists(crd))
         {
-            await _crdGeneratorLimiter.WaitAsync();
+            //await _crdGeneratorLimiter.WaitAsync();
 
             var assembly = _generator.GenerateAssembly(crd, "KubeUI.Models");
 
@@ -507,10 +505,9 @@ public sealed partial class Cluster : ObservableObject, ICluster
             var genericMethod = _processCustomObjectMethod.MakeGenericMethod(resourceType);
             await (Task)genericMethod.Invoke(this, [crd]);
 
-            _crdGeneratorLimiter.Release();
+            //_crdGeneratorLimiter.Release();
         }
 
-        Dispatcher.UIThread.Post(() => items[name] = crd, DispatcherPriority.Background);
         return true;
     }
 
