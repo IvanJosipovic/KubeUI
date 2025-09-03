@@ -228,7 +228,6 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
                 }
                 catch (JsonException ex)
                 {
-                    // Swallowing JsonException may hide serialization issues. Logging for visibility.
                     _logger.LogWarning(ex, $"JsonException occurred while deleting resource {item.Key.Namespace}/{item.Key.Name}");
                 }
                 catch (Exception ex)
