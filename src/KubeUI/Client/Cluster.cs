@@ -444,7 +444,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     {
                         APIGroupDiscoveryList = GetAPIGroupDiscoveryList(false).GetAwaiter().GetResult();
 
-                        var title = Name = crd2.Spec.Names.Kind.Humanize(LetterCasing.Title);
+                        var title = crd2.Spec.Names.Kind.Humanize(LetterCasing.Title);
 
                         var fqdnlist = ConstructFQDNList(crd2.Spec.Group);
                         var list = _crdNavigationLink.NavigationItems;
