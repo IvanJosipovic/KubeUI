@@ -320,7 +320,8 @@ internal static class YamlFoldingStrategy
 
         var nextLineIndents = CountIndents(nextLine);
 
-        if (nextLine == "\n" || nextLine == "\r" || (nextLine.Substring(currentLineIndent, 1) == "-" && !currentLine.Trim(" ").StartsWith("-")) )
+        if (nextLine == "\n" || nextLine == "\r" || 
+            (currentLineIndent < nextLine.Length && nextLine.Substring(currentLineIndent, 1) == "-" && !currentLine.Trim(" ").StartsWith("-")) )
         {
             return true;
         }
