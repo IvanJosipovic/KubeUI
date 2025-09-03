@@ -577,7 +577,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 }
 
                 navItem!.NavigationItems.Add(nav);
-            });
+            }, DispatcherPriority.Background);
         }
     }
 
