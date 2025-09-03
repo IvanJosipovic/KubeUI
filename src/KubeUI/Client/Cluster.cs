@@ -264,7 +264,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
             configs.Add(resourceConfig);
         }
 
-        var updatePermissionTasks = ResourceConfigs.Select(x => x.Value.UpdatePermissions()).ToArray();
+        var updatePermissionTasks = configs.Select(x => x.UpdatePermissions()).ToArray();
 
         await Task.WhenAll(updatePermissionTasks);
 
