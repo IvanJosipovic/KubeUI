@@ -79,7 +79,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
     public partial ObservableCollection<V1Namespace> SelectedNamespaces { get; set; } = [];
 
     [ObservableProperty]
-    public partial AvaloniaDictionary<GroupApiVersionKind, IResourceConfig> ResourceConfigs { get; set; } = [];
+    public partial ConcurrentObservableDictionary<GroupApiVersionKind, IResourceConfig> ResourceConfigs { get; set; } = [];
 
     public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ModelCache modelCache, IGenerator generator, ISettingsService settingsService, IDialogService dialogService, IServiceProvider serviceProvider)
     {
@@ -501,14 +501,14 @@ public sealed partial class Cluster : ObservableObject, ICluster
             var version = crd.Spec.Versions.First(x => x.Served && x.Storage);
             var resourceType = ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
 
-            var genericMethod = _processCustomObjectMethod.MakeGenericMethod(resourceType);
+            var genericMethod = s_processCustomObjectMethod.MakeGenericMethod(resourceType);
             await (Task)genericMethod.Invoke(this, [crd]);
         }
 
         return true;
     }
 
-    private static readonly MethodInfo _processCustomObjectMethod = typeof(Cluster).GetMethod(nameof(ProcessCustomObject), BindingFlags.Instance | BindingFlags.NonPublic);
+    private static readonly MethodInfo s_processCustomObjectMethod = typeof(Cluster).GetMethod(nameof(ProcessCustomObject), BindingFlags.Instance | BindingFlags.NonPublic);
 
     private async Task ProcessCustomObject<T>(V1CustomResourceDefinition crd) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
@@ -752,11 +752,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
         if (string.IsNullOrEmpty(api.Group))
         {
-            var native = NativeAPIGroupDiscoveryList.items[0].versions.First(x => x.freshness == "Current").resources.FirstOrDefault(z =>
-                z.resource == api.PluralName &&
-                z.singularResource == api.Kind.ToLower() &&
-                z.responseKind.kind == api.Kind
-            );
+            var native = GetAPIGroupDiscoveryListItem(api, true);
 
             if (native != null)
             {
@@ -769,12 +765,14 @@ public sealed partial class Cluster : ObservableObject, ICluster
         return ext.scope == "Namespaced";
     }
 
-    public V2beta1APIGroupDiscoveryListItemVersionResource? GetAPIGroupDiscoveryListItem(GroupApiVersionKind api)
+    public V2beta1APIGroupDiscoveryListItemVersionResource? GetAPIGroupDiscoveryListItem(GroupApiVersionKind api, bool isNative = false)
     {
-        if (APIGroupDiscoveryList == null || APIGroupDiscoveryList.items == null)
+        var list = isNative ? NativeAPIGroupDiscoveryList : APIGroupDiscoveryList;
+
+        if (list == null || list.items == null)
             return null;
 
-        var group = APIGroupDiscoveryList.items.FirstOrDefault(x => x.metadata.name == api.Group);
+        var group = list.items.FirstOrDefault(x => x.metadata.name == (string.IsNullOrEmpty(api.Group) ? null : api.Group));
         if (group == null || group.versions == null)
             return null;
 
@@ -784,7 +782,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
         return version.resources.FirstOrDefault(z =>
             z.resource == api.PluralName &&
-            z.singularResource == api.Kind.ToLower() &&
             z.responseKind.kind == api.Kind
         );
     }
