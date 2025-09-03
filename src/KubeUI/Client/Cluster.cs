@@ -423,8 +423,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                             {
                                 _logger.LogError("Exception in ProcessNewCRD: {exception}", t.Exception);
                             }
-                        }, TaskContinuationOptions.OnlyOnFaulted)
-                        .ContinueWith(_ => Dispatcher.UIThread.Post(() => items[name] = item, DispatcherPriority.Background));
+                        .ContinueWith(_ => Dispatcher.UIThread.Post(() => items[name] = item, DispatcherPriority.Background), TaskContinuationOptions.OnlyOnRanToCompletion);
                     }
                     else
                     {
