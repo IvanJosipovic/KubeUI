@@ -48,8 +48,7 @@ public static class KubernetesYaml
         .ToDictionary(
             t =>
             {
-                var attr = (KubernetesEntityAttribute)t.GetCustomAttribute(
-                    typeof(KubernetesEntityAttribute), true);
+                var attr = t.GetCustomAttribute<KubernetesEntityAttribute>(true);
                 var groupPrefix = string.IsNullOrEmpty(attr.Group) ? "" : $"{attr.Group}/";
                 return $"{groupPrefix}{attr.ApiVersion}/{attr.Kind}";
             },
