@@ -69,7 +69,7 @@ public partial class App : Application
                 loggingBuilder.AddFile(Path.Combine(SettingsService.GetSettingsPath(), "app.log"), x =>
                 {
                     x.Append = false;
-                    x.FileSizeLimitBytes = 10_73_741_824;
+                    x.FileSizeLimitBytes = 1 * 1024 * 1024 * 1024; // 1GB
                     x.MaxRollingFiles = 2;
                 });
             }
