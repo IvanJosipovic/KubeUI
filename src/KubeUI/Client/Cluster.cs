@@ -1,5 +1,6 @@
 ﻿using System.Net.Http.Json;
 using System.Reflection;
+using System.Threading.RateLimiting;
 using System.Xml;
 using Avalonia.Collections;
 using Dock.Model.Controls;
@@ -14,6 +15,8 @@ using k8s.Models;
 using KubernetesCRDModelGen;
 using KubeUI.Client.Informer;
 using KubeUI.Resources;
+using Microsoft.Extensions.Http.Resilience;
+using Polly;
 using Swordfish.NET.Collections;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
@@ -43,6 +46,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
     private readonly SemaphoreSlim _connectionLimiter = new(1);
 
     private readonly SemaphoreSlim _seedLimiter = new(1);
+
+    private readonly SemaphoreSlim _crdGenerationLimiter = new(Environment.ProcessorCount);
 
     public AvaloniaDictionary<GroupApiVersionKind, ContainerClass> Objects { get; } = new();
 
@@ -119,7 +124,16 @@ public sealed partial class Cluster : ObservableObject, ICluster
                         config = KubernetesClientConfiguration.BuildConfigFromConfigFile(KubeConfigPath, Name);
                     }
 
-                    Client = new Kubernetes(config);
+                    // build a custom pipeline for HTTP calls
+                    var pipe = new ResiliencePipelineBuilder<HttpResponseMessage>()
+                        .AddRetry(new HttpRetryStrategyOptions { MaxRetryAttempts = 5, BackoffType = DelayBackoffType.Exponential })
+                        .AddRateLimiter(new ConcurrencyLimiter(new ConcurrencyLimiterOptions() { PermitLimit = 12, QueueLimit = int.MaxValue}))
+                        .AddTimeout(TimeSpan.FromSeconds(30))
+                        .Build();
+
+                    var handler = new ResilienceHandler(pipe);
+
+                    Client = new Kubernetes(config, handler);
 
                     NativeAPIGroupDiscoveryList = await GetAPIGroupDiscoveryList();
 
@@ -427,6 +441,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                             {
                                 Dispatcher.UIThread.Post(() => items[name] = item, DispatcherPriority.Background);
                             }
+                            _crdGenerationLimiter.Release();
                         });
                     }
                     else
@@ -486,6 +501,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private async Task<bool> ProcessNewCRD(V1CustomResourceDefinition crd)
     {
+        await _crdGenerationLimiter.WaitAsync();
+
         if (!ModelCache.CheckIfCRDExists(crd))
         {
             var assembly = _generator.GenerateAssembly(crd, "KubeUI.Models");
@@ -565,7 +582,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 }
 
                 navItem!.NavigationItems.Add(nav);
-            });
+            }, DispatcherPriority.Background);
         }
     }
 
@@ -750,11 +767,14 @@ public sealed partial class Cluster : ObservableObject, ICluster
     {
         var api = GroupApiVersionKind.From(type);
 
-        var native = GetAPIGroupDiscoveryListItem(api, true);
-
-        if (native != null)
+        if (string.IsNullOrEmpty(api.Group))
         {
-            return native.scope == "Namespaced";
+            var native = GetAPIGroupDiscoveryListItem(api, true);
+
+            if (native != null)
+            {
+                return native.scope == "Namespaced";
+            }
         }
 
         var ext = GetAPIGroupDiscoveryListItem(api);

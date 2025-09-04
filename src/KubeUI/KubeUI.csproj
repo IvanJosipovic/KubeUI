@@ -23,7 +23,7 @@
     <Using Include="KubeUI.ViewModels" />
     <Using Include="Microsoft.Extensions.DependencyInjection" />
     <Using Include="Microsoft.Extensions.Logging" />
-    <Using Include="ServiceScan.SourceGenerator"/>
+    <Using Include="ServiceScan.SourceGenerator" />
     <Using Include="System" />
     <Using Include="System.Collections" />
     <Using Include="System.Collections.ObjectModel" />
@@ -49,6 +49,7 @@
     <PackageReference Include="KubernetesCRDModelGen" Version="1.0.0-alpha.601" />
     <PackageReference Include="Markdig" Version="0.41.3" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="9.8.0" />
     <PackageReference Include="NReco.Logging.File" Version="1.2.2" />
     <PackageReference Include="OpenTelemetry" Version="1.12.0" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.12.0" />
