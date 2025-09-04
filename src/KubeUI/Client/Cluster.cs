@@ -132,7 +132,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     .AddRetry(new HttpRetryStrategyOptions
                     {
                         MaxRetryAttempts = 5,
-                        BackoffType = DelayBackoffType.Exponential
                     })
                     .ConfigureTelemetry(_loggerFactory);
 
