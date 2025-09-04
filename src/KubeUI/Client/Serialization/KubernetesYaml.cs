@@ -48,8 +48,7 @@ public static class KubernetesYaml
         .ToDictionary(
             t =>
             {
-                var attr = (KubernetesEntityAttribute)t.GetCustomAttribute(
-                    typeof(KubernetesEntityAttribute), true);
+                var attr = t.GetCustomAttribute<KubernetesEntityAttribute>(true);
                 var groupPrefix = string.IsNullOrEmpty(attr.Group) ? "" : $"{attr.Group}/";
                 return $"{groupPrefix}{attr.ApiVersion}/{attr.Kind}";
             },
@@ -73,7 +72,14 @@ public static class KubernetesYaml
                         return null;
                     }
 
-                    return Encoding.UTF8.GetBytes(scalar.Value);
+                    try
+                    {
+                        return Convert.FromBase64String(scalar.Value);
+                    }
+                    catch (FormatException ex)
+                    {
+                        throw new YamlException(scalar.Start, scalar.End, $"Invalid Base64 string: '{scalar.Value}'", ex);
+                    }
                 }
                 finally
                 {
