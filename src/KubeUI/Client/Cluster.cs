@@ -1,6 +1,5 @@
 using System.Net.Http.Json;
 using System.Reflection;
-using System.Threading.RateLimiting;
 using System.Xml;
 using Avalonia.Collections;
 using Dock.Model.Controls;
@@ -126,16 +125,20 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                     // build a custom pipeline for HTTP calls
                     var pipe = new ResiliencePipelineBuilder<HttpResponseMessage>()
-                        .AddRetry(new HttpRetryStrategyOptions
-                                    {
-                                        MaxRetryAttempts = 5,
-                                        BackoffType = DelayBackoffType.Exponential
-                                    })
-                        .AddTimeout(TimeSpan.FromSeconds(30))
-                        .ConfigureTelemetry(_loggerFactory)
-                        .Build();
+                    {
+                        Name = "Cluster",
+                        InstanceName = Name
+                    }
+                    .AddRetry(new HttpRetryStrategyOptions
+                    {
+                        MaxRetryAttempts = 5,
+                    })
+                    .ConfigureTelemetry(_loggerFactory);
 
-                    var handler = new ResilienceHandler(pipe);
+                    var handler = new OperationKeyHandler()
+                    {
+                        InnerHandler = new ResilienceHandler(pipe.Build())
+                    };
 
                     Client = new Kubernetes(config, handler);
 
@@ -848,4 +851,26 @@ public partial class ContainerClass : ObservableObject
 
     [ObservableProperty]
     public partial bool Initialized { get; set; }
+}
+
+public sealed class OperationKeyHandler : DelegatingHandler
+{
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken)
+    {
+        var key = $"{request.Method}:{request.RequestUri?.PathAndQuery}";
+        var ctx = ResilienceContextPool.Shared.Get(key, cancellationToken);
+
+        request.SetResilienceContext(ctx);
+
+        try
+        {
+            return await base.SendAsync(request, cancellationToken);
+        }
+        finally
+        {
+            ResilienceContextPool.Shared.Return(ctx);
+        }
+    }
 }
