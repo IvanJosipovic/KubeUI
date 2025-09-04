@@ -353,13 +353,8 @@ public static class Utilities
 
     public static ScrollViewer? GetScrollViewer(this TextEditor editor)
     {
-        if (editor != null)
-        {
-            if (s_scrollViewerProperty.GetValue(editor) is ScrollViewer sc)
-            {
-                return sc;
-            }
-        }
+        if (editor != null && s_scrollViewerProperty.GetValue(editor) is ScrollViewer sc)
+            return sc;
 
         return null;
     }
