@@ -105,6 +105,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
     public async Task Connect()
     {
         await _connectionLimiter.WaitAsync();
+        _logger.LogInformation("Connecting to {name}", Name);
 
         try
         {
@@ -240,6 +241,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         finally
         {
             _connectionLimiter.Release();
+            _logger.LogInformation("Connected to {name}", Name);
         }
     }
 
@@ -437,6 +439,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 case WatchEventType.Added:
                     if (item is V1CustomResourceDefinition crd)
                     {
+                        _logger.LogInformation("Processing new CRD {name}", crd.Name());
                         _ = Task.Run(() => ProcessNewCRD(crd))
                         .ContinueWith(t =>
                         {
@@ -449,6 +452,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                                 Dispatcher.UIThread.Post(() => items[name] = item, DispatcherPriority.Background);
                             }
                             _crdGenerationLimiter.Release();
+                            _logger.LogInformation("Completed processing new CRD {name}", crd.Name());
                         });
                     }
                     else
@@ -664,6 +668,11 @@ public sealed partial class Cluster : ObservableObject, ICluster
         var api = GroupApiVersionKind.From<T>();
 
         using var client = new GenericClient(Client, api.Group, api.ApiVersion, api.PluralName, false);
+
+        if (IsNamespaced<T>() && string.IsNullOrEmpty(item.Namespace()))
+        {
+            item.Metadata.NamespaceProperty = "default";
+        }
 
         if (string.IsNullOrEmpty(item.Namespace()))
         {
