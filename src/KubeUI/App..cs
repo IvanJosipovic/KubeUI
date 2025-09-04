@@ -22,6 +22,7 @@ using OpenTelemetry.Exporter;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 namespace KubeUI;
 
@@ -56,21 +57,19 @@ public partial class App : Application
         builder.Services.AddLogging(loggingBuilder =>
         {
             loggingBuilder.ClearProviders();
-            loggingBuilder.SetMinimumLevel(LogLevel.Trace);
+            loggingBuilder.SetMinimumLevel(LogLevel.Debug);
 
-            loggingBuilder.AddFilter("System", LogLevel.Warning);
-            loggingBuilder.AddFilter("Microsoft", LogLevel.Warning);
+            // Send only Warnings and above to OTEL
+#if !DEBUG
             loggingBuilder.AddFilter<OpenTelemetryLoggerProvider>("*", LogLevel.Warning);
-            loggingBuilder.AddFilter<FileLoggerProvider>("*", LogLevel.Information);
-
+#endif
             if (!Design.IsDesignMode && SettingsService.LoadSettingsFromFile().LoggingEnabled
                 && SettingsService.EnsureSettingDirExists())
             {
                 loggingBuilder.AddFile(Path.Combine(SettingsService.GetSettingsPath(), "app.log"), x =>
                 {
                     x.Append = false;
-                    x.FileSizeLimitBytes = 10_73_741_824;
-                    x.MinLevel = LogLevel.Trace;
+                    x.FileSizeLimitBytes = 1 * 1024 * 1024 * 1024; // 1GB
                     x.MaxRollingFiles = 2;
                 });
             }
@@ -99,9 +98,13 @@ public partial class App : Application
                 {
                     loggingProvider.AddOtlpExporter((e) =>
                     {
+#if DEBUG
+                        e.Endpoint = new Uri("http://localhost:4317");
+#else
                         e.Endpoint = new Uri("https://otel.kubeui.com/v1/logs");
                         e.Headers = $"key={key}";
                         e.Protocol = OtlpExportProtocol.HttpProtobuf;
+#endif
                     });
                 },
                 opt =>
@@ -117,12 +120,27 @@ public partial class App : Application
                     .AddMeter(Instrumentation.MeterName)
                     .AddOtlpExporter((e, b) =>
                     {
-                        b.PeriodicExportingMetricReaderOptions.ExportIntervalMilliseconds = (int)TimeSpan.FromMinutes(1).TotalMilliseconds;
+#if DEBUG
+                        e.Endpoint = new Uri("http://localhost:4317");
+#else
                         e.Endpoint = new Uri("https://otel.kubeui.com/v1/metrics");
                         e.Headers = $"key={key}";
                         e.Protocol = OtlpExportProtocol.HttpProtobuf;
+#endif
                     });
-                });
+                })
+#if DEBUG
+                .WithTracing(tracingProvider =>
+                {
+                    tracingProvider
+                    .AddHttpClientInstrumentation()
+                    .AddOtlpExporter(e =>
+                    {
+                        e.Endpoint = new Uri("http://localhost:4317");
+                    });
+                })
+#endif
+                ;
         }
 
         // Services
@@ -284,10 +302,7 @@ public partial class App : Application
             desktop.MainWindow.DataContext = vm;
             TopLevel = TopLevel.GetTopLevel(desktop.MainWindow);
 
-            desktop.ShutdownRequested += (sender, e) =>
-            {
-                GracefulShutdown();
-            };
+            desktop.ShutdownRequested += (sender, e) => GracefulShutdown();
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {

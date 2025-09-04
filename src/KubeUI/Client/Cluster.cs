@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Json;
+using System.Net.Http.Json;
 using System.Reflection;
 using System.Threading.RateLimiting;
 using System.Xml;
@@ -126,9 +126,13 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                     // build a custom pipeline for HTTP calls
                     var pipe = new ResiliencePipelineBuilder<HttpResponseMessage>()
-                        .AddRetry(new HttpRetryStrategyOptions { MaxRetryAttempts = 5, BackoffType = DelayBackoffType.Exponential })
-                        .AddRateLimiter(new ConcurrencyLimiter(new ConcurrencyLimiterOptions() { PermitLimit = 12, QueueLimit = int.MaxValue}))
+                        .AddRetry(new HttpRetryStrategyOptions
+                                    {
+                                        MaxRetryAttempts = 5,
+                                        BackoffType = DelayBackoffType.Exponential
+                                    })
                         .AddTimeout(TimeSpan.FromSeconds(30))
+                        .ConfigureTelemetry(_loggerFactory)
                         .Build();
 
                     var handler = new ResilienceHandler(pipe);

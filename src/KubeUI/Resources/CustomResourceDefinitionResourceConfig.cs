@@ -221,7 +221,7 @@ public partial class CustomResourceDefinitionResourceConfig<T> : ResourceConfigB
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogCritical(ex, "Unable to generate CRD Column: {Name} in {crd}", item.Name, crd.Name());
+                    _logger.LogError(ex, "Unable to generate CRD Column: {Name} in {crd}", item.Name, crd.Name());
                 }
             }
         }
