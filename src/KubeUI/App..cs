@@ -123,7 +123,7 @@ public partial class App : Application
 #if DEBUG
                         e.Endpoint = new Uri("http://localhost:4317");
 #else
-                        e.Endpoint = new Uri("https://otel.kubeui.com/v1/logs");
+                        e.Endpoint = new Uri("https://otel.kubeui.com/v1/metrics");
                         e.Headers = $"key={key}";
                         e.Protocol = OtlpExportProtocol.HttpProtobuf;
 #endif
