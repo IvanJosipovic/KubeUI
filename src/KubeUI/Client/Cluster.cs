@@ -125,15 +125,16 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                     // build a custom pipeline for HTTP calls
                     var pipe = new ResiliencePipelineBuilder<HttpResponseMessage>()
-                        .AddRetry(new HttpRetryStrategyOptions
-                                    {
-                                        MaxRetryAttempts = 5,
-                                        BackoffType = DelayBackoffType.Exponential
-                                    })
-                        .ConfigureTelemetry(_loggerFactory);
-
-                    pipe.Name = "Cluster";
-                    pipe.InstanceName = Name;
+                    {
+                        Name = "Cluster",
+                        InstanceName = Name
+                    }
+                    .AddRetry(new HttpRetryStrategyOptions
+                    {
+                        MaxRetryAttempts = 5,
+                        BackoffType = DelayBackoffType.Exponential
+                    })
+                    .ConfigureTelemetry(_loggerFactory);
 
                     var handler = new OperationKeyHandler()
                     {
