@@ -73,7 +73,14 @@ public static class KubernetesYaml
                         return null;
                     }
 
-                    return Convert.FromBase64String(scalar.Value);
+                    try
+                    {
+                        return Convert.FromBase64String(scalar.Value);
+                    }
+                    catch (FormatException ex)
+                    {
+                        throw new YamlException(scalar.Start, scalar.End, $"Invalid Base64 string: '{scalar.Value}'", ex);
+                    }
                 }
                 finally
                 {
