@@ -1,6 +1,7 @@
 ﻿using Avalonia.Controls.Notifications;
 using Avalonia.Data.Converters;
 using Avalonia.Input;
+using AvaloniaEdit;
 using k8s;
 using k8s.Autorest;
 using k8s.Models;
@@ -346,5 +347,20 @@ public static class Utilities
         }
 
         throw new Exception("Unknown Expression Type");
+    }
+
+    private static readonly PropertyInfo s_scrollViewerProperty = typeof(TextEditor).GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic);
+
+    public static ScrollViewer? GetScrollViewer(this TextEditor editor)
+    {
+        if (editor != null)
+        {
+            if (s_scrollViewerProperty.GetValue(editor) is ScrollViewer sc)
+            {
+                return sc;
+            }
+        }
+
+        return null;
     }
 }

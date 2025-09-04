@@ -174,19 +174,15 @@ public sealed class ResourceYamlView : MyViewBase<ResourceYamlViewModel>
 
     public void SetOffset()
     {
-        var sc = _textEditor.GetType().GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(_textEditor) as ScrollViewer;
-
-        if (sc != null)
+        if (ViewModel != null && _textEditor.GetScrollViewer() is ScrollViewer sc)
         {
-            sc.Offset = ViewModel.ScrollOffset;
+            sc?.Offset = ViewModel.ScrollOffset;
         }
     }
 
     public void GetOffset()
     {
-        var sc = _textEditor.GetType().GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(_textEditor) as ScrollViewer;
-
-        if (sc != null)
+        if (ViewModel != null && _textEditor.GetScrollViewer() is ScrollViewer sc)
         {
             ViewModel.ScrollOffset = sc.Offset;
         }
@@ -320,7 +316,7 @@ internal static class YamlFoldingStrategy
 
         var nextLineIndents = CountIndents(nextLine);
 
-        if (nextLine == "\n" || nextLine == "\r" || 
+        if (nextLine == "\n" || nextLine == "\r" ||
             (currentLineIndent < nextLine.Length && nextLine[currentLineIndent] == '-' && !currentLine.Trim(" ").StartsWith("-")) )
         {
             return true;

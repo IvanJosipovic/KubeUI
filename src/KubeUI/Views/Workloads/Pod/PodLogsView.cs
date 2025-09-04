@@ -95,7 +95,10 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
 
                         x.TextChanged += (sender, e) => {
                             if (ViewModel?.AutoScrollToBottom == true)
-                                _textEditor.ScrollToEnd();
+                            {
+                                var sc = _textEditor.GetScrollViewer();
+                                sc?.SetCurrentValue(ScrollViewer.OffsetProperty, new Vector(sc.Offset.X, double.PositiveInfinity));
+                            }
                         };
                     })
                     .Document(@vm.Logs, BindingMode.OneWay)
@@ -122,9 +125,7 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
 
     public void SetOffset()
     {
-        var sc = _textEditor.GetType().GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(_textEditor) as ScrollViewer;
-
-        if (sc != null)
+        if (ViewModel != null && _textEditor.GetScrollViewer() is ScrollViewer sc)
         {
             sc.Offset = ViewModel.ScrollOffset;
         }
@@ -132,9 +133,7 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
 
     public void GetOffset()
     {
-        var sc = _textEditor.GetType().GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(_textEditor) as ScrollViewer;
-
-        if (sc != null)
+        if (ViewModel != null && _textEditor.GetScrollViewer() is ScrollViewer sc)
         {
             ViewModel.ScrollOffset = sc.Offset;
         }
