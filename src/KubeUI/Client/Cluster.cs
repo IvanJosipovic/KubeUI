@@ -47,6 +47,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private readonly SemaphoreSlim _seedLimiter = new(1);
 
+    private readonly SemaphoreSlim _crdGenerationLimiter = new(Environment.ProcessorCount);
+
     public AvaloniaDictionary<GroupApiVersionKind, ContainerClass> Objects { get; } = new();
 
     private ResourceNavigationLink? _crdNavigationLink;
@@ -439,6 +441,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                             {
                                 Dispatcher.UIThread.Post(() => items[name] = item, DispatcherPriority.Background);
                             }
+                            _crdGenerationLimiter.Release();
                         });
                     }
                     else
@@ -498,6 +501,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private async Task<bool> ProcessNewCRD(V1CustomResourceDefinition crd)
     {
+        await _crdGenerationLimiter.WaitAsync();
+
         if (!ModelCache.CheckIfCRDExists(crd))
         {
             var assembly = _generator.GenerateAssembly(crd, "KubeUI.Models");
