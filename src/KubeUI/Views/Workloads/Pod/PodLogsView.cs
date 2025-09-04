@@ -94,10 +94,9 @@ public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
                         x.Options.EnableEmailHyperlinks = false;
 
                         x.TextChanged += (sender, e) => {
-                            if (ViewModel?.AutoScrollToBottom == true)
+                            if (ViewModel?.AutoScrollToBottom == true && _textEditor.GetScrollViewer() is ScrollViewer sc)
                             {
-                                var sc = _textEditor.GetScrollViewer();
-                                sc?.SetCurrentValue(ScrollViewer.OffsetProperty, new Vector(sc.Offset.X, double.PositiveInfinity));
+                                sc.SetCurrentValue(ScrollViewer.OffsetProperty, new Vector(sc.Offset.X, double.PositiveInfinity));
                             }
                         };
                     })
