@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <WarningLevel>0</WarningLevel>
@@ -30,7 +30,6 @@
     <PackageReference Include="NodeEditorAvalonia.Mvvm" Version="11.2.0" />
     <PackageReference Include="Semi.Avalonia" Version="11.2.1.9" />
     <PackageReference Include="Svg.Controls.Skia.Avalonia" Version="11.3.0.4" />
-    <PackageReference Include="System.Text.Json" Version=" 9.0.8" />
 
     <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
     <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.3.5" />
