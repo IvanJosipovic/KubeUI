@@ -15,7 +15,6 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
             new ResourceListColumn<V1CustomResourceDefinition, string>()
             {
                 Name = "Name",
-                Display = x => x.Spec.Names.Kind.Humanize(LetterCasing.Title),
                 Field = x => x.Spec.Names.Kind,
                 Sort = SortDirection.Ascending,
                 Width = "2*",

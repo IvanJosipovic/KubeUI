@@ -48,7 +48,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private readonly SemaphoreSlim _crdGenerationLimiter = new(Environment.ProcessorCount);
 
-    public AvaloniaDictionary<GroupApiVersionKind, ContainerClass> Objects { get; } = new();
+    public AvaloniaDictionary<GroupApiVersionKind, ContainerClass> Objects { get; } = [];
 
     private ResourceNavigationLink? _crdNavigationLink;
 
@@ -563,7 +563,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
             ResourceConfigs[api] = resourceConfig;
 
             Dispatcher.UIThread.Post(() => {
-                var nav = new ResourceNavigationLink() { Name = api.PluralName.Humanize(LetterCasing.Title), ControlType = typeof(T), Cluster = this, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer()) };
+                var nav = new ResourceNavigationLink() { Name = api.Kind.Pluralize().Humanize(LetterCasing.Title), ControlType = typeof(T), Cluster = this, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer()) };
 
                 var fqdnlist = ConstructFQDNList(api.Group);
 
