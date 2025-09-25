@@ -7,7 +7,7 @@ using KubeUI.Controls;
 using KubeUI.Views;
 using static KubeUI.Client.Cluster;
 
-namespace KubeUI.Resources.Workloads.Pod;
+namespace KubeUI.Resources.Workloads;
 
 public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 {

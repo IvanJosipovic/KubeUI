@@ -1,6 +1,6 @@
 ﻿using k8s.Models;
 
-namespace KubeUI.Resources.Workloads.Configuration;
+namespace KubeUI.Resources.Configuration;
 
 public sealed partial class V1PodDisruptionBudgetConfig : ResourceConfigBase<V1PodDisruptionBudget>
 {

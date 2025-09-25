@@ -3,7 +3,7 @@ using Avalonia.Controls.Templates;
 using k8s.Models;
 using KubeUI.Views;
 
-namespace KubeUI.Resources.Workloads.Pod;
+namespace KubeUI.Resources.Configuration;
 
 public sealed partial class V1SecretConfig : ResourceConfigBase<V1Secret>
 {

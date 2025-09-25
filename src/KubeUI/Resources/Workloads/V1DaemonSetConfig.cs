@@ -5,7 +5,7 @@ using k8s;
 using k8s.Models;
 using static KubeUI.Client.Cluster;
 
-namespace KubeUI.Resources.Workloads.Pod;
+namespace KubeUI.Resources.Workloads;
 
 public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>
 {
