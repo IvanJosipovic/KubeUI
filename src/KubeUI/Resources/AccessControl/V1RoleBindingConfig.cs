@@ -4,6 +4,7 @@ namespace KubeUI.Resources.AccessControl;
 
 public sealed partial class V1RoleBindingConfig : ResourceConfigBase<V1RoleBinding>
 {
+    public override bool IsNamespaced => true;
     public override string Category => "Access Control";
     public override int Order => 4;
 

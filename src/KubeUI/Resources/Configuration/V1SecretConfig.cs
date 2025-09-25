@@ -7,6 +7,7 @@ namespace KubeUI.Resources.Workloads.Pod;
 
 public sealed partial class V1SecretConfig : ResourceConfigBase<V1Secret>
 {
+    public override bool IsNamespaced => true;
     public override string Category => "Configuration";
     public override int Order => 1;
 

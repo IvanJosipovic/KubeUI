@@ -7,6 +7,7 @@ namespace KubeUI.Resources;
 
 public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
 {
+    public override bool IsNamespaced => true;
     public override bool ShowNewResource => false;
     public override int Order => 7;
 

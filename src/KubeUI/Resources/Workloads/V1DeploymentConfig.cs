@@ -9,6 +9,7 @@ namespace KubeUI.Resources.Workloads.Pod;
 
 public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment>
 {
+    public override bool IsNamespaced => true;
     public override string Category => "Workloads";
 
     public override int Order => 1;

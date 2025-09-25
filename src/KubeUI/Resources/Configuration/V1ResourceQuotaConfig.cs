@@ -4,6 +4,7 @@ namespace KubeUI.Resources.Workloads.Configuration;
 
 public sealed partial class V1ResourceQuotaConfig : ResourceConfigBase<V1ResourceQuota>
 {
+    public override bool IsNamespaced => true;
     public override string Category => "Configuration";
     public override int Order => 2;
 

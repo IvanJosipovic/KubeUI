@@ -4,6 +4,7 @@ namespace KubeUI.Resources.Storage;
 
 public sealed partial class V1PersistentVolumeClaimConfig : ResourceConfigBase<V1PersistentVolumeClaim>
 {
+    public override bool IsNamespaced => true;
     public override string Category => "Storage";
     public override int Order => 0;
 
