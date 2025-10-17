@@ -180,13 +180,13 @@ public partial class App : Application
             {
                 Modifiers =
                 {
-                    ti =>
+                    jsonTypeInfo =>
                     {
-                        if (ti.Type?.Namespace?.StartsWith("KubeUI.Models") == true)
+                        if (jsonTypeInfo.Type?.Namespace?.StartsWith("KubeUI.Models") == true)
                         {
-                            foreach (var prop in ti.Properties)
+                            foreach (var prop in jsonTypeInfo.Properties)
                             {
-                                // Ignore missing required properties
+                                // Mark all properties as optional to allow deserialization with missing fields
                                 prop.IsRequired = false;
                             }
                         }
