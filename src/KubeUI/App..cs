@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using Avalonia.Controls.Notifications;
 using Avalonia.Data.Core.Plugins;
@@ -174,9 +175,14 @@ public partial class App : Application
 
         settings.LoadSettings();
 
+        // https://github.com/kubernetes-client/csharp/issues/1674
+        var ctxType = typeof(k8s.Kubernetes).Assembly.GetType("k8s.SourceGenerationContext");
+        var ctxProp = ctxType.GetProperty("Default", BindingFlags.Static | BindingFlags.Public);
+        var k8sResolver = ctxProp.GetValue(null) as IJsonTypeInfoResolver;
+
         KubernetesJson.AddJsonOptions(x =>
         {
-            x.TypeInfoResolver = new DefaultJsonTypeInfoResolver
+            x.TypeInfoResolver = JsonTypeInfoResolver.Combine(k8sResolver, new DefaultJsonTypeInfoResolver
             {
                 Modifiers =
                 {
@@ -192,7 +198,7 @@ public partial class App : Application
                         }
                     }
                 }
-            };
+            });
         });
 
         logger.LogInformation("Application Started");
