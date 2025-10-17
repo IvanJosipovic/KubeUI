@@ -1,5 +1,7 @@
 ﻿using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using Avalonia.Controls.Notifications;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
@@ -10,6 +12,7 @@ using FluentAvalonia.Styling;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using k8s;
 using KubernetesCRDModelGen;
 using KubeUI.Client;
 using KubeUI.Views;
@@ -171,6 +174,32 @@ public partial class App : Application
         var settings = Host.Services.GetRequiredService<ISettingsService>();
 
         settings.LoadSettings();
+
+        // https://github.com/kubernetes-client/csharp/issues/1674
+        var ctxType = typeof(k8s.Kubernetes).Assembly.GetType("k8s.SourceGenerationContext");
+        var ctxProp = ctxType.GetProperty("Default", BindingFlags.Static | BindingFlags.Public);
+        var k8sResolver = ctxProp.GetValue(null) as IJsonTypeInfoResolver;
+
+        KubernetesJson.AddJsonOptions(x =>
+        {
+            x.TypeInfoResolver = JsonTypeInfoResolver.Combine(k8sResolver, new DefaultJsonTypeInfoResolver
+            {
+                Modifiers =
+                {
+                    jsonTypeInfo =>
+                    {
+                        if (jsonTypeInfo.Type?.Namespace?.StartsWith("KubeUI.Models") == true)
+                        {
+                            foreach (var prop in jsonTypeInfo.Properties)
+                            {
+                                // Mark all properties as optional to allow deserialization with missing fields
+                                prop.IsRequired = false;
+                            }
+                        }
+                    }
+                }
+            });
+        });
 
         logger.LogInformation("Application Started");
 
