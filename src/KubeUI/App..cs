@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text.Json.Serialization.Metadata;
 using Avalonia.Controls.Notifications;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
@@ -10,6 +11,7 @@ using FluentAvalonia.Styling;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using k8s;
 using KubernetesCRDModelGen;
 using KubeUI.Client;
 using KubeUI.Views;
@@ -171,6 +173,24 @@ public partial class App : Application
         var settings = Host.Services.GetRequiredService<ISettingsService>();
 
         settings.LoadSettings();
+
+        KubernetesJson.AddJsonOptions(x =>
+        {
+            x.TypeInfoResolver = new DefaultJsonTypeInfoResolver
+            {
+                Modifiers =
+                {
+                    ti =>
+                    {
+                        foreach (var prop in ti.Properties)
+                        {
+                            // Ignore missing required properties
+                            prop.IsRequired = false;
+                        }
+                    }
+                }
+            };
+        });
 
         logger.LogInformation("Application Started");
 
