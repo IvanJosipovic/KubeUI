@@ -111,7 +111,6 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     public void Initialize(ICluster cluster)
     {
         Cluster = cluster;
-        IsNamespaced = Cluster.IsNamespaced<T>();
     }
 
     public IList<ResourceMenuItem> DefaultMenuItems() => [

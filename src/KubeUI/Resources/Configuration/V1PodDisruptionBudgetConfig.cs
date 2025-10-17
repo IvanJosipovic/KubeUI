@@ -1,9 +1,10 @@
 ﻿using k8s.Models;
 
-namespace KubeUI.Resources.Workloads.Configuration;
+namespace KubeUI.Resources.Configuration;
 
 public sealed partial class V1PodDisruptionBudgetConfig : ResourceConfigBase<V1PodDisruptionBudget>
 {
+    public override bool IsNamespaced => true;
     public override string Category => "Configuration";
     public override int Order => 5;
 

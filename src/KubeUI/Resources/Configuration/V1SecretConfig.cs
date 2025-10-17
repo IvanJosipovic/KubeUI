@@ -3,10 +3,11 @@ using Avalonia.Controls.Templates;
 using k8s.Models;
 using KubeUI.Views;
 
-namespace KubeUI.Resources.Workloads.Pod;
+namespace KubeUI.Resources.Configuration;
 
 public sealed partial class V1SecretConfig : ResourceConfigBase<V1Secret>
 {
+    public override bool IsNamespaced => true;
     public override string Category => "Configuration";
     public override int Order => 1;
 
