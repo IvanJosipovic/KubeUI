@@ -182,10 +182,13 @@ public partial class App : Application
                 {
                     ti =>
                     {
-                        foreach (var prop in ti.Properties)
+                        if (ti.Type?.Namespace?.StartsWith("KubeUI.Models") == true)
                         {
-                            // Ignore missing required properties
-                            prop.IsRequired = false;
+                            foreach (var prop in ti.Properties)
+                            {
+                                // Ignore missing required properties
+                                prop.IsRequired = false;
+                            }
                         }
                     }
                 }
