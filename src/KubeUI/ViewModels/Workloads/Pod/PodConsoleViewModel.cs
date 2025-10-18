@@ -1,15 +1,16 @@
-﻿using AvaloniaEdit.Document;
-using k8s.Models;
-using k8s;
-using KubeUI.Client;
-using System.Net.WebSockets;
+﻿using System.Net.WebSockets;
 using System.Text;
-using XtermSharp;
-using AvaloniaEdit.Highlighting;
-using Color = Avalonia.Media.Color;
 using System.Text.Json;
+using Avalonia.Input.Platform;
 using Avalonia.Media.TextFormatting;
+using AvaloniaEdit.Document;
+using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Rendering;
+using k8s;
+using k8s.Models;
+using KubeUI.Client;
+using XtermSharp;
+using Color = Avalonia.Media.Color;
 
 namespace KubeUI.ViewModels;
 
@@ -256,7 +257,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
             {
                 var clipboard = App.TopLevel.Clipboard;
 
-                var text = await clipboard.GetTextAsync();
+                var text = await clipboard.TryGetTextAsync();
 
                 if (!string.IsNullOrEmpty(text))
                 {

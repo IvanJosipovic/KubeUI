@@ -1,10 +1,11 @@
-﻿using k8s.Models;
-using k8s;
-using KubeUI.Client;
-using System.Net.WebSockets;
+﻿using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using Avalonia.Input.Platform;
 using AvaloniaTerminal;
+using k8s;
+using k8s.Models;
+using KubeUI.Client;
 
 namespace KubeUI.ViewModels;
 
@@ -140,7 +141,7 @@ public sealed partial class PodConsoleViewModel2 : ViewModelBase, IDisposable
             {
                 var clipboard = App.TopLevel.Clipboard;
 
-                var text = await clipboard.GetTextAsync();
+                var text = await clipboard.TryGetTextAsync();
 
                 if (!string.IsNullOrEmpty(text))
                 {
