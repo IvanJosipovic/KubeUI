@@ -42,6 +42,15 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     public VisualizationViewModel()
     {
         Title = Assets.Resources.VisualizationViewModel_Title;
+
+        if (Design.IsDesignMode)
+        {
+            var cluster = Application.Current.GetRequiredService<ClusterManager>().GetCluster("microk8s");
+
+            cluster.Connect();
+
+            Initialize(cluster);
+        }
     }
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)

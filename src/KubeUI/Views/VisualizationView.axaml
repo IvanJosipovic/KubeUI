@@ -1,0 +1,71 @@
+<UserControl
+    x:Class="KubeUI.Views.VisualizationView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:vm="clr-namespace:KubeUI.ViewModels"
+    xmlns:u="https://irihi.tech/ursa"
+    xmlns:k8s="using:k8s.Models"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    x:DataType="vm:VisualizationViewModel">
+
+      <Design.DataContext>
+        <vm:VisualizationViewModel />
+    </Design.DataContext>
+
+    <UserControl.Styles>
+        <!-- Style equivalent to BuildStyles() -->
+        <Style Selector="Pin">
+            <Setter Property="ContextFlyout">
+                <MenuFlyout />
+            </Setter>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- Left controls -->
+        <StackPanel Grid.Row="0"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Left">
+            <ToggleButton IsChecked="{Binding HideNoise}"
+                          ToolTip.Tip="Hide noisy resources like inactive Replica Sets"
+                          >
+                <PathIcon Data="{StaticResource eye_hide_regular}" />
+            </ToggleButton>
+
+            <Label Width="200"
+                   VerticalContentAlignment="Center"
+                   Content="{Binding Drawing.Nodes.Count, StringFormat='Items: {0}'}" />
+        </StackPanel>
+
+        <!-- Right controls -->
+        <StackPanel Grid.Row="0"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right">
+            <u:MultiComboBox Width="300"
+                                MaxHeight="20"
+                                Classes="ClearButton"
+                                ItemsSource="{Binding Cluster.Namespaces.Values}"
+                                SelectedItems="{Binding Cluster.SelectedNamespaces}">
+
+                <u:MultiComboBox.SelectedItemTemplate>
+                    <DataTemplate x:DataType="k8s:V1Namespace">
+                        <Label Content="{Binding Metadata.Name}" />
+                    </DataTemplate>
+                </u:MultiComboBox.SelectedItemTemplate>
+
+                <u:MultiComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="k8s:V1Namespace">
+                        <Label Content="{Binding Metadata.Name}" />
+                    </DataTemplate>
+                </u:MultiComboBox.ItemTemplate>
+
+            </u:MultiComboBox>
+        </StackPanel>
+
+        <!-- Editor surface -->
+        <Editor Grid.Row="1"
+                   DrawingSource="{Binding Drawing}" />
+    </Grid>
+</UserControl>

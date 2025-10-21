@@ -19,7 +19,7 @@
                    Text="{Binding Cluster.Name, StringFormat='{}{0} Settings'}" />
 
         <Grid ColumnDefinitions="*,2*"
-
+              ToolTip.Tip="Manually specified namespaces"
               IsEnabled="{Binding !Cluster.ListNamespaces}">
             <Label Grid.Column="0"
                    Content="Namespaces (Restart Required)" />
