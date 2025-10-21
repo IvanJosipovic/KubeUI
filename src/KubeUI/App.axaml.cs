@@ -110,7 +110,7 @@ public partial class App : Application
 #else
                         e.Endpoint = new Uri("https://otel.kubeui.com/v1/logs");
                         e.Headers = $"key={key}";
-                        e.Protocol = OtlpExportProtocol.HttpProtobuf;
+                        e.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
 #endif
                     });
                 },
@@ -132,7 +132,7 @@ public partial class App : Application
 #else
                         e.Endpoint = new Uri("https://otel.kubeui.com/v1/metrics");
                         e.Headers = $"key={key}";
-                        e.Protocol = OtlpExportProtocol.HttpProtobuf;
+                        e.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
 #endif
                     });
                 })
