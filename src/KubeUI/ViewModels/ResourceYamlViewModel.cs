@@ -37,11 +37,15 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     public partial IEnumerable<NewFolding> AllFoldings { get; set; }
 
+    [ObservableProperty]
+    public partial ISettingsService Settings { get; set; }
+
     public ResourceYamlViewModel()
     {
         Title = Assets.Resources.ResourceYamlViewModel_Title;
         _logger = Application.Current.GetRequiredService<ILogger<ResourceYamlViewModel>>();
         _notificationManager = Application.Current.GetRequiredService<INotificationManager>();
+        Settings = Application.Current.GetRequiredService<ISettingsService>();
     }
 
     public void Initialize(ICluster cluster, IKubernetesObject<V1ObjectMeta> @object)

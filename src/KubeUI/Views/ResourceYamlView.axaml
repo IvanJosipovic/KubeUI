@@ -1,0 +1,65 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:assets="using:KubeUI.Assets"
+             xmlns:avaloniaedit="https://github.com/avaloniaui/avaloniaedit"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:KubeUI.ViewModels"
+             xmlns:local="clr-namespace:KubeUI.Views"
+             xmlns:client="clr-namespace:KubeUI.Client"
+             xmlns:conv="clr-namespace:KubeUI.Converters"
+             xmlns:util="clr-namespace:KubeUI"
+             mc:Ignorable="d"
+             d:DesignHeight="450"
+             d:DesignWidth="800"
+             x:Class="KubeUI.Views.ResourceYamlView"
+             x:DataType="vm:ResourceYamlViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="StackPanel.resource-yaml-toolbar">
+            <Setter Property="Orientation" Value="Horizontal" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,*" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <!-- Read Only Toolbar -->
+        <StackPanel Classes="resource-yaml-toolbar" IsVisible="{Binding EditMode, Converter={x:Static util:Utilities.InverseBooleanConverter}}">
+            <Button Command="{Binding SetEditModeCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Edit}">
+                <PathIcon Data="{StaticResource document_edit_regular}" />
+            </Button>
+            <ToggleButton IsChecked="{Binding HideNoisyFields, Mode=OneWay}" Command="{Binding SetHideNoisyFieldsCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_HideNoisyFields}">
+                <PathIcon Data="{StaticResource eye_hide_regular}" />
+            </ToggleButton>
+            <ToggleButton IsChecked="{Binding WordWrap}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlView_WordWrap}">
+                <PathIcon Data="{StaticResource text_wrap_regular}" />
+            </ToggleButton>
+        </StackPanel>
+        <!-- Edit Mode Toolbar -->
+        <StackPanel Classes="resource-yaml-toolbar" IsVisible="{Binding EditMode}" Grid.Row="0">
+            <Button Command="{Binding SaveCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Save}">
+                <PathIcon Data="{StaticResource save_regular}" />
+            </Button>
+            <Button Command="{Binding SetEditModeCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Cancel}">
+                <PathIcon Data="{StaticResource dismiss_regular}" />
+            </Button>
+            <ToggleButton IsChecked="{Binding WordWrap}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlView_WordWrap}">
+                <PathIcon Data="{StaticResource text_wrap_regular}" />
+            </ToggleButton>
+        </StackPanel>
+        <!-- YAML Editor -->
+        <avaloniaedit:TextEditor
+                                Grid.Row="1"
+                                Document="{Binding YamlDocument, Mode=OneWay}"
+                                FontFamily="Cascadia Mono"
+                                FontSize="{Binding Settings.Settings.ConsoleFontSize}"
+                                FontWeight="Normal"
+                                IsReadOnly="{Binding EditMode, Converter={x:Static util:Utilities.InverseBooleanConverter}}"
+                                ShowLineNumbers="True"
+                                Background="{StaticResource SystemAltHighColor}"
+                                HorizontalScrollBarVisibility="Auto"
+                                VerticalScrollBarVisibility="Visible"
+                                WordWrap="{Binding WordWrap}"
+                                ContextMenu="{StaticResource YamlEditorContextMenu}" />
+    </Grid>
+
+</UserControl>

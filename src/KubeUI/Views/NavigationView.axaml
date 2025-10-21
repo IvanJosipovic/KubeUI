@@ -1,3 +1,4 @@
+
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -6,16 +7,24 @@
              xmlns:local="clr-namespace:KubeUI.Views"
              xmlns:client="clr-namespace:KubeUI.Client"
              xmlns:conv="clr-namespace:KubeUI.Converters"
+             xmlns:converters="using:KubeUI.Converters"
              xmlns:util="clr-namespace:KubeUI"
              mc:Ignorable="d"
              d:DesignHeight="450"
              d:DesignWidth="200"
              x:Class="KubeUI.Views.NavigationView"
-             x:DataType="vm:NavigationViewModel">
+             x:DataType="vm:NavigationViewModel"
+             >
 
-   <UserControl.DataContext>
+
+  <Design.DataContext>
     <vm:NavigationViewModel />
-  </UserControl.DataContext>
+  </Design.DataContext>
+
+      <UserControl.Resources>
+        <converters:StaticResourceConverter x:Key="StaticResourceConverter" />
+    </UserControl.Resources>
+
 
     <UserControl.Styles>
         <Style Selector="TreeViewItem">
@@ -51,7 +60,7 @@
             </TreeDataTemplate>
             <TreeDataTemplate x:DataType="vm:ResourceNavigationLink" ItemsSource="{Binding NavigationItems}">
                 <StackPanel Orientation="Horizontal">
-                    <Svg Source="{Binding IconPath}" />
+                    <Svg Path="{Binding IconPath}" />
                     <TextBlock Text="{Binding Name}" />
                     <TextBlock Margin="5,0,0,0" Text="{Binding Objects.Count}" />
                 </StackPanel>
@@ -59,7 +68,7 @@
             <TreeDataTemplate x:DataType="vm:NavigationItem" ItemsSource="{Binding NavigationItems}">
                 <StackPanel Orientation="Horizontal">
                     <PathIcon Data="{Binding StyleIcon, Converter={StaticResource StaticResourceConverter}}" IsVisible="{Binding StyleIcon, Converter={x:Static util:Utilities.NotNullConverter}}" />
-                    <Svg Source="{Binding SvgIcon}" IsVisible="{Binding SvgIcon, Converter={x:Static util:Utilities.NotNullConverter}}" />
+                    <Svg Path="{Binding SvgIcon}" IsVisible="{Binding SvgIcon, Converter={x:Static util:Utilities.NotNullConverter}}" />
                     <TextBlock Text="{Binding Name}" />
                 </StackPanel>
             </TreeDataTemplate>
