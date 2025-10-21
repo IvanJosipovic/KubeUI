@@ -1,0 +1,47 @@
+<UserControl
+    x:Class="KubeUI.Views.ClusterListView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="clr-namespace:KubeUI.Assets"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="clr-namespace:KubeUI.ViewModels"
+    xmlns:controls="clr-namespace:KubeUI.Controls"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    mc:Ignorable="d"
+    x:DataType="vm:ClusterListViewModel">
+
+    <Design.DataContext>
+        <vm:ClusterListViewModel />
+    </Design.DataContext>
+
+    <Grid>
+        <DataGrid x:Name="ClustersGrid"
+                  ItemsSource="{Binding ClusterManager.Clusters}"
+                  SelectedItem="{Binding SelectedItem}"
+                  CanUserReorderColumns="True"
+                  CanUserResizeColumns="True"
+                  GridLinesVisibility="All"
+                  IsReadOnly="True">
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="Delete"
+                              Command="{Binding DeleteCommand}"
+                              CommandParameter="{Binding SelectedItem}">
+                        <MenuItem.Icon>
+                            <PathIcon Data="{StaticResource delete_regular}" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+            <DataGrid.Columns>
+                <controls:MyDataGridTextColumn Header="Name"
+                                               Binding="{Binding Name}"
+                                               Width="*"/>
+                <controls:MyDataGridTextColumn Header="KubeConfig"
+                                               Binding="{Binding KubeConfigPath}"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>
