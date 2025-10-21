@@ -1,5 +1,4 @@
 ﻿using Dock.Model.Core;
-using Humanizer;
 using k8s.Models;
 using static KubeUI.Client.Cluster;
 

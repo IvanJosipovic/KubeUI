@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-
-namespace KubeUI.Views;
+﻿namespace KubeUI.Views;
 
 public partial class MainWindow : Window
 {

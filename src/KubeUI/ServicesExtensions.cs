@@ -1,5 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using Avalonia.Controls.Templates;
+﻿using Avalonia.Controls.Templates;
 using Avalonia.Logging;
 using Dock.Model.Core;
 using KubernetesCRDModelGen;
