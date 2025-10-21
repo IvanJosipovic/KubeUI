@@ -1,6 +1,6 @@
-﻿using System.Net.NetworkInformation;
+﻿using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using System.Net;
 using k8s;
 using k8s.Models;
 

@@ -1,14 +1,14 @@
-﻿using Avalonia.Controls.Notifications;
+﻿using System.Linq.Expressions;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Text.Json;
+using Avalonia.Controls.Notifications;
 using Avalonia.Data.Converters;
 using Avalonia.Input;
 using AvaloniaEdit;
 using k8s;
 using k8s.Autorest;
 using k8s.Models;
-using System.Linq.Expressions;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Text.Json;
 
 namespace KubeUI;
 
@@ -85,7 +85,7 @@ public static class Utilities
         return container;
     }
 
-    public static TControl Set<TControl,TValue>(this TControl control, AvaloniaProperty property, TValue value, FuncValueConverter<TValue, object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where TControl : Control
+    public static TControl Set<TControl, TValue>(this TControl control, AvaloniaProperty property, TValue value, FuncValueConverter<TValue, object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where TControl : Control
     {
         return control._setEx(property, ps, () => control[property] = converter.TryConvert(value), bindingMode, converter, bindingSource);
     }

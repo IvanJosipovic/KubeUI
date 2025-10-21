@@ -2138,7 +2138,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
     }
 
-    public sealed class MyPin: PinViewModel, IPin
+    public sealed class MyPin : PinViewModel, IPin
     {
         public new bool CanConnect()
         {

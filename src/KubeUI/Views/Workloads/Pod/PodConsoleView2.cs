@@ -1,6 +1,6 @@
 ﻿using Avalonia.Input;
-using KubeUI.Client;
 using AvaloniaTerminal;
+using KubeUI.Client;
 
 namespace KubeUI.Views;
 

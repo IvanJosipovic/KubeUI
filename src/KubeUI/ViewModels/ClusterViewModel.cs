@@ -60,7 +60,7 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
         var nodes = await Cluster.GetObjectDictionaryAsync<V1Node>();
 
         TotalPods.Value = pods.Count;
-        MaxPods.Value = nodes.Sum(x => x.Value.Status.Capacity?.TryGetValue("pods", out var value) == true ? value.ToDouble(): 0);
+        MaxPods.Value = nodes.Sum(x => x.Value.Status.Capacity?.TryGetValue("pods", out var value) == true ? value.ToDouble() : 0);
 
         CpuAllocatable.Value = nodes.Sum(x => x.Value.Status.Allocatable?.TryGetValue("cpu", out var value) == true ? value.ToDouble() : 0);
         CpuCapacity.Value = nodes.Sum(x => x.Value.Status.Capacity?.TryGetValue("cpu", out var value) == true ? value.ToDouble() : 0);

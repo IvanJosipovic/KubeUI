@@ -1,6 +1,6 @@
 ﻿using AvaloniaEdit.Document;
-using k8s.Models;
 using k8s;
+using k8s.Models;
 using KubeUI.Client;
 
 namespace KubeUI.ViewModels;
@@ -101,7 +101,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     {
         base.OnPropertyChanged(e);
 
-        if(e.PropertyName?.Equals(nameof(Previous), StringComparison.Ordinal) == true || e.PropertyName?.Equals(nameof(Timestamps), StringComparison.Ordinal) == true)
+        if (e.PropertyName?.Equals(nameof(Previous), StringComparison.Ordinal) == true || e.PropertyName?.Equals(nameof(Timestamps), StringComparison.Ordinal) == true)
         {
             await Connect();
         }

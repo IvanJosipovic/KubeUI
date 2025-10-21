@@ -1,7 +1,7 @@
-﻿using k8s.Models;
-using KubeUI.Views;
-using Avalonia.Controls.Shapes;
+﻿using Avalonia.Controls.Shapes;
 using Avalonia.Controls.Templates;
+using k8s.Models;
+using KubeUI.Views;
 
 namespace KubeUI.Controls;
 
@@ -17,7 +17,7 @@ public sealed class PodContainerCell : MyViewBase<V1Pod>
             .Setter(Shape.MarginProperty, new Thickness(left: 0.0, top: 0.0, right: 4.0, bottom: 0.0))
         ];
 
-    private static IBrush GetBrush(V1ContainerStatus status , bool isInit = false)
+    private static IBrush GetBrush(V1ContainerStatus status, bool isInit = false)
     {
         if (status.Ready && status.Started == true)
         {

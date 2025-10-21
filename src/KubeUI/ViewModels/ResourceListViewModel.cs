@@ -1,5 +1,6 @@
 using System.Collections.Specialized;
 using System.Linq.Expressions;
+using Avalonia.Collections;
 using Avalonia.Styling;
 using DynamicData;
 using DynamicData.Binding;
@@ -9,7 +10,6 @@ using k8s.Models;
 using KubeUI.Client;
 using KubeUI.Client.Informer;
 using KubeUI.Resources;
-using Avalonia.Collections;
 
 namespace KubeUI.ViewModels;
 

@@ -30,7 +30,7 @@ public sealed class ClusterView : MyViewBase<ClusterViewModel>
 
     private static SolidColorPaint GetColor()
     {
-        if (Application.Current.ActualThemeVariant ==  ThemeVariant.Dark)
+        if (Application.Current.ActualThemeVariant == ThemeVariant.Dark)
         {
             return new(SKColors.White);
         }
@@ -76,27 +76,32 @@ public sealed class ClusterView : MyViewBase<ClusterViewModel>
                 .Title(SetTitle("CPU"))
                 .MaxValue(@vm.CpuCapacity.Value.Value)
                 .Series(GaugeGenerator.BuildSolidGauge(
-                            new GaugeItem(vm.CpuCapacity, series => {
+                            new GaugeItem(vm.CpuCapacity, series =>
+                            {
                                 SetSeries("Capacity", series);
                                 series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
                                 series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
                             }),
-                            new GaugeItem(vm.CpuAllocatable, series => {
+                            new GaugeItem(vm.CpuAllocatable, series =>
+                            {
                                 SetSeries("Allocatable", series);
                                 series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
                                 series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
                             }),
-                            new GaugeItem(vm.CpuLimits, series => {
+                            new GaugeItem(vm.CpuLimits, series =>
+                            {
                                 SetSeries("Limits", series);
                                 series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
                                 series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
                             }),
-                            new GaugeItem(vm.CpuRequests, series => {
+                            new GaugeItem(vm.CpuRequests, series =>
+                            {
                                 SetSeries("Requests", series);
                                 series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
                                 series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
                             }),
-                            new GaugeItem(vm.CpuUsage, series => {
+                            new GaugeItem(vm.CpuUsage, series =>
+                            {
                                 SetSeries("Usage", series);
                                 series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
                                 series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F2}c";
@@ -109,27 +114,32 @@ public sealed class ClusterView : MyViewBase<ClusterViewModel>
                 .Title(SetTitle("Memory"))
                 .MaxValue(@vm.MemoryCapacity.Value.Value)
                 .Series(GaugeGenerator.BuildSolidGauge(
-                            new GaugeItem(vm.MemoryCapacity, series => {
+                            new GaugeItem(vm.MemoryCapacity, series =>
+                            {
                                 SetSeries("Capacity", series);
                                 series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F1}Gi";
                                 series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F1}Gi";
                             }),
-                            new GaugeItem(vm.MemoryAllocatable, series => {
+                            new GaugeItem(vm.MemoryAllocatable, series =>
+                            {
                                 SetSeries("Allocatable", series);
                                 series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F1}Gi";
                                 series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F1}Gi";
                             }),
-                            new GaugeItem(vm.MemoryLimits, series => {
+                            new GaugeItem(vm.MemoryLimits, series =>
+                            {
                                 SetSeries("Limits", series);
                                 series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F2}Gi";
                                 series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F1}Gi";
                             }),
-                            new GaugeItem(vm.MemoryRequests, series => {
+                            new GaugeItem(vm.MemoryRequests, series =>
+                            {
                                 SetSeries("Requests", series);
                                 series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F2}Gi";
                                 series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F1}Gi";
                             }),
-                            new GaugeItem(vm.MemoryUsage, series => {
+                            new GaugeItem(vm.MemoryUsage, series =>
+                            {
                                 SetSeries("Usage", series);
                                 series.DataLabelsFormatter = point => $"{point.Coordinate.PrimaryValue:F2}Gi";
                                 series.ToolTipLabelFormatter = point => $"{point.Coordinate.PrimaryValue:F1}Gi";

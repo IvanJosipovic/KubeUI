@@ -65,7 +65,7 @@ public partial class Cluster
 
         var resp = await kube.CreateSelfSubjectAccessReviewAsync(model);
 
-         _selfSubjectAccessReviews.Add(resp);
+        _selfSubjectAccessReviews.Add(resp);
     }
 
     public bool CanI(Type type, Verb verb, string @namespace = "", string subresource = "")

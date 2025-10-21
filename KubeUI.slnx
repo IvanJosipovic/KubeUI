@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".github/renovate.json" />
+    <File Path=".github/workflows/cicd.yml" />
+    <File Path=".github/workflows/sync-extensions.yml" />
+    <File Path=".releaserc.json" />
+    <File Path=".vsconfig" />
+    <File Path="global.json" />
+    <File Path="README.md" />
+  </Folder>
+  <Project Path="src/KubeUI.Core/KubeUI.Core.csproj" />
+  <Project Path="src/KubeUI.Desktop/KubeUI.Desktop.csproj" />
+  <Project Path="src/KubeUI/KubeUI.csproj" />
+  <Project Path="tests/KubeUI.Tests/KubeUI.Tests.csproj" />
+</Solution>

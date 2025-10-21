@@ -1,16 +1,16 @@
-﻿using k8s.Models;
-using k8s;
-using Avalonia.Data.Converters;
-using Ursa.Controls;
+﻿using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
-using Avalonia.Styling;
-using KubeUI.Client.Informer;
-using KubeUI.Client;
-using KubeUI.Resources;
+using Avalonia.Data.Converters;
 using Avalonia.Input;
+using Avalonia.Styling;
 using Avalonia.VisualTree;
+using k8s;
+using k8s.Models;
+using KubeUI.Client;
+using KubeUI.Client.Informer;
 using KubeUI.Controls;
-using Avalonia.Controls.Primitives;
+using KubeUI.Resources;
+using Ursa.Controls;
 
 namespace KubeUI.Views;
 
@@ -389,7 +389,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                         if ((x.Source is Visual control) && control.FindAncestorOfType<DataGridCell>(true) == null)
                         {
                             return;
-	                    }
+                        }
 
                         if (_grid.SelectedItem == null) return;
 
@@ -497,5 +497,25 @@ public readonly struct MyFuncComparer<TObj, TPtop> : IComparer
         }
 
         throw new NotImplementedException();
+    }
+
+    public override bool Equals(object obj)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override int GetHashCode()
+    {
+        throw new NotImplementedException();
+    }
+
+    public static bool operator ==(MyFuncComparer<TObj, TPtop> left, MyFuncComparer<TObj, TPtop> right)
+    {
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(MyFuncComparer<TObj, TPtop> left, MyFuncComparer<TObj, TPtop> right)
+    {
+        return !(left == right);
     }
 }

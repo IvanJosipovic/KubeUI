@@ -88,7 +88,7 @@ public sealed partial class ClusterManager : ObservableObject, IDisposable
         var watcher = new FileSystemWatcher
         {
             Path = dir,
-            NotifyFilter =  NotifyFilters.LastWrite,
+            NotifyFilter = NotifyFilters.LastWrite,
             Filter = filename,
             EnableRaisingEvents = true,
         };

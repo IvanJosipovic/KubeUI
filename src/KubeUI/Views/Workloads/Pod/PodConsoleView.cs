@@ -1,8 +1,8 @@
 ﻿using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using AvaloniaEdit;
-using XtermSharp;
 using KubeUI.Client;
+using XtermSharp;
 
 namespace KubeUI.Views;
 

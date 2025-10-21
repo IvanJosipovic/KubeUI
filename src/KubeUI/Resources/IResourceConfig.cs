@@ -2,7 +2,7 @@
 
 namespace KubeUI.Resources
 {
-    public interface IResourceConfig: IInitializeCluster
+    public interface IResourceConfig : IInitializeCluster
     {
         bool IsNamespaced { get; }
         bool ShowNewResource { get; }

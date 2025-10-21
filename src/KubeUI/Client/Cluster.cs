@@ -117,7 +117,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                     if (string.IsNullOrEmpty(KubeConfigPath))
                     {
-                        config =  KubernetesClientConfiguration.BuildConfigFromConfigObject(KubeConfig, Name);
+                        config = KubernetesClientConfiguration.BuildConfigFromConfigObject(KubeConfig, Name);
                     }
                     else
                     {
@@ -562,7 +562,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
             ResourceConfigs[api] = resourceConfig;
 
-            Dispatcher.UIThread.Post(() => {
+            Dispatcher.UIThread.Post(() =>
+            {
                 var nav = new ResourceNavigationLink() { Name = api.Kind.Pluralize().Humanize(LetterCasing.Title), ControlType = typeof(T), Cluster = this, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer()) };
 
                 var fqdnlist = ConstructFQDNList(api.Group);

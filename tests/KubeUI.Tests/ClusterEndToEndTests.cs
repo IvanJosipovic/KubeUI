@@ -404,7 +404,7 @@ spec:
         kind.Type.Should().Be(type);
         kind.Items.Count.Should().Be(1);
 
-        foreach(object item in kind.Items)
+        foreach (object item in kind.Items)
         {
             var key = (NamespacedName)(item.GetType().GetProperty("Key").GetValue(item));
             key.Name.Should().Be("test1");

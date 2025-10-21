@@ -1,15 +1,15 @@
-﻿using Avalonia.Controls.Notifications;
+﻿using System.Text.Json;
+using Avalonia.Controls.Notifications;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
-using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using HanumanInstitute.MvvmDialogs;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using Humanizer;
-using k8s.Models;
 using k8s;
-using KubeUI.Client.Informer;
+using k8s.Models;
 using KubeUI.Client;
+using KubeUI.Client.Informer;
 using KubeUI.Controls;
-using System.Text.Json;
 using static KubeUI.Client.Cluster;
 
 namespace KubeUI.Resources;
@@ -69,11 +69,11 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         }
     }
 
-    public virtual IList<ResourceMenuItem> MenuItems()=> [];
+    public virtual IList<ResourceMenuItem> MenuItems() => [];
 
     public virtual IList<(Cluster.Verb verb, string? subResource)> CustomPermissions() => [];
 
-    public virtual Control[] Properties(T resource)=> [];
+    public virtual Control[] Properties(T resource) => [];
 
     protected ResourceListColumn<T, string> NameColumn(SortDirection sort = SortDirection.None)
     {
@@ -252,7 +252,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
         foreach (var item in items)
         {
-            if (item is KeyValuePair<NamespacedName, T> resource )
+            if (item is KeyValuePair<NamespacedName, T> resource)
             {
                 if (!Cluster.CanI<T>(Verb.Delete, resource.Value.Namespace()))
                 {

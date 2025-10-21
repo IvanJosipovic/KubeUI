@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using Avalonia;
+using Avalonia.Collections;
 using Avalonia.Headless.XUnit;
 using FluentAssertions;
 using k8s.Models;
@@ -8,7 +9,6 @@ using KubeUI.Client;
 using KubeUI.Client.Informer;
 using KubeUI.ViewModels;
 using Moq;
-using Avalonia.Collections;
 using static KubeUI.ViewModels.VisualizationViewModel;
 
 namespace KubeUI.Tests;
@@ -780,7 +780,7 @@ public class VisualizationTests
             }
         };
 
-        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() {  Items = start });
+        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
         vm.Initialize(mock.Object);

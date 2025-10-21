@@ -6,7 +6,7 @@ public sealed class ClusterSettingsView : MyViewBase<ClusterSettingsViewModel>
 {
     protected override object Build(ClusterSettingsViewModel? vm) =>
         new StackPanel()
-            .Margin(10,0,0,0)
+            .Margin(10, 0, 0, 0)
             .Children([
                 new TextBlock()
                     .FontSize(25)

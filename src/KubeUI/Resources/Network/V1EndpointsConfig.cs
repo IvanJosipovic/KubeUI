@@ -27,6 +27,7 @@ public sealed partial class V1EndpointsConfig : ResourceConfigBase<V1Endpoints>
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             AgeColumn(),
-        ];;
+        ];
+        ;
     }
 }

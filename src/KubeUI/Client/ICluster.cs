@@ -1,10 +1,10 @@
-﻿using k8s;
+﻿using Avalonia.Collections;
+using k8s;
+using k8s.KubeConfigModels;
 using k8s.Models;
 using KubeUI.Client.Informer;
 using KubeUI.Resources;
-using Avalonia.Collections;
 using static KubeUI.Client.Cluster;
-using k8s.KubeConfigModels;
 
 namespace KubeUI.Client;
 

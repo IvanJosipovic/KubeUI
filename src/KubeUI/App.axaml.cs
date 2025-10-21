@@ -218,15 +218,15 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        // Line below is needed to remove Avalonia data validation.
-        // Without this line you will get duplicate validations from both Avalonia and CT
-        BindingPlugins.DataValidators.RemoveAt(0);
+        DisableAvaloniaDataAnnotationValidation();
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = Host.Services.GetRequiredService<MainWindow>();
             desktop.MainWindow.DataContext = Host.Services.GetRequiredService<MainViewModel>();
             TopLevel = TopLevel.GetTopLevel(desktop.MainWindow);
+
+            desktop.ShutdownRequested += (sender, e) => GracefulShutdown();
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
@@ -350,5 +350,18 @@ public partial class App : Application
         Host.Services.GetService<LoggerProvider>()?.ForceFlush();
         Host.Services.GetService<MeterProvider>()?.ForceFlush();
         Host.Services.GetRequiredService<IHostApplicationLifetime>().StopApplication();
+    }
+
+    private void DisableAvaloniaDataAnnotationValidation()
+    {
+        // Get an array of plugins to remove
+        var dataValidationPluginsToRemove =
+            BindingPlugins.DataValidators.OfType<DataAnnotationsValidationPlugin>().ToArray();
+
+        // remove each entry found
+        foreach (var plugin in dataValidationPluginsToRemove)
+        {
+            BindingPlugins.DataValidators.Remove(plugin);
+        }
     }
 }

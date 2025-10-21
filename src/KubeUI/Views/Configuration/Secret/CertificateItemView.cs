@@ -1,9 +1,10 @@
-﻿using System.Security.Cryptography.X509Certificates;
+﻿using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using System.Security.Cryptography;
 using Avalonia.Controls.Templates;
 
 namespace KubeUI.Views;
+
 public sealed partial class CertificateItemView : ViewBase
 {
     public static readonly DirectProperty<CertificateItemView, string> HeaderProperty =
@@ -45,7 +46,7 @@ public sealed partial class CertificateItemView : ViewBase
     public bool HasCert
     {
         get { return _hasCert; }
-        set { SetAndRaise(HasCertProperty, ref _hasCert, value);}
+        set { SetAndRaise(HasCertProperty, ref _hasCert, value); }
     }
 
     private ObservableCollection<X509Certificate2> Certificates = [];

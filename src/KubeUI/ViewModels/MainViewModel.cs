@@ -1,12 +1,12 @@
 ﻿using System.Runtime.InteropServices;
 using Dock.Model.Controls;
 using Dock.Model.Core;
-using KubeUI.Client;
-using Velopack.Sources;
-using Velopack;
 using FluentAvalonia.UI.Controls;
-using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using HanumanInstitute.MvvmDialogs;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using KubeUI.Client;
+using Velopack;
+using Velopack.Sources;
 
 namespace KubeUI.ViewModels;
 

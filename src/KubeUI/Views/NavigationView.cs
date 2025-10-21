@@ -10,7 +10,8 @@ public sealed class NavigationView : MyViewBase<NavigationViewModel>
 {
     private static FuncValueConverter<string?, Geometry> s_resoureConverter => new((x) =>
     {
-        if (x == null) return null;
+        if (x == null)
+            return null;
         return (Geometry)Application.Current.FindResource(x);
     });
 

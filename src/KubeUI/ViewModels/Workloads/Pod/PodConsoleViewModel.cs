@@ -315,6 +315,26 @@ public struct TerminalSize
 {
     public ushort Width { get; set; }
     public ushort Height { get; set; }
+
+    public override bool Equals(object obj)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override int GetHashCode()
+    {
+        throw new NotImplementedException();
+    }
+
+    public static bool operator ==(TerminalSize left, TerminalSize right)
+    {
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(TerminalSize left, TerminalSize right)
+    {
+        return !(left == right);
+    }
 }
 
 /// <summary>

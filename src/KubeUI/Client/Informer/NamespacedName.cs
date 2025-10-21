@@ -1,10 +1,10 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-using k8s;
-using k8s.Models;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
+using k8s;
+using k8s.Models;
 
 namespace KubeUI.Client.Informer;
 
