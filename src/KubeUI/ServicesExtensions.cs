@@ -12,6 +12,8 @@ public static partial class ServicesExtensions
 {
     //[GenerateServiceRegistrations(AssignableTo = typeof(UserControl), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = true)]
     //[GenerateServiceRegistrations(AssignableTo = typeof(ObservableObject), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false)]
+    [GenerateServiceRegistrations(AssignableTo = typeof(Window), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false)]
+
     [GenerateServiceRegistrations(AssignableTo = typeof(ViewModelBase), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false)]
     [GenerateServiceRegistrations(AssignableTo = typeof(MyViewBase<>), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false)]
     [GenerateServiceRegistrations(AssignableTo = typeof(ResourceConfigBase<>), Lifetime = ServiceLifetime.Transient, AsSelf = false, AsImplementedInterfaces = false)]

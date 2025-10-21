@@ -29,7 +29,7 @@ using OpenTelemetry.Trace;
 
 namespace KubeUI;
 
-public partial class App : Application
+public partial class AppOld : Application
 {
     public static IHost Host { get; private set; }
 
@@ -327,7 +327,7 @@ public partial class App : Application
         {
             var vm = Host.Services.GetRequiredService<MainViewModel>();
 
-            desktop.MainWindow = MainWindow.Build(vm);
+            //desktop.MainWindow = MainWindow.Build(vm);
             desktop.MainWindow.DataContext = vm;
             TopLevel = TopLevel.GetTopLevel(desktop.MainWindow);
 
