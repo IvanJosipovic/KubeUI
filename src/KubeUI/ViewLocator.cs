@@ -17,7 +17,7 @@ public sealed class ViewLocator : IDataTemplate
         _instrumentation = instrumentation;
     }
 
-    Type[] types;
+    private Type[] _types;
 
     public Control Build(object? data)
     {
@@ -26,7 +26,7 @@ public sealed class ViewLocator : IDataTemplate
 
         if (modelType.IsGenericType)
         {
-            types ??= GetType().Assembly.GetExportedTypes();
+            _types ??= GetType().Assembly.GetExportedTypes();
 
             var genericModelType = modelType.GetGenericTypeDefinition();
 
@@ -38,7 +38,7 @@ public sealed class ViewLocator : IDataTemplate
 
             if (viewType == null)
             {
-                var genericViewType = types.FirstOrDefault(x =>
+                var genericViewType = _types.FirstOrDefault(x =>
                     x.BaseType?.Name.Equals(typeof(MyViewBase<object>).Name) == true &&
                     (
                         (x.BaseType.GenericTypeArguments[0].IsGenericType && x.BaseType?.GenericTypeArguments[0].GetGenericTypeDefinition() == genericModelType)
