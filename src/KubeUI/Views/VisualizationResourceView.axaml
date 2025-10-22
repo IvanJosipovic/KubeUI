@@ -1,0 +1,41 @@
+<UserControl
+    x:Class="KubeUI.Views.VisualizationResourceView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="clr-namespace:KubeUI.ViewModels"
+    xmlns:svg="clr-namespace:Avalonia.Svg.Skia;assembly=Avalonia.Svg.Skia"
+    x:DataType="vm:VisualizationResourceViewModel" ClipToBounds="False">
+    <StackPanel>
+      <ToolTip.Tip>
+          <MultiBinding StringFormat="{} {0}/{1} {2}">
+              <Binding Path="Object.ApiVersion"></Binding>
+              <Binding Path="Object.Kind"></Binding>
+              <Binding Path="Object.Metadata.Name"></Binding>
+          </MultiBinding>
+      </ToolTip.Tip>
+      <Svg Path="{Binding IconPath}">
+        <Svg.ContextFlyout>
+            <MenuFlyout>
+                <MenuItem Header="Properties"
+                          Command="{Binding ViewPropertiesCommand}"
+                          CommandParameter="{Binding Object}" />
+                <MenuItem Header="View Yaml"
+                          Command="{Binding ViewYamlCommand}"
+                          CommandParameter="{Binding Object}" />
+            </MenuFlyout>
+        </Svg.ContextFlyout>
+      </Svg>
+        <TextBlock Margin="0,0,0,0"
+                   Width="120"
+                   TextAlignment="Center"
+                   TextWrapping="Wrap"
+                   ClipToBounds="false">
+          <TextBlock.Text>
+            <MultiBinding StringFormat="{} {0} {1}">
+                <Binding Path="Object.Kind"></Binding>
+                <Binding Path="Object.Metadata.Name"></Binding>
+            </MultiBinding>
+          </TextBlock.Text>
+        </TextBlock>
+    </StackPanel>
+</UserControl>
