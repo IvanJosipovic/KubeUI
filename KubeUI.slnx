@@ -8,6 +8,7 @@
     <File Path=".vsconfig" />
     <File Path="global.json" />
     <File Path="README.md" />
+    <File Path="Settings.XamlStyler" />
   </Folder>
   <Project Path="src/KubeUI.Core/KubeUI.Core.csproj" />
   <Project Path="src/KubeUI.Desktop/KubeUI.Desktop.csproj" />

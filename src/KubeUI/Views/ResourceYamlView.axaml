@@ -2,107 +2,123 @@
     x:Class="KubeUI.Views.ResourceYamlView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+    xmlns:assets="clr-namespace:KubeUI.Assets"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:vm="clr-namespace:KubeUI.ViewModels"
-    xmlns:assets="clr-namespace:KubeUI.Assets"
     xmlns:utils="clr-namespace:KubeUI"
-    xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
-    x:DataType="vm:ResourceYamlViewModel"
+    xmlns:vm="clr-namespace:KubeUI.ViewModels"
     d:DesignHeight="450"
     d:DesignWidth="800"
+    x:DataType="vm:ResourceYamlViewModel"
     mc:Ignorable="d">
 
     <Design.DataContext>
         <vm:ResourceYamlViewModel />
     </Design.DataContext>
 
-    <Grid RowDefinitions="Auto,*"
-          HorizontalAlignment="Stretch"
-          VerticalAlignment="Stretch">
+    <Grid
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch"
+        RowDefinitions="Auto,*">
 
-        <!-- Read-only toolbar -->
-        <StackPanel Grid.Row="0"
-                    Orientation="Horizontal"
-                    IsVisible="{Binding EditMode, Converter={x:Static utils:Utilities.InverseBooleanConverter}}">
-            <Button Command="{Binding SetEditModeCommand}"
-                    ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Edit}">
+        <!--  Read-only toolbar  -->
+        <StackPanel
+            Grid.Row="0"
+            IsVisible="{Binding EditMode, Converter={x:Static utils:Utilities.InverseBooleanConverter}}"
+            Orientation="Horizontal">
+            <Button
+                Command="{Binding SetEditModeCommand}"
+                ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Edit}">
                 <PathIcon Data="{StaticResource document_edit_regular}" />
             </Button>
-            <ToggleButton IsChecked="{Binding HideNoisyFields}"
-                          Command="{Binding SetHideNoisyFieldsCommand}"
-                          ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_HideNoisyFields}">
+            <ToggleButton
+                Command="{Binding SetHideNoisyFieldsCommand}"
+                IsChecked="{Binding HideNoisyFields}"
+                ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_HideNoisyFields}">
                 <PathIcon Data="{StaticResource eye_hide_regular}" />
             </ToggleButton>
-            <ToggleButton IsChecked="{Binding WordWrap}"
-                          ToolTip.Tip="{x:Static assets:Resources.ResourceYamlView_WordWrap}">
+            <ToggleButton
+                IsChecked="{Binding WordWrap}"
+                ToolTip.Tip="{x:Static assets:Resources.ResourceYamlView_WordWrap}">
                 <PathIcon Data="{StaticResource text_wrap_regular}" />
             </ToggleButton>
         </StackPanel>
 
-        <!-- Edit toolbar -->
-        <StackPanel Grid.Row="0"
-                    Orientation="Horizontal"
-                    IsVisible="{Binding EditMode}">
-            <Button Command="{Binding SaveCommand}"
-                    ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Save}">
+        <!--  Edit toolbar  -->
+        <StackPanel
+            Grid.Row="0"
+            IsVisible="{Binding EditMode}"
+            Orientation="Horizontal">
+            <Button
+                Command="{Binding SaveCommand}"
+                ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Save}">
                 <PathIcon Data="{StaticResource save_regular}" />
             </Button>
-            <Button Command="{Binding SetEditModeCommand}"
-                    ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Cancel}">
+            <Button
+                Command="{Binding SetEditModeCommand}"
+                ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Cancel}">
                 <PathIcon Data="{StaticResource dismiss_regular}" />
             </Button>
-            <ToggleButton IsChecked="{Binding WordWrap}"
-                          ToolTip.Tip="{x:Static assets:Resources.ResourceYamlView_WordWrap}">
+            <ToggleButton
+                IsChecked="{Binding WordWrap}"
+                ToolTip.Tip="{x:Static assets:Resources.ResourceYamlView_WordWrap}">
                 <PathIcon Data="{StaticResource text_wrap_regular}" />
             </ToggleButton>
         </StackPanel>
 
-        <!-- YAML editor -->
-        <ae:TextEditor Name="Editor"
-                       Grid.Row="1"
-                       Document="{Binding YamlDocument, Mode=TwoWay}"
-                       FontFamily="Cascadia Mono"
-                       FontSize="{Binding Settings.Settings.ConsoleFontSize}"
-                       FontWeight="Normal"
-                       ShowLineNumbers="True"
-                       Background="{DynamicResource SystemAltHighColor}"
-                       HorizontalScrollBarVisibility="Auto"
-                       VerticalScrollBarVisibility="Visible"
-                       WordWrap="{Binding WordWrap}"
-                       IsReadOnly="{Binding EditMode, Converter={x:Static utils:Utilities.InverseBooleanConverter}}">
+        <!--  YAML editor  -->
+        <ae:TextEditor
+            Name="Editor"
+            Grid.Row="1"
+            Background="{DynamicResource SystemAltHighColor}"
+            Document="{Binding YamlDocument, Mode=TwoWay}"
+            FontFamily="Cascadia Mono"
+            FontSize="{Binding Settings.Settings.ConsoleFontSize}"
+            FontWeight="Normal"
+            HorizontalScrollBarVisibility="Auto"
+            IsReadOnly="{Binding EditMode, Converter={x:Static utils:Utilities.InverseBooleanConverter}}"
+            ShowLineNumbers="True"
+            VerticalScrollBarVisibility="Visible"
+            WordWrap="{Binding WordWrap}">
             <ae:TextEditor.KeyBindings>
-                <KeyBinding Gesture="Ctrl+Z" Command="{Binding UndoCommand}" />
+                <KeyBinding
+                    Command="{Binding UndoCommand}"
+                    Gesture="Ctrl+Z" />
             </ae:TextEditor.KeyBindings>
             <ae:TextEditor.ContextMenu>
                 <ContextMenu>
-                    <MenuItem Header="{x:Static assets:Resources.Action_Cut}"
-                              HotKey="Ctrl+X"
-                              IsVisible="{Binding EditMode}"
-                              Click="CutClick">
+                    <MenuItem
+                        Click="CutClick"
+                        Header="{x:Static assets:Resources.Action_Cut}"
+                        HotKey="Ctrl+X"
+                        IsVisible="{Binding EditMode}">
                         <MenuItem.Icon>
                             <PathIcon Data="{StaticResource cut_regular}" />
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="{x:Static assets:Resources.Action_Copy}"
-                              HotKey="Ctrl+C"
-                              Click="CopyClick">
+                    <MenuItem
+                        Click="CopyClick"
+                        Header="{x:Static assets:Resources.Action_Copy}"
+                        HotKey="Ctrl+C">
                         <MenuItem.Icon>
                             <PathIcon Data="{StaticResource copy_regular}" />
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="{x:Static assets:Resources.Action_Paste}"
-                              HotKey="Ctrl+V"
-                              IsVisible="{Binding EditMode}"
-                              Click="PasteClick">
+                    <MenuItem
+                        Click="PasteClick"
+                        Header="{x:Static assets:Resources.Action_Paste}"
+                        HotKey="Ctrl+V"
+                        IsVisible="{Binding EditMode}">
                         <MenuItem.Icon>
                             <PathIcon Data="{StaticResource clipboard_paste_regular}" />
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="{x:Static assets:Resources.Action_Delete}"
-                              HotKey="Back"
-                              IsVisible="{Binding EditMode}"
-                              Click="DeleteClick">
+                    <MenuItem
+                        Click="DeleteClick"
+                        Header="{x:Static assets:Resources.Action_Delete}"
+                        HotKey="Back"
+                        IsVisible="{Binding EditMode}">
                         <MenuItem.Icon>
                             <PathIcon Data="{StaticResource delete_regular}" />
                         </MenuItem.Icon>
@@ -110,18 +126,20 @@
 
                     <Separator IsVisible="{Binding EditMode}" />
 
-                    <MenuItem Header="{x:Static assets:Resources.Action_Undo}"
-                              HotKey="Ctrl+Z"
-                              IsVisible="{Binding EditMode}"
-                              Click="UndoClick">
+                    <MenuItem
+                        Click="UndoClick"
+                        Header="{x:Static assets:Resources.Action_Undo}"
+                        HotKey="Ctrl+Z"
+                        IsVisible="{Binding EditMode}">
                         <MenuItem.Icon>
                             <PathIcon Data="{StaticResource arrow_undo_regular}" />
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="{x:Static assets:Resources.Action_Redo}"
-                              HotKey="Ctrl+Y"
-                              IsVisible="{Binding EditMode}"
-                              Click="RedoClick">
+                    <MenuItem
+                        Click="RedoClick"
+                        Header="{x:Static assets:Resources.Action_Redo}"
+                        HotKey="Ctrl+Y"
+                        IsVisible="{Binding EditMode}">
                         <MenuItem.Icon>
                             <PathIcon Data="{StaticResource arrow_redo_regular}" />
                         </MenuItem.Icon>

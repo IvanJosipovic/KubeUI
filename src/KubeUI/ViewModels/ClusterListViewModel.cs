@@ -10,20 +10,24 @@ public sealed partial class ClusterListViewModel : ViewModelBase
     [ObservableProperty]
     public partial ClusterManager ClusterManager { get; set; }
 
+    [ObservableProperty]
+    public partial ISettingsService Settings { get; set; }
+
     private readonly IDialogService _dialogService;
 
     public ClusterListViewModel()
     {
         ClusterManager = Application.Current.GetRequiredService<ClusterManager>();
+        Settings = Application.Current.GetRequiredService<ISettingsService>();
         _dialogService = Application.Current.GetRequiredService<IDialogService>();
 
         Title = Assets.Resources.ClusterListViewModel_Title;
         Id = nameof(ClusterListViewModel);
-        SelectedItem = ClusterManager.Clusters.FirstOrDefault();
+        //SelectedItem = ClusterManager.Clusters.FirstOrDefault();
     }
 
     [ObservableProperty]
-    public partial ICluster SelectedItem { get; set; }
+    public partial ICluster? SelectedItem { get; set; }
 
     [RelayCommand(CanExecute = nameof(CanDelete))]
     private async Task Delete(ICluster cluster)

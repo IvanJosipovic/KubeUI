@@ -85,6 +85,7 @@ public partial class App : Application
             builder.Services.AddOpenTelemetry()
                 .ConfigureResource(resource => resource
                     .AddService("Desktop", "com.KubeUI.Desktop", serviceVersion: version)
+                    .AddOperatingSystemDetector()
                     .AddAttributes(new Dictionary<string, object>(StringComparer.Ordinal)
                     {
                     #if DEBUG
@@ -92,8 +93,6 @@ public partial class App : Application
                     #else
                         { "deployment.environment", "Production" },
                     #endif
-                        { "host.type", RuntimeInformation.OSArchitecture.ToString() },
-                        { "host.os", RuntimeInformation.OSDescription },
                     })
                 )
                 .WithLogging(loggingProvider =>
@@ -168,11 +167,9 @@ public partial class App : Application
 
         //Logger.Sink = Host.Services.GetRequiredService<ILoggerSink>();
 
+        Host.Services.GetRequiredService<ISettingsService>().LoadSettings();
+
         logger = Host.Services.GetRequiredService<ILogger<App>>();
-
-        var settings = Host.Services.GetRequiredService<ISettingsService>();
-
-        settings.LoadSettings();
 
         // https://github.com/kubernetes-client/csharp/issues/1674
         var ctxType = typeof(k8s.Kubernetes).Assembly.GetType("k8s.SourceGenerationContext");
@@ -229,6 +226,8 @@ public partial class App : Application
             singleViewPlatform.MainView.DataContext = Host.Services.GetRequiredService<MainViewModel>();
             TopLevel = TopLevel.GetTopLevel(singleViewPlatform.MainView);
         }
+
+        Host.Services.GetRequiredService<ISettingsService>().ApplySettings();
 
         NotificationManager = new WindowNotificationManager(TopLevel) { MaxItems = 4 };
 

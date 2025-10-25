@@ -1,27 +1,27 @@
 
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:vm="clr-namespace:KubeUI.ViewModels"
-             xmlns:local="clr-namespace:KubeUI.Views"
-             xmlns:client="clr-namespace:KubeUI.Client"
-             xmlns:conv="clr-namespace:KubeUI.Converters"
-             xmlns:converters="using:KubeUI.Converters"
-             xmlns:util="clr-namespace:KubeUI"
-             mc:Ignorable="d"
-             d:DesignHeight="450"
-             d:DesignWidth="200"
-             x:Class="KubeUI.Views.NavigationView"
-             x:DataType="vm:NavigationViewModel"
-             >
+<UserControl
+    x:Class="KubeUI.Views.NavigationView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:client="clr-namespace:KubeUI.Client"
+    xmlns:conv="clr-namespace:KubeUI.Converters"
+    xmlns:converters="using:KubeUI.Converters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:KubeUI.Views"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:util="clr-namespace:KubeUI"
+    xmlns:vm="clr-namespace:KubeUI.ViewModels"
+    d:DesignHeight="600"
+    d:DesignWidth="300"
+    x:DataType="vm:NavigationViewModel"
+    mc:Ignorable="d">
 
 
-  <Design.DataContext>
-    <vm:NavigationViewModel />
-  </Design.DataContext>
+    <Design.DataContext>
+        <vm:NavigationViewModel />
+    </Design.DataContext>
 
-      <UserControl.Resources>
+    <UserControl.Resources>
         <converters:StaticResourceConverter x:Key="StaticResourceConverter" />
     </UserControl.Resources>
 
@@ -36,11 +36,21 @@
             <Setter Property="Margin" Value="0,0,4,0" />
         </Style>
     </UserControl.Styles>
-    <TreeView ItemsSource="{Binding ClusterManager.Clusters}" AutoScrollToSelectedItem="False" SelectionChanged="TreeView_SelectionChanged">
+    <TreeView
+        Margin="-5,0,0,0"
+        AutoScrollToSelectedItem="False"
+        ItemsSource="{Binding ClusterManager.Clusters}"
+        SelectionChanged="TreeView_SelectionChanged">
         <TreeView.DataTemplates>
-            <TreeDataTemplate x:DataType="client:ICluster" ItemsSource="{Binding NavigationItems}">
-                <StackPanel Orientation="Horizontal">
-                    <CheckBox MinHeight="10" Margin="0,0,4,0" IsChecked="{Binding Connected}" IsEnabled="False">
+            <TreeDataTemplate
+                x:DataType="client:ICluster"
+                ItemsSource="{Binding NavigationItems}">
+                <StackPanel Orientation="Horizontal" Margin="-5,0,0,0">
+                    <CheckBox
+                        MinHeight="10"
+                        Margin="0,0,4,0"
+                        IsChecked="{Binding Connected}"
+                        IsEnabled="False">
                         <CheckBox.Styles>
                             <Style Selector="CheckBox[IsChecked=true] /template/Ellipse">
                                 <Setter Property="Fill" Value="LimeGreen" />
@@ -51,24 +61,38 @@
                         </CheckBox.Styles>
                         <CheckBox.Template>
                             <ControlTemplate>
-                                <Ellipse Width="10" Height="10" Stroke="Gray" StrokeThickness="1" />
+                                <Ellipse
+                                    Width="10"
+                                    Height="10"
+                                    Stroke="Gray"
+                                    StrokeThickness="1" />
                             </ControlTemplate>
                         </CheckBox.Template>
                     </CheckBox>
                     <TextBlock Text="{Binding Name}" />
                 </StackPanel>
             </TreeDataTemplate>
-            <TreeDataTemplate x:DataType="vm:ResourceNavigationLink" ItemsSource="{Binding NavigationItems}">
-                <StackPanel Orientation="Horizontal">
+            <TreeDataTemplate
+                x:DataType="vm:ResourceNavigationLink"
+                ItemsSource="{Binding NavigationItems}">
+                <StackPanel Orientation="Horizontal" Margin="-5,0,0,0">
                     <Svg Path="{Binding IconPath}" />
                     <TextBlock Text="{Binding Name}" />
-                    <TextBlock Margin="5,0,0,0" Text="{Binding Objects.Count}" />
+                    <TextBlock
+                        Margin="4,0,0,0"
+                        Text="{Binding Objects.Count}" />
                 </StackPanel>
             </TreeDataTemplate>
-            <TreeDataTemplate x:DataType="vm:NavigationItem" ItemsSource="{Binding NavigationItems}">
-                <StackPanel Orientation="Horizontal">
-                    <PathIcon Data="{Binding StyleIcon, Converter={StaticResource StaticResourceConverter}}" IsVisible="{Binding StyleIcon, Converter={x:Static util:Utilities.NotNullConverter}}" />
-                    <Svg Path="{Binding SvgIcon}" IsVisible="{Binding SvgIcon, Converter={x:Static util:Utilities.NotNullConverter}}" />
+            <TreeDataTemplate
+                x:DataType="vm:NavigationItem"
+                ItemsSource="{Binding NavigationItems}">
+                <StackPanel Orientation="Horizontal" Margin="-5,0,0,0">
+                    <PathIcon
+                        Data="{Binding StyleIcon, Converter={StaticResource StaticResourceConverter}}"
+                        IsVisible="{Binding StyleIcon, Converter={x:Static util:Utilities.NotNullConverter}}" />
+                    <Svg
+                        IsVisible="{Binding SvgIcon, Converter={x:Static util:Utilities.NotNullConverter}}"
+                        Path="{Binding SvgIcon}" />
                     <TextBlock Text="{Binding Name}" />
                 </StackPanel>
             </TreeDataTemplate>

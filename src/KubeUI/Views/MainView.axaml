@@ -16,33 +16,45 @@
         <vm:MainViewModel />
     </Design.DataContext>
 
-    <Grid Background="Transparent" RowDefinitions="Auto,*">
-    <!-- Top Menu (hidden on macOS in code-behind) -->
-    <Menu x:Name="MainMenu" Grid.Row="0" VerticalAlignment="Top">
-      <MenuItem Header="{x:Static assets:Resources.MainView_Menu_File}">
-        <MenuItem Header="{x:Static assets:Resources.MainView_Menu_File_LoadKubeConfig}"
-                  Command="{Binding LoadKubeConfigCommand}" />
-        <MenuItem Header="{x:Static assets:Resources.MainView_Menu_File_Clusters}"
-                  Command="{Binding OpenClustersCommand}" />
-        <MenuItem Header="{x:Static assets:Resources.MainView_Menu_File_Settings}"
-                  Command="{Binding OpenSettingsCommand}" />
-        <Separator />
-        <MenuItem Header="{x:Static assets:Resources.MainView_Menu_File_Exit}"
-                  Command="{Binding CloseCommand}" />
-      </MenuItem>
+    <Grid
+        Background="Transparent"
+        RowDefinitions="Auto,*">
+        <!--  Top Menu (hidden on macOS in code-behind)  -->
+        <Menu
+            x:Name="MainMenu"
+            Grid.Row="0"
+            VerticalAlignment="Top">
+            <MenuItem Header="{x:Static assets:Resources.MainView_Menu_File}">
+                <MenuItem
+                    Command="{Binding LoadKubeConfigCommand}"
+                    Header="{x:Static assets:Resources.MainView_Menu_File_LoadKubeConfig}" />
+                <MenuItem
+                    Command="{Binding OpenClustersCommand}"
+                    Header="{x:Static assets:Resources.MainView_Menu_File_Clusters}" />
+                <MenuItem
+                    Command="{Binding OpenSettingsCommand}"
+                    Header="{x:Static assets:Resources.MainView_Menu_File_Settings}" />
+                <Separator />
+                <MenuItem
+                    Command="{Binding CloseCommand}"
+                    Header="{x:Static assets:Resources.MainView_Menu_File_Exit}" />
+            </MenuItem>
 
-      <MenuItem Header="{x:Static assets:Resources.MainView_Menu_Window}">
-        <MenuItem Header="{x:Static assets:Resources.MainView_Menu_Window_ResetLayout}"
-                  Command="{Binding ResetLayoutCommand}" />
-        <MenuItem Header="{x:Static assets:Resources.MainView_Menu_Window_SwitchTheme}"
-                  Command="{Binding SwitchThemeCommand}" />
-      </MenuItem>
+            <MenuItem Header="{x:Static assets:Resources.MainView_Menu_Window}">
+                <MenuItem
+                    Command="{Binding ResetLayoutCommand}"
+                    Header="{x:Static assets:Resources.MainView_Menu_Window_ResetLayout}" />
+                <MenuItem
+                    Command="{Binding SwitchThemeCommand}"
+                    Header="{x:Static assets:Resources.MainView_Menu_Window_SwitchTheme}" />
+            </MenuItem>
 
-      <MenuItem Header="{x:Static assets:Resources.MainView_Menu_Help}">
-        <MenuItem Header="{x:Static assets:Resources.MainView_Menu_Help_About}"
-                  Command="{Binding OpenAboutCommand}" />
-      </MenuItem>
-    </Menu>
+            <MenuItem Header="{x:Static assets:Resources.MainView_Menu_Help}">
+                <MenuItem
+                    Command="{Binding OpenAboutCommand}"
+                    Header="{x:Static assets:Resources.MainView_Menu_Help_About}" />
+            </MenuItem>
+        </Menu>
 
         <doc:DockControl
             Grid.Row="1"

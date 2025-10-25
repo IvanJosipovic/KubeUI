@@ -15,12 +15,14 @@
     </Design.DataContext>
 
     <Grid RowDefinitions="Auto,*">
-        <TextBlock Grid.Row="0"
-                   Padding="5,0,0,0"
-                   Text="{x:Static assets:Resources.ClusterErrorView_Header}" />
-        <SelectableTextBlock Grid.Row="1"
-                             Padding="5,0,0,0"
-                             TextWrapping="Wrap"
-                             Text="{Binding Error}" />
+        <TextBlock
+            Grid.Row="0"
+            Padding="5,0,0,0"
+            Text="{x:Static assets:Resources.ClusterErrorView_Header}" />
+        <SelectableTextBlock
+            Grid.Row="1"
+            Padding="5,0,0,0"
+            Text="{Binding Error}"
+            TextWrapping="Wrap" />
     </Grid>
 </UserControl>

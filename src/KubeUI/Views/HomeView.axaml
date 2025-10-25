@@ -15,5 +15,9 @@
         <vm:HomeViewModel />
     </Design.DataContext>
 
-    <TextBlock Text="{x:Static assets:Resources.HomeView_Header}" Margin="5, 5, 0, 0" HorizontalAlignment="Center" FontSize="24" />
+    <TextBlock
+        Margin="5,5,0,0"
+        HorizontalAlignment="Center"
+        FontSize="24"
+        Text="{x:Static assets:Resources.HomeView_Header}" />
 </UserControl>

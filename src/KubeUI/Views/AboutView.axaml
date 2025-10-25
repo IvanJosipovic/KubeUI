@@ -15,15 +15,15 @@
         <vm:AboutViewModel />
     </Design.DataContext>
     <StackPanel>
-        <TextBlock Padding="5,0,0,0"
-                   Text="{x:Static assets:Resources.AboutView_Header}" />
-        <HyperlinkButton Padding="5,0,0,0"
-                         NavigateUri="mailto:admin@KubeUI.com"
-                         Content="admin@KubeUI.com" />
-        <TextBlock Padding="5,0,0,0"
-                   Text="{Binding Version, StringFormat={x:Static assets:Resources.AboutView_Version_StringFormat}}"/>
-        <HyperlinkButton Padding="5,0,0,0"
-                         NavigateUri="https://KubeUI.com"
-                         Content="https://KubeUI.com" />
+        <TextBlock Padding="5,0,0,0" Text="{x:Static assets:Resources.AboutView_Header}" />
+        <HyperlinkButton
+            Padding="5,0,0,0"
+            Content="admin@KubeUI.com"
+            NavigateUri="mailto:admin@KubeUI.com" />
+        <TextBlock Padding="5,0,0,0" Text="{Binding Version, StringFormat={x:Static assets:Resources.AboutView_Version_StringFormat}}" />
+        <HyperlinkButton
+            Padding="5,0,0,0"
+            Content="https://KubeUI.com"
+            NavigateUri="https://KubeUI.com" />
     </StackPanel>
 </UserControl>

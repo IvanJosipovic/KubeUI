@@ -14,7 +14,8 @@ public sealed partial class MainViewModel : ViewModelBase
 {
     private readonly ILogger<MainViewModel> _logger;
 
-    private readonly ISettingsService _settingsService;
+    [ObservableProperty]
+    private partial ISettingsService SettingsService { get; set; }
 
     [ObservableProperty]
     public partial ClusterManager ClusterManager { get; set; }
@@ -25,7 +26,7 @@ public sealed partial class MainViewModel : ViewModelBase
     {
         _logger = Application.Current.GetRequiredService<ILogger<MainViewModel>>();
 
-        _settingsService = Application.Current.GetRequiredService<ISettingsService>();
+        SettingsService = Application.Current.GetRequiredService<ISettingsService>();
 
         ClusterManager = Application.Current.GetRequiredService<ClusterManager>();
 
@@ -208,8 +209,8 @@ public sealed partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void SwitchTheme()
     {
-        _settingsService.Settings.Theme = _settingsService.Settings.Theme == LocalThemeVariant.Light ? LocalThemeVariant.Dark : LocalThemeVariant.Light;
-        _settingsService.SaveSettings();
+        SettingsService.Settings.Theme = SettingsService.Settings.Theme == LocalThemeVariant.Light ? LocalThemeVariant.Dark : LocalThemeVariant.Light;
+        SettingsService.SaveSettings();
     }
 
     [RelayCommand]
@@ -236,7 +237,7 @@ public sealed partial class MainViewModel : ViewModelBase
 
     private async Task CheckForUpdates()
     {
-        var source = new GithubSource("https://github.com/IvanJosipovic/KubeUI", null, _settingsService.Settings.PreReleaseChannel);
+        var source = new GithubSource("https://github.com/IvanJosipovic/KubeUI", null, SettingsService.Settings.PreReleaseChannel);
 
         var arch = "x64";
 
