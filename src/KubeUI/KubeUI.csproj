@@ -78,17 +78,20 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.Process" Version="1.13.0-beta.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.13.0" />
     <PackageReference Include="OpenTelemetry.Resources.OperatingSystem" Version="1.13.0-beta.1" />
-    <PackageReference Include="roslynator.analyzers" Version="4.14.1"/>
+    <PackageReference Include="roslynator.analyzers" Version="4.14.1" />
     <PackageReference Include="Semi.Avalonia" Version="11.2.1.9" />
-    <PackageReference Include="ServiceScan.SourceGenerator" Version="2.4.1"/>
+    <PackageReference Include="ServiceScan.SourceGenerator" Version="2.4.1" />
     <PackageReference Include="Svg.Controls.Skia.Avalonia" Version="11.3.6.2" />
     <PackageReference Include="Swordfish.NET.CollectionsV3" Version="3.3.16" />
     <PackageReference Include="TextMateSharp" Version="1.0.70" />
     <PackageReference Include="TextMateSharp.Grammars" Version="1.0.70" />
     <PackageReference Include="Velopack" Version="0.0.1298" />
-    <!--<PackageReference Include="Xaml.Behaviors.Avalonia" Version="11.3.6.6" />-->
-    <PackageReference Include="Avalonia.Xaml.Behaviors" Version="11.3.0.6" />
     <PackageReference Include="YamlDotNet.System.Text.Json" Version="1.6.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Avalonia.Xaml.Behaviors\Avalonia.Xaml.Behaviors.csproj" />
+    <ProjectReference Include="..\Avalonia.Xaml.Interactivity\Avalonia.Xaml.Interactivity.csproj" />
   </ItemGroup>
 
   <ItemGroup>

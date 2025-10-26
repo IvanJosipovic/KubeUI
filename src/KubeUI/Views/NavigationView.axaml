@@ -5,7 +5,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:client="clr-namespace:KubeUI.Client"
     xmlns:converters="using:KubeUI.Converters"
-    xmlns:custom="using:Avalonia.Xaml.Interactions.Custom"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:KubeUI.Views"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -46,16 +45,16 @@
                 <StackPanel Margin="-5,0,0,0" Orientation="Horizontal">
                     <Interaction.Behaviors>
                         <DataTriggerBehavior Binding="{Binding Status}" Value="{x:Static client:ClusterStatus.None}">
-                            <custom:SetToolTipTipAction Tip="{x:Null}" />
+                            <SetToolTipTipAction Tip="Click to Connect" />
                         </DataTriggerBehavior>
                         <DataTriggerBehavior Binding="{Binding Status}" Value="{x:Static client:ClusterStatus.Connecting}">
-                            <custom:SetToolTipTipAction Tip="Connecting..." />
+                            <SetToolTipTipAction Tip="Connecting..." />
                         </DataTriggerBehavior>
                         <DataTriggerBehavior Binding="{Binding Status}" Value="{x:Static client:ClusterStatus.Errored}">
-                            <custom:SetToolTipTipAction Tip="Errored" />
+                            <SetToolTipTipAction Tip="Errored" />
                         </DataTriggerBehavior>
                         <DataTriggerBehavior Binding="{Binding Status}" Value="{x:Static client:ClusterStatus.Connected}">
-                            <custom:SetToolTipTipAction Tip="Connected" />
+                            <SetToolTipTipAction Tip="Connected" />
                         </DataTriggerBehavior>
                     </Interaction.Behaviors>
                     <Ellipse

@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Avalonia.Xaml.Behaviors</AssemblyName>
+    <RootNamespace>Avalonia.Xaml.Behaviors</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Xaml.Behaviors.Avalonia" Version="11.3.6.6" />
+  </ItemGroup>
+</Project>
