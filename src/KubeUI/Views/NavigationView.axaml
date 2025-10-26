@@ -4,8 +4,8 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:client="clr-namespace:KubeUI.Client"
-    xmlns:conv="clr-namespace:KubeUI.Converters"
     xmlns:converters="using:KubeUI.Converters"
+    xmlns:custom="using:Avalonia.Xaml.Interactions.Custom"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:KubeUI.Views"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -42,57 +42,59 @@
         ItemsSource="{Binding ClusterManager.Clusters}"
         SelectionChanged="TreeView_SelectionChanged">
         <TreeView.DataTemplates>
-            <TreeDataTemplate
-                x:DataType="client:ICluster"
-                ItemsSource="{Binding NavigationItems}">
-                <StackPanel Orientation="Horizontal" Margin="-5,0,0,0">
-                    <CheckBox
+            <TreeDataTemplate x:DataType="client:ICluster" ItemsSource="{Binding NavigationItems}">
+                <StackPanel Margin="-5,0,0,0" Orientation="Horizontal">
+                    <Interaction.Behaviors>
+                        <DataTriggerBehavior Binding="{Binding Status}" Value="{x:Static client:ClusterStatus.None}">
+                            <custom:SetToolTipTipAction Tip="{x:Null}" />
+                        </DataTriggerBehavior>
+                        <DataTriggerBehavior Binding="{Binding Status}" Value="{x:Static client:ClusterStatus.Connecting}">
+                            <custom:SetToolTipTipAction Tip="Connecting..." />
+                        </DataTriggerBehavior>
+                        <DataTriggerBehavior Binding="{Binding Status}" Value="{x:Static client:ClusterStatus.Errored}">
+                            <custom:SetToolTipTipAction Tip="Errored" />
+                        </DataTriggerBehavior>
+                        <DataTriggerBehavior Binding="{Binding Status}" Value="{x:Static client:ClusterStatus.Connected}">
+                            <custom:SetToolTipTipAction Tip="Connected" />
+                        </DataTriggerBehavior>
+                    </Interaction.Behaviors>
+                    <Ellipse
+                        Name="Target"
+                        Width="10"
+                        Height="10"
                         MinHeight="10"
                         Margin="0,0,4,0"
-                        IsChecked="{Binding Connected}"
-                        IsEnabled="False">
-                        <CheckBox.Styles>
-                            <Style Selector="CheckBox[IsChecked=true] /template/Ellipse">
-                                <Setter Property="Fill" Value="LimeGreen" />
-                            </Style>
-                            <Style Selector="CheckBox[IsChecked=false] /template/Ellipse">
-                                <Setter Property="Fill" Value="Red" />
-                            </Style>
-                        </CheckBox.Styles>
-                        <CheckBox.Template>
-                            <ControlTemplate>
-                                <Ellipse
-                                    Width="10"
-                                    Height="10"
-                                    Stroke="Gray"
-                                    StrokeThickness="1" />
-                            </ControlTemplate>
-                        </CheckBox.Template>
-                    </CheckBox>
+                        Stroke="Gray"
+                        StrokeThickness="1">
+                        <Interaction.Behaviors>
+                            <DataTriggerBehavior Binding="{Binding Status}" Value="{x:Static client:ClusterStatus.None}">
+                                <ChangePropertyAction PropertyName="Fill" Value="Red" />
+                            </DataTriggerBehavior>
+                            <DataTriggerBehavior Binding="{Binding Status}" Value="{x:Static client:ClusterStatus.Connecting}">
+                                <ChangePropertyAction PropertyName="Fill" Value="Orange" />
+                            </DataTriggerBehavior>
+                            <DataTriggerBehavior Binding="{Binding Status}" Value="{x:Static client:ClusterStatus.Errored}">
+                                <ChangePropertyAction PropertyName="Fill" Value="Yellow" />
+                            </DataTriggerBehavior>
+                            <DataTriggerBehavior Binding="{Binding Status}" Value="{x:Static client:ClusterStatus.Connected}">
+                                <ChangePropertyAction PropertyName="Fill" Value="LimeGreen" />
+                            </DataTriggerBehavior>
+                        </Interaction.Behaviors>
+                    </Ellipse>
                     <TextBlock Text="{Binding Name}" />
                 </StackPanel>
             </TreeDataTemplate>
-            <TreeDataTemplate
-                x:DataType="vm:ResourceNavigationLink"
-                ItemsSource="{Binding NavigationItems}">
-                <StackPanel Orientation="Horizontal" Margin="-5,0,0,0">
+            <TreeDataTemplate x:DataType="vm:ResourceNavigationLink" ItemsSource="{Binding NavigationItems}">
+                <StackPanel Margin="-5,0,0,0" Orientation="Horizontal">
                     <Svg Path="{Binding IconPath}" />
                     <TextBlock Text="{Binding Name}" />
-                    <TextBlock
-                        Margin="4,0,0,0"
-                        Text="{Binding Objects.Count}" />
+                    <TextBlock Margin="4,0,0,0" Text="{Binding Objects.Count}" />
                 </StackPanel>
             </TreeDataTemplate>
-            <TreeDataTemplate
-                x:DataType="vm:NavigationItem"
-                ItemsSource="{Binding NavigationItems}">
-                <StackPanel Orientation="Horizontal" Margin="-5,0,0,0">
-                    <PathIcon
-                        Data="{Binding StyleIcon, Converter={StaticResource StaticResourceConverter}}"
-                        IsVisible="{Binding StyleIcon, Converter={x:Static util:Utilities.NotNullConverter}}" />
-                    <Svg
-                        IsVisible="{Binding SvgIcon, Converter={x:Static util:Utilities.NotNullConverter}}"
-                        Path="{Binding SvgIcon}" />
+            <TreeDataTemplate x:DataType="vm:NavigationItem" ItemsSource="{Binding NavigationItems}">
+                <StackPanel Margin="-5,0,0,0" Orientation="Horizontal">
+                    <PathIcon Data="{Binding StyleIcon, Converter={StaticResource StaticResourceConverter}}" IsVisible="{Binding StyleIcon, Converter={x:Static util:Utilities.NotNullConverter}}" />
+                    <Svg IsVisible="{Binding SvgIcon, Converter={x:Static util:Utilities.NotNullConverter}}" Path="{Binding SvgIcon}" />
                     <TextBlock Text="{Binding Name}" />
                 </StackPanel>
             </TreeDataTemplate>

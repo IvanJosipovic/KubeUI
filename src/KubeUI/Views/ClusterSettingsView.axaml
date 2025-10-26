@@ -16,23 +16,17 @@
         <vm:ClusterSettingsViewModel />
     </Design.DataContext>
     <StackPanel Margin="10,0,0,0">
-        <TextBlock
-            FontSize="25"
-            Text="{Binding Cluster.Name, StringFormat='{}{0} Settings'}" />
+        <TextBlock FontSize="25" Text="{Binding Cluster.Name, StringFormat='{}{0} Settings'}" />
 
         <Grid
             ColumnDefinitions="*,2*"
             IsEnabled="{Binding !Cluster.ListNamespaces}"
             ToolTip.Tip="Manually specified namespaces">
-            <Label
-                Grid.Column="0"
-                Content="Namespaces (Restart Required)" />
+            <Label Grid.Column="0" Content="Namespaces (Restart Required)" />
 
             <StackPanel Grid.Column="1">
                 <Grid ColumnDefinitions="*,Auto">
-                    <TextBox
-                        Grid.Column="0"
-                        Text="{Binding Namespace}" />
+                    <TextBox Grid.Column="0" Text="{Binding Namespace}" />
                     <Button
                         Grid.Column="1"
                         Command="{Binding AddNamespaceCommand}"

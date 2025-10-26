@@ -22,6 +22,14 @@ using YamlDotNet.Core.Events;
 
 namespace KubeUI.Client;
 
+public enum ClusterStatus
+{
+    None,
+    Connecting,
+    Errored,
+    Connected
+}
+
 public sealed partial class Cluster : ObservableObject, ICluster
 {
     private ILoggerFactory _loggerFactory;
@@ -60,6 +68,9 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     [ObservableProperty]
     public partial K8SConfiguration KubeConfig { get; set; }
+
+    [ObservableProperty]
+    public partial ClusterStatus Status { get; set; }
 
     [ObservableProperty]
     public partial bool Connected { get; set; }
@@ -113,6 +124,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
             {
                 try
                 {
+                    Status = ClusterStatus.Connecting;
                     KubernetesClientConfiguration config;
 
                     if (string.IsNullOrEmpty(KubeConfigPath))
@@ -148,6 +160,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     APIGroupDiscoveryList = await GetAPIGroupDiscoveryList(false);
 
                     Connected = true;
+
+                    Status = ClusterStatus.Connected;
 
                     await GetPermissions();
 
@@ -211,6 +225,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     _logger.LogError(ex, "Error connecting to {name}", Name);
 
                     Connected = false;
+
+                    Status = ClusterStatus.Errored;
 
                     var factory = Application.Current.GetRequiredService<IFactory>();
 

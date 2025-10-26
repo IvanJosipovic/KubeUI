@@ -36,6 +36,7 @@ public interface ICluster
     string KubeConfigPath { get; set; }
     string Name { get; set; }
     K8SConfiguration KubeConfig { get; set; }
+    ClusterStatus Status { get; set; }
 
     Task AddOrUpdate<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task Connect();
