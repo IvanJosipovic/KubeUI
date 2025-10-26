@@ -13,9 +13,11 @@ using KubeUI.Resources;
 
 namespace KubeUI.ViewModels;
 
-public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluster, IDisposable where T : class, IKubernetesObject<V1ObjectMeta>, new()
+public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluster, IDisposable, IResourceListViewModel where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     private readonly ILogger<ResourceListViewModel<T>> _logger;
+
+    public ISettingsService SettingsService { get; }
 
     [ObservableProperty]
     public partial ICluster Cluster { get; set; }
@@ -49,6 +51,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     public ResourceListViewModel()
     {
         _logger = Application.Current.GetRequiredService<ILogger<ResourceListViewModel<T>>>();
+        SettingsService = Application.Current.GetRequiredService<ISettingsService>();
     }
 
     public void Initialize(ICluster cluster)

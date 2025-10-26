@@ -41,7 +41,7 @@ public partial class App : Application
         AvaloniaXamlLoader.Load(this);
 
 #if DEBUG
-        //this.AttachDevTools();
+        this.AttachDeveloperTools();
 #endif
 
         LiveCharts.Configure(config => config

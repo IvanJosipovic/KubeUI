@@ -165,7 +165,7 @@ public sealed class ClusterView : MyViewBase<ClusterViewModel>
                         .Row(0)
                         .Text("Events")
                         .FontSize(25),
-                    new ResourceListView<Corev1Event>()
+                    new ResourceListView()
                         .Row(1)
                         .DataContext(vm.EventsVM)
                 )

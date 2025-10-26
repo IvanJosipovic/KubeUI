@@ -6,6 +6,8 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:k8s="using:k8s.Models"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    HorizontalAlignment="Left"
+    VerticalAlignment="Center"
     x:DataType="k8s:V1Pod">
     <UserControl.Styles>
         <Style Selector="Ellipse.statusDot">

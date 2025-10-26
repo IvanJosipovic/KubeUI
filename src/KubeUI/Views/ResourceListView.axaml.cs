@@ -1,37 +1,70 @@
-﻿using Avalonia.Controls.Primitives;
+using System.Reflection;
+using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
-using Avalonia.Input;
-using Avalonia.Interactivity;
 using Avalonia.Styling;
 using Avalonia.VisualTree;
 using k8s;
 using k8s.Models;
 using KubeUI.Client;
 using KubeUI.Client.Informer;
-using KubeUI.Controls;
 using KubeUI.Resources;
-using Ursa.Controls;
 
 namespace KubeUI.Views;
 
-public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> where T : class, IKubernetesObject<V1ObjectMeta>, new()
+public partial class ResourceListView : UserControl
 {
-    DataGrid _grid;
-
-    private readonly ILogger<ResourceListView<T>> _logger;
-
-    private readonly ISettingsService _settingsService;
+    private readonly ILogger<ResourceListView> _logger;
 
     public ResourceListView()
     {
-        _logger = Application.Current.GetRequiredService<ILogger<ResourceListView<T>>>();
-        _settingsService = Application.Current.GetRequiredService<ISettingsService>();
+        _logger = Application.Current.GetRequiredService<ILogger<ResourceListView>>();
+
+        InitializeComponent();
     }
 
-    private void GenerateGrid()
+    protected override void OnDataContextChanged(EventArgs e)
     {
-        _grid.Columns.Clear();
+        base.OnDataContextChanged(e);
+
+        // Determine if DataContext is a generic ResourcePropertiesViewModel<T>
+        // If so, extract T and invoke Reload<T>() via reflection
+        var dcType = DataContext?.GetType();
+
+        if (dcType?.IsGenericType == true)
+        {
+            var genericArgs = dcType.GetGenericArguments();
+            if (genericArgs.Length == 1)
+            {
+                var t = genericArgs[0];
+
+                if (typeof(IKubernetesObject<V1ObjectMeta>).IsAssignableFrom(t))
+                {
+                    var reloadMethod = typeof(ResourceListView)
+                        .GetMethod(nameof(GenerateGrid), BindingFlags.NonPublic | BindingFlags.Instance);
+
+                    if (reloadMethod?.IsGenericMethodDefinition == true)
+                    {
+                        var genericReload = reloadMethod.MakeGenericMethod(t);
+                        genericReload.Invoke(this, null);
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        SaveState();
+    }
+
+    private void GenerateGrid<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        var ViewModel = (ResourceListViewModel<T>)DataContext!;
+
+        PART_Grid.Columns.Clear();
 
         var converter = new DataGridLengthConverter();
 
@@ -93,7 +126,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                     column.Width = width;
                 }
 
-                _grid.Columns.Add(column);
+                PART_Grid.Columns.Add(column);
 
                 if (string.IsNullOrEmpty(ViewModel.SortColumnName))
                 {
@@ -128,22 +161,22 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
             }
         }
 
-        _grid.ContextMenu ??= new ContextMenu();
+        PART_Grid.ContextMenu ??= new ContextMenu();
 
-        _grid.ContextMenu.Items.Clear();
+        PART_Grid.ContextMenu.Items.Clear();
 
         foreach (var item in ViewModel.ResourceConfig.DefaultMenuItems())
         {
-            _grid.ContextMenu.Items.Add(CreateMenuItem(item));
+            PART_Grid.ContextMenu.Items.Add(CreateMenuItem(item));
         }
 
         if (ViewModel.ResourceConfig.MenuItems != null)
         {
-            _grid.ContextMenu.Items.Add(new Separator());
+            PART_Grid.ContextMenu.Items.Add(new Separator());
 
             foreach (var item in ViewModel.ResourceConfig.MenuItems())
             {
-                _grid.ContextMenu.Items.Add(CreateMenuItem(item));
+                PART_Grid.ContextMenu.Items.Add(CreateMenuItem(item));
             }
         }
     }
@@ -180,7 +213,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                 multiBinding.Bindings.Add(new Binding("SelectedItem.Value"));
                 multiBinding.Bindings.Add(new Binding(menu.CommandParameterPath)
                 {
-                    Source = _grid,
+                    Source = PART_Grid,
                 });
 
                 menuItem.Bind(MenuItem.CommandParameterProperty, multiBinding);
@@ -189,7 +222,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
             {
                 menuItem.Bind(MenuItem.CommandParameterProperty, new Binding(menu.CommandParameterPath)
                 {
-                    Source = _grid,
+                    Source = PART_Grid,
                 });
             }
         }
@@ -267,7 +300,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
                 // Add the individual bindings
                 multiBinding.Bindings.Add(new Binding("SelectedItem.Value")
                 {
-                    Source = _grid,
+                    Source = PART_Grid,
                 });
                 multiBinding.Bindings.Add(new Binding(menu.CommandParameterPath));
 
@@ -277,7 +310,7 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
             {
                 style.Add(new Setter(MenuItem.CommandParameterProperty, new Binding(menu.CommandParameterPath)
                 {
-                    Source = _grid,
+                    Source = PART_Grid,
                 }));
             }
         }
@@ -297,126 +330,23 @@ public sealed class ResourceListView<T> : MyViewBase<ResourceListViewModel<T>> w
         return styles;
     }
 
-    protected override StyleGroup? BuildStyles()
-    {
-        return ViewModel?.ResourceConfig.ListStyle();
-    }
-
-    protected override void OnUnloaded(RoutedEventArgs e)
-    {
-        base.OnUnloaded(e);
-
-        SaveState();
-    }
-
     private void SaveState()
     {
-        foreach (var sortColumn in _grid.Columns)
+        var ViewModel = (IResourceListViewModel)DataContext;
+        ViewModel.SortColumnName = string.Empty;
+        ViewModel.SortDirection = SortDirection.None;
+
+        foreach (var sortColumn in PART_Grid.Columns)
         {
-            var headerCell = sortColumn.GetType().GetProperty("HeaderCell", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(sortColumn) as DataGridColumnHeader;
+            var headerCell = (DataGridColumnHeader)sortColumn.GetType().GetProperty("HeaderCell", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(sortColumn);
 
-            var direction = headerCell.GetType().GetProperty("CurrentSortingState", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(headerCell) as ListSortDirection?;
+            var direction = headerCell.Classes.Contains(":sortascending") ? SortDirection.Ascending : headerCell.Classes.Contains(":sortdescending") ? SortDirection.Descending : SortDirection.None;
 
-            if (direction != null)
+            if (direction != SortDirection.None)
             {
                 ViewModel.SortColumnName = sortColumn.Header.ToString();
-                ViewModel.SortDirection = direction == ListSortDirection.Ascending ? SortDirection.Ascending : SortDirection.Descending;
+                ViewModel.SortDirection = direction;
             }
         }
-    }
-
-    protected override object Build(ResourceListViewModel<T>? vm)
-    {
-        var controls = new Grid()
-            .Rows("Auto,*")
-            .Children([
-                new Grid()
-                    .Row(0)
-                    .Cols("Auto,Auto,*")
-                    .Children([
-                        new Button()
-                            .Col(0)
-                            .Command(vm.ResourceConfig.NewResourceCommand)
-                            .IsVisible(@vm.ResourceConfig.ShowNewResource)
-                            .ToolTip(Assets.Resources.ResourceListView_NewResource)
-                            .Content(new PathIcon() { Data = (Geometry)Application.Current.FindResource("add_square_regular") }),
-                        new Label()
-                            .Col(1)
-                            .Width(200)
-                            .VerticalContentAlignment(VerticalAlignment.Center)
-                            .Content(@vm.DataGridObjects.Count, null, new FuncValueConverter<int, string>((x) => string.Format("Items: {0}", x))),
-                        new Grid()
-                            .Col(2)
-                            .HorizontalAlignment(HorizontalAlignment.Right)
-                            .Cols("*,*")
-                            .Children([
-                                new TextBox()
-                                    .Col(0)
-                                    .Width(200)
-                                    .Background(Brushes.Transparent)
-                                    .HorizontalAlignment(HorizontalAlignment.Right)
-                                    .VerticalAlignment(VerticalAlignment.Stretch)
-                                    .VerticalContentAlignment(VerticalAlignment.Center)
-                                    .Text(@vm.SearchQuery)
-                                    .Watermark("Search"),
-
-                                new MultiComboBox()
-                                    .Col(1)
-                                    .MaxHeight(20)
-                                    .Width(200)
-                                    .HorizontalAlignment(HorizontalAlignment.Right)
-                                    .Classes("ClearButton")
-                                    .IsVisible(@vm.ResourceConfig.IsNamespaced)
-                                    .ItemsSource(@vm.Cluster.Namespaces.Values)
-                                    .SelectedItems(@vm.Cluster.SelectedNamespaces)
-                                    .SelectedItemTemplate(new FuncDataTemplate<V1Namespace?>((x,y) => new Label().Content(@x?.Metadata.Name)))
-                                    .ItemTemplate(new FuncDataTemplate<V1Namespace?>((x,y) => new Label().Content(@x?.Metadata.Name)))
-                                    .Watermark(Assets.Resources.ResourceListView_SelectNamespace)
-                            ]),
-                        ]),
-                new DataGrid()
-                    .Ref(out _grid)
-                    .Row(1)
-                    .ItemsSource(@vm.DataGridObjects, BindingMode.OneWay)
-                    .SelectedItem(@vm.SelectedItem)
-                    .CanUserReorderColumns(true)
-                    .CanUserResizeColumns(true)
-                    .GridLinesVisibility(DataGridGridLinesVisibility.All)
-                    .IsReadOnly(true)
-                    .MinColumnWidth(90)
-                    .RowHeight(Convert.ToDouble(_settingsService.Settings.ListRowHeight))
-                    .OnDoubleTapped((x) =>
-                    {
-                        if ((x.Source is Visual control) && control.FindAncestorOfType<DataGridCell>(true) == null)
-                        {
-                            return;
-                        }
-
-                        if (_grid.SelectedItem == null) return;
-
-                        if(vm.ResourceConfig.ViewCommand.CanExecute(((KeyValuePair<NamespacedName, T>)_grid.SelectedItem).Value))
-                        {
-                            vm.ResourceConfig.ViewCommand.Execute(((KeyValuePair<NamespacedName, T>)_grid.SelectedItem).Value);
-                        }
-                    })
-                    .KeyBindings([
-                        new KeyBinding()
-                            .Gesture(new KeyGesture(Key.Enter))
-                            .Command(vm.ResourceConfig.ViewCommand)
-                            .CommandParameter(new Binding("SelectedItem.Value") { Source = vm }),
-                        ])
-                    .Styles([
-                        new Style<DataGridCell>()
-                            .Setter(DataGridCell.FontSizeProperty, Convert.ToDouble(_settingsService.Settings.FontSize))
-                            .Setter(DataGridCell.MinHeightProperty, Convert.ToDouble(_settingsService.Settings.ListRowHeight)),
-                        new Style<DataGridColumnHeader>()
-                            .Setter(DataGridColumnHeader.FontSizeProperty, Convert.ToDouble(_settingsService.Settings.FontSize))
-                            .Setter(DataGridColumnHeader.MinHeightProperty, Convert.ToDouble(_settingsService.Settings.ListRowHeight)),
-                    ]),
-            ]);
-
-        GenerateGrid();
-
-        return controls;
     }
 }
