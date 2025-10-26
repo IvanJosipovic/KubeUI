@@ -1,10 +1,10 @@
-
 <UserControl
     x:Class="KubeUI.Views.NavigationView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:client="clr-namespace:KubeUI.Client"
     xmlns:converters="using:KubeUI.Converters"
+    xmlns:custom="using:Avalonia.Xaml.Interactions.Custom"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:KubeUI.Views"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -45,16 +45,16 @@
                 <StackPanel Margin="-5,0,0,0" Orientation="Horizontal">
                     <Interaction.Behaviors>
                         <DataTriggerBehavior Binding="{Binding Status}" Value="{x:Static client:ClusterStatus.None}">
-                            <SetToolTipTipAction Tip="Click to Connect" />
+                            <custom:SetToolTipTipAction Tip="Click to Connect" />
                         </DataTriggerBehavior>
                         <DataTriggerBehavior Binding="{Binding Status}" Value="{x:Static client:ClusterStatus.Connecting}">
-                            <SetToolTipTipAction Tip="Connecting..." />
+                            <custom:SetToolTipTipAction Tip="Connecting..." />
                         </DataTriggerBehavior>
                         <DataTriggerBehavior Binding="{Binding Status}" Value="{x:Static client:ClusterStatus.Errored}">
-                            <SetToolTipTipAction Tip="Errored" />
+                            <custom:SetToolTipTipAction Tip="Errored" />
                         </DataTriggerBehavior>
                         <DataTriggerBehavior Binding="{Binding Status}" Value="{x:Static client:ClusterStatus.Connected}">
-                            <SetToolTipTipAction Tip="Connected" />
+                            <custom:SetToolTipTipAction Tip="Connected" />
                         </DataTriggerBehavior>
                     </Interaction.Behaviors>
                     <Ellipse

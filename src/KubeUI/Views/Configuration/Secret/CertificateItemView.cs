@@ -125,57 +125,58 @@ public sealed partial class CertificateItemView : ViewBase
         new HeaderItem()
             .IsVisible(@HasCert)
             .DataContext(this)
-            .Text(@Header)
-            .Controls([
-                new StackPanel()
-                    .Children([
-                        new ItemsControl()
-                            .ItemsSource(@Certificates)
-                            .ItemTemplate(new FuncDataTemplate<X509Certificate2>((x,_) =>
-                                new StackPanel()
-                                    .Children([
-                                        new PropertyItem().Key("Issuer").Value(x.Issuer),
-                                        new PropertyItem().Key("Subject").Value(x.SubjectName.Name),
-                                        new PropertyItem().Key("Not Before").Value(x.NotBefore.ToLocalTime().ToString()),
-                                        new PropertyItem().Key("Expires").Value($"{x.NotAfter.ToLocalTime()} (Valid:{(x.NotAfter.ToLocalTime() - DateTime.Now).Days} days)"),
-                                        new ItemsControl()
-                                            .ItemsSource(x.Extensions.OfType<X509SubjectAlternativeNameExtension>().FirstOrDefault()?.EnumerateDnsNames() ?? [])
-                                            .ItemTemplate(new FuncDataTemplate<string>((x,_) =>
-                                                new StackPanel()
-                                                    .Children([
-                                                        new PropertyItem().Key("DNS").Value(x),
-                                                    ])
-                                        )),
-                                        new ItemsControl()
-                                            .ItemsSource(x.Extensions.OfType<X509SubjectAlternativeNameExtension>().FirstOrDefault()?.EnumerateIPAddresses() ?? [])
-                                            .ItemTemplate(new FuncDataTemplate<string>((x,_) =>
-                                                new StackPanel()
-                                                    .Children([
-                                                        new PropertyItem().Key("IP").Value(x),
-                                                    ])
-                                        )),
-                                    ])
-                        )),
-                        new ItemsControl()
-                            .ItemsSource(@Rsa)
-                            .ItemTemplate(new FuncDataTemplate<RSA>((x,_) =>
-                                new StackPanel()
-                                    .Children([
-                                        new PropertyItem().Key("Key Exchange Algorithm").Value(x.KeyExchangeAlgorithm),
-                                        new PropertyItem().Key("Signature Algorithm").Value(x.SignatureAlgorithm),
-                                        new PropertyItem().Key("Key Size").Value(x.KeySize.ToString()),
-                                    ])
-                        )),
-                        new ItemsControl()
-                            .ItemsSource(@Ecdsa)
-                            .ItemTemplate(new FuncDataTemplate<ECDsa>((x,_) =>
-                                new StackPanel()
-                                    .Children([
-                                        new PropertyItem().Key("Key Exchange Algorithm").Value(x.KeyExchangeAlgorithm),
-                                        new PropertyItem().Key("Signature Algorithm").Value(x.SignatureAlgorithm),
-                                        new PropertyItem().Key("Key Size").Value(x.KeySize.ToString()),
-                                    ])
-                        )),
-                    ])
-            ]);
+            //.Text(@Header)
+            //.Controls([
+            //    new StackPanel()
+            //        .Children([
+            //            new ItemsControl()
+            //                .ItemsSource(@Certificates)
+            //                .ItemTemplate(new FuncDataTemplate<X509Certificate2>((x,_) =>
+            //                    new StackPanel()
+            //                        .Children([
+            //                            new PropertyItem().Key("Issuer").Value(x.Issuer),
+            //                            new PropertyItem().Key("Subject").Value(x.SubjectName.Name),
+            //                            new PropertyItem().Key("Not Before").Value(x.NotBefore.ToLocalTime().ToString()),
+            //                            new PropertyItem().Key("Expires").Value($"{x.NotAfter.ToLocalTime()} (Valid:{(x.NotAfter.ToLocalTime() - DateTime.Now).Days} days)"),
+            //                            new ItemsControl()
+            //                                .ItemsSource(x.Extensions.OfType<X509SubjectAlternativeNameExtension>().FirstOrDefault()?.EnumerateDnsNames() ?? [])
+            //                                .ItemTemplate(new FuncDataTemplate<string>((x,_) =>
+            //                                    new StackPanel()
+            //                                        .Children([
+            //                                            new PropertyItem().Key("DNS").Value(x),
+            //                                        ])
+            //                            )),
+            //                            new ItemsControl()
+            //                                .ItemsSource(x.Extensions.OfType<X509SubjectAlternativeNameExtension>().FirstOrDefault()?.EnumerateIPAddresses() ?? [])
+            //                                .ItemTemplate(new FuncDataTemplate<string>((x,_) =>
+            //                                    new StackPanel()
+            //                                        .Children([
+            //                                            new PropertyItem().Key("IP").Value(x),
+            //                                        ])
+            //                            )),
+            //                        ])
+            //            )),
+            //            new ItemsControl()
+            //                .ItemsSource(@Rsa)
+            //                .ItemTemplate(new FuncDataTemplate<RSA>((x,_) =>
+            //                    new StackPanel()
+            //                        .Children([
+            //                            new PropertyItem().Key("Key Exchange Algorithm").Value(x.KeyExchangeAlgorithm),
+            //                            new PropertyItem().Key("Signature Algorithm").Value(x.SignatureAlgorithm),
+            //                            new PropertyItem().Key("Key Size").Value(x.KeySize.ToString()),
+            //                        ])
+            //            )),
+            //            new ItemsControl()
+            //                .ItemsSource(@Ecdsa)
+            //                .ItemTemplate(new FuncDataTemplate<ECDsa>((x,_) =>
+            //                    new StackPanel()
+            //                        .Children([
+            //                            new PropertyItem().Key("Key Exchange Algorithm").Value(x.KeyExchangeAlgorithm),
+            //                            new PropertyItem().Key("Signature Algorithm").Value(x.SignatureAlgorithm),
+            //                            new PropertyItem().Key("Key Size").Value(x.KeySize.ToString()),
+            //                        ])
+            //            )),
+            //        ])
+            //])
+        ;
 }

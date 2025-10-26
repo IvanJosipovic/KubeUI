@@ -10,9 +10,6 @@
     <File Path="README.md" />
     <File Path="Settings.XamlStyler" />
   </Folder>
-  <Project Path="src/Avalonia.Xaml.Behaviors/Avalonia.Xaml.Behaviors.csproj" Id="938ba19b-371e-4f62-b5d4-1fc0df27f09f" />
-  <Project Path="src/Avalonia.Xaml.Interactivity/Avalonia.Xaml.Interactivity.csproj" Id="4af83a35-92d6-4bc1-b7c3-5ab9dfd381cb" />
-  <Project Path="src/KubeUI.Core/KubeUI.Core.csproj" />
   <Project Path="src/KubeUI.Desktop/KubeUI.Desktop.csproj" />
   <Project Path="src/KubeUI/KubeUI.csproj" />
   <Project Path="tests/KubeUI.Tests/KubeUI.Tests.csproj" />

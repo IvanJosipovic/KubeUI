@@ -1,0 +1,28 @@
+<UserControl
+    x:Class="KubeUI.Views.PropertyItem"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:KubeUI.Views"
+    x:DataType="local:PropertyItem">
+    <UserControl.Styles>
+        <Style Selector="SelectableTextBlock">
+            <Setter Property="Padding" Value="5" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid VerticalAlignment="Top" ColumnDefinitions="*,2*">
+        <SelectableTextBlock
+            Grid.Row="0"
+            Grid.Column="0"
+            Text="{Binding Key}"
+            TextWrapping="NoWrap"
+            ToolTip.Tip="{Binding Key}" />
+        <ScrollViewer
+            Grid.Row="0"
+            Grid.Column="1"
+            MaxHeight="200"
+            VerticalScrollBarVisibility="Auto">
+            <SelectableTextBlock Text="{Binding Value}" TextWrapping="Wrap" />
+        </ScrollViewer>
+    </Grid>
+</UserControl>
