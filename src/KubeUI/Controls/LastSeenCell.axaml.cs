@@ -1,7 +1,3 @@
-using System;
-using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Threading;
 using k8s.Models;
 
 namespace KubeUI.Controls;
@@ -10,7 +6,6 @@ public sealed partial class LastSeenCell : UserControl
 {
     private static readonly DispatcherTimer s_timer = new(DispatcherPriority.Default);
     private DateTime _date;
-    private bool _subscribed;
 
     public LastSeenCell()
     {
@@ -19,9 +14,10 @@ public sealed partial class LastSeenCell : UserControl
         if (!s_timer.IsEnabled)
         {
             s_timer.Interval = TimeSpan.FromSeconds(1);
-            s_timer.Tick += TimerTick;
             s_timer.Start();
         }
+
+        s_timer.Tick += Timer_Tick;
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -32,11 +28,9 @@ public sealed partial class LastSeenCell : UserControl
         {
             _date = ev.LastTimestamp.Value;
             UpdatePretty();
-            _subscribed = true;
         }
         else
         {
-            _subscribed = false;
             PrettyString = string.Empty;
         }
     }
@@ -45,15 +39,13 @@ public sealed partial class LastSeenCell : UserControl
     {
         base.OnUnloaded(e);
 
-        _subscribed = false;
-        s_timer.Tick -= TimerTick;
+        s_timer.Tick -= Timer_Tick;
     }
 
 
-    private void TimerTick(object? sender, EventArgs e)
+    private void Timer_Tick(object? sender, EventArgs e)
     {
-        if (_subscribed)
-            UpdatePretty();
+        UpdatePretty();
     }
 
     private TimeSpan Delta => DateTime.UtcNow - _date;
@@ -74,6 +66,12 @@ public sealed partial class LastSeenCell : UserControl
         else if (d.TotalMinutes >= 1) PrettyString = $"{d.TotalMinutes:N0}m{d.Seconds:N0}s";
         else if (d.TotalSeconds >= 1) PrettyString = $"{d.TotalSeconds:N0}s";
         else                          PrettyString = $"{d.TotalMilliseconds:N0}ms";
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        s_timer.Tick -= Timer_Tick;
     }
 
     public static readonly DirectProperty<LastSeenCell, string> PrettyStringProperty =

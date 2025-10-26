@@ -9,16 +9,16 @@ public partial class PodMetricCPUCell : UserControl, IInitializeCluster
 
     private static readonly DispatcherTimer s_timer = new(DispatcherPriority.Default);
 
-    static PodMetricCPUCell()
-    {
-        s_timer.Interval = TimeSpan.FromSeconds(1);
-        if (!s_timer.IsEnabled)
-            s_timer.Start();
-    }
-
     public PodMetricCPUCell()
     {
         InitializeComponent();
+
+        if (!s_timer.IsEnabled)
+        {
+            s_timer.Interval = TimeSpan.FromSeconds(1);
+            s_timer.Start();
+        }
+
         s_timer.Tick += Timer_Tick;
     }
 

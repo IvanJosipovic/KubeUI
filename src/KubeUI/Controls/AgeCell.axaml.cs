@@ -1,7 +1,3 @@
-using System;
-using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Threading;
 using k8s;
 using k8s.Models;
 
@@ -11,7 +7,6 @@ public sealed partial class AgeCell : UserControl
 {
     private static readonly DispatcherTimer s_timer = new(DispatcherPriority.Default);
     private DateTime _date;
-    private bool _subscribed;
 
     public AgeCell()
     {
@@ -20,9 +15,10 @@ public sealed partial class AgeCell : UserControl
         if (!s_timer.IsEnabled)
         {
             s_timer.Interval = TimeSpan.FromSeconds(1);
-            s_timer.Tick += TimerTick;
             s_timer.Start();
         }
+
+        s_timer.Tick += Timer_Tick;
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -33,27 +29,22 @@ public sealed partial class AgeCell : UserControl
         {
             _date = obj.Metadata.CreationTimestamp.Value;
             UpdatePretty();
-            _subscribed = true;
         }
         else
         {
-            _subscribed = false;
             PrettyString = string.Empty;
         }
     }
 
-    protected override void OnUnloaded(RoutedEventArgs e)
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
-        base.OnUnloaded(e);
-
-        _subscribed = false;
-        s_timer.Tick -= TimerTick;
+        base.OnDetachedFromVisualTree(e);
+        s_timer.Tick -= Timer_Tick;
     }
 
-    private void TimerTick(object? sender, EventArgs e)
+    private void Timer_Tick(object? sender, EventArgs e)
     {
-        if (_subscribed)
-            UpdatePretty();
+        UpdatePretty();
     }
 
     private TimeSpan Delta => DateTime.UtcNow - _date;
