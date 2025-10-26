@@ -1,8 +1,8 @@
 <UserControl
-    x:Class="KubeUI.Views.HeaderItem"
+    x:Class="KubeUI.Controls.HeaderItem"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:KubeUI.Views"
+    xmlns:local="using:KubeUI.Controls"
     x:DataType="local:HeaderItem">
     <StackPanel>
         <local:PropertyItem Key="{Binding Text}" Value="">

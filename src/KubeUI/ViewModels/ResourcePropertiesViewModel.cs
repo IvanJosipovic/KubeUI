@@ -9,6 +9,7 @@ public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable
 {
     [ObservableProperty]
     public partial ICluster? Cluster { get; set; }
+
     public GroupApiVersionKind Kind { get; } = GroupApiVersionKind.From<T>();
 
     [ObservableProperty]
@@ -28,6 +29,8 @@ public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable
         Cluster = cluster;
         Object = resource;
         ResourceConfig = (ResourceConfigBase<T>)Cluster.GetResourceConfig(Kind);
+        Cluster.OnChange += Cluster_OnChange;
+
     }
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
@@ -35,7 +38,7 @@ public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable
         base.OnPropertyChanged(e);
     }
 
-    private void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)
+    public void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)
     {
         if (Object != null
             && Object.Kind == resource.Kind
@@ -49,5 +52,6 @@ public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable
 
     public void Dispose()
     {
+        Cluster?.OnChange -= Cluster_OnChange;
     }
 }

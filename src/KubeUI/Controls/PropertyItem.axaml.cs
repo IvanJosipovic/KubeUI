@@ -2,7 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using System;
 
-namespace KubeUI.Views;
+namespace KubeUI.Controls;
 
 public partial class PropertyItem : UserControl
 {

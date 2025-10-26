@@ -2,7 +2,7 @@ using System.Collections.ObjectModel;
 using Avalonia;
 using Avalonia.Controls;
 
-namespace KubeUI.Views;
+namespace KubeUI.Controls;
 
 public partial class HeaderItem : UserControl
 {

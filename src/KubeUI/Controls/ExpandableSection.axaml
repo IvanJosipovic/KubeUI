@@ -1,0 +1,21 @@
+<UserControl
+    x:Class="KubeUI.Controls.ExpandableSection"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:KubeUI.Controls"
+    x:DataType="local:ExpandableSection">
+    <UserControl.Styles>
+        <Style Selector="Expander ToggleButton">
+            <Setter Property="Padding" Value="8" />
+        </Style>
+    </UserControl.Styles>
+
+    <Expander
+        MinHeight="20"
+        Padding="5"
+        HorizontalAlignment="Stretch"
+        Header="{Binding Text}"
+        IsExpanded="{Binding IsExpanded}">
+        <ItemsControl ItemsSource="{Binding Controls}" />
+    </Expander>
+</UserControl>

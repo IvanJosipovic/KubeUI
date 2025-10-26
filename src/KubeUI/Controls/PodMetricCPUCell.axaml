@@ -1,0 +1,13 @@
+<UserControl
+    x:Class="KubeUI.Controls.PodMetricCPUCell"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:KubeUI.Controls"
+    x:DataType="local:PodMetricCPUCell">
+    <TextBlock
+        Margin="12,0,12,0"
+        HorizontalAlignment="Left"
+        VerticalAlignment="Center"
+        Text="{Binding PrettyString}"
+        ToolTip.Tip="{Binding PrettyString}" />
+</UserControl>

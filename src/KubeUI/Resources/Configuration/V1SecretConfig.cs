@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using Avalonia.Controls.Templates;
 using k8s.Models;
+using KubeUI.Controls;
 using KubeUI.Views;
 
 namespace KubeUI.Resources.Configuration;
