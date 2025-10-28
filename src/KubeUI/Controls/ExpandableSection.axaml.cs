@@ -50,7 +50,6 @@ public partial class ExpandableSection : UserControl
     public ExpandableSection()
     {
         InitializeComponent();
-        DataContext = this;
     }
 }
 

@@ -1,0 +1,26 @@
+<UserControl
+    x:Class="KubeUI.V1PodProperties"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="using:KubeUI.Controls"
+    xmlns:converters="using:KubeUI.Converters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:generic="using:System.Collections.Generic"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:k8s.Models"
+    xmlns:views="using:KubeUI.Views"
+    d:DesignHeight="1500"
+    d:DesignWidth="800"
+    x:DataType="models:V1Pod"
+    mc:Ignorable="d">
+    <UserControl.Resources>
+        <converters:ByteArrayToStringConverter x:Key="ByteArrayToStringConverter" />
+    </UserControl.Resources>
+    <StackPanel>
+        <c:PropertyItem Key="ControlledBy" Value="{Binding Metadata.OwnerReferences}" />
+        <c:PropertyItem Key="Status" Value="{Binding Status.Phase}" />
+        <c:PropertyItem Key="Node" Value="{Binding Spec.NodeName}" />
+        <c:PropertyItem Key="Pod IP" Value="{Binding Status.PodIP}" />
+
+    </StackPanel>
+</UserControl>

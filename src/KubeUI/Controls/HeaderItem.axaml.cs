@@ -1,6 +1,4 @@
-using System.Collections.ObjectModel;
-using Avalonia;
-using Avalonia.Controls;
+using AvaloniaEdit.Utils;
 
 namespace KubeUI.Controls;
 
@@ -36,5 +34,20 @@ public partial class HeaderItem : UserControl
     {
         InitializeComponent();
         DataContext = this;
+    }
+}
+
+public static class HeaderExtensions
+{
+    public static HeaderItem Text(this HeaderItem prop, string text)
+    {
+        prop.Text = text;
+        return prop;
+    }
+
+    public static HeaderItem Controls(this HeaderItem prop, Control[] controls)
+    {
+        prop.Controls.AddRange(controls);
+        return prop;
     }
 }

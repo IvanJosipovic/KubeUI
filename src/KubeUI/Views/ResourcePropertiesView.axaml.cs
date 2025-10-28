@@ -78,7 +78,10 @@ public partial class ResourcePropertiesView : UserControl
         if (extras != null)
         {
             foreach (var c in extras.Where(c => c != null))
+            {
+                c.DataContext = obj;
                 PART_Items.Children.Add(c);
+            }
         }
     }
 }

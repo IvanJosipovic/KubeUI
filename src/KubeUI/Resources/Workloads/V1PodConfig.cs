@@ -188,16 +188,16 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         return [
             new PropertyItem()
                 .Key("Controlled By")
-                .Value(@resource.Metadata.OwnerReferences.FirstOrDefault(x => x.Controller == true)?.Name ?? "N/A"),
+                .Value(resource.Metadata.OwnerReferences.FirstOrDefault(x => x.Controller == true)?.Name ?? "N/A"),
             new PropertyItem()
                 .Key("Status")
-                .Value(@resource.Status.Phase),
+                .Value(resource.Status.Phase),
             new PropertyItem()
                 .Key("Node")
-                .Value(@resource.Spec.NodeName),
+                .Value(resource.Spec.NodeName),
             new PropertyItem()
                 .Key("Pod IP")
-                .Value(@resource.Status.PodIP),
+                .Value(resource.Status.PodIP),
             new ExpandableSection()
                     .Text("Init Containers")
                     .IsExpanded(true)
@@ -208,10 +208,10 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                             .ItemTemplate(new FuncDataTemplate<V1Container>((x,_) =>
                             new StackPanel()
                                     .Children([
-                                        new PropertyItem().Key("Name").Value(@x.Name),
+                                        new PropertyItem().Key("Name").Value(x.Name),
                                         //new PropertyItem().Key("Status").Value(@x.Name),
-                                        new PropertyItem().Key("Image").Value(@x.Image),
-                                        new PropertyItem().Key("Image Pull Policy").Value(@x.ImagePullPolicy),
+                                        new PropertyItem().Key("Image").Value(x.Image),
+                                        new PropertyItem().Key("Image Pull Policy").Value(x.ImagePullPolicy),
                                     ])
                             ))
                         ]),
@@ -224,10 +224,10 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                             .ItemTemplate(new FuncDataTemplate<V1Container>((x,_) =>
                             new StackPanel()
                                     .Children([
-                                        new PropertyItem().Key("Name").Value(@x.Name),
+                                        new PropertyItem().Key("Name").Value(x.Name),
                                         //new PropertyItem().Key("Status").Value(this.Name),
-                                        new PropertyItem().Key("Image").Value(@x.Image),
-                                        new PropertyItem().Key("Image Pull Policy").Value(@x.ImagePullPolicy),
+                                        new PropertyItem().Key("Image").Value(x.Image),
+                                        new PropertyItem().Key("Image Pull Policy").Value(x.ImagePullPolicy),
                                     ])
                             ))
                     ])
@@ -239,6 +239,11 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         (Verb.Create, "portforward"),
         (Verb.Create, "exec"),
     ];
+
+
+
+
+
 
     [RelayCommand(CanExecute = nameof(CanViewLogs))]
     private async Task ViewLogs(IList parameters)

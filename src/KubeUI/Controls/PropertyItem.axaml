@@ -3,6 +3,8 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:KubeUI.Controls"
+    HorizontalAlignment="Stretch"
+    VerticalAlignment="Stretch"
     x:DataType="local:PropertyItem">
     <UserControl.Styles>
         <Style Selector="SelectableTextBlock">
@@ -11,18 +13,16 @@
     </UserControl.Styles>
 
     <Grid VerticalAlignment="Top" ColumnDefinitions="*,2*">
-        <SelectableTextBlock
-            Grid.Row="0"
+        <SelectableTextBlock Grid.Row="0"
             Grid.Column="0"
-            Text="{Binding Key}"
+            Text="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}}"
             TextWrapping="NoWrap"
-            ToolTip.Tip="{Binding Key}" />
-        <ScrollViewer
-            Grid.Row="0"
+            ToolTip.Tip="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}}" />
+        <ScrollViewer Grid.Row="0"
             Grid.Column="1"
             MaxHeight="200"
             VerticalScrollBarVisibility="Auto">
-            <SelectableTextBlock Text="{Binding Value}" TextWrapping="Wrap" />
+            <SelectableTextBlock Text="{Binding Value, RelativeSource={RelativeSource AncestorType=local:PropertyItem}}" TextWrapping="Wrap" />
         </ScrollViewer>
     </Grid>
 </UserControl>

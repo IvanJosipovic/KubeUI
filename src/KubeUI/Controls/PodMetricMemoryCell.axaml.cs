@@ -1,15 +1,16 @@
+using Humanizer;
 using k8s.Models;
 using KubeUI.Client;
 
 namespace KubeUI.Controls;
 
-public partial class PodMetricCPUCell : UserControl, IInitializeCluster
+public partial class PodMetricMemoryCell : UserControl, IInitializeCluster
 {
     public ICluster? Cluster { get; private set; }
 
     private static readonly DispatcherTimer s_timer = new(DispatcherPriority.Default);
 
-    public PodMetricCPUCell()
+    public PodMetricMemoryCell()
     {
         InitializeComponent();
 
@@ -30,14 +31,13 @@ public partial class PodMetricCPUCell : UserControl, IInitializeCluster
 
     private void Timer_Tick(object? sender, EventArgs e) => Update();
 
-    public static readonly DirectProperty<PodMetricCPUCell, string> PrettyStringProperty =
-        AvaloniaProperty.RegisterDirect<PodMetricCPUCell, string>(
+    public static readonly DirectProperty<PodMetricMemoryCell, string> PrettyStringProperty =
+        AvaloniaProperty.RegisterDirect<PodMetricMemoryCell, string>(
             nameof(PrettyString),
             o => o.PrettyString,
             (o, v) => o.PrettyString = v);
 
     private string _prettyString = string.Empty;
-
     public string PrettyString
     {
         get => _prettyString;
@@ -46,21 +46,14 @@ public partial class PodMetricCPUCell : UserControl, IInitializeCluster
 
     private void Update()
     {
-        if (Cluster == null)
+        if (Cluster == null || DataContext is not V1Pod pod)
         {
             PrettyString = string.Empty;
             return;
         }
 
-        if (DataContext is not V1Pod pod)
-        {
-            PrettyString = string.Empty;
-            return;
-        }
-
-        // Locate matching pod metric
-        var metric = Cluster.PodMetrics.FirstOrDefault(x =>
-            x.Name() == pod.Name() && x.Namespace() == pod.Namespace());
+        var metric = Cluster.PodMetrics.FirstOrDefault(m =>
+            m.Name() == pod.Name() && m.Namespace() == pod.Namespace());
 
         if (metric == null)
         {
@@ -68,9 +61,15 @@ public partial class PodMetricCPUCell : UserControl, IInitializeCluster
             return;
         }
 
-        // Sum container CPU usage; assumes "cpu" exists and ToDecimal() extension is available
-        var usage = metric.Containers.Sum(c => c.Usage["cpu"].ToDecimal());
-        PrettyString = $"{usage:F3}c";
+        try
+        {
+            var usageBytes = metric.Containers.Sum(c => c.Usage["memory"].ToInt64());
+            PrettyString = usageBytes.Bytes().Humanize();
+        }
+        catch
+        {
+            PrettyString = string.Empty;
+        }
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)

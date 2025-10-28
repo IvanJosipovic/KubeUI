@@ -257,9 +257,7 @@ public partial class ResourceListView : UserControl
     {
         var styles = new List<Style>();
 
-        Func<Selector?, Selector>? func = null;
-
-        func = x =>
+        Selector func(Selector? x)
         {
             var selector = x.OfType<MenuItem>().Descendant().OfType<MenuItem>();
 
@@ -269,22 +267,22 @@ public partial class ResourceListView : UserControl
             }
 
             return selector;
-        };
+        }
 
         var style = new Style(func);
 
         if (menu.Header != null)
         {
-            style.Add(new Setter(Avalonia.Controls.Primitives.HeaderedSelectingItemsControl.HeaderProperty, menu.Header));
+            style.Add(new Setter(HeaderedSelectingItemsControl.HeaderProperty, menu.Header));
         }
         else if (menu.HeaderBinding != null)
         {
-            style.Add(new Setter(Avalonia.Controls.Primitives.HeaderedSelectingItemsControl.HeaderProperty, menu.HeaderBinding));
+            style.Add(new Setter(HeaderedSelectingItemsControl.HeaderProperty, menu.HeaderBinding));
         }
 
         if (!string.IsNullOrEmpty(menu.CommandPath))
         {
-            style.Add(new Setter(MenuItem.CommandProperty, new Binding(nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + menu.CommandPath) { Source = DataContext }));
+            style.Add(new Setter(MenuItem.CommandProperty, new Binding(nameof(ResourceListViewModel<>.ResourceConfig) + "." + menu.CommandPath) { Source = DataContext }));
         }
 
         if (!string.IsNullOrEmpty(menu.CommandParameterPath))

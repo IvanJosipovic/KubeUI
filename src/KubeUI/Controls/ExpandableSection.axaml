@@ -14,8 +14,8 @@
         MinHeight="20"
         Padding="5"
         HorizontalAlignment="Stretch"
-        Header="{Binding Text}"
-        IsExpanded="{Binding IsExpanded}">
-        <ItemsControl ItemsSource="{Binding Controls}" />
+        Header="{Binding Text, RelativeSource={RelativeSource AncestorType=local:ExpandableSection}}"
+        IsExpanded="{Binding IsExpanded, RelativeSource={RelativeSource AncestorType=local:ExpandableSection}}">
+        <ItemsControl ItemsSource="{Binding Controls, RelativeSource={RelativeSource AncestorType=local:ExpandableSection}}" />
     </Expander>
 </UserControl>

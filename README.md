@@ -10,6 +10,7 @@
 KubeUI is a user interface for Kubernetes.
 
 ## Features
+
 - Automatic updates
 - Connect to Cluster
 - Create/View/Edit Resources as Yaml
@@ -20,6 +21,7 @@ KubeUI is a user interface for Kubernetes.
   - Namespace specific Resource Permissions
 
 ### Resource Specific Features
+
 - Node
   - Codon/UnCordon
   - Drain
@@ -30,7 +32,6 @@ KubeUI is a user interface for Kubernetes.
   - CPU/Memory Usage
 - Secret
   - View Certificate details (expiry etc)
-
 
 ## How to run?
 
@@ -50,7 +51,7 @@ Supported Platforms (AMD64 and ARM64):
 
 ## How to build?
 
-1. [Download .Net SDK 9.0](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
+1. [Download .Net SDK 10.0](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
 2. [Download an IDE](https://dotnet.microsoft.com/platform/tools)
 3. Build away!
 

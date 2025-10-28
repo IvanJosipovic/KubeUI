@@ -35,7 +35,6 @@ public partial class PropertyItem : UserControl
     public PropertyItem()
     {
         InitializeComponent();
-        DataContext = this;
     }
 }
 
