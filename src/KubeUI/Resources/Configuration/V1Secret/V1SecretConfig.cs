@@ -4,9 +4,9 @@ using k8s.Models;
 using KubeUI.Controls;
 using KubeUI.Views;
 
-namespace KubeUI.Resources.Configuration;
+namespace KubeUI.Resources.Configuration.V1Secret;
 
-public sealed partial class V1SecretConfig : ResourceConfigBase<V1Secret>
+public sealed partial class V1SecretConfig : ResourceConfigBase<k8s.Models.V1Secret>
 {
     public override bool IsNamespaced => true;
     public override string Category => "Configuration";
@@ -17,21 +17,21 @@ public sealed partial class V1SecretConfig : ResourceConfigBase<V1Secret>
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new ResourceListColumn<V1Secret, string>()
+            new ResourceListColumn<k8s.Models.V1Secret, string>()
             {
                 Name = "Labels",
                 Display = x => x.Metadata?.Labels != null ? x.Metadata.Labels.Keys.Aggregate((a,b) => a + ", " + b) : "",
                 Field = x => x.Metadata?.Labels?.Keys.FirstOrDefault() ?? "",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListColumn<V1Secret, string>()
+            new ResourceListColumn<k8s.Models.V1Secret, string>()
             {
                 Name = "Keys",
                 Display = x => x.Data != null ? x.Data.Keys.Aggregate((a,b) => a + ", " + b) : "",
                 Field = x => x.Data?.Keys.FirstOrDefault() ?? "",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListColumn<V1Secret, string>()
+            new ResourceListColumn<k8s.Models.V1Secret, string>()
             {
                 Name = "Type",
                 Field = x => x.Type,
@@ -41,10 +41,5 @@ public sealed partial class V1SecretConfig : ResourceConfigBase<V1Secret>
         ];
     }
 
-    public override Control[] Properties(V1Secret resource)
-    {
-        return [
-                new V1SecretProperties()
-            ];
-    }
+    public override Control[] Properties(k8s.Models.V1Secret resource) => [new V1SecretProperties()];
 }

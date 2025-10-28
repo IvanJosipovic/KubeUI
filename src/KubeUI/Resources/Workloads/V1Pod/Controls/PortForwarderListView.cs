@@ -1,7 +1,8 @@
 ﻿using KubeUI.Client;
 using KubeUI.Controls;
+using KubeUI.Views;
 
-namespace KubeUI.Views;
+namespace KubeUI.Resources.Workloads.V1Pod.Controls;
 
 public sealed class PortForwarderListView : MyViewBase<PortForwarderListViewModel>
 {

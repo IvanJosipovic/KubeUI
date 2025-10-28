@@ -2,7 +2,7 @@
 using System.Text;
 using Avalonia.Data.Converters;
 
-namespace KubeUI.Converters;
+namespace KubeUI.Resources.Configuration.V1Secret.Converters;
 
 public sealed class ByteArrayToStringConverter : IValueConverter
 {

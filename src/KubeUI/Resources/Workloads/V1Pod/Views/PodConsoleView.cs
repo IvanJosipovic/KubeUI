@@ -2,9 +2,10 @@
 using Avalonia.Input;
 using AvaloniaEdit;
 using KubeUI.Client;
+using KubeUI.Views;
 using XtermSharp;
 
-namespace KubeUI.Views;
+namespace KubeUI.Resources.Workloads.V1Pod.Views;
 
 public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
 {

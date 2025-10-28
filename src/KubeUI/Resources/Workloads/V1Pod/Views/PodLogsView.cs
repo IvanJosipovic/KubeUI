@@ -4,10 +4,11 @@ using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Styling;
 using AvaloniaEdit;
 using KubeUI.Client;
+using KubeUI.Views;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
 
-namespace KubeUI.Views;
+namespace KubeUI.Resources.Workloads.V1Pod.Views;
 
 public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
 {

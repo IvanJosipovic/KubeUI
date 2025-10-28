@@ -1,8 +1,9 @@
 ﻿using Avalonia.Input;
 using AvaloniaTerminal;
 using KubeUI.Client;
+using KubeUI.Views;
 
-namespace KubeUI.Views;
+namespace KubeUI.Resources.Workloads.V1Pod.Views;
 
 public sealed class PodConsoleView2 : MyViewBase<PodConsoleViewModel2>
 {
