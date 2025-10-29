@@ -4,11 +4,11 @@ using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using k8s.Models;
 
-namespace KubeUI;
+namespace KubeUI.Resources.Configuration.v1.Secret.Views;
 
-public partial class V1SecretProperties : UserControl
+public partial class SecretPropertiesView : UserControl
 {
-    public V1SecretProperties()
+    public SecretPropertiesView()
     {
         InitializeComponent();
 #if DEBUG

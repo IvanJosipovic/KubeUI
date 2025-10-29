@@ -7,7 +7,7 @@ using System.Text;
 using Avalonia;
 using Avalonia.Controls;
 
-namespace KubeUI.Views;
+namespace KubeUI.Resources.Configuration.v1.Secret.Views;
 
 public partial class CertificateItemView : UserControl
 {

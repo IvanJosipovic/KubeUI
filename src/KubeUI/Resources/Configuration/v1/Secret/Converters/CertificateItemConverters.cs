@@ -5,7 +5,7 @@ using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using Avalonia.Data.Converters;
 
-namespace KubeUI.Resources.Configuration.V1Secret.Converters;
+namespace KubeUI.Resources.Configuration.v1.Secret.Converters;
 
 public sealed class CertificateSanDnsConverter : IValueConverter
 {

@@ -2,9 +2,10 @@
 using Avalonia.Controls.Templates;
 using k8s.Models;
 using KubeUI.Controls;
+using KubeUI.Resources.Configuration.v1.Secret.Views;
 using KubeUI.Views;
 
-namespace KubeUI.Resources.Configuration.V1Secret;
+namespace KubeUI.Resources.Configuration.v1.Secret;
 
 public sealed partial class V1SecretConfig : ResourceConfigBase<k8s.Models.V1Secret>
 {
@@ -41,5 +42,5 @@ public sealed partial class V1SecretConfig : ResourceConfigBase<k8s.Models.V1Sec
         ];
     }
 
-    public override Control[] Properties(k8s.Models.V1Secret resource) => [new V1SecretProperties()];
+    public override Control[] Properties(k8s.Models.V1Secret resource) => [new SecretPropertiesView()];
 }
