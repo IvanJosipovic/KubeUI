@@ -3,7 +3,7 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:KubeUI.Controls"
-    xmlns:conv="using:KubeUI.Converters"
+    xmlns:conv="using:KubeUI.Resources.Configuration.V1Secret.Converters"
     xmlns:crypto="using:System.Security.Cryptography"
     xmlns:views="using:KubeUI.Views"
     xmlns:x509="using:System.Security.Cryptography.X509Certificates"

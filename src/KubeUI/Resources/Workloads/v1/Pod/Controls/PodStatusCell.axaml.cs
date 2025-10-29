@@ -4,7 +4,7 @@ using Avalonia;
 using Avalonia.Controls;
 using k8s.Models;
 
-namespace KubeUI.Controls;
+namespace KubeUI.Resources.Workloads.v1.Pod.Controls;
 
 public sealed partial class PodStatusCell : UserControl
 {

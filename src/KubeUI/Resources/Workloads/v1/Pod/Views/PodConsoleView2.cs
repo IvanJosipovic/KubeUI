@@ -3,7 +3,7 @@ using AvaloniaTerminal;
 using KubeUI.Client;
 using KubeUI.Views;
 
-namespace KubeUI.Resources.Workloads.V1Pod.Views;
+namespace KubeUI.Resources.Workloads.v1.Pod.Views;
 
 public sealed class PodConsoleView2 : MyViewBase<PodConsoleViewModel2>
 {

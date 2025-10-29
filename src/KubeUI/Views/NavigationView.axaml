@@ -15,15 +15,9 @@
     x:DataType="vm:NavigationViewModel"
     mc:Ignorable="d">
 
-
     <Design.DataContext>
         <vm:NavigationViewModel />
     </Design.DataContext>
-
-    <UserControl.Resources>
-        <converters:StaticResourceConverter x:Key="StaticResourceConverter" />
-    </UserControl.Resources>
-
 
     <UserControl.Styles>
         <Style Selector="TreeViewItem">
@@ -57,8 +51,7 @@
                             <custom:SetToolTipTipAction Tip="Connected" />
                         </DataTriggerBehavior>
                     </Interaction.Behaviors>
-                    <Ellipse
-                        Name="Target"
+                    <Ellipse Name="Target"
                         Width="10"
                         Height="10"
                         MinHeight="10"

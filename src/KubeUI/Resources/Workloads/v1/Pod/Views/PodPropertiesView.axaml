@@ -1,11 +1,13 @@
 <UserControl
-    x:Class="KubeUI.V1PodProperties"
+    x:Class="KubeUI.Resources.Workloads.v1.Pod.Views.PodPropertiesView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:c="using:KubeUI.Controls"
     xmlns:converters="using:KubeUI.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:generic="using:System.Collections.Generic"
+    xmlns:input="using:FluentAvalonia.UI.Input"
+    xmlns:local="using:KubeUI"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="using:k8s.Models"
     xmlns:views="using:KubeUI.Views"
@@ -14,8 +16,6 @@
     x:DataType="models:V1Pod"
     mc:Ignorable="d">
     <UserControl.Resources>
-        <converters:ObjectOwnerNameConverter x:Key="ObjectOwnerNameConverter" />
-
         <DataTemplate x:Key="V1ContainerTemplate" x:DataType="models:V1Container">
             <StackPanel>
                 <c:PropertyItem Key="Name" Value="{Binding Name}" />
@@ -31,18 +31,14 @@
         <c:PropertyItem Key="Pod IP" Value="{Binding Status.PodIP}" />
 
         <c:ExpandableSection
+            Header="Init Containers"
             IsExpanded="True"
-            IsVisible="{Binding !!Spec.InitContainers.Count}"
-            Text="Init Containers">
-            <c:ExpandableSection.Controls>
-                <ItemsControl ItemTemplate="{StaticResource V1ContainerTemplate}" ItemsSource="{Binding Spec.InitContainers}" />
-            </c:ExpandableSection.Controls>
+            IsVisible="{Binding Spec.InitContainers, Converter={StaticResource NotEmptyCollectionConverter}}">
+            <ItemsControl ItemTemplate="{StaticResource V1ContainerTemplate}" ItemsSource="{Binding Spec.InitContainers}" />
         </c:ExpandableSection>
 
-        <c:ExpandableSection IsExpanded="True" Text="Containers">
-            <c:ExpandableSection.Controls>
-                <ItemsControl ItemTemplate="{StaticResource V1ContainerTemplate}" ItemsSource="{Binding Spec.Containers}" />
-            </c:ExpandableSection.Controls>
+        <c:ExpandableSection Header="Containers" IsExpanded="True">
+            <ItemsControl ItemTemplate="{StaticResource V1ContainerTemplate}" ItemsSource="{Binding Spec.Containers}" />
         </c:ExpandableSection>
     </StackPanel>
 </UserControl>

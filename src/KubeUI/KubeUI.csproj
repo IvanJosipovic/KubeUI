@@ -105,8 +105,8 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Update="Resources\Workloads\V1Pod\Views\V1PodProperties.axaml.cs">
-      <DependentUpon>V1PodProperties.axaml</DependentUpon>
+    <Compile Update="Resources\Workloads\v1\Pod\Views\PodPropertiesView.axaml.cs">
+      <DependentUpon>PodPropertiesView.axaml</DependentUpon>
     </Compile>
   </ItemGroup>
 

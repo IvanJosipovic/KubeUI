@@ -2,8 +2,15 @@
     x:Class="KubeUI.App"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="using:KubeUI.Converters"
     xmlns:local="using:KubeUI"
     xmlns:styling="using:FluentAvalonia.Styling"
     xmlns:usemi="https://irihi.tech/ursa/themes/semi"
     RequestedThemeVariant="Dark">
+    <Application.Resources>
+        <converters:NotEmptyCollectionConverter x:Key="NotEmptyCollectionConverter" />
+        <converters:ObjectOwnerNameConverter x:Key="ObjectOwnerNameConverter" />
+        <converters:StaticResourceConverter x:Key="StaticResourceConverter" />
+        <converters:StringEqualsConverter x:Key="StringEqualsConverter" />
+    </Application.Resources>
 </Application>

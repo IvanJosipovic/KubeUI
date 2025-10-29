@@ -2,7 +2,7 @@
 using KubeUI.Controls;
 using KubeUI.Views;
 
-namespace KubeUI.Resources.Workloads.V1Pod.Controls;
+namespace KubeUI.Resources.Workloads.v1.Pod.Controls;
 
 public sealed class PortForwarderListView : MyViewBase<PortForwarderListViewModel>
 {

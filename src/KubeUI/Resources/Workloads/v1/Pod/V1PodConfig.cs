@@ -4,10 +4,12 @@ using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
 using KubeUI.Controls;
+using KubeUI.Resources.Workloads.v1.Pod.Controls;
+using KubeUI.Resources.Workloads.v1.Pod.Views;
 using KubeUI.Views;
 using static KubeUI.Client.Cluster;
 
-namespace KubeUI.Resources.Workloads.V1Pod;
+namespace KubeUI.Resources.Workloads.v1.Pod;
 
 public sealed partial class V1PodConfig : ResourceConfigBase<k8s.Models.V1Pod>
 {
@@ -183,7 +185,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<k8s.Models.V1Pod>
         ];
     }
 
-    public override Control[] Properties(k8s.Models.V1Pod resource) => [new V1PodProperties()];
+    public override Control[] Properties(k8s.Models.V1Pod resource) => [new PodPropertiesView()];
 
     public override IList<(Verb verb, string? subResource)> CustomPermissions() => [
         (Verb.Get, "log"),

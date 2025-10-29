@@ -1,20 +1,10 @@
-using System.Globalization;
-using System.Text;
-using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Data.Converters;
-using Avalonia.Markup.Xaml;
-using Avalonia.Platform;
-using k8s;
 using k8s.Models;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace KubeUI;
+namespace KubeUI.Resources.Workloads.v1.Pod.Views;
 
-public partial class V1PodProperties : UserControl
+public partial class PodPropertiesView : UserControl
 {
-    public V1PodProperties()
+    public PodPropertiesView()
     {
         InitializeComponent();
 #if DEBUG
@@ -33,7 +23,7 @@ public partial class V1PodProperties : UserControl
                             Controller = true,
                             Name = "the-controller"
                         }
-                        ]
+                    ]
                 },
                 Spec = new()
                 {
@@ -62,7 +52,4 @@ public partial class V1PodProperties : UserControl
         }
 #endif
     }
-
-
 }
-
