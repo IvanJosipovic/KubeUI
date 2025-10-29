@@ -568,7 +568,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         if (canI)
         {
             //Generate new Resource Configuration
-            var resourceConfig = Application.Current.GetRequiredService<CustomResourceDefinitionResourceConfig<T>>();
+            var resourceConfig = Application.Current.GetRequiredService<CRDResourceConfig<T>>();
 
             resourceConfig.Initialize(this);
 

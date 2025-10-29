@@ -5,7 +5,7 @@ using KubeUI.Client;
 using KubeUI.Views;
 using XtermSharp;
 
-namespace KubeUI.Resources.Workloads.v1.Pod.Views;
+namespace KubeUI.Views;
 
 public sealed class PodConsoleView : MyViewBase<PodConsoleViewModel>
 {

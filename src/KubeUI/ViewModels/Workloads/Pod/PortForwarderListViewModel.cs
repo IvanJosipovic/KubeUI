@@ -10,6 +10,9 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
     private readonly IDialogService _dialogService;
 
     [ObservableProperty]
+    public partial ISettingsService Settings { get; set; }
+
+    [ObservableProperty]
     public partial ICluster Cluster { get; set; }
 
     [ObservableProperty]
@@ -17,6 +20,7 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
 
     public PortForwarderListViewModel()
     {
+        Settings = Application.Current.GetRequiredService<ISettingsService>();
         _dialogService = Application.Current.GetRequiredService<IDialogService>();
         Title = Assets.Resources.PortForwarderListViewModel_Title;
     }

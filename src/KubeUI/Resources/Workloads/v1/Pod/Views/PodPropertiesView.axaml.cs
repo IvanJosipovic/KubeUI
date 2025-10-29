@@ -1,6 +1,6 @@
 using k8s.Models;
 
-namespace KubeUI.Resources.Workloads.v1.Pod.Views;
+namespace KubeUI.Views;
 
 public partial class PodPropertiesView : UserControl
 {

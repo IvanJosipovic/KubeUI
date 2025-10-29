@@ -7,7 +7,7 @@ using k8s.Models;
 
 namespace KubeUI.Resources;
 
-public partial class CustomResourceDefinitionResourceConfig<T> : ResourceConfigBase<T> where T : class, IKubernetesObject<V1ObjectMeta>, new()
+public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     private bool _showNamespaces = true;
 
@@ -243,7 +243,7 @@ public partial class CustomResourceDefinitionResourceConfig<T> : ResourceConfigB
         if (expression.Type == typeof(Enum))
         {
             // Create a method to get the enum member name from the JsonStringEnumMemberNameAttribute
-            var getEnumMemberNameMethod = typeof(CustomResourceDefinitionResourceConfig<>).GetMethod(nameof(GetEnumMemberName), BindingFlags.NonPublic | BindingFlags.Static)
+            var getEnumMemberNameMethod = typeof(CRDResourceConfig<>).GetMethod(nameof(GetEnumMemberName), BindingFlags.NonPublic | BindingFlags.Static)
                 .MakeGenericMethod(expression.Type);
 
             // Call the method to get the enum member name

@@ -17,7 +17,7 @@ public static partial class ServicesExtensions
     [GenerateServiceRegistrations(AssignableTo = typeof(ViewModelBase), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false)]
     [GenerateServiceRegistrations(AssignableTo = typeof(MyViewBase<>), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false)]
     [GenerateServiceRegistrations(AssignableTo = typeof(ResourceConfigBase<>), Lifetime = ServiceLifetime.Transient, AsSelf = false, AsImplementedInterfaces = false)]
-    [GenerateServiceRegistrations(AssignableTo = typeof(CustomResourceDefinitionResourceConfig<>), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false)]
+    [GenerateServiceRegistrations(AssignableTo = typeof(CRDResourceConfig<>), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false)]
 
     [GenerateServiceRegistrations(AssignableTo = typeof(ICluster), Lifetime = ServiceLifetime.Transient, AsSelf = false, AsImplementedInterfaces = false)]
 

@@ -1,0 +1,51 @@
+<UserControl
+    x:Class="KubeUI.Views.PortForwarderListView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="clr-namespace:KubeUI.Controls"
+    xmlns:viewmodels="using:KubeUI.ViewModels"
+    xmlns:vm="using:KubeUI.ViewModels"
+    x:DataType="vm:PortForwarderListViewModel">
+    <Grid>
+        <DataGrid x:Name="PortForwardersGrid"
+            MinHeight="{Binding Settings.Settings.ListRowHeight}"
+            CanUserReorderColumns="True"
+            CanUserResizeColumns="True"
+            GridLinesVisibility="All"
+            IsReadOnly="True"
+            ItemsSource="{Binding Cluster.PortForwarders}"
+            RowHeight="{Binding Settings.Settings.ListRowHeight}"
+            SelectedItem="{Binding SelectedItem, Mode=TwoWay}">
+            <DataGrid.Columns>
+                <c:MyDataGridTextColumn Binding="{Binding Type}" Header="Type" />
+                <c:MyDataGridTextColumn
+                    Width="*"
+                    Binding="{Binding Name}"
+                    Header="Name" />
+                <c:MyDataGridTextColumn Binding="{Binding Namespace}" Header="Namespace" />
+                <c:MyDataGridTextColumn Binding="{Binding Port}" Header="Port" />
+                <c:MyDataGridTextColumn Binding="{Binding LocalPort}" Header="Local Port" />
+                <c:MyDataGridTextColumn Binding="{Binding Connections}" Header="Connections" />
+                <c:MyDataGridTextColumn Binding="{Binding Status}" Header="Status" />
+            </DataGrid.Columns>
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem
+                        Command="{Binding OpenCommand}"
+                        CommandParameter="{Binding SelectedItem}"
+                        Header="Open in Browser" />
+                    <MenuItem
+                        Command="{Binding RemoveCommand}"
+                        CommandParameter="{Binding SelectedItem}"
+                        Header="Remove" />
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+            <DataGrid.Styles>
+                <Style Selector="DataGridColumnHeader">
+                    <Setter Property="FontSize" Value="{Binding Settings.Settings.FontSize}" />
+                    <Setter Property="MinHeight" Value="{Binding Settings.Settings.ListRowHeight}" />
+                </Style>
+            </DataGrid.Styles>
+        </DataGrid>
+    </Grid>
+</UserControl>

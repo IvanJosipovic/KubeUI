@@ -8,7 +8,7 @@ using KubeUI.Views;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
 
-namespace KubeUI.Resources.Workloads.v1.Pod.Views;
+namespace KubeUI.Views;
 
 public sealed class PodLogsView : MyViewBase<PodLogsViewModel>
 {

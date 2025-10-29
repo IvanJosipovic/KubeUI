@@ -5,7 +5,6 @@ using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
 using KubeUI.Controls;
 using KubeUI.Resources.Workloads.v1.Pod.Controls;
-using KubeUI.Resources.Workloads.v1.Pod.Views;
 using KubeUI.Views;
 using static KubeUI.Client.Cluster;
 
