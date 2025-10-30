@@ -348,14 +348,4 @@ public static class Utilities
 
         throw new Exception("Unknown Expression Type");
     }
-
-    private static readonly PropertyInfo s_scrollViewerProperty = typeof(TextEditor).GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic);
-
-    public static ScrollViewer? GetScrollViewer(this TextEditor editor)
-    {
-        if (editor != null && s_scrollViewerProperty.GetValue(editor) is ScrollViewer sc)
-            return sc;
-
-        return null;
-    }
 }

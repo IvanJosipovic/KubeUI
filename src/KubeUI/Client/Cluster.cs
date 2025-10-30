@@ -315,10 +315,13 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                 if (config.Type == typeof(V1CustomResourceDefinition))
                 {
+
                     _crdNavigationLink = nav;
                     nav.NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer());
-                    await Seed<V1CustomResourceDefinition>();
+#if !DEBUG
                     nav.Objects = Objects[config.Kind].Items;
+                    await Seed<V1CustomResourceDefinition>();
+#endif
                 }
 
                 if (string.IsNullOrEmpty(config.Category))
@@ -389,7 +392,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 if (waitForReady)
                 {
                     await inf.ReadyAsync(new CancellationToken());
-                    await Task.Delay(1000);
                 }
             }
             else
@@ -517,6 +519,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     }
                     break;
                 case WatchEventType.Error:
+
+                    items.Clear();
                     break;
                 case WatchEventType.Bookmark:
                     break;
@@ -616,7 +620,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private static List<string> ConstructFQDNList(string domain)
     {
-        List<string> fqdnList = new List<string>();
+        List<string> fqdnList = [];
         string[] levels = domain.Split('.');
 
         if (levels.Length <= 2)

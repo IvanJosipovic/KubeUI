@@ -23,7 +23,7 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
     private readonly object _sync = new();
     private readonly IKubernetes _client;
     private readonly GroupApiVersionKind _names;
-    private readonly SemaphoreSlim _ready = new SemaphoreSlim(0);
+    private readonly SemaphoreSlim _ready = new(0);
     private ImmutableList<Registration> _registrations = [];
     private IDictionary<NamespacedName, IList<V1OwnerReference>> _cache = new Dictionary<NamespacedName, IList<V1OwnerReference>>();
     private string _lastResourceVersion;
@@ -109,6 +109,7 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
     {
         var limiter = new Limiter(new Limit(0.2), 3);
         var firstSync = true;
+        var shouldSync = true;
 
         while (!cancellationToken.IsCancellationRequested)
         {
@@ -117,12 +118,16 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
                 "Starting Informer on {ResourceType}",
                 typeof(TResource).Name);
 
-            var shouldSync = true;
-
             try
             {
                 if (shouldSync)
                 {
+                    if (!firstSync)
+                    {
+                        // Send a reset
+                        InvokeRegistrationCallbacks(WatchEventType.Error, null);
+                    }
+
                     await ListAsync(cancellationToken).ConfigureAwait(true);
                     shouldSync = false;
                 }
@@ -174,7 +179,7 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
         }
     }
 
-    private static EventId EventId(EventType eventType) => new EventId((int)eventType, eventType.ToString());
+    private static EventId EventId(EventType eventType) => new((int)eventType, eventType.ToString());
 
     private async Task ListAsync(CancellationToken cancellationToken)
     {
@@ -288,8 +293,8 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
             _names.Group,
             _names.ApiVersion,
             _names.PluralName,
-            watch: true,
             resourceVersion: _lastResourceVersion,
+            watch: true,
             cancellationToken: cancellationToken);
         }
         else
@@ -299,8 +304,8 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
             _names.ApiVersion,
             _namespace,
             _names.PluralName,
-            watch: true,
             resourceVersion: _lastResourceVersion,
+            watch: true,
             cancellationToken: cancellationToken);
         }
 
@@ -432,10 +437,7 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
             catch (Exception innerException)
 #pragma warning restore CA1031 // Do not catch general exception types
             {
-                if (innerExceptions == null)
-                {
-                    innerExceptions = new List<Exception>();
-                }
+                innerExceptions ??= new List<Exception>();
 
                 innerExceptions.Add(innerException);
             }

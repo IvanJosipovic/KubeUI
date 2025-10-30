@@ -244,9 +244,7 @@ public static class FactoryExtensions
     {
         var @new = true;
 
-        var rightDock = factory.FindDockableById("RightDock") as IToolDock;
-
-        if (rightDock == null)
+        if (factory.FindDockableById("RightDock") is not IToolDock rightDock)
         {
             var documents = factory.GetDockable<IDocumentDock>("Documents");
 

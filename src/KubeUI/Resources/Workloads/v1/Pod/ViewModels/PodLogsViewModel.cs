@@ -7,6 +7,7 @@ namespace KubeUI.ViewModels;
 
 public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 {
+    public ISettingsService SettingsService { get; }
     private readonly ILogger<PodLogsViewModel> _logger;
 
     [ObservableProperty]
@@ -44,9 +45,10 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
     private bool _isConnected;
 
-    public PodLogsViewModel(ILogger<PodLogsViewModel> logger)
+    public PodLogsViewModel(ILogger<PodLogsViewModel> logger, ISettingsService settingsService)
     {
         _logger = logger;
+        SettingsService = settingsService;
         Title = Assets.Resources.PodLogsViewModel_Title;
     }
 
