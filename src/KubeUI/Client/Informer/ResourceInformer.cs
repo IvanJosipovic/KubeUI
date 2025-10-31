@@ -125,7 +125,7 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
                     if (!firstSync)
                     {
                         // Send a reset
-                        InvokeRegistrationCallbacks(WatchEventType.Error, null);
+                        InvokeRegistrationCallbacks(WatchEventType.Error, default);
                     }
 
                     await ListAsync(cancellationToken).ConfigureAwait(true);
@@ -390,7 +390,7 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
                 "Informer {ResourceType} received {WatchEventType} notification for {ItemKind}/{ItemName}.{ItemNamespace} at resource version {ResourceVersion}",
                 typeof(TResource).Name,
                 watchEventType,
-                item.Kind,
+                _names.Kind,
                 item.Name(),
                 item.Namespace(),
                 item.ResourceVersion());
@@ -418,13 +418,14 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
 
         if (watchEventType == WatchEventType.Added ||
             watchEventType == WatchEventType.Modified ||
-            watchEventType == WatchEventType.Deleted)
+            watchEventType == WatchEventType.Deleted ||
+            watchEventType == WatchEventType.Error)
         {
             InvokeRegistrationCallbacks(watchEventType, item);
         }
     }
 
-    private void InvokeRegistrationCallbacks(WatchEventType eventType, TResource resource)
+    private void InvokeRegistrationCallbacks(WatchEventType eventType, TResource? resource)
     {
         List<Exception>? innerExceptions = default;
         foreach (var registration in _registrations)
