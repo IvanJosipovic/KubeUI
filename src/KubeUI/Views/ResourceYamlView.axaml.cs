@@ -11,7 +11,6 @@ using AvaloniaEdit.Document;
 using AvaloniaEdit.Folding;
 using AvaloniaEdit.TextMate;
 using KubeUI.Client;
-using Microsoft.Extensions.Logging;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
 

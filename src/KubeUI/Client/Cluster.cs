@@ -519,8 +519,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     }
                     break;
                 case WatchEventType.Error:
-
-                    items.Clear();
+                    Dispatcher.UIThread.Invoke(() => items.Clear(), DispatcherPriority.Default);
                     break;
                 case WatchEventType.Bookmark:
                     break;
