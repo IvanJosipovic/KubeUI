@@ -18,12 +18,12 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
 {
     private readonly ILogger<PodConsoleViewModel> _logger;
 
-    private readonly ISettingsService _settingsService;
+    public ISettingsService SettingsService { get; }
 
     public PodConsoleViewModel(ILogger<PodConsoleViewModel> logger, ISettingsService settings)
     {
         _logger = logger;
-        _settingsService = settings;
+        SettingsService = settings;
         Title = Assets.Resources.PodConsoleViewModel_Title;
     }
 
@@ -120,7 +120,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
         Height = height;
         if (Width > 0 && Height > 0)
         {
-            var size = CalculateTextSize("a", FontFamily, Convert.ToDouble(_settingsService.Settings.ConsoleFontSize));
+            var size = CalculateTextSize("a", FontFamily, Convert.ToDouble(SettingsService.Settings.ConsoleFontSize));
             var cols = (int)((width) / size.Width);
             var rows = (int)((height) / (size.Height * 1.17));
             if (Terminal.Cols != cols || Terminal.Rows != rows)

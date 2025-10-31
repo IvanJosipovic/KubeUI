@@ -1,0 +1,66 @@
+<UserControl
+    x:Class="KubeUI.Views.PodConsoleView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="using:KubeUI.Assets"
+    xmlns:edit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+    xmlns:vm="using:KubeUI.ViewModels"
+    x:DataType="vm:PodConsoleViewModel">
+    <Grid
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch"
+        RowDefinitions="Auto,*">
+        <!--  Top bar  -->
+        <StackPanel Grid.Row="0"
+            Margin="0,0,0,4"
+            Orientation="Horizontal"
+            Spacing="4">
+            <Label Content="Pod:" />
+            <Label>
+                <Label.Content>
+                    <MultiBinding StringFormat="{}{0}/{1}/{2}">
+                        <Binding Path="Object.Metadata.NamespaceProperty" />
+                        <Binding Path="Object.Metadata.Name" />
+                        <Binding Path="ContainerName" />
+                    </MultiBinding>
+                </Label.Content>
+            </Label>
+            <!--  (Optional) Size / Terminal metrics labels could be added here  -->
+        </StackPanel>
+
+        <edit:TextEditor x:Name="TextEditorControl" Grid.Row="1"
+            Background="Black"
+            Document="{Binding Console, Mode=OneWay}"
+            FontFamily="{Binding FontFamily}"
+            FontSize="{Binding SettingsService.Settings.FontSize}"
+            HorizontalScrollBarVisibility="Disabled"
+            IsReadOnly="True"
+            ShowLineNumbers="False"
+            VerticalScrollBarVisibility="Disabled">
+            <edit:TextEditor.Options>
+                <edit:TextEditorOptions
+                    AllowScrollBelowDocument="false"
+                    EnableEmailHyperlinks="False"
+                    EnableHyperlinks="false"
+                    ShowBoxForControlCharacters="False" />
+            </edit:TextEditor.Options>
+            <edit:TextEditor.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Click="CopyMenuItem_Click" Header="{x:Static assets:Resources.Action_Copy}">
+                        <MenuItem.Icon>
+                            <PathIcon Data="{StaticResource copy_regular}" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem
+                        Command="{Binding PasteCommand}"
+                        Header="{x:Static assets:Resources.Action_Paste}"
+                        HotKey="Ctrl+V">
+                        <MenuItem.Icon>
+                            <PathIcon Data="{StaticResource clipboard_paste_regular}" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                </ContextMenu>
+            </edit:TextEditor.ContextMenu>
+        </edit:TextEditor>
+    </Grid>
+</UserControl>
