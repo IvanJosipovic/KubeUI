@@ -319,8 +319,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     _crdNavigationLink = nav;
                     nav.NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer());
 #if !DEBUG
-                    nav.Objects = Objects[config.Kind].Items;
                     await Seed<V1CustomResourceDefinition>();
+                    nav.Objects = Objects[config.Kind].Items;
 #endif
                 }
 
