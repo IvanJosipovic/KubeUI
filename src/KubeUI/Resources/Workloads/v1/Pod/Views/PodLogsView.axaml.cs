@@ -1,4 +1,3 @@
-using Avalonia.LogicalTree;
 using Avalonia.Styling;
 using KubeUI.Client;
 using TextMateSharp.Grammars;

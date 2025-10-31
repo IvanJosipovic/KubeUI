@@ -15,7 +15,11 @@ using k8s;
 using KubeUI.Client;
 using KubeUI.Views;
 using LiveChartsCore;
+using LiveChartsCore.Drawing;
 using LiveChartsCore.SkiaSharpView;
+using LiveChartsCore.SkiaSharpView.Painting;
+using LiveChartsCore.SkiaSharpView.Painting.ImageFilters;
+using LiveChartsCore.Themes;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using NReco.Logging.File;
@@ -23,6 +27,7 @@ using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using SkiaSharp;
 
 namespace KubeUI;
 
@@ -45,8 +50,45 @@ public partial class App : Application
 #endif
 
         LiveCharts.Configure(config => config
-                                        .AddDarkTheme()
-                                        .AddLightTheme()
+                                        .AddSkiaSharp()
+                                        .AddDefaultMappers()
+                                        .AddDefaultTheme(
+                                        // if necessary, override the default theme, for more info see:
+                                        // https://github.com/beto-rodriguez/LiveCharts2/blob/dev/samples/ViewModelsSamples/LiveChartsThemeExtensions.cs
+
+                                        theme =>
+                                            theme.OnInitialized(() =>
+                                            {
+                                                //theme.RequestedTheme = requestedTheme;
+                                                theme.AnimationsSpeed = TimeSpan.FromMilliseconds(800);
+                                                theme.EasingFunction = EasingFunctions.ExponentialOut;
+
+                                                if (theme.IsDark)
+                                                {
+                                                    theme.Colors = ColorPalletes.MaterialDesign200;
+                                                    theme.VirtualBackroundColor = LvcColor.Parse("#1E1E1E");
+                                                    theme.TooltipBackgroundPaint =
+                                                        new SolidColorPaint(new(45, 45, 45, 230))
+                                                        {
+                                                            ImageFilter = new DropShadow(4, 4, 12, 12, new(0, 0, 0, 255))
+                                                        };
+                                                    theme.TooltipTextPaint = new SolidColorPaint(new(245, 245, 245));
+                                                    theme.LegendTextPaint = new SolidColorPaint(SKColors.White);
+                                                }
+                                                else
+                                                {
+                                                    theme.Colors = ColorPalletes.MaterialDesign500;
+                                                    theme.VirtualBackroundColor = new(255, 255, 255);
+                                                    theme.TooltipBackgroundPaint =
+                                                        new SolidColorPaint(new(235, 235, 235, 230))
+                                                        {
+                                                            ImageFilter = new DropShadow(2, 2, 6, 6, new(0, 0, 0, 100))
+                                                        };
+                                                    theme.TooltipTextPaint = new SolidColorPaint(new(30, 30, 30));
+                                                    theme.LegendTextPaint = new SolidColorPaint(SKColors.Black);
+                                                }
+                                            })
+                                        )
         );
 
         var builder = Microsoft.Extensions.Hosting.Host.CreateEmptyApplicationBuilder(new()

@@ -1,11 +1,11 @@
 <UserControl
-    x:Class="KubeUI.Views.PodConsoleView"
+    x:Class="KubeUI.Views.PodConsoleView2"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:assets="using:KubeUI.Assets"
-    xmlns:edit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+    xmlns:term="clr-namespace:AvaloniaTerminal;assembly=AvaloniaTerminal"
     xmlns:vm="using:KubeUI.ViewModels"
-    x:DataType="vm:PodConsoleViewModel">
+    x:DataType="vm:PodConsoleViewModel2">
     <Grid
         HorizontalAlignment="Stretch"
         VerticalAlignment="Stretch"
@@ -24,29 +24,11 @@
             </Label>
         </StackPanel>
 
-        <edit:TextEditor x:Name="TextEditorControl" Grid.Row="1"
-            Background="Black"
-            Document="{Binding Console, Mode=OneWay}"
-            FontFamily="{Binding FontFamily}"
-            FontSize="{Binding SettingsService.Settings.FontSize}"
-            HorizontalScrollBarVisibility="Disabled"
-            IsReadOnly="True"
-            ShowLineNumbers="False"
-            VerticalScrollBarVisibility="Disabled">
-            <edit:TextEditor.Options>
-                <edit:TextEditorOptions
-                    AllowScrollBelowDocument="false"
-                    EnableEmailHyperlinks="False"
-                    EnableHyperlinks="false"
-                    ShowBoxForControlCharacters="False" />
-            </edit:TextEditor.Options>
-            <edit:TextEditor.ContextMenu>
+        <!--  Terminal  -->
+        <term:TerminalControl x:Name="Terminal" Grid.Row="1"
+            Model="{Binding Model}">
+            <term:TerminalControl.ContextMenu>
                 <ContextMenu>
-                    <MenuItem Click="CopyMenuItem_Click" Header="{x:Static assets:Resources.Action_Copy}">
-                        <MenuItem.Icon>
-                            <PathIcon Data="{StaticResource copy_regular}" />
-                        </MenuItem.Icon>
-                    </MenuItem>
                     <MenuItem
                         Command="{Binding PasteCommand}"
                         Header="{x:Static assets:Resources.Action_Paste}"
@@ -56,7 +38,7 @@
                         </MenuItem.Icon>
                     </MenuItem>
                 </ContextMenu>
-            </edit:TextEditor.ContextMenu>
-        </edit:TextEditor>
+            </term:TerminalControl.ContextMenu>
+        </term:TerminalControl>
     </Grid>
 </UserControl>

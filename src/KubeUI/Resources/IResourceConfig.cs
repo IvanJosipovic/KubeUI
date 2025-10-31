@@ -1,4 +1,5 @@
-﻿using KubeUI.Client;
+﻿using Avalonia.Markup.Declarative;
+using KubeUI.Client;
 
 namespace KubeUI.Resources
 {

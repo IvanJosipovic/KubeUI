@@ -1,0 +1,54 @@
+<UserControl
+    x:Class="KubeUI.Views.ClusterView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:geometries="using:LiveChartsCore.SkiaSharpView.Drawing.Geometries"
+    xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
+    xmlns:views="using:KubeUI.Views"
+    xmlns:visualelements="using:LiveChartsCore.SkiaSharpView.VisualElements"
+    xmlns:vm="using:KubeUI.ViewModels"
+    x:DataType="vm:ClusterViewModel">
+
+    <UserControl.Styles>
+        <!--  Base PieChart style equivalent to previous BuildStyles  -->
+        <Style Selector="lvc|PieChart">
+            <Setter Property="InitialRotation" Value="-90" />
+            <Setter Property="LegendPosition" Value="Bottom" />
+            <Setter Property="MaxAngle" Value="270" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid
+        Margin="8"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch"
+        ColumnDefinitions="*,*,*"
+        RowDefinitions="*,2*">
+
+        <!--  CPU  -->
+        <lvc:PieChart x:Name="CpuChart" Grid.Row="0"
+            Grid.Column="0"
+            MinHeight="100" />
+
+        <!--  Memory  -->
+        <lvc:PieChart x:Name="MemoryChart" Grid.Row="0"
+            Grid.Column="1"
+            MinHeight="100" />
+
+        <!--  Pods  -->
+        <lvc:PieChart x:Name="PodsChart" Grid.Row="0"
+            Grid.Column="2"
+            MinHeight="100" />
+
+        <!--  Events list  -->
+        <Grid Grid.Row="1"
+            Grid.ColumnSpan="3"
+            Margin="0,12,0,0"
+            RowDefinitions="Auto,*">
+            <TextBlock Grid.Row="0"
+                FontSize="25"
+                Text="Events" />
+            <views:ResourceListView Grid.Row="1" DataContext="{Binding EventsVM}" />
+        </Grid>
+    </Grid>
+</UserControl>

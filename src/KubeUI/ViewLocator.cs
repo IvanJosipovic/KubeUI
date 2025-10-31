@@ -39,7 +39,6 @@ public sealed class ViewLocator : IDataTemplate
             if (viewType == null)
             {
                 var genericViewType = _types.FirstOrDefault(x =>
-                    x.BaseType?.Name.Equals(typeof(MyViewBase<object>).Name) == true &&
                     (
                         (x.BaseType.GenericTypeArguments[0].IsGenericType && x.BaseType?.GenericTypeArguments[0].GetGenericTypeDefinition() == genericModelType)
                         ||
