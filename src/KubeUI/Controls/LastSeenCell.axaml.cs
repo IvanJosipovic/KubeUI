@@ -18,6 +18,16 @@ public sealed partial class LastSeenCell : UserControl
         }
 
         s_timer.Tick += Timer_Tick;
+
+#if DEBUG
+        if (Design.IsDesignMode)
+        {
+            DataContext = new Corev1Event()
+            {
+                LastTimestamp = DateTime.UtcNow,
+            };
+        }
+#endif
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -38,7 +48,6 @@ public sealed partial class LastSeenCell : UserControl
     protected override void OnUnloaded(RoutedEventArgs e)
     {
         base.OnUnloaded(e);
-
         s_timer.Tick -= Timer_Tick;
     }
 

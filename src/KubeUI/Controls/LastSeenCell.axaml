@@ -7,6 +7,8 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     HorizontalAlignment="Left"
     VerticalAlignment="Center"
+    d:DesignHeight="50"
+    d:DesignWidth="200"
     mc:Ignorable="d">
     <TextBlock
         Margin="12,0,12,0"

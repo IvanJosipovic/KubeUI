@@ -34,6 +34,13 @@ public partial class HeaderItem : UserControl
     {
         InitializeComponent();
         DataContext = this;
+
+#if DEBUG
+        if (Design.IsDesignMode)
+        {
+            Text = "Test123";
+        }
+#endif
     }
 }
 

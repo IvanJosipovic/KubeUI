@@ -30,16 +30,10 @@ public sealed partial class PodLogsView : UserControl
         Application.Current.ActualThemeVariantChanged += Current_ActualThemeVariantChanged;
     }
 
-    protected override void OnAttachedToLogicalTree(LogicalTreeAttachmentEventArgs e)
+    protected override void OnLoaded(RoutedEventArgs e)
     {
-        base.OnAttachedToLogicalTree(e);
+        base.OnLoaded(e);
         SetOffset();
-    }
-
-    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
-    {
-        base.OnAttachedToVisualTree(e);
-        //SetOffset();
     }
 
     protected override void OnUnloaded(RoutedEventArgs e)
@@ -69,8 +63,7 @@ public sealed partial class PodLogsView : UserControl
 
     public void GetOffset()
     {
-        if (ViewModel != null && TextEditorControl?.GetScrollViewer() is ScrollViewer sc)
-            ViewModel.ScrollOffset = new Vector(TextEditorControl.HorizontalOffset, TextEditorControl.VerticalOffset);
+        ViewModel?.ScrollOffset = new Vector(TextEditorControl.HorizontalOffset, TextEditorControl.VerticalOffset);
     }
 
     protected override void OnDataContextChanged(EventArgs e)

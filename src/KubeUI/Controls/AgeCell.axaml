@@ -1,21 +1,19 @@
 <UserControl
     x:Class="KubeUI.Controls.AgeCell"
     xmlns="https://github.com/avaloniaui"
-    xmlns:converters="using:KubeUI.Converters"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:k8s="using:k8s"
     xmlns:local="using:KubeUI.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:models="using:k8s.Models"
     HorizontalAlignment="Left"
     VerticalAlignment="Center"
-    x:DataType="{x:Type k8s:IKubernetesObject, x:TypeArguments=models:V1ObjectMeta}"
+    d:DesignHeight="50"
+    d:DesignWidth="200"
     mc:Ignorable="d">
     <TextBlock
         Margin="12,0,12,0"
         HorizontalAlignment="Left"
         VerticalAlignment="Center"
-        Text="{Binding Metadata.CreationTimestamp, Converter={x:Static converters:AgeConverter.Instance}}"
-        ToolTip.Tip="{Binding Metadata.CreationTimestamp, Converter={x:Static converters:AgeConverter.Instance}}" />
+        Text="{Binding PrettyString, RelativeSource={RelativeSource AncestorType=local:AgeCell}}"
+        ToolTip.Tip="{Binding PrettyString, RelativeSource={RelativeSource AncestorType=local:AgeCell}}" />
 </UserControl>
