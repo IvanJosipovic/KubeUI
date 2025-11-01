@@ -8,7 +8,7 @@
     d:DesignWidth="200"
     x:DataType="local:HeaderItem">
     <StackPanel>
-        <local:PropertyItem Key="{Binding Text, RelativeSource={RelativeSource AncestorType=local:HeaderItem}}" Value="">
+        <local:PropertyItem Key="{Binding Text}" Value="">
             <local:PropertyItem.Styles>
                 <Style Selector="SelectableTextBlock">
                     <Setter Property="Border.Background" Value="{DynamicResource SystemAltHighColor}" />
@@ -16,6 +16,6 @@
                 </Style>
             </local:PropertyItem.Styles>
         </local:PropertyItem>
-        <ItemsControl ItemsSource="{Binding Controls, RelativeSource={RelativeSource AncestorType=local:HeaderItem}}" />
+        <ItemsControl ItemsSource="{Binding Controls}" />
     </StackPanel>
 </UserControl>

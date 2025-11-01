@@ -1,7 +1,5 @@
-using Avalonia.Controls;
 using k8s;
 using k8s.Models;
-using Microsoft.CodeAnalysis;
 
 namespace KubeUI.Controls;
 
@@ -9,10 +7,15 @@ public sealed partial class AgeCell : UserControl
 {
     private static readonly DispatcherTimer s_timer = new(DispatcherPriority.Default);
     private DateTime _date;
+    private TimeSpan Delta => DateTime.UtcNow - _date;
+
+    [GeneratedDirectProperty]
+    public partial string PrettyString { get; set; }
 
     public AgeCell()
     {
         InitializeComponent();
+        DataContext = this;
 
         if (!s_timer.IsEnabled)
         {
@@ -62,8 +65,6 @@ public sealed partial class AgeCell : UserControl
         UpdatePretty();
     }
 
-    private TimeSpan Delta => DateTime.UtcNow - _date;
-
     private void UpdatePretty()
     {
         if (_date == default)
@@ -86,19 +87,5 @@ public sealed partial class AgeCell : UserControl
             PrettyString = $"{Delta.TotalSeconds:N0}s";
         else
             PrettyString = $"{Delta.TotalMilliseconds:N0}ms";
-    }
-
-    public static readonly DirectProperty<AgeCell, string> PrettyStringProperty =
-        AvaloniaProperty.RegisterDirect<AgeCell, string>(
-            nameof(PrettyString),
-            o => o.PrettyString,
-            (o, v) => o.PrettyString = v);
-
-    private string _pretty = string.Empty;
-
-    public string PrettyString
-    {
-        get => _pretty;
-        private set => SetAndRaise(PrettyStringProperty, ref _pretty, value);
     }
 }

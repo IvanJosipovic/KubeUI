@@ -1,13 +1,12 @@
-using System;
-using System.Linq;
-using Avalonia;
-using Avalonia.Controls;
 using k8s.Models;
 
 namespace KubeUI.Resources.Workloads.v1.Pod.Controls;
 
 public sealed partial class PodStatusCell : UserControl
 {
+    [GeneratedDirectProperty]
+    public partial string PrettyString { get; set; }
+
     public PodStatusCell()
     {
         InitializeComponent();
@@ -35,18 +34,5 @@ public sealed partial class PodStatusCell : UserControl
         {
             PrettyString = string.Empty;
         }
-    }
-
-    public static readonly DirectProperty<PodStatusCell, string> PrettyStringProperty =
-        AvaloniaProperty.RegisterDirect<PodStatusCell, string>(
-            nameof(PrettyString),
-            o => o.PrettyString,
-            (o, v) => o.PrettyString = v);
-
-    private string _pretty = string.Empty;
-    public string PrettyString
-    {
-        get => _pretty;
-        private set => SetAndRaise(PrettyStringProperty, ref _pretty, value);
     }
 }

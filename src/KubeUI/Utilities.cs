@@ -38,65 +38,6 @@ public static class Utilities
         throw new Exception($"Cant find {typeof(IServiceProvider).Name}");
     }
 
-    public static T Set<T>(this T control, Action<T> func) where T : Control
-    {
-        func.Invoke(control);
-
-        return control;
-    }
-
-    public static TDataGrid Columns<TDataGrid>(this TDataGrid container, params DataGridColumn[] items) where TDataGrid : DataGrid
-    {
-        IList items2 = container.Columns;
-        if (items2 != null)
-        {
-            foreach (DataGridColumn value in items)
-            {
-                items2.Add(value);
-            }
-        }
-
-        return container;
-    }
-
-    //public static TControl ContextMenu<TControl>(this TControl container, params Control[] items) where TControl : Control
-    //{
-    //    container.ContextMenu ??= new ContextMenu();
-
-    //    foreach (var item in items)
-    //    {
-    //        container.ContextMenu.Items.Add(item);
-    //    }
-
-    //    return container;
-    //}
-
-    public static TControl ContextFlyout<TControl>(this TControl container, params Control[] items) where TControl : Control
-    {
-        container.ContextFlyout ??= new MenuFlyout();
-
-        var menu = (MenuFlyout)container.ContextFlyout;
-
-        foreach (var item in items)
-        {
-            menu.Items.Add(item);
-        }
-
-        return container;
-    }
-
-    public static TControl Set<TControl, TValue>(this TControl control, AvaloniaProperty property, TValue value, FuncValueConverter<TValue, object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where TControl : Control
-    {
-        return control._setEx(property, ps, () => control[property] = converter.TryConvert(value), bindingMode, converter, bindingSource);
-    }
-
-    public static TControl KeyBindings<TControl>(this TControl container, params KeyBinding[] items) where TControl : Control
-    {
-        container.KeyBindings.AddRange(items);
-
-        return container;
-    }
-
     public static string GetKubeAssetPath(Type type)
     {
         const string infrastructure_componentsBasePath = "/Assets/kube/infrastructure_components/unlabeled/";

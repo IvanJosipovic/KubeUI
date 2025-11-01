@@ -9,6 +9,9 @@ public partial class PodMetricCPUCell : UserControl, IInitializeCluster
 
     private static readonly DispatcherTimer s_timer = new(DispatcherPriority.Default);
 
+    [GeneratedDirectProperty]
+    public partial string PrettyString { get; set; }
+
     public PodMetricCPUCell()
     {
         InitializeComponent();
@@ -29,20 +32,6 @@ public partial class PodMetricCPUCell : UserControl, IInitializeCluster
     }
 
     private void Timer_Tick(object? sender, EventArgs e) => Update();
-
-    public static readonly DirectProperty<PodMetricCPUCell, string> PrettyStringProperty =
-        AvaloniaProperty.RegisterDirect<PodMetricCPUCell, string>(
-            nameof(PrettyString),
-            o => o.PrettyString,
-            (o, v) => o.PrettyString = v);
-
-    private string _prettyString = string.Empty;
-
-    public string PrettyString
-    {
-        get => _prettyString;
-        private set => SetAndRaise(PrettyStringProperty, ref _prettyString, value);
-    }
 
     private void Update()
     {

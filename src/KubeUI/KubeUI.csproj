@@ -23,9 +23,9 @@
     <Using Include="KubeUI.Assets" />
     <Using Include="KubeUI.Controls" />
     <Using Include="KubeUI.ViewModels" />
-
     <Using Include="Microsoft.Extensions.DependencyInjection" />
     <Using Include="Microsoft.Extensions.Logging" />
+    <Using Include="PropertyGenerator.Avalonia"/>
     <Using Include="ServiceScan.SourceGenerator" />
     <Using Include="System" />
     <Using Include="System.Collections" />
@@ -81,7 +81,8 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.Process" Version="1.13.0-beta.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.13.0" />
     <PackageReference Include="OpenTelemetry.Resources.OperatingSystem" Version="1.13.0-beta.1" />
-    <PackageReference Include="roslynator.analyzers" Version="4.14.1" PrivateAssets="all"/>
+    <PackageReference Include="PropertyGenerator.Avalonia" Version="1.2.6" PrivateAssets="all" />
+    <PackageReference Include="roslynator.analyzers" Version="4.14.1" PrivateAssets="all" />
     <PackageReference Include="Semi.Avalonia" Version="11.2.1.9" />
     <PackageReference Include="ServiceScan.SourceGenerator" Version="2.4.1" PrivateAssets="all" />
     <PackageReference Include="Svg.Controls.Skia.Avalonia" Version="11.3.6.2" />

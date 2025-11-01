@@ -6,6 +6,10 @@ public sealed partial class LastSeenCell : UserControl
 {
     private static readonly DispatcherTimer s_timer = new(DispatcherPriority.Default);
     private DateTime _date;
+    private TimeSpan Delta => DateTime.UtcNow - _date;
+
+    [GeneratedDirectProperty]
+    public partial string PrettyString { get; set; }
 
     public LastSeenCell()
     {
@@ -57,8 +61,6 @@ public sealed partial class LastSeenCell : UserControl
         UpdatePretty();
     }
 
-    private TimeSpan Delta => DateTime.UtcNow - _date;
-
     private void UpdatePretty()
     {
         if (_date == default)
@@ -81,19 +83,5 @@ public sealed partial class LastSeenCell : UserControl
     {
         base.OnDetachedFromVisualTree(e);
         s_timer.Tick -= Timer_Tick;
-    }
-
-    public static readonly DirectProperty<LastSeenCell, string> PrettyStringProperty =
-        AvaloniaProperty.RegisterDirect<LastSeenCell, string>(
-            nameof(PrettyString),
-            o => o.PrettyString,
-            (o, v) => o.PrettyString = v);
-
-    private string _pretty = string.Empty;
-
-    public string PrettyString
-    {
-        get => _pretty;
-        private set => SetAndRaise(PrettyStringProperty, ref _pretty, value);
     }
 }
