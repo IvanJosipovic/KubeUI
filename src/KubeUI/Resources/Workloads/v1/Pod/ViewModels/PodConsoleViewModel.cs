@@ -316,7 +316,7 @@ public struct TerminalSize
     public ushort Width { get; set; }
     public ushort Height { get; set; }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         throw new NotImplementedException();
     }

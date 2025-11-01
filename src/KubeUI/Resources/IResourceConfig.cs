@@ -1,4 +1,4 @@
-﻿using Avalonia.Markup.Declarative;
+﻿using Avalonia.Styling;
 using KubeUI.Client;
 
 namespace KubeUI.Resources
@@ -13,7 +13,7 @@ namespace KubeUI.Resources
         int Order { get; }
         string Name { get; }
         string? Category { get; }
-        StyleGroup ListStyle();
+        IStyle ListStyle();
         Task UpdatePermissions();
         Type Type { get; }
     }

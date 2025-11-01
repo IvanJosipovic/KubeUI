@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using Avalonia.Controls.Notifications;
+using Avalonia.Styling;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
@@ -45,7 +46,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public virtual int Order { get; }
 
-    public virtual StyleGroup ListStyle() => [];
+    public virtual IStyle ListStyle() => null;
 
     public virtual IList<IResourceListColumn> Columns()
     {

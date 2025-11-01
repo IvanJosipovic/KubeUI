@@ -4,11 +4,13 @@ using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
 using Avalonia.Styling;
 using Avalonia.VisualTree;
+using DynamicData;
 using k8s;
 using k8s.Models;
 using KubeUI.Client;
 using KubeUI.Client.Informer;
 using KubeUI.Resources;
+using Semi.Avalonia;
 
 namespace KubeUI.Views;
 
@@ -65,6 +67,11 @@ public partial class ResourceListView : UserControl
         var ViewModel = (ResourceListViewModel<T>)DataContext!;
 
         PART_Grid.Columns.Clear();
+
+        if (ViewModel.ResourceConfig.ListStyle() != null)
+        {
+            PART_Grid.Styles.Add(ViewModel.ResourceConfig.ListStyle());
+        }
 
         var converter = new DataGridLengthConverter();
 
@@ -234,7 +241,7 @@ public partial class ResourceListView : UserControl
 
         if (!string.IsNullOrEmpty(menu.IconResource))
         {
-            menuItem.Icon(new PathIcon() { Data = (Geometry)Application.Current.FindResource(menu.IconResource) });
+            menuItem.Icon = new PathIcon() { Data = (Geometry)Application.Current.FindResource(menu.IconResource) };
         }
 
         if (menu.ItemTemplate != null)
