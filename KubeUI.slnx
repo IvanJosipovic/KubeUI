@@ -9,7 +9,8 @@
     <File Path="README.md" />
     <File Path="Settings.XamlStyler" />
   </Folder>
-  <Project Path="../../../../../../../../Repos/KubeUI/src/KubeUI.Desktop/KubeUI.Desktop.csproj" />
-  <Project Path="../../../../../../../../Repos/KubeUI/src/KubeUI/KubeUI.csproj" />
-  <Project Path="../../../../../../../../Repos/KubeUI/tests/KubeUI.Tests/KubeUI.Tests.csproj" />
+  <Project Path="src/KubeUI.Desktop/KubeUI.Desktop.csproj" />
+  <Project Path="src/KubeUI/KubeUI.csproj" />
+  <Project Path="tests/KubeUI.Tests/KubeUI.Tests.csproj" />
 </Solution>
+
