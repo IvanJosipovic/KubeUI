@@ -55,7 +55,6 @@ public partial class App : Application
                                         .AddDefaultTheme(
                                         // if necessary, override the default theme, for more info see:
                                         // https://github.com/beto-rodriguez/LiveCharts2/blob/dev/samples/ViewModelsSamples/LiveChartsThemeExtensions.cs
-
                                         theme =>
                                             theme.OnInitialized(() =>
                                             {
@@ -65,26 +64,26 @@ public partial class App : Application
 
                                                 if (theme.IsDark)
                                                 {
-                                                    theme.Colors = ColorPalletes.MaterialDesign200;
+                                                    //theme.Colors = ColorPalletes.MaterialDesign200;
                                                     theme.VirtualBackroundColor = LvcColor.Parse("#1E1E1E");
-                                                    theme.TooltipBackgroundPaint =
-                                                        new SolidColorPaint(new(45, 45, 45, 230))
-                                                        {
-                                                            ImageFilter = new DropShadow(4, 4, 12, 12, new(0, 0, 0, 255))
-                                                        };
-                                                    theme.TooltipTextPaint = new SolidColorPaint(new(245, 245, 245));
+                                                    //theme.TooltipBackgroundPaint =
+                                                    //    new SolidColorPaint(new(45, 45, 45, 230))
+                                                    //    {
+                                                    //        ImageFilter = new DropShadow(4, 4, 12, 12, new(0, 0, 0, 255))
+                                                    //    };
+                                                    //theme.TooltipTextPaint = new SolidColorPaint(new(245, 245, 245));
                                                     theme.LegendTextPaint = new SolidColorPaint(SKColors.White);
                                                 }
                                                 else
                                                 {
-                                                    theme.Colors = ColorPalletes.MaterialDesign500;
+                                                    //theme.Colors = ColorPalletes.MaterialDesign500;
                                                     theme.VirtualBackroundColor = new(255, 255, 255);
-                                                    theme.TooltipBackgroundPaint =
-                                                        new SolidColorPaint(new(235, 235, 235, 230))
-                                                        {
-                                                            ImageFilter = new DropShadow(2, 2, 6, 6, new(0, 0, 0, 100))
-                                                        };
-                                                    theme.TooltipTextPaint = new SolidColorPaint(new(30, 30, 30));
+                                                    //theme.TooltipBackgroundPaint =
+                                                    //    new SolidColorPaint(new(235, 235, 235, 230))
+                                                    //    {
+                                                    //        ImageFilter = new DropShadow(2, 2, 6, 6, new(0, 0, 0, 100))
+                                                    //    };
+                                                    //theme.TooltipTextPaint = new SolidColorPaint(new(30, 30, 30));
                                                     theme.LegendTextPaint = new SolidColorPaint(SKColors.Black);
                                                 }
                                             })

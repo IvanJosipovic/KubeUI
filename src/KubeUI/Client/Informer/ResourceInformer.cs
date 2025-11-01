@@ -122,12 +122,6 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
             {
                 if (shouldSync)
                 {
-                    if (!firstSync)
-                    {
-                        // Send a reset
-                        InvokeRegistrationCallbacks(WatchEventType.Error, default);
-                    }
-
                     await ListAsync(cancellationToken).ConfigureAwait(true);
                     shouldSync = false;
                 }
@@ -285,7 +279,7 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
         var watcherCompletionSource = new TaskCompletionSource<int>();
 
         // begin watching where list left off
-        Task<k8s.Autorest.HttpOperationResponse<object>> watchWithHttpMessage = null;
+        Task<k8s.Autorest.HttpOperationResponse<object>>? watchWithHttpMessage = null;
 
         if (string.IsNullOrEmpty(_namespace))
         {

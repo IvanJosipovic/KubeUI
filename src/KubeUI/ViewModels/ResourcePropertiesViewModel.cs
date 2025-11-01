@@ -21,7 +21,7 @@ public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable
     public ResourcePropertiesViewModel()
     {
         Title = Assets.Resources.ResourcePropertiesViewModel_Title;
-        Id = nameof(ResourcePropertiesViewModel<T>);
+        Id = nameof(ResourcePropertiesViewModel<>);
     }
 
     public void Initialize(ICluster cluster, T resource)
@@ -31,11 +31,6 @@ public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable
         ResourceConfig = (ResourceConfigBase<T>)Cluster.GetResourceConfig(Kind);
         Cluster.OnChange += Cluster_OnChange;
 
-    }
-
-    protected override void OnPropertyChanged(PropertyChangedEventArgs e)
-    {
-        base.OnPropertyChanged(e);
     }
 
     public void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)
