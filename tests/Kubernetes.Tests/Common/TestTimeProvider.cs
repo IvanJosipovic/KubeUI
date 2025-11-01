@@ -7,7 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Yarp.Tests.Common;
+namespace Yarp.Kubernetes.Common;
 
 /// <summary>
 /// Simulates passage of time, used for testing.

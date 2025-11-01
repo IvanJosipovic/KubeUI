@@ -44,12 +44,12 @@ public class ResourceInformerTests
         using var testHost = new HostBuilder()
             .ConfigureServices((context, services) =>
             {
-                services.AddKubernetesCore();
                 services.RegisterResourceInformer<V1Pod, V1PodResourceInformer>();
                 services.Configure<KubernetesClientOptions>(options =>
                 {
                     options.Configuration = KubernetesClientConfiguration.BuildConfigFromConfigObject(clusterHost.KubeConfig);
                 });
+                services.AddKubernetesCore();
             })
             .Build();
 
@@ -84,12 +84,12 @@ public class ResourceInformerTests
         using var testHost = new HostBuilder()
             .ConfigureServices((context, services) =>
             {
-                services.AddKubernetesCore();
                 services.RegisterResourceInformer<V1Deployment, V1DeploymentResourceInformer>();
                 services.Configure<KubernetesClientOptions>(options =>
                 {
                     options.Configuration = KubernetesClientConfiguration.BuildConfigFromConfigObject(clusterHost.KubeConfig);
                 });
+                services.AddKubernetesCore();
             })
             .Build();
 
