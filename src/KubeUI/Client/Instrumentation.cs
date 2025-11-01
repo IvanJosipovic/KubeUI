@@ -7,9 +7,9 @@ public class Instrumentation : IDisposable
 {
     public static string MeterName { get; set; } = "kubeui";
 
-    public Counter<long> AppOpened { get; private set; }
+    public Counter<long> AppOpened { get; }
 
-    public Counter<long> ViewOpened { get; private set; }
+    public Counter<long> ViewOpened { get; }
 
     private readonly Meter _meter;
 

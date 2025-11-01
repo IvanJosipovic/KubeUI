@@ -2,9 +2,10 @@
 using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
-using KubeUI.Client.Informer;
+using Yarp.Kubernetes.Controller.Client;
 using KubeUI.Resources;
 using static KubeUI.Client.Cluster;
+using Yarp.Kubernetes.Controller;
 
 namespace KubeUI.Client;
 

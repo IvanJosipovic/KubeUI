@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Xml;
 using k8s.Models;
 using Swordfish.NET.Collections.Auxiliary;
+using Yarp.Kubernetes.Controller.Client;
 
 namespace KubeUI.Client;
 

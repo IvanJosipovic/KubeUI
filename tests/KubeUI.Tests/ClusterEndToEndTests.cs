@@ -5,8 +5,9 @@ using FluentAssertions;
 using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
-using KubeUI.Client.Informer;
+using Yarp.Kubernetes.Controller.Client;
 using KubeUI.Core.Tests;
+using Yarp.Kubernetes.Controller;
 
 namespace KubeUI.Client.Tests;
 

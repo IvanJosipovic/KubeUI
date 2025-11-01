@@ -92,6 +92,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Kubernetes.Controller\Yarp.Kubernetes.Controller.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Update="Assets\Resources.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>

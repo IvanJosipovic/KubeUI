@@ -3,6 +3,7 @@ using Avalonia.Platform.Storage;
 using Dock.Model.Core;
 using KubeUI.Client;
 using Swordfish.NET.Collections;
+using Yarp.Kubernetes.Controller.Client;
 
 namespace KubeUI.ViewModels;
 

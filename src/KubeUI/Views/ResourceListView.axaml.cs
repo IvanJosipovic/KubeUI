@@ -9,11 +9,12 @@ using DynamicData;
 using k8s;
 using k8s.Models;
 using KubeUI.Client;
-using KubeUI.Client.Informer;
+using Yarp.Kubernetes.Controller.Client;
 using KubeUI.Resources;
 using KubeUI.ViewModels;
 using OpenTelemetry.Trace;
 using Semi.Avalonia;
+using Yarp.Kubernetes.Controller;
 
 namespace KubeUI.Views;
 

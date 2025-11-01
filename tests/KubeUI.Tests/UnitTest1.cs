@@ -4,6 +4,7 @@ using k8s.Models;
 using KubeUI.Client;
 using KubeUI.ViewModels;
 using KubeUI.Views;
+using Yarp.Kubernetes.Controller.Client;
 
 namespace KubeUI.Tests;
 

@@ -5,6 +5,7 @@ using AvaloniaEdit.Folding;
 using k8s;
 using k8s.Models;
 using KubeUI.Client;
+using Yarp.Kubernetes.Controller.Client;
 
 namespace KubeUI.ViewModels;
 

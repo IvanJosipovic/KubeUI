@@ -13,7 +13,7 @@ using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
 using KubernetesCRDModelGen;
-using KubeUI.Client.Informer;
+using Yarp.Kubernetes.Controller.Client;
 using KubeUI.Resources;
 using KubeUI.ViewModels;
 using Microsoft.Extensions.Http.Resilience;
@@ -21,6 +21,8 @@ using Polly;
 using Swordfish.NET.Collections;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
+using Yarp.Kubernetes.Controller;
+using Microsoft.Extensions.Hosting;
 
 namespace KubeUI.Client;
 
@@ -390,15 +392,17 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
             if (CanI(type, Verb.List) && CanI(type, Verb.Watch))
             {
-                var informer = new ResourceInformer<T>(_loggerFactory.CreateLogger<ResourceInformer<T>>(), Client);
+                var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>());
                 container.Informers.Add(informer);
                 var inf = informer.Register(GetResourceInformerCallback<T>());
 
-                _ = Task.Run(() => informer.RunAsync(new CancellationToken()));
+                _ = Task.Run(() => informer.StartAsync(CancellationToken.None));
+
+                informer.StartWatching();
 
                 if (waitForReady)
                 {
-                    await inf.ReadyAsync(new CancellationToken());
+                    await inf.ReadyAsync(CancellationToken.None);
                 }
             }
             else
@@ -428,11 +432,13 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                     if (CanI(type, Verb.List, ns) && CanI(type, Verb.Watch, ns))
                     {
-                        var informer = new ResourceInformer<T>(_loggerFactory.CreateLogger<ResourceInformer<T>>(), Client, ns);
+                        var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), @namespace: ns);
                         container.Informers.Add(informer);
                         var inf = informer.Register(GetResourceInformerCallback<T>());
 
-                        _ = Task.Run(() => informer.RunAsync(new CancellationToken()));
+                        _ = Task.Run(() => informer.StartAsync(CancellationToken.None));
+
+                        informer.StartWatching();
 
                         if (waitForReady)
                         {

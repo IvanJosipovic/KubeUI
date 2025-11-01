@@ -6,10 +6,11 @@ using Avalonia.Headless.XUnit;
 using FluentAssertions;
 using k8s.Models;
 using KubeUI.Client;
-using KubeUI.Client.Informer;
+using Yarp.Kubernetes.Controller.Client;
 using KubeUI.ViewModels;
 using Moq;
 using static KubeUI.ViewModels.VisualizationViewModel;
+using Yarp.Kubernetes.Controller;
 
 namespace KubeUI.Tests;
 

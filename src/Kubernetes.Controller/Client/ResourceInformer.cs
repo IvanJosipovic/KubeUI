@@ -232,7 +232,7 @@ public class ResourceInformer<TResource> : BackgroundHostedService, IResourceInf
         var previousCache = _cache;
         _cache = new Dictionary<NamespacedName, IList<V1OwnerReference>>();
 
-        if (_selector.FieldSelector is not null)
+        if (_selector?.FieldSelector is not null)
         {
             Logger.LogInformation(
                 EventId(EventType.SynchronizeStarted),
