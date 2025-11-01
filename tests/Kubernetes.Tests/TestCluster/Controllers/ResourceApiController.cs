@@ -29,14 +29,12 @@ public class ResourceApiController : ControllerBase
     {
         var list = await _testCluster.ListResourcesAsync(string.Empty, Version, Plural, parameters);
 
-        var result = new KubernetesList<ResourceObject>(
-            apiVersion: Version,
-            kind: "PodList",
-            metadata: new V1ListMeta(
-                continueProperty: list.Continue,
-                remainingItemCount: null,
-                resourceVersion: list.ResourceVersion),
-            items: list.Items);
+        var result = new KubernetesList<ResourceObject>(list.Items, Version, V1PodList.KubeKind, new V1ListMeta()
+        {
+            ContinueProperty = list.Continue,
+            RemainingItemCount = null,
+            ResourceVersion = list.ResourceVersion
+        });
 
         return new ObjectResult(result);
     }

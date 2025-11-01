@@ -32,14 +32,12 @@ public class ResourceApiGroupController : ControllerBase
     {
         var list = await _testCluster.ListResourcesAsync(Group, Version, Plural, parameters);
 
-        var result = new KubernetesList<ResourceObject>(
-            apiVersion: $"{Group}/{Version}",
-            kind: "DeploymentList",
-            metadata: new V1ListMeta(
-                continueProperty: list.Continue,
-                remainingItemCount: null,
-                resourceVersion: list.ResourceVersion),
-            items: list.Items);
+        var result = new KubernetesList<ResourceObject>(list.Items, Version, V1DeploymentList.KubeKind, new V1ListMeta()
+        {
+            ContinueProperty = list.Continue,
+            RemainingItemCount = null,
+            ResourceVersion = list.ResourceVersion
+        });
 
         return new ObjectResult(result);
     }
