@@ -28,19 +28,22 @@ public partial class ResourceListView : UserControl
         InitializeComponent();
 
 #if DEBUG
-        var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Pod>>() as IDockable;
-
-        var cluster = Application.Current.GetRequiredService<ClusterManager>().GetDefault();
-
-        cluster.Connect();
-        cluster.Seed<V1Pod>(false);
-
-        if (vm is IInitializeCluster init)
+        if (Design.IsDesignMode)
         {
-            init.Initialize(cluster);
-        }
+            var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Pod>>() as IDockable;
 
-        DataContext = vm;
+            var cluster = Application.Current.GetRequiredService<ClusterManager>().GetDefault();
+
+            cluster.Connect();
+            cluster.Seed<V1Pod>(false);
+
+            if (vm is IInitializeCluster init)
+            {
+                init.Initialize(cluster);
+            }
+
+            DataContext = vm;
+        }
 #endif
     }
 

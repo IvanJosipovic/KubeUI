@@ -251,10 +251,10 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
                     {
                         ApiVersion = _names.GroupApiVersion,
                         Kind = _names.Kind,
-                        Metadata = new V1ObjectMeta(
-                            name: key.Name,
-                            namespaceProperty: key.Namespace,
-                            ownerReferences: value),
+                        Metadata = new V1ObjectMeta {
+                            Name = key.Name,
+                            NamespaceProperty = key.Namespace,
+                            OwnerReferences= value},
                     };
 
                     InvokeRegistrationCallbacks(WatchEventType.Deleted, item);
@@ -311,9 +311,10 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
 
         var lastEventUtc = DateTime.UtcNow;
 
+#pragma warning disable CS0618 // Type or member is obsolete
         using var watcher = watchWithHttpMessage.Watch<TResource, object>(
             (watchEventType, item) =>
-            {
+           {
                 if (!watcherCompletionSource.Task.IsCompleted)
                 {
                     lastEventUtc = DateTime.UtcNow;
@@ -322,33 +323,34 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
             },
             error =>
             {
-                if (error is KubernetesException kubernetesError)
-                {
-                    // deal with this non-recoverable condition "too old resource version"
-                    if (string.Equals(kubernetesError.Status.Reason, "Expired", StringComparison.Ordinal))
-                    {
-                        // cause this error to surface
-                        watcherCompletionSource.TrySetException(error);
-                        throw error;
-                    }
-                }
+               if (error is KubernetesException kubernetesError)
+               {
+                   // deal with this non-recoverable condition "too old resource version"
+                   if (string.Equals(kubernetesError.Status.Reason, "Expired", StringComparison.Ordinal))
+                   {
+                       // cause this error to surface
+                       watcherCompletionSource.TrySetException(error);
+                       throw error;
+                   }
+               }
 
-                if (error is HttpRequestException requestException)
-                {
-                    watcherCompletionSource.TrySetException(error);
-                    throw error;
-                }
+               if (error is HttpRequestException requestException)
+               {
+                   watcherCompletionSource.TrySetException(error);
+                   throw error;
+               }
 
-                _logger.LogDebug(
-                    EventId(EventType.IgnoringError),
-                    "Ignoring error {ErrorType}: {ErrorMessage}",
-                    error.GetType().Name,
-                    error.Message);
+               _logger.LogDebug(
+                   EventId(EventType.IgnoringError),
+                   "Ignoring error {ErrorType}: {ErrorMessage}",
+                   error.GetType().Name,
+                   error.Message);
             },
             () =>
             {
                 watcherCompletionSource.TrySetResult(0);
             });
+#pragma warning restore CS0618 // Type or member is obsolete
 
         // reconnect if no events have arrived after a certain time
         using var checkLastEventUtcTimer = new Timer(
