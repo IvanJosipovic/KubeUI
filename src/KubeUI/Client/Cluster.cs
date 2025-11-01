@@ -219,8 +219,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                     await InitMetrics();
                     await AddDefaultNavigation();
-
-                    _ = Task.Run(ProcessResourceConfigs);
+                    await ProcessResourceConfigs();
                 }
                 catch (Exception ex)
                 {

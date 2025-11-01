@@ -3,14 +3,13 @@
     <File Path=".editorconfig" />
     <File Path=".github/renovate.json" />
     <File Path=".github/workflows/cicd.yml" />
-    <File Path=".github/workflows/sync-extensions.yml" />
     <File Path=".releaserc.json" />
     <File Path=".vsconfig" />
     <File Path="global.json" />
     <File Path="README.md" />
     <File Path="Settings.XamlStyler" />
   </Folder>
-  <Project Path="src/KubeUI.Desktop/KubeUI.Desktop.csproj" />
-  <Project Path="src/KubeUI/KubeUI.csproj" />
-  <Project Path="tests/KubeUI.Tests/KubeUI.Tests.csproj" />
+  <Project Path="../../../../../../../../Repos/KubeUI/src/KubeUI.Desktop/KubeUI.Desktop.csproj" />
+  <Project Path="../../../../../../../../Repos/KubeUI/src/KubeUI/KubeUI.csproj" />
+  <Project Path="../../../../../../../../Repos/KubeUI/tests/KubeUI.Tests/KubeUI.Tests.csproj" />
 </Solution>
