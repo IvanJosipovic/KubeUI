@@ -191,31 +191,33 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
             cancellationToken.ThrowIfCancellationRequested();
 
             // request next page of items
-            k8s.Autorest.HttpOperationResponse<object>? listWithHttpMessage = null;
+            k8s.Autorest.HttpOperationResponse<KubernetesList<TResource>>? listWithHttpMessage;
 
             if (string.IsNullOrEmpty(_namespace))
             {
-                listWithHttpMessage = await _client.CustomObjects.ListClusterCustomObjectWithHttpMessagesAsync(
+                listWithHttpMessage = await _client.CustomObjects.ListClusterCustomObjectWithHttpMessagesAsync<KubernetesList<TResource>>(
                 _names.Group,
                 _names.ApiVersion,
                 _names.PluralName,
                 continueParameter: continueParameter,
+                resourceVersion: _lastResourceVersion,
                 cancellationToken: cancellationToken);
             }
             else
             {
-                listWithHttpMessage = await _client.CustomObjects.ListNamespacedCustomObjectWithHttpMessagesAsync(
+                listWithHttpMessage = await _client.CustomObjects.ListNamespacedCustomObjectWithHttpMessagesAsync<KubernetesList<TResource>>(
                 _names.Group,
                 _names.ApiVersion,
                 _namespace,
                 _names.PluralName,
                 continueParameter: continueParameter,
+                resourceVersion: _lastResourceVersion,
                 cancellationToken: cancellationToken);
             }
 
             using (listWithHttpMessage)
             {
-                var list = KubernetesJson.Deserialize<KubernetesList<TResource>>(listWithHttpMessage.Body.ToString());
+                var list = listWithHttpMessage.Body;
 
                 foreach (var item in list.Items)
                 {
@@ -279,11 +281,11 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
         var watcherCompletionSource = new TaskCompletionSource<int>();
 
         // begin watching where list left off
-        Task<k8s.Autorest.HttpOperationResponse<object>>? watchWithHttpMessage = null;
+        Task<k8s.Autorest.HttpOperationResponse<KubernetesList<TResource>>>? watchWithHttpMessage = null;
 
         if (string.IsNullOrEmpty(_namespace))
         {
-            watchWithHttpMessage = _client.CustomObjects.ListClusterCustomObjectWithHttpMessagesAsync(
+            watchWithHttpMessage = _client.CustomObjects.ListClusterCustomObjectWithHttpMessagesAsync<KubernetesList<TResource>>(
             _names.Group,
             _names.ApiVersion,
             _names.PluralName,
@@ -293,7 +295,7 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
         }
         else
         {
-            watchWithHttpMessage = _client.CustomObjects.ListNamespacedCustomObjectWithHttpMessagesAsync(
+            watchWithHttpMessage = _client.CustomObjects.ListNamespacedCustomObjectWithHttpMessagesAsync<KubernetesList<TResource>>(
             _names.Group,
             _names.ApiVersion,
             _namespace,
@@ -306,7 +308,7 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
         var lastEventUtc = DateTime.UtcNow;
 
 #pragma warning disable CS0618 // Type or member is obsolete
-        using var watcher = watchWithHttpMessage.Watch<TResource, object>(
+        using var watcher = watchWithHttpMessage.Watch<TResource, KubernetesList<TResource>>(
             (watchEventType, item) =>
            {
                 if (!watcherCompletionSource.Task.IsCompleted)
