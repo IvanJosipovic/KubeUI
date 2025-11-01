@@ -1,0 +1,19 @@
+[
+  {
+    "RouteId": "mapped-port.default:/foo",
+    "Match": {
+      "Methods": null,
+      "Hosts": [],
+      "Path": "/foo/{**catch-all}",
+      "Headers": null,
+      "QueryParameters": null
+    },
+    "Order": null,
+    "ClusterId": "backend.default:5011",
+    "AuthorizationPolicy": null,
+    "RateLimiterPolicy": null,
+    "CorsPolicy": null,
+    "Metadata": null,
+    "Transforms": null
+  }
+]
