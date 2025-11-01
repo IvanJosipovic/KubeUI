@@ -28,7 +28,7 @@ public class ResourceInformer<TResource> : BackgroundHostedService, IResourceInf
     private readonly GroupApiVersionKind _names;
     private readonly SemaphoreSlim _ready = new SemaphoreSlim(0);
     private readonly SemaphoreSlim _start = new SemaphoreSlim(0);
-    private readonly ResourceSelector<TResource> _selector;
+    private readonly ResourceSelector<TResource>? _selector;
     private ImmutableList<Registration> _registrations = ImmutableList<Registration>.Empty;
     private Dictionary<NamespacedName, IList<V1OwnerReference>> _cache = [];
     private string _lastResourceVersion;
@@ -44,19 +44,18 @@ public class ResourceInformer<TResource> : BackgroundHostedService, IResourceInf
     /// <param name="@namespace">The Namespace to scope the informer.</param>
     public ResourceInformer(
         IKubernetes client,
-        ResourceSelector<TResource> selector,
         IHostApplicationLifetime hostApplicationLifetime,
         ILogger<ResourceInformer<TResource>> logger,
+        ResourceSelector<TResource>? selector = null,
         string? @namespace = null)
         : base(hostApplicationLifetime, logger)
     {
         ArgumentNullException.ThrowIfNull(client);
-        ArgumentNullException.ThrowIfNull(selector);
 
         Client = client;
         _selector = selector;
-        _names = GroupApiVersionKind.From<TResource>();
         _namespace = @namespace;
+        _names = GroupApiVersionKind.From<TResource>();
     }
 
     private enum EventType

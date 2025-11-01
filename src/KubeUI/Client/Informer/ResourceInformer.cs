@@ -4,6 +4,7 @@
 using System.Collections.Immutable;
 using System.Net.Sockets;
 using k8s;
+using k8s.Autorest;
 using k8s.Models;
 
 #pragma warning disable CA2213 // Disposable fields should be disposed
@@ -33,8 +34,8 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
     /// <summary>
     /// Initializes a new instance of the <see cref="ResourceInformer{TResource}" /> class.
     /// </summary>
-    /// <param name="client">The client.</param>
     /// <param name="logger">The logger.</param>
+    /// <param name="client">The client.</param>
     public ResourceInformer(ILogger<ResourceInformer<TResource>> logger, IKubernetes client)
     {
         _names = GroupApiVersionKind.From<TResource>();
@@ -191,7 +192,7 @@ public class ResourceInformer<TResource> : IResourceInformer<TResource>, IDispos
             cancellationToken.ThrowIfCancellationRequested();
 
             // request next page of items
-            k8s.Autorest.HttpOperationResponse<KubernetesList<TResource>>? listWithHttpMessage;
+            HttpOperationResponse<KubernetesList<TResource>>? listWithHttpMessage;
 
             if (string.IsNullOrEmpty(_namespace))
             {
