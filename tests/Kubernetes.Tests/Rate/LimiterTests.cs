@@ -10,7 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Sdk;
-using Yarp.Tests.Common;
+using Yarp.Kubernetes.Common;
 
 namespace Yarp.Kubernetes.Controller.Rate.Tests;
 

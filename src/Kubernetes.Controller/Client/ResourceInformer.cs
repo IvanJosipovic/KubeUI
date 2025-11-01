@@ -1,18 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Immutable;
+using System.Net.Sockets;
 using k8s;
 using k8s.Autorest;
 using k8s.Models;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.IO;
-using System.Net.Sockets;
-using System.Threading;
-using System.Threading.Tasks;
 using Yarp.Kubernetes.Controller.Hosting;
 using Yarp.Kubernetes.Controller.Rate;
 
@@ -24,12 +19,10 @@ namespace Yarp.Kubernetes.Controller.Client;
 /// Implements the <see cref="IDisposable" />.
 /// </summary>
 /// <typeparam name="TResource">The type of the t resource.</typeparam>
-/// <typeparam name="TListResource">The type of the t resource used in lists.</typeparam>
 /// <seealso cref="IResourceInformer{TResource}" />
 /// <seealso cref="IDisposable" />
-public abstract class ResourceInformer<TResource, TListResource> : BackgroundHostedService, IResourceInformer<TResource>
+public class ResourceInformer<TResource> : BackgroundHostedService, IResourceInformer<TResource>
     where TResource : class, IKubernetesObject<V1ObjectMeta>, new()
-    where TListResource : class, IKubernetesObject<V1ListMeta>, IItems<TResource>, new()
 {
     private readonly object _sync = new object();
     private readonly GroupApiVersionKind _names;
@@ -39,19 +32,22 @@ public abstract class ResourceInformer<TResource, TListResource> : BackgroundHos
     private ImmutableList<Registration> _registrations = ImmutableList<Registration>.Empty;
     private Dictionary<NamespacedName, IList<V1OwnerReference>> _cache = [];
     private string _lastResourceVersion;
+    private readonly string? _namespace;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ResourceInformer{TResource, TListResource}" /> class.
+    /// Initializes a new instance of the <see cref="ResourceInformer{TResource}" /> class.
     /// </summary>
     /// <param name="client">The client.</param>
     /// <param name="selector">A resource selector for (optionally) filtering the list of resources.</param>
     /// <param name="hostApplicationLifetime">The host application lifetime.</param>
     /// <param name="logger">The logger.</param>
+    /// <param name="@namespace">The Namespace to scope the informer.</param>
     public ResourceInformer(
         IKubernetes client,
         ResourceSelector<TResource> selector,
         IHostApplicationLifetime hostApplicationLifetime,
-        ILogger logger)
+        ILogger<ResourceInformer<TResource>> logger,
+        string? @namespace = null)
         : base(hostApplicationLifetime, logger)
     {
         ArgumentNullException.ThrowIfNull(client);
@@ -60,6 +56,7 @@ public abstract class ResourceInformer<TResource, TListResource> : BackgroundHos
         Client = client;
         _selector = selector;
         _names = GroupApiVersionKind.From<TResource>();
+        _namespace = @namespace;
     }
 
     private enum EventType
@@ -196,7 +193,38 @@ public abstract class ResourceInformer<TResource, TListResource> : BackgroundHos
         }
     }
 
-    protected abstract Task<HttpOperationResponse<TListResource>> RetrieveResourceListAsync(bool? watch = null, string resourceVersion = null, ResourceSelector<TResource> resourceSelector = null, CancellationToken cancellationToken = default);
+    protected virtual async Task<HttpOperationResponse<KubernetesList<TResource>>> RetrieveResourceListAsync(bool? watch = null, string? continueParameter = null, string? resourceVersion = null, ResourceSelector<TResource>? resourceSelector = null, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(_namespace))
+        {
+            var listWithHttpMessage = await Client.CustomObjects.ListClusterCustomObjectWithHttpMessagesAsync<KubernetesList<TResource>>(
+            _names.Group,
+            _names.ApiVersion,
+            _names.PluralName,
+            continueParameter: continueParameter,
+            fieldSelector: resourceSelector?.FieldSelector,
+            watch: watch,
+            resourceVersion: resourceVersion,
+            cancellationToken: cancellationToken);
+
+            return listWithHttpMessage;
+        }
+        else
+        {
+            var listWithHttpMessage = await Client.CustomObjects.ListNamespacedCustomObjectWithHttpMessagesAsync<KubernetesList<TResource>>(
+            _names.Group,
+            _names.ApiVersion,
+            _namespace,
+            _names.PluralName,
+            continueParameter: continueParameter,
+            fieldSelector: resourceSelector?.FieldSelector,
+            watch: watch,
+            resourceVersion: resourceVersion,
+            cancellationToken: cancellationToken);
+
+            return listWithHttpMessage;
+        }
+    }
 
     private static EventId EventId(EventType eventType) => new EventId((int)eventType, eventType.ToString());
 
@@ -227,7 +255,7 @@ public abstract class ResourceInformer<TResource, TListResource> : BackgroundHos
             cancellationToken.ThrowIfCancellationRequested();
 
             // request next page of items
-            using var listWithHttpMessage = await RetrieveResourceListAsync(resourceVersion: _lastResourceVersion, resourceSelector: _selector, cancellationToken: cancellationToken);
+            using var listWithHttpMessage = await RetrieveResourceListAsync(continueParameter: continueParameter, resourceVersion: _lastResourceVersion, resourceSelector: _selector, cancellationToken: cancellationToken);
 
             var list = listWithHttpMessage.Body;
             foreach (var item in list.Items)
@@ -294,7 +322,7 @@ public abstract class ResourceInformer<TResource, TListResource> : BackgroundHos
         var watchWithHttpMessage = RetrieveResourceListAsync(watch: true, resourceVersion: _lastResourceVersion, resourceSelector: _selector, cancellationToken: cancellationToken);
 
         var lastEventUtc = DateTime.UtcNow;
-        using var watcher = watchWithHttpMessage.Watch<TResource, TListResource>(
+        using var watcher = watchWithHttpMessage.Watch<TResource, KubernetesList<TResource>>(
             (watchEventType, item) =>
             {
                 if (!watcherCompletionSource.Task.IsCompleted)
@@ -428,7 +456,7 @@ public abstract class ResourceInformer<TResource, TListResource> : BackgroundHos
     {
         private bool _disposedValue;
 
-        public Registration(ResourceInformer<TResource, TListResource> resourceInformer, ResourceInformerCallback<TResource> callback)
+        public Registration(ResourceInformer<TResource> resourceInformer, ResourceInformerCallback<TResource> callback)
         {
             ResourceInformer = resourceInformer;
             Callback = callback;
@@ -444,7 +472,7 @@ public abstract class ResourceInformer<TResource, TListResource> : BackgroundHos
             Dispose(disposing: false);
         }
 
-        public ResourceInformer<TResource, TListResource> ResourceInformer { get; }
+        public ResourceInformer<TResource> ResourceInformer { get; }
         public ResourceInformerCallback<TResource> Callback { get; }
 
         public Task ReadyAsync(CancellationToken cancellationToken) => ResourceInformer.ReadyAsync(cancellationToken);

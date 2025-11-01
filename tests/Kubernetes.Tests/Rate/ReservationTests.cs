@@ -3,7 +3,7 @@
 
 using System;
 using Xunit;
-using Yarp.Tests.Common;
+using Yarp.Kubernetes.Common;
 
 namespace Yarp.Kubernetes.Controller.Rate.Tests;
 

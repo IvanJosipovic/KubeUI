@@ -9,18 +9,24 @@ namespace Yarp.Kubernetes.Controller.Client;
 
 public struct GroupApiVersionKind : IEquatable<GroupApiVersionKind>
 {
-    public GroupApiVersionKind(string group, string apiVersion, string kind)
+    public GroupApiVersionKind(string group, string apiVersion, string kind, string pluralName)
     {
+        Group = group;
         ApiVersion = apiVersion;
         GroupApiVersion = string.IsNullOrEmpty(group) ? apiVersion : $"{group}/{apiVersion}";
         Kind = kind;
+        PluralName = pluralName;
     }
+
+    public string Group { get; }
 
     public string ApiVersion { get; }
 
     public string GroupApiVersion { get; }
 
     public string Kind { get; }
+
+    public string PluralName { get; set; }
 
     public static GroupApiVersionKind From<TResource>() => From(typeof(TResource));
 
@@ -31,7 +37,8 @@ public struct GroupApiVersionKind : IEquatable<GroupApiVersionKind>
         return new GroupApiVersionKind(
             group: entity.Group,
             apiVersion: entity.ApiVersion,
-            kind: entity.Kind);
+            kind: entity.Kind,
+            pluralName: entity.PluralName);
     }
 
     public override bool Equals(object obj)
