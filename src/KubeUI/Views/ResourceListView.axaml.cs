@@ -4,12 +4,15 @@ using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
 using Avalonia.Styling;
 using Avalonia.VisualTree;
+using Dock.Model.Core;
 using DynamicData;
 using k8s;
 using k8s.Models;
 using KubeUI.Client;
 using KubeUI.Client.Informer;
 using KubeUI.Resources;
+using KubeUI.ViewModels;
+using OpenTelemetry.Trace;
 using Semi.Avalonia;
 
 namespace KubeUI.Views;
@@ -23,6 +26,22 @@ public partial class ResourceListView : UserControl
         _logger = Application.Current.GetRequiredService<ILogger<ResourceListView>>();
 
         InitializeComponent();
+
+#if DEBUG
+        var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Pod>>() as IDockable;
+
+        var cluster = Application.Current.GetRequiredService<ClusterManager>().GetDefault();
+
+        cluster.Connect();
+        cluster.Seed<V1Pod>(false);
+
+        if (vm is IInitializeCluster init)
+        {
+            init.Initialize(cluster);
+        }
+
+        DataContext = vm;
+#endif
     }
 
     protected override void OnDataContextChanged(EventArgs e)

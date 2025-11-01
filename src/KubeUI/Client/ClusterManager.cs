@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Xml.Linq;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using k8s;
@@ -250,6 +251,24 @@ public sealed partial class ClusterManager : ObservableObject, IDisposable
             {
                 _logger.LogError(ex, "Error Removing Cluster from configuration");
             }
+        }
+    }
+
+    public ICluster? GetDefault()
+    {
+        try
+        {
+            if (File.Exists(KubernetesClientConfiguration.KubeConfigDefaultLocation))
+            {
+                var kubeConfig = KubernetesClientConfiguration.LoadKubeConfig();
+                return GetCluster(kubeConfig.CurrentContext);
+            }
+
+            return null;
+        }
+        catch (Exception)
+        {
+            return null;
         }
     }
 

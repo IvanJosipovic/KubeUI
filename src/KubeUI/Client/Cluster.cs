@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Json;
 using System.Reflection;
 using System.Xml;
@@ -14,6 +15,7 @@ using k8s.Models;
 using KubernetesCRDModelGen;
 using KubeUI.Client.Informer;
 using KubeUI.Resources;
+using KubeUI.ViewModels;
 using Microsoft.Extensions.Http.Resilience;
 using Polly;
 using Swordfish.NET.Collections;
@@ -93,8 +95,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
     [ObservableProperty]
     public partial ObservableCollection<V1Namespace> SelectedNamespaces { get; set; } = [];
 
-    [ObservableProperty]
-    public partial ConcurrentObservableDictionary<GroupApiVersionKind, IResourceConfig> ResourceConfigs { get; set; } = [];
+    private ConcurrentObservableDictionary<GroupApiVersionKind, IResourceConfig> ResourceConfigs { get; set; } = [];
 
     public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ModelCache modelCache, IGenerator generator, ISettingsService settingsService, IDialogService dialogService, IServiceProvider serviceProvider)
     {
@@ -217,8 +218,9 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     }
 
                     await InitMetrics();
+                    await AddDefaultNavigation();
 
-                    Dispatcher.UIThread.Post(async () => await AddDefaultNavigation(), DispatcherPriority.Background);
+                    _ = Task.Run(ProcessResourceConfigs);
                 }
                 catch (Exception ex)
                 {
@@ -271,22 +273,19 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
         NavigationItems.Add(new NavigationItem() { Name = "Workloads", Order = 8 });
         NavigationItems.Add(new NavigationItem() { Name = "Configuration", Order = 9 });
-        var network = new NavigationItem() { Name = "Network", Order = 10 };
-        NavigationItems.Add(network);
+
+        NavigationItems.Add(new NavigationItem() { Name = "Network", Order = 10 });
         NavigationItems.Add(new NavigationItem() { Name = "Storage", Order = 11 });
         NavigationItems.Add(new NavigationItem() { Name = "Access Control", Order = 12 });
+    }
 
-        if (await UpdateCanIListWatchAnyNamespaceAsync<V1Pod>() && await UpdateCanIAnyNamespaceAsync<V1Pod>(Verb.Create, "portforward"))
-        {
-            network.NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.PortForwarderListViewModel_Title, ControlType = typeof(PortForwarderListViewModel), Cluster = this, StyleIcon = "ic_fluent_cloud_flow_filled", Order = 6 });
-        }
-
+    private async Task ProcessResourceConfigs()
+    {
         var types = _serviceProvider.GetRequiredService<ServiceDescriptor[]>().Where(t => t.ServiceType.IsGenericType
                                                                                        && t.ServiceType.GetGenericTypeDefinition() == typeof(ResourceConfigBase<>)
                                                                                        && t.ServiceType.GenericTypeArguments.Length == 1
                                                                                     ).Select(x => x.ServiceType)
                                                                                      .ToList();
-
         List<IResourceConfig> configs = [];
 
         foreach (var type in types)
@@ -313,6 +312,15 @@ public sealed partial class Cluster : ObservableObject, ICluster
             {
                 var nav = new ResourceNavigationLink() { Name = config.Name, ControlType = config.Type, Cluster = this, Order = config.Order };
 
+                if (config.Type == typeof(V1Pod))
+                {
+                    if (await UpdateCanIAnyNamespaceAsync<V1Pod>(Verb.Create, "portforward"))
+                    {
+                        var network = NavigationItems.First(x => x.Name == "Network");
+                        Dispatcher.UIThread.Post(() => network.NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.PortForwarderListViewModel_Title, ControlType = typeof(PortForwarderListViewModel), Cluster = this, StyleIcon = "ic_fluent_cloud_flow_filled", Order = 6 }), DispatcherPriority.Background);
+                    }
+                }
+
                 if (config.Type == typeof(V1CustomResourceDefinition))
                 {
 
@@ -326,13 +334,13 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                 if (string.IsNullOrEmpty(config.Category))
                 {
-                    NavigationItems.Add(nav);
+                    Dispatcher.UIThread.Post(() => NavigationItems.Add(nav), DispatcherPriority.Background);
                 }
                 else
                 {
-                    var category = NavigationItems.First(x => x.Name == config.Category);
+                    var category = NavigationItems.First(x => x is not null && x.Name == config.Category);
 
-                    category.NavigationItems.Add(nav);
+                    Dispatcher.UIThread.Post(() => category.NavigationItems.Add(nav), DispatcherPriority.Background);
                 }
             }
         }
@@ -430,7 +438,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
                         if (waitForReady)
                         {
                             await inf.ReadyAsync(new CancellationToken());
-                            await Task.Delay(1000);
                         }
                     }
                 }
