@@ -95,6 +95,11 @@ public partial class App : Application
             ApplicationName = "KubeUI.Desktop",
             Configuration = new ConfigurationManager(),
             ContentRootPath = Directory.GetCurrentDirectory(),
+#if DEBUG
+            EnvironmentName = "Development",
+#else
+            EnvironmentName = "Production",
+#endif
         });
 
         builder.Services.AddLogging(loggingBuilder =>

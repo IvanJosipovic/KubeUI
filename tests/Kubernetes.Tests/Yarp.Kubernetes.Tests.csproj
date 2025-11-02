@@ -5,6 +5,9 @@
     <OutputType>Exe</OutputType>
     <NoWarn>$(NoWarn);CS8002</NoWarn>
     <RootNamespace>Yarp.Kubernetes</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>preview</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

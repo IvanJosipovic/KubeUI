@@ -192,7 +192,7 @@ public class ResourceInformer<TResource> : BackgroundHostedService, IResourceInf
         }
     }
 
-    protected virtual async Task<HttpOperationResponse<KubernetesList<TResource>>> RetrieveResourceListAsync(bool? watch = null, string? continueParameter = null, string? resourceVersion = null, ResourceSelector<TResource>? resourceSelector = null, CancellationToken cancellationToken = default)
+    protected virtual async Task<HttpOperationResponse<KubernetesList<TResource>>> RetrieveResourceListAsync(bool? watch = null, string? continueParameter = null, string? resourceVersion = null, ResourceSelector<TResource>? resourceSelector = null, int? limit = null, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(_namespace))
         {
@@ -203,6 +203,7 @@ public class ResourceInformer<TResource> : BackgroundHostedService, IResourceInf
             continueParameter: continueParameter,
             fieldSelector: resourceSelector?.FieldSelector,
             watch: watch,
+            limit: limit,
             resourceVersion: resourceVersion,
             cancellationToken: cancellationToken);
 
@@ -218,6 +219,7 @@ public class ResourceInformer<TResource> : BackgroundHostedService, IResourceInf
             continueParameter: continueParameter,
             fieldSelector: resourceSelector?.FieldSelector,
             watch: watch,
+            limit: limit,
             resourceVersion: resourceVersion,
             cancellationToken: cancellationToken);
 
@@ -248,13 +250,13 @@ public class ResourceInformer<TResource> : BackgroundHostedService, IResourceInf
                 typeof(TResource).Name);
         }
 
-        string continueParameter = null;
+        string? continueParameter = null;
         do
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             // request next page of items
-            using var listWithHttpMessage = await RetrieveResourceListAsync(continueParameter: continueParameter, resourceVersion: _lastResourceVersion, resourceSelector: _selector, cancellationToken: cancellationToken);
+            using var listWithHttpMessage = await RetrieveResourceListAsync(continueParameter: continueParameter, resourceSelector: _selector, limit: 100, cancellationToken: cancellationToken);
 
             var list = listWithHttpMessage.Body;
             foreach (var item in list.Items)
