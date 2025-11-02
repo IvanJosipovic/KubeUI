@@ -23,13 +23,10 @@
         RowDefinitions="Auto,*">
 
         <!--  Read-only toolbar  -->
-        <StackPanel
-            Grid.Row="0"
+        <StackPanel Grid.Row="0"
             IsVisible="{Binding EditMode, Converter={x:Static utils:Utilities.InverseBooleanConverter}}"
             Orientation="Horizontal">
-            <Button
-                Command="{Binding SetEditModeCommand}"
-                ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Edit}">
+            <Button Command="{Binding SetEditModeCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Edit}">
                 <PathIcon Data="{StaticResource document_edit_regular}" />
             </Button>
             <ToggleButton
@@ -38,39 +35,28 @@
                 ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_HideNoisyFields}">
                 <PathIcon Data="{StaticResource eye_hide_regular}" />
             </ToggleButton>
-            <ToggleButton
-                IsChecked="{Binding WordWrap}"
-                ToolTip.Tip="{x:Static assets:Resources.ResourceYamlView_WordWrap}">
+            <ToggleButton IsChecked="{Binding WordWrap}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlView_WordWrap}">
                 <PathIcon Data="{StaticResource text_wrap_regular}" />
             </ToggleButton>
         </StackPanel>
 
         <!--  Edit toolbar  -->
-        <StackPanel
-            Grid.Row="0"
+        <StackPanel Grid.Row="0"
             IsVisible="{Binding EditMode}"
             Orientation="Horizontal">
-            <Button
-                Command="{Binding SaveCommand}"
-                ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Save}">
+            <Button Command="{Binding SaveCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Save}">
                 <PathIcon Data="{StaticResource save_regular}" />
             </Button>
-            <Button
-                Command="{Binding SetEditModeCommand}"
-                ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Cancel}">
+            <Button Command="{Binding SetEditModeCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Cancel}">
                 <PathIcon Data="{StaticResource dismiss_regular}" />
             </Button>
-            <ToggleButton
-                IsChecked="{Binding WordWrap}"
-                ToolTip.Tip="{x:Static assets:Resources.ResourceYamlView_WordWrap}">
+            <ToggleButton IsChecked="{Binding WordWrap}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlView_WordWrap}">
                 <PathIcon Data="{StaticResource text_wrap_regular}" />
             </ToggleButton>
         </StackPanel>
 
         <!--  YAML editor  -->
-        <ae:TextEditor
-            Name="Editor"
-            Grid.Row="1"
+        <ae:TextEditor Name="Editor" Grid.Row="1"
             Background="{DynamicResource SystemAltHighColor}"
             Document="{Binding YamlDocument, Mode=TwoWay}"
             FontFamily="Cascadia Mono"
@@ -81,10 +67,15 @@
             ShowLineNumbers="True"
             VerticalScrollBarVisibility="Visible"
             WordWrap="{Binding WordWrap}">
+            <ae:TextEditor.Options>
+                <ae:TextEditorOptions
+                    AllowScrollBelowDocument="false"
+                    EnableEmailHyperlinks="False"
+                    EnableHyperlinks="false"
+                    ShowBoxForControlCharacters="False" />
+            </ae:TextEditor.Options>
             <ae:TextEditor.KeyBindings>
-                <KeyBinding
-                    Command="{Binding UndoCommand}"
-                    Gesture="Ctrl+Z" />
+                <KeyBinding Command="{Binding UndoCommand}" Gesture="Ctrl+Z" />
             </ae:TextEditor.KeyBindings>
             <ae:TextEditor.ContextMenu>
                 <ContextMenu>
