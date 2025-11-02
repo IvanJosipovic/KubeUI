@@ -233,6 +233,11 @@ public partial class App : Application
                                 prop.IsRequired = false;
                             }
                         }
+
+                        if (jsonTypeInfo.OriginatingResolver is DefaultJsonTypeInfoResolver)
+                        {
+                            logger.LogDebug("Type is Serialized using Reflection: {type}", jsonTypeInfo.Type);
+	                    }
                     }
                 }
             });

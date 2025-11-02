@@ -212,11 +212,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     else
                     {
                         Namespaces = await GetObjectDictionaryAsync<V1Namespace>();
-
-                        while (Namespaces.Count == 0)
-                        {
-                            await Task.Delay(100);
-                        }
                     }
 
                     await InitMetrics();
@@ -312,6 +307,11 @@ public sealed partial class Cluster : ObservableObject, ICluster
             if (CanIAnyNamespace(config.Type, Verb.List) && CanIAnyNamespace(config.Type, Verb.Watch))
             {
                 var nav = new ResourceNavigationLink() { Name = config.Name, ControlType = config.Type, Cluster = this, Order = config.Order };
+
+                if (config.Type == typeof(V1Namespace))
+                {
+                    nav.Objects = Objects[config.Kind].Items;
+                }
 
                 if (config.Type == typeof(V1Pod))
                 {
