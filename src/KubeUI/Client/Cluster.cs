@@ -137,22 +137,22 @@ public sealed partial class Cluster : ObservableObject, ICluster
                         config = KubernetesClientConfiguration.BuildConfigFromConfigFile(KubeConfigPath, Name);
                     }
 
-                    //// build a custom pipeline for HTTP calls
-                    //var pipe = new ResiliencePipelineBuilder<HttpResponseMessage>()
-                    //{
-                    //    Name = "Cluster",
-                    //    InstanceName = Name
-                    //}
-                    //.AddRetry(new HttpRetryStrategyOptions
-                    //{
-                    //    MaxRetryAttempts = 5,
-                    //})
-                    //.ConfigureTelemetry(_loggerFactory);
+                    // build a custom pipeline for HTTP calls
+                    var pipe = new ResiliencePipelineBuilder<HttpResponseMessage>()
+                    {
+                        Name = "Cluster",
+                        InstanceName = Name
+                    }
+                    .AddRetry(new HttpRetryStrategyOptions
+                    {
+                        MaxRetryAttempts = 3,
+                    })
+                    .ConfigureTelemetry(_loggerFactory);
 
-                    //var handler = new OperationKeyHandler()
-                    //{
-                    //    InnerHandler = new ResilienceHandler(pipe.Build())
-                    //};
+                    var handler = new OperationKeyHandler()
+                    {
+                        InnerHandler = new ResilienceHandler(pipe.Build())
+                    };
 
                     Client = new Kubernetes(config);
 
@@ -279,6 +279,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
         {
             if (await UpdateCanIAnyNamespaceAsync(config.Value.Type, Verb.List) && await UpdateCanIAnyNamespaceAsync(config.Value.Type, Verb.Watch))
             {
+                await config.Value.UpdatePermissions();
+
                 var nav = new ResourceNavigationLink() { Name = config.Value.Name, ControlType = config.Value.Type, Cluster = this, Order = config.Value.Order };
 
                 if (config.Value.Type == typeof(V1Namespace))
@@ -385,7 +387,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     container.Informers.Add(informer);
                     informer.Register(GetResourceInformerCallback<T>());
                     informer.StartWatching();
-                    _ = informer.RunAsync(CancellationToken.None);
+                    _ = informer.RunInfinite(CancellationToken.None);
                 }
                 else
                 {
@@ -406,7 +408,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                             container.Informers.Add(informer);
                             informer.Register(GetResourceInformerCallback<T>());
                             informer.StartWatching();
-                            _ = informer.RunAsync(CancellationToken.None);
+                            _ = informer.RunInfinite(CancellationToken.None);
                         }
                     }
                 }

@@ -165,15 +165,19 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public async Task UpdatePermissions()
     {
+        var tasks = new List<Task>();
+
         foreach (var (verb, subResource) in DefaultPermissions())
         {
-            await Cluster.UpdateCanIAllNamespaceAsync<T>(verb, subResource);
+            tasks.Add(Cluster.UpdateCanIAllNamespaceAsync<T>(verb, subResource));
         }
 
         foreach (var (verb, subResource) in CustomPermissions())
         {
-            await Cluster.UpdateCanIAllNamespaceAsync<T>(verb, subResource);
+            tasks.Add(Cluster.UpdateCanIAllNamespaceAsync<T>(verb, subResource));
         }
+
+        await Task.WhenAll(tasks);
     }
 
     #region Actions

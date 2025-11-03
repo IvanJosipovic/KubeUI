@@ -39,6 +39,7 @@ public interface IResourceInformer<TResource> : IHostedService, IResourceInforme
     /// <param name="callback">The delegate that is invoked with each resource notification.</param>
     /// <returns>A registration that should be disposed to end the notifications.</returns>
     IResourceInformerRegistration Register(ResourceInformerCallback<TResource> callback);
+    Task RunInfinite(CancellationToken cancellationToken);
 }
 
 public interface IResourceInformer

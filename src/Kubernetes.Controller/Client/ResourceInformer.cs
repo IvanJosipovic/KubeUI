@@ -130,6 +130,7 @@ public class ResourceInformer<TResource> : BackgroundHostedService, IResourceInf
             var limiter = new Limiter(new Limit(0.2), 3);
             var shouldSync = true;
             var firstSync = true;
+
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -151,14 +152,6 @@ public class ResourceInformer<TResource> : BackgroundHostedService, IResourceInf
                     await WatchAsync(cancellationToken).ConfigureAwait(true);
                 }
                 catch (IOException ex) when (ex.InnerException is SocketException)
-                {
-                    Logger.LogDebug(
-                        EventId(EventType.ReceivedError),
-                        "Received error watching {ResourceType}: {ErrorMessage}",
-                        typeof(TResource).Name,
-                        ex.Message);
-                }
-                catch (OperationCanceledException ex)
                 {
                     Logger.LogDebug(
                         EventId(EventType.ReceivedError),
@@ -197,6 +190,29 @@ public class ResourceInformer<TResource> : BackgroundHostedService, IResourceInf
                 "No longer watching {ResourceType} resources from API server.",
                 typeof(TResource).Name);
             throw;
+        }
+    }
+
+    /// <summary>
+    /// Runs the Informer in a while loop until cancellation requested
+    /// </summary>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public async Task RunInfinite(CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            try
+            {
+                await RunAsync(cancellationToken);
+            }
+            catch (Exception)
+            {
+                // rate limiting the reconnect loop
+                await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
+            }
         }
     }
 
@@ -240,7 +256,7 @@ public class ResourceInformer<TResource> : BackgroundHostedService, IResourceInf
     private async Task ListAsync(CancellationToken cancellationToken)
     {
         var previousCache = _cache;
-        _cache = new Dictionary<NamespacedName, IList<V1OwnerReference>>();
+        _cache = [];
 
         if (_selector?.FieldSelector is not null)
         {

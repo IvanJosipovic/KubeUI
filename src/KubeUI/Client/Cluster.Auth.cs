@@ -172,10 +172,14 @@ public partial class Cluster
 
         if (IsNamespaced(type))
         {
+            var tasks = new List<Task>();
+
             foreach (var item in await GetObjectDictionaryAsync<V1Namespace>())
             {
-                await GetSelfSubjectAccessReview(type, verb, item.Value.Name(), subresource);
+                tasks.Add(GetSelfSubjectAccessReview(type, verb, item.Value.Name(), subresource));
             }
+
+            await Task.WhenAll(tasks);
         }
     }
 
