@@ -13,14 +13,10 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : clas
 
     public override bool IsNamespaced => _showNamespaces;
 
-    private V1CustomResourceDefinition _customResourceDefinition;
-
     private readonly List<IResourceListColumn> _columns = [];
 
     public void Generate(V1CustomResourceDefinition crd)
     {
-        _customResourceDefinition = crd;
-
         // Add Name Column
         _columns.Add(NameColumn(SortDirection.Ascending));
 

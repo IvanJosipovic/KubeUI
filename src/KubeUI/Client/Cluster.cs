@@ -1,4 +1,3 @@
-using System.Net;
 using System.Net.Http.Json;
 using System.Reflection;
 using System.Xml;
@@ -15,7 +14,6 @@ using k8s.Models;
 using KubernetesCRDModelGen;
 using Yarp.Kubernetes.Controller.Client;
 using KubeUI.Resources;
-using KubeUI.ViewModels;
 using Microsoft.Extensions.Http.Resilience;
 using Polly;
 using Swordfish.NET.Collections;
@@ -168,6 +166,15 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                     await GetPermissions();
 
+                    var resourceConfig = (IResourceConfig)_serviceProvider.GetRequiredService<ResourceConfigBase<V1Namespace>>();
+
+                    if (resourceConfig is IInitializeCluster initns)
+                    {
+                        initns.Initialize(this);
+                    }
+
+                    ResourceConfigs[resourceConfig.Kind] = resourceConfig;
+
                     if (!ListNamespaces)
                     {
                         var settings = _settingsService.Settings.GetClusterSettings(this);
@@ -315,7 +322,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                 if (config.Type == typeof(V1Pod))
                 {
-                    if (await UpdateCanIAnyNamespaceAsync<V1Pod>(Verb.Create, "portforward"))
+                    if (CanIAnyNamespace<V1Pod>(Verb.Create, "portforward"))
                     {
                         var network = NavigationItems.First(x => x.Name == "Network");
                         Dispatcher.UIThread.Post(() => network.NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.PortForwarderListViewModel_Title, ControlType = typeof(PortForwarderListViewModel), Cluster = this, StyleIcon = "ic_fluent_cloud_flow_filled", Order = 6 }), DispatcherPriority.Background);
@@ -376,19 +383,9 @@ public sealed partial class Cluster : ObservableObject, ICluster
             container.Initialized = true;
             _seedLimiter.Release();
 
-            // Parallelize the self subject access review calls for cluster-scoped permissions
-            var reviewTasks = new[]
-            {
-                GetSelfSubjectAccessReview(type, Verb.Create),
-                GetSelfSubjectAccessReview(type, Verb.Delete),
-                GetSelfSubjectAccessReview(type, Verb.Get),
-                GetSelfSubjectAccessReview(type, Verb.List),
-                GetSelfSubjectAccessReview(type, Verb.Patch),
-                GetSelfSubjectAccessReview(type, Verb.Update),
-                GetSelfSubjectAccessReview(type, Verb.Watch)
-            };
+            var resourceConfig = GetResourceConfig(kind);
 
-            await Task.WhenAll(reviewTasks);
+            await resourceConfig.UpdatePermissions();
 
             if (CanI(type, Verb.List) && CanI(type, Verb.Watch))
             {
@@ -416,19 +413,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 foreach (var item in namespaceDict)
                 {
                     string ns = item.Value.Name();
-                    // Parallelize the self subject access review calls for namespaced permissions
-                    var namespacedTasks = new[]
-                    {
-                        GetSelfSubjectAccessReview(type, Verb.Create, ns),
-                        GetSelfSubjectAccessReview(type, Verb.Delete, ns),
-                        GetSelfSubjectAccessReview(type, Verb.Get, ns),
-                        GetSelfSubjectAccessReview(type, Verb.List, ns),
-                        GetSelfSubjectAccessReview(type, Verb.Patch, ns),
-                        GetSelfSubjectAccessReview(type, Verb.Update, ns),
-                        GetSelfSubjectAccessReview(type, Verb.Watch, ns)
-                    };
-
-                    await Task.WhenAll(namespacedTasks);
 
                     if (CanI(type, Verb.List, ns) && CanI(type, Verb.Watch, ns))
                     {

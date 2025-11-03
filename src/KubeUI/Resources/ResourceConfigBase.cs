@@ -73,7 +73,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public virtual IList<ResourceMenuItem> MenuItems() => [];
 
-    public virtual IList<(Cluster.Verb verb, string? subResource)> CustomPermissions() => [];
+    public virtual IList<(Verb verb, string? subResource)> CustomPermissions() => [];
 
     public virtual Control[] Properties(T resource) => [];
 
@@ -142,7 +142,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     public IList<(Verb verb, string? subResource)> DefaultPermissions() => [
         (Verb.Create, null),
         (Verb.Delete, null),
-        (Verb.Get, null),
+        //(Verb.Get, null),
         (Verb.List, null),
         (Verb.Patch, null),
         (Verb.Update, null),

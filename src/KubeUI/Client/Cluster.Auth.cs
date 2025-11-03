@@ -32,7 +32,6 @@ public partial class Cluster
     private async Task GetSelfSubjectAccessReview(Type type, Verb verb, string @namespace = "", string subresource = "")
     {
         var kind = GroupApiVersionKind.From(type);
-        var kube = Client as Kubernetes;
 
         var review = _selfSubjectAccessReviews.ToList().FirstOrDefault(x =>
             x.Spec.ResourceAttributes.Verb == verb.ToString().ToLowerInvariant() &&
@@ -64,7 +63,7 @@ public partial class Cluster
             }
         };
 
-        var resp = await kube.CreateSelfSubjectAccessReviewAsync(model);
+        var resp = await Client.AuthorizationV1.CreateSelfSubjectAccessReviewAsync(model);
 
         _selfSubjectAccessReviews.Add(resp);
     }
