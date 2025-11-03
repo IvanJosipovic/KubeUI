@@ -344,6 +344,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     public async Task Seed<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
+        _logger.LogInformation("Starting Seed: {type}", typeof(T));
+
         var type = typeof(T);
         var kind = GroupApiVersionKind.From<T>();
 
@@ -392,7 +394,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
                         return;
                     }
 
-                    var namespaceDict = GetObjectDictionary<V1Namespace>();
+                    var namespaceDict = await GetObjectDictionaryAsync<V1Namespace>();
+
                     foreach (var item in namespaceDict)
                     {
                         string ns = item.Value.Name();
@@ -413,6 +416,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
         {
             _seedLimiter.Release();
         }
+
+        _logger.LogInformation("Finished Seed: {type}", typeof(T));
     }
 
     private ResourceInformerCallback<T> GetResourceInformerCallback<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
