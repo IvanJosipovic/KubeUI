@@ -552,7 +552,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
             resourceConfig.Initialize(this);
 
-            await resourceConfig.UpdatePermissions();
+            //await resourceConfig.UpdatePermissions();
 
             resourceConfig.Generate(crd);
 
