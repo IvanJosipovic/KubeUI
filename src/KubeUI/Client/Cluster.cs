@@ -381,11 +381,9 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 {
                     var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>());
                     container.Informers.Add(informer);
-                    var inf = informer.Register(GetResourceInformerCallback<T>());
-
-                    _ = Task.Run(() => informer.StartAsync(CancellationToken.None));
-
+                    informer.Register(GetResourceInformerCallback<T>());
                     informer.StartWatching();
+                    _ = Task.Run(() => informer.StartAsync(CancellationToken.None));
                 }
                 else
                 {
@@ -403,11 +401,9 @@ public sealed partial class Cluster : ObservableObject, ICluster
                         {
                             var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), @namespace: ns);
                             container.Informers.Add(informer);
-                            var inf = informer.Register(GetResourceInformerCallback<T>());
-
-                            _ = Task.Run(() => informer.StartAsync(CancellationToken.None));
-
+                            informer.Register(GetResourceInformerCallback<T>());
                             informer.StartWatching();
+                            _ = Task.Run(() => informer.StartAsync(CancellationToken.None));
                         }
                     }
                 }

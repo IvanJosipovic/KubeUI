@@ -24,14 +24,14 @@ namespace Yarp.Kubernetes.Controller.Client;
 public class ResourceInformer<TResource> : BackgroundHostedService, IResourceInformer<TResource>
     where TResource : class, IKubernetesObject<V1ObjectMeta>, new()
 {
-    private readonly object _sync = new object();
+    private readonly object _sync = new();
     private readonly GroupApiVersionKind _names;
-    private readonly SemaphoreSlim _ready = new SemaphoreSlim(0);
-    private readonly SemaphoreSlim _start = new SemaphoreSlim(0);
+    private readonly SemaphoreSlim _ready = new(0);
+    private readonly SemaphoreSlim _start = new(0);
     private readonly ResourceSelector<TResource>? _selector;
-    private ImmutableList<Registration> _registrations = ImmutableList<Registration>.Empty;
+    private ImmutableList<Registration> _registrations = [];
     private Dictionary<NamespacedName, IList<V1OwnerReference>> _cache = [];
-    private string _lastResourceVersion;
+    private string? _lastResourceVersion;
     private readonly string? _namespace;
 
     /// <summary>
@@ -333,6 +333,7 @@ public class ResourceInformer<TResource> : BackgroundHostedService, IResourceInf
         var watchWithHttpMessage = RetrieveResourceListAsync(watch: true, resourceVersion: _lastResourceVersion, resourceSelector: _selector, cancellationToken: cancellationToken);
 
         var lastEventUtc = DateTime.UtcNow;
+#pragma warning disable CS0618 // Type or member is obsolete
         using var watcher = watchWithHttpMessage.Watch<TResource, KubernetesList<TResource>>(
             (watchEventType, item) =>
             {
@@ -365,6 +366,7 @@ public class ResourceInformer<TResource> : BackgroundHostedService, IResourceInf
             {
                 watcherCompletionSource.TrySetResult(0);
             });
+#pragma warning restore CS0618 // Type or member is obsolete
 
         // reconnect if no events have arrived after a certain time
         using var checkLastEventUtcTimer = new Timer(
@@ -442,8 +444,8 @@ public class ResourceInformer<TResource> : BackgroundHostedService, IResourceInf
 
     private void InvokeRegistrationCallbacks(WatchEventType eventType, TResource resource)
     {
+        List<Exception>? innerExceptions = default;
 
-        List<Exception> innerExceptions = default;
         foreach (var registration in _registrations)
         {
             try
@@ -452,7 +454,7 @@ public class ResourceInformer<TResource> : BackgroundHostedService, IResourceInf
             }
             catch (Exception innerException)
             {
-                innerExceptions ??= new List<Exception>();
+                innerExceptions ??= [];
                 innerExceptions.Add(innerException);
             }
         }
