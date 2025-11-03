@@ -290,7 +290,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                 if (config.Value.Type == typeof(V1Pod))
                 {
-                    if (await UpdateCanIAnyNamespaceAsync<V1Pod>(Verb.Create, "portforward"))
+                    if (CanI<V1Pod>(Verb.Create, "portforward"))
                     {
                         Dispatcher.UIThread.Post(() => networkNavItem.NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.PortForwarderListViewModel_Title, ControlType = typeof(PortForwarderListViewModel), Cluster = this, StyleIcon = "ic_fluent_cloud_flow_filled", Order = 6 }), DispatcherPriority.Background);
                     }
@@ -439,22 +439,21 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     {
                         _logger.LogInformation("Processing new CRD {name}", crd.Name());
 
-                        _priorityExecutor.Enqueue(async _ =>
+                        ProcessNewCRD(crd)
+                        .ContinueWith(t =>
                         {
-                            await ProcessNewCRD(crd)
-                            .ContinueWith(t =>
+                            if (t.Exception != null)
                             {
-                                if (t.Exception != null)
-                                {
-                                    _logger.LogError("Exception in ProcessNewCRD: {exception}", t.Exception.Flatten());
-                                }
-                                else
-                                {
-                                    Dispatcher.UIThread.Post(() => items[name] = item, DispatcherPriority.Background);
-                                }
+                                _logger.LogError("Exception in ProcessNewCRD: {exception}", t.Exception.Flatten());
+                            }
+                            else
+                            {
+                                Dispatcher.UIThread.Post(() => items[name] = item, DispatcherPriority.Background);
+
                                 _logger.LogInformation("Completed processing new CRD {name}", crd.Name());
-                            });
-                        }, WorkPriority.Low).GetAwaiter().GetResult();
+                            }
+
+                        }).GetAwaiter().GetResult();
                     }
                     else
                     {
