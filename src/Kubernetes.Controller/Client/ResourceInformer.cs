@@ -158,6 +158,14 @@ public class ResourceInformer<TResource> : BackgroundHostedService, IResourceInf
                         typeof(TResource).Name,
                         ex.Message);
                 }
+                catch (OperationCanceledException ex)
+                {
+                    Logger.LogDebug(
+                        EventId(EventType.ReceivedError),
+                        "Received error watching {ResourceType}: {ErrorMessage}",
+                        typeof(TResource).Name,
+                        ex.Message);
+                }
                 catch (KubernetesException ex)
                 {
                     Logger.LogDebug(

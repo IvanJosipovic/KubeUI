@@ -167,12 +167,12 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     {
         foreach (var (verb, subResource) in DefaultPermissions())
         {
-            await Cluster.UpdateCanIAnyNamespaceAsync<T>(verb, subResource);
+            await Cluster.UpdateCanIAllNamespaceAsync<T>(verb, subResource);
         }
 
         foreach (var (verb, subResource) in CustomPermissions())
         {
-            await Cluster.UpdateCanIAnyNamespaceAsync<T>(verb, subResource);
+            await Cluster.UpdateCanIAllNamespaceAsync<T>(verb, subResource);
         }
     }
 

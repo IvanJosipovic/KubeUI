@@ -166,14 +166,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                     await GetPermissions();
 
-                    var resourceConfig = (IResourceConfig)_serviceProvider.GetRequiredService<ResourceConfigBase<V1Namespace>>();
-
-                    if (resourceConfig is IInitializeCluster initns)
-                    {
-                        initns.Initialize(this);
-                    }
-
-                    ResourceConfigs[resourceConfig.Kind] = resourceConfig;
+                    await AddResourceConfigs();
 
                     if (!ListNamespaces)
                     {
@@ -221,9 +214,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
                         Namespaces = await GetObjectDictionaryAsync<V1Namespace>();
                     }
 
-                    await InitMetrics();
                     await AddDefaultNavigation();
-                    await ProcessResourceConfigs();
+                    await InitMetrics();
                 }
                 catch (Exception ex)
                 {
@@ -277,12 +269,56 @@ public sealed partial class Cluster : ObservableObject, ICluster
         NavigationItems.Add(new NavigationItem() { Name = "Workloads", Order = 8 });
         NavigationItems.Add(new NavigationItem() { Name = "Configuration", Order = 9 });
 
-        NavigationItems.Add(new NavigationItem() { Name = "Network", Order = 10 });
+        var networkNavItem = new NavigationItem() { Name = "Network", Order = 10 };
+
+        NavigationItems.Add(networkNavItem);
         NavigationItems.Add(new NavigationItem() { Name = "Storage", Order = 11 });
         NavigationItems.Add(new NavigationItem() { Name = "Access Control", Order = 12 });
+
+        foreach (var config in ResourceConfigs)
+        {
+            if (await UpdateCanIAnyNamespaceAsync(config.Value.Type, Verb.List) && await UpdateCanIAnyNamespaceAsync(config.Value.Type, Verb.Watch))
+            {
+                var nav = new ResourceNavigationLink() { Name = config.Value.Name, ControlType = config.Value.Type, Cluster = this, Order = config.Value.Order };
+
+                if (config.Value.Type == typeof(V1Namespace))
+                {
+                    nav.Objects = Objects[config.Value.Kind].Items;
+                }
+
+                if (config.Value.Type == typeof(V1Pod))
+                {
+                    if (await UpdateCanIAnyNamespaceAsync<V1Pod>(Verb.Create, "portforward"))
+                    {
+                        Dispatcher.UIThread.Post(() => networkNavItem.NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.PortForwarderListViewModel_Title, ControlType = typeof(PortForwarderListViewModel), Cluster = this, StyleIcon = "ic_fluent_cloud_flow_filled", Order = 6 }), DispatcherPriority.Background);
+                    }
+                }
+
+                if (config.Value.Type == typeof(V1CustomResourceDefinition))
+                {
+                    _crdNavigationLink = nav;
+                    nav.NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer());
+#if !DEBUG
+                    await Seed<V1CustomResourceDefinition>();
+                    nav.Objects = Objects[config.Value.Kind].Items;
+#endif
+                }
+
+                if (string.IsNullOrEmpty(config.Value.Category))
+                {
+                    Dispatcher.UIThread.Post(() => NavigationItems.Add(nav), DispatcherPriority.Background);
+                }
+                else
+                {
+                    var category = NavigationItems.First(x => x is not null && x.Name == config.Value.Category);
+
+                    Dispatcher.UIThread.Post(() => category.NavigationItems.Add(nav), DispatcherPriority.Background);
+                }
+            }
+        }
     }
 
-    private async Task ProcessResourceConfigs()
+    private async Task AddResourceConfigs()
     {
         var types = _serviceProvider.GetRequiredService<ServiceDescriptor[]>().Where(t => t.ServiceType.IsGenericType
                                                                                        && t.ServiceType.GetGenericTypeDefinition() == typeof(ResourceConfigBase<>)
@@ -303,54 +339,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
             ResourceConfigs[resourceConfig.Kind] = resourceConfig;
 
             configs.Add(resourceConfig);
-        }
-
-        var updatePermissionTasks = configs.Select(x => x.UpdatePermissions()).ToArray();
-
-        await Task.WhenAll(updatePermissionTasks);
-
-        foreach (var config in configs)
-        {
-            if (CanIAnyNamespace(config.Type, Verb.List) && CanIAnyNamespace(config.Type, Verb.Watch))
-            {
-                var nav = new ResourceNavigationLink() { Name = config.Name, ControlType = config.Type, Cluster = this, Order = config.Order };
-
-                if (config.Type == typeof(V1Namespace))
-                {
-                    nav.Objects = Objects[config.Kind].Items;
-                }
-
-                if (config.Type == typeof(V1Pod))
-                {
-                    if (CanIAnyNamespace<V1Pod>(Verb.Create, "portforward"))
-                    {
-                        var network = NavigationItems.First(x => x.Name == "Network");
-                        Dispatcher.UIThread.Post(() => network.NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.PortForwarderListViewModel_Title, ControlType = typeof(PortForwarderListViewModel), Cluster = this, StyleIcon = "ic_fluent_cloud_flow_filled", Order = 6 }), DispatcherPriority.Background);
-                    }
-                }
-
-                if (config.Type == typeof(V1CustomResourceDefinition))
-                {
-
-                    _crdNavigationLink = nav;
-                    nav.NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer());
-#if !DEBUG
-                    await Seed<V1CustomResourceDefinition>();
-                    nav.Objects = Objects[config.Kind].Items;
-#endif
-                }
-
-                if (string.IsNullOrEmpty(config.Category))
-                {
-                    Dispatcher.UIThread.Post(() => NavigationItems.Add(nav), DispatcherPriority.Background);
-                }
-                else
-                {
-                    var category = NavigationItems.First(x => x is not null && x.Name == config.Category);
-
-                    Dispatcher.UIThread.Post(() => category.NavigationItems.Add(nav), DispatcherPriority.Background);
-                }
-            }
         }
     }
 
@@ -557,9 +545,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
             APIGroupDiscoveryList = await GetAPIGroupDiscoveryList(false);
         }
 
-        var canI = await UpdateCanIListWatchAnyNamespaceAsync<T>();
-
-        if (canI)
+        if (await UpdateCanIAnyNamespaceAsync<T>(Verb.List) && await UpdateCanIAnyNamespaceAsync<T>(Verb.Watch))
         {
             //Generate new Resource Configuration
             var resourceConfig = Application.Current.GetRequiredService<CRDResourceConfig<T>>();

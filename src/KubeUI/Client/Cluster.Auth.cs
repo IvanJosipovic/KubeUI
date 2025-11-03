@@ -14,7 +14,7 @@ public partial class Cluster
 
     private async Task GetPermissions()
     {
-        ListNamespaces = await UpdateCanIListWatchAnyNamespaceAsync<V1Namespace>();
+        ListNamespaces = await UpdateCanIAnyNamespaceAsync<V1Namespace>(Verb.List) && await UpdateCanIAnyNamespaceAsync<V1Namespace>(Verb.Watch);
     }
 
     public enum Verb
@@ -166,13 +166,21 @@ public partial class Cluster
         return await UpdateCanIAnyNamespaceAsync(typeof(T), verb, subresource);
     }
 
-    private async Task<bool> UpdateCanIListWatchAnyNamespaceAsync(Type type, string subresource = "")
+    public async Task UpdateCanIAllNamespaceAsync(Type type, Verb verb, string subresource = "")
     {
-        return await UpdateCanIAnyNamespaceAsync(type, Verb.List, subresource) && await UpdateCanIAnyNamespaceAsync(type, Verb.Watch, subresource);
+        await GetSelfSubjectAccessReview(type, verb, subresource: subresource);
+
+        if (IsNamespaced(type))
+        {
+            foreach (var item in await GetObjectDictionaryAsync<V1Namespace>())
+            {
+                await GetSelfSubjectAccessReview(type, verb, item.Value.Name(), subresource);
+            }
+        }
     }
 
-    private async Task<bool> UpdateCanIListWatchAnyNamespaceAsync<T>(string subresource = "") where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public async Task UpdateCanIAllNamespaceAsync<T>(Verb verb, string subresource = "") where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        return await UpdateCanIListWatchAnyNamespaceAsync(typeof(T), subresource);
+        await UpdateCanIAllNamespaceAsync(typeof(T), verb, subresource);
     }
 }
