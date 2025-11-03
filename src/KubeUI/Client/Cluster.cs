@@ -371,54 +371,58 @@ public sealed partial class Cluster : ObservableObject, ICluster
             container.Initialized = true;
             _seedLimiter.Release();
 
-            var resourceConfig = GetResourceConfig(kind);
-
-            await resourceConfig.UpdatePermissions();
-
-            if (CanI(type, Verb.List) && CanI(type, Verb.Watch))
+            _ = Task.Run(async () =>
             {
-                var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>());
-                container.Informers.Add(informer);
-                var inf = informer.Register(GetResourceInformerCallback<T>());
+                var resourceConfig = GetResourceConfig(kind);
 
-                _ = Task.Run(() => informer.StartAsync(CancellationToken.None));
+                await resourceConfig.UpdatePermissions();
 
-                informer.StartWatching();
-
-                if (waitForReady)
+                if (CanI(type, Verb.List) && CanI(type, Verb.Watch))
                 {
-                    await inf.ReadyAsync(CancellationToken.None);
-                }
-            }
-            else
-            {
-                if (!IsNamespaced<T>())
-                {
-                    return;
-                }
+                    var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>());
+                    container.Informers.Add(informer);
+                    var inf = informer.Register(GetResourceInformerCallback<T>());
 
-                var namespaceDict = GetObjectDictionary<V1Namespace>();
-                foreach (var item in namespaceDict)
-                {
-                    string ns = item.Value.Name();
+                    _ = Task.Run(() => informer.StartAsync(CancellationToken.None));
 
-                    if (CanI(type, Verb.List, ns) && CanI(type, Verb.Watch, ns))
+                    informer.StartWatching();
+
+                    if (waitForReady)
                     {
-                        var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), @namespace: ns);
-                        container.Informers.Add(informer);
-                        var inf = informer.Register(GetResourceInformerCallback<T>());
+                        await inf.ReadyAsync(CancellationToken.None);
+                    }
+                }
+                else
+                {
+                    if (!IsNamespaced<T>())
+                    {
+                        return;
+                    }
 
-                        _ = Task.Run(() => informer.StartAsync(CancellationToken.None));
+                    var namespaceDict = GetObjectDictionary<V1Namespace>();
+                    foreach (var item in namespaceDict)
+                    {
+                        string ns = item.Value.Name();
 
-                        informer.StartWatching();
-
-                        if (waitForReady)
+                        if (CanI(type, Verb.List, ns) && CanI(type, Verb.Watch, ns))
                         {
-                            await inf.ReadyAsync(new CancellationToken());
+                            var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), @namespace: ns);
+                            container.Informers.Add(informer);
+                            var inf = informer.Register(GetResourceInformerCallback<T>());
+
+                            _ = Task.Run(() => informer.StartAsync(CancellationToken.None));
+
+                            informer.StartWatching();
+
+                            if (waitForReady)
+                            {
+                                await inf.ReadyAsync(new CancellationToken());
+                            }
                         }
                     }
                 }
-            }
+
+            });
         }
         else
         {
