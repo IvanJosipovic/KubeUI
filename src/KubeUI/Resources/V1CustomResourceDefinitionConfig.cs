@@ -55,7 +55,7 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
     [RelayCommand(CanExecute = nameof(CanListCRD))]
     private void ListCRD(V1CustomResourceDefinition crd)
     {
-        var version = crd.Spec.Versions.First(x => x.Served && x.Storage);
+        var version = crd.Spec.Versions.First(x => x.Storage);
 
         var type = Cluster.ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
         var resourceListType = typeof(ResourceListViewModel<>).MakeGenericType(type);

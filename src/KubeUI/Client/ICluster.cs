@@ -44,7 +44,7 @@ public interface ICluster
     Task Delete<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task ImportFolder(string path);
     Task ImportYaml(Stream stream);
-    Task Seed<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    Task Seed<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task<bool> UpdateCanIAnyNamespaceAsync<T>(Verb verb, string subresource = "") where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task<AvaloniaDictionary<NamespacedName, T>> GetObjectDictionaryAsync<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task<T?> GetObjectAsync<T>(string @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new();

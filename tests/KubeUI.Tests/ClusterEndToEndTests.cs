@@ -791,9 +791,9 @@ rules:
 
         await cluster.Connect();
 
-        await cluster.Seed<V1Node>(true);
+        await cluster.Seed<V1Node>();
 
-        await cluster.Seed<V1Secret>(true);
+        await cluster.Seed<V1Secret>();
 
         await Task.Delay(TimeSpan.FromSeconds(5));
 
@@ -826,9 +826,9 @@ rules:
 
         await cluster.Connect();
 
-        await cluster.Seed<V1Node>(true);
+        await cluster.Seed<V1Node>();
 
-        await cluster.Seed<V1Secret>(true);
+        await cluster.Seed<V1Secret>();
 
         await Task.Delay(TimeSpan.FromSeconds(5));
 

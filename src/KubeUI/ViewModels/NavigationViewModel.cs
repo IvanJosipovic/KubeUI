@@ -82,7 +82,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
             {
                 Title = Assets.Resources.NavigationViewModel_LoadYaml,
                 AllowMultiple = true,
-                FileTypeFilter = new List<FilePickerFileType>() { new("Yaml") { Patterns = ["*.yaml", ".yml"] } }
+                FileTypeFilter = [new("Yaml") { Patterns = ["*.yaml", ".yml"] }]
             });
 
             foreach (var file in files)

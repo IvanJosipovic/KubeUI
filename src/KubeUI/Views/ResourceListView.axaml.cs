@@ -31,12 +31,12 @@ public partial class ResourceListView : UserControl
 #if DEBUG
         if (Design.IsDesignMode)
         {
+            var cluster = Application.Current.GetRequiredService<ClusterManager>().GetDefault();
+            cluster.Connect();
+            cluster.Seed<V1Pod>();
+
             var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Pod>>() as IDockable;
 
-            var cluster = Application.Current.GetRequiredService<ClusterManager>().GetDefault();
-
-            cluster.Connect();
-            cluster.Seed<V1Pod>(false);
 
             if (vm is IInitializeCluster init)
             {

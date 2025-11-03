@@ -46,6 +46,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private IServiceProvider _serviceProvider;
 
+    private IPriorityExecutor _priorityExecutor;
+
     public V2beta1APIGroupDiscoveryList NativeAPIGroupDiscoveryList { get; private set; }
 
     public V2beta1APIGroupDiscoveryList APIGroupDiscoveryList { get; private set; }
@@ -55,8 +57,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
     private readonly SemaphoreSlim _connectionLimiter = new(1);
 
     private readonly SemaphoreSlim _seedLimiter = new(1);
-
-    private readonly SemaphoreSlim _crdGenerationLimiter = new(Environment.ProcessorCount);
 
     public AvaloniaDictionary<GroupApiVersionKind, ContainerClass> Objects { get; } = [];
 
@@ -103,7 +103,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         _logger = logger;
         ModelCache = modelCache;
         _generator = generator;
-
+        _priorityExecutor = new PriorityExecutor(serviceProvider.GetRequiredService<ILogger<PriorityExecutor>>(), Environment.ProcessorCount);
         _generator.SetEnumSupport(false);
 
         var kubeAssemblyXmlDoc = new XmlDocument();
@@ -342,7 +342,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         }
     }
 
-    public async Task Seed<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public async Task Seed<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var type = typeof(T);
         var kind = GroupApiVersionKind.From<T>();
@@ -371,7 +371,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
             container.Initialized = true;
             _seedLimiter.Release();
 
-            _ = Task.Run(async () =>
+            await _priorityExecutor.Enqueue(async ct =>
             {
                 var resourceConfig = GetResourceConfig(kind);
 
@@ -386,11 +386,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     _ = Task.Run(() => informer.StartAsync(CancellationToken.None));
 
                     informer.StartWatching();
-
-                    if (waitForReady)
-                    {
-                        await inf.ReadyAsync(CancellationToken.None);
-                    }
                 }
                 else
                 {
@@ -413,16 +408,10 @@ public sealed partial class Cluster : ObservableObject, ICluster
                             _ = Task.Run(() => informer.StartAsync(CancellationToken.None));
 
                             informer.StartWatching();
-
-                            if (waitForReady)
-                            {
-                                await inf.ReadyAsync(new CancellationToken());
-                            }
                         }
                     }
                 }
-
-            });
+            }, WorkPriority.Normal);
         }
         else
         {
@@ -446,20 +435,23 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     if (item is V1CustomResourceDefinition crd)
                     {
                         _logger.LogInformation("Processing new CRD {name}", crd.Name());
-                        _ = Task.Run(() => ProcessNewCRD(crd))
-                        .ContinueWith(t =>
+
+                        _priorityExecutor.Enqueue(async _ =>
                         {
-                            if (t.Exception != null)
+                            await ProcessNewCRD(crd)
+                            .ContinueWith(t =>
                             {
-                                _logger.LogError("Exception in ProcessNewCRD: {exception}", t.Exception.Flatten());
-                            }
-                            else
-                            {
-                                Dispatcher.UIThread.Post(() => items[name] = item, DispatcherPriority.Background);
-                            }
-                            _crdGenerationLimiter.Release();
-                            _logger.LogInformation("Completed processing new CRD {name}", crd.Name());
-                        });
+                                if (t.Exception != null)
+                                {
+                                    _logger.LogError("Exception in ProcessNewCRD: {exception}", t.Exception.Flatten());
+                                }
+                                else
+                                {
+                                    Dispatcher.UIThread.Post(() => items[name] = item, DispatcherPriority.Background);
+                                }
+                                _logger.LogInformation("Completed processing new CRD {name}", crd.Name());
+                            });
+                        }, WorkPriority.Low).GetAwaiter().GetResult();
                     }
                     else
                     {
@@ -514,8 +506,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private async Task<bool> ProcessNewCRD(V1CustomResourceDefinition crd)
     {
-        await _crdGenerationLimiter.WaitAsync();
-
         if (!ModelCache.CheckIfCRDExists(crd))
         {
             var assembly = _generator.GenerateAssembly(crd, "KubeUI.Models");
@@ -639,7 +629,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     public async Task<T?> GetObjectAsync<T>(string @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        await Seed<T>(true);
+        await Seed<T>();
 
         var attribute = GroupApiVersionKind.From<T>();
 
@@ -657,7 +647,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     public async Task<AvaloniaDictionary<NamespacedName, T>> GetObjectDictionaryAsync<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        await Seed<T>(true);
+        await Seed<T>();
 
         var attribute = GroupApiVersionKind.From<T>();
 
