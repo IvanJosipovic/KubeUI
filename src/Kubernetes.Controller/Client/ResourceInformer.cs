@@ -264,7 +264,7 @@ public class ResourceInformer<TResource> : BackgroundHostedService, IResourceInf
             cancellationToken.ThrowIfCancellationRequested();
 
             // request next page of items
-            using var listWithHttpMessage = await RetrieveResourceListAsync(continueParameter: continueParameter, resourceSelector: _selector, limit: 500, cancellationToken: cancellationToken);
+            using var listWithHttpMessage = await RetrieveResourceListAsync(continueParameter: continueParameter, resourceSelector: _selector, limit: 1000, cancellationToken: cancellationToken);
 
             var list = listWithHttpMessage.Body;
             foreach (var item in list.Items)
