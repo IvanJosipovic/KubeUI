@@ -103,7 +103,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         _logger = logger;
         ModelCache = modelCache;
         _generator = generator;
-        _priorityExecutor = new PriorityExecutor(serviceProvider.GetRequiredService<ILogger<PriorityExecutor>>(), Environment.ProcessorCount);
+        _priorityExecutor = new PriorityExecutor(serviceProvider.GetRequiredService<ILogger<PriorityExecutor>>(), Environment.ProcessorCount * 2);
         _generator.SetEnumSupport(false);
 
         var kubeAssemblyXmlDoc = new XmlDocument();
