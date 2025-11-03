@@ -137,24 +137,24 @@ public sealed partial class Cluster : ObservableObject, ICluster
                         config = KubernetesClientConfiguration.BuildConfigFromConfigFile(KubeConfigPath, Name);
                     }
 
-                    // build a custom pipeline for HTTP calls
-                    var pipe = new ResiliencePipelineBuilder<HttpResponseMessage>()
-                    {
-                        Name = "Cluster",
-                        InstanceName = Name
-                    }
-                    .AddRetry(new HttpRetryStrategyOptions
-                    {
-                        MaxRetryAttempts = 5,
-                    })
-                    .ConfigureTelemetry(_loggerFactory);
+                    //// build a custom pipeline for HTTP calls
+                    //var pipe = new ResiliencePipelineBuilder<HttpResponseMessage>()
+                    //{
+                    //    Name = "Cluster",
+                    //    InstanceName = Name
+                    //}
+                    //.AddRetry(new HttpRetryStrategyOptions
+                    //{
+                    //    MaxRetryAttempts = 5,
+                    //})
+                    //.ConfigureTelemetry(_loggerFactory);
 
-                    var handler = new OperationKeyHandler()
-                    {
-                        InnerHandler = new ResilienceHandler(pipe.Build())
-                    };
+                    //var handler = new OperationKeyHandler()
+                    //{
+                    //    InnerHandler = new ResilienceHandler(pipe.Build())
+                    //};
 
-                    Client = new Kubernetes(config, handler);
+                    Client = new Kubernetes(config);
 
                     NativeAPIGroupDiscoveryList = await GetAPIGroupDiscoveryList();
 
