@@ -10,13 +10,7 @@ namespace KubeUI.ViewModels;
 public sealed partial class NavigationViewModel : ViewModelBase
 {
     private readonly ILogger<NavigationViewModel> _logger;
-    private INotificationManager _notificationManager
-    {
-        get
-        {
-            return Application.Current.GetRequiredService<INotificationManager>();
-        }
-    }
+    private INotificationManager _notificationManager => Application.Current.GetRequiredService<INotificationManager>();
 
     [ObservableProperty]
     public partial ClusterManager ClusterManager { get; set; }
