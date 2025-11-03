@@ -385,7 +385,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     container.Informers.Add(informer);
                     informer.Register(GetResourceInformerCallback<T>());
                     informer.StartWatching();
-                    _ = informer.RunAsync(CancellationToken.None).ConfigureAwait(false);
+                    _ = informer.RunAsync(CancellationToken.None);
                 }
                 else
                 {
@@ -406,7 +406,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                             container.Informers.Add(informer);
                             informer.Register(GetResourceInformerCallback<T>());
                             informer.StartWatching();
-                            _ = informer.RunAsync(CancellationToken.None).ConfigureAwait(false);
+                            _ = informer.RunAsync(CancellationToken.None);
                         }
                     }
                 }

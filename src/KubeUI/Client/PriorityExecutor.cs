@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text;
-using System.Threading.Channels;
+﻿using System.Threading.Channels;
 
 namespace KubeUI.Client;
 
@@ -26,7 +22,7 @@ public sealed class PriorityExecutor : IAsyncDisposable, IPriorityExecutor
         _logger = logger;
 
         for (int i = 0; i < workers; i++)
-            _workers.Add(Task.Run(() => Worker(_cts.Token)));
+            _workers.Add(Task.Run(async () => await Worker(_cts.Token)));
     }
 
     public ValueTask Enqueue(Func<CancellationToken, Task> work, WorkPriority priority = WorkPriority.Normal)
@@ -48,7 +44,7 @@ public sealed class PriorityExecutor : IAsyncDisposable, IPriorityExecutor
             {
                 try
                 {
-                    await job(ct);
+                    await job(ct).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException ex)
                 {
