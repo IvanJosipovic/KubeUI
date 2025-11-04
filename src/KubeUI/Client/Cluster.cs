@@ -103,7 +103,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         _logger = logger;
         ModelCache = modelCache;
         _generator = generator;
-        _priorityExecutor = new PriorityExecutor(serviceProvider.GetRequiredService<ILogger<PriorityExecutor>>(), Environment.ProcessorCount * 2);
+        _priorityExecutor = new PriorityExecutor(serviceProvider.GetRequiredService<ILogger<PriorityExecutor>>(), Environment.ProcessorCount);
         _generator.SetEnumSupport(false);
 
         var kubeAssemblyXmlDoc = new XmlDocument();
@@ -175,6 +175,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                         if (settings.Namespaces.Count == 0)
                         {
                             Connected = false;
+                            Status = ClusterStatus.Errored;
 
                             var vm = Application.Current.GetRequiredService<ClusterSettingsViewModel>();
 
@@ -194,8 +195,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
                             };
 
                             var result = await _dialogService.ShowContentDialogAsync(this, dialogSettings);
-
-                            Connected = false;
 
                             return;
                         }
@@ -277,46 +276,51 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
         foreach (var config in ResourceConfigs)
         {
-            if (await UpdateCanIAnyNamespaceAsync(config.Value.Type, Verb.List) && await UpdateCanIAnyNamespaceAsync(config.Value.Type, Verb.Watch))
+            await _priorityExecutor.Enqueue(async _ =>
             {
-                await config.Value.UpdatePermissions();
-
-                var nav = new ResourceNavigationLink() { Name = config.Value.Name, ControlType = config.Value.Type, Cluster = this, Order = config.Value.Order };
-
-                if (config.Value.Type == typeof(V1Namespace))
+                if ((config.Value.Type == typeof(V1Namespace) && !ListNamespaces) ||
+                    (await UpdateCanIAnyNamespaceAsync(config.Value.Type, Verb.List) && await UpdateCanIAnyNamespaceAsync(config.Value.Type, Verb.Watch)))
                 {
-                    nav.Objects = Objects[config.Value.Kind].Items;
-                }
+                    await config.Value.UpdatePermissions();
 
-                if (config.Value.Type == typeof(V1Pod))
-                {
-                    if (CanI<V1Pod>(Verb.Create, "portforward"))
+                    var nav = new ResourceNavigationLink() { Name = config.Value.Name, ControlType = config.Value.Type, Cluster = this, Order = config.Value.Order };
+
+                    if (config.Value.Type == typeof(V1Namespace))
                     {
-                        Dispatcher.UIThread.Post(() => networkNavItem.NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.PortForwarderListViewModel_Title, ControlType = typeof(PortForwarderListViewModel), Cluster = this, StyleIcon = "ic_fluent_cloud_flow_filled", Order = 6 }), DispatcherPriority.Background);
+                        nav.Objects = Objects[config.Value.Kind].Items;
+                    }
+
+                    if (config.Value.Type == typeof(V1Pod))
+                    {
+                        if (CanI<V1Pod>(Verb.Create, "portforward"))
+                        {
+                            Dispatcher.UIThread.Post(() => networkNavItem.NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.PortForwarderListViewModel_Title, ControlType = typeof(PortForwarderListViewModel), Cluster = this, StyleIcon = "ic_fluent_cloud_flow_filled", Order = 6 }), DispatcherPriority.Background);
+                        }
+                    }
+
+                    if (config.Value.Type == typeof(V1CustomResourceDefinition))
+                    {
+                        _crdNavigationLink = nav;
+                        nav.NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer());
+    #if !DEBUG
+                        await Seed<V1CustomResourceDefinition>();
+                        nav.Objects = Objects[config.Value.Kind].Items;
+    #endif
+                    }
+
+                    if (string.IsNullOrEmpty(config.Value.Category))
+                    {
+                        Dispatcher.UIThread.Post(() => NavigationItems.Add(nav), DispatcherPriority.Background);
+                    }
+                    else
+                    {
+                        var category = NavigationItems.First(x => x is not null && x.Name == config.Value.Category);
+
+                        Dispatcher.UIThread.Post(() => category.NavigationItems.Add(nav), DispatcherPriority.Background);
                     }
                 }
 
-                if (config.Value.Type == typeof(V1CustomResourceDefinition))
-                {
-                    _crdNavigationLink = nav;
-                    nav.NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer());
-#if !DEBUG
-                    await Seed<V1CustomResourceDefinition>();
-                    nav.Objects = Objects[config.Value.Kind].Items;
-#endif
-                }
-
-                if (string.IsNullOrEmpty(config.Value.Category))
-                {
-                    Dispatcher.UIThread.Post(() => NavigationItems.Add(nav), DispatcherPriority.Background);
-                }
-                else
-                {
-                    var category = NavigationItems.First(x => x is not null && x.Name == config.Value.Category);
-
-                    Dispatcher.UIThread.Post(() => category.NavigationItems.Add(nav), DispatcherPriority.Background);
-                }
-            }
+            }, WorkPriority.High);
         }
     }
 
@@ -367,7 +371,10 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 Items = new AvaloniaDictionary<NamespacedName, T>()
             };
 
-            Objects.Add(kind, container);
+            if (!Objects.TryAdd(kind, container))
+            {
+                throw new Exception($"Duplicate Object Set detected for: {kind}");
+            }
         }
 
         if (!container.Initialized)
@@ -378,8 +385,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
             await _priorityExecutor.Enqueue(async ct =>
             {
                 var resourceConfig = GetResourceConfig(kind);
-
-                await resourceConfig.UpdatePermissions();
 
                 if (CanI(type, Verb.List) && CanI(type, Verb.Watch))
                 {
@@ -548,7 +553,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
             resourceConfig.Initialize(this);
 
-            //await resourceConfig.UpdatePermissions();
+            await resourceConfig.UpdatePermissions();
 
             resourceConfig.Generate(crd);
 
@@ -629,7 +634,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         }
     }
 
-    public async Task<T?> GetObjectAsync<T>(string @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public async Task<T?> GetObjectAsync<T>(string? @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         await Seed<T>();
 

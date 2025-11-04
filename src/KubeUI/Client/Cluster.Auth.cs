@@ -29,16 +29,17 @@ public partial class Cluster
         DeleteCollection
     }
 
-    private async Task GetSelfSubjectAccessReview(Type type, Verb verb, string @namespace = "", string subresource = "")
+    private async Task GetSelfSubjectAccessReview(Type type, Verb verb, string? @namespace = null, string? subresource = null)
     {
         var kind = GroupApiVersionKind.From(type);
 
         var review = _selfSubjectAccessReviews.ToList().FirstOrDefault(x =>
-            x.Spec.ResourceAttributes.Verb == verb.ToString().ToLowerInvariant() &&
-            x.Spec.ResourceAttributes.Resource == kind.PluralName &&
             x.Spec.ResourceAttributes.Group == (string.IsNullOrEmpty(kind.Group) ? null : kind.Group) &&
             x.Spec.ResourceAttributes.NamespaceProperty == (string.IsNullOrEmpty(@namespace) ? null : @namespace) &&
-            x.Spec.ResourceAttributes.Subresource == (string.IsNullOrEmpty(subresource) ? null : subresource)
+            x.Spec.ResourceAttributes.Resource == kind.PluralName &&
+            x.Spec.ResourceAttributes.Subresource == (string.IsNullOrEmpty(subresource) ? null : subresource) &&
+            x.Spec.ResourceAttributes.Verb == verb.ToString().ToLowerInvariant() &&
+            x.Spec.ResourceAttributes.Version == kind.ApiVersion
         );
 
         if (review != null)
@@ -54,11 +55,12 @@ public partial class Cluster
             {
                 ResourceAttributes = new()
                 {
-                    Group = kind.Group,
-                    NamespaceProperty = @namespace,
+                    Group = (string.IsNullOrEmpty(kind.Group) ? "" : kind.Group),
+                    NamespaceProperty = (string.IsNullOrEmpty(@namespace) ? "" : @namespace),
                     Resource = kind.PluralName,
-                    Subresource = subresource,
-                    Verb = verb.ToString().ToLowerInvariant()
+                    Subresource = (string.IsNullOrEmpty(subresource) ? "" : subresource),
+                    Verb = verb.ToString().ToLowerInvariant(),
+                    Version = kind.ApiVersion
                 }
             }
         };
@@ -68,7 +70,7 @@ public partial class Cluster
         _selfSubjectAccessReviews.Add(resp);
     }
 
-    public bool CanI(Type type, Verb verb, string @namespace = "", string subresource = "")
+    public bool CanI(Type type, Verb verb, string? @namespace = null, string? subresource = null)
     {
         var kind = GroupApiVersionKind.From(type);
 
@@ -80,7 +82,8 @@ public partial class Cluster
                 x.Spec.ResourceAttributes.Resource == kind.PluralName &&
                 x.Spec.ResourceAttributes.Group == (string.IsNullOrEmpty(kind.Group) ? null : kind.Group) &&
                 x.Spec.ResourceAttributes.NamespaceProperty == null &&
-                x.Spec.ResourceAttributes.Subresource == (string.IsNullOrEmpty(subresource) ? null : subresource)
+                x.Spec.ResourceAttributes.Subresource == (string.IsNullOrEmpty(subresource) ? null : subresource) &&
+                x.Spec.ResourceAttributes.Version == kind.ApiVersion
             );
 
             if (global?.Status.Allowed == true)
@@ -94,23 +97,27 @@ public partial class Cluster
             x.Spec.ResourceAttributes.Resource == kind.PluralName &&
             x.Spec.ResourceAttributes.Group == (string.IsNullOrEmpty(kind.Group) ? null : kind.Group) &&
             x.Spec.ResourceAttributes.NamespaceProperty == (string.IsNullOrEmpty(@namespace) ? null : @namespace) &&
-            x.Spec.ResourceAttributes.Subresource == (string.IsNullOrEmpty(subresource) ? null : subresource)
+            x.Spec.ResourceAttributes.Subresource == (string.IsNullOrEmpty(subresource) ? null : subresource) &&
+            x.Spec.ResourceAttributes.Version == kind.ApiVersion
         );
 
         if (review == null)
         {
-            _logger.LogCritical("Missing V1SelfSubjectAccessReview {verb} {group}/{resource}/{subresource}", verb, kind.Group, kind.PluralName, subresource);
+            var error = string.Format("Missing V1SelfSubjectAccessReview {0} {1}/{2}/{3}", verb, kind.Group, kind.PluralName, subresource);
+
+            _logger.LogCritical(error);
+            throw new Exception(error);
         }
 
         return review?.Status.Allowed == true;
     }
 
-    public bool CanI<T>(Verb verb, string @namespace = "", string subresource = "") where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public bool CanI<T>(Verb verb, string? @namespace = null, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         return CanI(typeof(T), verb, @namespace, subresource);
     }
 
-    public bool CanIAnyNamespace(Type type, Verb verb, string subresource = "")
+    public bool CanIAnyNamespace(Type type, Verb verb, string? subresource = null)
     {
         if (CanI(type, verb, subresource: subresource))
         {
@@ -131,12 +138,12 @@ public partial class Cluster
         return false;
     }
 
-    public bool CanIAnyNamespace<T>(Verb verb, string subresource = "") where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public bool CanIAnyNamespace<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         return CanIAnyNamespace(typeof(T), verb, subresource);
     }
 
-    public async Task<bool> UpdateCanIAnyNamespaceAsync(Type type, Verb verb, string subresource = "")
+    public async Task<bool> UpdateCanIAnyNamespaceAsync(Type type, Verb verb, string? subresource = null)
     {
         await GetSelfSubjectAccessReview(type, verb, subresource: subresource);
 
@@ -161,12 +168,12 @@ public partial class Cluster
         return false;
     }
 
-    public async Task<bool> UpdateCanIAnyNamespaceAsync<T>(Verb verb, string subresource = "") where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public async Task<bool> UpdateCanIAnyNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         return await UpdateCanIAnyNamespaceAsync(typeof(T), verb, subresource);
     }
 
-    public async Task UpdateCanIAllNamespaceAsync(Type type, Verb verb, string subresource = "")
+    public async Task UpdateCanIAllNamespaceAsync(Type type, Verb verb, string? subresource = null)
     {
         await GetSelfSubjectAccessReview(type, verb, subresource: subresource);
 
@@ -183,7 +190,7 @@ public partial class Cluster
         }
     }
 
-    public async Task UpdateCanIAllNamespaceAsync<T>(Verb verb, string subresource = "") where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public async Task UpdateCanIAllNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         await UpdateCanIAllNamespaceAsync(typeof(T), verb, subresource);
     }

@@ -11,10 +11,10 @@ namespace KubeUI.Client;
 
 public interface ICluster
 {
-    bool CanI(Type type, Verb verb, string @namespace = "", string subresource = "");
-    bool CanI<T>(Verb verb, string @namespace = "", string subresource = "") where T : class, IKubernetesObject<V1ObjectMeta>, new();
-    bool CanIAnyNamespace(Type type, Verb verb, string subresource = "");
-    bool CanIAnyNamespace<T>(Verb verb, string subresource = "") where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    bool CanI(Type type, Verb verb, string? @namespace = null, string? subresource = null);
+    bool CanI<T>(Verb verb, string? @namespace = null, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    bool CanIAnyNamespace(Type type, Verb verb, string? subresource = null);
+    bool CanIAnyNamespace<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     bool Connected { get; set; }
     bool IsMetricsAvailable { get; }
     bool IsNamespaced(Type type);
@@ -45,9 +45,9 @@ public interface ICluster
     Task ImportFolder(string path);
     Task ImportYaml(Stream stream);
     Task Seed<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
-    Task<bool> UpdateCanIAnyNamespaceAsync<T>(Verb verb, string subresource = "") where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    Task<bool> UpdateCanIAnyNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task<AvaloniaDictionary<NamespacedName, T>> GetObjectDictionaryAsync<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
-    Task<T?> GetObjectAsync<T>(string @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    Task<T?> GetObjectAsync<T>(string? @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     void RemovePortForward(PortForwarder pf);
-    Task UpdateCanIAllNamespaceAsync<T>(Verb verb, string subresource = "") where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    Task UpdateCanIAllNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new();
 }

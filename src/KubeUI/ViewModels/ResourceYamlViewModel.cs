@@ -6,6 +6,7 @@ using k8s;
 using k8s.Models;
 using KubeUI.Client;
 using Yarp.Kubernetes.Controller.Client;
+using static KubeUI.Client.Cluster;
 
 namespace KubeUI.ViewModels;
 
@@ -125,15 +126,10 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         return true;
     }
 
-    [RelayCommand(CanExecute = nameof(CanSetHideNoisyFields))]
+    [RelayCommand]
     private void SetHideNoisyFields()
     {
         HideNoisyFields = !HideNoisyFields;
-    }
-
-    private bool CanSetHideNoisyFields()
-    {
-        return true;
     }
 
     [RelayCommand(CanExecute = nameof(CanSetEditMode))]
@@ -144,7 +140,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
     private bool CanSetEditMode()
     {
-        return true;
+        return Cluster.CanI(Object.GetType(), Verb.Update, Object?.Metadata?.NamespaceProperty);
     }
 
     [RelayCommand(CanExecute = nameof(CanUndo))]
