@@ -9,6 +9,10 @@
     xmlns:vm="using:KubeUI.ViewModels"
     x:DataType="vm:ClusterViewModel">
 
+    <Design.DataContext>
+        <vm:ClusterViewModel />
+    </Design.DataContext>
+
     <UserControl.Styles>
         <!--  Base PieChart style equivalent to previous BuildStyles  -->
         <Style Selector="lvc|PieChart">
@@ -26,9 +30,11 @@
         RowDefinitions="*,2*">
 
         <!--  CPU  -->
-        <lvc:PieChart x:Name="CpuChart" Grid.Row="0"
+        <lvc:PieChart
             Grid.Column="0"
-            MinHeight="100" />
+            MinHeight="100"
+            MaxValue="{Binding CpuCapacity}"
+            Series="{Binding CPUSeries}" />
 
         <!--  Memory  -->
         <lvc:PieChart x:Name="MemoryChart" Grid.Row="0"

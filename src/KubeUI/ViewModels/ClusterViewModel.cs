@@ -1,6 +1,8 @@
-﻿using k8s.Models;
+﻿using Dock.Model.Core;
+using k8s.Models;
 using KubeUI.Client;
 using LiveChartsCore.Defaults;
+using LiveChartsCore.SkiaSharpView;
 
 namespace KubeUI.ViewModels;
 
@@ -19,25 +21,28 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
     }
 
     [ObservableProperty]
-    public partial ObservableValue MaxPods { get; set; } = new();
-
-    [ObservableProperty]
-    public partial ObservableValue TotalPods { get; set; } = new();
+    public partial IEnumerable<PieSeries<ObservableValue>> CPUSeries { get; set; }
 
     [ObservableProperty]
     public partial ObservableValue CpuCapacity { get; set; } = new();
+
 
     [ObservableProperty]
     public partial ObservableValue CpuAllocatable { get; set; } = new();
 
     [ObservableProperty]
-    public partial ObservableValue CpuRequests { get; set; } = new();
-
-    [ObservableProperty]
     public partial ObservableValue CpuLimits { get; set; } = new();
 
     [ObservableProperty]
+    public partial ObservableValue CpuRequests { get; set; } = new();
+
+    [ObservableProperty]
     public partial ObservableValue CpuUsage { get; set; } = new();
+
+
+
+
+
 
     [ObservableProperty]
     public partial ObservableValue MemoryCapacity { get; set; } = new();
@@ -53,6 +58,15 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
 
     [ObservableProperty]
     public partial ObservableValue MemoryUsage { get; set; } = new();
+
+
+
+
+    [ObservableProperty]
+    public partial ObservableValue MaxPods { get; set; } = new();
+
+    [ObservableProperty]
+    public partial ObservableValue TotalPods { get; set; } = new();
 
     public async Task RefreshData()
     {
@@ -88,4 +102,10 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
             init.Initialize(Cluster);
         }
     }
+}
+
+public class PieData(string name, double value)
+{
+    public string Name { get; set; } = name;
+    public double[] Values { get; set; } = [value];
 }
