@@ -9,7 +9,6 @@
     RequestedThemeVariant="Dark">
     <Application.Resources>
         <converters:NotEmptyCollectionConverter x:Key="NotEmptyCollectionConverter" />
-        <converters:ObjectOwnerNameConverter x:Key="ObjectOwnerNameConverter" />
         <converters:StaticResourceConverter x:Key="StaticResourceConverter" />
         <converters:StringEqualsConverter x:Key="StringEqualsConverter" />
     </Application.Resources>

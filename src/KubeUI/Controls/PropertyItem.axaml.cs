@@ -11,5 +11,14 @@ public partial class PropertyItem : UserControl
     public PropertyItem()
     {
         InitializeComponent();
+
+#if DEBUG
+        if (Design.IsDesignMode)
+        {
+            Key = "testKey";
+
+            Value = "testValue";
+        }
+#endif
     }
 }

@@ -5,14 +5,11 @@
     xmlns:c="using:KubeUI.Controls"
     xmlns:converters="using:KubeUI.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:generic="using:System.Collections.Generic"
-    xmlns:input="using:FluentAvalonia.UI.Input"
     xmlns:local="using:KubeUI"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="using:k8s.Models"
-    xmlns:views="using:KubeUI.Views"
-    d:DesignHeight="1500"
-    d:DesignWidth="800"
+    d:DesignHeight="800"
+    d:DesignWidth="400"
     x:DataType="models:V1Pod"
     mc:Ignorable="d">
     <UserControl.Resources>
@@ -25,7 +22,7 @@
         </DataTemplate>
     </UserControl.Resources>
     <StackPanel>
-        <c:PropertyItem Key="ControlledBy" Value="{Binding ., Converter={StaticResource ObjectOwnerNameConverter}}" />
+        <c:PropertyItem Key="ControlledBy" Value="{Binding ., Converter={x:Static converters:Converters.ObjectOwnerNameConverter}}" />
         <c:PropertyItem Key="Status" Value="{Binding Status.Phase}" />
         <c:PropertyItem Key="Node" Value="{Binding Spec.NodeName}" />
         <c:PropertyItem Key="Pod IP" Value="{Binding Status.PodIP}" />

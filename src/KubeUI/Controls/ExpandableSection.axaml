@@ -8,8 +8,8 @@
     Padding="5"
     HorizontalAlignment="Stretch"
     VerticalAlignment="Top"
-    d:DesignHeight="200"
-    d:DesignWidth="200">
+    d:DesignHeight="400"
+    d:DesignWidth="400">
     <Expander.Styles>
         <Style Selector="ToggleButton">
             <Setter Property="Padding" Value="8" />

@@ -6,6 +6,8 @@
     xmlns:local="using:KubeUI.Controls"
     HorizontalAlignment="Stretch"
     VerticalAlignment="Stretch"
+    d:DesignHeight="40"
+    d:DesignWidth="400"
     x:DataType="local:PropertyItem">
     <UserControl.Styles>
         <Style Selector="SelectableTextBlock">
