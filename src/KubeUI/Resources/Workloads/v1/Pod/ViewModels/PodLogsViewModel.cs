@@ -109,6 +109,12 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         }
     }
 
+    [RelayCommand]
+    public void Clear()
+    {
+        Logs.Text = string.Empty;
+    }
+
     public void Dispose()
     {
         _isConnected = false;

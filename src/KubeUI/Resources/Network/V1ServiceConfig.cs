@@ -1,4 +1,5 @@
 using FluentAvalonia.UI.Controls;
+using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
@@ -49,7 +50,7 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
             {
                 Header = "Port Forwarding",
                 ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Service>>(x => x.SelectedItem.Value.Spec.Ports),
-                IconResource = "ic_fluent_cloud_flow_filled",
+                FluentIcon = Icon.CloudFlow,
                 ItemTemplate = new()
                 {
                     HeaderBinding = new MultiBinding()

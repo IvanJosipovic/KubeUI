@@ -3,6 +3,7 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:ic="using:FluentIcons.Avalonia"
     xmlns:k8s="using:k8s.Models"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:u="https://irihi.tech/ursa"
@@ -27,14 +28,11 @@
 
     <Grid RowDefinitions="Auto,*">
         <!--  Left controls  -->
-        <StackPanel
-            Grid.Row="0"
+        <StackPanel Grid.Row="0"
             HorizontalAlignment="Left"
             Orientation="Horizontal">
-            <ToggleButton
-                IsChecked="{Binding HideNoise}"
-                ToolTip.Tip="Hide noisy resources like inactive Replica Sets">
-                <PathIcon Data="{StaticResource eye_hide_regular}" />
+            <ToggleButton IsChecked="{Binding HideNoise}" ToolTip.Tip="Hide noisy resources like inactive Replica Sets">
+                <ic:FluentIcon Icon="EyeOff" />
             </ToggleButton>
 
             <Label
@@ -44,8 +42,7 @@
         </StackPanel>
 
         <!--  Right controls  -->
-        <StackPanel
-            Grid.Row="0"
+        <StackPanel Grid.Row="0"
             HorizontalAlignment="Right"
             Orientation="Horizontal">
             <u:MultiComboBox
@@ -71,8 +68,6 @@
         </StackPanel>
 
         <!--  Editor surface  -->
-        <Editor
-            Grid.Row="1"
-            DrawingSource="{Binding Drawing}" />
+        <Editor Grid.Row="1" DrawingSource="{Binding Drawing}" />
     </Grid>
 </UserControl>

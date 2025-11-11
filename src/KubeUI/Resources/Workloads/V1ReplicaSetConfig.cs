@@ -1,4 +1,5 @@
 ﻿using FluentAvalonia.UI.Controls;
+using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
@@ -50,7 +51,7 @@ public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet
             new()
             {
                 Header = "Restart",
-                IconResource = "arrow_sync_regular",
+                FluentIcon = Icon.ArrowSync,
                 CommandPath = nameof(RestartReplicaSetCommand),
                 CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<V1Deployment>>(x => x.SelectedItem.Value),
             },

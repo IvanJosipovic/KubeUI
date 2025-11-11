@@ -1,4 +1,5 @@
 ﻿using FluentAvalonia.UI.Controls;
+using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
@@ -43,7 +44,7 @@ public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>
             new()
             {
                 Header = "Restart",
-                IconResource = "arrow_sync_regular",
+                FluentIcon = Icon.ArrowSync,
                 CommandPath = nameof(RestartDaemonSetCommand),
                 CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<V1DaemonSet>>(x => x.SelectedItem.Value)
             },

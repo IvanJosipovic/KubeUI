@@ -384,10 +384,6 @@ public partial class App : Application
         {
             Source = new Uri("avares://KubeUI/Styles/Fluent.axaml")
         });
-        Styles.Add(new StyleInclude(new Uri("avares://KubeUI"))
-        {
-            Source = new Uri("avares://KubeUI/Styles/Icons.axaml")
-        });
     }
 
     private static void GracefulShutdown()

@@ -1,4 +1,5 @@
 ﻿using FluentAvalonia.UI.Controls;
+using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
@@ -93,7 +94,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             new()
             {
                 Header = "View Console",
-                IconResource = "desktop_regular",
+                FluentIcon = Icon.Desktop,
                 MenuItems =
                 [
                     new()
@@ -125,7 +126,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             new()
             {
                 Header = "View Logs",
-                IconResource = "text_description_regular",
+                FluentIcon = Icon.TextDescription,
                 MenuItems = [
                     new()
                     {
@@ -157,7 +158,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             {
                 Header = "Port Forwarding",
                 ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Value.Spec.Containers),
-                IconResource = "ic_fluent_cloud_flow_filled",
+                FluentIcon = Icon.CloudFlow,
                 ItemTemplate = new()
                 {
                     HeaderBinding = Utilities.FuncBinding<V1Container>(x => x.Name),

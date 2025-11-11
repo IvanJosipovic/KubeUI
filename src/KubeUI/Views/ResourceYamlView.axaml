@@ -5,6 +5,7 @@
     xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
     xmlns:assets="clr-namespace:KubeUI.Assets"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:ic="using:FluentIcons.Avalonia"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:utils="clr-namespace:KubeUI"
     xmlns:vm="clr-namespace:KubeUI.ViewModels"
@@ -27,16 +28,16 @@
             IsVisible="{Binding EditMode, Converter={x:Static utils:Utilities.InverseBooleanConverter}}"
             Orientation="Horizontal">
             <Button Command="{Binding SetEditModeCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Edit}">
-                <PathIcon Data="{StaticResource document_edit_regular}" />
+                <ic:FluentIcon Icon="DocumentEdit" />
             </Button>
             <ToggleButton
                 Command="{Binding SetHideNoisyFieldsCommand}"
                 IsChecked="{Binding HideNoisyFields}"
                 ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_HideNoisyFields}">
-                <PathIcon Data="{StaticResource eye_hide_regular}" />
+                <ic:FluentIcon Icon="EyeOff" />
             </ToggleButton>
             <ToggleButton IsChecked="{Binding WordWrap}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlView_WordWrap}">
-                <PathIcon Data="{StaticResource text_wrap_regular}" />
+                <ic:FluentIcon Icon="TextWrap" />
             </ToggleButton>
         </StackPanel>
 
@@ -45,13 +46,13 @@
             IsVisible="{Binding EditMode}"
             Orientation="Horizontal">
             <Button Command="{Binding SaveCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Save}">
-                <PathIcon Data="{StaticResource save_regular}" />
+                <ic:FluentIcon Icon="Save" />
             </Button>
             <Button Command="{Binding SetEditModeCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Cancel}">
-                <PathIcon Data="{StaticResource dismiss_regular}" />
+                <ic:FluentIcon Icon="Dismiss" />
             </Button>
             <ToggleButton IsChecked="{Binding WordWrap}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlView_WordWrap}">
-                <PathIcon Data="{StaticResource text_wrap_regular}" />
+                <ic:FluentIcon Icon="TextWrap" />
             </ToggleButton>
         </StackPanel>
 
@@ -85,7 +86,7 @@
                         HotKey="Ctrl+X"
                         IsVisible="{Binding EditMode}">
                         <MenuItem.Icon>
-                            <PathIcon Data="{StaticResource cut_regular}" />
+                            <ic:FluentIcon Icon="Cut" />
                         </MenuItem.Icon>
                     </MenuItem>
                     <MenuItem
@@ -93,7 +94,7 @@
                         Header="{x:Static assets:Resources.Action_Copy}"
                         HotKey="Ctrl+C">
                         <MenuItem.Icon>
-                            <PathIcon Data="{StaticResource copy_regular}" />
+                            <ic:FluentIcon Icon="Copy" />
                         </MenuItem.Icon>
                     </MenuItem>
                     <MenuItem
@@ -102,7 +103,7 @@
                         HotKey="Ctrl+V"
                         IsVisible="{Binding EditMode}">
                         <MenuItem.Icon>
-                            <PathIcon Data="{StaticResource clipboard_paste_regular}" />
+                            <ic:FluentIcon Icon="ClipboardPaste" />
                         </MenuItem.Icon>
                     </MenuItem>
                     <MenuItem
@@ -111,7 +112,7 @@
                         HotKey="Back"
                         IsVisible="{Binding EditMode}">
                         <MenuItem.Icon>
-                            <PathIcon Data="{StaticResource delete_regular}" />
+                            <ic:FluentIcon Icon="Delete" />
                         </MenuItem.Icon>
                     </MenuItem>
 
@@ -123,7 +124,7 @@
                         HotKey="Ctrl+Z"
                         IsVisible="{Binding EditMode}">
                         <MenuItem.Icon>
-                            <PathIcon Data="{StaticResource arrow_undo_regular}" />
+                            <ic:FluentIcon Icon="ArrowUndo" />
                         </MenuItem.Icon>
                     </MenuItem>
                     <MenuItem
@@ -132,7 +133,7 @@
                         HotKey="Ctrl+Y"
                         IsVisible="{Binding EditMode}">
                         <MenuItem.Icon>
-                            <PathIcon Data="{StaticResource arrow_redo_regular}" />
+                            <ic:FluentIcon Icon="ArrowRedo" />
                         </MenuItem.Icon>
                     </MenuItem>
                 </ContextMenu>

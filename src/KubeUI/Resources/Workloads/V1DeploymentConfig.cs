@@ -1,4 +1,5 @@
 ﻿using FluentAvalonia.UI.Controls;
+using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
@@ -49,7 +50,7 @@ public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment
             new()
             {
                 Header = "Restart",
-                IconResource = "arrow_sync_regular",
+                FluentIcon = Icon.ArrowSync,
                 CommandPath = nameof(RestartDeploymentCommand),
                 CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<V1Deployment>>(x => x.SelectedItem.Value)
             },

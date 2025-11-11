@@ -13,6 +13,7 @@
     <EnableCompressionInSingleFile>false</EnableCompressionInSingleFile>
     <PackageIcon>..\KubeUI\Assets\icon.ico</PackageIcon>
     <ApplicationIcon>..\KubeUI\Assets\icon.ico</ApplicationIcon>
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
 
   <ItemGroup>

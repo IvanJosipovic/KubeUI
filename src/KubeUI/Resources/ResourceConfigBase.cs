@@ -13,6 +13,7 @@ using Yarp.Kubernetes.Controller.Client;
 using KubeUI.Controls;
 using static KubeUI.Client.Cluster;
 using Yarp.Kubernetes.Controller;
+using FluentIcons.Common;
 
 namespace KubeUI.Resources;
 
@@ -121,21 +122,21 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             Header = "View",
             CommandPath = nameof(ViewCommand),
             CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<T>>(x => x.SelectedItem.Value),
-            IconResource = "ic_fluent_panel_right_filled",
+            FluentIcon = Icon.PanelRight,
         },
         new()
         {
             Header = "View Yaml",
             CommandPath = nameof(ViewYamlCommand),
             CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<T>>(x => x.SelectedItem.Value),
-            IconResource = "code_regular",
+            FluentIcon = Icon.Code,
         },
         new()
         {
             Header = "Delete",
             CommandPath = nameof(DeleteCommand),
             CommandParameterPath = "SelectedItems",
-            IconResource = "delete_regular",
+            FluentIcon = Icon.Delete,
         }
     ];
 
@@ -169,12 +170,12 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
         foreach (var (verb, subResource) in DefaultPermissions())
         {
-            tasks.Add(Cluster.UpdateCanIAllNamespaceAsync<T>(verb, subResource));
+            tasks.Add(Cluster.UpdatePermissionsAllNamespaceAsync<T>(verb, subResource));
         }
 
         foreach (var (verb, subResource) in CustomPermissions())
         {
-            tasks.Add(Cluster.UpdateCanIAllNamespaceAsync<T>(verb, subResource));
+            tasks.Add(Cluster.UpdatePermissionsAllNamespaceAsync<T>(verb, subResource));
         }
 
         await Task.WhenAll(tasks);
@@ -353,6 +354,8 @@ public class ResourceMenuItem
     public string? ItemSourcePath { get; set; }
 
     public string? IconResource { get; set; }
+
+    public Icon? FluentIcon { get; set; }
 
     public ResourceMenuItem? ItemTemplate { get; set; }
 

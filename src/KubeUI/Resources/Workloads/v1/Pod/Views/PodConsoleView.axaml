@@ -5,6 +5,7 @@
     xmlns:assets="using:KubeUI.Assets"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:edit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+    xmlns:ic="using:FluentIcons.Avalonia"
     xmlns:vm="using:KubeUI.ViewModels"
     d:DesignHeight="400"
     d:DesignWidth="800"
@@ -47,7 +48,7 @@
                 <ContextMenu>
                     <MenuItem Click="CopyMenuItem_Click" Header="{x:Static assets:Resources.Action_Copy}">
                         <MenuItem.Icon>
-                            <PathIcon Data="{StaticResource copy_regular}" />
+                            <ic:FluentIcon Icon="Copy" />
                         </MenuItem.Icon>
                     </MenuItem>
                     <MenuItem
@@ -55,7 +56,7 @@
                         Header="{x:Static assets:Resources.Action_Paste}"
                         HotKey="Ctrl+V">
                         <MenuItem.Icon>
-                            <PathIcon Data="{StaticResource clipboard_paste_regular}" />
+                            <ic:FluentIcon Icon="ClipboardPaste" />
                         </MenuItem.Icon>
                     </MenuItem>
                 </ContextMenu>

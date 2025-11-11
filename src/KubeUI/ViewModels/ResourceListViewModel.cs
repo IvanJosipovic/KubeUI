@@ -131,9 +131,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
                         var colType = column.GetType();
 
-                        var columnDisplay = (Func<T, string>)colType.GetProperty(nameof(ResourceListColumn<V1Pod, string>.Display)).GetValue(column);
+                        var columnDisplay = (Func<T, string>)colType.GetProperty(nameof(ResourceListColumn<,>.Display)).GetValue(column);
 
-                        columnDisplay ??= (Func<T, string>)colType.GetProperty(nameof(ResourceListColumn<V1Pod, string>.Field)).GetValue(column);
+                        columnDisplay ??= (Func<T, string>)colType.GetProperty(nameof(ResourceListColumn<,>.Field)).GetValue(column);
 
                         var funcCall = Expression.Call(Expression.Constant(columnDisplay), columnDisplay.GetType().GetMethod("Invoke"), value);
 

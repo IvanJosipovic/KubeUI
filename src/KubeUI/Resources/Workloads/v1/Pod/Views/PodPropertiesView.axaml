@@ -30,7 +30,7 @@
         <c:ExpandableSection
             Header="Init Containers"
             IsExpanded="True"
-            IsVisible="{Binding Spec.InitContainers, Converter={StaticResource NotEmptyCollectionConverter}}">
+            IsVisible="{Binding Spec.InitContainers, Converter={x:Static converters:NotEmptyCollectionConverter.Instance}}">
             <ItemsControl ItemTemplate="{StaticResource V1ContainerTemplate}" ItemsSource="{Binding Spec.InitContainers}" />
         </c:ExpandableSection>
 

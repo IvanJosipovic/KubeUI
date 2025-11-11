@@ -7,6 +7,7 @@
     xmlns:controls="clr-namespace:KubeUI.Controls"
     xmlns:converters="using:KubeUI.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:ic="using:FluentIcons.Avalonia"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="clr-namespace:KubeUI.ViewModels"
     d:DesignHeight="450"
@@ -19,8 +20,7 @@
     </Design.DataContext>
 
     <Grid>
-        <DataGrid
-            x:Name="ClustersGrid"
+        <DataGrid x:Name="ClustersGrid"
             MinHeight="{Binding Settings.Settings.ListRowHeight}"
             CanUserReorderColumns="True"
             CanUserResizeColumns="True"
@@ -36,7 +36,7 @@
                         CommandParameter="{Binding SelectedItem}"
                         Header="Delete">
                         <MenuItem.Icon>
-                            <PathIcon Data="{StaticResource delete_regular}" />
+                            <ic:FluentIcon Icon="Delete" />
                         </MenuItem.Icon>
                     </MenuItem>
                 </ContextMenu>

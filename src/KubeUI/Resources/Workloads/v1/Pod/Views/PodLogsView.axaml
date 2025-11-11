@@ -5,6 +5,7 @@
     xmlns:assets="using:KubeUI.Assets"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:edit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+    xmlns:ic="using:FluentIcons.Avalonia"
     xmlns:vm="using:KubeUI.ViewModels"
     d:DesignHeight="400"
     d:DesignWidth="500"
@@ -26,27 +27,33 @@
                 </Label.Content>
             </Label>
 
+            <Button Command="{Binding Clear}" ToolTip.Tip="{x:Static assets:Resources.PodLogsView_Clear}">
+                <Button.Content>
+                    <ic:FluentIcon Icon="Delete" />
+                </Button.Content>
+            </Button>
+
             <ToggleButton IsChecked="{Binding Previous, Mode=TwoWay}" ToolTip.Tip="{x:Static assets:Resources.PodLogsView_Previous}">
                 <ToggleButton.Content>
-                    <PathIcon Data="{StaticResource arrow_undo_regular}" />
+                    <ic:FluentIcon Icon="ArrowUndo" />
                 </ToggleButton.Content>
             </ToggleButton>
 
             <ToggleButton IsChecked="{Binding Timestamps, Mode=TwoWay}" ToolTip.Tip="{x:Static assets:Resources.PodLogsView_Timestamps}">
                 <ToggleButton.Content>
-                    <PathIcon Data="{StaticResource timer_regular}" />
+                    <ic:FluentIcon Icon="Timer" />
                 </ToggleButton.Content>
             </ToggleButton>
 
             <ToggleButton IsChecked="{Binding AutoScrollToBottom, Mode=TwoWay}" ToolTip.Tip="{x:Static assets:Resources.PodLogsView_AutoScrollToBottom}">
                 <ToggleButton.Content>
-                    <PathIcon Data="{StaticResource ic_fluent_padding_down_filled}" />
+                    <ic:FluentIcon Icon="PaddingDown" />
                 </ToggleButton.Content>
             </ToggleButton>
 
             <ToggleButton IsChecked="{Binding WordWrap, Mode=TwoWay}" ToolTip.Tip="{x:Static assets:Resources.PodLogsView_WordWrap}">
                 <ToggleButton.Content>
-                    <PathIcon Data="{StaticResource text_wrap_regular}" />
+                    <ic:FluentIcon Icon="TextWrap" />
                 </ToggleButton.Content>
             </ToggleButton>
         </StackPanel>
@@ -77,7 +84,7 @@
                         Header="{x:Static assets:Resources.Action_Copy}"
                         HotKey="Ctrl+C">
                         <MenuItem.Icon>
-                            <PathIcon Data="{StaticResource copy_regular}" />
+                            <ic:FluentIcon Icon="Copy" />
                         </MenuItem.Icon>
                     </MenuItem>
                 </ContextMenu>

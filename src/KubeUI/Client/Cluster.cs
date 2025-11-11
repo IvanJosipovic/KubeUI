@@ -21,6 +21,7 @@ using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using Yarp.Kubernetes.Controller;
 using Microsoft.Extensions.Hosting;
+using FluentIcons.Common;
 
 namespace KubeUI.Client;
 
@@ -160,13 +161,9 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                     APIGroupDiscoveryList = await GetAPIGroupDiscoveryList(false);
 
-                    Connected = true;
-
-                    Status = ClusterStatus.Connected;
-
-                    await GetPermissions();
-
                     await AddResourceConfigs();
+
+                    await UpdateNamespacePermission();
 
                     if (!ListNamespaces)
                     {
@@ -212,6 +209,9 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     {
                         Namespaces = await GetObjectDictionaryAsync<V1Namespace>();
                     }
+
+                    Connected = true;
+                    Status = ClusterStatus.Connected;
 
                     await AddDefaultNavigation();
                     await InitMetrics();
@@ -259,11 +259,11 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private async Task AddDefaultNavigation()
     {
-        NavigationItems.Add(new NavigationLink() { Name = "Settings", ControlType = typeof(ClusterSettingsViewModel), Cluster = this, StyleIcon = "ic_fluent_settings_24_filled", Order = 0 });
+        NavigationItems.Add(new NavigationLink() { Name = "Settings", ControlType = typeof(ClusterSettingsViewModel), Cluster = this, FluentIcon = Icon.Settings, Order = 0 });
         NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.ClusterViewModel_Title, ControlType = typeof(ClusterViewModel), Cluster = this, SvgIcon = "/Assets/kube/infrastructure_components/unlabeled/control-plane.svg", Order = 1 });
-        NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.VisualizationViewModel_Title, ControlType = typeof(VisualizationViewModel), Cluster = this, StyleIcon = "ic_fluent_search_visual_24_filled", Order = 2 });
-        NavigationItems.Add(new NavigationLink() { Name = "Load Yaml", Cluster = this, Id = "load-yaml", StyleIcon = "arrow_upload_regular", Order = 3 });
-        NavigationItems.Add(new NavigationLink() { Name = "Load Folder", Cluster = this, Id = "load-folder", StyleIcon = "folder_add_regular", Order = 4 });
+        NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.VisualizationViewModel_Title, ControlType = typeof(VisualizationViewModel), Cluster = this, FluentIcon = Icon.SearchVisual, Order = 2 });
+        NavigationItems.Add(new NavigationLink() { Name = "Load Yaml", Cluster = this, Id = "load-yaml", FluentIcon = Icon.ArrowUpload, Order = 3 });
+        NavigationItems.Add(new NavigationLink() { Name = "Load Folder", Cluster = this, Id = "load-folder", FluentIcon = Icon.FolderAdd, Order = 4 });
 
         NavigationItems.Add(new NavigationItem() { Name = "Workloads", Order = 8 });
         NavigationItems.Add(new NavigationItem() { Name = "Configuration", Order = 9 });
@@ -276,51 +276,48 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
         foreach (var config in ResourceConfigs)
         {
-            await _priorityExecutor.Enqueue(async _ =>
+            await config.Value.UpdatePermissions();
+
+            if ((config.Value.Type == typeof(V1Namespace) && !ListNamespaces) ||
+                (CanI(config.Value.Type, Verb.List) && CanI(config.Value.Type, Verb.Watch)))
             {
-                if ((config.Value.Type == typeof(V1Namespace) && !ListNamespaces) ||
-                    (await UpdateCanIAnyNamespaceAsync(config.Value.Type, Verb.List) && await UpdateCanIAnyNamespaceAsync(config.Value.Type, Verb.Watch)))
+                var nav = new ResourceNavigationLink() { Name = config.Value.Name, ControlType = config.Value.Type, Cluster = this, Order = config.Value.Order };
+
+                if (config.Value.Type == typeof(V1Namespace))
                 {
-                    await config.Value.UpdatePermissions();
+                    nav.Objects = Objects[config.Value.Kind].Items;
+                }
 
-                    var nav = new ResourceNavigationLink() { Name = config.Value.Name, ControlType = config.Value.Type, Cluster = this, Order = config.Value.Order };
-
-                    if (config.Value.Type == typeof(V1Namespace))
+                if (config.Value.Type == typeof(V1Pod))
+                {
+                    if (CanI<V1Pod>(Verb.Create, "portforward"))
                     {
-                        nav.Objects = Objects[config.Value.Kind].Items;
-                    }
-
-                    if (config.Value.Type == typeof(V1Pod))
-                    {
-                        if (CanI<V1Pod>(Verb.Create, "portforward"))
-                        {
-                            Dispatcher.UIThread.Post(() => networkNavItem.NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.PortForwarderListViewModel_Title, ControlType = typeof(PortForwarderListViewModel), Cluster = this, StyleIcon = "ic_fluent_cloud_flow_filled", Order = 6 }), DispatcherPriority.Background);
-                        }
-                    }
-
-                    if (config.Value.Type == typeof(V1CustomResourceDefinition))
-                    {
-                        _crdNavigationLink = nav;
-                        nav.NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer());
-    #if !DEBUG
-                        await Seed<V1CustomResourceDefinition>();
-                        nav.Objects = Objects[config.Value.Kind].Items;
-    #endif
-                    }
-
-                    if (string.IsNullOrEmpty(config.Value.Category))
-                    {
-                        Dispatcher.UIThread.Post(() => NavigationItems.Add(nav), DispatcherPriority.Background);
-                    }
-                    else
-                    {
-                        var category = NavigationItems.First(x => x is not null && x.Name == config.Value.Category);
-
-                        Dispatcher.UIThread.Post(() => category.NavigationItems.Add(nav), DispatcherPriority.Background);
+                        Dispatcher.UIThread.Post(() => networkNavItem.NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.PortForwarderListViewModel_Title, ControlType = typeof(PortForwarderListViewModel), Cluster = this, FluentIcon = Icon.CloudFlow, Order = 6 }), DispatcherPriority.Background);
                     }
                 }
 
-            }, WorkPriority.High);
+                if (config.Value.Type == typeof(V1CustomResourceDefinition))
+                {
+                    _crdNavigationLink = nav;
+                    nav.NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer());
+#if !DEBUG
+                    await Seed<V1CustomResourceDefinition>();
+                    nav.Objects = Objects[config.Value.Kind].Items;
+#endif
+                }
+
+                if (string.IsNullOrEmpty(config.Value.Category))
+                {
+                    Dispatcher.UIThread.Post(() => NavigationItems.Add(nav), DispatcherPriority.Background);
+                }
+                else
+                {
+                    var category = NavigationItems.First(x => x is not null && x.Name == config.Value.Category);
+
+                    Dispatcher.UIThread.Post(() => category.NavigationItems.Add(nav), DispatcherPriority.Background);
+                }
+            }
+
         }
     }
 
@@ -382,42 +379,37 @@ public sealed partial class Cluster : ObservableObject, ICluster
             container.Initialized = true;
             _seedLimiter.Release();
 
-            await _priorityExecutor.Enqueue(async ct =>
+            if (await UpdateCanI(type, Verb.List) && await UpdateCanI(type, Verb.Watch))
             {
-                var resourceConfig = GetResourceConfig(kind);
-
-                if (CanI(type, Verb.List) && CanI(type, Verb.Watch))
+                var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>());
+                container.Informers.Add(informer);
+                informer.Register(GetResourceInformerCallback<T>());
+                informer.StartWatching();
+                _ = informer.RunInfinite(CancellationToken.None);
+            }
+            else
+            {
+                if (!IsNamespaced<T>())
                 {
-                    var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>());
-                    container.Informers.Add(informer);
-                    informer.Register(GetResourceInformerCallback<T>());
-                    informer.StartWatching();
-                    _ = informer.RunInfinite(CancellationToken.None);
+                    return;
                 }
-                else
+
+                var namespaceDict = await GetObjectDictionaryAsync<V1Namespace>();
+
+                foreach (var item in namespaceDict)
                 {
-                    if (!IsNamespaced<T>())
+                    string ns = item.Value.Name();
+
+                    if (await UpdateCanI(type, Verb.List, ns) && await UpdateCanI(type, Verb.Watch, ns))
                     {
-                        return;
-                    }
-
-                    var namespaceDict = await GetObjectDictionaryAsync<V1Namespace>();
-
-                    foreach (var item in namespaceDict)
-                    {
-                        string ns = item.Value.Name();
-
-                        if (CanI(type, Verb.List, ns) && CanI(type, Verb.Watch, ns))
-                        {
-                            var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), @namespace: ns);
-                            container.Informers.Add(informer);
-                            informer.Register(GetResourceInformerCallback<T>());
-                            informer.StartWatching();
-                            _ = informer.RunInfinite(CancellationToken.None);
-                        }
+                        var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), @namespace: ns);
+                        container.Informers.Add(informer);
+                        informer.Register(GetResourceInformerCallback<T>());
+                        informer.StartWatching();
+                        _ = informer.RunInfinite(CancellationToken.None);
                     }
                 }
-            }, WorkPriority.Normal);
+            }
         }
         else
         {
@@ -842,6 +834,26 @@ public sealed partial class Cluster : ObservableObject, ICluster
     public IResourceConfig GetResourceConfig(GroupApiVersionKind kind)
     {
         return ResourceConfigs[kind];
+    }
+
+    public IResourceConfig GetResourceConfig<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        return GetResourceConfig(GroupApiVersionKind.From<T>());
+    }
+
+    public async Task<bool> IsResourceReady<T>(CancellationToken? token = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        token ??= CancellationToken.None;
+
+        var kind = GroupApiVersionKind.From<T>();
+
+        if (Objects.TryGetValue(kind, out var con))
+        {
+            var tasks = con.Informers.Select(x => x.ReadyAsync(token.Value));
+            await Task.WhenAll(tasks).WaitAsync(token.Value).ConfigureAwait(false);
+        }
+
+        return false;
     }
 }
 

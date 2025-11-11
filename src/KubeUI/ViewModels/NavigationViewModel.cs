@@ -1,6 +1,7 @@
 ﻿using Avalonia.Controls.Notifications;
 using Avalonia.Platform.Storage;
 using Dock.Model.Core;
+using FluentIcons.Common;
 using KubeUI.Client;
 using Swordfish.NET.Collections;
 using Yarp.Kubernetes.Controller.Client;
@@ -137,6 +138,9 @@ public partial class NavigationItem : ObservableObject
 
     [ObservableProperty]
     public partial string? StyleIcon { get; set; }
+
+    [ObservableProperty]
+    public partial Icon? FluentIcon { get; set; }
 
     [ObservableProperty]
     public partial string Name { get; set; }

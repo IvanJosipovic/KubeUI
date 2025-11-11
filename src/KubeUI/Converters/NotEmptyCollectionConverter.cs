@@ -8,6 +8,8 @@ namespace KubeUI.Converters;
 
 public class NotEmptyCollectionConverter : IValueConverter
 {
+    public static readonly NotEmptyCollectionConverter Instance = new();
+
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         if (value is ICollection coll)

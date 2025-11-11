@@ -1,4 +1,5 @@
 ﻿using FluentAvalonia.UI.Controls;
+using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
@@ -72,21 +73,21 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
             new()
             {
                 Header = "Cordon",
-                IconResource = "stop_regular",
+                FluentIcon = Icon.Stop,
                 CommandPath = nameof(CordonNodeCommand),
                 CommandParameterPath = "SelectedItems",
             },
             new()
             {
                 Header = "UnCordon",
-                IconResource = "play_regular",
+                FluentIcon = Icon.Play,
                 CommandPath = nameof(UnCordonNodeCommand),
                 CommandParameterPath = "SelectedItems",
             },
             new()
             {
                 Header = "Drain",
-                IconResource = "arrow_sync_regular",
+                FluentIcon = Icon.ArrowSync,
                 CommandPath = nameof(DrainNodeCommand),
                 CommandParameterPath = "SelectedItems",
             },

@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <LangVersion>preview</LangVersion>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
 
   <ItemGroup>
@@ -57,6 +58,7 @@
     <PackageReference Include="Dock.Model.Mvvm" Version="11.3.6.5" />
     <PackageReference Include="DynamicData" Version="9.4.1" />
     <PackageReference Include="FluentAvaloniaUI" Version="2.4.0" />
+    <PackageReference Include="FluentIcons.Avalonia" Version="1.2.313" />
     <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia" Version="2.1.0" />
     <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia.Fluent" Version="2.1.0" />
     <PackageReference Include="Humanizer.Core" Version="2.14.1" />
@@ -79,7 +81,7 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.Process" Version="1.13.0-beta.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.13.0" />
     <PackageReference Include="OpenTelemetry.Resources.OperatingSystem" Version="1.13.0-beta.1" />
-    <PackageReference Include="PropertyGenerator.Avalonia" Version="1.2.6"/>
+    <PackageReference Include="PropertyGenerator.Avalonia" Version="1.2.6" />
     <PackageReference Include="roslynator.analyzers" Version="4.14.1" PrivateAssets="all" />
     <PackageReference Include="Semi.Avalonia" Version="11.2.1.9" />
     <PackageReference Include="ServiceScan.SourceGenerator" Version="2.4.1" PrivateAssets="all" />

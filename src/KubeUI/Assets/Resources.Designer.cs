@@ -475,6 +475,15 @@ namespace KubeUI.Assets {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Clear Logs.
+        /// </summary>
+        public static string PodLogsView_Clear {
+            get {
+                return ResourceManager.GetString("PodLogsView_Clear", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Show last container.
         /// </summary>
         public static string PodLogsView_Previous {

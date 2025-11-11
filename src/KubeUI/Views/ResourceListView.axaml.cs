@@ -15,6 +15,7 @@ using KubeUI.ViewModels;
 using OpenTelemetry.Trace;
 using Semi.Avalonia;
 using Yarp.Kubernetes.Controller;
+using FluentIcons.Avalonia;
 
 namespace KubeUI.Views;
 
@@ -103,9 +104,9 @@ public partial class ResourceListView : UserControl
         {
             try
             {
-                var columnDisplay = (Func<T, string>)columnDefinition.GetType().GetProperty(nameof(ResourceListColumn<T, string>.Display)).GetValue(columnDefinition);
+                var columnDisplay = (Func<T, string>)columnDefinition.GetType().GetProperty(nameof(ResourceListColumn<,>.Display)).GetValue(columnDefinition);
 
-                var columnField = columnDefinition.GetType().GetProperty(nameof(ResourceListColumn<T, string>.Field)).GetValue(columnDefinition);
+                var columnField = columnDefinition.GetType().GetProperty(nameof(ResourceListColumn<,>.Field)).GetValue(columnDefinition);
 
                 // Create Sort FuncComparer
                 var colType = columnField.GetType().GenericTypeArguments[1];
@@ -266,6 +267,14 @@ public partial class ResourceListView : UserControl
         if (!string.IsNullOrEmpty(menu.IconResource))
         {
             menuItem.Icon = new PathIcon() { Data = (Geometry)Application.Current.FindResource(menu.IconResource) };
+        }
+
+        if (menu.FluentIcon.HasValue)
+        {
+            menuItem.Icon = new FluentIcon()
+            {
+                Icon = menu.FluentIcon.Value
+            };
         }
 
         if (menu.ItemTemplate != null)
