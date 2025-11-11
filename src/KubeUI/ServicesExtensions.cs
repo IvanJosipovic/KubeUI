@@ -10,9 +10,8 @@ namespace KubeUI;
 
 public static partial class ServicesExtensions
 {
-    [GenerateServiceRegistrations(AssignableTo = typeof(UserControl), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI")]
-    //[GenerateServiceRegistrations(AssignableTo = typeof(ObservableObject), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false)]
     [GenerateServiceRegistrations(AssignableTo = typeof(Window), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI")]
+    [GenerateServiceRegistrations(AssignableTo = typeof(UserControl), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI")]
 
     [GenerateServiceRegistrations(AssignableTo = typeof(ViewModelBase), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false)]
     [GenerateServiceRegistrations(AssignableTo = typeof(ResourceConfigBase<>), Lifetime = ServiceLifetime.Transient, AsSelf = false, AsImplementedInterfaces = false)]
@@ -21,7 +20,6 @@ public static partial class ServicesExtensions
     [GenerateServiceRegistrations(AssignableTo = typeof(ICluster), Lifetime = ServiceLifetime.Transient, AsSelf = false, AsImplementedInterfaces = false)]
 
     [GenerateServiceRegistrations(AssignableTo = typeof(ModelCache), Lifetime = ServiceLifetime.Transient)]
-
 
     [GenerateServiceRegistrations(AssignableTo = typeof(Instrumentation), Lifetime = ServiceLifetime.Singleton)]
     [GenerateServiceRegistrations(AssignableTo = typeof(ILogSink), Lifetime = ServiceLifetime.Singleton, AsImplementedInterfaces = true)]

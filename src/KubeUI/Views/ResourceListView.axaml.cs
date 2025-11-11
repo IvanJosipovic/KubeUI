@@ -3,17 +3,11 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
 using Avalonia.Styling;
-using Avalonia.VisualTree;
 using Dock.Model.Core;
-using DynamicData;
 using k8s;
 using k8s.Models;
 using KubeUI.Client;
-using Yarp.Kubernetes.Controller.Client;
 using KubeUI.Resources;
-using KubeUI.ViewModels;
-using OpenTelemetry.Trace;
-using Semi.Avalonia;
 using Yarp.Kubernetes.Controller;
 using FluentIcons.Avalonia;
 
