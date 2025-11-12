@@ -21,8 +21,6 @@ public partial class ResourceListView : UserControl
     {
         _logger = Application.Current.GetRequiredService<ILogger<ResourceListView>>();
 
-        InitializeComponent();
-
 #if DEBUG
         if (Design.IsDesignMode)
         {
@@ -42,6 +40,8 @@ public partial class ResourceListView : UserControl
             });
         }
 #endif
+
+        InitializeComponent();
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -162,7 +162,7 @@ public partial class ResourceListView : UserControl
                         {
                             if (column != null && columnDefinition != null)
                             {
-                                column.Sort(columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending);
+                                //column.Sort(columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending);
                             }
                         });
                     }
@@ -175,7 +175,7 @@ public partial class ResourceListView : UserControl
                         {
                             if (ViewModel != null)
                             {
-                                column.Sort(ViewModel.SortDirection == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending);
+                                //column.Sort(ViewModel.SortDirection == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending);
                             }
                         });
                     }

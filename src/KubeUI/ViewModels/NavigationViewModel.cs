@@ -176,7 +176,7 @@ public class NavigationItemNameComparer : IComparer<NavigationItem>
 {
     public int Compare(NavigationItem? x, NavigationItem? y)
     {
-        return x?.Name.CompareTo(y?.Name) ?? 0;
+        return x?.Name.CompareTo(y?.Name, StringComparison.Ordinal) ?? 0;
     }
 }
 

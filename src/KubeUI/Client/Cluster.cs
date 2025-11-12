@@ -61,7 +61,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     public AvaloniaDictionary<GroupApiVersionKind, ContainerClass> Objects { get; } = [];
 
-    private ResourceNavigationLink? _crdNavigationLink;
+    private NavigationItem? _crdNavigationLink;
 
     [ObservableProperty]
     public partial string Name { get; set; }
@@ -274,6 +274,15 @@ public sealed partial class Cluster : ObservableObject, ICluster
         NavigationItems.Add(new NavigationItem() { Name = "Storage", Order = 11 });
         NavigationItems.Add(new NavigationItem() { Name = "Access Control", Order = 12 });
 
+        _crdNavigationLink = new NavigationItem
+        {
+            Name = "Custom Resource Definitions",
+            Order = 13,
+            NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer())
+        };
+
+        NavigationItems.Add(_crdNavigationLink);
+
         foreach (var config in ResourceConfigs)
         {
             await config.Value.UpdatePermissions();
@@ -298,12 +307,14 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                 if (config.Value.Type == typeof(V1CustomResourceDefinition))
                 {
-                    _crdNavigationLink = nav;
+                    nav.Name = "Definitions";
                     nav.NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer());
-#if !DEBUG
+
                     await Seed<V1CustomResourceDefinition>();
                     nav.Objects = Objects[config.Value.Kind].Items;
-#endif
+
+                    Dispatcher.UIThread.Post(() => _crdNavigationLink.NavigationItems.Add(nav), DispatcherPriority.Background);
+                    continue;
                 }
 
                 if (string.IsNullOrEmpty(config.Value.Category))
