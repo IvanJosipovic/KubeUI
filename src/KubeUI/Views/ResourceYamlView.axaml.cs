@@ -56,7 +56,6 @@ public sealed partial class ResourceYamlView : UserControl
 
         _foldingManager = FoldingManager.Install(Editor.TextArea);
 
-        UpdateFoldings();
 
         if (DataContext is ResourceYamlViewModel vm && vm.AllFoldings != null)
         {
@@ -69,6 +68,8 @@ public sealed partial class ResourceYamlView : UserControl
                 _logger.LogWarning(ex, "Error loading foldings");
             }
         }
+
+        UpdateFoldings();
 
         Application.Current!.ActualThemeVariantChanged += ThemeChanged;
         Editor.TextChanged += Editor_TextChanged;
