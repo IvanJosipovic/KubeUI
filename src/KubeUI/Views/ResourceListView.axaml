@@ -5,6 +5,7 @@
     xmlns:assets="using:KubeUI.Assets"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:ic="using:FluentIcons.Avalonia"
+    xmlns:local="using:KubeUI.Views"
     xmlns:models="using:k8s.Models"
     xmlns:u="https://irihi.tech/ursa"
     xmlns:ursa="clr-namespace:Ursa.Controls"
@@ -94,12 +95,12 @@
             </Interaction.Behaviors>
             <DataGrid.Styles>
                 <Style Selector="DataGridColumnHeader">
-                    <Setter Property="FontSize" Value="{Binding SettingsService.Settings.FontSize}" />
-                    <Setter Property="MinHeight" Value="{Binding SettingsService.Settings.ListRowHeight}" />
+                    <Setter Property="FontSize" Value="{Binding $parent[local:ResourceListView].DataContext.SettingsService.Settings.FontSize}" />
+                    <Setter Property="MinHeight" Value="{Binding $parent[local:ResourceListView].DataContext.SettingsService.Settings.ListRowHeight}" />
                 </Style>
                 <Style Selector="TextBlock">
                     <Setter Property="MaxLines" Value="1" />
-                    <Setter Property="FontSize" Value="{Binding SettingsService.Settings.FontSize}" />
+                    <Setter Property="FontSize" Value="{Binding $parent[local:ResourceListView].DataContext.SettingsService.Settings.FontSize}" />
                 </Style>
             </DataGrid.Styles>
         </DataGrid>

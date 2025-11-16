@@ -1,15 +1,17 @@
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using Avalonia.Collections;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
 using Avalonia.Styling;
 using Dock.Model.Core;
+using FluentIcons.Avalonia;
 using k8s;
 using k8s.Models;
 using KubeUI.Client;
 using KubeUI.Resources;
 using Yarp.Kubernetes.Controller;
-using FluentIcons.Avalonia;
 
 namespace KubeUI.Views;
 
@@ -48,8 +50,11 @@ public partial class ResourceListView : UserControl
     {
         base.OnDataContextChanged(e);
 
-        // Determine if DataContext is a generic ResourcePropertiesViewModel<T>
-        // If so, extract T and invoke Reload<T>() via reflection
+        GetGenericMethod(nameof(GenerateGrid))?.Invoke(this, null);
+    }
+
+    private MethodInfo? GetGenericMethod(string name)
+    {
         var dcType = DataContext?.GetType();
 
         if (dcType?.IsGenericType == true)
@@ -61,18 +66,18 @@ public partial class ResourceListView : UserControl
 
                 if (typeof(IKubernetesObject<V1ObjectMeta>).IsAssignableFrom(t))
                 {
-                    var reloadMethod = typeof(ResourceListView)
-                        .GetMethod(nameof(GenerateGrid), BindingFlags.NonPublic | BindingFlags.Instance);
+                    var method = GetType().GetMethod(name, BindingFlags.NonPublic | BindingFlags.Instance);
 
-                    if (reloadMethod?.IsGenericMethodDefinition == true)
+                    if (method?.IsGenericMethodDefinition == true)
                     {
-                        var genericReload = reloadMethod.MakeGenericMethod(t);
-                        genericReload.Invoke(this, null);
-                        return;
+                        var genericMethod = method.MakeGenericMethod(t);
+                        return genericMethod;
                     }
                 }
             }
         }
+
+        return null;
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
@@ -83,18 +88,18 @@ public partial class ResourceListView : UserControl
 
     private void GenerateGrid<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        var ViewModel = (ResourceListViewModel<T>)DataContext!;
+        var viewModel = (ResourceListViewModel<T>)DataContext!;
 
         PART_Grid.Columns.Clear();
 
-        if (ViewModel.ResourceConfig.ListStyle() != null)
+        if (viewModel.ResourceConfig.ListStyle() != null)
         {
-            PART_Grid.Styles.Add(ViewModel.ResourceConfig.ListStyle());
+            PART_Grid.Styles.Add(viewModel.ResourceConfig.ListStyle());
         }
 
         var converter = new DataGridLengthConverter();
 
-        foreach (var columnDefinition in ViewModel.ResourceConfig.Columns())
+        foreach (var columnDefinition in viewModel.ResourceConfig.Columns())
         {
             try
             {
@@ -123,7 +128,7 @@ public partial class ResourceListView : UserControl
 
                             if (control is IInitializeCluster init)
                             {
-                                init.Initialize(ViewModel.Cluster);
+                                init.Initialize(viewModel.Cluster);
                             }
 
                             return control;
@@ -154,7 +159,7 @@ public partial class ResourceListView : UserControl
 
                 PART_Grid.Columns.Add(column);
 
-                if (string.IsNullOrEmpty(ViewModel.SortColumnName))
+                if (string.IsNullOrEmpty(viewModel.SortColumnName))
                 {
                     if (columnDefinition.Sort != SortDirection.None)
                     {
@@ -162,20 +167,20 @@ public partial class ResourceListView : UserControl
                         {
                             if (column != null && columnDefinition != null)
                             {
-                                //column.Sort(columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending);
+                                column.Sort(columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending);
                             }
                         });
                     }
                 }
                 else
                 {
-                    if (column.Header.ToString() == ViewModel.SortColumnName)
+                    if (column.Header.ToString() == viewModel.SortColumnName)
                     {
                         Dispatcher.UIThread.Post(() =>
                         {
-                            if (ViewModel != null)
+                            if (viewModel != null)
                             {
-                                //column.Sort(ViewModel.SortDirection == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending);
+                                column.Sort(viewModel.SortDirection == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending);
                             }
                         });
                     }
@@ -191,16 +196,16 @@ public partial class ResourceListView : UserControl
 
         PART_Grid.ContextMenu.Items.Clear();
 
-        foreach (var item in ViewModel.ResourceConfig.DefaultMenuItems())
+        foreach (var item in viewModel.ResourceConfig.DefaultMenuItems())
         {
             PART_Grid.ContextMenu.Items.Add(CreateMenuItem(item));
         }
 
-        if (ViewModel.ResourceConfig.MenuItems != null)
+        if (viewModel.ResourceConfig.MenuItems != null)
         {
             PART_Grid.ContextMenu.Items.Add(new Separator());
 
-            foreach (var item in ViewModel.ResourceConfig.MenuItems())
+            foreach (var item in viewModel.ResourceConfig.MenuItems())
             {
                 PART_Grid.ContextMenu.Items.Add(CreateMenuItem(item));
             }
@@ -370,15 +375,34 @@ public partial class ResourceListView : UserControl
 
         foreach (var sortColumn in PART_Grid.Columns)
         {
-            var headerCell = (DataGridColumnHeader)sortColumn.GetType().GetProperty("HeaderCell", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(sortColumn);
+            var direction = sortColumn.GetCurrentSortingState();
 
-            var direction = headerCell.Classes.Contains(":sortascending") ? SortDirection.Ascending : headerCell.Classes.Contains(":sortdescending") ? SortDirection.Descending : SortDirection.None;
-
-            if (direction != SortDirection.None)
+            if (direction != null)
             {
                 ViewModel.SortColumnName = sortColumn.Header.ToString();
-                ViewModel.SortDirection = direction;
+                ViewModel.SortDirection = direction.Value == ListSortDirection.Ascending ? SortDirection.Ascending : SortDirection.Descending;
             }
         }
     }
+}
+
+public static class DataGridExtensions
+{
+    extension(DataGridColumn col)
+    {
+        public ListSortDirection? GetCurrentSortingState()
+        {
+            var desc = GetSortDescription(col);
+
+            if (desc != null)
+            {
+                return desc.Direction;
+            }
+
+            return null;
+        }
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "GetSortDescription")]
+    public static extern DataGridSortDescription GetSortDescription(DataGridColumn column);
 }

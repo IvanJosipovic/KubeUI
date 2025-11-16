@@ -1,6 +1,5 @@
 ﻿using k8s.Models;
 using Yarp.Kubernetes.Controller;
-using Yarp.Kubernetes.Controller.Client;
 
 namespace KubeUI.Views;
 

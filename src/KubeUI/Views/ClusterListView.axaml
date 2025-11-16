@@ -8,6 +8,7 @@
     xmlns:converters="using:KubeUI.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:ic="using:FluentIcons.Avalonia"
+    xmlns:local="using:KubeUI.Views"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="clr-namespace:KubeUI.ViewModels"
     d:DesignHeight="450"
@@ -54,8 +55,8 @@
             </DataGrid.Columns>
             <DataGrid.Styles>
                 <Style Selector="DataGridColumnHeader">
-                    <Setter Property="FontSize" Value="{Binding Settings.Settings.FontSize}" />
-                    <Setter Property="MinHeight" Value="{Binding Settings.Settings.ListRowHeight}" />
+                    <Setter Property="FontSize" Value="{Binding $parent[local:ClusterListView].DataContext.Settings.Settings.FontSize}" />
+                    <Setter Property="MinHeight" Value="{Binding $parent[local:ClusterListView].DataContext.Settings.Settings.ListRowHeight}" />
                 </Style>
             </DataGrid.Styles>
         </DataGrid>

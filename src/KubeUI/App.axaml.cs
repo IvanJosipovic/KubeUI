@@ -1,8 +1,8 @@
 ﻿using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Text.Json.Serialization.Metadata;
 using Avalonia.Controls.Notifications;
 using Avalonia.Data.Core.Plugins;
+using Avalonia.Logging;
 using Avalonia.Markup.Xaml;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Styling;
@@ -12,13 +12,13 @@ using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
+using KubeUI;
 using KubeUI.Client;
 using KubeUI.Views;
 using LiveChartsCore;
 using LiveChartsCore.Drawing;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
-using LiveChartsCore.SkiaSharpView.Painting.ImageFilters;
 using LiveChartsCore.Themes;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -211,7 +211,7 @@ public partial class App : Application
 
         AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
 
-        //Logger.Sink = Host.Services.GetRequiredService<ILoggerSink>();
+        Logger.Sink = Host.Services.GetRequiredService<ILogSink>();
 
         Host.Services.GetRequiredService<ISettingsService>().LoadSettings();
 

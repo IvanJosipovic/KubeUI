@@ -1,12 +1,12 @@
 ﻿using Avalonia.Logging;
 
-namespace KubeUI.Desktop;
+namespace KubeUI;
 
-public class LoggerSink : ILogSink
+public class LogSink : ILogSink
 {
     private readonly ILogger<Application> _logger;
 
-    public LoggerSink(ILogger<Application> logger)
+    public LogSink(ILogger<Application> logger)
     {
         _logger = logger;
     }
