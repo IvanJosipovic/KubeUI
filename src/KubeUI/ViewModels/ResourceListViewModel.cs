@@ -76,7 +76,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
         _filter = Objects
             .Connect()
-            //.Filter(GenerateFilter())
+            .Filter(GenerateFilter())
             .ObserveOn(AvaloniaScheduler.Instance)
             .Bind(out var filteredObjects)
             .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Setting Resource List Filter: {ns} ", typeof(T)));
@@ -90,10 +90,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         {
             var param = Expression.Parameter(typeof(T), "p");
 
-            var key = Expression.PropertyOrField(param, "Key");
-
-            var value = Expression.PropertyOrField(param, "Value");
-
             BinaryExpression? body = null;
 
             BinaryExpression? namespaceFilter = null;
@@ -102,10 +98,12 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
             if (Cluster.SelectedNamespaces != null && ResourceConfig.IsNamespaced)
             {
+                var method = typeof(IKubernetesObject<V1ObjectMeta>).GetMethod("Namespace");
+
                 foreach (var item in Cluster.SelectedNamespaces)
                 {
                     var expression = Expression.Equal(
-                            Expression.PropertyOrField(param, "Namespace"),
+                            Expression.Call(param, method),
                             Expression.Constant(item.Name())
                        );
 
@@ -136,7 +134,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
                         columnDisplay ??= (Func<T, string>)colType.GetProperty(nameof(ResourceListColumn<,>.Field)).GetValue(column);
 
-                        var funcCall = Expression.Call(Expression.Constant(columnDisplay), columnDisplay.GetType().GetMethod("Invoke"), value);
+                        var funcCall = Expression.Call(Expression.Constant(columnDisplay), columnDisplay.GetType().GetMethod("Invoke"), param);
 
                         var expression = Expression.GreaterThanOrEqual(Expression.Call(funcCall, method, someValue, Expression.Constant(StringComparison.OrdinalIgnoreCase)), Expression.Constant(0));
 
