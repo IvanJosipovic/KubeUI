@@ -49,7 +49,7 @@
                 Width="300"
                 MaxHeight="20"
                 Classes="ClearButton"
-                ItemsSource="{Binding Cluster.Namespaces.Values}"
+                ItemsSource="{Binding Cluster.Namespaces}"
                 SelectedItems="{Binding Cluster.SelectedNamespaces}">
 
                 <u:MultiComboBox.SelectedItemTemplate>

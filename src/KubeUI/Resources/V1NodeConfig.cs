@@ -118,11 +118,11 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 
         if (result == ContentDialogResult.Primary)
         {
-            foreach (var item in items.Cast<KeyValuePair<NamespacedName, V1Node>>().ToList())
+            foreach (var item in items.Cast<V1Node>().ToList())
             {
                 try
                 {
-                    await Cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Key.Name, item.Key.Namespace);
+                    await Cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Name(), item.Namespace());
                 }
                 catch (Exception ex)
                 {
@@ -161,11 +161,11 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 
         if (result == ContentDialogResult.Primary)
         {
-            foreach (var item in items.Cast<KeyValuePair<NamespacedName, V1Node>>().ToList())
+            foreach (var item in items.Cast<V1Node>().ToList())
             {
                 try
                 {
-                    await Cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Key.Name, item.Key.Namespace);
+                    await Cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Name(), item.Namespace());
                 }
                 catch (Exception ex)
                 {
@@ -204,19 +204,21 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 
         if (result == ContentDialogResult.Primary)
         {
-            foreach (var item in items.Cast<KeyValuePair<NamespacedName, V1Node>>().ToList())
+            foreach (var item in items.Cast<V1Node>().ToList())
             {
                 try
                 {
-                    await Cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Key.Name, item.Key.Namespace);
+                    await Cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Name(), item.Namespace());
 
-                    var pods = (await Cluster.GetObjectDictionaryAsync<V1Pod>()).ToList();
+                    await Cluster.SeedResource<V1Pod>();
+                    await Cluster.IsResourceReady<V1Pod>();
+                    var pods = Cluster.GetResourceList<V1Pod>();
 
                     foreach (var pod in pods)
                     {
-                        if (pod.Value.Spec.NodeName == item.Value.Metadata.Name)
+                        if (pod.Spec.NodeName == item.Metadata.Name)
                         {
-                            if (pod.Value.Metadata.OwnerReferences.Any(x => x.ApiVersion == V1DaemonSet.KubeGroup + "/" + V1DaemonSet.KubeApiVersion &&
+                            if (pod.Metadata.OwnerReferences.Any(x => x.ApiVersion == V1DaemonSet.KubeGroup + "/" + V1DaemonSet.KubeApiVersion &&
                                                                             x.Kind == V1DaemonSet.KubeKind &&
                                                                             x.Controller == true &&
                                                                             x.BlockOwnerDeletion == true))
@@ -230,14 +232,14 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
                                 Kind = V1Eviction.KubeKind,
                                 Metadata = new()
                                 {
-                                    Name = pod.Value.Metadata.Name,
-                                    NamespaceProperty = pod.Value.Metadata.NamespaceProperty
+                                    Name = pod.Metadata.Name,
+                                    NamespaceProperty = pod.Metadata.NamespaceProperty
                                 }
                             };
 
                             try
                             {
-                                await Cluster.Client.CoreV1.CreateNamespacedPodEvictionAsync(evict, pod.Value.Metadata.Name, pod.Value.Metadata.NamespaceProperty);
+                                await Cluster.Client.CoreV1.CreateNamespacedPodEvictionAsync(evict, pod.Metadata.Name, pod.Metadata.NamespaceProperty);
                             }
                             catch (Exception ex)
                             {

@@ -1,18 +1,13 @@
 using System.Collections.Specialized;
 using System.Linq.Expressions;
-using System.Reactive.Concurrency;
-using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using Avalonia.Collections;
 using Avalonia.Styling;
 using DynamicData;
-using DynamicData.Binding;
 using Humanizer;
 using k8s;
 using k8s.Models;
 using KubeUI.Client;
 using KubeUI.Resources;
-using Yarp.Kubernetes.Controller;
 using Yarp.Kubernetes.Controller.Client;
 
 namespace KubeUI.ViewModels;
@@ -30,13 +25,13 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     public partial GroupApiVersionKind Kind { get; set; }
 
     [ObservableProperty]
-    public partial AvaloniaDictionary<NamespacedName, T> Objects { get; set; }
+    public partial ISourceCache<T, string> Objects { get; set; }
 
     [ObservableProperty]
-    public partial KeyValuePair<NamespacedName, T> SelectedItem { get; set; }
+    public partial T SelectedItem { get; set; }
 
     [ObservableProperty]
-    public partial ReadOnlyObservableCollection<KeyValuePair<NamespacedName, T>>? DataGridObjects { get; private set; }
+    public partial ReadOnlyObservableCollection<T>? DataGridObjects { get; private set; }
 
     [ObservableProperty]
     public partial string SearchQuery { get; set; }
@@ -66,7 +61,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         Id = Cluster.Name + "-" + Kind;
         ResourceConfig = (ResourceConfigBase<T>)Cluster.GetResourceConfig(Kind);
 
-        Objects = Cluster.GetObjectDictionary<T>();
+        Cluster.SeedResource<T>().GetAwaiter().GetResult();
+
+        Objects = Cluster.GetResourceSourceCache<T>();
 
         Cluster.SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
 
@@ -78,8 +75,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _filter?.Dispose();
 
         _filter = Objects
-            .ToObservableChangeSet<AvaloniaDictionary<NamespacedName, T>, KeyValuePair<NamespacedName, T>>()
-            .Filter(GenerateFilter())
+            .Connect()
+            //.Filter(GenerateFilter())
             .ObserveOn(AvaloniaScheduler.Instance)
             .Bind(out var filteredObjects)
             .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Setting Resource List Filter: {ns} ", typeof(T)));
@@ -87,11 +84,11 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         DataGridObjects = filteredObjects;
     }
 
-    private Func<KeyValuePair<NamespacedName, T>, bool> GenerateFilter()
+    private Func<T, bool> GenerateFilter()
     {
         try
         {
-            var param = Expression.Parameter(typeof(KeyValuePair<NamespacedName, T>), "p");
+            var param = Expression.Parameter(typeof(T), "p");
 
             var key = Expression.PropertyOrField(param, "Key");
 
@@ -108,7 +105,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 foreach (var item in Cluster.SelectedNamespaces)
                 {
                     var expression = Expression.Equal(
-                            Expression.PropertyOrField(key, "Namespace"),
+                            Expression.PropertyOrField(param, "Namespace"),
                             Expression.Constant(item.Name())
                        );
 
@@ -167,7 +164,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 body = Expression.Equal(Expression.Constant(true), Expression.Constant(true));
             }
 
-            return Expression.Lambda<Func<KeyValuePair<NamespacedName, T>, bool>>(body, param).Compile();
+            return Expression.Lambda<Func<T, bool>>(body, param).Compile();
         }
         catch (Exception ex)
         {
@@ -197,96 +194,5 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _filter?.Dispose();
 
         Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
-    }
-}
-
-/// <summary>
-/// A reactive scheduler that uses Avalonia's <see cref="Dispatcher"/>.
-/// </summary>
-public sealed class AvaloniaScheduler : LocalScheduler
-{
-    /// <summary>
-    /// The instance of the <see cref="AvaloniaScheduler"/>.
-    /// </summary>
-    public static readonly AvaloniaScheduler Instance = new();
-
-    /// <summary>
-    /// Users can schedule actions on the dispatcher thread while being on the correct thread already.
-    /// We are optimizing this case by invoking user callback immediately which can lead to stack overflows in certain cases.
-    /// To prevent this we are limiting amount of reentrant calls to <see cref="Schedule{TState}"/> before we will
-    /// schedule on a dispatcher anyway.
-    /// </summary>
-    private const int MaxReentrantSchedules = 32;
-
-    private int _reentrancyGuard;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="AvaloniaScheduler"/> class.
-    /// </summary>
-    private AvaloniaScheduler()
-    {
-    }
-
-    /// <inheritdoc/>
-    public override IDisposable Schedule<TState>(
-        TState state, TimeSpan dueTime, Func<IScheduler, TState, IDisposable> action)
-    {
-        if (action is null)
-        {
-            throw new ArgumentNullException(nameof(action));
-        }
-
-        IDisposable PostOnDispatcher()
-        {
-            var composite = new CompositeDisposable(2);
-
-            var cancellation = new CancellationDisposable();
-
-            Dispatcher.UIThread.Post(
-                                     () =>
-                                     {
-                                         if (!cancellation.Token.IsCancellationRequested)
-                                         {
-                                             composite.Add(action(this, state));
-                                         }
-                                     },
-                                     DispatcherPriority.Background);
-
-            composite.Add(cancellation);
-
-            return composite;
-        }
-
-        if (dueTime == TimeSpan.Zero)
-        {
-            if (!Dispatcher.UIThread.CheckAccess())
-            {
-                return PostOnDispatcher();
-            }
-
-            if (_reentrancyGuard >= MaxReentrantSchedules)
-            {
-                return PostOnDispatcher();
-            }
-
-            try
-            {
-                _reentrancyGuard++;
-
-                return action(this, state);
-            }
-            finally
-            {
-                _reentrancyGuard--;
-            }
-        }
-
-        {
-            var composite = new CompositeDisposable(2);
-
-            composite.Add(DispatcherTimer.RunOnce(() => composite.Add(action(this, state)), dueTime));
-
-            return composite;
-        }
     }
 }

@@ -3,17 +3,18 @@ using Avalonia.Controls.Notifications;
 using Avalonia.Styling;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
+using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using Humanizer;
 using k8s;
 using k8s.Models;
 using KubeUI.Client;
-using Yarp.Kubernetes.Controller.Client;
 using KubeUI.Controls;
-using static KubeUI.Client.Cluster;
+using OpenTelemetry.Resources;
 using Yarp.Kubernetes.Controller;
-using FluentIcons.Common;
+using Yarp.Kubernetes.Controller.Client;
+using static KubeUI.Client.Cluster;
 
 namespace KubeUI.Resources;
 
@@ -121,14 +122,14 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         {
             Header = "View",
             CommandPath = nameof(ViewCommand),
-            CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<T>>(x => x.SelectedItem.Value),
+            CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<T>>(x => x.SelectedItem),
             FluentIcon = Icon.PanelRight,
         },
         new()
         {
             Header = "View Yaml",
             CommandPath = nameof(ViewYamlCommand),
-            CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<T>>(x => x.SelectedItem.Value),
+            CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<T>>(x => x.SelectedItem),
             FluentIcon = Icon.Code,
         },
         new()
@@ -226,20 +227,20 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         {
             var exceptions = new List<Exception>();
 
-            foreach (var item in items.Cast<KeyValuePair<NamespacedName, T>>().ToList())
+            foreach (var item in items.Cast<T>().ToList())
             {
                 try
                 {
-                    await Cluster.Delete<T>(item.Value);
+                    await Cluster.DeleteResource<T>(item);
                 }
                 catch (JsonException ex)
                 {
-                    _logger.LogWarning(ex, $"JsonException occurred while deleting resource {item.Key.Namespace}/{item.Key.Name}");
+                    _logger.LogWarning(ex, $"JsonException occurred while deleting resource {item.Namespace()}/{item.Name()}");
                 }
                 catch (Exception ex)
                 {
                     exceptions.Add(ex);
-                    Utilities.HandleException(_logger, _notificationManager, ex, $"Error Deleting {item.Key.Namespace}/{item.Key.Name}", sendNotification: true);
+                    Utilities.HandleException(_logger, _notificationManager, ex, $"Error Deleting {item.Namespace()}/{item.Name()}", sendNotification: true);
                 }
             }
 
@@ -257,14 +258,11 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             return false;
         }
 
-        foreach (var item in items)
+        foreach (var item in items.Cast<T>().ToList())
         {
-            if (item is KeyValuePair<NamespacedName, T> resource)
+            if (!Cluster.CanI<T>(Verb.Delete, item.Namespace()))
             {
-                if (!Cluster.CanI<T>(Verb.Delete, resource.Value.Namespace()))
-                {
-                    return false;
-                }
+                return false;
             }
         }
 

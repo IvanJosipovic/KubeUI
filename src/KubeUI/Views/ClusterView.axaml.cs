@@ -30,7 +30,7 @@ public sealed partial class ClusterView : UserControl
             {
                 var cluster = Application.Current.GetRequiredService<ClusterManager>().GetDefault();
                 await cluster.Connect();
-                await cluster.Seed<Corev1Event>();
+                await cluster.SeedResource<Corev1Event>();
 
                 var vm = Application.Current.GetRequiredService<ClusterViewModel>() as IDockable;
 

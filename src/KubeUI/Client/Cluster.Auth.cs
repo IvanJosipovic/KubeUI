@@ -139,11 +139,11 @@ public partial class Cluster
             return true;
         }
 
-        if (IsNamespaced(type))
+        if (IsResourceNamespaced(type))
         {
-            foreach (var item in GetObjectDictionary<V1Namespace>())
+            foreach (var item in GetResourceList<V1Namespace>())
             {
-                if (CanI(type, verb, item.Value.Name(), subresource))
+                if (CanI(type, verb, item.Name(), subresource))
                 {
                     return true;
                 }
@@ -165,11 +165,11 @@ public partial class Cluster
             return true;
         }
 
-        if (IsNamespaced(type))
+        if (IsResourceNamespaced(type))
         {
-            foreach (var item in await GetObjectDictionaryAsync<V1Namespace>())
+            foreach (var item in GetResourceList<V1Namespace>())
             {
-                if (await UpdateCanI(type, verb, item.Value.Name(), subresource))
+                if (await UpdateCanI(type, verb, item.Name(), subresource))
                 {
                     return true;
                 }
@@ -188,13 +188,13 @@ public partial class Cluster
     {
         await GetSelfSubjectAccessReview(type, verb, subresource: subresource);
 
-        if (IsNamespaced(type))
+        if (IsResourceNamespaced(type))
         {
             var tasks = new List<Task>();
 
-            foreach (var item in await GetObjectDictionaryAsync<V1Namespace>())
+            foreach (var item in GetResourceList<V1Namespace>())
             {
-                tasks.Add(GetSelfSubjectAccessReview(type, verb, item.Value.Name(), subresource));
+                tasks.Add(GetSelfSubjectAccessReview(type, verb, item.Name(), subresource));
             }
 
             await Task.WhenAll(tasks);

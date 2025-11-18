@@ -70,22 +70,26 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
 
     public async Task RefreshData()
     {
-        var pods = await Cluster.GetObjectDictionaryAsync<V1Pod>();
-        var nodes = await Cluster.GetObjectDictionaryAsync<V1Node>();
+        await Cluster.SeedResource<V1Pod>();
+        await Cluster.IsResourceReady<V1Pod>();
+        await Cluster.SeedResource<V1Node>();
+        await Cluster.IsResourceReady<V1Node>();
+        var pods = Cluster.GetResourceList<V1Pod>();
+        var nodes = Cluster.GetResourceList<V1Node>();
 
         TotalPods.Value = pods.Count;
-        MaxPods.Value = nodes.Sum(x => x.Value.Status.Capacity?.TryGetValue("pods", out var value) == true ? value.ToDouble() : 0);
+        MaxPods.Value = nodes.Sum(x => x.Status.Capacity?.TryGetValue("pods", out var value) == true ? value.ToDouble() : 0);
 
-        CpuAllocatable.Value = nodes.Sum(x => x.Value.Status.Allocatable?.TryGetValue("cpu", out var value) == true ? value.ToDouble() : 0);
-        CpuCapacity.Value = nodes.Sum(x => x.Value.Status.Capacity?.TryGetValue("cpu", out var value) == true ? value.ToDouble() : 0);
-        CpuRequests.Value = pods.Sum(x => x.Value.Spec.Containers.Sum(y => y.Resources?.Requests?.TryGetValue("cpu", out var value) == true ? value.ToDouble() : 0));
-        CpuLimits.Value = pods.Sum(x => x.Value.Spec.Containers.Sum(y => y.Resources?.Limits?.TryGetValue("cpu", out var value) == true ? value.ToDouble() : 0));
+        CpuAllocatable.Value = nodes.Sum(x => x.Status.Allocatable?.TryGetValue("cpu", out var value) == true ? value.ToDouble() : 0);
+        CpuCapacity.Value = nodes.Sum(x => x.Status.Capacity?.TryGetValue("cpu", out var value) == true ? value.ToDouble() : 0);
+        CpuRequests.Value = pods.Sum(x => x.Spec.Containers.Sum(y => y.Resources?.Requests?.TryGetValue("cpu", out var value) == true ? value.ToDouble() : 0));
+        CpuLimits.Value = pods.Sum(x => x.Spec.Containers.Sum(y => y.Resources?.Limits?.TryGetValue("cpu", out var value) == true ? value.ToDouble() : 0));
         CpuUsage.Value = Cluster.PodMetrics.Sum(x => x.Containers.Sum(y => y.Usage?.TryGetValue("cpu", out var value) == true ? value.ToDouble() : 0));
 
-        MemoryAllocatable.Value = nodes.Sum(x => x.Value.Status.Allocatable?.TryGetValue("memory", out var value) == true ? value.ToDouble() : 0) / 1048576 / 1024;
-        MemoryCapacity.Value = nodes.Sum(x => x.Value.Status.Capacity?.TryGetValue("memory", out var value) == true ? value.ToDouble() : 0) / 1048576 / 1024;
-        MemoryRequests.Value = pods.Sum(x => x.Value.Spec.Containers.Sum(y => y.Resources?.Requests?.TryGetValue("memory", out var value) == true ? value.ToDouble() : 0)) / 1048576 / 1024;
-        MemoryLimits.Value = pods.Sum(x => x.Value.Spec.Containers.Sum(y => y.Resources?.Limits?.TryGetValue("memory", out var value) == true ? value.ToDouble() : 0)) / 1048576 / 1024;
+        MemoryAllocatable.Value = nodes.Sum(x => x.Status.Allocatable?.TryGetValue("memory", out var value) == true ? value.ToDouble() : 0) / 1048576 / 1024;
+        MemoryCapacity.Value = nodes.Sum(x => x.Status.Capacity?.TryGetValue("memory", out var value) == true ? value.ToDouble() : 0) / 1048576 / 1024;
+        MemoryRequests.Value = pods.Sum(x => x.Spec.Containers.Sum(y => y.Resources?.Requests?.TryGetValue("memory", out var value) == true ? value.ToDouble() : 0)) / 1048576 / 1024;
+        MemoryLimits.Value = pods.Sum(x => x.Spec.Containers.Sum(y => y.Resources?.Limits?.TryGetValue("memory", out var value) == true ? value.ToDouble() : 0)) / 1048576 / 1024;
         MemoryUsage.Value = Cluster.PodMetrics.Sum(x => x.Containers.Sum(y => y.Usage?.TryGetValue("memory", out var value) == true ? value.ToDouble() : 0)) / 1048576 / 1024;
     }
 

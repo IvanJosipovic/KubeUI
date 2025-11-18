@@ -29,11 +29,8 @@ public readonly struct MyFuncComparer<TObj, TPtop> : IComparer
             return 1;
         }
 
-        var sourceItem = ((KeyValuePair<NamespacedName, TObj>)x).Value;
-        var destItem = ((KeyValuePair<NamespacedName, TObj>)y).Value;
-
-        var srcProperty = _cmp.Invoke(sourceItem);
-        var destProperty = _cmp.Invoke(destItem);
+        var srcProperty = _cmp.Invoke((TObj)x);
+        var destProperty = _cmp.Invoke((TObj)y);
 
         if (srcProperty == null && destProperty == null)
         {

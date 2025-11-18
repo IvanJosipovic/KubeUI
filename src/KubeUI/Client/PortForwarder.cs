@@ -88,12 +88,14 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
         var podPort = Port;
         if (Type == "Service")
         {
-            var service = await _cluster.GetObjectAsync<V1Service>(Namespace, Name);
+            var service = _cluster.GetResource<V1Service>(Namespace, Name);
             var servicePort = service.Spec.Ports.First(x => x.Port == Port);
 
-            var endpointSlices = await _cluster.GetObjectDictionaryAsync<V1EndpointSlice>();
+            await _cluster.SeedResource<V1EndpointSlice>();
+            await _cluster.IsResourceReady<V1EndpointSlice>();
+            var endpointSlices = _cluster.GetResourceList<V1EndpointSlice>();
 
-            var endpointSlice = endpointSlices.FirstOrDefault(x => x.Value.Namespace() == service.Namespace() && x.Value.GetLabel("kubernetes.io/service-name") == service.Name()).Value;
+            var endpointSlice = endpointSlices.FirstOrDefault(x => x.Namespace() == service.Namespace() && x.GetLabel("kubernetes.io/service-name") == service.Name());
             if (endpointSlice == null)
             {
                 Status = "No endpoint slices found for Service";

@@ -39,7 +39,7 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
                 Header = "Restart",
                 FluentIcon = Icon.ArrowSync,
                 CommandPath = nameof(RestartStatefulSetCommand),
-                CommandParameterPath = "SelectedItem.Value"
+                CommandParameterPath = "SelectedItem"
             },
         ];
     }

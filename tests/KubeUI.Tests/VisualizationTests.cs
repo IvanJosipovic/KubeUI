@@ -3,95 +3,258 @@ using System.Collections.ObjectModel;
 using Avalonia;
 using Avalonia.Collections;
 using Avalonia.Headless.XUnit;
+using DynamicData;
 using FluentAssertions;
+using k8s;
+using k8s.KubeConfigModels;
 using k8s.Models;
 using KubeUI.Client;
-using Yarp.Kubernetes.Controller.Client;
+using KubeUI.Resources;
 using KubeUI.ViewModels;
-using Moq;
-using static KubeUI.ViewModels.VisualizationViewModel;
 using Yarp.Kubernetes.Controller;
+using Yarp.Kubernetes.Controller.Client;
+using static KubeUI.ViewModels.VisualizationViewModel;
 
 namespace KubeUI.Tests;
 
+public class TestCluster : ICluster
+{
+    public AvaloniaDictionary<GroupApiVersionKind, object> Objects { get; } = [];
+
+    public bool Connected { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+    public bool IsMetricsAvailable => throw new NotImplementedException();
+
+    public bool ListNamespaces { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    public ClusterStatus Status { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    public IKubernetes? Client { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    public IReadOnlyList<V1Namespace> Namespaces { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    public K8SConfiguration KubeConfig { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    public ModelCache ModelCache { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    public ObservableCollection<NavigationItem> NavigationItems { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    public ObservableCollection<NodeMetrics> NodeMetrics { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    public ObservableCollection<PodMetrics> PodMetrics { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    public ObservableCollection<PortForwarder> PortForwarders { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    public ObservableCollection<V1Namespace> SelectedNamespaces { get; } = [];
+    public string KubeConfigPath { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    public string Name { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+    public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
+
+    public PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort)
+    {
+        throw new NotImplementedException();
+    }
+
+    public PortForwarder AddServicePortForward(string @namespace, string serviceName, int servicePort)
+    {
+        throw new NotImplementedException();
+    }
+
+    public bool CanI(Type type, Client.Cluster.Verb verb, string? @namespace = null, string? subresource = null)
+    {
+        throw new NotImplementedException();
+    }
+
+    public bool CanIAnyNamespace(Type type, Client.Cluster.Verb verb, string? subresource = null)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task Connect()
+    {
+        throw new NotImplementedException();
+    }
+
+    public IResourceConfig GetResourceConfig(GroupApiVersionKind kind)
+    {
+        throw new NotImplementedException();
+    }
+
+    public IObservable<int> GetResourceCount(Type type)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task ImportFolder(string path)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task ImportYaml(Stream stream)
+    {
+        throw new NotImplementedException();
+    }
+
+    public bool IsResourceNamespaced(Type type)
+    {
+        throw new NotImplementedException();
+    }
+
+    public bool IsResourceNamespaced<T>()
+    {
+        throw new NotImplementedException();
+    }
+
+    public void RemovePortForward(PortForwarder pf)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> UpdateCanI(Type type, Client.Cluster.Verb verb, string? @namespace = null, string? subresource = null)
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        await SeedResource<T>();
+
+        var kind = GroupApiVersionKind.From<T>();
+
+        var container = (ContainerClass<T>)Objects[kind];
+
+        container.Items.AddOrUpdate(item);
+    }
+
+    public bool CanI<T>(Client.Cluster.Verb verb, string? @namespace, string? subresource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        throw new NotImplementedException();
+    }
+
+    public bool CanIAnyNamespace<T>(Client.Cluster.Verb verb, string? subresource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task DeleteResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        throw new NotImplementedException();
+    }
+
+    public T? GetResource<T>(string? @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        throw new NotImplementedException();
+    }
+
+    public IResourceConfig GetResourceConfig<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        throw new NotImplementedException();
+    }
+
+    public IObservable<int> GetResourceCount<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        throw new NotImplementedException();
+    }
+
+    public IReadOnlyList<T> GetResourceList<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        throw new NotImplementedException();
+    }
+
+    public ISourceCache<T, string> GetResourceSourceCache<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> IsResourceReady<T>(CancellationToken? token) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task SeedResource<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        var kind = GroupApiVersionKind.From<T>();
+
+        if (!Objects.TryGetValue(kind, out _))
+        {
+            var container = new ContainerClass<T>();
+
+            if (!Objects.TryAdd(kind, container))
+            {
+                throw new Exception($"Duplicate Object Set detected for: {kind}");
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task<bool> UpdateCanI<T>(Client.Cluster.Verb verb, string? @namespace, string? subresource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> UpdateCanIAnyNamespaceAsync<T>(Client.Cluster.Verb verb, string? subresource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task UpdatePermissionsAllNamespaceAsync<T>(Client.Cluster.Verb verb, string? subresource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        throw new NotImplementedException();
+    }
+}
+
+
 public class VisualizationTests
 {
-    private (Mock<ICluster>, AvaloniaDictionary<GroupApiVersionKind, ContainerClass>) GetMock()
+    private ICluster GetTestCluster()
     {
-        var resources = new AvaloniaDictionary<GroupApiVersionKind, ContainerClass>();
+        var cluster = new TestCluster();
 
-        var mock = new Mock<ICluster>();
-        mock.Setup(p => p.Objects).Returns(resources);
-        mock.Setup(p => p.SelectedNamespaces).Returns(
-        [
-            new V1Namespace()
-            {
-                Metadata = new()
-                {
-                    Name = "default"
-                }
-            }
-        ]);
+        var ns = new V1Namespace()
+        {
+            Metadata = new() { Name = "default" }
+        };
 
-        return (mock, resources);
+        cluster.AddOrUpdateResource(ns).GetAwaiter().GetResult();
+
+        cluster.SelectedNamespaces.Add(ns);
+
+        return cluster;
     }
 
     [AvaloniaFact]
-    public void LinkOwners()
+    public async Task LinkOwners()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
+        await cluster.AddOrUpdateResource(new V1Deployment
         {
+            Metadata = new()
             {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default",
-                        OwnerReferences =
-                        [
-                            new()
-                            {
-                                Uid = "test123"
-                            }
-                        ]
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
-        {
+                Name = "my-deployment",
+                NamespaceProperty = "default",
+                Uid = "owner-uid"
+            },
+            Spec = new()
             {
-                new("default", "my-deployment"),
-                new()
+                Template = new()
                 {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default",
-                        Uid = "test123"
-                    },
                     Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                        }
-                    }
                 }
             }
-        };
+        });
 
-        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
+        await cluster.AddOrUpdateResource(new V1ConfigMap
+        {
+            Metadata = new()
+            {
+                Name = "my-config",
+                NamespaceProperty = "default",
+                OwnerReferences =
+                [
+                    new()
+                    {
+                        Uid = "owner-uid"
+                    }
+                ]
+            }
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        // Simulate selection
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
@@ -101,38 +264,273 @@ public class VisualizationTests
     #region ConfigMap
 
     [AvaloniaFact]
-    public void LinkConfigMapInPodEnv()
+    public async Task LinkConfigMapInPodEnv()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
+        await cluster.AddOrUpdateResource(new V1ConfigMap
         {
+            Metadata = new()
             {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
+                Name = "my-config",
+                NamespaceProperty = "default"
             }
-        };
+        });
 
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1Pod>
+        await cluster.AddOrUpdateResource(new V1Pod
         {
+            Metadata = new()
             {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
+                Name = "my-pod",
+                NamespaceProperty = "default"
+            },
+            Spec = new()
+            {
+                Containers =
+                [
+                    new()
                     {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
+                        Env =
+                        [
+                            new()
+                            {
+                                ValueFrom = new()
+                                {
+                                    ConfigMapKeyRef = new()
+                                    {
+                                        Name = "my-config"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        
+        vm.Initialize(cluster);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Pod>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkConfigMapInPodInitEnv()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1ConfigMap
+        {
+            Metadata = new()
+            {
+                Name = "my-config",
+                NamespaceProperty = "default"
+            }
+        });
+
+        await cluster.AddOrUpdateResource(new V1Pod
+        {
+            Metadata = new()
+            {
+                Name = "my-pod",
+                NamespaceProperty = "default"
+            },
+            Spec = new()
+            {
+                InitContainers =
+                [
+                    new()
+                    {
+                        Env =
+                        [
+                            new()
+                            {
+                                ValueFrom = new()
+                                {
+                                    ConfigMapKeyRef = new()
+                                    {
+                                        Name = "my-config"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Pod>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkConfigMapInPodEnvFrom()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1ConfigMap
+        {
+            Metadata = new()
+            {
+                Name = "my-config",
+                NamespaceProperty = "default"
+            }
+        });
+
+        await cluster.AddOrUpdateResource(new V1Pod
+        {
+            Metadata = new()
+            {
+                Name = "my-pod",
+                NamespaceProperty = "default"
+            },
+            Spec = new()
+            {
+                Containers =
+                [
+                    new()
+                    {
+                        EnvFrom =
+                        [
+                            new()
+                            {
+                                ConfigMapRef = new()
+                                {
+                                    Name = "my-config"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Pod>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkConfigMapInPodInitEnvFrom()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1ConfigMap
+        {
+            Metadata = new()
+            {
+                Name = "my-config",
+                NamespaceProperty = "default"
+            }
+        });
+
+        await cluster.AddOrUpdateResource(new V1Pod
+        {
+            Metadata = new()
+            {
+                Name = "my-pod",
+                NamespaceProperty = "default"
+            },
+            Spec = new()
+            {
+                InitContainers =
+                [
+                    new()
+                    {
+                        EnvFrom =
+                        [
+                            new()
+                            {
+                                ConfigMapRef = new()
+                                {
+                                    Name = "my-config"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Pod>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkConfigMapInPodVolume()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1ConfigMap
+        {
+            Metadata = new()
+            {
+                Name = "my-config",
+                NamespaceProperty = "default"
+            }
+        });
+
+        await cluster.AddOrUpdateResource(new V1Pod
+        {
+            Metadata = new()
+            {
+                Name = "my-pod",
+                NamespaceProperty = "default"
+            },
+            Spec = new()
+            {
+                Volumes =
+                [
+                    new()
+                    {
+                        ConfigMap = new()
+                        {
+                            Name = "my-config"
+                        }
+                    }
+                ]
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Pod>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkConfigMapInDeploymentEnv()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1ConfigMap
+        {
+            Metadata = new() { Name = "my-config", NamespaceProperty = "default" }
+        });
+
+        await cluster.AddOrUpdateResource(new V1Deployment
+        {
+            Metadata = new() { Name = "my-deployment", NamespaceProperty = "default" },
+            Spec = new()
+            {
+                Template = new()
+                {
                     Spec = new()
                     {
                         Containers =
@@ -157,51 +555,30 @@ public class VisualizationTests
                     }
                 }
             }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Pod>(), new() { Items = start });
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Pod>();
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
         vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
-    public void LinkConfigMapInPodInitEnv()
+    public async Task LinkConfigMapInDeploymentInitEnv()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
+        await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1Deployment
         {
+            Metadata = new() { Name = "my-deployment", NamespaceProperty = "default" },
+            Spec = new()
             {
-                new("default", "my-config"),
-                new()
+                Template = new()
                 {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1Pod>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
                     Spec = new()
                     {
                         InitContainers =
@@ -226,51 +603,30 @@ public class VisualizationTests
                     }
                 }
             }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Pod>(), new() { Items = start });
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Pod>();
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
         vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
-    public void LinkConfigMapInPodEnvFrom()
+    public async Task LinkConfigMapInDeploymentEnvFrom()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
+        await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1Deployment
         {
+            Metadata = new() { Name = "my-deployment", NamespaceProperty = "default" },
+            Spec = new()
             {
-                new("default", "my-config"),
-                new()
+                Template = new()
                 {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1Pod>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
                     Spec = new()
                     {
                         Containers =
@@ -292,59 +648,38 @@ public class VisualizationTests
                     }
                 }
             }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Pod>(), new() { Items = start });
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Pod>();
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
         vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
-    public void LinkConfigMapInPodInitEnvFrom()
+    public async Task LinkConfigMapInDeploymentInitEnvFrom()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
+        await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1Deployment
         {
+            Metadata = new() { Name = "my-deployment", NamespaceProperty = "default" },
+            Spec = new()
             {
-                new("default", "my-config"),
-                new()
+                Template = new()
                 {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1Pod>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
                     Spec = new()
                     {
                         InitContainers =
                         [
                             new()
                             {
-                                    EnvFrom =
-                                    [
+                                EnvFrom =
+                                [
                                     new()
                                     {
                                         ConfigMapRef = new()
@@ -358,51 +693,30 @@ public class VisualizationTests
                     }
                 }
             }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Pod>(), new() { Items = start });
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Pod>();
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
         vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
-    public void LinkConfigMapInPodVolume()
+    public async Task LinkConfigMapInDeploymentVolume()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
+        await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1Deployment
         {
+            Metadata = new() { Name = "my-deployment", NamespaceProperty = "default" },
+            Spec = new()
             {
-                new("default", "my-config"),
-                new()
+                Template = new()
                 {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1Pod>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
                     Spec = new()
                     {
                         Volumes =
@@ -418,88 +732,10 @@ public class VisualizationTests
                     }
                 }
             }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Pod>(), new() { Items = start });
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Pod>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
-    }
-
-
-    [AvaloniaFact]
-    public void LinkConfigMapInDeploymentEnv()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                Containers =
-                                [
-                                    new()
-                                    {
-                                        Env =
-                                        [
-                                            new()
-                                            {
-                                                ValueFrom = new()
-                                                {
-                                                    ConfigMapKeyRef = new()
-                                                    {
-                                                        Name = "my-config"
-                                                    }
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
@@ -507,360 +743,140 @@ public class VisualizationTests
     }
 
     [AvaloniaFact]
-    public void LinkConfigMapInDeploymentInitEnv()
+    public async Task LinkConfigMapInDaemonSetEnv()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
+        await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1DaemonSet
         {
+            Metadata = new() { Name = "my-ds", NamespaceProperty = "default" },
+            Spec = new()
             {
-                new("default", "my-config"),
-                new()
+                Template = new()
                 {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
                     Spec = new()
                     {
-                        Template = new()
-                        {
-                            Spec = new()
+                        Containers =
+                        [
+                            new()
                             {
-                                InitContainers =
+                                Env =
                                 [
                                     new()
                                     {
-                                        Env =
-                                        [
-                                            new()
+                                        ValueFrom = new()
+                                        {
+                                            ConfigMapKeyRef = new()
                                             {
-                                                ValueFrom = new()
-                                                {
-                                                    ConfigMapKeyRef = new()
-                                                    {
-                                                        Name = "my-config"
-                                                    }
-                                                }
+                                                Name = "my-config"
                                             }
-                                        ]
+                                        }
                                     }
                                 ]
                             }
-                        }
+                        ]
                     }
                 }
             }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1DaemonSet>();
         vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
-    public void LinkConfigMapInDeploymentEnvFrom()
+    public async Task LinkConfigMapInDaemonSetInitEnv()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
+        await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1DaemonSet
         {
+            Metadata = new() { Name = "my-ds", NamespaceProperty = "default" },
+            Spec = new()
             {
-                new("default", "my-config"),
-                new()
+                Template = new()
                 {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
                     Spec = new()
                     {
-                        Template = new()
-                        {
-                            Spec = new()
+                        InitContainers =
+                        [
+                            new()
                             {
-                                Containers =
+                                Env =
                                 [
                                     new()
                                     {
-                                         EnvFrom =
-                                         [
-                                            new()
+                                        ValueFrom = new()
+                                        {
+                                            ConfigMapKeyRef = new()
                                             {
-                                                ConfigMapRef = new()
-                                                {
-                                                    Name = "my-config"
-                                                }
+                                                Name = "my-config"
                                             }
-                                        ]
+                                        }
                                     }
                                 ]
                             }
-                        }
+                        ]
                     }
                 }
             }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1DaemonSet>();
         vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
     }
 
     [AvaloniaFact]
-    public void LinkConfigMapInDeploymentInitEnvFrom()
+    public async Task LinkConfigMapInDaemonSetEnvFrom()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
+        await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1DaemonSet
         {
+            Metadata = new() { Name = "my-ds", NamespaceProperty = "default" },
+            Spec = new()
             {
-                new("default", "my-config"),
-                new()
+                Template = new()
                 {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
                     Spec = new()
                     {
-                        Template = new()
-                        {
-                            Spec = new()
+                        Containers =
+                        [
+                            new()
                             {
-                                InitContainers =
+                                EnvFrom =
                                 [
                                     new()
                                     {
-                                         EnvFrom =
-                                         [
-                                            new()
-                                            {
-                                                ConfigMapRef = new()
-                                                {
-                                                    Name = "my-config"
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
-    }
-
-    [AvaloniaFact]
-    public void LinkConfigMapInDeploymentVolume()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                Volumes =
-                                [
-                                    new()
-                                    {
-                                        ConfigMap = new()
+                                        ConfigMapRef = new()
                                         {
                                             Name = "my-config"
                                         }
                                     }
                                 ]
                             }
-                        }
+                        ]
                     }
                 }
             }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
-    }
-
-
-    [AvaloniaFact]
-    public void LinkConfigMapInDaemonSetEnv()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1DaemonSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                Containers =
-                                [
-                                    new()
-                                    {
-                                        Env =
-                                        [
-                                            new()
-                                            {
-                                                ValueFrom = new()
-                                                {
-                                                    ConfigMapKeyRef = new()
-                                                    {
-                                                        Name = "my-config"
-                                                    }
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1DaemonSet>();
@@ -868,360 +884,131 @@ public class VisualizationTests
     }
 
     [AvaloniaFact]
-    public void LinkConfigMapInDaemonSetInitEnv()
+    public async Task LinkConfigMapInDaemonSetInitEnvFrom()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
+        await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1DaemonSet
         {
+            Metadata = new() { Name = "my-ds", NamespaceProperty = "default" },
+            Spec = new()
             {
-                new("default", "my-config"),
-                new()
+                Template = new()
                 {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1DaemonSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
                     Spec = new()
                     {
-                        Template = new()
-                        {
-                            Spec = new()
+                        InitContainers =
+                        [
+                            new()
                             {
-                                InitContainers =
+                                EnvFrom =
                                 [
                                     new()
                                     {
-                                        Env =
-                                        [
-                                            new()
-                                            {
-                                                ValueFrom = new()
-                                                {
-                                                    ConfigMapKeyRef = new()
-                                                    {
-                                                        Name = "my-config"
-                                                    }
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1DaemonSet>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
-    }
-
-    [AvaloniaFact]
-    public void LinkConfigMapInDaemonSetEnvFrom()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1DaemonSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                Containers =
-                                [
-                                    new()
-                                    {
-                                         EnvFrom =
-                                         [
-                                            new()
-                                            {
-                                                ConfigMapRef = new()
-                                                {
-                                                    Name = "my-config"
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1DaemonSet>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
-    }
-
-    [AvaloniaFact]
-    public void LinkConfigMapInDaemonSetInitEnvFrom()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1DaemonSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                InitContainers =
-                                [
-                                    new()
-                                    {
-                                         EnvFrom =
-                                         [
-                                            new()
-                                            {
-                                                ConfigMapRef = new()
-                                                {
-                                                    Name = "my-config"
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1DaemonSet>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
-    }
-
-    [AvaloniaFact]
-    public void LinkConfigMapInDaemonSetVolume()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1DaemonSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                Volumes =
-                                [
-                                    new()
-                                    {
-                                        ConfigMap = new()
+                                        ConfigMapRef = new()
                                         {
                                             Name = "my-config"
                                         }
                                     }
                                 ]
                             }
-                        }
+                        ]
                     }
                 }
             }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = start });
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1DaemonSet>();
         vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
     }
 
-
     [AvaloniaFact]
-    public void LinkConfigMapInStatefulSetEnv()
+    public async Task LinkConfigMapInDaemonSetVolume()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
+        await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1DaemonSet
         {
+            Metadata = new() { Name = "my-ds", NamespaceProperty = "default" },
+            Spec = new()
             {
-                new("default", "my-config"),
-                new()
+                Template = new()
                 {
-                    Metadata = new()
+                    Spec = new()
                     {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
+                        Volumes =
+                        [
+                            new()
+                            {
+                                ConfigMap = new()
+                                {
+                                    Name = "my-config"
+                                }
+                            }
+                        ]
                     }
                 }
             }
-        };
+        });
 
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
 
-        var start = new AvaloniaDictionary<NamespacedName, V1StatefulSet>
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1DaemonSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkConfigMapInStatefulSetEnv()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1StatefulSet
         {
+            Metadata = new() { Name = "my-sts", NamespaceProperty = "default" },
+            Spec = new()
             {
-                new("default", "my-deployment"),
-                new()
+                Template = new()
                 {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
                     Spec = new()
                     {
-                        Template = new()
-                        {
-                            Spec = new()
+                        Containers =
+                        [
+                            new()
                             {
-                                Containers =
+                                Env =
                                 [
                                     new()
                                     {
-                                        Env =
-                                        [
-                                            new()
+                                        ValueFrom = new()
+                                        {
+                                            ConfigMapKeyRef = new()
                                             {
-                                                ValueFrom = new()
-                                                {
-                                                    ConfigMapKeyRef = new()
-                                                    {
-                                                        Name = "my-config"
-                                                    }
-                                                }
+                                                Name = "my-config"
                                             }
-                                        ]
+                                        }
                                     }
                                 ]
                             }
-                        }
+                        ]
                     }
                 }
             }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = start });
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1StatefulSet>();
@@ -1229,74 +1016,47 @@ public class VisualizationTests
     }
 
     [AvaloniaFact]
-    public void LinkConfigMapInStatefulSetInitEnv()
+    public async Task LinkConfigMapInStatefulSetInitEnv()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
+        await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1StatefulSet
         {
+            Metadata = new() { Name = "my-sts", NamespaceProperty = "default" },
+            Spec = new()
             {
-                new("default", "my-config"),
-                new()
+                Template = new()
                 {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1StatefulSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
                     Spec = new()
                     {
-                        Template = new()
-                        {
-                            Spec = new()
+                        InitContainers =
+                        [
+                            new()
                             {
-                                InitContainers =
+                                Env =
                                 [
                                     new()
                                     {
-                                        Env =
-                                        [
-                                            new()
+                                        ValueFrom = new()
+                                        {
+                                            ConfigMapKeyRef = new()
                                             {
-                                                ValueFrom = new()
-                                                {
-                                                    ConfigMapKeyRef = new()
-                                                    {
-                                                        Name = "my-config"
-                                                    }
-                                                }
+                                                Name = "my-config"
                                             }
-                                        ]
+                                        }
                                     }
                                 ]
                             }
-                        }
+                        ]
                     }
                 }
             }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = start });
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1StatefulSet>();
@@ -1304,209 +1064,128 @@ public class VisualizationTests
     }
 
     [AvaloniaFact]
-    public void LinkConfigMapInStatefulSetEnvFrom()
+    public async Task LinkConfigMapInStatefulSetEnvFrom()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
+        await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1StatefulSet
         {
+            Metadata = new() { Name = "my-sts", NamespaceProperty = "default" },
+            Spec = new()
             {
-                new("default", "my-config"),
-                new()
+                Template = new()
                 {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1StatefulSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
                     Spec = new()
                     {
-                        Template = new()
-                        {
-                            Spec = new()
+                        Containers =
+                        [
+                            new()
                             {
-                                Containers =
+                                EnvFrom =
                                 [
                                     new()
                                     {
-                                         EnvFrom =
-                                         [
-                                            new()
-                                            {
-                                                ConfigMapRef = new()
-                                                {
-                                                    Name = "my-config"
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1StatefulSet>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
-    }
-
-    [AvaloniaFact]
-    public void LinkConfigMapInStatefulSetInitEnvFrom()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1StatefulSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                InitContainers =
-                                [
-                                    new()
-                                    {
-                                         EnvFrom =
-                                         [
-                                            new()
-                                            {
-                                                ConfigMapRef = new()
-                                                {
-                                                    Name = "my-config"
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1StatefulSet>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
-    }
-
-    [AvaloniaFact]
-    public void LinkConfigMapInStatefulSetVolume()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1StatefulSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                Volumes =
-                                [
-                                    new()
-                                    {
-                                        ConfigMap = new()
+                                        ConfigMapRef = new()
                                         {
                                             Name = "my-config"
                                         }
                                     }
                                 ]
                             }
-                        }
+                        ]
                     }
                 }
             }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = start });
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1StatefulSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkConfigMapInStatefulSetInitEnvFrom()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1StatefulSet
+        {
+            Metadata = new() { Name = "my-sts", NamespaceProperty = "default" },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        InitContainers =
+                        [
+                            new()
+                            {
+                                EnvFrom =
+                                [
+                                    new()
+                                    {
+                                        ConfigMapRef = new()
+                                        {
+                                            Name = "my-config"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1StatefulSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkConfigMapInStatefulSetVolume()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1StatefulSet
+        {
+            Metadata = new() { Name = "my-sts", NamespaceProperty = "default" },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        Volumes =
+                        [
+                            new()
+                            {
+                                ConfigMap = new()
+                                {
+                                    Name = "my-config"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1StatefulSet>();
@@ -1516,78 +1195,48 @@ public class VisualizationTests
     //todo add test for hidenoise and ReplicaSet = 1/0
 
     [AvaloniaFact]
-    public void LinkConfigMapInReplicaSetEnv()
+    public async Task LinkConfigMapInReplicaSetEnv()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
+        await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1ReplicaSet
         {
+            Metadata = new() { Name = "my-rs", NamespaceProperty = "default" },
+            Spec = new()
             {
-                new("default", "my-config"),
-                new()
+                Template = new()
                 {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1ReplicaSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
                     Spec = new()
                     {
-                        Template = new()
-                        {
-                            Spec = new()
+                        Containers =
+                        [
+                            new()
                             {
-                                Containers =
+                                Env =
                                 [
                                     new()
                                     {
-                                        Env =
-                                        [
-                                            new()
+                                        ValueFrom = new()
+                                        {
+                                            ConfigMapKeyRef = new()
                                             {
-                                                ValueFrom = new()
-                                                {
-                                                    ConfigMapKeyRef = new()
-                                                    {
-                                                        Name = "my-config"
-                                                    }
-                                                }
+                                                Name = "my-config"
                                             }
-                                        ]
+                                        }
                                     }
                                 ]
                             }
-                        }
-                    },
-                    Status = new()
-                    {
-                        Replicas = 1
+                        ]
                     }
                 }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = start });
+            },
+            Status = new() { Replicas = 1 }
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
@@ -1595,78 +1244,48 @@ public class VisualizationTests
     }
 
     [AvaloniaFact]
-    public void LinkConfigMapInReplicaSetInitEnv()
+    public async Task LinkConfigMapInReplicaSetInitEnv()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
+        await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1ReplicaSet
         {
+            Metadata = new() { Name = "my-rs", NamespaceProperty = "default" },
+            Spec = new()
             {
-                new("default", "my-config"),
-                new()
+                Template = new()
                 {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1ReplicaSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
                     Spec = new()
                     {
-                        Template = new()
-                        {
-                            Spec = new()
+                        InitContainers =
+                        [
+                            new()
                             {
-                                InitContainers =
+                                Env =
                                 [
                                     new()
                                     {
-                                        Env =
-                                        [
-                                            new()
+                                        ValueFrom = new()
+                                        {
+                                            ConfigMapKeyRef = new()
                                             {
-                                                ValueFrom = new()
-                                                {
-                                                    ConfigMapKeyRef = new()
-                                                    {
-                                                        Name = "my-config"
-                                                    }
-                                                }
+                                                Name = "my-config"
                                             }
-                                        ]
+                                        }
                                     }
                                 ]
                             }
-                        }
-                    },
-                    Status = new()
-                    {
-                        Replicas = 1
+                        ]
                     }
                 }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = start });
+            },
+            Status = new() { Replicas = 1 }
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
@@ -1674,221 +1293,131 @@ public class VisualizationTests
     }
 
     [AvaloniaFact]
-    public void LinkConfigMapInReplicaSetEnvFrom()
+    public async Task LinkConfigMapInReplicaSetEnvFrom()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
+        await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1ReplicaSet
         {
+            Metadata = new() { Name = "my-rs", NamespaceProperty = "default" },
+            Spec = new()
             {
-                new("default", "my-config"),
-                new()
+                Template = new()
                 {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1ReplicaSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
                     Spec = new()
                     {
-                        Template = new()
-                        {
-                            Spec = new()
+                        Containers =
+                        [
+                            new()
                             {
-                                Containers =
+                                EnvFrom =
                                 [
                                     new()
                                     {
-                                         EnvFrom =
-                                         [
-                                            new()
-                                            {
-                                                ConfigMapRef = new()
-                                                {
-                                                    Name = "my-config"
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    },
-                    Status = new()
-                    {
-                        Replicas = 1
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
-    }
-
-    [AvaloniaFact]
-    public void LinkConfigMapInReplicaSetInitEnvFrom()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1ReplicaSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                InitContainers =
-                                [
-                                    new()
-                                    {
-                                         EnvFrom =
-                                         [
-                                            new()
-                                            {
-                                                ConfigMapRef = new()
-                                                {
-                                                    Name = "my-config"
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    },
-                    Status = new()
-                    {
-                        Replicas = 1
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
-    }
-
-    [AvaloniaFact]
-    public void LinkConfigMapInReplicaSetVolume()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1ConfigMap>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1ReplicaSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                Volumes =
-                                [
-                                    new()
-                                    {
-                                        ConfigMap = new()
+                                        ConfigMapRef = new()
                                         {
                                             Name = "my-config"
                                         }
                                     }
                                 ]
                             }
-                        }
-                    },
-                    Status = new()
-                    {
-                        Replicas = 1
+                        ]
                     }
                 }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = start });
+            },
+            Status = new() { Replicas = 1 }
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkConfigMapInReplicaSetInitEnvFrom()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1ReplicaSet
+        {
+            Metadata = new() { Name = "my-rs", NamespaceProperty = "default" },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        InitContainers =
+                        [
+                            new()
+                            {
+                                EnvFrom =
+                                [
+                                    new()
+                                    {
+                                        ConfigMapRef = new()
+                                        {
+                                            Name = "my-config"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            },
+            Status = new() { Replicas = 1 }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ConfigMap>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkConfigMapInReplicaSetVolume()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1ReplicaSet
+        {
+            Metadata = new() { Name = "my-rs", NamespaceProperty = "default" },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        Volumes =
+                        [
+                            new()
+                            {
+                                ConfigMap = new()
+                                {
+                                    Name = "my-config"
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+            Status = new() { Replicas = 1 }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
@@ -1900,387 +1429,19 @@ public class VisualizationTests
     #region Secret
 
     [AvaloniaFact]
-    public void LinkSecretInPodEnv()
+    public async Task LinkSecretInDeploymentEnv()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
+        await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1Deployment
         {
+            Metadata = new() { Name = "my-deployment", NamespaceProperty = "default" },
+            Spec = new()
             {
-                new("default", "my-config"),
-                new()
+                Template = new()
                 {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                Containers =
-                                [
-                                    new()
-                                    {
-                                        Env =
-                                        [
-                                            new()
-                                            {
-                                                ValueFrom = new()
-                                                {
-                                                    SecretKeyRef = new()
-                                                    {
-                                                        Name = "my-config"
-                                                    }
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
-    }
-
-    [AvaloniaFact]
-    public void LinkSecretInPodInitEnv()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                InitContainers =
-                                [
-                                    new()
-                                    {
-                                        Env =
-                                        [
-                                            new()
-                                            {
-                                                ValueFrom = new()
-                                                {
-                                                    SecretKeyRef = new()
-                                                    {
-                                                        Name = "my-config"
-                                                    }
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
-    }
-
-    [AvaloniaFact]
-    public void LinkSecretInPodEnvFrom()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                Containers =
-                                [
-                                    new()
-                                    {
-                                         EnvFrom =
-                                         [
-                                            new()
-                                            {
-                                                SecretRef = new()
-                                                {
-                                                    Name = "my-config"
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
-    }
-
-    [AvaloniaFact]
-    public void LinkSecretInPodInitEnvFrom()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1Pod>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        InitContainers =
-                        [
-                            new()
-                            {
-                                EnvFrom =
-                                    [
-                                    new()
-                                    {
-                                        SecretRef = new()
-                                        {
-                                            Name = "my-config"
-                                        }
-                                    }
-                                ]
-                            }
-                        ]
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Pod>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Pod>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
-    }
-
-    [AvaloniaFact]
-    public void LinkSecretInPodVolume()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1Pod>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Volumes =
-                        [
-                            new()
-                            {
-                                Secret = new()
-                                {
-                                    SecretName = "my-config"
-                                }
-                            }
-                        ]
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Pod>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Pod>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
-    }
-
-
-    [AvaloniaFact]
-    public void LinkSecretInDeploymentEnv()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1Pod>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
                     Spec = new()
                     {
                         Containers =
@@ -2295,7 +1456,7 @@ public class VisualizationTests
                                         {
                                             SecretKeyRef = new()
                                             {
-                                                Name = "my-config"
+                                                Name = "my-secret"
                                             }
                                         }
                                     }
@@ -2305,51 +1466,30 @@ public class VisualizationTests
                     }
                 }
             }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Pod>(), new() { Items = start });
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Pod>();
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
         vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
     }
 
     [AvaloniaFact]
-    public void LinkSecretInDeploymentInitEnv()
+    public async Task LinkSecretInDeploymentInitEnv()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
+        await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1Deployment
         {
+            Metadata = new() { Name = "my-deployment", NamespaceProperty = "default" },
+            Spec = new()
             {
-                new("default", "my-config"),
-                new()
+                Template = new()
                 {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ConfigMap>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1Pod>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
                     Spec = new()
                     {
                         InitContainers =
@@ -2364,7 +1504,7 @@ public class VisualizationTests
                                         {
                                             SecretKeyRef = new()
                                             {
-                                                Name = "my-config"
+                                                Name = "my-secret"
                                             }
                                         }
                                     }
@@ -2374,84 +1514,10 @@ public class VisualizationTests
                     }
                 }
             }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Pod>(), new() { Items = start });
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Pod>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
-    }
-
-    [AvaloniaFact]
-    public void LinkSecretInDeploymentEnvFrom()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                Containers =
-                                [
-                                    new()
-                                    {
-                                         EnvFrom =
-                                         [
-                                            new()
-                                            {
-                                                SecretRef = new()
-                                                {
-                                                    Name = "my-config"
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
@@ -2459,1297 +1525,847 @@ public class VisualizationTests
     }
 
     [AvaloniaFact]
-    public void LinkSecretInDeploymentInitEnvFrom()
+    public async Task LinkSecretInDeploymentEnvFrom()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
+        await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1Deployment
         {
+            Metadata = new() { Name = "my-deployment", NamespaceProperty = "default" },
+            Spec = new()
             {
-                new("default", "my-config"),
-                new()
+                Template = new()
                 {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
                     Spec = new()
                     {
-                        Template = new()
-                        {
-                            Spec = new()
+                        Containers =
+                        [
+                            new()
                             {
-                                InitContainers =
+                                EnvFrom =
                                 [
                                     new()
                                     {
-                                         EnvFrom =
-                                         [
-                                            new()
-                                            {
-                                                SecretRef = new()
-                                                {
-                                                    Name = "my-config"
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
-    }
-
-    [AvaloniaFact]
-    public void LinkSecretInDeploymentVolume()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                Volumes =
-                                [
-                                    new()
-                                    {
-                                        Secret = new()
+                                        SecretRef = new()
                                         {
-                                            SecretName = "my-config"
+                                            Name = "my-secret"
                                         }
                                     }
                                 ]
                             }
-                        }
+                        ]
                     }
                 }
             }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
         vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
     }
 
-
     [AvaloniaFact]
-    public void LinkSecretInDaemonSetEnv()
+    public async Task LinkSecretInDeploymentInitEnvFrom()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
+        await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1Deployment
         {
+            Metadata = new() { Name = "my-deployment", NamespaceProperty = "default" },
+            Spec = new()
             {
-                new("default", "my-config"),
-                new()
+                Template = new()
                 {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1DaemonSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
                     Spec = new()
                     {
-                        Template = new()
-                        {
-                            Spec = new()
+                        InitContainers =
+                        [
+                            new()
                             {
-                                Containers =
+                                EnvFrom =
                                 [
                                     new()
                                     {
-                                        Env =
-                                        [
-                                            new()
-                                            {
-                                                ValueFrom = new()
-                                                {
-                                                    SecretKeyRef = new()
-                                                    {
-                                                        Name = "my-config"
-                                                    }
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1DaemonSet>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
-    }
-
-    [AvaloniaFact]
-    public void LinkSecretInDaemonSetInitEnv()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1DaemonSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                InitContainers =
-                                [
-                                    new()
-                                    {
-                                        Env =
-                                        [
-                                            new()
-                                            {
-                                                ValueFrom = new()
-                                                {
-                                                    SecretKeyRef = new()
-                                                    {
-                                                        Name = "my-config"
-                                                    }
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1DaemonSet>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
-    }
-
-    [AvaloniaFact]
-    public void LinkSecretInDaemonSetEnvFrom()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1DaemonSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                Containers =
-                                [
-                                    new()
-                                    {
-                                         EnvFrom =
-                                         [
-                                            new()
-                                            {
-                                                SecretRef = new()
-                                                {
-                                                    Name = "my-config"
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1DaemonSet>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
-    }
-
-    [AvaloniaFact]
-    public void LinkSecretInDaemonSetInitEnvFrom()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1DaemonSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                InitContainers =
-                                [
-                                    new()
-                                    {
-                                         EnvFrom =
-                                         [
-                                            new()
-                                            {
-                                                SecretRef = new()
-                                                {
-                                                    Name = "my-config"
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1DaemonSet>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
-    }
-
-    [AvaloniaFact]
-    public void LinkSecretInDaemonSetVolume()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1DaemonSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                Volumes =
-                                [
-                                    new()
-                                    {
-                                        Secret = new()
+                                        SecretRef = new()
                                         {
-                                            SecretName = "my-config"
-                                        },
+                                            Name = "my-secret"
+                                        }
                                     }
                                 ]
                             }
-                        }
+                        ]
                     }
                 }
             }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = start });
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkSecretInDeploymentVolume()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1Deployment
+        {
+            Metadata = new() { Name = "my-deployment", NamespaceProperty = "default" },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        Volumes =
+                        [
+                            new()
+                            {
+                                Secret = new()
+                                {
+                                    SecretName = "my-secret"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkSecretInDaemonSetEnv()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1DaemonSet
+        {
+            Metadata = new() { Name = "my-ds", NamespaceProperty = "default" },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        Containers =
+                        [
+                            new()
+                            {
+                                Env =
+                                [
+                                    new()
+                                    {
+                                        ValueFrom = new()
+                                        {
+                                            SecretKeyRef = new()
+                                            {
+                                                Name = "my-secret"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1DaemonSet>();
         vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
     }
 
-
     [AvaloniaFact]
-    public void LinkSecretInStatefulSetEnv()
+    public async Task LinkSecretInDaemonSetInitEnv()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
+        await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1DaemonSet
         {
+            Metadata = new() { Name = "my-ds", NamespaceProperty = "default" },
+            Spec = new()
             {
-                new("default", "my-config"),
-                new()
+                Template = new()
                 {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1StatefulSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
                     Spec = new()
                     {
-                        Template = new()
-                        {
-                            Spec = new()
+                        InitContainers =
+                        [
+                            new()
                             {
-                                Containers =
+                                Env =
                                 [
                                     new()
                                     {
-                                        Env =
-                                        [
-                                            new()
-                                            {
-                                                ValueFrom = new()
-                                                {
-                                                    SecretKeyRef = new()
-                                                    {
-                                                        Name = "my-config"
-                                                    }
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1StatefulSet>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
-    }
-
-    [AvaloniaFact]
-    public void LinkSecretInStatefulSetInitEnv()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1StatefulSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                InitContainers =
-                                [
-                                    new()
-                                    {
-                                        Env =
-                                        [
-                                            new()
-                                            {
-                                                ValueFrom = new()
-                                                {
-                                                    SecretKeyRef = new()
-                                                    {
-                                                        Name = "my-config"
-                                                    }
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1StatefulSet>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
-    }
-
-    [AvaloniaFact]
-    public void LinkSecretInStatefulSetEnvFrom()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1StatefulSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                Containers =
-                                [
-                                    new()
-                                    {
-                                         EnvFrom =
-                                         [
-                                            new()
-                                            {
-                                                SecretRef = new()
-                                                {
-                                                    Name = "my-config"
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1StatefulSet>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
-    }
-
-    [AvaloniaFact]
-    public void LinkSecretInStatefulSetInitEnvFrom()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1StatefulSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                InitContainers =
-                                [
-                                    new()
-                                    {
-                                         EnvFrom =
-                                         [
-                                            new()
-                                            {
-                                                SecretRef = new()
-                                                {
-                                                    Name = "my-config"
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1StatefulSet>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
-    }
-
-    [AvaloniaFact]
-    public void LinkSecretInStatefulSetVolume()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1StatefulSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                Volumes =
-                                [
-                                    new()
-                                    {
-                                        Secret = new()
+                                        ValueFrom = new()
                                         {
-                                            SecretName = "my-config"
-                                        },
+                                            SecretKeyRef = new()
+                                            {
+                                                Name = "my-secret"
+                                            }
+                                        }
                                     }
                                 ]
                             }
-                        }
+                        ]
                     }
                 }
             }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1StatefulSet>(), new() { Items = start });
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1DaemonSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkSecretInDaemonSetEnvFrom()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1DaemonSet
+        {
+            Metadata = new() { Name = "my-ds", NamespaceProperty = "default" },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        Containers =
+                        [
+                            new()
+                            {
+                                EnvFrom =
+                                [
+                                    new()
+                                    {
+                                        SecretRef = new()
+                                        {
+                                            Name = "my-secret"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1DaemonSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkSecretInDaemonSetInitEnvFrom()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1DaemonSet
+        {
+            Metadata = new() { Name = "my-ds", NamespaceProperty = "default" },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        InitContainers =
+                        [
+                            new()
+                            {
+                                EnvFrom =
+                                [
+                                    new()
+                                    {
+                                        SecretRef = new()
+                                        {
+                                            Name = "my-secret"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1DaemonSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkSecretInDaemonSetVolume()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1DaemonSet
+        {
+            Metadata = new() { Name = "my-ds", NamespaceProperty = "default" },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        Volumes =
+                        [
+                            new()
+                            {
+                                Secret = new()
+                                {
+                                    SecretName = "my-secret"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1DaemonSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkSecretInStatefulSetEnv()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1StatefulSet
+        {
+            Metadata = new() { Name = "my-sts", NamespaceProperty = "default" },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        Containers =
+                        [
+                            new()
+                            {
+                                Env =
+                                [
+                                    new()
+                                    {
+                                        ValueFrom = new()
+                                        {
+                                            SecretKeyRef = new()
+                                            {
+                                                Name = "my-secret"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1StatefulSet>();
         vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
     }
 
-    //todo add test for hidenoise and ReplicaSet = 1/0
-
     [AvaloniaFact]
-    public void LinkSecretInReplicaSetEnv()
+    public async Task LinkSecretInStatefulSetInitEnv()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
+        await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1StatefulSet
         {
+            Metadata = new() { Name = "my-sts", NamespaceProperty = "default" },
+            Spec = new()
             {
-                new("default", "my-config"),
-                new()
+                Template = new()
                 {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1ReplicaSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
                     Spec = new()
                     {
-                        Template = new()
-                        {
-                            Spec = new()
+                        InitContainers =
+                        [
+                            new()
                             {
-                                Containers =
+                                Env =
                                 [
                                     new()
                                     {
-                                        Env =
-                                        [
-                                            new()
-                                            {
-                                                ValueFrom = new()
-                                                {
-                                                    SecretKeyRef = new()
-                                                    {
-                                                        Name = "my-config"
-                                                    }
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    },
-                    Status = new()
-                    {
-                        Replicas = 1
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
-    }
-
-    [AvaloniaFact]
-    public void LinkSecretInReplicaSetInitEnv()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1ReplicaSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                InitContainers =
-                                [
-                                    new()
-                                    {
-                                        Env =
-                                        [
-                                            new()
-                                            {
-                                                ValueFrom = new()
-                                                {
-                                                    SecretKeyRef = new()
-                                                    {
-                                                        Name = "my-config"
-                                                    }
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    },
-                    Status = new()
-                    {
-                        Replicas = 1
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
-    }
-
-    [AvaloniaFact]
-    public void LinkSecretInReplicaSetEnvFrom()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1ReplicaSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                Containers =
-                                [
-                                    new()
-                                    {
-                                         EnvFrom =
-                                         [
-                                            new()
-                                            {
-                                                SecretRef = new()
-                                                {
-                                                    Name = "my-config"
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    },
-                    Status = new()
-                    {
-                        Replicas = 1
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
-    }
-
-    [AvaloniaFact]
-    public void LinkSecretInReplicaSetInitEnvFrom()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1ReplicaSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                InitContainers =
-                                [
-                                    new()
-                                    {
-                                         EnvFrom =
-                                         [
-                                            new()
-                                            {
-                                                SecretRef = new()
-                                                {
-                                                    Name = "my-config"
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    },
-                    Status = new()
-                    {
-                        Replicas = 1
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = start });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
-
-        vm.Drawing.Connectors.Count.Should().Be(1);
-        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
-        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
-    }
-
-    [AvaloniaFact]
-    public void LinkSecretInReplicaSetVolume()
-    {
-        var (mock, resources) = GetMock();
-
-        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
-        {
-            {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1ReplicaSet>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                Volumes =
-                                [
-                                    new()
-                                    {
-                                        Secret = new()
+                                        ValueFrom = new()
                                         {
-                                            SecretName = "my-config"
-                                        },
+                                            SecretKeyRef = new()
+                                            {
+                                                Name = "my-secret"
+                                            }
+                                        }
                                     }
                                 ]
                             }
-                        }
-                    },
-                    Status = new()
-                    {
-                        Replicas = 1
+                        ]
                     }
                 }
             }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = start });
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1StatefulSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkSecretInStatefulSetEnvFrom()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1StatefulSet
+        {
+            Metadata = new() { Name = "my-sts", NamespaceProperty = "default" },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        Containers =
+                        [
+                            new()
+                            {
+                                EnvFrom =
+                                [
+                                    new()
+                                    {
+                                        SecretRef = new()
+                                        {
+                                            Name = "my-secret"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1StatefulSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkSecretInStatefulSetInitEnvFrom()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1StatefulSet
+        {
+            Metadata = new() { Name = "my-sts", NamespaceProperty = "default" },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        InitContainers =
+                        [
+                            new()
+                            {
+                                EnvFrom =
+                                [
+                                    new()
+                                    {
+                                        SecretRef = new()
+                                        {
+                                            Name = "my-secret"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1StatefulSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkSecretInStatefulSetVolume()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1StatefulSet
+        {
+            Metadata = new() { Name = "my-sts", NamespaceProperty = "default" },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        Volumes =
+                        [
+                            new()
+                            {
+                                Secret = new()
+                                {
+                                    SecretName = "my-secret"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1StatefulSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkSecretInReplicaSetEnv()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1ReplicaSet
+        {
+            Metadata = new() { Name = "my-rs", NamespaceProperty = "default" },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        Containers =
+                        [
+                            new()
+                            {
+                                Env =
+                                [
+                                    new()
+                                    {
+                                        ValueFrom = new()
+                                        {
+                                            SecretKeyRef = new()
+                                            {
+                                                Name = "my-secret"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            },
+            Status = new() { Replicas = 1 }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
         vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
     }
 
-
     [AvaloniaFact]
-    public void LinkSecretInServiceAccount()
+    public async Task LinkSecretInReplicaSetInitEnv()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1Secret>
+        await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1ReplicaSet
         {
+            Metadata = new() { Name = "my-rs", NamespaceProperty = "default" },
+            Spec = new()
             {
-                new("default", "my-config"),
-                new()
+                Template = new()
                 {
-                    Metadata = new()
+                    Spec = new()
                     {
-                        Name = "my-config",
-                        NamespaceProperty = "default",
-                        Uid = "123"
+                        InitContainers =
+                        [
+                            new()
+                            {
+                                Env =
+                                [
+                                    new()
+                                    {
+                                        ValueFrom = new()
+                                        {
+                                            SecretKeyRef = new()
+                                            {
+                                                Name = "my-secret"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
                     }
                 }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Secret>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1ServiceAccount>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Secrets =
-                    [
-                        new ()
-                        {
-                            Uid = "123"
-                        }
-                    ]
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ServiceAccount>(), new() { Items = start });
+            },
+            Status = new() { Replicas = 1 }
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkSecretInReplicaSetEnvFrom()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1ReplicaSet
+        {
+            Metadata = new() { Name = "my-rs", NamespaceProperty = "default" },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        Containers =
+                        [
+                            new()
+                            {
+                                EnvFrom =
+                                [
+                                    new()
+                                    {
+                                        SecretRef = new()
+                                        {
+                                            Name = "my-secret"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            },
+            Status = new() { Replicas = 1 }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkSecretInReplicaSetInitEnvFrom()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1ReplicaSet
+        {
+            Metadata = new() { Name = "my-rs", NamespaceProperty = "default" },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        InitContainers =
+                        [
+                            new()
+                            {
+                                EnvFrom =
+                                [
+                                    new()
+                                    {
+                                        SecretRef = new()
+                                        {
+                                            Name = "my-secret"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            },
+            Status = new() { Replicas = 1 }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkSecretInReplicaSetVolume()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1ReplicaSet
+        {
+            Metadata = new() { Name = "my-rs", NamespaceProperty = "default" },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        Volumes =
+                        [
+                            new()
+                            {
+                                Secret = new()
+                                {
+                                    SecretName = "my-secret"
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+            Status = new() { Replicas = 1 }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Drawing.Connectors.Count.Should().Be(1);
+        vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
+        vm.Drawing.Connectors[0].End.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Secret>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkSecretInServiceAccount()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1Secret
+        {
+            Metadata = new()
+            {
+                Name = "my-secret",
+                NamespaceProperty = "default",
+                Uid = "sec-uid"
+            }
+        });
+
+        await cluster.AddOrUpdateResource(new V1ServiceAccount
+        {
+            Metadata = new()
+            {
+                Name = "my-sa",
+                NamespaceProperty = "default"
+            },
+            Secrets =
+            [
+                new()
+                {
+                    Uid = "sec-uid"
+                }
+            ]
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ServiceAccount>();
@@ -3759,58 +2375,42 @@ public class VisualizationTests
     #endregion
 
     [AvaloniaFact]
-    public void LinkEvent()
+    public async Task LinkEvent()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, Corev1Event>
+        await cluster.AddOrUpdateResource(new V1Deployment
         {
+            Metadata = new()
             {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    },
-                    InvolvedObject = new()
-                    {
-                        Uid = "123"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<Corev1Event>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
-        {
+                Name = "my-deployment",
+                NamespaceProperty = "default",
+                Uid = "dep-uid"
+            },
+            Spec = new()
             {
-                new("default", "my-deployment"),
-                new()
+                Template = new()
                 {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default",
-                        Uid = "123"
-                    },
                     Spec = new()
-                    {
-                        Template = new()
-                        {
-                            Spec = new()
-                        }
-                    }
                 }
             }
-        };
+        });
 
-        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
+        await cluster.AddOrUpdateResource(new Corev1Event
+        {
+            Metadata = new()
+            {
+                Name = "my-event",
+                NamespaceProperty = "default"
+            },
+            InvolvedObject = new()
+            {
+                Uid = "dep-uid"
+            }
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
@@ -3818,60 +2418,42 @@ public class VisualizationTests
     }
 
     [AvaloniaFact]
-    public void LinkEndpointSlice()
+    public async Task LinkEndpointSlice()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var start = new AvaloniaDictionary<NamespacedName, V1EndpointSlice>
+        await cluster.AddOrUpdateResource(new V1Pod
         {
+            Metadata = new()
             {
-                new("default", "my-config"),
+                Name = "my-pod",
+                NamespaceProperty = "default",
+                Uid = "pod-uid"
+            },
+            Spec = new()
+        });
+
+        await cluster.AddOrUpdateResource(new V1EndpointSlice
+        {
+            Metadata = new()
+            {
+                Name = "my-es",
+                NamespaceProperty = "default"
+            },
+            Endpoints =
+            [
                 new()
                 {
-                    Metadata = new()
+                    TargetRef = new()
                     {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    },
-                    Endpoints =
-                    [
-                        new()
-                        {
-                            TargetRef = new()
-                            {
-                                Uid = "123"
-                            }
-                        }
-                    ]
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1EndpointSlice>(), new() { Items = start });
-
-        var end = new AvaloniaDictionary<NamespacedName, V1Pod>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default",
-                        Uid = "123"
-                    },
-                    Spec = new()
-                    {
+                        Uid = "pod-uid"
                     }
                 }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Pod>(), new() { Items = end });
+            ]
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1EndpointSlice>();
@@ -3879,66 +2461,48 @@ public class VisualizationTests
     }
 
     [AvaloniaFact]
-    public void LinkEndpoints()
+    public async Task LinkEndpoints()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var start = new AvaloniaDictionary<NamespacedName, V1Endpoints>
+        await cluster.AddOrUpdateResource(new V1Pod
         {
+            Metadata = new()
             {
-                new("default", "my-config"),
+                Name = "my-pod",
+                NamespaceProperty = "default",
+                Uid = "pod-uid"
+            },
+            Spec = new()
+        });
+
+        await cluster.AddOrUpdateResource(new V1Endpoints
+        {
+            Metadata = new()
+            {
+                Name = "my-endpoints",
+                NamespaceProperty = "default"
+            },
+            Subsets =
+            [
                 new()
                 {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    },
-                    Subsets =
+                    Addresses =
                     [
                         new()
                         {
-                            Addresses =
-                            [
-                                new()
-                                {
-                                    TargetRef = new()
-                                    {
-                                        Uid = "123"
-                                    }
-                                }
-                            ]
+                            TargetRef = new()
+                            {
+                                Uid = "pod-uid"
+                            }
                         }
                     ]
                 }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Endpoints>(), new() { Items = start });
-
-        var end = new AvaloniaDictionary<NamespacedName, V1Pod>
-        {
-            {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default",
-                        Uid = "123"
-                    },
-                    Spec = new()
-                    {
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Pod>(), new() { Items = end });
+            ]
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Endpoints>();
@@ -3946,74 +2510,56 @@ public class VisualizationTests
     }
 
     [AvaloniaFact]
-    public void LinkIngress()
+    public async Task LinkIngress()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var start = new AvaloniaDictionary<NamespacedName, V1Ingress>
+        await cluster.AddOrUpdateResource(new V1Service
         {
+            Metadata = new()
             {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
+                Name = "my-service",
+                NamespaceProperty = "default"
+            },
+            Spec = new()
+        });
+
+        await cluster.AddOrUpdateResource(new V1Ingress
+        {
+            Metadata = new()
+            {
+                Name = "my-ingress",
+                NamespaceProperty = "default"
+            },
+            Spec = new()
+            {
+                Rules =
+                [
+                    new()
                     {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Rules =
-                        [
-                            new()
-                            {
-                                Http = new()
+                        Http = new()
+                        {
+                            Paths =
+                            [
+                                new()
                                 {
-                                    Paths =
-                                    [
-                                        new()
+                                    Backend = new()
+                                    {
+                                        Service = new()
                                         {
-                                            Backend = new()
-                                            {
-                                                Service = new()
-                                                {
-                                                    Name = "my-service"
-                                                }
-                                            }
+                                            Name = "my-service"
                                         }
-                                    ]
+                                    }
                                 }
-                            }
-                        ]
+                            ]
+                        }
                     }
-                }
+                ]
             }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Ingress>(), new() { Items = start });
-
-        var end = new AvaloniaDictionary<NamespacedName, V1Service>
-        {
-            {
-                new("default", "my-service"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-service",
-                        NamespaceProperty = "default",
-                    },
-                    Spec = new()
-                    {
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Pod>(), new() { Items = end });
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Ingress>();
@@ -4021,59 +2567,41 @@ public class VisualizationTests
     }
 
     [AvaloniaFact]
-    public void LinkIngressDefaultBackend()
+    public async Task LinkIngressDefaultBackend()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var start = new AvaloniaDictionary<NamespacedName, V1Ingress>
+        await cluster.AddOrUpdateResource(new V1Service
         {
+            Metadata = new()
             {
-                new("default", "my-config"),
-                new()
+                Name = "my-service",
+                NamespaceProperty = "default"
+            },
+            Spec = new()
+        });
+
+        await cluster.AddOrUpdateResource(new V1Ingress
+        {
+            Metadata = new()
+            {
+                Name = "my-ingress",
+                NamespaceProperty = "default"
+            },
+            Spec = new()
+            {
+                DefaultBackend = new()
                 {
-                    Metadata = new()
+                    Service = new()
                     {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        DefaultBackend = new()
-                        {
-                            Service = new()
-                            {
-                                Name = "my-service"
-                            }
-                        }
+                        Name = "my-service"
                     }
                 }
             }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Ingress>(), new() { Items = start });
-
-        var end = new AvaloniaDictionary<NamespacedName, V1Service>
-        {
-            {
-                new("default", "my-service"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-service",
-                        NamespaceProperty = "default",
-                    },
-                    Spec = new()
-                    {
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Pod>(), new() { Items = end });
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Ingress>();
@@ -4083,51 +2611,35 @@ public class VisualizationTests
     #region ServiceAccount
 
     [AvaloniaFact]
-    public void LinkServiceAccountInPod()
+    public async Task LinkServiceAccountInPod()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1ServiceAccount>
+        await cluster.AddOrUpdateResource(new V1ServiceAccount
         {
+            Metadata = new()
             {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
+                Name = "my-sa",
+                NamespaceProperty = "default"
             }
-        };
+        });
 
-        resources.TryAdd(GroupApiVersionKind.From<V1ServiceAccount>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1Pod>
+        await cluster.AddOrUpdateResource(new V1Pod
         {
+            Metadata = new()
             {
-                new("default", "my-deployment"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
-                    Spec = new()
-                    {
-                        Containers = [],
-                        ServiceAccountName = "my-config"
-                    }
-                }
+                Name = "my-pod",
+                NamespaceProperty = "default"
+            },
+            Spec = new()
+            {
+                Containers = [],
+                ServiceAccountName = "my-sa"
             }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Pod>(), new() { Items = start });
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Pod>();
@@ -4135,57 +2647,41 @@ public class VisualizationTests
     }
 
     [AvaloniaFact]
-    public void LinkServiceAccountInDeployment()
+    public async Task LinkServiceAccountInDeployment()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1ServiceAccount>
+        await cluster.AddOrUpdateResource(new V1ServiceAccount
         {
+            Metadata = new()
             {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
+                Name = "my-sa",
+                NamespaceProperty = "default"
             }
-        };
+        });
 
-        resources.TryAdd(GroupApiVersionKind.From<V1ServiceAccount>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1Deployment>
+        await cluster.AddOrUpdateResource(new V1Deployment
         {
+            Metadata = new()
             {
-                new("default", "my-deployment"),
-                new()
+                Name = "my-deployment",
+                NamespaceProperty = "default"
+            },
+            Spec = new()
+            {
+                Template = new()
                 {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
                     Spec = new()
                     {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                Containers = [],
-                                ServiceAccountName = "my-config"
-                            }
-                        }
+                        Containers = [],
+                        ServiceAccountName = "my-sa"
                     }
                 }
             }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
@@ -4193,57 +2689,34 @@ public class VisualizationTests
     }
 
     [AvaloniaFact]
-    public void LinkServiceAccountInStatefulSet()
+    public async Task LinkServiceAccountInStatefulSet()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1ServiceAccount>
+        await cluster.AddOrUpdateResource(new V1ServiceAccount { Metadata = new() { Name = "my-sa", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1StatefulSet
         {
+            Metadata = new()
             {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ServiceAccount>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1StatefulSet>
-        {
+                Name = "my-sts",
+                NamespaceProperty = "default"
+            },
+            Spec = new()
             {
-                new("default", "my-deployment"),
-                new()
+                Template = new()
                 {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
                     Spec = new()
                     {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                Containers = [],
-                                ServiceAccountName = "my-config"
-                            }
-                        }
+                        Containers = [],
+                        ServiceAccountName = "my-sa"
                     }
                 }
             }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1Deployment>(), new() { Items = start });
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1StatefulSet>();
@@ -4251,57 +2724,34 @@ public class VisualizationTests
     }
 
     [AvaloniaFact]
-    public void LinkServiceAccountInDaemonSet()
+    public async Task LinkServiceAccountInDaemonSet()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1ServiceAccount>
+        await cluster.AddOrUpdateResource(new V1ServiceAccount { Metadata = new() { Name = "my-sa", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1DaemonSet
         {
+            Metadata = new()
             {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ServiceAccount>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1DaemonSet>
-        {
+                Name = "my-ds",
+                NamespaceProperty = "default"
+            },
+            Spec = new()
             {
-                new("default", "my-deployment"),
-                new()
+                Template = new()
                 {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
                     Spec = new()
                     {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                Containers = [],
-                                ServiceAccountName = "my-config"
-                            }
-                        }
+                        Containers = [],
+                        ServiceAccountName = "my-sa"
                     }
                 }
             }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1DaemonSet>(), new() { Items = start });
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1DaemonSet>();
@@ -4309,61 +2759,35 @@ public class VisualizationTests
     }
 
     [AvaloniaFact]
-    public void LinkServiceAccountInReplicaSet()
+    public async Task LinkServiceAccountInReplicaSet()
     {
-        var (mock, resources) = GetMock();
+        var cluster = GetTestCluster();
 
-        var end = new AvaloniaDictionary<NamespacedName, V1ServiceAccount>
+        await cluster.AddOrUpdateResource(new V1ServiceAccount { Metadata = new() { Name = "my-sa", NamespaceProperty = "default" } });
+
+        await cluster.AddOrUpdateResource(new V1ReplicaSet
         {
+            Metadata = new()
             {
-                new("default", "my-config"),
-                new()
-                {
-                    Metadata = new()
-                    {
-                        Name = "my-config",
-                        NamespaceProperty = "default"
-                    }
-                }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ServiceAccount>(), new() { Items = end });
-
-        var start = new AvaloniaDictionary<NamespacedName, V1ReplicaSet>
-        {
+                Name = "my-rs",
+                NamespaceProperty = "default"
+            },
+            Spec = new()
             {
-                new("default", "my-deployment"),
-                new()
+                Template = new()
                 {
-                    Metadata = new()
-                    {
-                        Name = "my-deployment",
-                        NamespaceProperty = "default"
-                    },
                     Spec = new()
                     {
-                        Template = new()
-                        {
-                            Spec = new()
-                            {
-                                Containers = [],
-                                ServiceAccountName = "my-config"
-                            }
-                        }
-                    },
-                    Status = new()
-                    {
-                        Replicas = 1
+                        Containers = [],
+                        ServiceAccountName = "my-sa"
                     }
                 }
-            }
-        };
-
-        resources.TryAdd(GroupApiVersionKind.From<V1ReplicaSet>(), new() { Items = start });
+            },
+            Status = new() { Replicas = 1 }
+        });
 
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(mock.Object);
+        vm.Initialize(cluster);
 
         vm.Drawing.Connectors.Count.Should().Be(1);
         vm.Drawing.Connectors[0].Start.Parent.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();

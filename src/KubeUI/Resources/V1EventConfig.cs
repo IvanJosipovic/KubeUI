@@ -62,7 +62,7 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
     public override IStyle ListStyle()
     {
         var style = new Style(x => x.OfType<DataGridRow>());
-        style.Add(new Setter(DataGridRow.ForegroundProperty, new Binding("Value.Type")
+        style.Add(new Setter(DataGridRow.ForegroundProperty, new Binding("Type")
         {
             Converter = new FuncValueConverter<string, IBrush>(x =>
             {

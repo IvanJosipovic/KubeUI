@@ -100,7 +100,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                     new()
                     {
                         Header = "Init",
-                        ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Value.Spec.InitContainers),
+                        ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Spec.InitContainers),
                         ItemTemplate = new()
                         {
                             HeaderBinding = Utilities.FuncBinding<V1Container>(x => x.Name),
@@ -112,7 +112,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                     new()
                     {
                         Header = "Normal",
-                        ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Value.Spec.Containers),
+                        ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Spec.Containers),
                         ItemTemplate = new()
                         {
                             HeaderBinding = Utilities.FuncBinding<V1Container>(x => x.Name),
@@ -131,7 +131,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                     new()
                     {
                         Header = "Init",
-                        ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Value.Spec.InitContainers),
+                        ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Spec.InitContainers),
                         ItemTemplate = new()
                         {
                             HeaderBinding = Utilities.FuncBinding<V1Container>(x => x.Name),
@@ -143,7 +143,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                     new()
                     {
                         Header = "Normal",
-                        ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Value.Spec.Containers),
+                        ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Spec.Containers),
                         ItemTemplate = new()
                         {
                             HeaderBinding = Utilities.FuncBinding<V1Container>(x => x.Name),
@@ -157,7 +157,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             new()
             {
                 Header = "Port Forwarding",
-                ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Value.Spec.Containers),
+                ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Spec.Containers),
                 FluentIcon = Icon.CloudFlow,
                 ItemTemplate = new()
                 {

@@ -7,7 +7,6 @@ using KubeUI.Views;
 using NodeEditor.Model;
 using NodeEditor.Mvvm;
 using Cluster = KubeUI.Client.Cluster;
-using Yarp.Kubernetes.Controller;
 
 namespace KubeUI.ViewModels;
 
@@ -74,33 +73,33 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         Id = nameof(VisualizationViewModel) + "-" + cluster;
 
-        _ = cluster.Seed<V1Node>();
+        _ = cluster.SeedResource<V1Node>();
 
         // Workloads
-        _ = cluster.Seed<V1Pod>();
-        _ = cluster.Seed<V1ReplicaSet>();
-        _ = cluster.Seed<V1Deployment>();
-        _ = cluster.Seed<V1StatefulSet>();
-        _ = cluster.Seed<V1DaemonSet>();
-        _ = cluster.Seed<V1CronJob>();
-        _ = cluster.Seed<V1Job>();
+        _ = cluster.SeedResource<V1Pod>();
+        _ = cluster.SeedResource<V1ReplicaSet>();
+        _ = cluster.SeedResource<V1Deployment>();
+        _ = cluster.SeedResource<V1StatefulSet>();
+        _ = cluster.SeedResource<V1DaemonSet>();
+        _ = cluster.SeedResource<V1CronJob>();
+        _ = cluster.SeedResource<V1Job>();
 
         // Configuration
-        _ = cluster.Seed<V1Secret>();
-        _ = cluster.Seed<V1ConfigMap>();
+        _ = cluster.SeedResource<V1Secret>();
+        _ = cluster.SeedResource<V1ConfigMap>();
 
         // Network
-        _ = cluster.Seed<V1Service>();
-        _ = cluster.Seed<V1EndpointSlice>();
-        _ = cluster.Seed<V1Ingress>();
-        _ = cluster.Seed<V1IngressClass>();
+        _ = cluster.SeedResource<V1Service>();
+        _ = cluster.SeedResource<V1EndpointSlice>();
+        _ = cluster.SeedResource<V1Ingress>();
+        _ = cluster.SeedResource<V1IngressClass>();
 
         // Storage
-        _ = cluster.Seed<V1PersistentVolumeClaim>();
-        _ = cluster.Seed<V1PersistentVolume>();
+        _ = cluster.SeedResource<V1PersistentVolumeClaim>();
+        _ = cluster.SeedResource<V1PersistentVolume>();
 
         // Access Control
-        _ = cluster.Seed<V1ServiceAccount>();
+        _ = cluster.SeedResource<V1ServiceAccount>();
 
         Run();
     }
@@ -147,12 +146,15 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         foreach (var kind in Cluster.Objects)
         {
-            foreach (object item in kind.Value.Items)
-            {
-                var key = (NamespacedName)item.GetType().GetProperty("Key").GetValue(item);
-                var value = (IKubernetesObject<V1ObjectMeta>)item.GetType().GetProperty("Value").GetValue(item);
+            var container = kind.GetType().GetProperty("Value").GetValue(kind);
 
-                if (Cluster.SelectedNamespaces.Count == 0 || !Cluster.SelectedNamespaces.Any(x => x.Metadata.Name == key.Namespace))
+            var items = container.GetType().GetProperty("Items").GetValue(container);
+
+            foreach (object item in (IList)items.GetType().GetProperty("Items").GetValue(items))
+            {
+                var value = (IKubernetesObject<V1ObjectMeta>)item;
+
+                if (Cluster.SelectedNamespaces.Count == 0 || !Cluster.SelectedNamespaces.Any(x => x.Metadata.Name == value.Namespace()))
                 {
                     continue;
                 }

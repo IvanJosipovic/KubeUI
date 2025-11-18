@@ -32,7 +32,7 @@ public partial class ResourceListView : UserControl
             {
                 var cluster = Application.Current.GetRequiredService<ClusterManager>().GetDefault();
                 await cluster.Connect();
-                await cluster.Seed<V1Pod>();
+                await cluster.SeedResource<V1Pod>();
 
                 var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Pod>>() as IDockable;
 
@@ -81,12 +81,6 @@ public partial class ResourceListView : UserControl
         return null;
     }
 
-    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
-    {
-        base.OnDetachedFromVisualTree(e);
-        SaveState();
-    }
-
     private void GenerateGrid<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var viewModel = (ResourceListViewModel<T>)DataContext!;
@@ -122,10 +116,10 @@ public partial class ResourceListView : UserControl
                         Header = columnDefinition.Name,
                         CustomSortComparer = sortConverter,
                         CanUserSort = true,
-                        CellTemplate = new FuncDataTemplate<KeyValuePair<NamespacedName, T>>((item, _) =>
+                        CellTemplate = new FuncDataTemplate<T>((item, _) =>
                         {
                             var control = Application.Current.GetRequiredService(columnDefinition.CustomControl) as Control;
-                            control.DataContext = item.Value;
+                            control.DataContext = item;
 
                             if (control is IInitializeCluster init)
                             {
@@ -143,7 +137,6 @@ public partial class ResourceListView : UserControl
                     {
                         Binding = new Binding()
                         {
-                            Path = "Value",
                             Converter = new FuncValueConverter<T, string>(columnDisplay ?? (Func<T, string>)columnField),
                             Mode = BindingMode.OneWay
                         },
@@ -159,33 +152,6 @@ public partial class ResourceListView : UserControl
                 }
 
                 PART_Grid.Columns.Add(column);
-
-                if (string.IsNullOrEmpty(viewModel.SortColumnName))
-                {
-                    if (columnDefinition.Sort != SortDirection.None)
-                    {
-                        Dispatcher.UIThread.Post(() =>
-                        {
-                            if (column != null && columnDefinition != null)
-                            {
-                                column.Sort(columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending);
-                            }
-                        });
-                    }
-                }
-                else
-                {
-                    if (column.Header.ToString() == viewModel.SortColumnName)
-                    {
-                        Dispatcher.UIThread.Post(() =>
-                        {
-                            if (viewModel != null)
-                            {
-                                column.Sort(viewModel.SortDirection == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending);
-                            }
-                        });
-                    }
-                }
             }
             catch (Exception ex)
             {
@@ -228,7 +194,7 @@ public partial class ResourceListView : UserControl
 
         if (!string.IsNullOrEmpty(menu.CommandPath))
         {
-            menuItem.Bind(MenuItem.CommandProperty, new Binding(nameof(ResourceListViewModel<V1Pod>.ResourceConfig) + "." + menu.CommandPath) { Source = DataContext });
+            menuItem.Bind(MenuItem.CommandProperty, new Binding(nameof(ResourceListViewModel<>.ResourceConfig) + "." + menu.CommandPath) { Source = DataContext });
         }
 
         if (!string.IsNullOrEmpty(menu.CommandParameterPath))
@@ -242,7 +208,7 @@ public partial class ResourceListView : UserControl
                 };
 
                 // Add the individual bindings
-                multiBinding.Bindings.Add(new Binding("SelectedItem.Value"));
+                multiBinding.Bindings.Add(new Binding("SelectedItem"));
                 multiBinding.Bindings.Add(new Binding(menu.CommandParameterPath)
                 {
                     Source = PART_Grid,
@@ -336,7 +302,7 @@ public partial class ResourceListView : UserControl
                 };
 
                 // Add the individual bindings
-                multiBinding.Bindings.Add(new Binding("SelectedItem.Value")
+                multiBinding.Bindings.Add(new Binding("SelectedItem")
                 {
                     Source = PART_Grid,
                 });
@@ -368,21 +334,63 @@ public partial class ResourceListView : UserControl
         return styles;
     }
 
-    private void SaveState()
+    private void SetSort<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        var viewModel = (ResourceListViewModel<T>)DataContext!;
+
+        if (string.IsNullOrEmpty(viewModel.SortColumnName))
+        {
+            var columnDefinition = viewModel.ResourceConfig.Columns().First(x => x.Sort != SortDirection.None);
+
+            var column = PART_Grid.Columns.First(x => x.Header.ToString() == columnDefinition.Name);
+
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (column != null && columnDefinition != null)
+                {
+                    column.Sort(columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending);
+                }
+            });
+        }
+        else
+        {
+            var column = PART_Grid.Columns.First(x => x.Header.ToString() == viewModel.SortColumnName);
+
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (viewModel != null)
+                {
+                    column.Sort(viewModel.SortDirection == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending);
+                }
+            });
+        }
+    }
+
+    private void PART_Grid_PropertyChanged(object? sender, Avalonia.AvaloniaPropertyChangedEventArgs e)
     {
         var ViewModel = (IResourceListViewModel)DataContext;
-        ViewModel.SortColumnName = string.Empty;
-        ViewModel.SortDirection = SortDirection.None;
 
-        foreach (var sortColumn in PART_Grid.Columns)
+        if (e.Property.Name == "CollectionView")
         {
-            var direction = sortColumn.GetCurrentSortingState();
+            GetGenericMethod(nameof(SetSort))?.Invoke(this, null);
+        }
 
-            if (direction != null)
-            {
-                ViewModel.SortColumnName = sortColumn.Header.ToString();
-                ViewModel.SortDirection = direction.Value == ListSortDirection.Ascending ? SortDirection.Ascending : SortDirection.Descending;
-            }
+        if (e.Property.Name == "DataConnection")
+        {
+
+        }
+    }
+
+    private void PART_Grid_Sorting(object? sender, DataGridColumnEventArgs e)
+    {
+        var ViewModel = (IResourceListViewModel)DataContext;
+
+        var direction = e.Column.GetCurrentSortingState();
+
+        if (direction != null)
+        {
+            ViewModel.SortColumnName = e.Column.Header.ToString();
+            ViewModel.SortDirection = direction.Value == ListSortDirection.Ascending ? SortDirection.Ascending : SortDirection.Descending;
         }
     }
 }

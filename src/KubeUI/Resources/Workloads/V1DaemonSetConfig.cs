@@ -46,7 +46,7 @@ public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>
                 Header = "Restart",
                 FluentIcon = Icon.ArrowSync,
                 CommandPath = nameof(RestartDaemonSetCommand),
-                CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<V1DaemonSet>>(x => x.SelectedItem.Value)
+                CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<V1DaemonSet>>(x => x.SelectedItem)
             },
         ];
     }

@@ -55,7 +55,7 @@
                     HorizontalAlignment="Right"
                     Classes="ClearButton"
                     IsVisible="{ReflectionBinding ResourceConfig.IsNamespaced}"
-                    ItemsSource="{Binding Cluster.Namespaces.Values}"
+                    ItemsSource="{Binding Cluster.Namespaces}"
                     SelectedItems="{Binding Cluster.SelectedNamespaces}"
                     Watermark="{x:Static assets:Resources.ResourceListView_SelectNamespace}">
                     <u:MultiComboBox.ItemTemplate>
@@ -82,17 +82,16 @@
             MinColumnWidth="90"
             PropertyChanged="PART_Grid_PropertyChanged"
             RowHeight="{Binding SettingsService.Settings.ListRowHeight}"
-            SelectedItem="{ReflectionBinding SelectedItem, Mode=TwoWay}"
-            Sorting="PART_Grid_Sorting">
+            SelectedItem="{ReflectionBinding SelectedItem, Mode=TwoWay}">
             <DataGrid.KeyBindings>
                 <KeyBinding
                     Command="{ReflectionBinding ResourceConfig.ViewCommand}"
-                    CommandParameter="{ReflectionBinding #PART_Grid.SelectedItem.Value}"
+                    CommandParameter="{ReflectionBinding #PART_Grid.SelectedItem}"
                     Gesture="Enter" />
             </DataGrid.KeyBindings>
             <Interaction.Behaviors>
                 <EventTriggerBehavior EventName="DoubleTapped">
-                    <InvokeCommandAction Command="{ReflectionBinding ResourceConfig.ViewCommand}" CommandParameter="{ReflectionBinding #PART_Grid.SelectedItem.Value}" />
+                    <InvokeCommandAction Command="{ReflectionBinding ResourceConfig.ViewCommand}" CommandParameter="{ReflectionBinding #PART_Grid.SelectedItem}" />
                 </EventTriggerBehavior>
             </Interaction.Behaviors>
             <DataGrid.Styles>

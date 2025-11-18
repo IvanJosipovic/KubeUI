@@ -47,23 +47,27 @@ public sealed partial class NavigationViewModel : ViewModelBase
         }
     }
 
-    private void SelectResourceNavigationLink(ResourceNavigationLink link)
+    private void SelectResourceNavigationLink(ResourceNavigationLink nav)
     {
-        var kind = GroupApiVersionKind.From(link.ControlType);
+        var kind = GroupApiVersionKind.From(nav.ControlType);
 
-        var resourceListType = typeof(ResourceListViewModel<>).MakeGenericType(link.ControlType);
+        var resourceListType = typeof(ResourceListViewModel<>).MakeGenericType(nav.ControlType);
 
         var vm = Application.Current.GetRequiredService(resourceListType) as IDockable;
 
         if (vm is IInitializeCluster init)
         {
-            init.Initialize(link.Cluster);
+            init.Initialize(nav.Cluster);
         }
+
+        if (nav.Count == null)
+        {
+            nav.Count = nav.Cluster.GetResourceCount(nav.ControlType);
+        }
+
 
         Dispatcher.UIThread.Post(() =>
         {
-            link.Objects = link.Cluster.Objects[kind].Items;
-
             Factory.AddToDocuments(vm);
         });
     }
@@ -167,7 +171,7 @@ public partial class NavigationLink : NavigationItem
 public partial class ResourceNavigationLink : NavigationLink
 {
     [ObservableProperty]
-    public partial ICollection? Objects { get; set; }
+    public partial IObservable<int>? Count { get; set; }
 
     public string IconPath => Utilities.GetKubeAssetPath(ControlType);
 }

@@ -81,7 +81,7 @@
                 <StackPanel Margin="-5,0,0,0" Orientation="Horizontal">
                     <Svg Path="{Binding IconPath}" />
                     <TextBlock Text="{Binding Name}" />
-                    <TextBlock Margin="4,0,0,0" Text="{Binding Objects.Count}" />
+                    <TextBlock Margin="4,0,0,0" Text="{Binding Count^}" />
                 </StackPanel>
             </TreeDataTemplate>
             <TreeDataTemplate x:DataType="vm:NavigationItem" ItemsSource="{Binding NavigationItems}">

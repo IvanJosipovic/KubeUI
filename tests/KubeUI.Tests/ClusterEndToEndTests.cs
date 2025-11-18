@@ -8,6 +8,7 @@ using k8s.Models;
 using Yarp.Kubernetes.Controller.Client;
 using KubeUI.Core.Tests;
 using Yarp.Kubernetes.Controller;
+using System.Collections;
 
 namespace KubeUI.Client.Tests;
 
@@ -20,7 +21,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        await testHarness.Cluster.Seed<V1Namespace>();
+        await testHarness.Cluster.SeedResource<V1Namespace>();
 
         var ns = new V1Namespace()
         {
@@ -34,14 +35,14 @@ public class ClusterEndToEndTests
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        await testHarness.Cluster.AddOrUpdate(ns);
+        await testHarness.Cluster.AddOrUpdateResource(ns);
 
         var ns2 = await testHarness.Kubernetes.CoreV1.ReadNamespaceAsync("test");
         ns2.Name().Should().Be("test");
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        var ns3 = await testHarness.Cluster.GetObjectAsync<V1Namespace>(null, "test");
+        var ns3 = testHarness.Cluster.GetResource<V1Namespace>(null, "test");
         ns3.Name().Should().Be("test");
     }
 
@@ -51,7 +52,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        await testHarness.Cluster.Seed<V1Secret>();
+        await testHarness.Cluster.SeedResource<V1Secret>();
 
         var secret = new V1Secret()
         {
@@ -70,14 +71,14 @@ public class ClusterEndToEndTests
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        await testHarness.Cluster.AddOrUpdate(secret);
+        await testHarness.Cluster.AddOrUpdateResource(secret);
 
         var ns2 = await testHarness.Kubernetes.CoreV1.ReadNamespacedSecretAsync("test", "default");
         ns2.Name().Should().Be("test");
 
         await Task.Delay(TimeSpan.FromSeconds(15));
 
-        var ns3 = await testHarness.Cluster.GetObjectAsync<V1Secret>("default", "test");
+        var ns3 = testHarness.Cluster.GetResource<V1Secret>("default", "test");
         ns3.Name().Should().Be("test");
         ns3.Namespace().Should().Be("default");
     }
@@ -88,7 +89,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        await testHarness.Cluster.Seed<V1Namespace>();
+        await testHarness.Cluster.SeedResource<V1Namespace>();
 
         var ns = new V1Namespace()
         {
@@ -106,7 +107,7 @@ public class ClusterEndToEndTests
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        var ns2 = await testHarness.Cluster.GetObjectAsync<V1Namespace>(null, "test");
+        var ns2 = testHarness.Cluster.GetResource<V1Namespace>(null, "test");
         ns2.Name().Should().Be("test");
     }
 
@@ -116,7 +117,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        await testHarness.Cluster.Seed<V1Secret>();
+        await testHarness.Cluster.SeedResource<V1Secret>();
 
         var secret = new V1Secret()
         {
@@ -139,7 +140,7 @@ public class ClusterEndToEndTests
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        var ns2 = await testHarness.Cluster.GetObjectAsync<V1Secret>("default", "test");
+        var ns2 = testHarness.Cluster.GetResource<V1Secret>("default", "test");
         ns2.Name().Should().Be("test");
         ns2.Namespace().Should().Be("default");
     }
@@ -150,11 +151,11 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        await testHarness.Cluster.Seed<V1Namespace>();
+        await testHarness.Cluster.SeedResource<V1Namespace>();
 
         await testHarness.Cluster.IsResourceReady<V1Namespace>();
 
-        var ns = (await testHarness.Cluster.GetObjectDictionaryAsync<V1Namespace>()).Values;
+        var ns = testHarness.Cluster.GetResourceList<V1Namespace>();
         ns.Count.Should().BeGreaterThan(1);
     }
 
@@ -164,7 +165,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        await testHarness.Cluster.Seed<V1Namespace>();
+        await testHarness.Cluster.SeedResource<V1Namespace>();
 
         var ns = new V1Namespace()
         {
@@ -183,11 +184,11 @@ public class ClusterEndToEndTests
         ns.Metadata.Labels = new Dictionary<string, string>();
         ns.Metadata.Labels.Add("test", "test");
 
-        await testHarness.Cluster.AddOrUpdate(ns);
+        await testHarness.Cluster.AddOrUpdateResource(ns);
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        var ns2 = await testHarness.Cluster.GetObjectAsync<V1Namespace>(null, ns.Name());
+        var ns2 = testHarness.Cluster.GetResource<V1Namespace>(null, ns.Name());
         ns2.Name().Should().Be("test");
         ns2.Metadata.Labels["test"].Should().Be("test");
     }
@@ -198,7 +199,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        await testHarness.Cluster.Seed<V1Secret>();
+        await testHarness.Cluster.SeedResource<V1Secret>();
 
         var secret = new V1Secret()
         {
@@ -222,11 +223,11 @@ public class ClusterEndToEndTests
         secret.Metadata.Labels = new Dictionary<string, string>();
         secret.Metadata.Labels.Add("test", "test");
 
-        await testHarness.Cluster.AddOrUpdate(secret);
+        await testHarness.Cluster.AddOrUpdateResource(secret);
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        var ns2 = await testHarness.Cluster.GetObjectAsync<V1Secret>("default", "test");
+        var ns2 = testHarness.Cluster.GetResource<V1Secret>("default", "test");
         ns2.Name().Should().Be("test");
         ns2.Namespace().Should().Be("default");
         ns2.Metadata.Labels["test"].Should().Be("test");
@@ -238,7 +239,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        await testHarness.Cluster.Seed<V1Namespace>();
+        await testHarness.Cluster.SeedResource<V1Namespace>();
 
         var ns = new V1Namespace()
         {
@@ -256,11 +257,11 @@ public class ClusterEndToEndTests
 
         await Task.Delay(TimeSpan.FromSeconds(10));
 
-        await testHarness.Cluster.Delete(ns);
+        await testHarness.Cluster.DeleteResource(ns);
 
         await Task.Delay(TimeSpan.FromSeconds(10));
 
-        testHarness.Cluster.GetObjectDictionary<V1Namespace>().Values.All(x => x.Name() != "test").Should().BeTrue();
+        testHarness.Cluster.GetResourceList<V1Namespace>().All(x => x.Name() != "test").Should().BeTrue();
     }
 
     [AvaloniaFact]
@@ -269,7 +270,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        await testHarness.Cluster.Seed<V1Secret>();
+        await testHarness.Cluster.SeedResource<V1Secret>();
 
         var secret = new V1Secret()
         {
@@ -288,11 +289,11 @@ public class ClusterEndToEndTests
 
         await testHarness.Kubernetes.CoreV1.CreateNamespacedSecretAsync(secret, "default");
 
-        await testHarness.Cluster.Delete(secret);
+        await testHarness.Cluster.DeleteResource(secret);
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        testHarness.Cluster.GetObjectDictionary<V1Secret>().Values.All(x => x.Name() != "test").Should().BeTrue();
+        testHarness.Cluster.GetResourceList<V1Secret>().All(x => x.Name() != "test").Should().BeTrue();
     }
 
     [AvaloniaFact]
@@ -301,7 +302,7 @@ public class ClusterEndToEndTests
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        await testHarness.Cluster.Seed<V1Namespace>();
+        await testHarness.Cluster.SeedResource<V1Namespace>();
 
         var ns = new V1Namespace()
         {
@@ -328,7 +329,7 @@ public class ClusterEndToEndTests
 
         await Task.Delay(TimeSpan.FromSeconds(5));
 
-        var ns3 = await testHarness.Cluster.GetObjectAsync<V1Namespace>(null, "test");
+        var ns3 = testHarness.Cluster.GetResource<V1Namespace>(null, "test");
         ns3.Name().Should().Be("test");
     }
 
@@ -372,11 +373,10 @@ spec:
         using var testHarness = new TestHarness();
         await testHarness.Initialize();
 
-        await testHarness.Cluster.Seed<V1CustomResourceDefinition>();
-
-        //await testHarness.Cluster.IsResourceReady<V1CustomResourceDefinition>(CancellationToken.None);
-
+        await testHarness.Cluster.SeedResource<V1CustomResourceDefinition>();
         await testHarness.Kubernetes.CreateCustomResourceDefinitionAsync(KubernetesYaml.Deserialize<V1CustomResourceDefinition>(yamlCRD));
+
+        await testHarness.Cluster.IsResourceReady<V1CustomResourceDefinition>();
 
         await Task.Delay(TimeSpan.FromSeconds(15));
 
@@ -394,24 +394,22 @@ spec:
         await testHarness.Cluster.ImportYaml(stream);
         var type = testHarness.Cluster.ModelCache.GetResourceType("kubeui.com", "v1beta1", "Test");
 
-        var _seedMethodInfo = testHarness.Cluster.GetType().GetMethod(nameof(Cluster.Seed));
+        var _seedMethodInfo = testHarness.Cluster.GetType().GetMethod(nameof(Cluster.SeedResource));
 
         var fooRef = _seedMethodInfo.MakeGenericMethod(type);
-        fooRef.Invoke(testHarness.Cluster, null);
+        await (Task)fooRef.Invoke(testHarness.Cluster, null);
 
         await Task.Delay(TimeSpan.FromSeconds(5));
 
         var kind = testHarness.Cluster.Objects[GroupApiVersionKind.From(type)];
-        kind.Type.Should().Be(type);
-        kind.Items.Count.Should().Be(1);
 
-        foreach (object item in kind.Items)
+        var items = kind.GetType().GetProperty("Items").GetValue(kind);
+
+        items.GetType().GetProperty("Count").GetValue(items).Should().Be(1);
+
+        foreach (object item in (IList)items.GetType().GetProperty("Items").GetValue(items))
         {
-            var key = (NamespacedName)(item.GetType().GetProperty("Key").GetValue(item));
-            key.Name.Should().Be("test1");
-            key.Namespace.Should().Be("default");
-
-            var obj = (IKubernetesObject<V1ObjectMeta>)item.GetType().GetProperty("Value").GetValue(item);
+            var obj = (IKubernetesObject<V1ObjectMeta>)item;
 
             obj.Name().Should().Be("test1");
             obj.Namespace().Should().Be("default");
@@ -792,23 +790,23 @@ rules:
         await cluster.Connect();
         await Task.Delay(TimeSpan.FromSeconds(15));
 
-        await cluster.Seed<V1Node>();
+        await cluster.SeedResource<V1Node>();
         await cluster.IsResourceReady<V1Node>();
 
-        await cluster.Seed<V1Secret>();
+        await cluster.SeedResource<V1Secret>();
         await cluster.IsResourceReady<V1Secret>();
 
         await Task.Delay(TimeSpan.FromSeconds(15));
 
-        var nodes = await cluster.GetObjectDictionaryAsync<V1Node>();
+        var nodes = cluster.GetResourceList<V1Node>();
         nodes.Count.Should().Be(1);
 
-        var secrets = await cluster.GetObjectDictionaryAsync<V1Secret>();
+        var secrets = cluster.GetResourceList<V1Secret>();
         await Task.Delay(TimeSpan.FromSeconds(15));
 
         secrets.Count.Should().Be(1);
-        secrets.Values.First().Namespace().Should().Be("my-app");
-        secrets.Values.First().Name().Should().Be("my-serviceaccount");
+        secrets.First().Namespace().Should().Be("my-app");
+        secrets.First().Name().Should().Be("my-serviceaccount");
     }
 
     [AvaloniaFact]
@@ -831,19 +829,19 @@ rules:
 
         await cluster.Connect();
 
-        await cluster.Seed<V1Node>();
+        await cluster.SeedResource<V1Node>();
 
-        await cluster.Seed<V1Secret>();
+        await cluster.SeedResource<V1Secret>();
 
         await Task.Delay(TimeSpan.FromSeconds(5));
 
-        var nodes = await cluster.GetObjectDictionaryAsync<V1Node>();
+        var nodes = cluster.GetResourceList<V1Node>();
         nodes.Count.Should().Be(1);
 
-        var secrets = await cluster.GetObjectDictionaryAsync<V1Secret>();
+        var secrets = cluster.GetResourceList<V1Secret>();
         secrets.Count.Should().Be(1);
-        secrets.Values.First().Namespace().Should().Be("my-app");
-        secrets.Values.First().Name().Should().Be("my-serviceaccount");
+        secrets.First().Namespace().Should().Be("my-app");
+        secrets.First().Name().Should().Be("my-serviceaccount");
     }
 
     [AvaloniaFact]
@@ -899,9 +897,8 @@ rules:
 
         await cluster.Connect();
 
-        await cluster.GetObjectDictionaryAsync<V1Pod>();
-
-        await Task.Delay(TimeSpan.FromSeconds(15));
+        await cluster.SeedResource<V1Pod>();
+        await cluster.IsResourceReady<V1Pod>();
 
         (await cluster.UpdateCanI<V1Namespace>(Cluster.Verb.Create)).Should().BeFalse();
         (await cluster.UpdateCanI<V1Namespace>(Cluster.Verb.Delete)).Should().BeFalse();
