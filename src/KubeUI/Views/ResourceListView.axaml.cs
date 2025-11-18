@@ -51,7 +51,11 @@ public partial class ResourceListView : UserControl
     {
         base.OnDataContextChanged(e);
 
-        GetGenericMethod(nameof(GenerateGrid))?.Invoke(this, null);
+        if (DataContext != null)
+        {
+            GetGenericMethod(nameof(GenerateGrid))?.Invoke(this, null);
+            GetGenericMethod(nameof(SetSort))?.Invoke(this, null);
+        }
     }
 
     private MethodInfo? GetGenericMethod(string name)
@@ -137,7 +141,18 @@ public partial class ResourceListView : UserControl
                     {
                         Binding = new Binding()
                         {
-                            Converter = new FuncValueConverter<T, string>(columnDisplay ?? (Func<T, string>)columnField),
+                            Converter = new FuncValueConverter<T, string>(x =>
+                            {
+                                if (x == null)
+                                    return "";
+                                // Use columnDisplay if not null, otherwise use columnField as a Func<T, string>
+                                if (columnDisplay != null)
+                                    return columnDisplay(x);
+                                else if (columnField is Func<T, string> fieldFunc)
+                                    return fieldFunc(x);
+                                else
+                                    throw new Exception("Column is miss-configured");
+                            }),
                             Mode = BindingMode.OneWay
                         },
                         Header = columnDefinition.Name,
@@ -336,6 +351,11 @@ public partial class ResourceListView : UserControl
 
     private void SetSort<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
+        if (DataContext == null)
+        {
+            return;
+        }
+
         var viewModel = (ResourceListViewModel<T>)DataContext!;
 
         if (string.IsNullOrEmpty(viewModel.SortColumnName))
@@ -372,12 +392,7 @@ public partial class ResourceListView : UserControl
 
         if (e.Property.Name == "CollectionView")
         {
-            GetGenericMethod(nameof(SetSort))?.Invoke(this, null);
-        }
-
-        if (e.Property.Name == "DataConnection")
-        {
-
+            //GetGenericMethod(nameof(SetSort))?.Invoke(this, null);
         }
     }
 

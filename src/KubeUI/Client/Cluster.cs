@@ -461,7 +461,8 @@ public sealed partial class Cluster : ObservableObject, ICluster
                             }
                             else
                             {
-                                Dispatcher.UIThread.Post(() => items.AddOrUpdate(item), DispatcherPriority.Background);
+                                items.AddOrUpdate(item);
+                                //Dispatcher.UIThread.Post(() => items.AddOrUpdate(item), DispatcherPriority.Background);
 
                                 _logger.LogInformation("Completed processing new CRD {name}", crd.Name());
                             }
@@ -470,15 +471,18 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     }
                     else
                     {
-                        Dispatcher.UIThread.Post(() => items.AddOrUpdate(item), DispatcherPriority.Background);
+                        items.AddOrUpdate(item);
+                        //Dispatcher.UIThread.Post(() => items.AddOrUpdate(item), DispatcherPriority.Background);
                     }
 
                     break;
                 case WatchEventType.Modified:
-                    Dispatcher.UIThread.Post(() => items.AddOrUpdate(item), DispatcherPriority.Background);
+                    items.AddOrUpdate(item);
+                    //Dispatcher.UIThread.Post(() => items.AddOrUpdate(item), DispatcherPriority.Background);
                     break;
                 case WatchEventType.Deleted:
-                    Dispatcher.UIThread.Post(() => items.RemoveKey(item.Namespace() + "/" + item.Name()), DispatcherPriority.Background);
+                    items.RemoveKey(item.Namespace() + "/" + item.Name());
+                    //Dispatcher.UIThread.Post(() => items.RemoveKey(item.Namespace() + "/" + item.Name()), DispatcherPriority.Background);
                     if (item is V1CustomResourceDefinition crd2)
                     {
                         APIGroupDiscoveryList = GetAPIGroupDiscoveryList(false).GetAwaiter().GetResult();

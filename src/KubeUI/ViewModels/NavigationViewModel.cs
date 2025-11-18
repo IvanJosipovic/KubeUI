@@ -60,16 +60,9 @@ public sealed partial class NavigationViewModel : ViewModelBase
             init.Initialize(nav.Cluster);
         }
 
-        if (nav.Count == null)
-        {
-            nav.Count = nav.Cluster.GetResourceCount(nav.ControlType);
-        }
+        nav.Count ??= nav.Cluster.GetResourceCount(nav.ControlType);
 
-
-        Dispatcher.UIThread.Post(() =>
-        {
-            Factory.AddToDocuments(vm);
-        });
+        Dispatcher.UIThread.Post(() => Factory.AddToDocuments(vm));
     }
 
     private async Task SelectNavigationLink(NavigationLink link)
