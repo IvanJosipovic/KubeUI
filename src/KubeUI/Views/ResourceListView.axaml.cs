@@ -21,12 +21,15 @@ public partial class ResourceListView : UserControl
 
     public ResourceListView()
     {
+        InitializeComponent();
+
         _logger = Application.Current.GetRequiredService<ILogger<ResourceListView>>();
 
 #if DEBUG
         if (Design.IsDesignMode)
         {
-            Dispatcher.UIThread.Post(async () => {
+            Dispatcher.UIThread.Post(async () =>
+            {
                 var cluster = Application.Current.GetRequiredService<ClusterManager>().GetDefault();
                 await cluster.Connect();
                 await cluster.Seed<V1Pod>();
@@ -42,8 +45,6 @@ public partial class ResourceListView : UserControl
             });
         }
 #endif
-
-        InitializeComponent();
     }
 
     protected override void OnDataContextChanged(EventArgs e)

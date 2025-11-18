@@ -55,9 +55,9 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
 
-    private readonly SemaphoreSlim _connectionLimiter = new(1);
+    private readonly SemaphoreSlim _connectionLimiter = new(1,1);
 
-    private readonly SemaphoreSlim _seedLimiter = new(1);
+    private readonly SemaphoreSlim _seedLimiter = new(1,1);
 
     public AvaloniaDictionary<GroupApiVersionKind, ContainerClass> Objects { get; } = [];
 
@@ -358,7 +358,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     public async Task Seed<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        _logger.LogInformation("Starting Seed: {type}", typeof(T));
+        _logger.LogDebug("Starting Seed: {type}", typeof(T));
 
         var type = typeof(T);
         var kind = GroupApiVersionKind.From<T>();
@@ -427,7 +427,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
             _seedLimiter.Release();
         }
 
-        _logger.LogInformation("Finished Seed: {type}", typeof(T));
+        _logger.LogDebug("Finished Seed: {type}", typeof(T));
     }
 
     private ResourceInformerCallback<T> GetResourceInformerCallback<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
