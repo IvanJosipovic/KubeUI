@@ -322,7 +322,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     nav.NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer());
 
 #if !DEBUG
-                    await Seed<V1CustomResourceDefinition>();
+                    await SeedResource<V1CustomResourceDefinition>();
                     nav.Count = GetResourceCount<V1CustomResourceDefinition>();
 #endif
 
