@@ -1,10 +1,13 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Avalonia.Collections;
+using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
+using Avalonia.Input;
 using Avalonia.Styling;
+using Avalonia.VisualTree;
 using Dock.Model.Core;
 using FluentIcons.Avalonia;
 using k8s;
@@ -45,6 +48,11 @@ public partial class ResourceListView : UserControl
             });
         }
 #endif
+
+        PART_Grid.AddHandler(
+       InputElement.PointerReleasedEvent,
+       PART_Grid_PointerReleased,
+       RoutingStrategies.Bubble | RoutingStrategies.Tunnel, true);
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -54,7 +62,7 @@ public partial class ResourceListView : UserControl
         if (DataContext != null)
         {
             GetGenericMethod(nameof(GenerateGrid))?.Invoke(this, null);
-            GetGenericMethod(nameof(SetSort))?.Invoke(this, null);
+            //GetGenericMethod(nameof(SetSort))?.Invoke(this, null);
         }
     }
 
@@ -386,27 +394,61 @@ public partial class ResourceListView : UserControl
         }
     }
 
-    private void PART_Grid_PropertyChanged(object? sender, Avalonia.AvaloniaPropertyChangedEventArgs e)
+    private void PART_Grid_PropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
         var ViewModel = (IResourceListViewModel)DataContext;
 
         if (e.Property.Name == "CollectionView")
         {
-            //GetGenericMethod(nameof(SetSort))?.Invoke(this, null);
+            GetGenericMethod(nameof(SetSort))?.Invoke(this, null);
         }
     }
 
-    private void PART_Grid_Sorting(object? sender, DataGridColumnEventArgs e)
+    //private void SaveSort()
+    //{
+    //    var ViewModel = (IResourceListViewModel)DataContext;
+
+    //    foreach (var column in PART_Grid.Columns)
+    //    {
+    //        var direction = column.GetCurrentSortingState();
+
+    //        if (direction != null)
+    //        {
+    //            ViewModel.SortColumnName = e.Column.Header.ToString();
+    //            ViewModel.SortDirection = direction.Value == ListSortDirection.Ascending ? SortDirection.Ascending : SortDirection.Descending;
+    //        }
+    //    }
+    //}
+
+    private void PART_Grid_PointerReleased(object? sender, PointerReleasedEventArgs e)
     {
+        if (e.Source is not Control source)
+            return;
+
+        if (source.Name != "PART_ColumnHeaderRoot")
+        {
+            // Not the header root grid
+            return;
+        }
+
+        // Walk up to DataGridColumnHeader
+        var header = source
+            .GetVisualAncestors()
+            .OfType<DataGridColumnHeader>()
+            .FirstOrDefault();
+
+        if (header is null)
+            return;
+
         var ViewModel = (IResourceListViewModel)DataContext;
 
-        var direction = e.Column.GetCurrentSortingState();
+        ViewModel.SortColumnName = header.OwningColumn.Header.ToString();
 
-        if (direction != null)
-        {
-            ViewModel.SortColumnName = e.Column.Header.ToString();
-            ViewModel.SortDirection = direction.Value == ListSortDirection.Ascending ? SortDirection.Ascending : SortDirection.Descending;
-        }
+        var sort = header.OwningColumn.GetCurrentSortingState();
+
+        ViewModel.SortDirection = sort.HasValue
+            ? sort.Value == ListSortDirection.Ascending ? SortDirection.Ascending : SortDirection.Descending
+            : SortDirection.None;
     }
 }
 
@@ -426,6 +468,15 @@ public static class DataGridExtensions
             return null;
         }
     }
+
+    extension(DataGridColumnHeader col)
+    {
+        public DataGridColumn? OwningColumn => GetOwningColumn(col);
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_OwningColumn")]
+    public static extern DataGridColumn? GetOwningColumn(DataGridColumnHeader header);
+
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "GetSortDescription")]
     public static extern DataGridSortDescription GetSortDescription(DataGridColumn column);

@@ -258,9 +258,9 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             return false;
         }
 
-        foreach (var item in items.Cast<T>().ToList())
+        foreach (var item in items.Cast<T>().ToList().GroupBy(x => x.Namespace()))
         {
-            if (!Cluster.CanI<T>(Verb.Delete, item.Namespace()))
+            if (!Cluster.CanI<T>(Verb.Delete, item.Key))
             {
                 return false;
             }

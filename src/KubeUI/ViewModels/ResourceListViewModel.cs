@@ -90,7 +90,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         {
             var param = Expression.Parameter(typeof(T), "p");
 
-            BinaryExpression? body = null;
+            Expression? body = null;
 
             BinaryExpression? namespaceFilter = null;
 
@@ -98,14 +98,14 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
             if (Cluster.SelectedNamespaces != null && ResourceConfig.IsNamespaced)
             {
-                var method = typeof(IKubernetesObject<V1ObjectMeta>).GetMethod("Namespace");
+                var nsExpr = Expression.Property(
+                                Expression.Property(param, nameof(IMetadata<>.Metadata)),
+                                nameof(V1ObjectMeta.NamespaceProperty)
+                             );
 
                 foreach (var item in Cluster.SelectedNamespaces)
                 {
-                    var expression = Expression.Equal(
-                            Expression.Call(param, method),
-                            Expression.Constant(item.Name())
-                       );
+                    var expression = Expression.Equal(nsExpr, Expression.Constant(item.Name()));
 
                     namespaceFilter = namespaceFilter == null ? expression : Expression.OrElse(namespaceFilter, expression);
                 }
@@ -113,7 +113,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
             if (!string.IsNullOrEmpty(SearchQuery))
             {
-                var method = typeof(string).GetMethod(nameof(string.IndexOf), [typeof(string), typeof(StringComparison)]);
+                var method = typeof(string).GetMethod(nameof(string.IndexOf), [typeof(string), typeof(StringComparison)])!;
 
                 foreach (var query in SearchQuery.Split(' '))
                 {
@@ -130,15 +130,22 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
                         var colType = column.GetType();
 
-                        var columnDisplay = (Func<T, string>)colType.GetProperty(nameof(ResourceListColumn<,>.Display)).GetValue(column);
+                        var columnDisplay = colType.GetProperty(nameof(ResourceListColumn<,>.Display))!.GetValue(column) as Func<T, string>;
 
-                        columnDisplay ??= (Func<T, string>)colType.GetProperty(nameof(ResourceListColumn<,>.Field)).GetValue(column);
+                        columnDisplay ??= colType.GetProperty(nameof(ResourceListColumn<,>.Field))!.GetValue(column) as Func<T, string>;
 
-                        var funcCall = Expression.Call(Expression.Constant(columnDisplay), columnDisplay.GetType().GetMethod("Invoke"), param);
+                        if (columnDisplay != null)
+                        {
+                            var funcCall = Expression.Call(Expression.Constant(columnDisplay), columnDisplay.GetType()!.GetMethod("Invoke")!, param);
 
-                        var expression = Expression.GreaterThanOrEqual(Expression.Call(funcCall, method, someValue, Expression.Constant(StringComparison.OrdinalIgnoreCase)), Expression.Constant(0));
+                            var expression = Expression.GreaterThanOrEqual(Expression.Call(funcCall, method, someValue, Expression.Constant(StringComparison.OrdinalIgnoreCase)), Expression.Constant(0));
 
-                        wordFilter = wordFilter == null ? expression : Expression.OrElse(wordFilter, expression);
+                            wordFilter = wordFilter == null ? expression : Expression.OrElse(wordFilter, expression);
+                        }
+                        else
+                        {
+                            throw new Exception($"No string based columnDisplay, {typeof(T)} {column.Name}");
+                        }
                     }
 
                     searchFilter = searchFilter == null ? wordFilter : Expression.AndAlso(searchFilter, wordFilter);
@@ -159,7 +166,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             }
             else
             {
-                body = Expression.Equal(Expression.Constant(true), Expression.Constant(true));
+                body = Expression.Constant(true);
             }
 
             return Expression.Lambda<Func<T, bool>>(body, param).Compile();
