@@ -14,13 +14,18 @@ public static partial class DataGridCheckBoxColumn_MarkupExtensions
 //================= Properties ======================//
  // IsThreeState
 
+/*ValueSetterGenerator*/
+public static T IsThreeState<T>(this T control, System.Boolean value) where T : Avalonia.Controls.DataGridCheckBoxColumn 
+=> control._set(() => control.IsThreeState = value!);
+
 /*BindFromExpressionSetterGenerator*/
-public static T IsThreeState<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression("func")] string? expression = null) where T : Avalonia.Controls.DataGridCheckBoxColumn 
-   => control._set(Avalonia.Controls.DataGridCheckBoxColumn.IsThreeStateProperty, func, onChanged, expression);
+public static T IsThreeState<T>(this T control, Func<System.Boolean> func, Action<System.Boolean>? onChanged = null, [CallerArgumentExpression(nameof(func))] string? expression = null) where T : Avalonia.Controls.DataGridCheckBoxColumn 
+   => control._set(Avalonia.Controls.DataGridCheckBoxColumn.IsThreeStateProperty!, func, onChanged, expression);
 
 /*MagicalSetterGenerator*/
-public static T IsThreeState<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Avalonia.Controls.DataGridCheckBoxColumn 
-=> control._setEx(Avalonia.Controls.DataGridCheckBoxColumn.IsThreeStateProperty, ps, () => control.IsThreeState = value, bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IsThreeState<T>(this T control,System.Boolean value, BindingMode? bindingMode = null, IValueConverter? converter = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Avalonia.Controls.DataGridCheckBoxColumn 
+=> control._setEx(Avalonia.Controls.DataGridCheckBoxColumn.IsThreeStateProperty, ps, () => control.IsThreeState = value!, bindingMode, converter, bindingSource);
 
 /*BindSetterGenerator*/
 public static T IsThreeState<T>(this T control, IBinding binding) where T : Avalonia.Controls.DataGridCheckBoxColumn 
@@ -31,8 +36,9 @@ public static T IsThreeState<T>(this T control, AvaloniaProperty avaloniaPropert
    => control._set(Avalonia.Controls.DataGridCheckBoxColumn.IsThreeStateProperty, avaloniaProperty, bindingMode, converter, overrideView);
 
 /*MagicalSetterWithConverterGenerator*/
-public static T IsThreeState<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where T : Avalonia.Controls.DataGridCheckBoxColumn 
-=> control._setEx(Avalonia.Controls.DataGridCheckBoxColumn.IsThreeStateProperty, ps, () => control.IsThreeState = converter.TryConvert(value), bindingMode, converter, bindingSource);
+[Obsolete]
+public static T IsThreeState<TValue,T>(this T control, TValue value, FuncValueConverter<TValue, System.Boolean> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression(nameof(value))] string? ps = null) where T : Avalonia.Controls.DataGridCheckBoxColumn 
+=> control._setEx(Avalonia.Controls.DataGridCheckBoxColumn.IsThreeStateProperty, ps, () => control.IsThreeState = converter.TryConvert(value)!, bindingMode, converter, bindingSource);
 
 
 
