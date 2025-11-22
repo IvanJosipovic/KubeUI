@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Text;
-using Avalonia.Data.Converters;
+﻿using Avalonia.Data.Converters;
 using k8s;
 using k8s.Models;
 
@@ -26,4 +22,9 @@ public static class Converters
 
             return "N/A";
         });
+
+
+    public static readonly IValueConverter InverseBooleanConverter = new FuncValueConverter<bool, bool>(b => !b);
+
+    public static readonly IValueConverter NotNullConverter = new FuncValueConverter<object, bool>((x) => x != null);
 }

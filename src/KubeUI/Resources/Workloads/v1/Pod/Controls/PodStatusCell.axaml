@@ -9,22 +9,9 @@
         Margin="12,0,12,0"
         HorizontalAlignment="Left"
         VerticalAlignment="Center"
+        Foreground="{Binding Color, RelativeSource={RelativeSource AncestorType=local:PodStatusCell}}"
         Text="{Binding PrettyString, RelativeSource={RelativeSource AncestorType=local:PodStatusCell}}"
         ToolTip.Tip="{Binding PrettyString, RelativeSource={RelativeSource AncestorType=local:PodStatusCell}}">
-        <Interaction.Behaviors>
-            <DataTriggerBehavior Binding="{Binding PrettyString, RelativeSource={RelativeSource AncestorType=local:PodStatusCell}}" Value="Pending">
-                <ChangePropertyAction PropertyName="Foreground" Value="Yellow" />
-            </DataTriggerBehavior>
-            <DataTriggerBehavior Binding="{Binding PrettyString, RelativeSource={RelativeSource AncestorType=local:PodStatusCell}}" Value="Running">
-                <ChangePropertyAction PropertyName="Foreground" Value="LimeGreen" />
-            </DataTriggerBehavior>
-            <DataTriggerBehavior Binding="{Binding PrettyString, RelativeSource={RelativeSource AncestorType=local:PodStatusCell}}" Value="Terminating">
-                <ChangePropertyAction PropertyName="Foreground" Value="Yellow" />
-            </DataTriggerBehavior>
-            <DataTriggerBehavior Binding="{Binding PrettyString, RelativeSource={RelativeSource AncestorType=local:PodStatusCell}}" Value="PodCompleted">
-                <ChangePropertyAction PropertyName="Foreground" Value="LimeGreen" />
-            </DataTriggerBehavior>
-        </Interaction.Behaviors>
         <TextBlock.Styles>
             <Style Selector="TextBlock">
                 <Setter Property="Foreground" Value="Orange" />

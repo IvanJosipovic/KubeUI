@@ -1,7 +1,5 @@
-using System;
 using System.Globalization;
 using Avalonia.Data.Converters;
-using Avalonia.Media;
 using k8s.Models;
 
 namespace KubeUI.Converters;
@@ -31,7 +29,7 @@ public class ContainerStatusToBrushConverter : IValueConverter
             var terminated = status.State?.Terminated;
             if (terminated != null)
             {
-                if (string.Equals(terminated.Reason, "Completed", StringComparison.OrdinalIgnoreCase))
+                if (terminated.Reason == "Completed")
                     return Brushes.Gray;
 
                 return Brushes.Orange;

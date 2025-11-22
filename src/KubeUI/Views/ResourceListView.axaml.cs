@@ -366,7 +366,14 @@ public partial class ResourceListView : UserControl
             {
                 if (column != null && columnDefinition != null)
                 {
-                    column.Sort(columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending);
+                    try
+                    {
+                        column.Sort(columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error Setting Sort");
+                    }
                 }
             });
         }
@@ -378,7 +385,14 @@ public partial class ResourceListView : UserControl
             {
                 if (viewModel != null)
                 {
-                    column.Sort(viewModel.SortDirection == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending);
+                    try
+                    {
+                        column.Sort(viewModel.SortDirection == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error Setting Sort");
+                    }
                 }
             });
         }

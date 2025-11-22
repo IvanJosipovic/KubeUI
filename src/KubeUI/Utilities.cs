@@ -14,10 +14,6 @@ namespace KubeUI;
 
 public static class Utilities
 {
-    public static FuncValueConverter<bool, bool> InverseBooleanConverter { get; } = new FuncValueConverter<bool, bool>(b => !b);
-
-    public static FuncValueConverter<object, bool> NotNullConverter { get; } = new FuncValueConverter<object, bool>((x) => x != null);
-
     public static T GetRequiredService<T>(this Application? app)
     {
         if (app.TryFindResource(typeof(IServiceProvider), out var service))
@@ -229,12 +225,12 @@ public static class Utilities
 
                             if (status != null)
                             {
-                                notificationManage.Show(new Notification(status.Reason, status.Message + "\n\n" + status?.Details?.Causes?.Select(x => x.Message).Aggregate((x, y) => x + "\n" + y) ?? "", type, TimeSpan.FromSeconds(30)));
+                                Dispatcher.UIThread.Post(() => notificationManage.Show(new Notification(status.Reason, status.Message + "\n\n" + status?.Details?.Causes?.Select(x => x.Message).Aggregate((x, y) => x + "\n" + y) ?? "", type, TimeSpan.FromSeconds(30))));
                             }
                         }
                         else
                         {
-                            notificationManage.Show(new Notification(message, item.Message, type));
+                            Dispatcher.UIThread.Post(() => notificationManage.Show(new Notification(message, item.Message, type)));
                         }
                     }
                 }
@@ -244,12 +240,12 @@ public static class Utilities
 
                     if (status != null)
                     {
-                        notificationManage.Show(new Notification(status.Reason, status.Message + "\n\n" + status?.Details?.Causes?.Select(x => x.Message).Aggregate((x, y) => x + "\n" + y) ?? "", type, TimeSpan.FromSeconds(30)));
+                        Dispatcher.UIThread.Post(() => notificationManage.Show(new Notification(status.Reason, status.Message + "\n\n" + status?.Details?.Causes?.Select(x => x.Message).Aggregate((x, y) => x + "\n" + y) ?? "", type, TimeSpan.FromSeconds(30))));
                     }
                 }
                 else
                 {
-                    notificationManage.Show(new Notification(message, ex.Message, type));
+                    Dispatcher.UIThread.Post(() => notificationManage.Show(new Notification(message, ex.Message, type)));
                 }
             }
             catch (Exception ex2)

@@ -1,3 +1,4 @@
+using Avalonia.Media; // Add this if not already present
 using k8s.Models;
 
 namespace KubeUI.Resources.Workloads.v1.Pod.Controls;
@@ -6,6 +7,9 @@ public sealed partial class PodStatusCell : UserControl
 {
     [GeneratedDirectProperty]
     public partial string PrettyString { get; set; }
+
+    [GeneratedDirectProperty]
+    public partial IBrush Color { get; set; }
 
     public PodStatusCell()
     {
@@ -29,6 +33,12 @@ public sealed partial class PodStatusCell : UserControl
                     ? "Running"
                     : ready?.Reason ?? "Unknown";
             }
+
+            Color = PrettyString switch
+            {
+                "PodCompleted" or "Running" => new SolidColorBrush(Colors.LimeGreen),
+                _ => new SolidColorBrush(Colors.Orange),
+            };
         }
         else
         {
