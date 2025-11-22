@@ -9,7 +9,6 @@
     xmlns:ic="using:FluentIcons.Avalonia"
     xmlns:local="clr-namespace:KubeUI.Views"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:util="clr-namespace:KubeUI"
     xmlns:vm="clr-namespace:KubeUI.ViewModels"
     d:DesignHeight="600"
     d:DesignWidth="300"
@@ -86,9 +85,9 @@
             </TreeDataTemplate>
             <TreeDataTemplate x:DataType="vm:NavigationItem" ItemsSource="{Binding NavigationItems}">
                 <StackPanel Margin="-5,0,0,0" Orientation="Horizontal">
-                    <ic:FluentIcon Icon="{Binding FluentIcon}" IsVisible="{Binding FluentIcon, Converter={x:Static util:Utilities.NotNullConverter}}" />
+                    <ic:FluentIcon Icon="{Binding FluentIcon}" IsVisible="{Binding FluentIcon, Converter={x:Static converters:Converters.NotNullConverter}}" />
                     <PathIcon Data="{Binding StyleIcon, Converter={x:Static converters:StaticResourceConverter.Instance}}" IsVisible="{Binding StyleIcon, Converter={x:Static util:Utilities.NotNullConverter}}" />
-                    <Svg IsVisible="{Binding SvgIcon, Converter={x:Static util:Utilities.NotNullConverter}}" Path="{Binding SvgIcon}" />
+                    <Svg IsVisible="{Binding SvgIcon, Converter={x:Static converters:Converters.NotNullConverter}}" Path="{Binding SvgIcon}" />
                     <TextBlock Text="{Binding Name}" />
                 </StackPanel>
             </TreeDataTemplate>
