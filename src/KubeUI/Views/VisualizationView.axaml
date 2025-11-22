@@ -2,11 +2,15 @@
     x:Class="KubeUI.Views.VisualizationView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:NodifyM.Avalonia.Controls;assembly=NodifyM.Avalonia"
+    xmlns:converters="clr-namespace:NodifyM.Avalonia.Converters;assembly=NodifyM.Avalonia"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:ic="using:FluentIcons.Avalonia"
     xmlns:k8s="using:k8s.Models"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:u="https://irihi.tech/ursa"
+    xmlns:viewModelBase="clr-namespace:NodifyM.Avalonia.ViewModelBase;assembly=NodifyM.Avalonia"
+    xmlns:viewmodels="using:KubeUI.ViewModels"
     xmlns:vm="clr-namespace:KubeUI.ViewModels"
     d:DesignHeight="450"
     d:DesignWidth="800"
@@ -17,14 +21,7 @@
         <vm:VisualizationViewModel />
     </Design.DataContext>
 
-    <UserControl.Styles>
-        <!--  Style equivalent to BuildStyles()  -->
-        <Style Selector="Pin">
-            <Setter Property="ContextFlyout">
-                <MenuFlyout />
-            </Setter>
-        </Style>
-    </UserControl.Styles>
+    <UserControl.Styles />
 
     <Grid RowDefinitions="Auto,*">
         <!--  Left controls  -->
@@ -38,7 +35,7 @@
             <Label
                 Width="200"
                 VerticalContentAlignment="Center"
-                Content="{Binding Drawing.Nodes.Count, StringFormat='Items: {0}'}" />
+                Content="{Binding NodifyEditor.Nodes.Count, StringFormat='Items: {0}'}" />
         </StackPanel>
 
         <!--  Right controls  -->
@@ -68,6 +65,265 @@
         </StackPanel>
 
         <!--  Editor surface  -->
-        <Editor Grid.Row="1" DrawingSource="{Binding Drawing}" />
+        <controls:NodifyEditor x:Name="Editor" Grid.Row="1"
+            Margin="0,20,0,0"
+            Background="Transparent"
+            Connections="{Binding NodifyEditor.Connections}"
+            DisconnectConnectorCommand="{Binding NodifyEditor.DisconnectConnectorCommand}"
+            ItemsSource="{Binding NodifyEditor.Nodes}"
+            PendingConnection="{Binding NodifyEditor.PendingConnection}">
+
+            <controls:NodifyEditor.Resources>
+                <converters:FlowToDirectionConverter x:Key="FlowToDirectionConverter" />
+
+            </controls:NodifyEditor.Resources>
+            <controls:NodifyEditor.GridLineTemplate>
+                <DataTemplate>
+                    <controls:LargeGridLine
+                        Width="{Binding $parent[controls:NodifyEditor].Bounds.Width}"
+                        Height="{Binding $parent[controls:NodifyEditor].Bounds.Height}"
+                        Brush="{StaticResource GridLinesColorBrush}"
+                        OffsetX="{Binding $parent[controls:NodifyEditor].OffsetX}"
+                        OffsetY="{Binding $parent[controls:NodifyEditor].OffsetY}"
+                        Spacing="30"
+                        Thickness="0.5"
+                        ZIndex="-2"
+                        Zoom="{Binding $parent[controls:NodifyEditor].Zoom}" />
+                </DataTemplate>
+            </controls:NodifyEditor.GridLineTemplate>
+            <controls:NodifyEditor.ConnectionTemplate>
+                <DataTemplate DataType="{x:Type viewModelBase:ConnectionViewModelBase}">
+                    <Grid>
+                        <controls:Connection
+                            Direction="{Binding ., Converter={StaticResource FlowToDirectionConverter}}"
+                            DisconnectCommand="{Binding DisconnectConnectionCommand}"
+                            Focusable="True"
+                            Source="{Binding Source.Anchor}"
+                            SplitCommand="{Binding SplitConnectionCommand}"
+                            Target="{Binding Target.Anchor}"
+                            Text="{Binding Text}"
+                            TextBrush="{StaticResource Connection.TextColorBrush}"
+                            TextPoint="50%,50%">
+                            <controls:Connection.Stroke>
+                                <SolidColorBrush Opacity="0.5" Color="Red" />
+                            </controls:Connection.Stroke>
+                            <controls:Connection.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="_Delete" />
+                                </ContextMenu>
+                            </controls:Connection.ContextMenu>
+                        </controls:Connection>
+                    </Grid>
+
+                </DataTemplate>
+            </controls:NodifyEditor.ConnectionTemplate>
+            <controls:NodifyEditor.PendingConnectionTemplate>
+                <DataTemplate DataType="{x:Type viewModelBase:PendingConnectionViewModelBase}">
+                    <controls:PendingConnection
+                        CompletedCommand="{Binding FinishCommand}"
+                        Direction="{Binding Source.Flow, Converter={StaticResource FlowToDirectionConverter}}"
+                        EnablePreview="True"
+                        EnableSnapping="True"
+                        PreviewTarget="{Binding PreviewTarget, Mode=OneWayToSource}"
+                        StartedCommand="{Binding StartCommand}">
+                        <controls:PendingConnection.Stroke>
+                            <SolidColorBrush Opacity="0.5" Color="Red" />
+
+                        </controls:PendingConnection.Stroke>
+                        <controls:PendingConnection.Background>
+                            <SolidColorBrush Opacity="0.8" Color="DodgerBlue" />
+                        </controls:PendingConnection.Background>
+                        <TextBlock Text="{Binding PreviewText}" />
+                    </controls:PendingConnection>
+
+                </DataTemplate>
+            </controls:NodifyEditor.PendingConnectionTemplate>
+            <controls:NodifyEditor.ItemTemplate>
+                <controls:NodeTemplateSelector>
+                    <DataTemplate DataType="controls:NodeGroup">
+                        <controls:NodeGroup
+                            CanResize="{Binding CanResize}"
+                            Header="{Binding Header}"
+                            Size="{Binding Size}" />
+                    </DataTemplate>
+                    <DataTemplate DataType="viewmodels:VisualizationViewModel+ResourceNodeViewModel">
+                        <controls:Node x:Name="Node"
+                            VerticalAlignment="Center"
+                            Background="{DynamicResource TransparentBrush}"
+                            Input="{Binding Input}"
+                            Location="{Binding Location, Mode=TwoWay}"
+                            Output="{Binding Output}">
+                            <controls:Node.Styles>
+                                <Style Selector="controls|Node[IsSelected=False]:pointerover">
+                                    <Setter Property="BorderBrush" Value="AliceBlue" />
+                                </Style>
+                            </controls:Node.Styles>
+                            <controls:Node.Header>
+                                <StackPanel Background="Transparent">
+                                    <ToolTip.Tip>
+                                        <MultiBinding StringFormat="{} {0}/{1} {2}">
+                                            <Binding Path="Resource.ApiVersion" />
+                                            <Binding Path="Resource.Kind" />
+                                            <Binding Path="Resource.Metadata.Name" />
+                                        </MultiBinding>
+                                    </ToolTip.Tip>
+                                    <Svg Path="{Binding IconPath}">
+                                        <Svg.ContextFlyout>
+                                            <MenuFlyout>
+                                                <MenuItem
+                                                    Command="{Binding}"
+                                                    CommandParameter="{Binding Resource}"
+                                                    Header="Properties" />
+                                                <MenuItem
+                                                    Command="{Binding}"
+                                                    CommandParameter="{Binding Resource}"
+                                                    Header="View Yaml" />
+                                            </MenuFlyout>
+                                        </Svg.ContextFlyout>
+                                    </Svg>
+                                    <TextBlock
+                                        Width="120"
+                                        Margin="0,0,0,0"
+                                        TextAlignment="Center"
+                                        TextWrapping="Wrap">
+                                        <TextBlock.Text>
+                                            <MultiBinding StringFormat="{} {0} {1}">
+                                                <Binding Path="Resource.Kind" />
+                                                <Binding Path="Resource.Metadata.Name" />
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                </StackPanel>
+                            </controls:Node.Header>
+                            <controls:Node.InputConnectorTemplate>
+                                <DataTemplate DataType="{x:Type viewModelBase:ConnectorViewModelBase}">
+                                    <controls:NodeInput x:Name="NodeInput"
+                                        VerticalAlignment="Center"
+                                        Anchor="{Binding Anchor, Mode=OneWayToSource}"
+                                        IsConnected="{Binding IsConnected}">
+                                        <controls:NodeInput.Header>
+                                            <StackPanel
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Center"
+                                                Orientation="Horizontal">
+
+                                                <TextBlock x:Name="textBlock"
+                                                    VerticalAlignment="Center"
+                                                    Text="{Binding Title}" />
+                                            </StackPanel>
+                                        </controls:NodeInput.Header>
+                                        <controls:NodeInput.BorderBrush>
+                                            <SolidColorBrush Opacity="0.5" Color="CornflowerBlue" />
+                                        </controls:NodeInput.BorderBrush>
+                                    </controls:NodeInput>
+                                </DataTemplate>
+                            </controls:Node.InputConnectorTemplate>
+
+                            <controls:Node.OutputConnectorTemplate>
+                                <DataTemplate DataType="{x:Type viewModelBase:ConnectorViewModelBase}">
+                                    <controls:NodeOutput x:Name="NodeOutput"
+                                        VerticalAlignment="Center"
+                                        Anchor="{Binding Anchor, Mode=OneWayToSource}"
+                                        IsConnected="{Binding IsConnected}">
+                                        <controls:NodeOutput.Header>
+                                            <StackPanel
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Center"
+                                                Orientation="Horizontal">
+
+                                                <TextBlock x:Name="textBlock"
+                                                    VerticalAlignment="Center"
+                                                    Text="{Binding Title}" />
+                                            </StackPanel>
+                                        </controls:NodeOutput.Header>
+                                        <controls:NodeOutput.BorderBrush>
+                                            <SolidColorBrush Opacity="0.5" Color="CornflowerBlue" />
+                                        </controls:NodeOutput.BorderBrush>
+                                    </controls:NodeOutput>
+                                </DataTemplate>
+                            </controls:Node.OutputConnectorTemplate>
+                        </controls:Node>
+                    </DataTemplate>
+                    <DataTemplate DataType="viewModelBase:KnotNodeViewModel">
+                        <controls:KnotNode Content="{Binding Connector}" Location="{Binding Location, Mode=TwoWay}">
+                            <controls:KnotNode.ContentTemplate>
+                                <DataTemplate DataType="viewModelBase:ConnectorViewModelBase">
+                                    <controls:Connector
+                                        VerticalAlignment="Center"
+                                        Anchor="{Binding Anchor, Mode=OneWayToSource}"
+                                        Foreground="Green"
+                                        IsConnected="{Binding IsConnected}">
+                                        <controls:Connector.BorderBrush>
+                                            <SolidColorBrush Opacity="0.5" Color="Green" />
+                                        </controls:Connector.BorderBrush>
+                                    </controls:Connector>
+                                </DataTemplate>
+                            </controls:KnotNode.ContentTemplate>
+                        </controls:KnotNode>
+                    </DataTemplate>
+                    <DataTemplate DataType="viewModelBase:NodeViewModelBase">
+                        <controls:Node x:Name="Node"
+                            VerticalAlignment="Center"
+                            Header="{Binding Title}"
+                            Input="{Binding Input}"
+                            Location="{Binding Location, Mode=TwoWay}"
+                            Output="{Binding Output}">
+                            <controls:Node.Styles>
+                                <Style Selector="controls|Node[IsSelected=False]:pointerover">
+                                    <Setter Property="BorderBrush" Value="AliceBlue" />
+                                </Style>
+                            </controls:Node.Styles>
+                            <controls:Node.InputConnectorTemplate>
+                                <DataTemplate DataType="{x:Type viewModelBase:ConnectorViewModelBase}">
+                                    <controls:NodeInput x:Name="NodeInput"
+                                        VerticalAlignment="Center"
+                                        Anchor="{Binding Anchor, Mode=OneWayToSource}"
+                                        IsConnected="{Binding IsConnected}">
+                                        <controls:NodeInput.Header>
+                                            <StackPanel
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Center"
+                                                Orientation="Horizontal">
+
+                                                <TextBlock x:Name="textBlock"
+                                                    VerticalAlignment="Center"
+                                                    Text="{Binding Title}" />
+                                            </StackPanel>
+                                        </controls:NodeInput.Header>
+                                        <controls:NodeInput.BorderBrush>
+                                            <SolidColorBrush Opacity="0.5" Color="CornflowerBlue" />
+                                        </controls:NodeInput.BorderBrush>
+                                    </controls:NodeInput>
+                                </DataTemplate>
+                            </controls:Node.InputConnectorTemplate>
+
+                            <controls:Node.OutputConnectorTemplate>
+                                <DataTemplate DataType="{x:Type viewModelBase:ConnectorViewModelBase}">
+                                    <controls:NodeOutput x:Name="NodeOutput"
+                                        VerticalAlignment="Center"
+                                        Anchor="{Binding Anchor, Mode=OneWayToSource}"
+                                        IsConnected="{Binding IsConnected}">
+                                        <controls:NodeOutput.Header>
+                                            <StackPanel
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Center"
+                                                Orientation="Horizontal">
+
+                                                <TextBlock x:Name="textBlock"
+                                                    VerticalAlignment="Center"
+                                                    Text="{Binding Title}" />
+                                            </StackPanel>
+                                        </controls:NodeOutput.Header>
+                                        <controls:NodeOutput.BorderBrush>
+                                            <SolidColorBrush Opacity="0.5" Color="CornflowerBlue" />
+                                        </controls:NodeOutput.BorderBrush>
+                                    </controls:NodeOutput>
+                                </DataTemplate>
+                            </controls:Node.OutputConnectorTemplate>
+                        </controls:Node>
+                    </DataTemplate>
+                </controls:NodeTemplateSelector>
+            </controls:NodifyEditor.ItemTemplate>
+        </controls:NodifyEditor>
     </Grid>
 </UserControl>

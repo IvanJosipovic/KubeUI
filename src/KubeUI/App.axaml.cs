@@ -210,7 +210,7 @@ public partial class App : Application
 
         AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
 
-        Logger.Sink = Host.Services.GetRequiredService<ILogSink>();
+        //Logger.Sink = Host.Services.GetRequiredService<ILogSink>();
 
         Host.Services.GetRequiredService<ISettingsService>().LoadSettings();
 
@@ -291,7 +291,7 @@ public partial class App : Application
         Host.Services.GetRequiredService<IHostApplicationLifetime>().StopApplication();
     }
 
-    private void DisableAvaloniaDataAnnotationValidation()
+    private static void DisableAvaloniaDataAnnotationValidation()
     {
         // Get an array of plugins to remove
         var dataValidationPluginsToRemove =

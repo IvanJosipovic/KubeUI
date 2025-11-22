@@ -672,7 +672,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
     }
 
     // Find the generic definition of GetResourceCount<T>()
-    private static MethodInfo s_getResourceCountMethod = typeof(Cluster)
+    private static readonly MethodInfo s_getResourceCountMethod = typeof(Cluster)
         .GetMethods(BindingFlags.Instance | BindingFlags.Public)
         .First(m =>
                m.Name == nameof(GetResourceCount) &&

@@ -1,6 +1,5 @@
 using System.Reflection;
 using AvaloniaEdit;
-using NodeEditor.Controls;
 
 namespace KubeUI.Views;
 

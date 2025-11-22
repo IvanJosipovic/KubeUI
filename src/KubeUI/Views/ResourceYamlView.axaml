@@ -4,10 +4,10 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
     xmlns:assets="clr-namespace:KubeUI.Assets"
+    xmlns:converters="using:KubeUI.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:ic="using:FluentIcons.Avalonia"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:utils="clr-namespace:KubeUI"
     xmlns:vm="clr-namespace:KubeUI.ViewModels"
     d:DesignHeight="450"
     d:DesignWidth="800"
@@ -25,7 +25,7 @@
 
         <!--  Read-only toolbar  -->
         <StackPanel Grid.Row="0"
-            IsVisible="{Binding EditMode, Converter={x:Static utils:Utilities.InverseBooleanConverter}}"
+            IsVisible="{Binding EditMode, Converter={x:Static converters:Converters.InverseBooleanConverter}}"
             Orientation="Horizontal">
             <Button Command="{Binding SetEditModeCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Edit}">
                 <ic:FluentIcon Icon="DocumentEdit" />
@@ -64,7 +64,7 @@
             FontSize="{Binding Settings.Settings.ConsoleFontSize}"
             FontWeight="Normal"
             HorizontalScrollBarVisibility="Auto"
-            IsReadOnly="{Binding EditMode, Converter={x:Static utils:Utilities.InverseBooleanConverter}}"
+            IsReadOnly="{Binding EditMode, Converter={x:Static converters:Converters.InverseBooleanConverter}}"
             ShowLineNumbers="True"
             VerticalScrollBarVisibility="Visible"
             WordWrap="{Binding WordWrap}">
