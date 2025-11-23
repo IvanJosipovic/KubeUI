@@ -84,7 +84,7 @@
                     LayoutMethod="{Binding LayoutMethod}">
                     <agc:GraphPanel.DataTemplates>
                         <DataTemplate DataType="vm:VisualizationViewModel+ResourceNodeViewModel">
-                            <StackPanel>
+                            <StackPanel Width="128" Margin="20,0,20,0">
                                 <ToolTip.Tip>
                                     <MultiBinding StringFormat="{} {0}/{1} {2}">
                                         <Binding Path="Resource.ApiVersion" />
@@ -92,28 +92,25 @@
                                         <Binding Path="Resource.Metadata.Name" />
                                     </MultiBinding>
                                 </ToolTip.Tip>
-                                <Svg
-                                    Width="64"
-                                    Height="64"
-                                    Path="{Binding IconPath}">
+                                <Svg Width="64" Path="{Binding IconPath}">
                                     <Svg.ContextFlyout>
                                         <MenuFlyout />
                                     </Svg.ContextFlyout>
                                 </Svg>
                                 <TextBlock
-                                    Width="120"
-                                    Margin="0,0,0,0"
                                     ClipToBounds="false"
+                                    Text="{Binding Resource.Kind}"
                                     TextAlignment="Center"
-                                    TextWrapping="Wrap">
-                                    <TextBlock.Text>
-                                        <MultiBinding StringFormat="{} {0} {1}">
-                                            <Binding Path="Resource.Kind" />
-                                            <Binding Path="Resource.Metadata.Name" />
-                                        </MultiBinding>
-                                    </TextBlock.Text>
-                                </TextBlock>
+                                    TextWrapping="NoWrap" />
+                                <TextBlock
+                                    ClipToBounds="false"
+                                    Text="{Binding Resource.Metadata.Name}"
+                                    TextAlignment="Center"
+                                    TextWrapping="Wrap" />
                             </StackPanel>
+                        </DataTemplate>
+                        <DataTemplate DataType="agc:Edge">
+                            <agc:Connection Brush="Green" />
                         </DataTemplate>
                     </agc:GraphPanel.DataTemplates>
                 </agc:GraphPanel>
