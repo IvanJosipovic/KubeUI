@@ -49,8 +49,6 @@ public sealed partial class NavigationViewModel : ViewModelBase
 
     private void SelectResourceNavigationLink(ResourceNavigationLink nav)
     {
-        var kind = GroupApiVersionKind.From(nav.ControlType);
-
         var resourceListType = typeof(ResourceListViewModel<>).MakeGenericType(nav.ControlType);
 
         var vm = Application.Current.GetRequiredService(resourceListType) as IDockable;

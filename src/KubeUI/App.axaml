@@ -81,8 +81,6 @@
         <DockFluentTheme />
         <StyleInclude Source="avares://AvaloniaTerminal/Styles/Colors.axaml" />
         <StyleInclude Source="avares://KubeUI/Styles/Fluent.axaml" />
-        <StyleInclude Source="avares://NodifyM.Avalonia/Styles/ControlStyles.axaml" />
-
     </Application.Styles>
 
 </Application>
