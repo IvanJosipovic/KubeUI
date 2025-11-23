@@ -1,4 +1,3 @@
-using Dock.Model.Core;
 using k8s.Models;
 using KubeUI.Client;
 

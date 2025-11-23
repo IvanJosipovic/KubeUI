@@ -2795,4 +2795,253 @@ public class VisualizationTests
     }
 
     #endregion
+
+    #region PersistentVolumeClaim
+
+    [AvaloniaFact]
+    public async Task LinkPersistentVolumeClaimInPod()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1PersistentVolumeClaim
+        {
+            Metadata = new()
+            {
+                Name = "pvc",
+                NamespaceProperty = "default"
+            }
+        });
+
+        await cluster.AddOrUpdateResource(new V1Pod
+        {
+            Metadata = new()
+            {
+                Name = "my-pod",
+                NamespaceProperty = "default"
+            },
+            Spec = new()
+            {
+                Volumes = [
+                    new()
+                    {
+                        Name = "vol",
+                        PersistentVolumeClaim = new()
+                        {
+                            ClaimName = "pvc"
+                        }
+                    }
+                ]
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Graph.Edges.Count.Should().Be(1);
+        vm.Graph.Edges.First().Tail.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Pod>();
+        vm.Graph.Edges.First().Head.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1PersistentVolumeClaim>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkPersistentVolumeClaimInDeployment()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1PersistentVolumeClaim
+        {
+            Metadata = new()
+            {
+                Name = "pvc",
+                NamespaceProperty = "default"
+            }
+        });
+
+        await cluster.AddOrUpdateResource(new V1Deployment
+        {
+            Metadata = new()
+            {
+                Name = "my-deployment",
+                NamespaceProperty = "default"
+            },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        Volumes = [
+                            new()
+                            {
+                                Name = "vol",
+                                PersistentVolumeClaim = new()
+                                {
+                                    ClaimName = "pvc"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Graph.Edges.Count.Should().Be(1);
+        vm.Graph.Edges.First().Tail.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
+        vm.Graph.Edges.First().Head.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1PersistentVolumeClaim>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkPersistentVolumeClaimInStatefulSet()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1PersistentVolumeClaim
+        {
+            Metadata = new()
+            {
+                Name = "pvc",
+                NamespaceProperty = "default"
+            }
+        });
+
+        await cluster.AddOrUpdateResource(new V1StatefulSet
+        {
+            Metadata = new()
+            {
+                Name = "my-sts",
+                NamespaceProperty = "default"
+            },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        Volumes = [
+                            new()
+                            {
+                                Name = "vol",
+                                PersistentVolumeClaim = new()
+                                {
+                                    ClaimName = "pvc"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Graph.Edges.Count.Should().Be(1);
+        vm.Graph.Edges.First().Tail.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1StatefulSet>();
+        vm.Graph.Edges.First().Head.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1PersistentVolumeClaim>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkPersistentVolumeClaimInDaemonSet()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1PersistentVolumeClaim
+        {
+            Metadata = new()
+            {
+                Name = "pvc",
+                NamespaceProperty = "default"
+            }
+        });
+
+        await cluster.AddOrUpdateResource(new V1DaemonSet
+        {
+            Metadata = new()
+            {
+                Name = "my-ds",
+                NamespaceProperty = "default"
+            },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        Volumes = [
+                            new()
+                            {
+                                Name = "vol",
+                                PersistentVolumeClaim = new()
+                                {
+                                    ClaimName = "pvc"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Graph.Edges.Count.Should().Be(1);
+        vm.Graph.Edges.First().Tail.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1DaemonSet>();
+        vm.Graph.Edges.First().Head.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1PersistentVolumeClaim>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkPersistentVolumeClaimInReplicaSet()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1PersistentVolumeClaim
+        {
+            Metadata = new()
+            {
+                Name = "pvc",
+                NamespaceProperty = "default"
+            }
+        });
+
+        await cluster.AddOrUpdateResource(new V1ReplicaSet
+        {
+            Metadata = new()
+            {
+                Name = "my-rs",
+                NamespaceProperty = "default"
+            },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        Volumes = [
+                            new()
+                            {
+                                Name = "vol",
+                                PersistentVolumeClaim = new()
+                                {
+                                    ClaimName = "pvc"
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+            Status = new() { Replicas = 1 }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Graph.Edges.Count.Should().Be(1);
+        vm.Graph.Edges.First().Tail.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ReplicaSet>();
+        vm.Graph.Edges.First().Head.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1PersistentVolumeClaim>();
+    }
+
+    #endregion
 }
