@@ -3,7 +3,6 @@ using AvaloniaGraphControl;
 using k8s;
 using k8s.Models;
 using KubeUI.Client;
-using Yarp.Kubernetes.Controller.Client;
 using static AvaloniaGraphControl.GraphPanel;
 using Cluster = KubeUI.Client.Cluster;
 
@@ -104,6 +103,9 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         LinkServiceAccount();
 
         LinkPersistantVolumeClaim();
+        LinkPersistantVolume();
+
+        RemoveDuplicateConnections();
     }
 
     private void SelectedNamespaces_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -129,9 +131,12 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             {
                 var value = (IKubernetesObject<V1ObjectMeta>)item;
 
-                if (Cluster.SelectedNamespaces.Count == 0 || !Cluster.SelectedNamespaces.Any(x => x.Name() == value.Namespace()))
+                if (value is not V1PersistentVolume)
                 {
-                    continue;
+                    if (Cluster.SelectedNamespaces.Count == 0 || !Cluster.SelectedNamespaces.Any(x => x.Name() == value.Namespace()))
+                    {
+                        continue;
+                    }
                 }
 
                 // Remove inactive ReplicaSets
@@ -147,6 +152,29 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 };
 
                 Resources.Add(node);
+            }
+        }
+    }
+
+    private void RemoveDuplicateConnections()
+    {
+        if (Graph?.Edges == null || Graph.Edges.Count < 2)
+        {
+            return;
+        }
+
+        var seen = new HashSet<(object? Head, object? Tail)>();
+
+        // Iterate backwards so we can remove in-place
+        for (int i = Graph.Edges.Count - 1; i >= 0; i--)
+        {
+            var edge = Graph.Edges.ElementAt(i);
+            var key = (edge.Head, edge.Tail);
+
+            if (!seen.Add(key))
+            {
+                // Duplicate found, remove it
+                Graph.Edges.Remove(edge);
             }
         }
     }
@@ -1482,7 +1510,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             {
                 foreach (var start in Resources)
                 {
-                    if (start.Resource.Uid() == @event.InvolvedObject.Uid && start.Resource.Namespace() == @event.Namespace())
+                    if (start.Resource.Uid() == @event.InvolvedObject.Uid)
                     {
                         Graph.Edges.Add(new Edge(start, end));
                     }
@@ -1572,11 +1600,11 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         {
             if (start.Resource is V1Deployment deployment)
             {
-                if (deployment.Spec.Template.Spec.Volumes != null)
+                if (deployment?.Spec?.Template?.Spec?.Volumes != null)
                 {
                     foreach (var volume in deployment.Spec.Template.Spec.Volumes)
                     {
-                        if (volume.PersistentVolumeClaim != null)
+                        if (volume?.PersistentVolumeClaim != null)
                         {
                             foreach (var end in Resources)
                             {
@@ -1595,11 +1623,11 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
             if (start.Resource is V1ReplicaSet replicaSet)
             {
-                if (replicaSet.Spec.Template.Spec.Volumes != null)
+                if (replicaSet?.Spec?.Template?.Spec?.Volumes != null)
                 {
                     foreach (var volume in replicaSet.Spec.Template.Spec.Volumes)
                     {
-                        if (volume.PersistentVolumeClaim != null)
+                        if (volume?.PersistentVolumeClaim != null)
                         {
                             foreach (var end in Resources)
                             {
@@ -1618,11 +1646,11 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
             if (start.Resource is V1StatefulSet statefulSet)
             {
-                if (statefulSet.Spec.Template.Spec.Volumes != null)
+                if (statefulSet?.Spec?.Template?.Spec?.Volumes != null)
                 {
                     foreach (var volume in statefulSet.Spec.Template.Spec.Volumes)
                     {
-                        if (volume.PersistentVolumeClaim != null)
+                        if (volume?.PersistentVolumeClaim != null)
                         {
                             foreach (var end in Resources)
                             {
@@ -1641,11 +1669,11 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
             if (start.Resource is V1DaemonSet daemonSet)
             {
-                if (daemonSet.Spec.Template.Spec.Volumes != null)
+                if (daemonSet?.Spec?.Template?.Spec?.Volumes != null)
                 {
                     foreach (var volume in daemonSet.Spec.Template.Spec.Volumes)
                     {
-                        if (volume.PersistentVolumeClaim != null)
+                        if (volume?.PersistentVolumeClaim != null)
                         {
                             foreach (var end in Resources)
                             {
@@ -1668,7 +1696,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 {
                     foreach (var volume in pod.Spec.Volumes)
                     {
-                        if (volume.PersistentVolumeClaim != null)
+                        if (volume?.PersistentVolumeClaim != null)
                         {
                             foreach (var end in Resources)
                             {
@@ -1679,6 +1707,29 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                         Graph.Edges.Add(new Edge(start, end));
                                     }
                                 }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void LinkPersistantVolume()
+    {
+        foreach (var start in Resources)
+        {
+            if (start.Resource is V1PersistentVolumeClaim persistentVolumeClaim)
+            {
+                if (persistentVolumeClaim?.Spec?.VolumeName != null)
+                {
+                    foreach (var end in Resources)
+                    {
+                        if (end.Resource is V1PersistentVolume persistentVolume)
+                        {
+                            if (persistentVolume.Name() == persistentVolumeClaim.Spec.VolumeName)
+                            {
+                                Graph.Edges.Add(new Edge(start, end));
                             }
                         }
                     }

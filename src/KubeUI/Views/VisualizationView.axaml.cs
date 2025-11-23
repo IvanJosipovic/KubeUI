@@ -17,7 +17,7 @@ public sealed partial class VisualizationView : UserControl
                 var cluster = Application.Current.GetRequiredService<ClusterManager>().GetDefault();
                 await cluster.Connect();
 
-                cluster.SelectedNamespaces.Add(cluster.Namespaces.FirstOrDefault(x => x.Name() == "cert-manager"));
+                cluster.SelectedNamespaces.Add(cluster.GetResource<V1Namespace>(null, "cert-manager"));
 
                 var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
 

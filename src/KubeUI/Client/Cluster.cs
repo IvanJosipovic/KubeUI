@@ -907,7 +907,7 @@ public partial class ContainerClass<T> : ObservableObject where T : class, IKube
 {
     public Type Type { get; } = typeof(T);
 
-    public ISourceCache<T, string> Items { get; } = new SourceCache<T, string>(x => x.Namespace() + "" + x.Name());
+    public ISourceCache<T, string> Items { get; } = new SourceCache<T, string>(x => x.Namespace() + "/" + x.Name());
 
     [ObservableProperty]
     public partial List<IResourceInformer> Informers { get; set; } = [];
