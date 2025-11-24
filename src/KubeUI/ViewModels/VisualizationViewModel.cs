@@ -83,11 +83,11 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     {
         if (Cluster.SelectedNamespaces.Count == 0)
         {
-            Clear();
             return;
         }
 
-        Clear();
+        Graph.Edges.Clear();
+        Resources.Clear();
         PopulateAllResources();
 
         LinkOwners();
@@ -106,17 +106,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         LinkPersistantVolume();
 
         RemoveDuplicateConnections();
+
+        OnPropertyChanged(nameof(Graph));
     }
 
     private void SelectedNamespaces_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         Run();
-    }
-
-    private void Clear()
-    {
-        Resources.Clear();
-        Graph.Edges.Clear();
     }
 
     private void PopulateAllResources()
@@ -139,8 +135,10 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     }
                 }
 
-                // Remove inactive ReplicaSets
-                if (HideNoise && value is V1ReplicaSet replicaSet && replicaSet.Status.Replicas == 0)
+                // HideNoise
+                if (HideNoise
+                    && value is V1ReplicaSet replicaSet && replicaSet.Status.Replicas == 0
+                    && value is Corev1Event)
                 {
                     continue;
                 }
