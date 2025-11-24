@@ -137,8 +137,10 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
                 // HideNoise
                 if (HideNoise
-                    && value is V1ReplicaSet replicaSet && replicaSet.Status.Replicas == 0
-                    && value is Corev1Event)
+                    && (
+                           (value is V1ReplicaSet replicaSet && replicaSet.Status.Replicas == 0)
+                        || (value is Corev1Event)
+                    ))
                 {
                     continue;
                 }
