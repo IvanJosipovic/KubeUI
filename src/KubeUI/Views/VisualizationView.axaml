@@ -84,7 +84,7 @@
                     LayoutMethod="{Binding LayoutMethod}">
                     <agc:GraphPanel.DataTemplates>
                         <DataTemplate DataType="vm:VisualizationViewModel+ResourceNodeViewModel">
-                            <StackPanel Width="64" Margin="32,0,32,0">
+                            <StackPanel Width="64" Margin="64,16,64,16">
                                 <ToolTip.Tip>
                                     <MultiBinding StringFormat="{} {0}/{1} {2}">
                                         <Binding Path="Resource.ApiVersion" />
