@@ -125,7 +125,11 @@ public class ResourceInformer<TResource> : BackgroundHostedService, IResourceInf
     {
         try
         {
-            await _start.WaitAsync(cancellationToken).ConfigureAwait(false);
+            // Only wait for ready the first time
+            if (_start.CurrentCount == 1)
+            {
+                await _start.WaitAsync(cancellationToken).ConfigureAwait(false);
+            }
 
             var limiter = new Limiter(new Limit(0.2), 3);
             var shouldSync = true;
@@ -211,6 +215,10 @@ public class ResourceInformer<TResource> : BackgroundHostedService, IResourceInf
             catch (Exception)
             {
                 // rate limiting the reconnect loop
+                Logger.LogInformation(
+                    EventId(EventType.WatchingComplete),
+                    "Retrying {ResourceType} in 10s",
+                    typeof(TResource).Name);
                 await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
             }
         }
