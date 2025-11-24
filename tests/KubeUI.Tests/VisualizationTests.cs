@@ -2193,28 +2193,11 @@ public class VisualizationTests
     {
         var cluster = GetTestCluster();
 
-        await cluster.AddOrUpdateResource(new V1Deployment
-        {
-            Metadata = new()
-            {
-                Name = "my-deployment",
-                NamespaceProperty = "default",
-                Uid = "dep-uid"
-            },
-            Spec = new()
-            {
-                Template = new()
-                {
-                    Spec = new()
-                }
-            }
-        });
-
         await cluster.AddOrUpdateResource(new Corev1Event
         {
             Metadata = new()
             {
-                Name = "my-event",
+                Name = "start",
                 NamespaceProperty = "default"
             },
             InvolvedObject = new()
@@ -2223,12 +2206,24 @@ public class VisualizationTests
             }
         });
 
+        await cluster.AddOrUpdateResource(new V1Deployment
+        {
+            Metadata = new()
+            {
+                Name = "end",
+                NamespaceProperty = "default",
+                Uid = "dep-uid"
+            }
+        });
+
         var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+
+        vm.HideNoise = false;
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.Should().Be(1);
-        vm.Graph.Edges.First().Tail.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
-        vm.Graph.Edges.First().Head.As<ResourceNodeViewModel>().Resource.Should().BeOfType<Corev1Event>();
+        vm.Graph.Edges.First().Tail.As<ResourceNodeViewModel>().Resource.Should().BeOfType<Corev1Event>();
+        vm.Graph.Edges.First().Head.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Deployment>();
     }
 
     [AvaloniaFact]
@@ -2461,6 +2456,197 @@ public class VisualizationTests
         vm.Graph.Edges.Count.Should().Be(1);
         vm.Graph.Edges.First().Tail.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1PersistentVolumeClaim>();
         vm.Graph.Edges.First().Head.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1PersistentVolume>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkRoleBindingToServiceAccount()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1RoleBinding 
+        {
+            Metadata = new()
+            {
+                Name = "start",
+                NamespaceProperty = "default",
+            },
+            Subjects =
+            [
+                new()
+                {
+                    ApiGroup = "",
+                    Kind = V1ServiceAccount.KubeKind, // ServiceAccount, todo User and Group
+                    Name = "end",
+                    NamespaceProperty = "default"
+                }
+            ]
+        });
+
+        await cluster.AddOrUpdateResource(new V1ServiceAccount
+        {
+            Metadata = new()
+            {
+                Name = "end",
+                NamespaceProperty = "default",
+            },
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Graph.Edges.Count.Should().Be(1);
+        vm.Graph.Edges.First().Tail.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1RoleBinding>();
+        vm.Graph.Edges.First().Head.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ServiceAccount>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkRoleBindingToRole()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1RoleBinding
+        {
+            Metadata = new()
+            {
+                Name = "start",
+                NamespaceProperty = "default"
+            },
+            RoleRef = new()
+            {
+                ApiGroup = V1Role.KubeGroup,
+                Kind = V1Role.KubeKind,
+                Name = "end"
+            }
+        });
+
+        await cluster.AddOrUpdateResource(new V1Role
+        {
+            Metadata = new()
+            {
+                Name = "end",
+                NamespaceProperty = "default"
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Graph.Edges.Count.Should().Be(1);
+        vm.Graph.Edges.First().Tail.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1RoleBinding>();
+        vm.Graph.Edges.First().Head.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1Role>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkRoleBindingClusterRole()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1RoleBinding
+        {
+            Metadata = new()
+            {
+                Name = "start",
+                NamespaceProperty = "default"
+            },
+            RoleRef = new()
+            {
+                ApiGroup = V1ClusterRole.KubeGroup,
+                Kind = V1ClusterRole.KubeKind,
+                Name = "end"
+            }
+        });
+
+        await cluster.AddOrUpdateResource(new V1ClusterRole
+        {
+            Metadata = new()
+            {
+                Name = "end"
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Graph.Edges.Count.Should().Be(1);
+        vm.Graph.Edges.First().Tail.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1RoleBinding>();
+        vm.Graph.Edges.First().Head.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ClusterRole>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkClusterRoleBindingToServiceAccount()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1ClusterRoleBinding
+        {
+            Metadata = new()
+            {
+                Name = "start",
+                NamespaceProperty = "default",
+            },
+            Subjects =
+            [
+                new()
+                {
+                    ApiGroup = "",
+                    Kind = V1ServiceAccount.KubeKind, // ServiceAccount, todo User and Group
+                    Name = "end",
+                    NamespaceProperty = "default"
+                }
+            ]
+        });
+
+        await cluster.AddOrUpdateResource(new V1ServiceAccount
+        {
+            Metadata = new()
+            {
+                Name = "end",
+                NamespaceProperty = "default",
+            },
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Graph.Edges.Count.Should().Be(1);
+        vm.Graph.Edges.First().Tail.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ClusterRoleBinding>();
+        vm.Graph.Edges.First().Head.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ServiceAccount>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkClusterRoleBindingClusterRole()
+    {
+        var cluster = GetTestCluster();
+
+        await cluster.AddOrUpdateResource(new V1ClusterRoleBinding
+        {
+            Metadata = new()
+            {
+                Name = "start",
+                NamespaceProperty = "default"
+            },
+            RoleRef = new()
+            {
+                ApiGroup = V1ClusterRole.KubeGroup,
+                Kind = V1ClusterRole.KubeKind,
+                Name = "end"
+            }
+        });
+
+        await cluster.AddOrUpdateResource(new V1ClusterRole
+        {
+            Metadata = new()
+            {
+                Name = "end"
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Graph.Edges.Count.Should().Be(1);
+        vm.Graph.Edges.First().Tail.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ClusterRoleBinding>();
+        vm.Graph.Edges.First().Head.As<ResourceNodeViewModel>().Resource.Should().BeOfType<V1ClusterRole>();
     }
 
     #region ServiceAccount

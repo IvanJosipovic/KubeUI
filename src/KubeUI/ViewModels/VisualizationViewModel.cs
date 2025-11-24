@@ -1,4 +1,5 @@
 ﻿using System.Collections.Specialized;
+using System.Reactive.Subjects;
 using AvaloniaGraphControl;
 using k8s;
 using k8s.Models;
@@ -14,7 +15,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     public partial ICluster? Cluster { get; set; }
 
     [ObservableProperty]
-    public partial Graph Graph { get; set; } = new();
+    public partial Graph Graph { get; set; }
 
     [ObservableProperty]
     public partial ObservableCollection<ResourceNodeViewModel> Resources { get; set; } = [];
@@ -50,6 +51,8 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         _ = cluster.SeedResource<V1Node>();
 
+        _ = cluster.SeedResource<Corev1Event>();
+
         // Workloads
         _ = cluster.SeedResource<V1Pod>();
         _ = cluster.SeedResource<V1ReplicaSet>();
@@ -75,39 +78,50 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         // Access Control
         _ = cluster.SeedResource<V1ServiceAccount>();
+        _ = cluster.SeedResource<V1RoleBinding>();
+        _ = cluster.SeedResource<V1ClusterRoleBinding>();
+        _ = cluster.SeedResource<V1Role>();
+        _ = cluster.SeedResource<V1ClusterRole>();
 
         Run();
     }
 
     public void Run()
     {
-        if (Cluster.SelectedNamespaces.Count == 0)
+        if (Cluster == null || Cluster.SelectedNamespaces.Count == 0)
         {
+            Graph = new Graph();
+            Resources.Clear();
             return;
         }
 
-        Graph.Edges.Clear();
+        var graph = new Graph();
         Resources.Clear();
         PopulateAllResources();
 
-        LinkOwners();
-        LinkEvent();
+        LinkOwners(Resources, graph);
+        LinkEvent(Resources, graph);
 
-        LinkIngress();
-        LinkEndpoints();
-        LinkEndpointSlice();
+        LinkIngress(Resources, graph);
+        LinkEndpoints(Resources, graph);
+        LinkEndpointSlice(Resources, graph);
 
-        LinkConfigMap();
-        LinkSecret();
+        LinkConfigMap(Resources, graph);
+        LinkSecret(Resources, graph);
 
-        LinkServiceAccount();
+        LinkServiceAccount(Resources, graph);
 
-        LinkPersistantVolumeClaim();
-        LinkPersistantVolume();
+        LinkPersistantVolumeClaim(Resources, graph);
+        LinkPersistantVolume(Resources, graph);
 
-        RemoveDuplicateConnections();
+        LinkRoleBinding(Resources, graph);
+        LinkClusterRoleBinding(Resources, graph);
 
-        OnPropertyChanged(nameof(Graph));
+        RemoveDuplicateConnections(graph);
+
+        RemoveNonRelatedToNamespace(graph);
+
+        Graph = graph;
     }
 
     private void SelectedNamespaces_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -127,12 +141,9 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             {
                 var value = (IKubernetesObject<V1ObjectMeta>)item;
 
-                if (value is not V1PersistentVolume)
+                if (!string.IsNullOrEmpty(value.Namespace()) && !Cluster.SelectedNamespaces.Any(x => x.Name() == value.Namespace()))
                 {
-                    if (Cluster.SelectedNamespaces.Count == 0 || !Cluster.SelectedNamespaces.Any(x => x.Name() == value.Namespace()))
-                    {
-                        continue;
-                    }
+                    continue;
                 }
 
                 // HideNoise
@@ -156,9 +167,9 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
     }
 
-    private void RemoveDuplicateConnections()
+    private static void RemoveDuplicateConnections(Graph graph)
     {
-        if (Graph?.Edges == null || Graph.Edges.Count < 2)
+        if (graph?.Edges == null || graph.Edges.Count < 2)
         {
             return;
         }
@@ -166,59 +177,189 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         var seen = new HashSet<(object? Head, object? Tail)>();
 
         // Iterate backwards so we can remove in-place
-        for (int i = Graph.Edges.Count - 1; i >= 0; i--)
+        for (int i = graph.Edges.Count - 1; i >= 0; i--)
         {
-            var edge = Graph.Edges.ElementAt(i);
+            var edge = graph.Edges.ElementAt(i);
             var key = (edge.Head, edge.Tail);
 
             if (!seen.Add(key))
             {
                 // Duplicate found, remove it
-                Graph.Edges.Remove(edge);
+                graph.Edges.Remove(edge);
+            }
+        }
+    }
+
+    private void RemoveNonRelatedToNamespace(Graph graph)
+    {
+        if (graph?.Edges == null || graph.Edges.Count == 0 || Cluster == null)
+        {
+            return;
+        }
+
+        var selectedNamespaces = new HashSet<string>(
+            Cluster.SelectedNamespaces
+                .Where(n => !string.IsNullOrEmpty(n.Name()))
+                .Select(n => n.Name()!));
+
+        if (selectedNamespaces.Count == 0)
+        {
+            return;
+        }
+
+        // Collect all resource nodes participating in edges
+        var nodes = new HashSet<ResourceNodeViewModel>();
+        foreach (var edge in graph.Edges)
+        {
+            if (edge.Head is ResourceNodeViewModel head)
+            {
+                nodes.Add(head);
+            }
+
+            if (edge.Tail is ResourceNodeViewModel tail)
+            {
+                nodes.Add(tail);
+            }
+        }
+
+        if (nodes.Count == 0)
+        {
+            return;
+        }
+
+        // Determine which nodes are in a selected namespace
+        var nodeIsInSelectedNamespace = new Dictionary<ResourceNodeViewModel, bool>();
+        foreach (var node in nodes)
+        {
+            var ns = node.Resource?.Namespace();
+            nodeIsInSelectedNamespace[node] = ns != null && selectedNamespaces.Contains(ns);
+        }
+
+        // Build undirected adjacency list
+        var adjacency = new Dictionary<ResourceNodeViewModel, List<ResourceNodeViewModel>>();
+        foreach (var node in nodes)
+        {
+            adjacency[node] = new List<ResourceNodeViewModel>();
+        }
+
+        foreach (var edge in graph.Edges)
+        {
+            if (edge.Head is ResourceNodeViewModel head && edge.Tail is ResourceNodeViewModel tail)
+            {
+                adjacency[head].Add(tail);
+                adjacency[tail].Add(head);
+            }
+        }
+
+        var visited = new HashSet<ResourceNodeViewModel>();
+        var edgesToRemove = new HashSet<Edge>();
+
+        // Traverse connected components; keep only components that have at least one node in a selected namespace
+        foreach (var start in nodes)
+        {
+            if (!visited.Add(start))
+            {
+                continue;
+            }
+
+            var componentNodes = new List<ResourceNodeViewModel>();
+            var queue = new Queue<ResourceNodeViewModel>();
+            queue.Enqueue(start);
+
+            var componentHasSelectedNamespaceNode = false;
+
+            while (queue.Count > 0)
+            {
+                var current = queue.Dequeue();
+                componentNodes.Add(current);
+
+                if (nodeIsInSelectedNamespace[current])
+                {
+                    componentHasSelectedNamespaceNode = true;
+                }
+
+                foreach (var neighbor in adjacency[current])
+                {
+                    if (visited.Add(neighbor))
+                    {
+                        queue.Enqueue(neighbor);
+                    }
+                }
+            }
+
+            if (!componentHasSelectedNamespaceNode)
+            {
+                var componentSet = new HashSet<ResourceNodeViewModel>(componentNodes);
+
+                // Mark all edges entirely contained in this component for removal
+                foreach (var edge in graph.Edges)
+                {
+                    if (edge.Head is ResourceNodeViewModel head && edge.Tail is ResourceNodeViewModel tail)
+                    {
+                        if (componentSet.Contains(head) && componentSet.Contains(tail))
+                        {
+                            edgesToRemove.Add(edge);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Remove edges not related to any selected namespace chain
+        if (edgesToRemove.Count > 0)
+        {
+            foreach (var edge in edgesToRemove)
+            {
+                graph.Edges.Remove(edge);
             }
         }
     }
 
     #region Links
 
-    private void LinkOwners()
+    private static void LinkOwners(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
     {
-        foreach (var end in Resources)
+        foreach (var end in resources)
         {
-            if (end.Resource.Metadata.OwnerReferences != null)
+            if (end.Resource?.Metadata?.OwnerReferences != null)
             {
                 foreach (var ownerReference in end.Resource.Metadata.OwnerReferences)
                 {
-                    var start = Resources.FirstOrDefault(x => x.Resource.Uid() == ownerReference.Uid);
+                    if (ownerReference.Kind == V1Namespace.KubeKind)
+                    {
+                        continue;
+                    }
+
+                    var start = resources.FirstOrDefault(x => x.Resource.Uid() == ownerReference.Uid);
 
                     if (start != null)
                     {
-                        Graph.Edges.Add(new Edge(start, end));
+                        graph.Edges.Add(new Edge(start, end));
                     }
                 }
             }
         }
     }
 
-    private void LinkIngress()
+    private static void LinkIngress(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
     {
-        foreach (var start in Resources)
+        foreach (var start in resources)
         {
             if (start.Resource is V1Ingress ingress)
             {
-                if (ingress.Spec.Rules != null)
+                if (ingress?.Spec?.Rules != null)
                 {
                     foreach (var serviceBackend in ingress.Spec.Rules
                                                     .SelectMany(x => x.Http.Paths.Where(y => y.Backend?.Service != null)
                                                     .Select(y => y.Backend.Service)))
                     {
-                        foreach (var end in Resources)
+                        foreach (var end in resources)
                         {
                             if (end.Resource is V1Service service)
                             {
                                 if (service.Name() == serviceBackend.Name && service.Namespace() == ingress.Namespace())
                                 {
-                                    Graph.Edges.Add(new Edge(start, end));
+                                    graph.Edges.Add(new Edge(start, end));
                                 }
                             }
                         }
@@ -227,15 +368,15 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
                 if (ingress.Spec.DefaultBackend != null)
                 {
-                    if (ingress.Spec.DefaultBackend.Service != null)
+                    if (ingress?.Spec?.DefaultBackend?.Service != null)
                     {
-                        foreach (var end in Resources)
+                        foreach (var end in resources)
                         {
                             if (end.Resource is V1Service service)
                             {
                                 if (service.Name() == ingress.Spec.DefaultBackend.Service.Name && service.Namespace() == ingress.Namespace())
                                 {
-                                    Graph.Edges.Add(new Edge(start, end));
+                                    graph.Edges.Add(new Edge(start, end));
                                 }
                             }
                         }
@@ -249,9 +390,9 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
     }
 
-    private void LinkEndpoints()
+    private static void LinkEndpoints(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
     {
-        foreach (var start in Resources)
+        foreach (var start in resources)
         {
             if (start.Resource is V1Endpoints endpoint)
             {
@@ -274,13 +415,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             continue;
                         }
 
-                        foreach (var end in Resources)
+                        foreach (var end in resources)
                         {
                             if (end.Resource is V1Pod pod)
                             {
                                 if (pod.Uid() == address.TargetRef.Uid)
                                 {
-                                    Graph.Edges.Add(new Edge(start, end));
+                                    graph.Edges.Add(new Edge(start, end));
                                 }
                             }
                         }
@@ -290,9 +431,9 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
     }
 
-    private void LinkEndpointSlice()
+    private static void LinkEndpointSlice(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
     {
-        foreach (var start in Resources)
+        foreach (var start in resources)
         {
             if (start.Resource is V1EndpointSlice endpointSlice)
             {
@@ -308,13 +449,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                         continue;
                     }
 
-                    foreach (var end in Resources)
+                    foreach (var end in resources)
                     {
                         if (end.Resource is V1Pod pod)
                         {
                             if (pod.Uid() == endpoint.TargetRef.Uid)
                             {
-                                Graph.Edges.Add(new Edge(start, end));
+                                graph.Edges.Add(new Edge(start, end));
                             }
                         }
                     }
@@ -323,13 +464,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
     }
 
-    private void LinkConfigMap()
+    private static void LinkConfigMap(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
     {
-        foreach (var start in Resources)
+        foreach (var start in resources)
         {
             if (start.Resource is V1Deployment deployment)
             {
-                if (deployment.Spec.Template.Spec.Containers != null)
+                if (deployment?.Spec?.Template?.Spec?.Containers != null)
                 {
                     foreach (var container in deployment.Spec.Template.Spec.Containers)
                     {
@@ -339,13 +480,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (env.ValueFrom?.ConfigMapKeyRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1ConfigMap configMap)
                                         {
                                             if (configMap.Name() == env.ValueFrom.ConfigMapKeyRef.Name && configMap.Namespace() == deployment.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -359,13 +500,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (envFrom.ConfigMapRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1ConfigMap configMap)
                                         {
                                             if (configMap.Name() == envFrom.ConfigMapRef.Name && configMap.Namespace() == deployment.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -375,7 +516,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     }
                 }
 
-                if (deployment.Spec.Template.Spec.InitContainers != null)
+                if (deployment?.Spec?.Template?.Spec?.InitContainers != null)
                 {
                     foreach (var container in deployment.Spec.Template.Spec.InitContainers)
                     {
@@ -385,13 +526,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (env.ValueFrom?.ConfigMapKeyRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1ConfigMap configMap)
                                         {
                                             if (configMap.Name() == env.ValueFrom.ConfigMapKeyRef.Name && configMap.Namespace() == deployment.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -405,13 +546,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (envFrom.ConfigMapRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1ConfigMap configMap)
                                         {
                                             if (configMap.Name() == envFrom.ConfigMapRef.Name && configMap.Namespace() == deployment.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -421,19 +562,19 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     }
                 }
 
-                if (deployment.Spec.Template.Spec.Volumes != null)
+                if (deployment?.Spec?.Template?.Spec?.Volumes != null)
                 {
                     foreach (var volume in deployment.Spec.Template.Spec.Volumes)
                     {
                         if (volume.ConfigMap != null)
                         {
-                            foreach (var end in Resources)
+                            foreach (var end in resources)
                             {
                                 if (end.Resource is V1ConfigMap configMap)
                                 {
                                     if (configMap.Name() == volume.ConfigMap.Name && configMap.Namespace() == deployment.Namespace())
                                     {
-                                        Graph.Edges.Add(new Edge(start, end));
+                                        graph.Edges.Add(new Edge(start, end));
                                     }
                                 }
                             }
@@ -444,7 +585,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
             if (start.Resource is V1ReplicaSet replicaSet)
             {
-                if (replicaSet.Spec.Template.Spec.Containers != null)
+                if (replicaSet?.Spec?.Template?.Spec?.Containers != null)
                 {
                     foreach (var container in replicaSet.Spec.Template.Spec.Containers)
                     {
@@ -454,13 +595,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (env.ValueFrom?.ConfigMapKeyRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1ConfigMap configMap)
                                         {
                                             if (configMap.Name() == env.ValueFrom.ConfigMapKeyRef.Name && configMap.Namespace() == replicaSet.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -474,13 +615,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (envFrom.ConfigMapRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1ConfigMap configMap)
                                         {
                                             if (configMap.Name() == envFrom.ConfigMapRef.Name && configMap.Namespace() == replicaSet.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -490,7 +631,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     }
                 }
 
-                if (replicaSet.Spec.Template.Spec.InitContainers != null)
+                if (replicaSet?.Spec?.Template?.Spec?.InitContainers != null)
                 {
                     foreach (var container in replicaSet.Spec.Template.Spec.InitContainers)
                     {
@@ -500,13 +641,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (env.ValueFrom?.ConfigMapKeyRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1ConfigMap configMap)
                                         {
                                             if (configMap.Name() == env.ValueFrom.ConfigMapKeyRef.Name && configMap.Namespace() == replicaSet.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -520,13 +661,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (envFrom.ConfigMapRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1ConfigMap configMap)
                                         {
                                             if (configMap.Name() == envFrom.ConfigMapRef.Name && configMap.Namespace() == replicaSet.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -536,19 +677,19 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     }
                 }
 
-                if (replicaSet.Spec.Template.Spec.Volumes != null)
+                if (replicaSet?.Spec?.Template?.Spec?.Volumes != null)
                 {
                     foreach (var volume in replicaSet.Spec.Template.Spec.Volumes)
                     {
                         if (volume.ConfigMap != null)
                         {
-                            foreach (var end in Resources)
+                            foreach (var end in resources)
                             {
                                 if (end.Resource is V1ConfigMap configMap)
                                 {
                                     if (configMap.Name() == volume.ConfigMap.Name && configMap.Namespace() == replicaSet.Namespace())
                                     {
-                                        Graph.Edges.Add(new Edge(start, end));
+                                        graph.Edges.Add(new Edge(start, end));
                                     }
                                 }
                             }
@@ -559,7 +700,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
             if (start.Resource is V1StatefulSet statefulSet)
             {
-                if (statefulSet.Spec.Template.Spec.Containers != null)
+                if (statefulSet?.Spec?.Template?.Spec?.Containers != null)
                 {
                     foreach (var container in statefulSet.Spec.Template.Spec.Containers)
                     {
@@ -569,13 +710,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (env.ValueFrom?.ConfigMapKeyRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1ConfigMap configMap)
                                         {
                                             if (configMap.Name() == env.ValueFrom.ConfigMapKeyRef.Name && configMap.Namespace() == statefulSet.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -589,13 +730,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (envFrom.ConfigMapRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1ConfigMap configMap)
                                         {
                                             if (configMap.Name() == envFrom.ConfigMapRef.Name && configMap.Namespace() == statefulSet.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -605,7 +746,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     }
                 }
 
-                if (statefulSet.Spec.Template.Spec.InitContainers != null)
+                if (statefulSet?.Spec?.Template?.Spec?.InitContainers != null)
                 {
                     foreach (var container in statefulSet.Spec.Template.Spec.InitContainers)
                     {
@@ -615,13 +756,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (env.ValueFrom?.ConfigMapKeyRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1ConfigMap configMap)
                                         {
                                             if (configMap.Name() == env.ValueFrom.ConfigMapKeyRef.Name && configMap.Namespace() == statefulSet.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -635,13 +776,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (envFrom.ConfigMapRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1ConfigMap configMap)
                                         {
                                             if (configMap.Name() == envFrom.ConfigMapRef.Name && configMap.Namespace() == statefulSet.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -651,19 +792,19 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     }
                 }
 
-                if (statefulSet.Spec.Template.Spec.Volumes != null)
+                if (statefulSet?.Spec?.Template?.Spec?.Volumes != null)
                 {
                     foreach (var volume in statefulSet.Spec.Template.Spec.Volumes)
                     {
                         if (volume.ConfigMap != null)
                         {
-                            foreach (var end in Resources)
+                            foreach (var end in resources)
                             {
                                 if (end.Resource is V1ConfigMap configMap)
                                 {
                                     if (configMap.Name() == volume.ConfigMap.Name && configMap.Namespace() == statefulSet.Namespace())
                                     {
-                                        Graph.Edges.Add(new Edge(start, end));
+                                        graph.Edges.Add(new Edge(start, end));
                                     }
                                 }
                             }
@@ -674,7 +815,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
             if (start.Resource is V1DaemonSet daemonSet)
             {
-                if (daemonSet.Spec.Template.Spec.Containers != null)
+                if (daemonSet?.Spec?.Template?.Spec?.Containers != null)
                 {
                     foreach (var container in daemonSet.Spec.Template.Spec.Containers)
                     {
@@ -684,11 +825,11 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (env.ValueFrom?.ConfigMapKeyRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1ConfigMap configMap)
                                         {
-                                            Graph.Edges.Add(new Edge(start, end));
+                                            graph.Edges.Add(new Edge(start, end));
                                         }
                                     }
                                 }
@@ -701,13 +842,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (envFrom.ConfigMapRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1ConfigMap configMap)
                                         {
                                             if (configMap.Name() == envFrom.ConfigMapRef.Name && configMap.Namespace() == daemonSet.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -717,7 +858,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     }
                 }
 
-                if (daemonSet.Spec.Template.Spec.InitContainers != null)
+                if (daemonSet?.Spec?.Template?.Spec?.InitContainers != null)
                 {
                     foreach (var container in daemonSet.Spec.Template.Spec.InitContainers)
                     {
@@ -727,13 +868,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (env.ValueFrom?.ConfigMapKeyRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1ConfigMap configMap)
                                         {
                                             if (configMap.Name() == env.ValueFrom.ConfigMapKeyRef.Name && configMap.Namespace() == daemonSet.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -747,13 +888,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (envFrom.ConfigMapRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1ConfigMap configMap)
                                         {
                                             if (configMap.Name() == envFrom.ConfigMapRef.Name && configMap.Namespace() == daemonSet.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -763,19 +904,19 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     }
                 }
 
-                if (daemonSet.Spec.Template.Spec.Volumes != null)
+                if (daemonSet?.Spec?.Template?.Spec?.Volumes != null)
                 {
                     foreach (var volume in daemonSet.Spec.Template.Spec.Volumes)
                     {
                         if (volume.ConfigMap != null)
                         {
-                            foreach (var end in Resources)
+                            foreach (var end in resources)
                             {
                                 if (end.Resource is V1ConfigMap configMap)
                                 {
                                     if (configMap.Name() == volume.ConfigMap.Name && configMap.Namespace() == daemonSet.Namespace())
                                     {
-                                        Graph.Edges.Add(new Edge(start, end));
+                                        graph.Edges.Add(new Edge(start, end));
                                     }
                                 }
                             }
@@ -796,13 +937,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (env.ValueFrom?.ConfigMapKeyRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1ConfigMap configMap)
                                         {
                                             if (configMap.Name() == env.ValueFrom.ConfigMapKeyRef.Name && configMap.Namespace() == pod.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -816,13 +957,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (envFrom.ConfigMapRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1ConfigMap configMap)
                                         {
                                             if (configMap.Name() == envFrom.ConfigMapRef.Name && configMap.Namespace() == pod.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -842,13 +983,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (env.ValueFrom?.ConfigMapKeyRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1ConfigMap configMap)
                                         {
                                             if (configMap.Name() == env.ValueFrom.ConfigMapKeyRef.Name && configMap.Namespace() == pod.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -862,13 +1003,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (envFrom.ConfigMapRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1ConfigMap configMap)
                                         {
                                             if (configMap.Name() == envFrom.ConfigMapRef.Name && configMap.Namespace() == pod.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -884,13 +1025,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     {
                         if (volume.ConfigMap != null)
                         {
-                            foreach (var end in Resources)
+                            foreach (var end in resources)
                             {
                                 if (end.Resource is V1ConfigMap configMap)
                                 {
                                     if (configMap.Name() == volume.ConfigMap.Name && configMap.Namespace() == pod.Namespace())
                                     {
-                                        Graph.Edges.Add(new Edge(start, end));
+                                        graph.Edges.Add(new Edge(start, end));
                                     }
                                 }
                             }
@@ -901,13 +1042,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
     }
 
-    private void LinkSecret()
+    private static void LinkSecret(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
     {
-        foreach (var start in Resources)
+        foreach (var start in resources)
         {
             if (start.Resource is V1Deployment deployment)
             {
-                if (deployment.Spec.Template.Spec.Containers != null)
+                if (deployment?.Spec?.Template?.Spec?.Containers != null)
                 {
                     foreach (var container in deployment.Spec.Template.Spec.Containers)
                     {
@@ -917,13 +1058,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (env.ValueFrom?.SecretKeyRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1Secret secret)
                                         {
                                             if (secret.Name() == env.ValueFrom.SecretKeyRef.Name && secret.Namespace() == deployment.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -937,13 +1078,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (envFrom.SecretRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1Secret secret)
                                         {
                                             if (secret.Name() == envFrom.SecretRef.Name && secret.Namespace() == deployment.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -953,7 +1094,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     }
                 }
 
-                if (deployment.Spec.Template.Spec.InitContainers != null)
+                if (deployment?.Spec?.Template?.Spec?.InitContainers != null)
                 {
                     foreach (var container in deployment.Spec.Template.Spec.InitContainers)
                     {
@@ -963,13 +1104,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (env.ValueFrom?.SecretKeyRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1Secret secret)
                                         {
                                             if (secret.Name() == env.ValueFrom.SecretKeyRef.Name && secret.Namespace() == deployment.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -983,13 +1124,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (envFrom.SecretRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1Secret secret)
                                         {
                                             if (secret.Name() == envFrom.SecretRef.Name && secret.Namespace() == deployment.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -999,19 +1140,19 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     }
                 }
 
-                if (deployment.Spec.Template.Spec.Volumes != null)
+                if (deployment?.Spec?.Template?.Spec?.Volumes != null)
                 {
                     foreach (var volume in deployment.Spec.Template.Spec.Volumes)
                     {
                         if (volume.Secret != null)
                         {
-                            foreach (var end in Resources)
+                            foreach (var end in resources)
                             {
                                 if (end.Resource is V1Secret secret)
                                 {
                                     if (secret.Name() == volume.Secret.SecretName && secret.Namespace() == deployment.Namespace())
                                     {
-                                        Graph.Edges.Add(new Edge(start, end));
+                                        graph.Edges.Add(new Edge(start, end));
                                     }
                                 }
                             }
@@ -1022,7 +1163,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
             if (start.Resource is V1ReplicaSet replicaSet)
             {
-                if (replicaSet.Spec.Template.Spec.Containers != null)
+                if (replicaSet?.Spec?.Template?.Spec?.Containers != null)
                 {
                     foreach (var container in replicaSet.Spec.Template.Spec.Containers)
                     {
@@ -1032,13 +1173,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (env.ValueFrom?.SecretKeyRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1Secret secret)
                                         {
                                             if (secret.Name() == env.ValueFrom.SecretKeyRef.Name && secret.Namespace() == replicaSet.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -1052,13 +1193,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (envFrom.SecretRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1Secret secret)
                                         {
                                             if (secret.Name() == envFrom.SecretRef.Name && secret.Namespace() == replicaSet.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -1068,7 +1209,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     }
                 }
 
-                if (replicaSet.Spec.Template.Spec.InitContainers != null)
+                if (replicaSet?.Spec?.Template?.Spec?.InitContainers != null)
                 {
                     foreach (var container in replicaSet.Spec.Template.Spec.InitContainers)
                     {
@@ -1078,13 +1219,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (env.ValueFrom?.SecretKeyRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1Secret secret)
                                         {
                                             if (secret.Name() == env.ValueFrom.SecretKeyRef.Name && secret.Namespace() == replicaSet.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -1098,13 +1239,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (envFrom.SecretRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1Secret secret)
                                         {
                                             if (secret.Name() == envFrom.SecretRef.Name && secret.Namespace() == replicaSet.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -1114,19 +1255,19 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     }
                 }
 
-                if (replicaSet.Spec.Template.Spec.Volumes != null)
+                if (replicaSet?.Spec?.Template?.Spec?.Volumes != null)
                 {
                     foreach (var volume in replicaSet.Spec.Template.Spec.Volumes)
                     {
                         if (volume.Secret != null)
                         {
-                            foreach (var end in Resources)
+                            foreach (var end in resources)
                             {
                                 if (end.Resource is V1Secret secret)
                                 {
                                     if (secret.Name() == volume.Secret.SecretName && secret.Namespace() == replicaSet.Namespace())
                                     {
-                                        Graph.Edges.Add(new Edge(start, end));
+                                        graph.Edges.Add(new Edge(start, end));
                                     }
                                 }
                             }
@@ -1137,7 +1278,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
             if (start.Resource is V1StatefulSet statefulSet)
             {
-                if (statefulSet.Spec.Template.Spec.Containers != null)
+                if (statefulSet?.Spec?.Template?.Spec?.Containers != null)
                 {
                     foreach (var container in statefulSet.Spec.Template.Spec.Containers)
                     {
@@ -1147,13 +1288,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (env.ValueFrom?.SecretKeyRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1Secret secret)
                                         {
                                             if (secret.Name() == env.ValueFrom.SecretKeyRef.Name && secret.Namespace() == statefulSet.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -1167,13 +1308,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (envFrom.SecretRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1Secret secret)
                                         {
                                             if (secret.Name() == envFrom.SecretRef.Name && secret.Namespace() == statefulSet.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -1183,7 +1324,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     }
                 }
 
-                if (statefulSet.Spec.Template.Spec.InitContainers != null)
+                if (statefulSet?.Spec?.Template?.Spec?.InitContainers != null)
                 {
                     foreach (var container in statefulSet.Spec.Template.Spec.InitContainers)
                     {
@@ -1193,13 +1334,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (env.ValueFrom?.SecretKeyRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1Secret secret)
                                         {
                                             if (secret.Name() == env.ValueFrom.SecretKeyRef.Name && secret.Namespace() == statefulSet.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -1213,13 +1354,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (envFrom.SecretRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1Secret secret)
                                         {
                                             if (secret.Name() == envFrom.SecretRef.Name && secret.Namespace() == statefulSet.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -1229,19 +1370,19 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     }
                 }
 
-                if (statefulSet.Spec.Template.Spec.Volumes != null)
+                if (statefulSet?.Spec?.Template?.Spec?.Volumes != null)
                 {
                     foreach (var volume in statefulSet.Spec.Template.Spec.Volumes)
                     {
                         if (volume.Secret != null)
                         {
-                            foreach (var end in Resources)
+                            foreach (var end in resources)
                             {
                                 if (end.Resource is V1Secret secret)
                                 {
                                     if (secret.Name() == volume.Secret.SecretName && secret.Namespace() == statefulSet.Namespace())
                                     {
-                                        Graph.Edges.Add(new Edge(start, end));
+                                        graph.Edges.Add(new Edge(start, end));
                                     }
                                 }
                             }
@@ -1252,7 +1393,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
             if (start.Resource is V1DaemonSet daemonSet)
             {
-                if (daemonSet.Spec.Template.Spec.Containers != null)
+                if (daemonSet?.Spec?.Template?.Spec?.Containers != null)
                 {
                     foreach (var container in daemonSet.Spec.Template.Spec.Containers)
                     {
@@ -1262,13 +1403,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (env.ValueFrom?.SecretKeyRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1Secret secret)
                                         {
                                             if (secret.Name() == env.ValueFrom.SecretKeyRef.Name && secret.Namespace() == daemonSet.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -1282,13 +1423,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (envFrom.SecretRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1Secret secret)
                                         {
                                             if (secret.Name() == envFrom.SecretRef.Name && secret.Namespace() == daemonSet.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -1298,7 +1439,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     }
                 }
 
-                if (daemonSet.Spec.Template.Spec.InitContainers != null)
+                if (daemonSet?.Spec?.Template?.Spec?.InitContainers != null)
                 {
                     foreach (var container in daemonSet.Spec.Template.Spec.InitContainers)
                     {
@@ -1308,13 +1449,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (env.ValueFrom?.SecretKeyRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1Secret secret)
                                         {
                                             if (secret.Name() == env.ValueFrom.SecretKeyRef.Name && secret.Namespace() == daemonSet.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -1328,13 +1469,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (envFrom.SecretRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1Secret secret)
                                         {
                                             if (secret.Name() == envFrom.SecretRef.Name && secret.Namespace() == daemonSet.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -1344,19 +1485,19 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     }
                 }
 
-                if (daemonSet.Spec.Template.Spec.Volumes != null)
+                if (daemonSet?.Spec?.Template?.Spec?.Volumes != null)
                 {
                     foreach (var volume in daemonSet.Spec.Template.Spec.Volumes)
                     {
                         if (volume.Secret != null)
                         {
-                            foreach (var end in Resources)
+                            foreach (var end in resources)
                             {
                                 if (end.Resource is V1Secret secret)
                                 {
                                     if (secret.Name() == volume.Secret.SecretName && secret.Namespace() == daemonSet.Namespace())
                                     {
-                                        Graph.Edges.Add(new Edge(start, end));
+                                        graph.Edges.Add(new Edge(start, end));
                                     }
                                 }
                             }
@@ -1377,13 +1518,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (env.ValueFrom?.SecretKeyRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1Secret secret)
                                         {
                                             if (secret.Name() == env.ValueFrom.SecretKeyRef.Name && secret.Namespace() == pod.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -1397,13 +1538,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (envFrom.SecretRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1Secret secret)
                                         {
                                             if (secret.Name() == envFrom.SecretRef.Name && secret.Namespace() == pod.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -1413,7 +1554,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     }
                 }
 
-                if (pod.Spec.InitContainers != null)
+                if (pod?.Spec?.InitContainers != null)
                 {
                     foreach (var container in pod.Spec.InitContainers)
                     {
@@ -1423,13 +1564,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (env.ValueFrom?.SecretKeyRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1Secret secret)
                                         {
                                             if (secret.Name() == env.ValueFrom.SecretKeyRef.Name && secret.Namespace() == pod.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -1443,13 +1584,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                             {
                                 if (envFrom.SecretRef != null)
                                 {
-                                    foreach (var end in Resources)
+                                    foreach (var end in resources)
                                     {
                                         if (end.Resource is V1Secret secret)
                                         {
                                             if (secret.Name() == envFrom.SecretRef.Name && secret.Namespace() == pod.Namespace())
                                             {
-                                                Graph.Edges.Add(new Edge(start, end));
+                                                graph.Edges.Add(new Edge(start, end));
                                             }
                                         }
                                     }
@@ -1459,19 +1600,19 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     }
                 }
 
-                if (pod.Spec.Volumes != null)
+                if (pod?.Spec?.Volumes != null)
                 {
                     foreach (var volume in pod.Spec.Volumes)
                     {
                         if (volume.Secret != null)
                         {
-                            foreach (var end in Resources)
+                            foreach (var end in resources)
                             {
                                 if (end.Resource is V1Secret secret)
                                 {
                                     if (secret.Name() == volume.Secret.SecretName && secret.Namespace() == pod.Namespace())
                                     {
-                                        Graph.Edges.Add(new Edge(start, end));
+                                        graph.Edges.Add(new Edge(start, end));
                                     }
                                 }
                             }
@@ -1486,13 +1627,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 {
                     foreach (var secretReference in serviceAccount.Secrets)
                     {
-                        foreach (var end in Resources)
+                        foreach (var end in resources)
                         {
                             if (end.Resource is V1Secret secret)
                             {
                                 if (secret.Uid() == secretReference.Uid && end.Resource.Namespace() == serviceAccount.Namespace())
                                 {
-                                    Graph.Edges.Add(new Edge(start, end));
+                                    graph.Edges.Add(new Edge(start, end));
                                 }
                             }
                         }
@@ -1502,49 +1643,49 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
     }
 
-    private void LinkEvent()
+    private static void LinkEvent(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
     {
-        foreach (var end in Resources)
+        foreach (var start in resources)
         {
-            if (end.Resource is Corev1Event @event)
+            if (start.Resource is Corev1Event @event)
             {
-                foreach (var start in Resources)
+                foreach (var end in resources)
                 {
-                    if (start.Resource.Uid() == @event.InvolvedObject.Uid)
+                    if (end.Resource.Uid() == @event.InvolvedObject.Uid)
                     {
-                        Graph.Edges.Add(new Edge(start, end));
+                        graph.Edges.Add(new Edge(start, end));
                     }
                 }
             }
         }
     }
 
-    private void LinkServiceAccount()
+    private static void LinkServiceAccount(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
     {
-        foreach (var start in Resources)
+        foreach (var start in resources)
         {
             if (start.Resource is V1Deployment deployment)
             {
-                foreach (var end in Resources)
+                foreach (var end in resources)
                 {
                     if (end.Resource is V1ServiceAccount serviceAccount &&
                         serviceAccount.Name() == deployment.Spec.Template.Spec.ServiceAccountName &&
                         end.Resource.Namespace() == deployment.Namespace())
                     {
-                        Graph.Edges.Add(new Edge(start, end));
+                        graph.Edges.Add(new Edge(start, end));
                     }
                 }
             }
 
             if (start.Resource is V1ReplicaSet replicaSet)
             {
-                foreach (var end in Resources)
+                foreach (var end in resources)
                 {
                     if (end.Resource is V1ServiceAccount serviceAccount)
                     {
                         if (serviceAccount.Name() == replicaSet.Spec.Template.Spec.ServiceAccountName && end.Resource.Namespace() == replicaSet.Namespace())
                         {
-                            Graph.Edges.Add(new Edge(start, end));
+                            graph.Edges.Add(new Edge(start, end));
                         }
                     }
                 }
@@ -1552,13 +1693,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
             if (start.Resource is V1DaemonSet daemonSet)
             {
-                foreach (var end in Resources)
+                foreach (var end in resources)
                 {
                     if (end.Resource is V1ServiceAccount serviceAccount)
                     {
                         if (serviceAccount.Name() == daemonSet.Spec.Template.Spec.ServiceAccountName && end.Resource.Namespace() == daemonSet.Namespace())
                         {
-                            Graph.Edges.Add(new Edge(start, end));
+                            graph.Edges.Add(new Edge(start, end));
                         }
                     }
                 }
@@ -1566,13 +1707,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
             if (start.Resource is V1StatefulSet statefulSet)
             {
-                foreach (var end in Resources)
+                foreach (var end in resources)
                 {
                     if (end.Resource is V1ServiceAccount serviceAccount)
                     {
                         if (serviceAccount.Name() == statefulSet.Spec.Template.Spec.ServiceAccountName && end.Resource.Namespace() == statefulSet.Namespace())
                         {
-                            Graph.Edges.Add(new Edge(start, end));
+                            graph.Edges.Add(new Edge(start, end));
                         }
                     }
                 }
@@ -1580,13 +1721,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
             if (start.Resource is V1Pod pod)
             {
-                foreach (var end in Resources)
+                foreach (var end in resources)
                 {
                     if (end.Resource is V1ServiceAccount serviceAccount)
                     {
                         if (serviceAccount.Name() == pod.Spec.ServiceAccountName && end.Resource.Namespace() == pod.Namespace())
                         {
-                            Graph.Edges.Add(new Edge(start, end));
+                            graph.Edges.Add(new Edge(start, end));
                         }
                     }
                 }
@@ -1594,9 +1735,9 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
     }
 
-    private void LinkPersistantVolumeClaim()
+    private static void LinkPersistantVolumeClaim(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
     {
-        foreach (var start in Resources)
+        foreach (var start in resources)
         {
             if (start.Resource is V1Deployment deployment)
             {
@@ -1606,13 +1747,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     {
                         if (volume?.PersistentVolumeClaim != null)
                         {
-                            foreach (var end in Resources)
+                            foreach (var end in resources)
                             {
                                 if (end.Resource is V1PersistentVolumeClaim pvc)
                                 {
                                     if (pvc.Name() == volume.PersistentVolumeClaim.ClaimName && pvc.Namespace() == deployment.Namespace())
                                     {
-                                        Graph.Edges.Add(new Edge(start, end));
+                                        graph.Edges.Add(new Edge(start, end));
                                     }
                                 }
                             }
@@ -1629,13 +1770,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     {
                         if (volume?.PersistentVolumeClaim != null)
                         {
-                            foreach (var end in Resources)
+                            foreach (var end in resources)
                             {
                                 if (end.Resource is V1PersistentVolumeClaim pvc)
                                 {
                                     if (pvc.Name() == volume.PersistentVolumeClaim.ClaimName && pvc.Namespace() == replicaSet.Namespace())
                                     {
-                                        Graph.Edges.Add(new Edge(start, end));
+                                        graph.Edges.Add(new Edge(start, end));
                                     }
                                 }
                             }
@@ -1652,13 +1793,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     {
                         if (volume?.PersistentVolumeClaim != null)
                         {
-                            foreach (var end in Resources)
+                            foreach (var end in resources)
                             {
                                 if (end.Resource is V1PersistentVolumeClaim pvc)
                                 {
                                     if (pvc.Name() == volume.PersistentVolumeClaim.ClaimName && pvc.Namespace() == statefulSet.Namespace())
                                     {
-                                        Graph.Edges.Add(new Edge(start, end));
+                                        graph.Edges.Add(new Edge(start, end));
                                     }
                                 }
                             }
@@ -1675,13 +1816,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     {
                         if (volume?.PersistentVolumeClaim != null)
                         {
-                            foreach (var end in Resources)
+                            foreach (var end in resources)
                             {
                                 if (end.Resource is V1PersistentVolumeClaim pvc)
                                 {
                                     if (pvc.Name() == volume.PersistentVolumeClaim.ClaimName && pvc.Namespace() == daemonSet.Namespace())
                                     {
-                                        Graph.Edges.Add(new Edge(start, end));
+                                        graph.Edges.Add(new Edge(start, end));
                                     }
                                 }
                             }
@@ -1698,13 +1839,13 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     {
                         if (volume?.PersistentVolumeClaim != null)
                         {
-                            foreach (var end in Resources)
+                            foreach (var end in resources)
                             {
                                 if (end.Resource is V1PersistentVolumeClaim pvc)
                                 {
                                     if (pvc.Name() == volume.PersistentVolumeClaim.ClaimName && pvc.Namespace() == pod.Namespace())
                                     {
-                                        Graph.Edges.Add(new Edge(start, end));
+                                        graph.Edges.Add(new Edge(start, end));
                                     }
                                 }
                             }
@@ -1715,21 +1856,135 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
     }
 
-    private void LinkPersistantVolume()
+    private static void LinkPersistantVolume(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
     {
-        foreach (var start in Resources)
+        foreach (var start in resources)
         {
             if (start.Resource is V1PersistentVolumeClaim persistentVolumeClaim)
             {
                 if (persistentVolumeClaim?.Spec?.VolumeName != null)
                 {
-                    foreach (var end in Resources)
+                    foreach (var end in resources)
                     {
                         if (end.Resource is V1PersistentVolume persistentVolume)
                         {
                             if (persistentVolume.Name() == persistentVolumeClaim.Spec.VolumeName)
                             {
-                                Graph.Edges.Add(new Edge(start, end));
+                                graph.Edges.Add(new Edge(start, end));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static void LinkRoleBinding(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
+    {
+        foreach (var start in resources)
+        {
+            if (start.Resource is V1RoleBinding roleBinding)
+            {
+                if (roleBinding.Subjects != null)
+                {
+                    foreach (var subject in roleBinding.Subjects)
+                    {
+                        foreach (var end in resources)
+                        {
+                            if (subject.Kind == V1ServiceAccount.KubeKind)
+                            {
+                                if (end.Resource is V1ServiceAccount serviceAccount)
+                                {
+                                    if (serviceAccount.Name() == subject.Name
+                                        && serviceAccount.Namespace() == subject.NamespaceProperty)
+                                    {
+                                        graph.Edges.Add(new Edge(start, end));
+                                    }
+                                }
+                            }
+
+                            //todo User
+
+                            //todo Group
+                        }
+                    }
+                }
+
+                if (roleBinding.RoleRef != null)
+                {
+                    foreach (var end in resources)
+                    {
+                        if (roleBinding.RoleRef.Kind == V1Role.KubeKind)
+                        {
+                            if (end.Resource is V1Role role)
+                            {
+                                if (role.Name() == roleBinding.RoleRef.Name
+                                    && role.Namespace() == roleBinding.Namespace())
+                                {
+                                    graph.Edges.Add(new Edge(start, end));
+                                }
+                            }
+                        }
+
+                        if (roleBinding.RoleRef.Kind == V1ClusterRole.KubeKind)
+                        {
+                            if (end.Resource is V1ClusterRole clusterRole)
+                            {
+                                if (clusterRole.Name() == roleBinding.RoleRef.Name)
+                                {
+                                    graph.Edges.Add(new Edge(start, end));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static void LinkClusterRoleBinding(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
+    {
+        foreach (var start in resources)
+        {
+            if (start.Resource is V1ClusterRoleBinding roleBinding)
+            {
+                if (roleBinding.Subjects != null)
+                {
+                    foreach (var subject in roleBinding.Subjects)
+                    {
+                        foreach (var end in resources)
+                        {
+                            if (subject.Kind == V1ServiceAccount.KubeKind)
+                            {
+                                if (end.Resource is V1ServiceAccount serviceAccount)
+                                {
+                                    if (serviceAccount.Name() == subject.Name
+                                        && serviceAccount.Namespace() == subject.NamespaceProperty)
+                                    {
+                                        graph.Edges.Add(new Edge(start, end));
+                                    }
+                                }
+                            }
+
+                            //todo User
+
+                            //todo Group
+                        }
+                    }
+                }
+
+                if (roleBinding.RoleRef != null)
+                {
+                    foreach (var end in resources)
+                    {
+                        if (roleBinding.RoleRef.Kind == V1ClusterRole.KubeKind)
+                        {
+                            if (end.Resource is V1ClusterRole clusterRole)
+                            {
+                                if (clusterRole.Name() == roleBinding.RoleRef.Name)
+                                {
+                                    graph.Edges.Add(new Edge(start, end));
+                                }
                             }
                         }
                     }
