@@ -831,7 +831,10 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                     {
                                         if (end.Resource is V1ConfigMap configMap)
                                         {
-                                            graph.Edges.Add(new Edge(start, end));
+                                            if (configMap.Name() == env.ValueFrom?.ConfigMapKeyRef.Name && configMap.Namespace() == daemonSet.Namespace())
+                                            {
+                                                graph.Edges.Add(new Edge(start, end));
+                                            }
                                         }
                                     }
                                 }
