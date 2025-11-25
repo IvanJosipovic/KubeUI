@@ -60,11 +60,41 @@ public sealed partial class MainViewModel : ViewModelBase
 
         factory.DockableAdded += (_, args) =>
         {
+            var rightDock = factory.GetDockable<IToolDock>("RightDock");
+            var rightSplitter = factory.GetDockable<IProportionalDockSplitter>("RightDockSplitter");
+            var bottomDock = factory.GetDockable<IToolDock>("BottomDock");
+            var bottomSplitter = factory.GetDockable<IProportionalDockSplitter>("BottomDockSplitter");
+
+            if (rightDock?.VisibleDockables?.Count >= 1 && rightSplitter?.CanResize == false)
+            {
+                Dispatcher.UIThread.Invoke(() => rightSplitter.CanResize = true);
+            }
+
+            if (bottomDock?.VisibleDockables?.Count >= 1 && bottomSplitter?.CanResize == false)
+            {
+                Dispatcher.UIThread.Invoke(() => bottomSplitter.CanResize = true);
+            }
+
             _logger.LogDebug($"[DockableAdded] Title='{args.Dockable?.Title}'");
         };
 
         factory.DockableRemoved += (_, args) =>
         {
+            var rightDock = factory.GetDockable<IToolDock>("RightDock");
+            var rightSplitter = factory.GetDockable<IProportionalDockSplitter>("RightDockSplitter");
+            var bottomDock = factory.GetDockable<IToolDock>("BottomDock");
+            var bottomSplitter = factory.GetDockable<IProportionalDockSplitter>("BottomDockSplitter");
+
+            if (rightDock?.VisibleDockables?.Count == 0 && rightSplitter?.CanResize == true)
+            {
+                Dispatcher.UIThread.Invoke(() => rightSplitter.CanResize = false);
+            }
+
+            if (bottomDock?.VisibleDockables?.Count == 0 && bottomSplitter?.CanResize == true)
+            {
+                Dispatcher.UIThread.Invoke(() => bottomSplitter.CanResize = false);
+            }
+
             _logger.LogDebug($"[DockableRemoved] Title='{args.Dockable?.Title}'");
         };
 

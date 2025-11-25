@@ -2227,7 +2227,7 @@ public class VisualizationTests
     }
 
     [AvaloniaFact]
-    public async Task LinkEndpointSlice()
+    public async Task LinkPodToEndpointSlice()
     {
         var cluster = GetTestCluster();
 
@@ -2270,7 +2270,7 @@ public class VisualizationTests
     }
 
     [AvaloniaFact]
-    public async Task LinkEndpoints()
+    public async Task LinkPodToEndpointEndpoints()
     {
         var cluster = GetTestCluster();
 
@@ -2319,7 +2319,7 @@ public class VisualizationTests
     }
 
     [AvaloniaFact]
-    public async Task LinkIngress()
+    public async Task LinkIngressToService()
     {
         var cluster = GetTestCluster();
 
@@ -2418,7 +2418,7 @@ public class VisualizationTests
     }
 
     [AvaloniaFact]
-    public async Task LinkPersistantVolume()
+    public async Task LinkPersistentVolumeClaimToPersistantVolume()
     {
         var cluster = GetTestCluster();
 

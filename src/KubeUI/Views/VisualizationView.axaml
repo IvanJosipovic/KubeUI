@@ -73,9 +73,12 @@
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
                 ClipToBounds="True"
+                EnableConstrains="False"
+                EnableGestures="True"
                 Focusable="True"
-                Stretch="Uniform"
-                ZoomSpeed="1.2">
+                PanButton="Left"
+                Stretch="None"
+                ZoomSpeed="1.5">
                 <ZoomBorder.GestureRecognizers>
                     <PinchGestureRecognizer />
                 </ZoomBorder.GestureRecognizers>
@@ -83,7 +86,7 @@
                     Graph="{Binding Graph}"
                     LayoutMethod="{Binding LayoutMethod}">
                     <agc:GraphPanel.DataTemplates>
-                        <DataTemplate DataType="vm:VisualizationViewModel+ResourceNodeViewModel">
+                        <DataTemplate x:DataType="vm:VisualizationViewModel+ResourceNodeViewModel">
                             <StackPanel Width="64" Margin="40,16,40,16">
                                 <ToolTip.Tip>
                                     <MultiBinding StringFormat="{} {0}/{1} {2}">
@@ -94,7 +97,16 @@
                                 </ToolTip.Tip>
                                 <Svg Width="64" Path="{Binding IconPath}">
                                     <Svg.ContextFlyout>
-                                        <MenuFlyout />
+                                        <MenuFlyout>
+                                            <MenuItem
+                                                Command="{Binding ViewPropertiesCommand}"
+                                                CommandParameter="{Binding Resource}"
+                                                Header="Properties" />
+                                            <MenuItem
+                                                Command="{Binding ViewYamlCommand}"
+                                                CommandParameter="{Binding Resource}"
+                                                Header="View Yaml" />
+                                        </MenuFlyout>
                                     </Svg.ContextFlyout>
                                 </Svg>
                                 <TextBlock

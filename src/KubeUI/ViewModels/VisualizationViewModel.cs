@@ -1,6 +1,7 @@
 ﻿using System.Collections.Specialized;
 using System.Reactive.Subjects;
 using AvaloniaGraphControl;
+using Dock.Model.Core;
 using k8s;
 using k8s.Models;
 using KubeUI.Client;
@@ -86,7 +87,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         Run();
     }
 
-    public void Run()
+    private void Run()
     {
         if (Cluster == null || Cluster.SelectedNamespaces.Count == 0)
         {
@@ -158,6 +159,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
                 var node = new ResourceNodeViewModel
                 {
+                    Cluster = Cluster,
                     Resource = value,
                     IconPath = Utilities.GetKubeAssetPath(value.GetType())
                 };
@@ -2000,12 +2002,38 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
     }
 
-    public sealed partial class ResourceNodeViewModel: ObservableObject
+    public sealed partial class ResourceNodeViewModel: ViewModelBase
     {
+        [ObservableProperty]
+        public partial ICluster Cluster { get; set; }
+
         [ObservableProperty]
         public partial IKubernetesObject<V1ObjectMeta> Resource { get; set; }
 
         [ObservableProperty]
         public partial string IconPath { get; set; }
+
+        [RelayCommand]
+        private void ViewYaml(IKubernetesObject<V1ObjectMeta> resource)
+        {
+            var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
+
+            vm.Initialize(Cluster, resource);
+
+            Factory.AddToBottom(vm);
+        }
+
+        [RelayCommand]
+        private void ViewProperties(IKubernetesObject<V1ObjectMeta> resource)
+        {
+            var propType = typeof(ResourcePropertiesViewModel<>).MakeGenericType(resource.GetType());
+
+            var instance = Application.Current.GetRequiredService(propType) as IDockable;
+            instance.CanFloat = false;
+
+            propType.GetMethod(nameof(ResourcePropertiesViewModel<V1Pod>.Initialize)).Invoke(instance, [Cluster, resource]);
+
+            Factory?.AddToRight(instance);
+        }
     }
 }
