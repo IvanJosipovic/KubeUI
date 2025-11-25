@@ -1,0 +1,143 @@
+<UserControl
+    x:Class="KubeUI.Views.ResourceYamlView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+    xmlns:assets="clr-namespace:KubeUI.Assets"
+    xmlns:converters="using:KubeUI.Converters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:ic="using:FluentIcons.Avalonia"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="clr-namespace:KubeUI.ViewModels"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    x:DataType="vm:ResourceYamlViewModel"
+    mc:Ignorable="d">
+
+    <Design.DataContext>
+        <vm:ResourceYamlViewModel />
+    </Design.DataContext>
+
+    <Grid
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch"
+        RowDefinitions="Auto,*">
+
+        <!--  Read-only toolbar  -->
+        <StackPanel Grid.Row="0"
+            IsVisible="{Binding EditMode, Converter={x:Static converters:Converters.InverseBooleanConverter}}"
+            Orientation="Horizontal">
+            <Button Command="{Binding SetEditModeCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Edit}">
+                <ic:FluentIcon Icon="DocumentEdit" />
+            </Button>
+            <ToggleButton
+                Command="{Binding SetHideNoisyFieldsCommand}"
+                IsChecked="{Binding HideNoisyFields}"
+                ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_HideNoisyFields}">
+                <ic:FluentIcon Icon="EyeOff" />
+            </ToggleButton>
+            <ToggleButton IsChecked="{Binding WordWrap}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlView_WordWrap}">
+                <ic:FluentIcon Icon="TextWrap" />
+            </ToggleButton>
+        </StackPanel>
+
+        <!--  Edit toolbar  -->
+        <StackPanel Grid.Row="0"
+            IsVisible="{Binding EditMode}"
+            Orientation="Horizontal">
+            <Button Command="{Binding SaveCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Save}">
+                <ic:FluentIcon Icon="Save" />
+            </Button>
+            <Button Command="{Binding SetEditModeCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Cancel}">
+                <ic:FluentIcon Icon="Dismiss" />
+            </Button>
+            <ToggleButton IsChecked="{Binding WordWrap}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlView_WordWrap}">
+                <ic:FluentIcon Icon="TextWrap" />
+            </ToggleButton>
+        </StackPanel>
+
+        <!--  YAML editor  -->
+        <ae:TextEditor Name="Editor" Grid.Row="1"
+            Background="{DynamicResource SystemAltHighColor}"
+            Document="{Binding YamlDocument, Mode=TwoWay}"
+            FontFamily="Cascadia Mono"
+            FontSize="{Binding Settings.Settings.ConsoleFontSize}"
+            FontWeight="Normal"
+            HorizontalScrollBarVisibility="Auto"
+            IsReadOnly="{Binding EditMode, Converter={x:Static converters:Converters.InverseBooleanConverter}}"
+            ShowLineNumbers="True"
+            VerticalScrollBarVisibility="Visible"
+            WordWrap="{Binding WordWrap}">
+            <ae:TextEditor.Options>
+                <ae:TextEditorOptions
+                    AllowScrollBelowDocument="false"
+                    EnableEmailHyperlinks="False"
+                    EnableHyperlinks="false"
+                    ShowBoxForControlCharacters="False" />
+            </ae:TextEditor.Options>
+            <ae:TextEditor.KeyBindings>
+                <KeyBinding Command="{Binding UndoCommand}" Gesture="Ctrl+Z" />
+            </ae:TextEditor.KeyBindings>
+            <ae:TextEditor.ContextMenu>
+                <ContextMenu>
+                    <MenuItem
+                        Click="CutClick"
+                        Header="{x:Static assets:Resources.Action_Cut}"
+                        HotKey="Ctrl+X"
+                        IsVisible="{Binding EditMode}">
+                        <MenuItem.Icon>
+                            <ic:FluentIcon Icon="Cut" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem
+                        Click="CopyClick"
+                        Header="{x:Static assets:Resources.Action_Copy}"
+                        HotKey="Ctrl+C">
+                        <MenuItem.Icon>
+                            <ic:FluentIcon Icon="Copy" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem
+                        Click="PasteClick"
+                        Header="{x:Static assets:Resources.Action_Paste}"
+                        HotKey="Ctrl+V"
+                        IsVisible="{Binding EditMode}">
+                        <MenuItem.Icon>
+                            <ic:FluentIcon Icon="ClipboardPaste" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem
+                        Click="DeleteClick"
+                        Header="{x:Static assets:Resources.Action_Delete}"
+                        HotKey="Back"
+                        IsVisible="{Binding EditMode}">
+                        <MenuItem.Icon>
+                            <ic:FluentIcon Icon="Delete" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+
+                    <Separator IsVisible="{Binding EditMode}" />
+
+                    <MenuItem
+                        Click="UndoClick"
+                        Header="{x:Static assets:Resources.Action_Undo}"
+                        HotKey="Ctrl+Z"
+                        IsVisible="{Binding EditMode}">
+                        <MenuItem.Icon>
+                            <ic:FluentIcon Icon="ArrowUndo" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem
+                        Click="RedoClick"
+                        Header="{x:Static assets:Resources.Action_Redo}"
+                        HotKey="Ctrl+Y"
+                        IsVisible="{Binding EditMode}">
+                        <MenuItem.Icon>
+                            <ic:FluentIcon Icon="ArrowRedo" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                </ContextMenu>
+            </ae:TextEditor.ContextMenu>
+        </ae:TextEditor>
+    </Grid>
+</UserControl>

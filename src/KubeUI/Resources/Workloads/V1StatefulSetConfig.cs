@@ -1,4 +1,5 @@
 ﻿using FluentAvalonia.UI.Controls;
+using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
@@ -36,9 +37,9 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
             new()
             {
                 Header = "Restart",
-                IconResource = "arrow_sync_regular",
+                FluentIcon = Icon.ArrowSync,
                 CommandPath = nameof(RestartStatefulSetCommand),
-                CommandParameterPath = "SelectedItem.Value"
+                CommandParameterPath = "SelectedItem"
             },
         ];
     }

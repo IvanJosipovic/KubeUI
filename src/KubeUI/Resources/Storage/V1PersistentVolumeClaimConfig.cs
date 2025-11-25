@@ -22,7 +22,7 @@ public sealed partial class V1PersistentVolumeClaimConfig : ResourceConfigBase<V
             new ResourceListColumn<V1PersistentVolumeClaim, string>()
             {
                 Name = "Size",
-                Field = x => x.Spec.Resources.Requests["storage"].Value,
+                Field = x => x.Spec.Resources.Requests["storage"].CanonicalizeString(ResourceQuantity.SuffixFormat.BinarySI),
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             AgeColumn(),

@@ -1,8 +1,10 @@
-﻿using KubeUI.Client;
+﻿using Avalonia.Styling;
+using KubeUI.Client;
+using Yarp.Kubernetes.Controller.Client;
 
 namespace KubeUI.Resources
 {
-    public interface IResourceConfig: IInitializeCluster
+    public interface IResourceConfig : IInitializeCluster
     {
         bool IsNamespaced { get; }
         bool ShowNewResource { get; }
@@ -12,7 +14,7 @@ namespace KubeUI.Resources
         int Order { get; }
         string Name { get; }
         string? Category { get; }
-        StyleGroup ListStyle();
+        IStyle ListStyle();
         Task UpdatePermissions();
         Type Type { get; }
     }

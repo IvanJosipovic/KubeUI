@@ -1,5 +1,4 @@
 ﻿using Dock.Model.Core;
-using Humanizer;
 using k8s.Models;
 using static KubeUI.Client.Cluster;
 
@@ -47,7 +46,7 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
             new()
             {
                 Header = "View Items",
-                CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<V1CustomResourceDefinition>>(x => x.SelectedItem.Value),
+                CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<V1CustomResourceDefinition>>(x => x.SelectedItem),
                 CommandPath =  nameof(ListCRDCommand)
             },
         ];
@@ -56,7 +55,7 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
     [RelayCommand(CanExecute = nameof(CanListCRD))]
     private void ListCRD(V1CustomResourceDefinition crd)
     {
-        var version = crd.Spec.Versions.First(x => x.Served && x.Storage);
+        var version = crd.Spec.Versions.First(x => x.Storage);
 
         var type = Cluster.ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
         var resourceListType = typeof(ResourceListViewModel<>).MakeGenericType(type);

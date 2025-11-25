@@ -13,14 +13,14 @@ public sealed partial class V1PodDisruptionBudgetConfig : ResourceConfigBase<V1P
         return [
             NameColumn(SortDirection.Ascending),
             NamespaceColumn(),
-            new ResourceListColumn<V1PodDisruptionBudget, IntstrIntOrString>()
+            new ResourceListColumn<V1PodDisruptionBudget, IntOrString>()
             {
                 Name = "Min Available",
                 Display = x => x.Spec.MinAvailable != null ? x.Spec.MinAvailable.Value : "",
                 Field = x => x.Spec.MinAvailable,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            new ResourceListColumn<V1PodDisruptionBudget, IntstrIntOrString>()
+            new ResourceListColumn<V1PodDisruptionBudget, IntOrString>()
             {
                 Name = "Max Unavailable",
                 Display = x => x.Spec.MaxUnavailable != null ? x.Spec.MaxUnavailable.Value : "",

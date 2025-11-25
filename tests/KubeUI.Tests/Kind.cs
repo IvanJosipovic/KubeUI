@@ -1,8 +1,8 @@
-﻿using CliWrap;
+﻿using System.Runtime.InteropServices;
+using System.Text;
+using CliWrap;
 using k8s;
 using k8s.KubeConfigModels;
-using System.Runtime.InteropServices;
-using System.Text;
 
 namespace KubeUI.Core.Tests;
 
@@ -17,7 +17,8 @@ public class Kind
 
     public async Task DownloadClient()
     {
-        if (File.Exists(FileName)) return;
+        if (File.Exists(FileName))
+            return;
 
         var client = new HttpClient();
         var arch = "amd64";

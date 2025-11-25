@@ -4,6 +4,7 @@ using k8s.Models;
 using KubeUI.Client;
 using KubeUI.ViewModels;
 using KubeUI.Views;
+using Yarp.Kubernetes.Controller.Client;
 
 namespace KubeUI.Tests;
 
@@ -19,9 +20,9 @@ public class UnitTest1
     public void PathBuilder()
     {
         Utilities.PathBuilder<V1ContainerPort>(x => x.ContainerPort).Should().Be("ContainerPort");
-        Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Value.Spec).Should().Be("SelectedItem.Value.Spec");
-        Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Value.Spec.Affinity).Should().Be("SelectedItem.Value.Spec.Affinity");
-        Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Value.Spec.Containers).Should().Be("SelectedItem.Value.Spec.Containers");
+        Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Spec).Should().Be("SelectedItem.Spec");
+        Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Spec.Affinity).Should().Be("SelectedItem.Spec.Affinity");
+        Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Spec.Containers).Should().Be("SelectedItem.Spec.Containers");
     }
 
     [Fact]

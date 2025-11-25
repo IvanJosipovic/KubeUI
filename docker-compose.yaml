@@ -1,6 +1,6 @@
 services:
   aspire-dashboard:
-    image: mcr.microsoft.com/dotnet/aspire-dashboard:9
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:latest
     pull_policy: always
     container_name: aspire-dashboard
     ports:

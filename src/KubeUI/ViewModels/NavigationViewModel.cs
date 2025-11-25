@@ -1,21 +1,17 @@
 ﻿using Avalonia.Controls.Notifications;
 using Avalonia.Platform.Storage;
 using Dock.Model.Core;
+using FluentIcons.Common;
 using KubeUI.Client;
 using Swordfish.NET.Collections;
+using Yarp.Kubernetes.Controller.Client;
 
 namespace KubeUI.ViewModels;
 
 public sealed partial class NavigationViewModel : ViewModelBase
 {
     private readonly ILogger<NavigationViewModel> _logger;
-    private INotificationManager _notificationManager
-    {
-        get
-        {
-            return Application.Current.GetRequiredService<INotificationManager>();
-        }
-    }
+    private INotificationManager _notificationManager => Application.Current.GetRequiredService<INotificationManager>();
 
     [ObservableProperty]
     public partial ClusterManager ClusterManager { get; set; }
@@ -51,25 +47,20 @@ public sealed partial class NavigationViewModel : ViewModelBase
         }
     }
 
-    private void SelectResourceNavigationLink(ResourceNavigationLink link)
+    private void SelectResourceNavigationLink(ResourceNavigationLink nav)
     {
-        var kind = GroupApiVersionKind.From(link.ControlType);
-
-        var resourceListType = typeof(ResourceListViewModel<>).MakeGenericType(link.ControlType);
+        var resourceListType = typeof(ResourceListViewModel<>).MakeGenericType(nav.ControlType);
 
         var vm = Application.Current.GetRequiredService(resourceListType) as IDockable;
 
         if (vm is IInitializeCluster init)
         {
-            init.Initialize(link.Cluster);
+            init.Initialize(nav.Cluster);
         }
 
-        Dispatcher.UIThread.Post(() =>
-        {
-            link.Objects = link.Cluster.Objects[kind].Items;
+        nav.Count ??= nav.Cluster.GetResourceCount(nav.ControlType);
 
-            Factory.AddToDocuments(vm);
-        });
+        Dispatcher.UIThread.Post(() => Factory.AddToDocuments(vm));
     }
 
     private async Task SelectNavigationLink(NavigationLink link)
@@ -81,7 +72,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
             {
                 Title = Assets.Resources.NavigationViewModel_LoadYaml,
                 AllowMultiple = true,
-                FileTypeFilter = new List<FilePickerFileType>() { new("Yaml") { Patterns = ["*.yaml", ".yml"] } }
+                FileTypeFilter = [new("Yaml") { Patterns = ["*.yaml", ".yml"] }]
             });
 
             foreach (var file in files)
@@ -144,6 +135,9 @@ public partial class NavigationItem : ObservableObject
     public partial string? StyleIcon { get; set; }
 
     [ObservableProperty]
+    public partial Icon? FluentIcon { get; set; }
+
+    [ObservableProperty]
     public partial string Name { get; set; }
 
     [ObservableProperty]
@@ -168,7 +162,7 @@ public partial class NavigationLink : NavigationItem
 public partial class ResourceNavigationLink : NavigationLink
 {
     [ObservableProperty]
-    public partial ICollection? Objects { get; set; }
+    public partial IObservable<int>? Count { get; set; }
 
     public string IconPath => Utilities.GetKubeAssetPath(ControlType);
 }
@@ -177,7 +171,7 @@ public class NavigationItemNameComparer : IComparer<NavigationItem>
 {
     public int Compare(NavigationItem? x, NavigationItem? y)
     {
-        return x?.Name.CompareTo(y?.Name) ?? 0;
+        return x?.Name.CompareTo(y?.Name, StringComparison.Ordinal) ?? 0;
     }
 }
 

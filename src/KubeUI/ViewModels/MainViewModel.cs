@@ -1,12 +1,12 @@
 ﻿using System.Runtime.InteropServices;
 using Dock.Model.Controls;
 using Dock.Model.Core;
-using KubeUI.Client;
-using Velopack.Sources;
-using Velopack;
 using FluentAvalonia.UI.Controls;
-using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using HanumanInstitute.MvvmDialogs;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using KubeUI.Client;
+using Velopack;
+using Velopack.Sources;
 
 namespace KubeUI.ViewModels;
 
@@ -14,7 +14,8 @@ public sealed partial class MainViewModel : ViewModelBase
 {
     private readonly ILogger<MainViewModel> _logger;
 
-    private readonly ISettingsService _settingsService;
+    [ObservableProperty]
+    private partial ISettingsService SettingsService { get; set; }
 
     [ObservableProperty]
     public partial ClusterManager ClusterManager { get; set; }
@@ -25,7 +26,7 @@ public sealed partial class MainViewModel : ViewModelBase
     {
         _logger = Application.Current.GetRequiredService<ILogger<MainViewModel>>();
 
-        _settingsService = Application.Current.GetRequiredService<ISettingsService>();
+        SettingsService = Application.Current.GetRequiredService<ISettingsService>();
 
         ClusterManager = Application.Current.GetRequiredService<ClusterManager>();
 
@@ -59,11 +60,41 @@ public sealed partial class MainViewModel : ViewModelBase
 
         factory.DockableAdded += (_, args) =>
         {
+            var rightDock = factory.GetDockable<IToolDock>("RightDock");
+            var rightSplitter = factory.GetDockable<IProportionalDockSplitter>("RightDockSplitter");
+            var bottomDock = factory.GetDockable<IToolDock>("BottomDock");
+            var bottomSplitter = factory.GetDockable<IProportionalDockSplitter>("BottomDockSplitter");
+
+            if (rightDock?.VisibleDockables?.Count >= 1 && rightSplitter?.CanResize == false)
+            {
+                Dispatcher.UIThread.Invoke(() => rightSplitter.CanResize = true);
+            }
+
+            if (bottomDock?.VisibleDockables?.Count >= 1 && bottomSplitter?.CanResize == false)
+            {
+                Dispatcher.UIThread.Invoke(() => bottomSplitter.CanResize = true);
+            }
+
             _logger.LogDebug($"[DockableAdded] Title='{args.Dockable?.Title}'");
         };
 
         factory.DockableRemoved += (_, args) =>
         {
+            var rightDock = factory.GetDockable<IToolDock>("RightDock");
+            var rightSplitter = factory.GetDockable<IProportionalDockSplitter>("RightDockSplitter");
+            var bottomDock = factory.GetDockable<IToolDock>("BottomDock");
+            var bottomSplitter = factory.GetDockable<IProportionalDockSplitter>("BottomDockSplitter");
+
+            if (rightDock?.VisibleDockables?.Count == 0 && rightSplitter?.CanResize == true)
+            {
+                Dispatcher.UIThread.Invoke(() => rightSplitter.CanResize = false);
+            }
+
+            if (bottomDock?.VisibleDockables?.Count == 0 && bottomSplitter?.CanResize == true)
+            {
+                Dispatcher.UIThread.Invoke(() => bottomSplitter.CanResize = false);
+            }
+
             _logger.LogDebug($"[DockableRemoved] Title='{args.Dockable?.Title}'");
         };
 
@@ -208,8 +239,8 @@ public sealed partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void SwitchTheme()
     {
-        _settingsService.Settings.Theme = _settingsService.Settings.Theme == LocalThemeVariant.Light ? LocalThemeVariant.Dark : LocalThemeVariant.Light;
-        _settingsService.SaveSettings();
+        SettingsService.Settings.Theme = SettingsService.Settings.Theme == LocalThemeVariant.Light ? LocalThemeVariant.Dark : LocalThemeVariant.Light;
+        SettingsService.SaveSettings();
     }
 
     [RelayCommand]
@@ -236,7 +267,7 @@ public sealed partial class MainViewModel : ViewModelBase
 
     private async Task CheckForUpdates()
     {
-        var source = new GithubSource("https://github.com/IvanJosipovic/KubeUI", null, _settingsService.Settings.PreReleaseChannel);
+        var source = new GithubSource("https://github.com/IvanJosipovic/KubeUI", null, SettingsService.Settings.PreReleaseChannel);
 
         var arch = "x64";
 

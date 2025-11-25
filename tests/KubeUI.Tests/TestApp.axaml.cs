@@ -1,18 +1,18 @@
 using Avalonia;
-using Avalonia.Markup.Xaml;
-using KubeUI.Client;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Dock.Model.Core;
-using KubernetesCRDModelGen;
 using Avalonia.Controls;
+using Avalonia.Controls.Notifications;
+using Avalonia.Markup.Xaml;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Dock.Model.Core;
+using HanumanInstitute.MvvmDialogs;
+using KubernetesCRDModelGen;
+using KubeUI.Client;
 using KubeUI.ViewModels;
 using KubeUI.Views;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using HanumanInstitute.MvvmDialogs;
 using Moq;
-using Avalonia.Controls.Notifications;
 
 namespace KubeUI.Tests;
 

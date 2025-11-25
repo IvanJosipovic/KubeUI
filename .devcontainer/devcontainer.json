@@ -28,7 +28,7 @@
     },
     "remoteEnv": {
         "DOTNET_MULTILEVEL_LOOKUP": "0",
-        "TARGET": "net9.0"
+        "TARGET": "net10.0"
     },
     "portsAttributes": {
     },

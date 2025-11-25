@@ -1,7 +1,7 @@
 ﻿using YamlDotNet.Core;
-using YamlDotNet.Serialization.EventEmitters;
-using YamlDotNet.Serialization;
 using YamlDotNet.Core.Events;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.EventEmitters;
 
 namespace KubeUI.Client.Serialization;
 

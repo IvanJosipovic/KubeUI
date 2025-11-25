@@ -1,15 +1,19 @@
-﻿using Avalonia.Controls.Notifications;
+﻿using System.Text.Json;
+using Avalonia.Controls.Notifications;
+using Avalonia.Styling;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
-using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using Humanizer;
-using k8s.Models;
 using k8s;
-using KubeUI.Client.Informer;
+using k8s.Models;
 using KubeUI.Client;
 using KubeUI.Controls;
-using System.Text.Json;
+using OpenTelemetry.Resources;
+using Yarp.Kubernetes.Controller;
+using Yarp.Kubernetes.Controller.Client;
 using static KubeUI.Client.Cluster;
 
 namespace KubeUI.Resources;
@@ -45,7 +49,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public virtual int Order { get; }
 
-    public virtual StyleGroup ListStyle() => [];
+    public virtual IStyle ListStyle() => null;
 
     public virtual IList<IResourceListColumn> Columns()
     {
@@ -69,11 +73,11 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         }
     }
 
-    public virtual IList<ResourceMenuItem> MenuItems()=> [];
+    public virtual IList<ResourceMenuItem> MenuItems() => [];
 
-    public virtual IList<(Cluster.Verb verb, string? subResource)> CustomPermissions() => [];
+    public virtual IList<(Verb verb, string? subResource)> CustomPermissions() => [];
 
-    public virtual Control[] Properties(T resource)=> [];
+    public virtual Control[] Properties(T resource) => [];
 
     protected ResourceListColumn<T, string> NameColumn(SortDirection sort = SortDirection.None)
     {
@@ -118,29 +122,29 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         {
             Header = "View",
             CommandPath = nameof(ViewCommand),
-            CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<T>>(x => x.SelectedItem.Value),
-            IconResource = "ic_fluent_panel_right_filled",
+            CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<T>>(x => x.SelectedItem),
+            FluentIcon = Icon.PanelRight,
         },
         new()
         {
             Header = "View Yaml",
             CommandPath = nameof(ViewYamlCommand),
-            CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<T>>(x => x.SelectedItem.Value),
-            IconResource = "code_regular",
+            CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<T>>(x => x.SelectedItem),
+            FluentIcon = Icon.Code,
         },
         new()
         {
             Header = "Delete",
             CommandPath = nameof(DeleteCommand),
             CommandParameterPath = "SelectedItems",
-            IconResource = "delete_regular",
+            FluentIcon = Icon.Delete,
         }
     ];
 
     public IList<(Verb verb, string? subResource)> DefaultPermissions() => [
         (Verb.Create, null),
         (Verb.Delete, null),
-        (Verb.Get, null),
+        //(Verb.Get, null),
         (Verb.List, null),
         (Verb.Patch, null),
         (Verb.Update, null),
@@ -163,15 +167,19 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public async Task UpdatePermissions()
     {
+        var tasks = new List<Task>();
+
         foreach (var (verb, subResource) in DefaultPermissions())
         {
-            await Cluster.UpdateCanIAnyNamespaceAsync<T>(verb, subResource);
+            tasks.Add(Cluster.UpdatePermissionsAllNamespaceAsync<T>(verb, subResource));
         }
 
         foreach (var (verb, subResource) in CustomPermissions())
         {
-            await Cluster.UpdateCanIAnyNamespaceAsync<T>(verb, subResource);
+            tasks.Add(Cluster.UpdatePermissionsAllNamespaceAsync<T>(verb, subResource));
         }
+
+        await Task.WhenAll(tasks);
     }
 
     #region Actions
@@ -219,20 +227,20 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         {
             var exceptions = new List<Exception>();
 
-            foreach (var item in items.Cast<KeyValuePair<NamespacedName, T>>().ToList())
+            foreach (var item in items.Cast<T>().ToList())
             {
                 try
                 {
-                    await Cluster.Delete<T>(item.Value);
+                    await Cluster.DeleteResource<T>(item);
                 }
                 catch (JsonException ex)
                 {
-                    _logger.LogWarning(ex, $"JsonException occurred while deleting resource {item.Key.Namespace}/{item.Key.Name}");
+                    _logger.LogWarning(ex, $"JsonException occurred while deleting resource {item.Namespace()}/{item.Name()}");
                 }
                 catch (Exception ex)
                 {
                     exceptions.Add(ex);
-                    Utilities.HandleException(_logger, _notificationManager, ex, $"Error Deleting {item.Key.Namespace}/{item.Key.Name}", sendNotification: true);
+                    Utilities.HandleException(_logger, _notificationManager, ex, $"Error Deleting {item.Namespace()}/{item.Name()}", sendNotification: true);
                 }
             }
 
@@ -250,14 +258,11 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             return false;
         }
 
-        foreach (var item in items)
+        foreach (var item in items.Cast<T>().ToList().GroupBy(x => x.Namespace()))
         {
-            if (item is KeyValuePair<NamespacedName, T> resource )
+            if (!Cluster.CanI<T>(Verb.Delete, item.Key))
             {
-                if (!Cluster.CanI<T>(Verb.Delete, resource.Value.Namespace()))
-                {
-                    return false;
-                }
+                return false;
             }
         }
 
@@ -347,6 +352,8 @@ public class ResourceMenuItem
     public string? ItemSourcePath { get; set; }
 
     public string? IconResource { get; set; }
+
+    public Icon? FluentIcon { get; set; }
 
     public ResourceMenuItem? ItemTemplate { get; set; }
 

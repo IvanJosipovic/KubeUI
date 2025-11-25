@@ -1,23 +1,19 @@
-﻿using Avalonia.Controls.Notifications;
+﻿using System.Linq.Expressions;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Text.Json;
+using Avalonia.Controls.Notifications;
 using Avalonia.Data.Converters;
 using Avalonia.Input;
 using AvaloniaEdit;
 using k8s;
 using k8s.Autorest;
 using k8s.Models;
-using System.Linq.Expressions;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Text.Json;
 
 namespace KubeUI;
 
 public static class Utilities
 {
-    public static FuncValueConverter<bool, bool> InverseBooleanConverter { get; } = new FuncValueConverter<bool, bool>(b => !b);
-
-    public static FuncValueConverter<object, bool> NotNullConverter { get; } = new FuncValueConverter<object, bool>((x) => x != null);
-
     public static T GetRequiredService<T>(this Application? app)
     {
         if (app.TryFindResource(typeof(IServiceProvider), out var service))
@@ -36,65 +32,6 @@ public static class Utilities
         }
 
         throw new Exception($"Cant find {typeof(IServiceProvider).Name}");
-    }
-
-    public static T Set<T>(this T control, Action<T> func) where T : Control
-    {
-        func.Invoke(control);
-
-        return control;
-    }
-
-    public static TDataGrid Columns<TDataGrid>(this TDataGrid container, params DataGridColumn[] items) where TDataGrid : DataGrid
-    {
-        IList items2 = container.Columns;
-        if (items2 != null)
-        {
-            foreach (DataGridColumn value in items)
-            {
-                items2.Add(value);
-            }
-        }
-
-        return container;
-    }
-
-    //public static TControl ContextMenu<TControl>(this TControl container, params Control[] items) where TControl : Control
-    //{
-    //    container.ContextMenu ??= new ContextMenu();
-
-    //    foreach (var item in items)
-    //    {
-    //        container.ContextMenu.Items.Add(item);
-    //    }
-
-    //    return container;
-    //}
-
-    public static TControl ContextFlyout<TControl>(this TControl container, params Control[] items) where TControl : Control
-    {
-        container.ContextFlyout ??= new MenuFlyout();
-
-        var menu = (MenuFlyout)container.ContextFlyout;
-
-        foreach (var item in items)
-        {
-            menu.Items.Add(item);
-        }
-
-        return container;
-    }
-
-    public static TControl Set<TControl,TValue>(this TControl control, AvaloniaProperty property, TValue value, FuncValueConverter<TValue, object> converter, BindingMode? bindingMode = null, object? bindingSource = null, [CallerArgumentExpression("value")] string? ps = null) where TControl : Control
-    {
-        return control._setEx(property, ps, () => control[property] = converter.TryConvert(value), bindingMode, converter, bindingSource);
-    }
-
-    public static TControl KeyBindings<TControl>(this TControl container, params KeyBinding[] items) where TControl : Control
-    {
-        container.KeyBindings.AddRange(items);
-
-        return container;
     }
 
     public static string GetKubeAssetPath(Type type)
@@ -288,12 +225,12 @@ public static class Utilities
 
                             if (status != null)
                             {
-                                notificationManage.Show(new Notification(status.Reason, status.Message + "\n\n" + status?.Details?.Causes?.Select(x => x.Message).Aggregate((x, y) => x + "\n" + y) ?? "", type, TimeSpan.FromSeconds(30)));
+                                Dispatcher.UIThread.Post(() => notificationManage.Show(new Notification(status.Reason, status.Message + "\n\n" + status?.Details?.Causes?.Select(x => x.Message).Aggregate((x, y) => x + "\n" + y) ?? "", type, TimeSpan.FromSeconds(30))));
                             }
                         }
                         else
                         {
-                            notificationManage.Show(new Notification(message, item.Message, type));
+                            Dispatcher.UIThread.Post(() => notificationManage.Show(new Notification(message, item.Message, type)));
                         }
                     }
                 }
@@ -303,12 +240,12 @@ public static class Utilities
 
                     if (status != null)
                     {
-                        notificationManage.Show(new Notification(status.Reason, status.Message + "\n\n" + status?.Details?.Causes?.Select(x => x.Message).Aggregate((x, y) => x + "\n" + y) ?? "", type, TimeSpan.FromSeconds(30)));
+                        Dispatcher.UIThread.Post(() => notificationManage.Show(new Notification(status.Reason, status.Message + "\n\n" + status?.Details?.Causes?.Select(x => x.Message).Aggregate((x, y) => x + "\n" + y) ?? "", type, TimeSpan.FromSeconds(30))));
                     }
                 }
                 else
                 {
-                    notificationManage.Show(new Notification(message, ex.Message, type));
+                    Dispatcher.UIThread.Post(() => notificationManage.Show(new Notification(message, ex.Message, type)));
                 }
             }
             catch (Exception ex2)
@@ -347,15 +284,5 @@ public static class Utilities
         }
 
         throw new Exception("Unknown Expression Type");
-    }
-
-    private static readonly PropertyInfo s_scrollViewerProperty = typeof(TextEditor).GetProperty("ScrollViewer", BindingFlags.Instance | BindingFlags.NonPublic);
-
-    public static ScrollViewer? GetScrollViewer(this TextEditor editor)
-    {
-        if (editor != null && s_scrollViewerProperty.GetValue(editor) is ScrollViewer sc)
-            return sc;
-
-        return null;
     }
 }

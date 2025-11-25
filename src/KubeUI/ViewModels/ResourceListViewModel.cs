@@ -1,21 +1,22 @@
 using System.Collections.Specialized;
 using System.Linq.Expressions;
+using System.Reactive.Linq;
 using Avalonia.Styling;
 using DynamicData;
-using DynamicData.Binding;
 using Humanizer;
 using k8s;
 using k8s.Models;
 using KubeUI.Client;
-using KubeUI.Client.Informer;
 using KubeUI.Resources;
-using Avalonia.Collections;
+using Yarp.Kubernetes.Controller.Client;
 
 namespace KubeUI.ViewModels;
 
-public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluster, IDisposable where T : class, IKubernetesObject<V1ObjectMeta>, new()
+public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluster, IDisposable, IResourceListViewModel where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     private readonly ILogger<ResourceListViewModel<T>> _logger;
+
+    public ISettingsService SettingsService { get; }
 
     [ObservableProperty]
     public partial ICluster Cluster { get; set; }
@@ -24,13 +25,13 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     public partial GroupApiVersionKind Kind { get; set; }
 
     [ObservableProperty]
-    public partial AvaloniaDictionary<NamespacedName, T> Objects { get; set; }
+    public partial ISourceCache<T, string> Objects { get; set; }
 
     [ObservableProperty]
-    public partial KeyValuePair<NamespacedName, T> SelectedItem { get; set; }
+    public partial T SelectedItem { get; set; }
 
     [ObservableProperty]
-    public partial ReadOnlyObservableCollection<KeyValuePair<NamespacedName, T>>? DataGridObjects { get; private set; }
+    public partial ReadOnlyObservableCollection<T>? DataGridObjects { get; private set; }
 
     [ObservableProperty]
     public partial string SearchQuery { get; set; }
@@ -49,6 +50,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     public ResourceListViewModel()
     {
         _logger = Application.Current.GetRequiredService<ILogger<ResourceListViewModel<T>>>();
+        SettingsService = Application.Current.GetRequiredService<ISettingsService>();
     }
 
     public void Initialize(ICluster cluster)
@@ -59,7 +61,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         Id = Cluster.Name + "-" + Kind;
         ResourceConfig = (ResourceConfigBase<T>)Cluster.GetResourceConfig(Kind);
 
-        Objects = Cluster.GetObjectDictionary<T>();
+        Cluster.SeedResource<T>().GetAwaiter().GetResult();
+
+        Objects = Cluster.GetResourceSourceCache<T>();
 
         Cluster.SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
 
@@ -71,25 +75,22 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _filter?.Dispose();
 
         _filter = Objects
-            .ToObservableChangeSet<AvaloniaDictionary<NamespacedName, T>, KeyValuePair<NamespacedName, T>>()
+            .Connect()
             .Filter(GenerateFilter())
+            .ObserveOn(AvaloniaScheduler.Instance)
             .Bind(out var filteredObjects)
-            .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Setting Resource List Filter: {ns}", typeof(T)));
+            .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Setting Resource List Filter: {ns} ", typeof(T)));
 
         DataGridObjects = filteredObjects;
     }
 
-    private Func<KeyValuePair<NamespacedName, T>, bool> GenerateFilter()
+    private Func<T, bool> GenerateFilter()
     {
         try
         {
-            var param = Expression.Parameter(typeof(KeyValuePair<NamespacedName, T>), "p");
+            var param = Expression.Parameter(typeof(T), "p");
 
-            var key = Expression.PropertyOrField(param, "Key");
-
-            var value = Expression.PropertyOrField(param, "Value");
-
-            BinaryExpression? body = null;
+            Expression? body = null;
 
             BinaryExpression? namespaceFilter = null;
 
@@ -97,12 +98,14 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
             if (Cluster.SelectedNamespaces != null && ResourceConfig.IsNamespaced)
             {
+                var nsExpr = Expression.Property(
+                                Expression.Property(param, nameof(IMetadata<>.Metadata)),
+                                nameof(V1ObjectMeta.NamespaceProperty)
+                             );
+
                 foreach (var item in Cluster.SelectedNamespaces)
                 {
-                    var expression = Expression.Equal(
-                            Expression.PropertyOrField(key, "Namespace"),
-                            Expression.Constant(item.Name())
-                       );
+                    var expression = Expression.Equal(nsExpr, Expression.Constant(item.Name()));
 
                     namespaceFilter = namespaceFilter == null ? expression : Expression.OrElse(namespaceFilter, expression);
                 }
@@ -110,7 +113,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
             if (!string.IsNullOrEmpty(SearchQuery))
             {
-                var method = typeof(string).GetMethod(nameof(string.IndexOf), [typeof(string), typeof(StringComparison)]);
+                var method = typeof(string).GetMethod(nameof(string.IndexOf), [typeof(string), typeof(StringComparison)])!;
 
                 foreach (var query in SearchQuery.Split(' '))
                 {
@@ -127,15 +130,22 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
                         var colType = column.GetType();
 
-                        var columnDisplay = (Func<T, string>)colType.GetProperty(nameof(ResourceListColumn<V1Pod, string>.Display)).GetValue(column);
+                        var columnDisplay = colType.GetProperty(nameof(ResourceListColumn<,>.Display))!.GetValue(column) as Func<T, string>;
 
-                        columnDisplay ??= (Func<T, string>)colType.GetProperty(nameof(ResourceListColumn<V1Pod, string>.Field)).GetValue(column);
+                        columnDisplay ??= colType.GetProperty(nameof(ResourceListColumn<,>.Field))!.GetValue(column) as Func<T, string>;
 
-                        var funcCall = Expression.Call(Expression.Constant(columnDisplay), columnDisplay.GetType().GetMethod("Invoke"), value);
+                        if (columnDisplay != null)
+                        {
+                            var funcCall = Expression.Call(Expression.Constant(columnDisplay), columnDisplay.GetType()!.GetMethod("Invoke")!, param);
 
-                        var expression = Expression.GreaterThanOrEqual(Expression.Call(funcCall, method, someValue, Expression.Constant(StringComparison.OrdinalIgnoreCase)), Expression.Constant(0));
+                            var expression = Expression.GreaterThanOrEqual(Expression.Call(funcCall, method, someValue, Expression.Constant(StringComparison.OrdinalIgnoreCase)), Expression.Constant(0));
 
-                        wordFilter = wordFilter == null ? expression : Expression.OrElse(wordFilter, expression);
+                            wordFilter = wordFilter == null ? expression : Expression.OrElse(wordFilter, expression);
+                        }
+                        else
+                        {
+                            throw new Exception($"No string based columnDisplay, {typeof(T)} {column.Name}");
+                        }
                     }
 
                     searchFilter = searchFilter == null ? wordFilter : Expression.AndAlso(searchFilter, wordFilter);
@@ -156,10 +166,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             }
             else
             {
-                body = Expression.Equal(Expression.Constant(true), Expression.Constant(true));
+                body = Expression.Constant(true);
             }
 
-            return Expression.Lambda<Func<KeyValuePair<NamespacedName, T>, bool>>(body, param).Compile();
+            return Expression.Lambda<Func<T, bool>>(body, param).Compile();
         }
         catch (Exception ex)
         {
