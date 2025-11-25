@@ -54,8 +54,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private IServiceProvider _serviceProvider;
 
-    private IPriorityExecutor _priorityExecutor;
-
     public V2beta1APIGroupDiscoveryList NativeAPIGroupDiscoveryList { get; private set; }
 
     public V2beta1APIGroupDiscoveryList APIGroupDiscoveryList { get; private set; }
@@ -111,7 +109,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
         _logger = logger;
         ModelCache = modelCache;
         _generator = generator;
-        _priorityExecutor = new PriorityExecutor(serviceProvider.GetRequiredService<ILogger<PriorityExecutor>>(), Environment.ProcessorCount);
         _generator.SetEnumSupport(false);
 
         var kubeAssemblyXmlDoc = new XmlDocument();
