@@ -31,9 +31,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     public partial T SelectedItem { get; set; }
 
     [ObservableProperty]
-    public partial ObservableCollection<T> SelectedItems { get; set; } = [];
-
-    [ObservableProperty]
     public partial ReadOnlyObservableCollection<T>? DataGridObjects { get; private set; }
 
     [ObservableProperty]
