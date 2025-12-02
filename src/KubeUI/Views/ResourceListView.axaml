@@ -82,16 +82,17 @@
             MinColumnWidth="90"
             PropertyChanged="PART_Grid_PropertyChanged"
             RowHeight="{Binding SettingsService.Settings.ListRowHeight}"
-            SelectedItem="{ReflectionBinding SelectedItem, Mode=TwoWay}" Sorting="PART_Grid_Sorting">
+            SelectedItem="{ReflectionBinding SelectedItem}"
+            Sorting="PART_Grid_Sorting">
             <DataGrid.KeyBindings>
                 <KeyBinding
                     Command="{ReflectionBinding ResourceConfig.ViewCommand}"
-                    CommandParameter="{ReflectionBinding #PART_Grid.SelectedItem}"
+                    CommandParameter="{ReflectionBinding #PART_Grid.SelectedItems}"
                     Gesture="Enter" />
             </DataGrid.KeyBindings>
             <Interaction.Behaviors>
                 <EventTriggerBehavior EventName="DoubleTapped">
-                    <InvokeCommandAction Command="{ReflectionBinding ResourceConfig.ViewCommand}" CommandParameter="{ReflectionBinding #PART_Grid.SelectedItem}" />
+                    <InvokeCommandAction Command="{ReflectionBinding ResourceConfig.ViewCommand}" CommandParameter="{ReflectionBinding #PART_Grid.SelectedItems}" />
                 </EventTriggerBehavior>
             </Interaction.Behaviors>
             <DataGrid.Styles>

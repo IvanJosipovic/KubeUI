@@ -5,10 +5,9 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:KubeUI.Controls"
     d:DesignHeight="30"
-    d:DesignWidth="200"
-    x:DataType="local:HeaderItem">
+    d:DesignWidth="200">
     <StackPanel>
-        <local:PropertyItem Key="{Binding Text}" Value="">
+        <local:PropertyItem Key="{Binding Text, RelativeSource={RelativeSource AncestorType=local:HeaderItem}}" Value="">
             <local:PropertyItem.Styles>
                 <Style Selector="SelectableTextBlock">
                     <Setter Property="Border.Background" Value="{DynamicResource SystemAltHighColor}" />
@@ -16,6 +15,6 @@
                 </Style>
             </local:PropertyItem.Styles>
         </local:PropertyItem>
-        <ItemsControl ItemsSource="{Binding Controls}" />
+        <ItemsControl ItemsSource="{Binding Controls, RelativeSource={RelativeSource AncestorType=local:HeaderItem}}" />
     </StackPanel>
 </UserControl>

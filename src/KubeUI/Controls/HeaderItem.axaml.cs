@@ -11,12 +11,15 @@ public partial class HeaderItem : UserControl
     public HeaderItem()
     {
         InitializeComponent();
-        DataContext = this;
 
 #if DEBUG
         if (Design.IsDesignMode)
         {
             Text = "Test123";
+
+            Controls = [
+                            new TextBox() {Text = "Text"},
+                        ];
         }
 #endif
     }
