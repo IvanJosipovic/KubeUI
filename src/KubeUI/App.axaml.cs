@@ -265,7 +265,6 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = Host.Services.GetRequiredService<MainWindow>();
-            desktop.MainWindow.DataContext = Host.Services.GetRequiredService<MainViewModel>();
             TopLevel = TopLevel.GetTopLevel(desktop.MainWindow);
 
             desktop.ShutdownRequested += (sender, e) => GracefulShutdown();
@@ -273,7 +272,6 @@ public partial class App : Application
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
             singleViewPlatform.MainView = Host.Services.GetRequiredService<MainView>();
-            singleViewPlatform.MainView.DataContext = Host.Services.GetRequiredService<MainViewModel>();
             TopLevel = TopLevel.GetTopLevel(singleViewPlatform.MainView);
         }
 
