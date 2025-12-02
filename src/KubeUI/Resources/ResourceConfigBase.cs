@@ -122,21 +122,21 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         {
             Header = "View",
             CommandPath = nameof(ViewCommand),
-            CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<T>>(x => x.SelectedItems),
+            CommandParameterPath = "SelectedItems",
             FluentIcon = Icon.PanelRight,
         },
         new()
         {
             Header = "View Yaml",
             CommandPath = nameof(ViewYamlCommand),
-            CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<T>>(x => x.SelectedItems),
+            CommandParameterPath = "SelectedItems",
             FluentIcon = Icon.Code,
         },
         new()
         {
             Header = "Delete",
             CommandPath = nameof(DeleteCommand),
-            CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<T>>(x => x.SelectedItems),
+            CommandParameterPath = "SelectedItems",
             FluentIcon = Icon.Delete,
         }
     ];

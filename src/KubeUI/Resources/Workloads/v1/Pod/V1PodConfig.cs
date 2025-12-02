@@ -290,7 +290,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 
     private bool CanPortForward(IList? parameters)
     {
-        if (parameters?.Count != 1)
+        if (parameters?.Count != 2)
         {
             return false;
         }
