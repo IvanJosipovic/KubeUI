@@ -219,7 +219,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 
     private bool CanViewLogs(IList? parameters)
     {
-        if (parameters?.Count != 1)
+        if (parameters?.Count != 2)
         {
             return false;
         }
@@ -249,7 +249,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 
     private bool CanViewConsole(IList? parameters)
     {
-        if (parameters?.Count != 1)
+        if (parameters?.Count != 2)
         {
             return false;
         }
