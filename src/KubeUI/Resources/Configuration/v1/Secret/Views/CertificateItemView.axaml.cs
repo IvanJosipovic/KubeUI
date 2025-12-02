@@ -110,7 +110,7 @@ public partial class CertificateItemView : UserControl
         try
         {
             var key = ECDsa.Create();
-            var str  = Encoding.UTF8.GetString(bytes);
+            var str = Encoding.UTF8.GetString(bytes);
             key.ImportFromPem(str);
             Ecdsa.Add(key);
         }
