@@ -49,7 +49,7 @@
     <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.9" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.9" />
     <PackageReference Include="AvaloniaEdit.TextMate" Version="11.3.0" />
-    <PackageReference Include="AvaloniaGraphControl" Version="0.6.1" />
+    <PackageReference Include="AvaloniaGraphControl" Version="0.7.0" />
     <PackageReference Include="AvaloniaTerminal" Version="1.0.0-alpha.7" />
     <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.1.1" Condition="'$(Configuration)' == 'Debug'" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
