@@ -15,7 +15,6 @@ public partial class CertificateItemView : UserControl
     [GeneratedDirectProperty]
     public partial bool HasCert { get; set; }
 
-    // Collections exposed for XAML binding
     public ObservableCollection<X509Certificate2> Certificates { get; } = [];
     public ObservableCollection<RSA> Rsa { get; } = [];
     public ObservableCollection<ECDsa> Ecdsa { get; } = [];
@@ -23,6 +22,13 @@ public partial class CertificateItemView : UserControl
     public CertificateItemView()
     {
         InitializeComponent();
+    }
+
+    protected override void OnLoaded(RoutedEventArgs e)
+    {
+        base.OnLoaded(e);
+
+        ConvertBytes();
     }
 
     private void ConvertBytes()
@@ -47,46 +53,68 @@ public partial class CertificateItemView : UserControl
 
         try
         {
-            if (text.StartsWith("-----BEGIN CERTIFICATE-----", StringComparison.Ordinal))
-            {
-                var cert = X509CertificateLoader.LoadCertificate(bytes);
-                Certificates.Add(cert);
-            }
-            else if (text.StartsWith("-----BEGIN RSA PRIVATE KEY-----", StringComparison.Ordinal))
-            {
-                var key = RSA.Create();
-                key.ImportRSAPrivateKey(bytes, out _);
-                Rsa.Add(key);
-            }
-            else if (text.StartsWith("-----BEGIN PRIVATE KEY-----", StringComparison.Ordinal))
-            {
-                var key = RSA.Create();
-                key.ImportPkcs8PrivateKey(bytes, out _);
-                Rsa.Add(key);
-            }
-            else if (text.StartsWith("-----BEGIN RSA PUBLIC KEY-----", StringComparison.Ordinal))
-            {
-                var key = RSA.Create();
-                key.ImportRSAPublicKey(bytes, out _);
-                Rsa.Add(key);
-            }
-            else if (text.StartsWith("-----BEGIN PUBLIC KEY-----", StringComparison.Ordinal))
-            {
-                var key = RSA.Create();
-                key.ImportSubjectPublicKeyInfo(bytes, out _);
-                Rsa.Add(key);
-            }
-            else if (text.StartsWith("-----BEGIN EC PRIVATE KEY-----", StringComparison.Ordinal))
-            {
-                var ecdsa = ECDsa.Create();
-                ecdsa.ImportECPrivateKey(bytes, out _);
-                Ecdsa.Add(ecdsa);
-            }
+            var cert = X509CertificateLoader.LoadCertificate(bytes);
+            Certificates.Add(cert);
         }
-        catch (CryptographicException)
+        catch (Exception) {}
+
+        try
         {
-            // Ignore malformed data
+            var key = RSA.Create();
+            key.ImportRSAPrivateKey(bytes, out _);
+            Rsa.Add(key);
         }
+        catch (Exception) {}
+
+        try
+        {
+            var key = RSA.Create();
+            var str = Encoding.UTF8.GetString(bytes);
+            key.ImportFromPem(str);
+            Rsa.Add(key);
+        }
+        catch (Exception) { }
+
+        try
+        {
+            var key = RSA.Create();
+            key.ImportPkcs8PrivateKey(bytes, out _);
+            Rsa.Add(key);
+        }
+        catch (Exception) { }
+
+        try
+        {
+            var key = RSA.Create();
+            key.ImportRSAPublicKey(bytes, out _);
+            Rsa.Add(key);
+        }
+        catch (Exception) { }
+
+        try
+        {
+            var key = RSA.Create();
+            key.ImportSubjectPublicKeyInfo(bytes, out _);
+            Rsa.Add(key);
+        }
+        catch (Exception) { }
+
+        try
+        {
+            var key = ECDsa.Create();
+            key.ImportECPrivateKey(bytes, out _);
+            Ecdsa.Add(key);
+        }
+        catch (Exception) { }
+
+        try
+        {
+            var key = ECDsa.Create();
+            var str  = Encoding.UTF8.GetString(bytes);
+            key.ImportFromPem(str);
+            Ecdsa.Add(key);
+        }
+        catch (Exception) { }
 
         HasCert = Certificates.Any() || Rsa.Any() || Ecdsa.Any();
     }

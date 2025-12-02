@@ -219,6 +219,11 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 
     private bool CanViewLogs(IList? parameters)
     {
+        if (parameters?.Count != 1)
+        {
+            return false;
+        }
+
         if (parameters?[0] is V1Pod pod && parameters?[1] is V1Container container)
         {
             return Cluster.CanI<V1Pod>(Verb.Get, pod.Namespace(), "log");
@@ -244,6 +249,11 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 
     private bool CanViewConsole(IList? parameters)
     {
+        if (parameters?.Count != 1)
+        {
+            return false;
+        }
+
         if (parameters?[0] is V1Pod pod && parameters?[1] is V1Container container)
         {
             return Cluster.CanI<V1Pod>(Verb.Create, pod.Namespace(), "exec");
@@ -280,6 +290,11 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 
     private bool CanPortForward(IList? parameters)
     {
+        if (parameters?.Count != 1)
+        {
+            return false;
+        }
+
         if (parameters?[0] is V1Pod pod && parameters?[1] is V1ContainerPort containerPort)
         {
             return containerPort.ContainerPort > 0 &&

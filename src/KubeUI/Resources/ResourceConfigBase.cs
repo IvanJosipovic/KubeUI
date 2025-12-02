@@ -122,21 +122,21 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         {
             Header = "View",
             CommandPath = nameof(ViewCommand),
-            CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<T>>(x => x.SelectedItem),
+            CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<T>>(x => x.SelectedItems),
             FluentIcon = Icon.PanelRight,
         },
         new()
         {
             Header = "View Yaml",
             CommandPath = nameof(ViewYamlCommand),
-            CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<T>>(x => x.SelectedItem),
+            CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<T>>(x => x.SelectedItems),
             FluentIcon = Icon.Code,
         },
         new()
         {
             Header = "Delete",
             CommandPath = nameof(DeleteCommand),
-            CommandParameterPath = "SelectedItems",
+            CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<T>>(x => x.SelectedItems),
             FluentIcon = Icon.Delete,
         }
     ];
@@ -270,33 +270,33 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     }
 
     [RelayCommand(CanExecute = nameof(CanView))]
-    public void View(T item)
+    public void View(IList items)
     {
         var instance = Application.Current.GetRequiredService<ResourcePropertiesViewModel<T>>();
-        instance.Initialize(Cluster, item);
+        instance.Initialize(Cluster, (T)items[0]!);
         instance.CanFloat = false;
 
         _factory.AddToRight(instance);
     }
 
-    public bool CanView(T? item)
+    public bool CanView(IList? items)
     {
-        return item != null;
+        return items?.Count == 1;
     }
 
     [RelayCommand(CanExecute = nameof(CanViewYaml))]
-    public void ViewYaml(T item)
+    public void ViewYaml(IList items)
     {
         var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
 
-        vm.Initialize(Cluster, item);
+        vm.Initialize(Cluster, (T)items[0]!);
 
         _factory.AddToBottom(vm);
     }
 
-    public bool CanViewYaml(T? item)
+    public bool CanViewYaml(IList? items)
     {
-        return item != null;
+        return items?.Count == 1;
     }
 
     #endregion

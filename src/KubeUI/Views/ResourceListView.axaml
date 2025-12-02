@@ -82,7 +82,9 @@
             MinColumnWidth="90"
             PropertyChanged="PART_Grid_PropertyChanged"
             RowHeight="{Binding SettingsService.Settings.ListRowHeight}"
-            SelectedItem="{ReflectionBinding SelectedItem, Mode=TwoWay}" Sorting="PART_Grid_Sorting">
+            SelectedItem="{ReflectionBinding SelectedItem}"
+            SelectedItems="{ReflectionBinding SelectedItems}"
+            Sorting="PART_Grid_Sorting">
             <DataGrid.KeyBindings>
                 <KeyBinding
                     Command="{ReflectionBinding ResourceConfig.ViewCommand}"

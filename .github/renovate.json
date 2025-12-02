@@ -12,10 +12,13 @@
   "ignorePaths": [
     "**/docs/**"
   ],
+  "git-submodules": {
+    "enabled": true
+  },
   "packageRules": [
     {
-      "matchManagers": ["nuget"],
-      "matchPackageNames": ["OpenTelemetry.Instrumentation.Process"],
+      "matchManagers": [ "nuget" ],
+      "matchPackageNames": [ "OpenTelemetry.Instrumentation.Process" ],
       "ignoreUnstable": false,
       "respectLatest": false
     },
