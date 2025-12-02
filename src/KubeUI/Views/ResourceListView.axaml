@@ -88,12 +88,12 @@
             <DataGrid.KeyBindings>
                 <KeyBinding
                     Command="{ReflectionBinding ResourceConfig.ViewCommand}"
-                    CommandParameter="{ReflectionBinding #PART_Grid.SelectedItem}"
+                    CommandParameter="{ReflectionBinding SelectedItems}"
                     Gesture="Enter" />
             </DataGrid.KeyBindings>
             <Interaction.Behaviors>
                 <EventTriggerBehavior EventName="DoubleTapped">
-                    <InvokeCommandAction Command="{ReflectionBinding ResourceConfig.ViewCommand}" CommandParameter="{ReflectionBinding #PART_Grid.SelectedItem}" />
+                    <InvokeCommandAction Command="{ReflectionBinding ResourceConfig.ViewCommand}" CommandParameter="{ReflectionBinding SelectedItems}" />
                 </EventTriggerBehavior>
             </Interaction.Behaviors>
             <DataGrid.Styles>
