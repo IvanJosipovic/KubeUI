@@ -14,7 +14,7 @@ namespace KubeUI;
 [JsonSerializable(typeof(IDictionary))]
 [JsonSerializable(typeof(IDictionary<object, object>))]
 [JsonSerializable(typeof(IEnumerable))]
-[JsonSerializable(typeof(IEnumerable<KeyValuePair<object, object>>) )]
+[JsonSerializable(typeof(IEnumerable<KeyValuePair<object, object>>))]
 [JsonSerializable(typeof(ISerializable))]
 [JsonSerializable(typeof(JsonElement))]
 [JsonSerializable(typeof(JsonNode))]
