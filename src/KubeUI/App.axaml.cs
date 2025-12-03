@@ -2,12 +2,8 @@
 using System.Text.Json.Serialization.Metadata;
 using Avalonia.Controls.Notifications;
 using Avalonia.Data.Core.Plugins;
-using Avalonia.Logging;
 using Avalonia.Markup.Xaml;
-using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Styling;
-using Dock.Avalonia.Themes.Fluent;
-using FluentAvalonia.Styling;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
@@ -216,14 +212,10 @@ public partial class App : Application
 
         logger = Host.Services.GetRequiredService<ILogger<App>>();
 
-        // https://github.com/kubernetes-client/csharp/issues/1674
-        var ctxType = typeof(k8s.Kubernetes).Assembly.GetType("k8s.SourceGenerationContext");
-        var ctxProp = ctxType.GetProperty("Default", BindingFlags.Static | BindingFlags.Public);
-        var k8sResolver = ctxProp.GetValue(null) as IJsonTypeInfoResolver;
 
         KubernetesJson.AddJsonOptions(x =>
         {
-            x.TypeInfoResolver = JsonTypeInfoResolver.Combine(k8sResolver, new DefaultJsonTypeInfoResolver
+            x.TypeInfoResolver = JsonTypeInfoResolver.Combine(CustomSourceGenerationContext.Default, SourceGenerationContext.Default, new DefaultJsonTypeInfoResolver
             {
                 Modifiers =
                 {
@@ -241,7 +233,7 @@ public partial class App : Application
                         if (jsonTypeInfo.OriginatingResolver is DefaultJsonTypeInfoResolver)
                         {
                             logger.LogDebug("Type is Serialized using Reflection: {type}", jsonTypeInfo.Type);
-	                    }
+                        }
                     }
                 }
             });
