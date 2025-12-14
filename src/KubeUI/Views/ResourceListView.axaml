@@ -32,7 +32,7 @@
                 Grid.Column="1"
                 Width="200"
                 VerticalContentAlignment="Center"
-                Content="{ReflectionBinding DataGridObjects.Count, StringFormat=Items: {0}}" />
+                Content="{ReflectionBinding ItemsView.Count, StringFormat=Items: {0}}" />
 
             <Grid
                 Grid.Column="2"
@@ -91,11 +91,6 @@
                     CommandParameter="{ReflectionBinding #PART_Grid.SelectedItems}"
                     Gesture="Enter" />
             </DataGrid.KeyBindings>
-            <Interaction.Behaviors>
-                <EventTriggerBehavior EventName="DoubleTapped">
-                    <InvokeCommandAction Command="{ReflectionBinding ResourceConfig.ViewCommand}" CommandParameter="{ReflectionBinding #PART_Grid.SelectedItems}" />
-                </EventTriggerBehavior>
-            </Interaction.Behaviors>
             <DataGrid.Styles>
                 <Style Selector="DataGridColumnHeader">
                     <Setter Property="FontSize" Value="{Binding $parent[local:ResourceListView].DataContext.SettingsService.Settings.FontSize}" />
