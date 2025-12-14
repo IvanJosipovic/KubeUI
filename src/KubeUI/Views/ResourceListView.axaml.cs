@@ -368,7 +368,11 @@ public partial class ResourceListView : UserControl
                 {
                     try
                     {
-                        column.Sort(columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending);
+                        var sort = columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending;
+                        if (column.SortDescription != sort)
+                        {
+                            column.Sort(sort);
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -387,7 +391,11 @@ public partial class ResourceListView : UserControl
                 {
                     try
                     {
-                        column.Sort(viewModel.SortDirection == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending);
+                        var sort = viewModel.SortDirection == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending;
+                        if (column.SortDescription != sort)
+                        {
+                            column.Sort(sort);
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -429,7 +437,7 @@ public static class DataGridExtensions
 {
     extension(DataGridColumn col)
     {
-        public ListSortDirection? SortDescription => GetSortDescription(col).Direction;
+        public ListSortDirection? SortDescription => GetSortDescription(col)?.Direction;
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "GetSortDescription")]

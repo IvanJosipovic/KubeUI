@@ -1,5 +1,4 @@
 ﻿using k8s.Models;
-using Yarp.Kubernetes.Controller;
 
 namespace KubeUI.Views;
 
@@ -81,7 +80,13 @@ public readonly struct MyFuncComparer<TObj, TPtop> : IComparer
 
     public override bool Equals(object? obj)
     {
-        throw new NotImplementedException();
+        if (obj is MyFuncComparer<TObj, TPtop> other)
+        {
+            var cmpComparer = EqualityComparer<Func<TObj, TPtop>>.Default;
+            return cmpComparer.Equals(_cmp, other._cmp);
+        }
+
+        return false;
     }
 
     public override int GetHashCode()

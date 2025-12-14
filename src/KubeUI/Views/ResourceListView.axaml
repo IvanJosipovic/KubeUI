@@ -78,7 +78,7 @@
             CanUserResizeColumns="True"
             GridLinesVisibility="All"
             IsReadOnly="True"
-            ItemsSource="{ReflectionBinding DataGridObjects}"
+            ItemsSource="{ReflectionBinding ItemsView}"
             MinColumnWidth="90"
             PropertyChanged="PART_Grid_PropertyChanged"
             RowHeight="{Binding SettingsService.Settings.ListRowHeight}"

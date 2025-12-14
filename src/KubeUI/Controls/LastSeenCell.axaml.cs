@@ -40,7 +40,8 @@ public sealed partial class LastSeenCell : UserControl
 
         if (DataContext is Corev1Event ev && ev.LastTimestamp.HasValue)
         {
-            _date = ev.LastTimestamp.Value;
+            _date = ev.LastTimestamp.HasValue ? ev.LastTimestamp.Value : ev.FirstTimestamp!.Value;
+
             UpdatePretty();
         }
         else

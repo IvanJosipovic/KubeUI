@@ -31,7 +31,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     public partial T SelectedItem { get; set; }
 
     [ObservableProperty]
-    public partial ReadOnlyObservableCollection<T>? DataGridObjects { get; private set; }
+    public partial ObservableCollection<T> SelectedItems { get; set; } = [];
+
+    [ObservableProperty]
+    public partial DataGridCollectionView ItemsView { get; private set; }
 
     [ObservableProperty]
     public partial string SearchQuery { get; set; }
@@ -80,8 +83,16 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             .ObserveOn(AvaloniaScheduler.Instance)
             .Bind(out var filteredObjects)
             .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Setting Resource List Filter: {ns} ", typeof(T)));
+            
+        Dispatcher.UIThread.Post(() =>
+        {
+            ItemsView = new DataGridCollectionView(filteredObjects);
+        });
+    }
 
-        DataGridObjects = filteredObjects;
+    private void Selection_SelectionChanged(object? sender, SelectionModelSelectionChangedEventArgs<T> e)
+    {
+
     }
 
     private Func<T, bool> GenerateFilter()

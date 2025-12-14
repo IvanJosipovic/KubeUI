@@ -54,7 +54,6 @@ public partial class App : Application
                                         theme =>
                                             theme.OnInitialized(() =>
                                             {
-                                                //theme.RequestedTheme = requestedTheme;
                                                 theme.AnimationsSpeed = TimeSpan.FromMilliseconds(800);
                                                 theme.EasingFunction = EasingFunctions.ExponentialOut;
 

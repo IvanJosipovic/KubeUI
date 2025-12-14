@@ -76,7 +76,7 @@
                     RegionColor="#1E1E1E" />
             </FluentTheme.Palettes>
         </FluentTheme>
-        <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+        <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.v2.xaml" />
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
         <DockFluentTheme />
         <StyleInclude Source="avares://AvaloniaTerminal/Styles/Colors.axaml" />
