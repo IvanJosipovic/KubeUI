@@ -83,6 +83,7 @@
             PropertyChanged="PART_Grid_PropertyChanged"
             RowHeight="{Binding SettingsService.Settings.ListRowHeight}"
             SelectedItem="{ReflectionBinding SelectedItem}"
+            SelectedItems="{ReflectionBinding SelectedItems}"
             Sorting="PART_Grid_Sorting">
             <DataGrid.KeyBindings>
                 <KeyBinding
