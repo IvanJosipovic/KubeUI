@@ -1,6 +1,8 @@
 using System.Collections.Specialized;
 using System.Linq.Expressions;
 using System.Reactive.Linq;
+using Avalonia.Collections;
+using Avalonia.Controls.Selection;
 using Avalonia.Styling;
 using DynamicData;
 using Humanizer;
@@ -84,15 +86,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             .Bind(out var filteredObjects)
             .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Setting Resource List Filter: {ns} ", typeof(T)));
             
-        Dispatcher.UIThread.Post(() =>
-        {
-            ItemsView = new DataGridCollectionView(filteredObjects);
-        });
-    }
-
-    private void Selection_SelectionChanged(object? sender, SelectionModelSelectionChangedEventArgs<T> e)
-    {
-
+        Dispatcher.UIThread.Post(() => ItemsView = new DataGridCollectionView(filteredObjects));
     }
 
     private Func<T, bool> GenerateFilter()
