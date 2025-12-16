@@ -46,6 +46,7 @@
                 <controls:MyDataGridTextColumn
                     Width="*"
                     Binding="{Binding Name}"
+                    SortDirection="Ascending"
                     FontSize="{Binding Settings.Settings.FontSize}"
                     Header="Name" />
                 <controls:MyDataGridTextColumn

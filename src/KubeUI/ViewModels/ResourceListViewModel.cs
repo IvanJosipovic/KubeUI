@@ -85,7 +85,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             .ObserveOn(AvaloniaScheduler.Instance)
             .Bind(out var filteredObjects)
             .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Setting Resource List Filter: {ns} ", typeof(T)));
-            
+
         Dispatcher.UIThread.Post(() => ItemsView = new DataGridCollectionView(filteredObjects));
     }
 

@@ -469,17 +469,14 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     else
                     {
                         items.AddOrUpdate(item);
-                        //Dispatcher.UIThread.Post(() => items.AddOrUpdate(item), DispatcherPriority.Background);
                     }
 
                     break;
                 case WatchEventType.Modified:
                     items.AddOrUpdate(item);
-                    //Dispatcher.UIThread.Post(() => items.AddOrUpdate(item), DispatcherPriority.Background);
                     break;
                 case WatchEventType.Deleted:
                     items.Remove(item);
-                    //Dispatcher.UIThread.Post(() => items.Remove(item), DispatcherPriority.Background);
                     if (item is V1CustomResourceDefinition crd2)
                     {
                         APIGroupDiscoveryList = GetAPIGroupDiscoveryList(false).GetAwaiter().GetResult();

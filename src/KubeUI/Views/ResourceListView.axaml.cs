@@ -87,7 +87,7 @@ public partial class ResourceListView : UserControl
     {
         var viewModel = (ResourceListViewModel<T>)DataContext!;
 
-        PART_Grid.Columns.Clear();
+        ((IList)PART_Grid.Columns).Clear();
 
         if (viewModel.ResourceConfig.ListStyle() != null)
         {
@@ -130,6 +130,7 @@ public partial class ResourceListView : UserControl
 
                             return control;
                         }),
+                        SortDirection = columnDefinition.Sort == SortDirection.None ? null : columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending
                     };
                 }
                 else
@@ -156,6 +157,7 @@ public partial class ResourceListView : UserControl
                         Header = columnDefinition.Name,
                         CanUserSort = true,
                         CustomSortComparer = sortConverter,
+                        SortDirection = columnDefinition.Sort == SortDirection.None ? null : columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending
                     };
                 }
 
@@ -164,7 +166,7 @@ public partial class ResourceListView : UserControl
                     column.Width = width;
                 }
 
-                PART_Grid.Columns.Add(column);
+                ((IList)PART_Grid.Columns).Add(column);
             }
             catch (Exception ex)
             {
@@ -408,12 +410,12 @@ public partial class ResourceListView : UserControl
 
     private void PART_Grid_PropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
-        var ViewModel = (IResourceListViewModel)DataContext;
+        //var ViewModel = (IResourceListViewModel)DataContext;
 
-        if (e.Property.Name == "CollectionView")
-        {
-            GetGenericMethod(nameof(SetSort))?.Invoke(this, null);
-        }
+        //if (e.Property.Name == "CollectionView")
+        //{
+        //    GetGenericMethod(nameof(SetSort))?.Invoke(this, null);
+        //}
     }
 
     private void PART_Grid_Sorting(object? sender, DataGridColumnEventArgs e)
