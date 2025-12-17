@@ -32,7 +32,7 @@
                 Grid.Column="1"
                 Width="200"
                 VerticalContentAlignment="Center"
-                Content="{ReflectionBinding ItemsView.Count, StringFormat=Items: {0}}" />
+                Content="{Binding ItemsView.Count, StringFormat=Items: {0}}" />
 
             <Grid
                 Grid.Column="2"
@@ -76,15 +76,13 @@
         <DataGrid x:Name="PART_Grid" Grid.Row="1"
             CanUserReorderColumns="True"
             CanUserResizeColumns="True"
+            Columns="{Binding Columns}"
             GridLinesVisibility="All"
             IsReadOnly="True"
-            ItemsSource="{ReflectionBinding ItemsView}"
+            ItemsSource="{Binding ItemsView}"
             MinColumnWidth="90"
-            PropertyChanged="PART_Grid_PropertyChanged"
             RowHeight="{Binding SettingsService.Settings.ListRowHeight}"
-            SelectedItem="{ReflectionBinding SelectedItem}"
-            SelectedItems="{ReflectionBinding SelectedItems}"
-            Sorting="PART_Grid_Sorting">
+            SelectedItem="{ReflectionBinding SelectedItem}">
             <DataGrid.KeyBindings>
                 <KeyBinding
                     Command="{ReflectionBinding ResourceConfig.ViewCommand}"

@@ -2,14 +2,19 @@ using System.Collections.Specialized;
 using System.Linq.Expressions;
 using System.Reactive.Linq;
 using Avalonia.Collections;
+using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Selection;
+using Avalonia.Controls.Templates;
+using Avalonia.Data.Converters;
 using Avalonia.Styling;
 using DynamicData;
+using FluentIcons.Avalonia;
 using Humanizer;
 using k8s;
 using k8s.Models;
 using KubeUI.Client;
 using KubeUI.Resources;
+using KubeUI.Views;
 using Yarp.Kubernetes.Controller.Client;
 
 namespace KubeUI.ViewModels;
@@ -45,10 +50,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     public partial ResourceConfigBase<T> ResourceConfig { get; set; }
 
     [ObservableProperty]
-    public partial string SortColumnName { get; set; }
-
-    [ObservableProperty]
-    public partial Resources.SortDirection SortDirection { get; set; }
+    public partial ObservableCollection<DataGridColumn> Columns { get; set; } = [];
 
     private IDisposable? _filter;
 
@@ -73,6 +75,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         Cluster.SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
 
         SetFilter();
+
+        //GenerateGrid<T>();
+        Dispatcher.UIThread.Post(() => GenerateGrid<T>());
     }
 
     private void SetFilter()
@@ -204,5 +209,90 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _filter?.Dispose();
 
         Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
+    }
+
+    private void GenerateGrid<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        Columns.Clear();
+
+        var converter = new DataGridLengthConverter();
+
+        foreach (var columnDefinition in ResourceConfig.Columns())
+        {
+            try
+            {
+                var columnDisplay = (Func<T, string>)columnDefinition.GetType().GetProperty(nameof(ResourceListColumn<,>.Display)).GetValue(columnDefinition);
+
+                var columnField = columnDefinition.GetType().GetProperty(nameof(ResourceListColumn<,>.Field)).GetValue(columnDefinition);
+
+                // Create Sort FuncComparer
+                var colType = columnField.GetType().GenericTypeArguments[1];
+                var sortConverterType = typeof(MyFuncComparer<,>).MakeGenericType(typeof(T), colType);
+                var sortConverter = (IComparer)Activator.CreateInstance(sortConverterType, columnField);
+
+                DataGridColumn column = null;
+
+                if (columnDefinition.CustomControl != null)
+                {
+                    column = new DataGridTemplateColumn()
+                    {
+                        Header = columnDefinition.Name,
+                        CustomSortComparer = sortConverter,
+                        CanUserSort = true,
+                        CellTemplate = new FuncDataTemplate<T>((item, _) =>
+                        {
+                            var control = Application.Current.GetRequiredService(columnDefinition.CustomControl) as Control;
+                            control.DataContext = item;
+
+                            if (control is IInitializeCluster init)
+                            {
+                                init.Initialize(Cluster);
+                            }
+
+                            return control;
+                        }),
+                        SortDirection = columnDefinition.Sort == SortDirection.None ? null : columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending
+                    };
+                }
+                else
+                {
+                    // Create Display FuncValueConverter
+                    column = new MyDataGridTextColumn
+                    {
+                        Binding = new Binding()
+                        {
+                            Converter = new FuncValueConverter<T, string>(x =>
+                            {
+                                if (x == null)
+                                    return "";
+                                // Use columnDisplay if not null, otherwise use columnField as a Func<T, string>
+                                if (columnDisplay != null)
+                                    return columnDisplay(x);
+                                else if (columnField is Func<T, string> fieldFunc)
+                                    return fieldFunc(x);
+                                else
+                                    throw new Exception("Column is miss-configured");
+                            }),
+                            Mode = BindingMode.OneWay
+                        },
+                        Header = columnDefinition.Name,
+                        CanUserSort = true,
+                        CustomSortComparer = sortConverter,
+                        SortDirection = columnDefinition.Sort == SortDirection.None ? null : columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending
+                    };
+                }
+
+                if (!string.IsNullOrEmpty(columnDefinition.Width) && converter.ConvertFromString(columnDefinition.Width) is DataGridLength width)
+                {
+                    column.Width = width;
+                }
+
+                Columns.Add(column);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Unable to generate column for: ");
+            }
+        }
     }
 }

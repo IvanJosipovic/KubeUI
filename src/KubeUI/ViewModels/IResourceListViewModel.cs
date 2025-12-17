@@ -13,8 +13,8 @@ namespace KubeUI.ViewModels
         GroupApiVersionKind Kind { get; set; }
         string SearchQuery { get; set; }
         ISettingsService SettingsService { get; }
-        string SortColumnName { get; set; }
-        SortDirection SortDirection { get; set; }
+        DataGridCollectionView ItemsView { get; }
+        ObservableCollection<DataGridColumn> Columns { get; set; }
 
         void Dispose();
         void Initialize(ICluster cluster);
