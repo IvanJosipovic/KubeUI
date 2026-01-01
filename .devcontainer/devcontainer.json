@@ -1,12 +1,17 @@
 {
     "name": ".NET in Codespaces",
-    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "image": "mcr.microsoft.com/devcontainers/dotnet:10.0",
     "features": {
         "ghcr.io/devcontainers/features/docker-in-docker:2": {},
         "ghcr.io/devcontainers/features/powershell:1": {},
         "ghcr.io/devcontainers/features/common-utils:2": {},
-        "ghcr.io/devcontainers/features/dotnet:2": "latest",
-        "ghcr.io/devcontainers/features/git-lfs:1": {}
+        "ghcr.io/devcontainers/features/git-lfs:1": {},
+        "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {},
+        "desktop-lite": {
+            "password": "vscode",
+            "webPort": "6080"
+            //"vncPort": "5901"
+        }
     },
     "customizations": {
         "vscode": {
@@ -20,6 +25,7 @@
         }
     },
     "forwardPorts": [
+        6080
     ],
     "postCreateCommand": "dotnet restore",
     "hostRequirements": {
@@ -31,6 +37,9 @@
         "TARGET": "net10.0"
     },
     "portsAttributes": {
+        "6080": {
+            "label": "desktop"
+        }
     },
     "remoteUser": "root"
 }
