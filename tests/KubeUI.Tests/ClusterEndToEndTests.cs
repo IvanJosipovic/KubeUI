@@ -6,7 +6,7 @@ using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
 using Yarp.Kubernetes.Controller.Client;
-using KubeUI.Core.Tests;
+using KubeUI.Tests;
 using Yarp.Kubernetes.Controller;
 using System.Collections;
 
