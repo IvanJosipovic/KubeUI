@@ -27,7 +27,7 @@
     "forwardPorts": [
         6080
     ],
-    "postCreateCommand": "dotnet restore",
+    "postCreateCommand": "minikube start --force && dotnet build",
     "hostRequirements": {
         "memory": "8gb",
         "cpus": 4
