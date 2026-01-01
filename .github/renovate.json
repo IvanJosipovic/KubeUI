@@ -98,7 +98,7 @@
         "/Kind\\.cs$/"
       ],
       "matchStrings": [
-        "private const string KindVersion = \"v(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\";"
+        "private const string Version = \"v(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\";"
       ],
       "depNameTemplate": "kubernetes-sigs/kind",
       "datasourceTemplate": "github-releases"
