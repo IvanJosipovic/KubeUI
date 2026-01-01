@@ -211,7 +211,6 @@ public partial class App : Application
 
         logger = Host.Services.GetRequiredService<ILogger<App>>();
 
-
         KubernetesJson.AddJsonOptions(x =>
         {
             x.TypeInfoResolver = JsonTypeInfoResolver.Combine(CustomSourceGenerationContext.Default, SourceGenerationContext.Default, new DefaultJsonTypeInfoResolver
