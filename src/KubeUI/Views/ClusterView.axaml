@@ -1,0 +1,208 @@
+<UserControl
+    x:Class="KubeUI.Views.ClusterView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:collections="using:Avalonia.Collections"
+    xmlns:converters="using:KubeUI.Converters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:geometries="using:LiveChartsCore.SkiaSharpView.Drawing.Geometries"
+    xmlns:livechartscore="using:LiveChartsCore"
+    xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
+    xmlns:painting="using:LiveChartsCore.SkiaSharpView.Painting"
+    xmlns:views="using:KubeUI.Views"
+    xmlns:visualelements="using:LiveChartsCore.SkiaSharpView.VisualElements"
+    xmlns:vm="using:KubeUI.ViewModels"
+    d:DesignHeight="800"
+    d:DesignWidth="1200"
+    x:DataType="vm:ClusterViewModel">
+
+    <Design.DataContext>
+        <vm:ClusterViewModel />
+    </Design.DataContext>
+
+    <UserControl.Styles>
+        <!--  Base PieChart style equivalent to previous BuildStyles  -->
+        <Style Selector="lvc|PieChart">
+            <Setter Property="InitialRotation" Value="-90" />
+            <Setter Property="LegendPosition" Value="Bottom" />
+            <Setter Property="MaxAngle" Value="270" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid
+        Margin="8"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch"
+        ColumnDefinitions="*,*,*"
+        RowDefinitions="*,2*">
+
+        <!--  CPU  -->
+        <lvc:PieChart
+            Grid.Column="0"
+            MinHeight="100"
+            LegendTextSize="10"
+            MaxValue="{Binding CPUGaugeData.CpuCapacity.Value}">
+            <lvc:PieChart.Title>
+                <lvc:XamlDrawnLabelVisual
+                    Paint="{x:Static vm:ClusterViewModel.TextColor}"
+                    Text="CPU"
+                    TextSize="25" />
+            </lvc:PieChart.Title>
+            <lvc:PieChart.Series>
+                <collections:AvaloniaList x:TypeArguments="livechartscore:ISeries">
+                    <lvc:XamlGaugeSeries
+                        DataLabelsFormatter="{x:Static vm:CPUGaugeData.DataLabelsFormatter}"
+                        DataLabelsPosition="Start"
+                        DataLabelsSize="10"
+                        GaugeValue="{Binding CPUGaugeData.CpuCapacity.Value}"
+                        InnerRadius="20"
+                        SeriesName="CPU Capacity"
+                        ToolTipLabelFormatter="{x:Static vm:CPUGaugeData.DataLabelsFormatter}" />
+                    <lvc:XamlGaugeSeries
+                        DataLabelsFormatter="{x:Static vm:CPUGaugeData.DataLabelsFormatter}"
+                        DataLabelsPosition="Start"
+                        DataLabelsSize="10"
+                        GaugeValue="{Binding CPUGaugeData.CpuAllocatable.Value}"
+                        InnerRadius="20"
+                        SeriesName="CPU Allocatable"
+                        ToolTipLabelFormatter="{x:Static vm:CPUGaugeData.DataLabelsFormatter}" />
+                    <lvc:XamlGaugeSeries
+                        DataLabelsFormatter="{x:Static vm:CPUGaugeData.DataLabelsFormatter}"
+                        DataLabelsPosition="Start"
+                        DataLabelsSize="10"
+                        GaugeValue="{Binding CPUGaugeData.CpuLimits.Value}"
+                        InnerRadius="20"
+                        SeriesName="CPU Limits"
+                        ToolTipLabelFormatter="{x:Static vm:CPUGaugeData.DataLabelsFormatter}" />
+                    <lvc:XamlGaugeSeries
+                        DataLabelsFormatter="{x:Static vm:CPUGaugeData.DataLabelsFormatter}"
+                        DataLabelsPosition="Start"
+                        DataLabelsSize="10"
+                        GaugeValue="{Binding CPUGaugeData.CpuRequests.Value}"
+                        InnerRadius="20"
+                        SeriesName="CPU Requests"
+                        ToolTipLabelFormatter="{x:Static vm:CPUGaugeData.DataLabelsFormatter}" />
+                    <lvc:XamlGaugeSeries
+                        DataLabelsFormatter="{x:Static vm:CPUGaugeData.DataLabelsFormatter}"
+                        DataLabelsPosition="Start"
+                        DataLabelsSize="10"
+                        GaugeValue="{Binding CPUGaugeData.CpuUsage.Value}"
+                        InnerRadius="20"
+                        SeriesName="CPU Usage"
+                        ToolTipLabelFormatter="{x:Static vm:CPUGaugeData.DataLabelsFormatter}" />
+
+                    <!--  The background series is used to style the gauge background.  -->
+                    <lvc:XamlGaugeBackgroundSeries />
+                </collections:AvaloniaList>
+            </lvc:PieChart.Series>
+        </lvc:PieChart>
+
+        <!--  Memory  -->
+        <lvc:PieChart x:Name="MemoryChart" Grid.Row="0"
+            Grid.Column="1"
+            MinHeight="100"
+            LegendTextSize="10"
+            MaxValue="{Binding MemoryGaugeData.MemoryCapacity.Value}">
+            <lvc:PieChart.Title>
+                <lvc:XamlDrawnLabelVisual
+                    Paint="{x:Static vm:ClusterViewModel.TextColor}"
+                    Text="Memory"
+                    TextSize="25" />
+            </lvc:PieChart.Title>
+            <lvc:PieChart.Series>
+                <collections:AvaloniaList x:TypeArguments="livechartscore:ISeries">
+                    <lvc:XamlGaugeSeries
+                        DataLabelsFormatter="{x:Static vm:MemoryGaugeData.DataLabelsFormatter}"
+                        DataLabelsPosition="Start"
+                        DataLabelsSize="10"
+                        GaugeValue="{Binding MemoryGaugeData.MemoryCapacity.Value}"
+                        InnerRadius="20"
+                        SeriesName="Memory Capacity"
+                        ToolTipLabelFormatter="{x:Static vm:MemoryGaugeData.DataLabelsFormatter}" />
+                    <lvc:XamlGaugeSeries
+                        DataLabelsFormatter="{x:Static vm:MemoryGaugeData.DataLabelsFormatter}"
+                        DataLabelsPosition="Start"
+                        DataLabelsSize="10"
+                        GaugeValue="{Binding MemoryGaugeData.MemoryAllocatable.Value}"
+                        InnerRadius="20"
+                        SeriesName="Memory Allocatable"
+                        ToolTipLabelFormatter="{x:Static vm:MemoryGaugeData.DataLabelsFormatter}" />
+                    <lvc:XamlGaugeSeries
+                        DataLabelsFormatter="{x:Static vm:MemoryGaugeData.DataLabelsFormatter}"
+                        DataLabelsPosition="Start"
+                        DataLabelsSize="10"
+                        GaugeValue="{Binding MemoryGaugeData.MemoryLimits.Value}"
+                        InnerRadius="20"
+                        SeriesName="Memory Limits"
+                        ToolTipLabelFormatter="{x:Static vm:MemoryGaugeData.DataLabelsFormatter}" />
+                    <lvc:XamlGaugeSeries
+                        DataLabelsFormatter="{x:Static vm:MemoryGaugeData.DataLabelsFormatter}"
+                        DataLabelsPosition="Start"
+                        DataLabelsSize="10"
+                        GaugeValue="{Binding MemoryGaugeData.MemoryRequests.Value}"
+                        InnerRadius="20"
+                        SeriesName="Memory Requests"
+                        ToolTipLabelFormatter="{x:Static vm:MemoryGaugeData.DataLabelsFormatter}" />
+                    <lvc:XamlGaugeSeries
+                        DataLabelsFormatter="{x:Static vm:MemoryGaugeData.DataLabelsFormatter}"
+                        DataLabelsPosition="Start"
+                        DataLabelsSize="10"
+                        GaugeValue="{Binding MemoryGaugeData.MemoryUsage.Value}"
+                        InnerRadius="20"
+                        SeriesName="Memory Usage"
+                        ToolTipLabelFormatter="{x:Static vm:MemoryGaugeData.DataLabelsFormatter}" />
+
+                    <!--  The background series is used to style the gauge background.  -->
+                    <lvc:XamlGaugeBackgroundSeries />
+                </collections:AvaloniaList>
+            </lvc:PieChart.Series>
+
+        </lvc:PieChart>
+
+        <!--  Pods  -->
+        <lvc:PieChart x:Name="PodsChart" Grid.Row="0"
+            Grid.Column="2"
+            MinHeight="100"
+            LegendTextSize="10"
+            MaxValue="{Binding PodGaugeData.MaxPods.Value}">
+            <lvc:PieChart.Title>
+                <lvc:XamlDrawnLabelVisual
+                    Paint="{x:Static vm:ClusterViewModel.TextColor}"
+                    Text="Pods"
+                    TextSize="25" />
+            </lvc:PieChart.Title>
+            <lvc:PieChart.Series>
+                <collections:AvaloniaList x:TypeArguments="livechartscore:ISeries">
+                    <lvc:XamlGaugeSeries
+                        DataLabelsFormatter="{x:Static vm:PodGaugeData.DataLabelsFormatter}"
+                        DataLabelsPosition="Start"
+                        GaugeValue="{Binding PodGaugeData.MaxPods.Value}"
+                        InnerRadius="20"
+                        SeriesName="Capacity"
+                        ToolTipLabelFormatter="{x:Static vm:PodGaugeData.DataLabelsFormatter}" />
+                    <lvc:XamlGaugeSeries
+                        DataLabelsFormatter="{x:Static vm:PodGaugeData.DataLabelsFormatter}"
+                        DataLabelsPosition="Start"
+                        GaugeValue="{Binding PodGaugeData.TotalPods.Value}"
+                        InnerRadius="20"
+                        SeriesName="Count"
+                        ToolTipLabelFormatter="{x:Static vm:PodGaugeData.DataLabelsFormatter}" />
+
+                    <!--  The background series is used to style the gauge background.  -->
+                    <lvc:XamlGaugeBackgroundSeries />
+                </collections:AvaloniaList>
+            </lvc:PieChart.Series>
+        </lvc:PieChart>
+
+        <!--  Events list  -->
+        <Grid Grid.Row="1"
+            Grid.ColumnSpan="3"
+            Margin="0,12,0,0"
+            RowDefinitions="Auto,*">
+            <TextBlock Grid.Row="0"
+                FontSize="25"
+                Text="Events" />
+            <views:ResourceListView Grid.Row="1" DataContext="{Binding EventsVM}" />
+        </Grid>
+    </Grid>
+</UserControl>

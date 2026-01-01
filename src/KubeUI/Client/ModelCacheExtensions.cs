@@ -61,9 +61,11 @@ public static class ModelCacheExtensions
     public static string GetSummary(this MemberInfo memberInfo)
     {
         var element = memberInfo.GetDocumentation();
-        if (element == null) return "";
+        if (element == null)
+            return "";
         var summaryElm = element?.SelectSingleNode("summary");
-        if (summaryElm == null) return "";
+        if (summaryElm == null)
+            return "";
         return summaryElm.InnerText.Trim();
     }
 
@@ -75,9 +77,11 @@ public static class ModelCacheExtensions
     public static string GetSummary(this Type type)
     {
         var element = type.GetDocumentation();
-        if (element == null) return "";
+        if (element == null)
+            return "";
         var summaryElm = element?.SelectSingleNode("summary");
-        if (summaryElm == null) return "";
+        if (summaryElm == null)
+            return "";
         return summaryElm.InnerText.Trim();
     }
 

@@ -1,0 +1,110 @@
+<UserControl
+    x:Class="KubeUI.Views.ResourceListView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="using:KubeUI.Assets"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:ic="using:FluentIcons.Avalonia"
+    xmlns:local="using:KubeUI.Views"
+    xmlns:models="using:k8s.Models"
+    xmlns:u="https://irihi.tech/ursa"
+    xmlns:ursa="clr-namespace:Ursa.Controls"
+    xmlns:viewmodels="using:KubeUI.ViewModels"
+    HorizontalAlignment="Stretch"
+    VerticalAlignment="Stretch"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    x:DataType="viewmodels:IResourceListViewModel">
+    <Grid RowDefinitions="Auto,*">
+        <!--  Top Bar  -->
+        <Grid Grid.Row="0"
+            Margin="0,0,0,4"
+            ColumnDefinitions="Auto,Auto,*">
+            <Button
+                Grid.Column="0"
+                Command="{ReflectionBinding ResourceConfig.NewResourceCommand}"
+                IsVisible="{ReflectionBinding ResourceConfig.ShowNewResource}"
+                ToolTip.Tip="{x:Static assets:Resources.ResourceListView_NewResource}">
+                <ic:FluentIcon Icon="AddSquare" />
+            </Button>
+
+            <Label
+                Grid.Column="1"
+                Width="200"
+                VerticalContentAlignment="Center"
+                Content="{ReflectionBinding DataGridObjects.Count, StringFormat=Items: {0}}" />
+
+            <Grid
+                Grid.Column="2"
+                HorizontalAlignment="Right"
+                ColumnDefinitions="*,*">
+                <TextBox
+                    Grid.Column="0"
+                    Width="200"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Stretch"
+                    VerticalContentAlignment="Center"
+                    Background="Transparent"
+                    Text="{Binding SearchQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    Watermark="Search" />
+
+                <u:MultiComboBox
+                    Grid.Column="1"
+                    Width="200"
+                    MaxHeight="20"
+                    HorizontalAlignment="Right"
+                    Classes="ClearButton"
+                    IsVisible="{ReflectionBinding ResourceConfig.IsNamespaced}"
+                    ItemsSource="{Binding Cluster.Namespaces}"
+                    SelectedItems="{Binding Cluster.SelectedNamespaces}"
+                    Watermark="{x:Static assets:Resources.ResourceListView_SelectNamespace}">
+                    <u:MultiComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="models:V1Namespace">
+                            <Label Content="{Binding Metadata.Name}" />
+                        </DataTemplate>
+                    </u:MultiComboBox.ItemTemplate>
+                    <u:MultiComboBox.SelectedItemTemplate>
+                        <DataTemplate x:DataType="models:V1Namespace">
+                            <Label Content="{Binding Metadata.Name}" />
+                        </DataTemplate>
+                    </u:MultiComboBox.SelectedItemTemplate>
+                </u:MultiComboBox>
+            </Grid>
+        </Grid>
+
+        <!--  Data Grid  -->
+        <DataGrid x:Name="PART_Grid" Grid.Row="1"
+            CanUserReorderColumns="True"
+            CanUserResizeColumns="True"
+            GridLinesVisibility="All"
+            IsReadOnly="True"
+            ItemsSource="{ReflectionBinding DataGridObjects}"
+            MinColumnWidth="90"
+            PropertyChanged="PART_Grid_PropertyChanged"
+            RowHeight="{Binding SettingsService.Settings.ListRowHeight}"
+            SelectedItem="{ReflectionBinding SelectedItem}"
+            Sorting="PART_Grid_Sorting">
+            <DataGrid.KeyBindings>
+                <KeyBinding
+                    Command="{ReflectionBinding ResourceConfig.ViewCommand}"
+                    CommandParameter="{ReflectionBinding #PART_Grid.SelectedItems}"
+                    Gesture="Enter" />
+            </DataGrid.KeyBindings>
+            <Interaction.Behaviors>
+                <EventTriggerBehavior EventName="DoubleTapped">
+                    <InvokeCommandAction Command="{ReflectionBinding ResourceConfig.ViewCommand}" CommandParameter="{ReflectionBinding #PART_Grid.SelectedItems}" />
+                </EventTriggerBehavior>
+            </Interaction.Behaviors>
+            <DataGrid.Styles>
+                <Style Selector="DataGridColumnHeader">
+                    <Setter Property="FontSize" Value="{Binding $parent[local:ResourceListView].DataContext.SettingsService.Settings.FontSize}" />
+                    <Setter Property="MinHeight" Value="{Binding $parent[local:ResourceListView].DataContext.SettingsService.Settings.ListRowHeight}" />
+                </Style>
+                <Style Selector="TextBlock">
+                    <Setter Property="MaxLines" Value="1" />
+                    <Setter Property="FontSize" Value="{Binding $parent[local:ResourceListView].DataContext.SettingsService.Settings.FontSize}" />
+                </Style>
+            </DataGrid.Styles>
+        </DataGrid>
+    </Grid>
+</UserControl>

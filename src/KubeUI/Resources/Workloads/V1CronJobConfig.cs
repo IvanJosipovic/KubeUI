@@ -4,6 +4,7 @@ namespace KubeUI.Resources.Workloads;
 
 public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
 {
+    public override bool IsNamespaced => true;
     public override string Category => "Workloads";
     public override int Order => 6;
 

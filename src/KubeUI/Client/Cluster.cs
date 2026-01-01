@@ -1,10 +1,17 @@
 using System.Net.Http.Json;
+using System.Reactive.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Xml;
 using Avalonia.Collections;
 using Dock.Model.Controls;
 using Dock.Model.Core;
+using DynamicData;
+using DynamicData.Aggregation;
+using DynamicData.Binding;
+using DynamicData.Kernel;
 using FluentAvalonia.UI.Controls;
+using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using Humanizer;
@@ -12,15 +19,26 @@ using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
 using KubernetesCRDModelGen;
-using KubeUI.Client.Informer;
+using KubeUI;
 using KubeUI.Resources;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http.Resilience;
 using Polly;
 using Swordfish.NET.Collections;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
+using Yarp.Kubernetes.Controller;
+using Yarp.Kubernetes.Controller.Client;
 
 namespace KubeUI.Client;
+
+public enum ClusterStatus
+{
+    None,
+    Connecting,
+    Errored,
+    Connected
+}
 
 public sealed partial class Cluster : ObservableObject, ICluster
 {
@@ -42,15 +60,13 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
 
-    private readonly SemaphoreSlim _connectionLimiter = new(1);
+    private readonly SemaphoreSlim _connectionLimiter = new(1,1);
 
-    private readonly SemaphoreSlim _seedLimiter = new(1);
+    private readonly SemaphoreSlim _seedLimiter = new(1,1);
 
-    private readonly SemaphoreSlim _crdGenerationLimiter = new(Environment.ProcessorCount);
+    public AvaloniaDictionary<GroupApiVersionKind, object> Objects { get; } = [];
 
-    public AvaloniaDictionary<GroupApiVersionKind, ContainerClass> Objects { get; } = new();
-
-    private ResourceNavigationLink? _crdNavigationLink;
+    private NavigationItem? _crdNavigationLink;
 
     [ObservableProperty]
     public partial string Name { get; set; }
@@ -60,6 +76,9 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     [ObservableProperty]
     public partial K8SConfiguration KubeConfig { get; set; }
+
+    [ObservableProperty]
+    public partial ClusterStatus Status { get; set; }
 
     [ObservableProperty]
     public partial bool Connected { get; set; }
@@ -77,13 +96,12 @@ public sealed partial class Cluster : ObservableObject, ICluster
     public partial bool IsExpanded { get; set; }
 
     [ObservableProperty]
-    public partial AvaloniaDictionary<NamespacedName, V1Namespace> Namespaces { get; set; } = [];
+    public partial IReadOnlyList<V1Namespace> Namespaces { get; set; }
 
     [ObservableProperty]
     public partial ObservableCollection<V1Namespace> SelectedNamespaces { get; set; } = [];
 
-    [ObservableProperty]
-    public partial ConcurrentObservableDictionary<GroupApiVersionKind, IResourceConfig> ResourceConfigs { get; set; } = [];
+    private ConcurrentObservableDictionary<GroupApiVersionKind, IResourceConfig> ResourceConfigs { get; set; } = [];
 
     public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ModelCache modelCache, IGenerator generator, ISettingsService settingsService, IDialogService dialogService, IServiceProvider serviceProvider)
     {
@@ -91,7 +109,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
         _logger = logger;
         ModelCache = modelCache;
         _generator = generator;
-
         _generator.SetEnumSupport(false);
 
         var kubeAssemblyXmlDoc = new XmlDocument();
@@ -113,11 +130,12 @@ public sealed partial class Cluster : ObservableObject, ICluster
             {
                 try
                 {
+                    Status = ClusterStatus.Connecting;
                     KubernetesClientConfiguration config;
 
                     if (string.IsNullOrEmpty(KubeConfigPath))
                     {
-                        config =  KubernetesClientConfiguration.BuildConfigFromConfigObject(KubeConfig, Name);
+                        config = KubernetesClientConfiguration.BuildConfigFromConfigObject(KubeConfig, Name);
                     }
                     else
                     {
@@ -132,7 +150,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     }
                     .AddRetry(new HttpRetryStrategyOptions
                     {
-                        MaxRetryAttempts = 5,
+                        MaxRetryAttempts = 3,
                     })
                     .ConfigureTelemetry(_loggerFactory);
 
@@ -141,16 +159,20 @@ public sealed partial class Cluster : ObservableObject, ICluster
                         InnerHandler = new ResilienceHandler(pipe.Build())
                     };
 
-                    Client = new Kubernetes(config, handler);
+                    Client = new Kubernetes(config);
 
                     NativeAPIGroupDiscoveryList = await GetAPIGroupDiscoveryList();
 
                     APIGroupDiscoveryList = await GetAPIGroupDiscoveryList(false);
 
-                    Connected = true;
+                    await AddResourceConfigs();
 
-                    await GetPermissions();
+                    await UpdateNamespacePermission();
 
+                    await SeedResource<V1Namespace>();
+                    var namespaceCache = GetResourceSourceCache<V1Namespace>();
+
+                    // Cant list Namespaces
                     if (!ListNamespaces)
                     {
                         var settings = _settingsService.Settings.GetClusterSettings(this);
@@ -158,6 +180,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                         if (settings.Namespaces.Count == 0)
                         {
                             Connected = false;
+                            Status = ClusterStatus.Errored;
 
                             var vm = Application.Current.GetRequiredService<ClusterSettingsViewModel>();
 
@@ -178,39 +201,36 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                             var result = await _dialogService.ShowContentDialogAsync(this, dialogSettings);
 
-                            Connected = false;
-
                             return;
                         }
 
-                        var items = await GetObjectDictionaryAsync<V1Namespace>();
-
                         foreach (var item in settings.Namespaces)
                         {
-                            items[new NamespacedName(item)] = new V1Namespace() { Metadata = new() { Name = item } };
-                        }
-
-                        Namespaces = items;
-                    }
-                    else
-                    {
-                        Namespaces = await GetObjectDictionaryAsync<V1Namespace>();
-
-                        while (Namespaces.Count == 0)
-                        {
-                            await Task.Delay(100);
+                            namespaceCache.AddOrUpdate(new V1Namespace() { Metadata = new() { Name = item } });
                         }
                     }
 
+                    namespaceCache
+                    .Connect()
+                    .ObserveOn(AvaloniaScheduler.Instance)
+                    .SortAndBind(out var filteredObjects, SortExpressionComparer<V1Namespace>.Ascending(p => p.Name()))
+                    .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Namespace Observable"));
+
+                    Namespaces = filteredObjects;
+
+                    Connected = true;
+                    Status = ClusterStatus.Connected;
+
+                    await AddDefaultNavigation();
                     await InitMetrics();
-
-                    Dispatcher.UIThread.Post(async () => await AddDefaultNavigation(), DispatcherPriority.Background);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error connecting to {name}", Name);
 
                     Connected = false;
+
+                    Status = ClusterStatus.Errored;
 
                     var factory = Application.Current.GetRequiredService<IFactory>();
 
@@ -247,30 +267,88 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private async Task AddDefaultNavigation()
     {
-        NavigationItems.Add(new NavigationLink() { Name = "Settings", ControlType = typeof(ClusterSettingsViewModel), Cluster = this, StyleIcon = "ic_fluent_settings_24_filled", Order = 0 });
+        NavigationItems.Add(new NavigationLink() { Name = "Settings", ControlType = typeof(ClusterSettingsViewModel), Cluster = this, FluentIcon = Icon.Settings, Order = 0 });
         NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.ClusterViewModel_Title, ControlType = typeof(ClusterViewModel), Cluster = this, SvgIcon = "/Assets/kube/infrastructure_components/unlabeled/control-plane.svg", Order = 1 });
-        NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.VisualizationViewModel_Title, ControlType = typeof(VisualizationViewModel), Cluster = this, StyleIcon = "ic_fluent_search_visual_24_filled", Order = 2 });
-        NavigationItems.Add(new NavigationLink() { Name = "Load Yaml", Cluster = this, Id = "load-yaml", StyleIcon = "arrow_upload_regular", Order = 3 });
-        NavigationItems.Add(new NavigationLink() { Name = "Load Folder", Cluster = this, Id = "load-folder", StyleIcon = "folder_add_regular", Order = 4 });
+        NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.VisualizationViewModel_Title, ControlType = typeof(VisualizationViewModel), Cluster = this, FluentIcon = Icon.SearchVisual, Order = 2 });
+        NavigationItems.Add(new NavigationLink() { Name = "Load Yaml", Cluster = this, Id = "load-yaml", FluentIcon = Icon.ArrowUpload, Order = 3 });
+        NavigationItems.Add(new NavigationLink() { Name = "Load Folder", Cluster = this, Id = "load-folder", FluentIcon = Icon.FolderAdd, Order = 4 });
 
         NavigationItems.Add(new NavigationItem() { Name = "Workloads", Order = 8 });
         NavigationItems.Add(new NavigationItem() { Name = "Configuration", Order = 9 });
-        var network = new NavigationItem() { Name = "Network", Order = 10 };
-        NavigationItems.Add(network);
+
+        var networkNavItem = new NavigationItem() { Name = "Network", Order = 10 };
+
+        NavigationItems.Add(networkNavItem);
         NavigationItems.Add(new NavigationItem() { Name = "Storage", Order = 11 });
         NavigationItems.Add(new NavigationItem() { Name = "Access Control", Order = 12 });
 
-        if (await UpdateCanIListWatchAnyNamespaceAsync<V1Pod>() && await UpdateCanIAnyNamespaceAsync<V1Pod>(Verb.Create, "portforward"))
+        _crdNavigationLink = new NavigationItem
         {
-            network.NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.PortForwarderListViewModel_Title, ControlType = typeof(PortForwarderListViewModel), Cluster = this, StyleIcon = "ic_fluent_cloud_flow_filled", Order = 6 });
-        }
+            Name = "Custom Resource Definitions",
+            Order = 13,
+            NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer())
+        };
 
+        NavigationItems.Add(_crdNavigationLink);
+
+        foreach (var config in ResourceConfigs)
+        {
+            await config.Value.UpdatePermissions();
+
+            if ((config.Value.Type == typeof(V1Namespace) && !ListNamespaces) ||
+                (CanI(config.Value.Type, Verb.List) && CanI(config.Value.Type, Verb.Watch)))
+            {
+                var nav = new ResourceNavigationLink() { Name = config.Value.Name, ControlType = config.Value.Type, Cluster = this, Order = config.Value.Order };
+
+                if (config.Value.Type == typeof(V1Namespace))
+                {
+                    nav.Count = GetResourceCount<V1Namespace>();
+                }
+
+                if (config.Value.Type == typeof(V1Pod))
+                {
+                    if (CanI<V1Pod>(Verb.Create, "portforward"))
+                    {
+                        Dispatcher.UIThread.Post(() => networkNavItem.NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.PortForwarderListViewModel_Title, ControlType = typeof(PortForwarderListViewModel), Cluster = this, FluentIcon = Icon.CloudFlow, Order = 6 }), DispatcherPriority.Background);
+                    }
+                }
+
+                if (config.Value.Type == typeof(V1CustomResourceDefinition))
+                {
+                    nav.Name = "Definitions";
+                    nav.NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer());
+
+#if !DEBUG
+                    await SeedResource<V1CustomResourceDefinition>();
+                    nav.Count = GetResourceCount<V1CustomResourceDefinition>();
+#endif
+
+                    Dispatcher.UIThread.Post(() => _crdNavigationLink.NavigationItems.Add(nav), DispatcherPriority.Background);
+                    continue;
+                }
+
+                if (string.IsNullOrEmpty(config.Value.Category))
+                {
+                    Dispatcher.UIThread.Post(() => NavigationItems.Add(nav), DispatcherPriority.Background);
+                }
+                else
+                {
+                    var category = NavigationItems.First(x => x is not null && x.Name == config.Value.Category);
+
+                    Dispatcher.UIThread.Post(() => category.NavigationItems.Add(nav), DispatcherPriority.Background);
+                }
+            }
+
+        }
+    }
+
+    private async Task AddResourceConfigs()
+    {
         var types = _serviceProvider.GetRequiredService<ServiceDescriptor[]>().Where(t => t.ServiceType.IsGenericType
                                                                                        && t.ServiceType.GetGenericTypeDefinition() == typeof(ResourceConfigBase<>)
                                                                                        && t.ServiceType.GenericTypeArguments.Length == 1
                                                                                     ).Select(x => x.ServiceType)
                                                                                      .ToList();
-
         List<IResourceConfig> configs = [];
 
         foreach (var type in types)
@@ -286,61 +364,31 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
             configs.Add(resourceConfig);
         }
-
-        var updatePermissionTasks = configs.Select(x => x.UpdatePermissions()).ToArray();
-
-        await Task.WhenAll(updatePermissionTasks);
-
-        foreach (var config in configs)
-        {
-            if (CanIAnyNamespace(config.Type, Verb.List) && CanIAnyNamespace(config.Type, Verb.Watch))
-            {
-                var nav = new ResourceNavigationLink() { Name = config.Name, ControlType = config.Type, Cluster = this, Order = config.Order };
-
-                if (config.Type == typeof(V1CustomResourceDefinition))
-                {
-                    _crdNavigationLink = nav;
-                    nav.NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer());
-                    await Seed<V1CustomResourceDefinition>();
-                    nav.Objects = Objects[config.Kind].Items;
-                }
-
-                if (string.IsNullOrEmpty(config.Category))
-                {
-                    NavigationItems.Add(nav);
-                }
-                else
-                {
-                    var category = NavigationItems.First(x => x.Name == config.Category);
-
-                    category.NavigationItems.Add(nav);
-                }
-            }
-        }
     }
 
-    public async Task Seed<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public async Task SeedResource<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
+        _logger.LogDebug("Starting Seed: {type}", typeof(T));
+
         var type = typeof(T);
         var kind = GroupApiVersionKind.From<T>();
 
-        ContainerClass container;
+        ContainerClass<T> container;
 
         await _seedLimiter.WaitAsync();
 
-        if (Objects.TryGetValue(kind, out var container2))
+        if (Objects.TryGetValue(kind, out var obj) && obj is ContainerClass<T> container2)
         {
             container = container2;
         }
         else
         {
-            container = new ContainerClass
-            {
-                Type = type,
-                Items = new AvaloniaDictionary<NamespacedName, T>()
-            };
+            container = new ContainerClass<T>();
 
-            Objects.Add(kind, container);
+            if (!Objects.TryAdd(kind, container))
+            {
+                throw new Exception($"Duplicate Object Set detected for: {kind}");
+            }
         }
 
         if (!container.Initialized)
@@ -348,72 +396,32 @@ public sealed partial class Cluster : ObservableObject, ICluster
             container.Initialized = true;
             _seedLimiter.Release();
 
-            // Parallelize the self subject access review calls for cluster-scoped permissions
-            var reviewTasks = new[]
+            if (await UpdateCanI(type, Verb.List) && await UpdateCanI(type, Verb.Watch))
             {
-                GetSelfSubjectAccessReview(type, Verb.Create),
-                GetSelfSubjectAccessReview(type, Verb.Delete),
-                GetSelfSubjectAccessReview(type, Verb.Get),
-                GetSelfSubjectAccessReview(type, Verb.List),
-                GetSelfSubjectAccessReview(type, Verb.Patch),
-                GetSelfSubjectAccessReview(type, Verb.Update),
-                GetSelfSubjectAccessReview(type, Verb.Watch)
-            };
-
-            await Task.WhenAll(reviewTasks);
-
-            if (CanI(type, Verb.List) && CanI(type, Verb.Watch))
-            {
-                var informer = new ResourceInformer<T>(_loggerFactory.CreateLogger<ResourceInformer<T>>(), Client);
+                var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>());
                 container.Informers.Add(informer);
-                var inf = informer.Register(GetResourceInformerCallback<T>());
-
-                _ = Task.Run(() => informer.RunAsync(new CancellationToken()));
-
-                if (waitForReady)
-                {
-                    await inf.ReadyAsync(new CancellationToken());
-                    await Task.Delay(1000);
-                }
+                informer.Register(GetResourceInformerCallback<T>());
+                informer.StartWatching();
+                _ = informer.RunInfinite(CancellationToken.None);
             }
             else
             {
-                if (!IsNamespaced<T>())
+                if (!IsResourceNamespaced<T>())
                 {
                     return;
                 }
 
-                var namespaceDict = GetObjectDictionary<V1Namespace>();
-                foreach (var item in namespaceDict)
+                foreach (var item in GetResourceList<V1Namespace>())
                 {
-                    string ns = item.Value.Name();
-                    // Parallelize the self subject access review calls for namespaced permissions
-                    var namespacedTasks = new[]
-                    {
-                        GetSelfSubjectAccessReview(type, Verb.Create, ns),
-                        GetSelfSubjectAccessReview(type, Verb.Delete, ns),
-                        GetSelfSubjectAccessReview(type, Verb.Get, ns),
-                        GetSelfSubjectAccessReview(type, Verb.List, ns),
-                        GetSelfSubjectAccessReview(type, Verb.Patch, ns),
-                        GetSelfSubjectAccessReview(type, Verb.Update, ns),
-                        GetSelfSubjectAccessReview(type, Verb.Watch, ns)
-                    };
+                    string ns = item.Name();
 
-                    await Task.WhenAll(namespacedTasks);
-
-                    if (CanI(type, Verb.List, ns) && CanI(type, Verb.Watch, ns))
+                    if (await UpdateCanI(type, Verb.List, ns) && await UpdateCanI(type, Verb.Watch, ns))
                     {
-                        var informer = new ResourceInformer<T>(_loggerFactory.CreateLogger<ResourceInformer<T>>(), Client, ns);
+                        var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), @namespace: ns);
                         container.Informers.Add(informer);
-                        var inf = informer.Register(GetResourceInformerCallback<T>());
-
-                        _ = Task.Run(() => informer.RunAsync(new CancellationToken()));
-
-                        if (waitForReady)
-                        {
-                            await inf.ReadyAsync(new CancellationToken());
-                            await Task.Delay(1000);
-                        }
+                        informer.Register(GetResourceInformerCallback<T>());
+                        informer.StartWatching();
+                        _ = informer.RunInfinite(CancellationToken.None);
                     }
                 }
             }
@@ -422,25 +430,26 @@ public sealed partial class Cluster : ObservableObject, ICluster
         {
             _seedLimiter.Release();
         }
+
+        _logger.LogDebug("Finished Seed: {type}", typeof(T));
     }
 
     private ResourceInformerCallback<T> GetResourceInformerCallback<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        return new ResourceInformerCallback<T>((x, item) =>
+        return new ResourceInformerCallback<T>((eventType, item) =>
         {
             var kind = GroupApiVersionKind.From<T>();
 
-            var items = (AvaloniaDictionary<NamespacedName, T>)Objects[kind].Items;
+            var items = GetResourceSourceCache<T>();
 
-            var name = new NamespacedName(item.Namespace(), item.Name());
-
-            switch (x)
+            switch (eventType)
             {
                 case WatchEventType.Added:
                     if (item is V1CustomResourceDefinition crd)
                     {
                         _logger.LogInformation("Processing new CRD {name}", crd.Name());
-                        _ = Task.Run(() => ProcessNewCRD(crd))
+
+                        ProcessNewCRD(crd)
                         .ContinueWith(t =>
                         {
                             if (t.Exception != null)
@@ -449,23 +458,28 @@ public sealed partial class Cluster : ObservableObject, ICluster
                             }
                             else
                             {
-                                Dispatcher.UIThread.Post(() => items[name] = item, DispatcherPriority.Background);
+                                items.AddOrUpdate(item);
+                                //Dispatcher.UIThread.Post(() => items.AddOrUpdate(item), DispatcherPriority.Background);
+
+                                _logger.LogInformation("Completed processing new CRD {name}", crd.Name());
                             }
-                            _crdGenerationLimiter.Release();
-                            _logger.LogInformation("Completed processing new CRD {name}", crd.Name());
-                        });
+
+                        }).GetAwaiter().GetResult();
                     }
                     else
                     {
-                        Dispatcher.UIThread.Post(() => items[name] = item, DispatcherPriority.Background);
+                        items.AddOrUpdate(item);
+                        //Dispatcher.UIThread.Post(() => items.AddOrUpdate(item), DispatcherPriority.Background);
                     }
 
                     break;
                 case WatchEventType.Modified:
-                    Dispatcher.UIThread.Post(() => items[name] = item, DispatcherPriority.Background);
+                    items.AddOrUpdate(item);
+                    //Dispatcher.UIThread.Post(() => items.AddOrUpdate(item), DispatcherPriority.Background);
                     break;
                 case WatchEventType.Deleted:
-                    Dispatcher.UIThread.Post(() => items.Remove(name), DispatcherPriority.Background);
+                    items.Remove(item);
+                    //Dispatcher.UIThread.Post(() => items.Remove(item), DispatcherPriority.Background);
                     if (item is V1CustomResourceDefinition crd2)
                     {
                         APIGroupDiscoveryList = GetAPIGroupDiscoveryList(false).GetAwaiter().GetResult();
@@ -500,20 +514,14 @@ public sealed partial class Cluster : ObservableObject, ICluster
                         }
                     }
                     break;
-                case WatchEventType.Error:
-                    break;
-                case WatchEventType.Bookmark:
-                    break;
             }
 
-            OnChange?.Invoke(x, kind, item);
+            OnChange?.Invoke(eventType, kind, item);
         });
     }
 
     private async Task<bool> ProcessNewCRD(V1CustomResourceDefinition crd)
     {
-        await _crdGenerationLimiter.WaitAsync();
-
         if (!ModelCache.CheckIfCRDExists(crd))
         {
             var assembly = _generator.GenerateAssembly(crd, "KubeUI.Models");
@@ -529,16 +537,16 @@ public sealed partial class Cluster : ObservableObject, ICluster
             var version = crd.Spec.Versions.First(x => x.Served && x.Storage);
             var resourceType = ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
 
-            var genericMethod = s_processCustomObjectMethod.MakeGenericMethod(resourceType);
+            var genericMethod = s_processCustomResourceDefinitionMethod.MakeGenericMethod(resourceType);
             await (Task)genericMethod.Invoke(this, [crd]);
         }
 
         return true;
     }
 
-    private static readonly MethodInfo s_processCustomObjectMethod = typeof(Cluster).GetMethod(nameof(ProcessCustomObject), BindingFlags.Instance | BindingFlags.NonPublic);
+    private static readonly MethodInfo s_processCustomResourceDefinitionMethod = typeof(Cluster).GetMethod(nameof(ProcessCustomResourceDefinition), BindingFlags.Instance | BindingFlags.NonPublic);
 
-    private async Task ProcessCustomObject<T>(V1CustomResourceDefinition crd) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    private async Task ProcessCustomResourceDefinition<T>(V1CustomResourceDefinition crd) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var api = GroupApiVersionKind.From<T>();
 
@@ -547,12 +555,10 @@ public sealed partial class Cluster : ObservableObject, ICluster
             APIGroupDiscoveryList = await GetAPIGroupDiscoveryList(false);
         }
 
-        var canI = await UpdateCanIListWatchAnyNamespaceAsync<T>();
-
-        if (canI)
+        if (await UpdateCanIAnyNamespaceAsync<T>(Verb.List) && await UpdateCanIAnyNamespaceAsync<T>(Verb.Watch))
         {
             //Generate new Resource Configuration
-            var resourceConfig = Application.Current.GetRequiredService<CustomResourceDefinitionResourceConfig<T>>();
+            var resourceConfig = Application.Current.GetRequiredService<CRDResourceConfig<T>>();
 
             resourceConfig.Initialize(this);
 
@@ -562,8 +568,9 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
             ResourceConfigs[api] = resourceConfig;
 
-            Dispatcher.UIThread.Post(() => {
-                var nav = new ResourceNavigationLink() { Name = api.PluralName.Humanize(LetterCasing.Title), ControlType = typeof(T), Cluster = this, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer()) };
+            Dispatcher.UIThread.Post(() =>
+            {
+                var nav = new ResourceNavigationLink() { Name = api.Kind.Pluralize().Humanize(LetterCasing.Title), ControlType = typeof(T), Cluster = this, NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer()) };
 
                 var fqdnlist = ConstructFQDNList(api.Group);
 
@@ -599,7 +606,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private static List<string> ConstructFQDNList(string domain)
     {
-        List<string> fqdnList = new List<string>();
+        List<string> fqdnList = [];
         string[] levels = domain.Split('.');
 
         if (levels.Length <= 2)
@@ -620,7 +627,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         return fqdnList;
     }
 
-    public async Task Delete<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public async Task DeleteResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var api = GroupApiVersionKind.From<T>();
 
@@ -636,40 +643,66 @@ public sealed partial class Cluster : ObservableObject, ICluster
         }
     }
 
-    public async Task<T?> GetObjectAsync<T>(string @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public T? GetResource<T>(string? @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        await Seed<T>(true);
-
-        var attribute = GroupApiVersionKind.From<T>();
-
-        return ((AvaloniaDictionary<NamespacedName, T>)Objects[attribute].Items)[new NamespacedName(@namespace, name)];
+        return GetResourceSourceCache<T>().Lookup(@namespace + "/" + name).ValueOrDefault();
     }
 
-    public AvaloniaDictionary<NamespacedName, T> GetObjectDictionary<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public IReadOnlyList<T> GetResourceList<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        Seed<T>().GetAwaiter().GetResult();
-
-        var attribute = GroupApiVersionKind.From<T>();
-
-        return (AvaloniaDictionary<NamespacedName, T>)Objects[attribute].Items;
+        return GetResourceSourceCache<T>().Items;
     }
 
-    public async Task<AvaloniaDictionary<NamespacedName, T>> GetObjectDictionaryAsync<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public ISourceCache<T, string> GetResourceSourceCache<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        await Seed<T>(true);
+        if (Objects.TryGetValue(GroupApiVersionKind.From<T>(), out var obj) && obj is ContainerClass<T> container)
+        {
+            return container.Items;
+        }
 
-        var attribute = GroupApiVersionKind.From<T>();
-
-        return (AvaloniaDictionary<NamespacedName, T>)Objects[attribute].Items;
+        throw new Exception("Resource has not been Seeded " + typeof(T));
     }
 
-    public async Task AddOrUpdate<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public IObservable<int> GetResourceCount<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        return GetResourceSourceCache<T>().Connect().Count();
+    }
+
+    // Find the generic definition of GetResourceCount<T>()
+    private static readonly MethodInfo s_getResourceCountMethod = typeof(Cluster)
+        .GetMethods(BindingFlags.Instance | BindingFlags.Public)
+        .First(m =>
+               m.Name == nameof(GetResourceCount) &&
+               m.IsGenericMethodDefinition &&
+               m.GetGenericArguments().Length == 1 &&
+               m.GetParameters().Length == 0);
+
+    public IObservable<int> GetResourceCount(Type type)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+
+        // Validate generic constraints: class, IKubernetesObject<V1ObjectMeta>, new()
+        if (!typeof(IKubernetesObject<V1ObjectMeta>).IsAssignableFrom(type))
+            throw new ArgumentException($"Type {type.FullName} does not implement IKubernetesObject<V1ObjectMeta>.", nameof(type));
+
+        if (type.IsAbstract)
+            throw new ArgumentException($"Type {type.FullName} must be a concrete type.", nameof(type));
+
+        if (type.GetConstructor(Type.EmptyTypes) == null)
+            throw new ArgumentException($"Type {type.FullName} must have a public parameterless constructor.", nameof(type));
+
+        var closedMethod = s_getResourceCountMethod.MakeGenericMethod(type);
+
+        return (IObservable<int>)closedMethod.Invoke(this, null)!;
+    }
+
+    public async Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var api = GroupApiVersionKind.From<T>();
 
         using var client = new GenericClient(Client, api.Group, api.ApiVersion, api.PluralName, false);
 
-        if (IsNamespaced<T>() && string.IsNullOrEmpty(item.Namespace()))
+        if (IsResourceNamespaced<T>() && string.IsNullOrEmpty(item.Namespace()))
         {
             item.Metadata.NamespaceProperty = "default";
         }
@@ -704,7 +737,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     public async Task ImportYaml(Stream stream)
     {
-        var mi = GetType().GetMethods().First(x => x.Name == nameof(AddOrUpdate) && x.IsGenericMethod && x.GetParameters().Length == 1);
+        var mi = GetType().GetMethods().First(x => x.Name == nameof(AddOrUpdateResource) && x.IsGenericMethod && x.GetParameters().Length == 1);
 
         var reader = new StreamReader(stream);
         var parser = new Parser(new StringReader(reader.ReadToEnd()));
@@ -779,7 +812,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         }
     }
 
-    public bool IsNamespaced(Type type)
+    public bool IsResourceNamespaced(Type type)
     {
         var api = GroupApiVersionKind.From(type);
 
@@ -819,9 +852,9 @@ public sealed partial class Cluster : ObservableObject, ICluster
         );
     }
 
-    public bool IsNamespaced<T>()
+    public bool IsResourceNamespaced<T>()
     {
-        return IsNamespaced(typeof(T));
+        return IsResourceNamespaced(typeof(T));
     }
 
     private async Task<V2beta1APIGroupDiscoveryList> GetAPIGroupDiscoveryList(bool native = true)
@@ -845,18 +878,36 @@ public sealed partial class Cluster : ObservableObject, ICluster
     {
         return ResourceConfigs[kind];
     }
+
+    public IResourceConfig GetResourceConfig<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        return GetResourceConfig(GroupApiVersionKind.From<T>());
+    }
+
+    public async Task<bool> IsResourceReady<T>(CancellationToken? token = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        token ??= CancellationToken.None;
+
+        var kind = GroupApiVersionKind.From<T>();
+
+        if (Objects.TryGetValue(kind, out var obj) && obj is ContainerClass<T> container)
+        {
+            var tasks = container.Informers.Select(x => x.ReadyAsync(token.Value));
+            await Task.WhenAll(tasks).WaitAsync(token.Value).ConfigureAwait(false);
+        }
+
+        return false;
+    }
 }
 
-public partial class ContainerClass : ObservableObject
+public partial class ContainerClass<T> : ObservableObject where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
-    [ObservableProperty]
-    public partial Type Type { get; set; }
+    public Type Type { get; } = typeof(T);
+
+    public ISourceCache<T, string> Items { get; } = new SourceCache<T, string>(x => x.Namespace() + "/" + x.Name());
 
     [ObservableProperty]
     public partial List<IResourceInformer> Informers { get; set; } = [];
-
-    [ObservableProperty]
-    public partial IDictionary Items { get; set; }
 
     [ObservableProperty]
     public partial bool Initialized { get; set; }

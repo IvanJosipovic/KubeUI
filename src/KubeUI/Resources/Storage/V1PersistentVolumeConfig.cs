@@ -20,7 +20,7 @@ public sealed partial class V1PersistentVolumeConfig : ResourceConfigBase<V1Pers
             new ResourceListColumn<V1PersistentVolume, string>()
             {
                 Name = "Size",
-                Field = x => x.Spec.Capacity["storage"].Value,
+                Field = x => x.Spec.Capacity["storage"].CanonicalizeString(ResourceQuantity.SuffixFormat.BinarySI),
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             new ResourceListColumn<V1PersistentVolume, string>()

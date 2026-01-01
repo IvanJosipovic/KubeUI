@@ -4,6 +4,7 @@ namespace KubeUI.Resources.Network;
 
 public sealed partial class V1NetworkPolicyConfig : ResourceConfigBase<V1NetworkPolicy>
 {
+    public override bool IsNamespaced => true;
     public override string Category => "Network";
     public override int Order => 5;
 

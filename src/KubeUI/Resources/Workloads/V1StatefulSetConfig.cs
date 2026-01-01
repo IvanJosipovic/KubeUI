@@ -1,14 +1,16 @@
 ﻿using FluentAvalonia.UI.Controls;
+using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
 using k8s.Models;
 using static KubeUI.Client.Cluster;
 
-namespace KubeUI.Resources.Workloads.Pod;
+namespace KubeUI.Resources.Workloads;
 
 public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulSet>
 {
+    public override bool IsNamespaced => true;
     public override string Category => "Workloads";
 
     public override int Order => 3;
@@ -35,9 +37,9 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
             new()
             {
                 Header = "Restart",
-                IconResource = "arrow_sync_regular",
+                FluentIcon = Icon.ArrowSync,
                 CommandPath = nameof(RestartStatefulSetCommand),
-                CommandParameterPath = "SelectedItem.Value"
+                CommandParameterPath = "SelectedItem"
             },
         ];
     }

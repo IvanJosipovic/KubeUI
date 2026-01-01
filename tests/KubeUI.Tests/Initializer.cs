@@ -1,5 +1,5 @@
-﻿using Avalonia.Headless;
-using Avalonia;
+﻿using Avalonia;
+using Avalonia.Headless;
 using KubeUI.Tests;
 
 [assembly: AvaloniaTestApplication(typeof(TestAppBuilder))]

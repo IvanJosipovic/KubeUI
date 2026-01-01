@@ -1,6 +1,6 @@
 ﻿using k8s.Models;
 
-namespace KubeUI.Resources.Workloads.Configuration;
+namespace KubeUI.Resources.Configuration;
 
 public sealed partial class V1ValidatingWebhookConfigurationConfig : ResourceConfigBase<V1ValidatingWebhookConfiguration>
 {

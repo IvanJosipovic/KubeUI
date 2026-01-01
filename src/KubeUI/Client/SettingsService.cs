@@ -93,7 +93,7 @@ public sealed partial class SettingsService : ObservableObject, ISettingsService
         ApplySettings();
     }
 
-    private void ApplySettings()
+    public void ApplySettings()
     {
         switch (Settings.Theme)
         {
@@ -108,9 +108,6 @@ public sealed partial class SettingsService : ObservableObject, ISettingsService
                 break;
         }
 
-        if (App.TopLevel != null)
-        {
-            App.TopLevel.FontSize = Convert.ToDouble(Settings.FontSize);
-        }
+        App.TopLevel?.FontSize = Convert.ToDouble(Settings.FontSize);
     }
 }

@@ -1,4 +1,5 @@
 using FluentAvalonia.UI.Controls;
+using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
@@ -8,6 +9,7 @@ namespace KubeUI.Resources.Network;
 
 public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
 {
+    public override bool IsNamespaced => true;
     public override string Category => "Network";
     public override int Order => 0;
 
@@ -47,8 +49,8 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
             new()
             {
                 Header = "Port Forwarding",
-                ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Service>>(x => x.SelectedItem.Value.Spec.Ports),
-                IconResource = "ic_fluent_cloud_flow_filled",
+                ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Service>>(x => x.SelectedItem.Spec.Ports),
+                FluentIcon = Icon.CloudFlow,
                 ItemTemplate = new()
                 {
                     HeaderBinding = new MultiBinding()

@@ -12,10 +12,13 @@
   "ignorePaths": [
     "**/docs/**"
   ],
+  "git-submodules": {
+    "enabled": true
+  },
   "packageRules": [
     {
-      "matchManagers": ["nuget"],
-      "matchPackageNames": ["OpenTelemetry.Instrumentation.Process"],
+      "matchManagers": [ "nuget" ],
+      "matchPackageNames": [ "OpenTelemetry.Instrumentation.Process" ],
       "ignoreUnstable": false,
       "respectLatest": false
     },
@@ -86,6 +89,30 @@
         "OpenTelemetry",
         "OpenTelemetry.*"
       ]
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/Kind\\.cs$/"
+      ],
+      "matchStrings": [
+        "private const string Version = \"v(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\";"
+      ],
+      "depNameTemplate": "kubernetes-sigs/kind",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/Kind\\.cs$/"
+      ],
+      "matchStrings": [
+        "private const string KubernetesVersion = \"kindest/node:v(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\";"
+      ],
+      "depNameTemplate": "kindest/node",
+      "datasourceTemplate": "docker"
     }
   ]
 }

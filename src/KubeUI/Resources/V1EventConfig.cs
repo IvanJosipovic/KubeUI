@@ -7,6 +7,7 @@ namespace KubeUI.Resources;
 
 public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
 {
+    public override bool IsNamespaced => true;
     public override bool ShowNewResource => false;
     public override int Order => 7;
 
@@ -58,24 +59,27 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
         ];
     }
 
-    public override StyleGroup ListStyle() => [
-        new Style<DataGridRow>()
-            .Setter(DataGridRow.ForegroundProperty, new Binding("Value.Type")
+    public override IStyle ListStyle()
+    {
+        var style = new Style(x => x.OfType<DataGridRow>());
+        style.Add(new Setter(DataGridRow.ForegroundProperty, new Binding("Type")
+        {
+            Converter = new FuncValueConverter<string, IBrush>(x =>
             {
-                Converter = new FuncValueConverter<string, IBrush>(x =>
+                if (string.Equals(x, "Warning", StringComparison.Ordinal))
                 {
-                    if (string.Equals(x, "Warning", StringComparison.Ordinal))
-                    {
-                        return Brushes.Red;
-                    }
+                    return Brushes.Red;
+                }
 
-                    if (Application.Current.ActualThemeVariant == ThemeVariant.Light)
-                    {
-                        return Brushes.Black; //todo reference style
-                    }
+                if (Application.Current.ActualThemeVariant == ThemeVariant.Light)
+                {
+                    return Brushes.Black; //todo reference style
+                }
 
-                    return Brushes.White; //todo reference style
-                }),
-            }),
-    ];
+                return Brushes.White; //todo reference style
+            })
+        }));
+
+        return style;
+    }
 }

@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: 'true'
 
@@ -43,7 +43,7 @@ jobs:
         if: success() || failure()
         with:
           name: KubeUI Tests
-          path: tests/KubeUI.Tests/TestResults/test-results.trx
+          path: tests/**/TestResults/test-results.trx
           reporter: dotnet-trx
 
       - name: Coverage
@@ -63,7 +63,7 @@ jobs:
       new_release_version: ${{ (steps.semantic.outputs.new_release_published && steps.semantic.outputs.new_release_version) || '0.0.1' }}
       new_release_notes: ${{ steps.semantic.outputs.new_release_notes }}
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
 
     - name: Semantic Release
       uses: cycjimmy/semantic-release-action@v4
@@ -106,13 +106,13 @@ jobs:
             runs-on: macos-latest
             packParam: --icon ../KubeUI/Assets/icon.icns --plist info.plist
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: 'true'
 
       - uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: '8.x.x'
+          dotnet-version: '9.x.x'
 
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v5
@@ -191,7 +191,7 @@ jobs:
           Remove-Item -Path packed/RELEASES-*
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.rid }}-artifacts
           path: src/KubeUI.Desktop/packed
@@ -202,10 +202,10 @@ jobs:
     needs: [semantic-release, publish-matrix]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
 
     - name: Download artifacts
-      uses: actions/download-artifact@v5
+      uses: actions/download-artifact@v7
       with:
         path: dist/
 

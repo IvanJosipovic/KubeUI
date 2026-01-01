@@ -1,5 +1,5 @@
-﻿using YamlDotNet.Serialization.TypeInspectors;
-using YamlDotNet.Serialization;
+﻿using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.TypeInspectors;
 
 namespace KubeUI.Client.Serialization;
 

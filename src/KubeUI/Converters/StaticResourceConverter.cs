@@ -5,6 +5,8 @@ namespace KubeUI.Converters;
 
 class StaticResourceConverter : IValueConverter
 {
+    public static readonly StaticResourceConverter Instance = new();
+
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         if (value == null)

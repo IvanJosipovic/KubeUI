@@ -1,0 +1,29 @@
+<UserControl
+    x:Class="KubeUI.Views.AboutView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="clr-namespace:KubeUI.Assets"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:views="clr-namespace:KubeUI.Views"
+    xmlns:vm="clr-namespace:KubeUI.ViewModels"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    x:DataType="vm:AboutViewModel"
+    mc:Ignorable="d">
+    <Design.DataContext>
+        <vm:AboutViewModel />
+    </Design.DataContext>
+    <StackPanel>
+        <TextBlock Padding="5,0,0,0" Text="{x:Static assets:Resources.AboutView_Header}" />
+        <HyperlinkButton
+            Padding="5,0,0,0"
+            Content="admin@KubeUI.com"
+            NavigateUri="mailto:admin@KubeUI.com" />
+        <TextBlock Padding="5,0,0,0" Text="{Binding Version, StringFormat={x:Static assets:Resources.AboutView_Version_StringFormat}}" />
+        <HyperlinkButton
+            Padding="5,0,0,0"
+            Content="https://KubeUI.com"
+            NavigateUri="https://KubeUI.com" />
+    </StackPanel>
+</UserControl>
