@@ -1,4 +1,5 @@
 ﻿using Avalonia.Collections;
+using Avalonia.Controls.DataGridFiltering;
 using Avalonia.Controls.DataGridSorting;
 using k8s;
 using k8s.Models;
@@ -17,6 +18,9 @@ namespace KubeUI.ViewModels
         ObservableCollection<DataGridColumn> Columns { get; set; }
         IDataGridSortingAdapterFactory SortingAdapterFactory { get; }
         ISortingModel SortingModel { get; set; }
+        IDataGridFilteringAdapterFactory FilteringAdapterFactory { get; }
+        IFilteringModel FilteringModel { get; set; }
+
         void Dispose();
         void Initialize(ICluster cluster);
     }
