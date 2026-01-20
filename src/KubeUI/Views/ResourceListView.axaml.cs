@@ -1,9 +1,5 @@
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using Avalonia.Collections;
 using Avalonia.Controls.Primitives;
-using Avalonia.Controls.Templates;
-using Avalonia.Data.Converters;
 using Avalonia.Styling;
 using Dock.Model.Core;
 using FluentIcons.Avalonia;
@@ -50,9 +46,14 @@ public partial class ResourceListView : UserControl
     {
         base.OnDataContextChanged(e);
 
-        if (DataContext != null)
+        if (DataContext is IResourceListViewModel vm)
         {
             GetGenericMethod(nameof(GenerateGrid))?.Invoke(this, null);
+
+            PART_Grid.SortingAdapterFactory = vm.SortingAdapterFactory;
+            //PART_Grid.FilteringAdapterFactory = vm.FilteringAdapterFactory;
+            PART_Grid.SortingModel = vm.SortingModel;
+            //PART_Grid.FilteringModel = vm.FilteringModel;
         }
     }
 

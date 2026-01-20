@@ -1,14 +1,14 @@
 using System.Collections.Specialized;
 using System.Linq.Expressions;
 using System.Reactive.Linq;
-using Avalonia.Collections;
-using Avalonia.Controls.Primitives;
+using System.Reactive.Subjects;
+using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls.Selection;
 using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
 using Avalonia.Styling;
 using DynamicData;
-using FluentIcons.Avalonia;
+using DynamicData.Binding;
 using Humanizer;
 using k8s;
 using k8s.Models;
@@ -16,12 +16,15 @@ using KubeUI.Client;
 using KubeUI.Resources;
 using KubeUI.Views;
 using Yarp.Kubernetes.Controller.Client;
+using SortDirection = KubeUI.Resources.SortDirection;
 
 namespace KubeUI.ViewModels;
 
 public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluster, IDisposable, IResourceListViewModel where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     private readonly ILogger<ResourceListViewModel<T>> _logger;
+
+    private static readonly IComparer sNoopSortComparer = Comparer<object>.Create(static (_, _) => 0);
 
     public ISettingsService SettingsService { get; }
 
@@ -41,9 +44,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     public partial ObservableCollection<T> SelectedItems { get; set; } = [];
 
     [ObservableProperty]
-    public partial DataGridCollectionView ItemsView { get; private set; }
-
-    [ObservableProperty]
     public partial string SearchQuery { get; set; }
 
     [ObservableProperty]
@@ -52,7 +52,27 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     [ObservableProperty]
     public partial ObservableCollection<DataGridColumn> Columns { get; set; } = [];
 
-    private IDisposable? _filter;
+    private IDisposable? _subscription;
+
+    // new
+
+    public ReadOnlyObservableCollection<T> View => _view;
+    private ReadOnlyObservableCollection<T> _view;
+
+    private BehaviorSubject<IComparer<T>> _sortSubject;
+
+    public IDataGridSortingAdapterFactory SortingAdapterFactory => _sortingAdapterFactory;
+
+    private SortingAdapterFactory<T> _sortingAdapterFactory { get; set; }
+
+    [ObservableProperty]
+    public partial ISortingModel SortingModel { get; set; }
+
+
+    public SelectionModel<T> SelectionModel { get; } = new SelectionModel<T>()
+    {
+        SingleSelect = false
+    };
 
     public ResourceListViewModel()
     {
@@ -71,27 +91,28 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         Cluster.SeedResource<T>().GetAwaiter().GetResult();
 
         Objects = Cluster.GetResourceSourceCache<T>();
-
+        Dispatcher.UIThread.Invoke(() => GenerateGrid<T>());
         Cluster.SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
 
-        SetFilter();
+        _subscription?.Dispose();
 
-        //GenerateGrid<T>();
-        Dispatcher.UIThread.Post(() => GenerateGrid<T>());
-    }
+        _sortingAdapterFactory = new SortingAdapterFactory<T>(ResourceConfig, Columns);
+        _sortSubject = new BehaviorSubject<IComparer<T>>(_sortingAdapterFactory.SortComparer);
 
-    private void SetFilter()
-    {
-        _filter?.Dispose();
+        _subscription = Objects.Connect()
+                                        //.Filter(GenerateFilter())
+                                        .ObserveOn(AvaloniaScheduler.Instance)
+                                        .SortAndBind(out _view, _sortSubject)
+                                        .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Setting Resource List Filter: {ns} ", typeof(T)));
 
-        _filter = Objects
-            .Connect()
-            .Filter(GenerateFilter())
-            .ObserveOn(AvaloniaScheduler.Instance)
-            .Bind(out var filteredObjects)
-            .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Setting Resource List Filter: {ns} ", typeof(T)));
+        SortingModel = new SortingModel
+        {
+            MultiSort = true,
+            CycleMode = SortCycleMode.AscendingDescendingNone,
+            OwnsViewSorts = true
+        };
 
-        Dispatcher.UIThread.Post(() => ItemsView = new DataGridCollectionView(filteredObjects));
+        SortingModel.SortingChanged += SortingModelOnSortingChanged;
     }
 
     private Func<T, bool> GenerateFilter()
@@ -195,23 +216,23 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
         if (e.PropertyName == nameof(SearchQuery))
         {
-            SetFilter();
+            //SetFilter();
         }
     }
 
     private void SelectedNamespaces_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        SetFilter();
+        //SetFilter();
     }
 
     public void Dispose()
     {
-        _filter?.Dispose();
+        _subscription?.Dispose();
 
         Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
     }
 
-    private void GenerateGrid<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    private void GenerateGrid<T>()
     {
         Columns.Clear();
 
@@ -221,15 +242,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         {
             try
             {
-                var columnDisplay = (Func<T, string>)columnDefinition.GetType().GetProperty(nameof(ResourceListColumn<,>.Display)).GetValue(columnDefinition);
-
-                var columnField = columnDefinition.GetType().GetProperty(nameof(ResourceListColumn<,>.Field)).GetValue(columnDefinition);
-
-                // Create Sort FuncComparer
-                var colType = columnField.GetType().GenericTypeArguments[1];
-                var sortConverterType = typeof(MyFuncComparer<,>).MakeGenericType(typeof(T), colType);
-                var sortConverter = (IComparer)Activator.CreateInstance(sortConverterType, columnField);
-
                 DataGridColumn column = null;
 
                 if (columnDefinition.CustomControl != null)
@@ -237,7 +249,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                     column = new DataGridTemplateColumn()
                     {
                         Header = columnDefinition.Name,
-                        CustomSortComparer = sortConverter,
+                        CustomSortComparer = sNoopSortComparer,
                         CanUserSort = true,
                         CellTemplate = new FuncDataTemplate<T>((item, _) =>
                         {
@@ -264,20 +276,17 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                             Converter = new FuncValueConverter<T, string>(x =>
                             {
                                 if (x == null)
+                                {
                                     return "";
-                                // Use columnDisplay if not null, otherwise use columnField as a Func<T, string>
-                                if (columnDisplay != null)
-                                    return columnDisplay(x);
-                                else if (columnField is Func<T, string> fieldFunc)
-                                    return fieldFunc(x);
-                                else
-                                    throw new Exception("Column is miss-configured");
+                                }
+
+                                return columnDefinition.DisplayValue(x);
                             }),
                             Mode = BindingMode.OneWay
                         },
                         Header = columnDefinition.Name,
                         CanUserSort = true,
-                        CustomSortComparer = sortConverter,
+                        CustomSortComparer = sNoopSortComparer,
                         SortDirection = columnDefinition.Sort == SortDirection.None ? null : columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending
                     };
                 }
@@ -293,6 +302,138 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             {
                 _logger.LogWarning(ex, "Unable to generate column for: ");
             }
+        }
+    }
+    private void SortingModelOnSortingChanged(object? sender, SortingChangedEventArgs e)
+    {
+        _sortingAdapterFactory.UpdateComparer(e.NewDescriptors);
+        _sortSubject.OnNext(_sortingAdapterFactory.SortComparer);
+    }
+}
+
+public sealed class SortingAdapterFactory<T> : IDataGridSortingAdapterFactory where T : class, IKubernetesObject<V1ObjectMeta>, new()
+{
+    private readonly ResourceConfigBase<T> _resourceConfig;
+
+    private readonly ObservableCollection<DataGridColumn> _columns;
+
+    private static readonly IComparer<T> s_sNoopComparer = Comparer<T>.Create(static (_, _) => 0);
+
+    private readonly IReadOnlyDictionary<string, IResourceListColumn> _columnsByName;
+
+    private readonly Dictionary<DataGridColumn, Func<T, IComparable?>?> _selectorCache = [];
+
+    public IComparer<T> SortComparer { get; private set; }
+
+    public SortingAdapterFactory(ResourceConfigBase<T> resourceConfig, ObservableCollection<DataGridColumn> columns)
+    {
+        SortComparer = s_sNoopComparer;
+        _resourceConfig = resourceConfig;
+        _columns = columns;
+
+        _columnsByName = _resourceConfig
+            .Columns()
+            .GroupBy(static c => c.Name, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(static g => g.Key, static g => g.First(), StringComparer.OrdinalIgnoreCase);
+    }
+
+    public DataGridSortingAdapter Create(DataGrid grid, ISortingModel model)
+    {
+        return new DynamicDataSortingAdapter(model, () => _columns, UpdateComparer);
+    }
+
+    public void UpdateComparer(IReadOnlyList<SortingDescriptor> descriptors)
+    {
+        SortComparer = BuildComparer(descriptors);
+    }
+
+    private IComparer<T> BuildComparer(IReadOnlyList<SortingDescriptor> descriptors)
+    {
+        if (descriptors == null || descriptors.Count == 0)
+        {
+            return s_sNoopComparer;
+        }
+
+        SortExpressionComparer<T>? comparer = null;
+
+        foreach (var descriptor in descriptors.Where(static d => d != null))
+        {
+            // Depending on SortCycleMode, Avalonia may include descriptors representing "None".
+            // Treat default enum value as unsorted and ignore.
+            if ((int)descriptor.Direction == 0)
+            {
+                continue;
+            }
+
+            var selector = CreateSelector(descriptor);
+
+            if (selector == null)
+            {
+                continue;
+            }
+
+            comparer = comparer == null
+                ? descriptor.Direction == ListSortDirection.Ascending
+                    ? SortExpressionComparer<T>.Ascending(selector)
+                    : SortExpressionComparer<T>.Descending(selector)
+                : descriptor.Direction == ListSortDirection.Ascending
+                    ? comparer.ThenByAscending(selector)
+                    : comparer.ThenByDescending(selector);
+        }
+
+        return (IComparer<T>?)comparer ?? s_sNoopComparer;
+    }
+
+    private Func<T, IComparable?>? CreateSelector(SortingDescriptor descriptor)
+    {
+        if (descriptor.ColumnId is not DataGridColumn gridColumn)
+        {
+            return null;
+        }
+
+        if (_selectorCache.TryGetValue(gridColumn, out var cached))
+        {
+            return cached;
+        }
+
+        if (gridColumn.Header is not string header || string.IsNullOrWhiteSpace(header))
+        {
+            return null;
+        }
+
+        if (!_columnsByName.TryGetValue(header, out var columnDefinition))
+        {
+            _selectorCache[gridColumn] = null;
+            return null;
+        }
+
+        // SortExpressionComparer expects a selector; IResourceListColumn exposes SortKey as Func<object, IComparable?>.
+        cached = x => columnDefinition.SortKey(x);
+        _selectorCache[gridColumn] = cached;
+        return cached;
+    }
+
+    private sealed class DynamicDataSortingAdapter : DataGridSortingAdapter
+    {
+        private readonly Action<IReadOnlyList<SortingDescriptor>> _update;
+
+        public DynamicDataSortingAdapter(
+            ISortingModel model,
+            Func<IEnumerable<DataGridColumn>> columns,
+            Action<IReadOnlyList<SortingDescriptor>> update)
+            : base(model, columns)
+        {
+            _update = update;
+        }
+
+        protected override bool TryApplyModelToView(
+            IReadOnlyList<SortingDescriptor> descriptors,
+            IReadOnlyList<SortingDescriptor> previousDescriptors,
+            out bool changed)
+        {
+            _update(descriptors);
+            changed = true;
+            return true;
         }
     }
 }
