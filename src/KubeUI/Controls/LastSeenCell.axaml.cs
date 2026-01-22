@@ -38,9 +38,9 @@ public sealed partial class LastSeenCell : UserControl
     {
         base.OnDataContextChanged(e);
 
-        if (DataContext is Corev1Event ev && ev.LastTimestamp.HasValue)
+        if (DataContext is Corev1Event ev)
         {
-            _date = ev.LastTimestamp ?? ev.FirstTimestamp!.Value;
+            _date = ev.LastTimestamp ?? (ev.EventTime ?? ev!.Metadata!.CreationTimestamp!.Value);
 
             UpdatePretty();
         }

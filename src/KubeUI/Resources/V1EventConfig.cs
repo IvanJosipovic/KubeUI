@@ -50,8 +50,7 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
             {
                 Name = "Last Seen",
                 CustomControl = typeof(LastSeenCell),
-                Field = x => x.LastTimestamp,
-                Display = x => x.LastTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
+                Field = x => x.LastTimestamp ?? (x.EventTime ?? x.Metadata.CreationTimestamp),
                 Sort = SortDirection.Descending,
                 Width = "80"
             },

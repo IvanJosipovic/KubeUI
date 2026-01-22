@@ -102,7 +102,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         Cluster.SeedResource<T>().GetAwaiter().GetResult();
 
         Objects = Cluster.GetResourceSourceCache<T>();
-        Dispatcher.UIThread.Invoke(() => GenerateGrid<T>());
+        Dispatcher.UIThread.Invoke(() => GenerateGrid());
         Cluster.SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
 
         _subscription?.Dispose();
@@ -185,7 +185,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
     }
 
-    private void GenerateGrid<T>()
+    private void GenerateGrid()
     {
         Columns.Clear();
 

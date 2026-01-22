@@ -105,7 +105,6 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             Name = "Age",
             CustomControl = typeof(AgeCell),
             Field = x => x.Metadata.CreationTimestamp,
-            Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
             Width = "80"
         };
     }
