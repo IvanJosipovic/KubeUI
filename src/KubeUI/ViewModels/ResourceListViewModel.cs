@@ -50,7 +50,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     // new
 
-    public ReadOnlyObservableCollection<T> View => _view;
+    public IEnumerable View => _view;
 
     private ReadOnlyObservableCollection<T> _view;
 
@@ -80,7 +80,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         OwnsViewFilter = true
     };
 
-    public SelectionModel<T> SelectionModel { get; } = new SelectionModel<T>()
+    public ISelectionModel SelectionModel { get; } = new SelectionModel<T>()
     {
         SingleSelect = false
     };
@@ -232,11 +232,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 }
 
                 ColumnDefinitions.Add(column);
-
-                //if (column.SortDirection != null)
-                //{
-                //    SortingModel.Apply([new(column, column.SortDirection.Value)]);
-                //}
             }
             catch (Exception ex)
             {

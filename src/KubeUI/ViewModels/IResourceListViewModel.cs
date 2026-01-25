@@ -1,6 +1,7 @@
 ﻿using Avalonia.Collections;
 using Avalonia.Controls.DataGridFiltering;
 using Avalonia.Controls.DataGridSorting;
+using Avalonia.Controls.Selection;
 using k8s;
 using k8s.Models;
 using KubeUI.Client;
@@ -20,8 +21,7 @@ namespace KubeUI.ViewModels
         ISortingModel SortingModel { get; set; }
         IDataGridFilteringAdapterFactory FilteringAdapterFactory { get; }
         IFilteringModel FilteringModel { get; set; }
-
-        void Dispose();
-        void Initialize(ICluster cluster);
+        ISelectionModel SelectionModel { get; }
+        IEnumerable View { get; }
     }
 }

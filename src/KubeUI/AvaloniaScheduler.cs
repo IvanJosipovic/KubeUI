@@ -4,13 +4,20 @@ using System.Reactive.Disposables;
 namespace KubeUI;
 
 /// <summary>
-/// A reactive scheduler that uses Avalonia's <see cref="Dispatcher"/>.
+/// Provides a scheduler that executes actions on the Avalonia UI thread, enabling scheduling of work to run on the
+/// dispatcher.
 /// </summary>
+/// <remarks>Use <see cref="AvaloniaScheduler.Instance"/> to access the singleton instance. This scheduler is
+/// typically used to marshal work onto the Avalonia UI thread, ensuring thread-safe interaction with UI components.
+/// Actions scheduled with zero delay may be executed immediately if already on the dispatcher thread, but excessive
+/// immediate scheduling is limited to prevent stack overflows.</remarks>
 public sealed class AvaloniaScheduler : LocalScheduler
 {
     /// <summary>
-    /// The instance of the <see cref="AvaloniaScheduler"/>.
+    /// Gets the singleton instance of the AvaloniaScheduler.
     /// </summary>
+    /// <remarks>Use this property to access the default scheduler for Avalonia operations. The instance is
+    /// thread-safe and intended for global use throughout the application.</remarks>
     public static readonly AvaloniaScheduler Instance = new();
 
     /// <summary>

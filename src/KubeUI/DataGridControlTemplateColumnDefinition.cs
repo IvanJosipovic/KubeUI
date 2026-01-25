@@ -48,7 +48,6 @@ namespace Avalonia.Controls
                     templateColumn.ClearValue(DataGridTemplateColumn.ReuseCellContentProperty);
                 }
 
-                var reuseCellContent = templateColumn.ReuseCellContent;
                 templateColumn.CellTemplate = CellTemplate;
             }
         }
@@ -78,7 +77,6 @@ namespace Avalonia.Controls
                         templateColumn.ClearValue(DataGridTemplateColumn.ReuseCellContentProperty);
                     }
 
-                    var reuseCellContent = templateColumn.ReuseCellContent;
                     templateColumn.CellTemplate = CellTemplate;
                     return true;
             }

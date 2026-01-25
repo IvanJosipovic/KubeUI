@@ -80,12 +80,12 @@
             ColumnDefinitionsSource="{Binding ColumnDefinitions}"
             GridLinesVisibility="All"
             IsReadOnly="True"
-            ItemsSource="{ReflectionBinding View}"
+            ItemsSource="{Binding View}"
             MinColumnWidth="90"
             RowHeight="{Binding SettingsService.Settings.ListRowHeight}"
             SelectedItem="{ReflectionBinding SelectedItem}"
             SelectedItems="{ReflectionBinding SelectedItems}"
-            Selection="{ReflectionBinding SelectionModel}"
+            Selection="{Binding SelectionModel}"
             UseLogicalScrollable="True">
             <DataGrid.KeyBindings>
                 <KeyBinding
