@@ -1,26 +1,28 @@
-﻿using System.Runtime.InteropServices;
-using System.Text;
-using CliWrap;
+﻿using CliWrap;
 using k8s;
 using k8s.KubeConfigModels;
+using System.Runtime.InteropServices;
+using System.Text;
 
-namespace KubeUI.Core.Tests;
+namespace KubeUI.Tests;
 
 /// <summary>
 /// Interface for KIND https://github.com/kubernetes-sigs/kind/releases
 /// </summary>
-public class Kind
+public static class Kind
 {
-    public string Version = "latest";
+    private const string Version = "v0.31.0";
 
-    public string FileName { get; } = "kind" + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "");
+    private const string KubernetesVersion = "kindest/node:v1.34.3";
 
-    public async Task DownloadClient()
+    public static string FileName { get; } = "kind" + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "");
+
+    public static async Task DownloadClient()
     {
         if (File.Exists(FileName))
             return;
 
-        var client = new HttpClient();
+        using var client = new HttpClient();
         var arch = "amd64";
 
         if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
@@ -48,17 +50,19 @@ public class Kind
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             await Cli.Wrap("chmod")
-                .WithArguments("+x ./kind")
+                .WithArguments("+x ./" + FileName)
                 .ExecuteAsync();
         }
     }
 
-    public async Task CreateCluster(string name, string? image = null)
+    public static async Task CreateCluster(string name, string? image = null, string? config = null)
     {
         var stdErrBuffer = new StringBuilder();
 
+        image ??= KubernetesVersion;
+
         await Cli.Wrap(FileName)
-            .WithArguments($"create cluster --name {name}" + (string.IsNullOrEmpty(image) ? "" : $" --image {image}"))
+            .WithArguments($"create cluster --name {name}" + $" --image {image}" + (string.IsNullOrEmpty(config) ? "" : $" --config={config}"))
             .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
             .ExecuteAsync();
 
@@ -70,7 +74,7 @@ public class Kind
         }
     }
 
-    public async Task DeleteCluster(string name)
+    public static async Task DeleteCluster(string name)
     {
         var stdErrBuffer = new StringBuilder();
 
@@ -87,7 +91,7 @@ public class Kind
         }
     }
 
-    public async Task<List<string>> GetClusters()
+    public static async Task<List<string>> GetClusters()
     {
         var stdOutBuffer = new StringBuilder();
         var stdErrBuffer = new StringBuilder();
@@ -106,10 +110,10 @@ public class Kind
             throw new Exception(stdErr);
         }
 
-        return new List<string>(stdOut.TrimEnd().Split("\n"));
+        return [.. stdOut.TrimEnd().Split("\n")];
     }
 
-    public async Task<string> GetKubeConfig(string name)
+    public static async Task<string> GetKubeConfig(string name)
     {
         var stdOutBuffer = new StringBuilder();
         var stdErrBuffer = new StringBuilder();
@@ -131,21 +135,60 @@ public class Kind
         return stdOut;
     }
 
-    public async Task<K8SConfiguration> GetK8SConfiguration(string name)
+    public static async Task<string> ExportKubeConfig(string name)
+    {
+        var stdOutBuffer = new StringBuilder();
+        var stdErrBuffer = new StringBuilder();
+
+        await Cli.Wrap(FileName)
+            .WithArguments($"export kubeconfig --name {name}")
+            .WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdOutBuffer))
+            .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
+            .ExecuteAsync();
+
+        var stdOut = stdOutBuffer.ToString();
+        var stdErr = stdErrBuffer.ToString();
+
+        if (!string.IsNullOrEmpty(stdErr) && stdErr.StartsWith("ERROR:"))
+        {
+            throw new Exception(stdErr);
+        }
+
+        return stdOut;
+    }
+
+    public static async Task<K8SConfiguration> GetK8SConfiguration(string name)
     {
         return KubernetesYaml.Deserialize<K8SConfiguration>(await GetKubeConfig(name));
     }
 
-    public async Task<Kubernetes> GetKubernetesClient(string name)
+    public static async Task<k8s.Kubernetes> GetKubernetesClient(string name)
     {
-        return new Kubernetes(KubernetesClientConfiguration.BuildConfigFromConfigObject(await GetK8SConfiguration(name)));
+        return new k8s.Kubernetes(KubernetesClientConfiguration.BuildConfigFromConfigObject(await GetK8SConfiguration(name)));
     }
 
-    public async Task DeleteAllClusters()
+    public static async Task DeleteAllClusters()
     {
         foreach (var cluster in await GetClusters())
         {
             await DeleteCluster(cluster);
+        }
+    }
+
+    public static async Task LoadDockerImage(string clusterName, string imageName)
+    {
+        var stdErrBuffer = new StringBuilder();
+
+        await Cli.Wrap(FileName)
+            .WithArguments($"load docker-image {imageName} --name {clusterName}")
+            .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
+            .ExecuteAsync();
+
+        var stdErr = stdErrBuffer.ToString();
+
+        if (!string.IsNullOrEmpty(stdErr) && stdErr.StartsWith("ERROR:"))
+        {
+            throw new Exception(stdErr);
         }
     }
 }
