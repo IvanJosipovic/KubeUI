@@ -328,6 +328,7 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
     public string? Width { get; set; }
 
     public Type ItemType => typeof(T);
+
     public Type ValueType => typeof(TValue);
 
     public Func<object, IComparable?> SortKey =>
@@ -342,27 +343,6 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
             var v = Field(t);
             return v?.ToString() ?? "";
         };
-}
-
-public static class ResourceListColumnSortingExtensions
-{
-    public static SortExpressionComparer<T> ToSortExpressionComparer<T>(this IResourceListColumn col)
-    {
-        if (!col.ItemType.IsAssignableFrom(typeof(T)) && !typeof(T).IsAssignableFrom(col.ItemType))
-        {
-            throw new InvalidOperationException(
-                $"Column '{col.Name}' is for '{col.ItemType.FullName}' but you are sorting '{typeof(T).FullName}'.");
-        }
-
-        IComparable? selector(T x) => col.SortKey(x);
-
-        return col.Sort switch
-        {
-            SortDirection.Descending => SortExpressionComparer<T>.Descending(selector),
-            SortDirection.Ascending => SortExpressionComparer<T>.Ascending(selector),
-            _ => SortExpressionComparer<T>.Ascending(selector)
-        };
-    }
 }
 
 public enum SortDirection

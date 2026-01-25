@@ -12,10 +12,10 @@ namespace KubeUI.ViewModels
     public interface IResourceListViewModel
     {
         ICluster Cluster { get; set; }
-        GroupApiVersionKind Kind { get; set; }
+        GroupApiVersionKind Kind { get; }
         string SearchQuery { get; set; }
         ISettingsService SettingsService { get; }
-        ObservableCollection<DataGridColumn> Columns { get; set; }
+        ObservableCollection<DataGridColumnDefinition> ColumnDefinitions { get; }
         IDataGridSortingAdapterFactory SortingAdapterFactory { get; }
         ISortingModel SortingModel { get; set; }
         IDataGridFilteringAdapterFactory FilteringAdapterFactory { get; }

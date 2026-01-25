@@ -1,13 +1,11 @@
 using System.Collections.Specialized;
-using System.Linq.Expressions;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Avalonia.Controls.DataGridFiltering;
 using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls.Selection;
 using Avalonia.Controls.Templates;
-using Avalonia.Data.Converters;
-using Avalonia.Styling;
+using Avalonia.Data.Core;
 using DynamicData;
 using DynamicData.Binding;
 using Humanizer;
@@ -15,7 +13,6 @@ using k8s;
 using k8s.Models;
 using KubeUI.Client;
 using KubeUI.Resources;
-using KubeUI.Views;
 using Yarp.Kubernetes.Controller.Client;
 using SortDirection = KubeUI.Resources.SortDirection;
 
@@ -25,15 +22,14 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 {
     private readonly ILogger<ResourceListViewModel<T>> _logger;
 
-    private static readonly IComparer s_sNoopSortComparer = Comparer<object>.Create(static (_, _) => 0);
+    private static readonly IComparer s_noopSortComparer = Comparer<object>.Create(static (_, _) => 0);
 
     public ISettingsService SettingsService { get; }
 
     [ObservableProperty]
     public partial ICluster Cluster { get; set; }
 
-    [ObservableProperty]
-    public partial GroupApiVersionKind Kind { get; set; }
+    public GroupApiVersionKind Kind { get; } = GroupApiVersionKind.From<T>();
 
     [ObservableProperty]
     public partial ISourceCache<T, string> Objects { get; set; }
@@ -50,9 +46,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     [ObservableProperty]
     public partial ResourceConfigBase<T> ResourceConfig { get; set; }
 
-    [ObservableProperty]
-    public partial ObservableCollection<DataGridColumn> Columns { get; set; } = [];
-
     private IDisposable? _subscription;
 
     // new
@@ -68,8 +61,12 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     private DynamicDataSortingAdapterFactory<T> _sortingAdapterFactory { get; set; }
 
     [ObservableProperty]
-    public partial ISortingModel SortingModel { get; set; }
-
+    public partial ISortingModel SortingModel { get; set; } = new SortingModel
+    {
+        MultiSort = true,
+        CycleMode = SortCycleMode.AscendingDescendingNone,
+        OwnsViewSorts = true
+    };
 
     private BehaviorSubject<Func<T, bool>> _filterSubject;
 
@@ -78,36 +75,43 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     private DynamicDataFilteringAdapterFactory<T> _filteringAdapterFactory { get; set; }
 
     [ObservableProperty]
-    public partial IFilteringModel FilteringModel { get; set; }
+    public partial IFilteringModel FilteringModel { get; set; } = new FilteringModel
+    {
+        OwnsViewFilter = true
+    };
 
     public SelectionModel<T> SelectionModel { get; } = new SelectionModel<T>()
     {
         SingleSelect = false
     };
 
+    [ObservableProperty]
+    public partial ObservableCollection<DataGridColumnDefinition> ColumnDefinitions { get; private set; } = [];
+
     public ResourceListViewModel()
     {
         _logger = Application.Current.GetRequiredService<ILogger<ResourceListViewModel<T>>>();
         SettingsService = Application.Current.GetRequiredService<ISettingsService>();
+
+        SortingModel.SortingChanged += SortingModelOnSortingChanged;
+        FilteringModel.FilteringChanged += FilteringModelOnFilteringChanged;
     }
 
     public void Initialize(ICluster cluster)
     {
         Cluster = cluster;
-        Kind = GroupApiVersionKind.From<T>();
         Title = Kind.Kind.Humanize(LetterCasing.Title).Pluralize();
         Id = Cluster.Name + "-" + Kind;
         ResourceConfig = (ResourceConfigBase<T>)Cluster.GetResourceConfig(Kind);
-
+        GenerateColumnDefinitions();
         Cluster.SeedResource<T>().GetAwaiter().GetResult();
 
         Objects = Cluster.GetResourceSourceCache<T>();
-        Dispatcher.UIThread.Invoke(() => GenerateGrid());
         Cluster.SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
 
         _subscription?.Dispose();
 
-        _sortingAdapterFactory = new DynamicDataSortingAdapterFactory<T>(ResourceConfig, Columns);
+        _sortingAdapterFactory = new DynamicDataSortingAdapterFactory<T>(ResourceConfig);
         _sortSubject = new BehaviorSubject<IComparer<T>>(_sortingAdapterFactory.SortComparer);
         _filteringAdapterFactory = new DynamicDataFilteringAdapterFactory<T>(ResourceConfig);
         _filterSubject = new BehaviorSubject<Func<T, bool>>(_filteringAdapterFactory.FilterPredicate);
@@ -117,22 +121,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                                         .ObserveOn(AvaloniaScheduler.Instance)
                                         .SortAndBind(out _view, _sortSubject)
                                         .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Setting Resource List Filter: {ns} ", typeof(T)));
-
-        SortingModel = new SortingModel
-        {
-            MultiSort = true,
-            CycleMode = SortCycleMode.AscendingDescendingNone,
-            OwnsViewSorts = true
-        };
-
-        SortingModel.SortingChanged += SortingModelOnSortingChanged;
-
-        FilteringModel = new FilteringModel
-        {
-            OwnsViewFilter = true
-        };
-
-        FilteringModel.FilteringChanged += FilteringModelOnFilteringChanged;
     }
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
@@ -183,79 +171,92 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _subscription?.Dispose();
 
         Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
+        SortingModel.SortingChanged -= SortingModelOnSortingChanged;
+        FilteringModel.FilteringChanged -= FilteringModelOnFilteringChanged;
     }
 
-    private void GenerateGrid()
+    private void GenerateColumnDefinitions()
     {
-        Columns.Clear();
+        ColumnDefinitions.Clear();
 
         var converter = new DataGridLengthConverter();
+
+        var builder = DataGridColumnDefinitionBuilder.For<T>();
 
         foreach (var columnDefinition in ResourceConfig.Columns())
         {
             try
             {
-                DataGridColumn column = null;
+                DataGridColumnDefinition column = null;
 
                 if (columnDefinition.CustomControl != null)
                 {
-                    column = new DataGridTemplateColumn()
+                    column = new DataGridControlTemplateColumnDefinition()
                     {
                         Header = columnDefinition.Name,
-                        CustomSortComparer = s_sNoopSortComparer,
-                        CanUserSort = true,
                         CellTemplate = new FuncDataTemplate<T>((item, _) =>
-                        {
-                            var control = Application.Current.GetRequiredService(columnDefinition.CustomControl) as Control;
-                            control.DataContext = item;
-
-                            if (control is IInitializeCluster init)
                             {
-                                init.Initialize(Cluster);
-                            }
+                                var control = Application.Current.GetRequiredService(columnDefinition.CustomControl) as Control;
+                                control.DataContext = item;
 
-                            return control;
-                        }),
-                        SortDirection = columnDefinition.Sort == SortDirection.None ? null : columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending
+                                if (control is IInitializeCluster init)
+                                {
+                                    init.Initialize(Cluster);
+                                }
+
+                                return control;
+                            }),
+                        CanUserSort = true,
+                        CustomSortComparer = s_noopSortComparer,
+                        SortDirection = columnDefinition.Sort == SortDirection.None ? null : columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending,
+                        Width = columnDefinition.Width != null ? converter.ConvertFromString(columnDefinition.Width) as DataGridLength? : null,
+                        ValueType = columnDefinition.ValueType,
                     };
                 }
                 else
                 {
-                    // Create Display FuncValueConverter
-                    column = new MyDataGridTextColumn
-                    {
-                        Binding = new Binding()
+                    column = builder.Text(
+                        header: columnDefinition.Name,
+                        property: CreateProperty(columnDefinition.Name, p => columnDefinition.DisplayValue(p)),
+                        getter: p => columnDefinition.DisplayValue(p),
+                        setter : null,
+                        configure: ct =>
                         {
-                            Converter = new FuncValueConverter<T, string>(x =>
-                            {
-                                if (x == null)
-                                {
-                                    return "";
-                                }
-
-                                return columnDefinition.DisplayValue(x);
-                            }),
-                            Mode = BindingMode.OneWay
-                        },
-                        Header = columnDefinition.Name,
-                        CanUserSort = true,
-                        CustomSortComparer = s_sNoopSortComparer,
-                        SortDirection = columnDefinition.Sort == SortDirection.None ? null : columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending
-                    };
+                            ct.CanUserSort = true;
+                            ct.CustomSortComparer = s_noopSortComparer;
+                            ct.SortDirection = columnDefinition.Sort == SortDirection.None ? null : columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending;
+                            ct.Width = columnDefinition.Width != null ? converter.ConvertFromString(columnDefinition.Width) as DataGridLength? : null;
+                            ct.ValueType = columnDefinition.ValueType;
+                        }
+                    );
                 }
 
-                if (!string.IsNullOrEmpty(columnDefinition.Width) && converter.ConvertFromString(columnDefinition.Width) is DataGridLength width)
-                {
-                    column.Width = width;
-                }
+                ColumnDefinitions.Add(column);
 
-                Columns.Add(column);
+                //if (column.SortDirection != null)
+                //{
+                //    SortingModel.Apply([new(column, column.SortDirection.Value)]);
+                //}
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Unable to generate column for: ");
             }
         }
+    }
+
+    private static IPropertyInfo CreateProperty<TValue>(
+    string name,
+    Func<T, TValue> getter,
+    Action<T, TValue>? setter = null)
+    {
+        return new ClrPropertyInfo(
+            name,
+            target => getter((T)target),
+            setter == null
+                ? null
+                : (target, value) => setter((T)target, value is null ? default! : (TValue)value),
+            typeof(TValue));
     }
 
     private void SortingModelOnSortingChanged(object? sender, SortingChangedEventArgs e)
@@ -275,31 +276,19 @@ public sealed class DynamicDataSortingAdapterFactory<T> : IDataGridSortingAdapte
 {
     private readonly ResourceConfigBase<T> _resourceConfig;
 
-    private readonly ObservableCollection<DataGridColumn> _columns;
-
-    private static readonly IComparer<T> s_sNoopComparer = Comparer<T>.Create(static (_, _) => 0);
-
-    private readonly IReadOnlyDictionary<string, IResourceListColumn> _columnsByName;
-
-    private readonly Dictionary<DataGridColumn, Func<T, IComparable?>?> _selectorCache = [];
+    private static readonly IComparer<T> s_noopComparer = Comparer<T>.Create(static (_, _) => 0);
 
     public IComparer<T> SortComparer { get; private set; }
 
-    public DynamicDataSortingAdapterFactory(ResourceConfigBase<T> resourceConfig, ObservableCollection<DataGridColumn> columns)
+    public DynamicDataSortingAdapterFactory(ResourceConfigBase<T> resourceConfig)
     {
-        SortComparer = s_sNoopComparer;
+        SortComparer = s_noopComparer;
         _resourceConfig = resourceConfig;
-        _columns = columns;
-
-        _columnsByName = _resourceConfig
-            .Columns()
-            .GroupBy(static c => c.Name, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(static g => g.Key, static g => g.First(), StringComparer.OrdinalIgnoreCase);
     }
 
     public DataGridSortingAdapter Create(DataGrid grid, ISortingModel model)
     {
-        return new DynamicDataSortingAdapter(model, () => _columns, UpdateComparer);
+        return new DynamicDataSortingAdapter(model, () => grid.Columns, UpdateComparer);
     }
 
     public void UpdateComparer(IReadOnlyList<SortingDescriptor> descriptors)
@@ -311,7 +300,7 @@ public sealed class DynamicDataSortingAdapterFactory<T> : IDataGridSortingAdapte
     {
         if (descriptors == null || descriptors.Count == 0)
         {
-            return s_sNoopComparer;
+            return s_noopComparer;
         }
 
         SortExpressionComparer<T>? comparer = null;
@@ -334,19 +323,14 @@ public sealed class DynamicDataSortingAdapterFactory<T> : IDataGridSortingAdapte
                     : comparer.ThenByDescending(selector);
         }
 
-        return comparer ?? s_sNoopComparer;
+        return comparer ?? s_noopComparer;
     }
 
     private Func<T, IComparable?>? CreateSelector(SortingDescriptor descriptor)
     {
-        if (descriptor.ColumnId is not DataGridColumn gridColumn)
+        if (descriptor.ColumnId is not DataGridColumnDefinition gridColumn)
         {
             return null;
-        }
-
-        if (_selectorCache.TryGetValue(gridColumn, out var cached))
-        {
-            return cached;
         }
 
         if (gridColumn.Header is not string header || string.IsNullOrWhiteSpace(header))
@@ -354,16 +338,7 @@ public sealed class DynamicDataSortingAdapterFactory<T> : IDataGridSortingAdapte
             return null;
         }
 
-        if (!_columnsByName.TryGetValue(header, out var columnDefinition))
-        {
-            _selectorCache[gridColumn] = null;
-            return null;
-        }
-
-        // SortExpressionComparer expects a selector; IResourceListColumn exposes SortKey as Func<object, IComparable?>.
-        cached = x => columnDefinition.SortKey(x);
-        _selectorCache[gridColumn] = cached;
-        return cached;
+        return _resourceConfig.Columns().First(x => x.Name == header).SortKey;
     }
 
     private sealed class DynamicDataSortingAdapter : DataGridSortingAdapter
@@ -393,23 +368,19 @@ public sealed class DynamicDataSortingAdapterFactory<T> : IDataGridSortingAdapte
 
 public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAdapterFactory where T : class, IKubernetesObject<V1ObjectMeta>, new ()
 {
-    private static readonly Func<T, bool> s_sAlwaysTrue = static _ => true;
+    private static readonly Func<T, bool> s_alwaysTrue = static _ => true;
 
-    private readonly IReadOnlyDictionary<string, IResourceListColumn> _columnsByName;
+    private readonly ResourceConfigBase<T> _resourceConfig;
 
     public DynamicDataFilteringAdapterFactory(ResourceConfigBase<T> resourceConfig)
     {
-        FilterPredicate = s_sAlwaysTrue;
-
-        _columnsByName = resourceConfig
-            .Columns()
-            .GroupBy(static c => c.Name, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(static g => g.Key, static g => g.First(), StringComparer.OrdinalIgnoreCase);
+        FilterPredicate = s_alwaysTrue;
+        _resourceConfig = resourceConfig;
     }
 
     public DataGridFilteringAdapter Create(DataGrid grid, IFilteringModel model)
     {
-        return new DynamicDataFilteringAdapter(model, () => grid.ColumnDefinitions, UpdateFilter);
+        return new DynamicDataFilteringAdapter(model, () => grid.Columns, UpdateFilter);
     }
 
     public Func<T, bool> FilterPredicate { get; private set; }
@@ -423,7 +394,7 @@ public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAd
     {
         if (descriptors == null || descriptors.Count == 0)
         {
-            return s_sAlwaysTrue;
+            return s_alwaysTrue;
         }
 
         var compiled = new List<Func<T, bool>>(descriptors.Count);
@@ -438,7 +409,7 @@ public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAd
 
         if (compiled.Count == 0)
         {
-            return s_sAlwaysTrue;
+            return s_alwaysTrue;
         }
 
         if (compiled.Count == 1)
@@ -497,13 +468,13 @@ public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAd
             FilteringOperator.LessThanOrEqual => item => Compare(selector(item), value, culture) <= 0,
             FilteringOperator.Between => item => Between(selector(item), values, culture),
             FilteringOperator.In => item => In(selector(item), values),
-            _ => s_sAlwaysTrue
+            _ => s_alwaysTrue
         };
     }
 
     private Func<T, object?>? CreateSelector(FilteringDescriptor descriptor)
     {
-        if (descriptor.ColumnId is not DataGridColumn gridColumn)
+        if (descriptor.ColumnId is not DataGridColumnDefinition gridColumn)
         {
             return null;
         }
@@ -513,12 +484,7 @@ public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAd
             return null;
         }
 
-        if (!_columnsByName.TryGetValue(header, out var columnDefinition))
-        {
-            return null;
-        }
-
-        return item => columnDefinition.DisplayValue(item);
+        return _resourceConfig.Columns().First(x => x.Name == header).DisplayValue;
     }
 
     private static bool Contains(object? source, object? target, StringComparison comparison)
@@ -630,17 +596,6 @@ public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAd
         {
             return value;
         }
-    }
-
-    private static string Describe(IReadOnlyList<FilteringDescriptor> descriptors)
-    {
-        if (descriptors == null || descriptors.Count == 0)
-        {
-            return "(none)";
-        }
-
-        return string.Join(", ", descriptors.Where(d => d != null).Select(d =>
-            $"{d.PropertyPath ?? d.ColumnId}:{d.Operator}"));
     }
 
     private sealed class DynamicDataFilteringAdapter : DataGridFilteringAdapter
