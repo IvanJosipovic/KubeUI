@@ -18,9 +18,7 @@
 
     <Grid Background="Transparent" RowDefinitions="Auto,*">
         <!--  Top Menu (hidden on macOS in code-behind)  -->
-        <Menu
-            x:Name="MainMenu"
-            Grid.Row="0"
+        <Menu x:Name="MainMenu" Grid.Row="0"
             VerticalAlignment="Top">
             <MenuItem Header="{x:Static assets:Resources.MainView_Menu_File}">
                 <MenuItem Command="{Binding LoadKubeConfigCommand}" Header="{x:Static assets:Resources.MainView_Menu_File_LoadKubeConfig}" />
@@ -40,9 +38,15 @@
             </MenuItem>
         </Menu>
 
-        <doc:DockControl
-            Grid.Row="1"
+        <doc:DockControl Grid.Row="1"
             Margin="4"
-            Layout="{Binding Layout}" />
+            Layout="{Binding Layout}">
+            <doc:DockControl.Styles>
+                <Style Selector="DocumentTabStrip#PART_TabStrip /template/ ScrollViewer#PART_ScrollViewer /template/ ScrollBar#PART_HorizontalScrollBar">
+                    <Setter Property="MinHeight" Value="4" />
+                    <Setter Property="MaxHeight" Value="4" />
+                </Style>
+            </doc:DockControl.Styles>
+        </doc:DockControl>
     </Grid>
 </UserControl>

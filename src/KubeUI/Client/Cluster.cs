@@ -459,7 +459,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
                             else
                             {
                                 items.AddOrUpdate(item);
-                                //Dispatcher.UIThread.Post(() => items.AddOrUpdate(item), DispatcherPriority.Background);
 
                                 _logger.LogInformation("Completed processing new CRD {name}", crd.Name());
                             }

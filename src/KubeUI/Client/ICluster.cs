@@ -40,6 +40,8 @@ public interface ICluster
     PortForwarder AddServicePortForward(string @namespace, string serviceName, int servicePort);
     string KubeConfigPath { get; set; }
     string Name { get; set; }
+    bool IsExpanded { get; set; }
+
     Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task Connect();
     Task DeleteResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();

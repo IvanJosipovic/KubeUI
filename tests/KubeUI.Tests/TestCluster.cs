@@ -32,6 +32,7 @@ public class TestCluster : ICluster
     public ObservableCollection<V1Namespace> SelectedNamespaces { get; } = [];
     public string KubeConfigPath { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     public string Name { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    public bool IsExpanded { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
 

@@ -86,6 +86,7 @@
             SelectedItem="{ReflectionBinding SelectedItem}"
             SelectedItems="{ReflectionBinding SelectedItems}"
             Selection="{Binding SelectionModel}"
+            SelectionMode="Extended"
             UseLogicalScrollable="True">
             <DataGrid.KeyBindings>
                 <KeyBinding

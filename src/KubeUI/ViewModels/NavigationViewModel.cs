@@ -41,7 +41,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
             _ = Task.Run(async () => await SelectNavigationLink(navLink));
         }
 
-        if (item is NavigationItem nav)
+        if (item is NavigationItem nav && nav.NavigationItems.Count > 0)
         {
             nav.IsExpanded = !nav.IsExpanded;
         }
