@@ -5,7 +5,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Yarp.Kubernetes.Controller.Client;
+namespace Kubernetes.Controller.Client;
 
 /// <summary>
 /// Returned by <see cref="IResourceInformer{TResource}.Register(ResourceInformerCallback{TResource})"/> to control the lifetime of an event

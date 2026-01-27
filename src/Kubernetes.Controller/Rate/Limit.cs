@@ -4,7 +4,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Yarp.Kubernetes.Controller.Rate;
+namespace Kubernetes.Controller.Rate;
 
 /// <summary>
 /// Struct Limit defines the maximum frequency of some events.

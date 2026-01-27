@@ -5,7 +5,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Threading;
 using System.Threading.Tasks;
-using Yarp.Kubernetes.Controller.Hosting;
+using Kubernetes.Controller.Hosting;
 
 namespace Yarp.Kubernetes.Tests.Hosting.Fakes;
 

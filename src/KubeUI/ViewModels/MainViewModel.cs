@@ -30,12 +30,6 @@ public sealed partial class MainViewModel : ViewModelBase
 
         ClusterManager = Application.Current.GetRequiredService<ClusterManager>();
 
-#if DEBUG
-        var defaultCluster = ClusterManager.GetDefault();
-        _ = Task.Run(defaultCluster.Connect);
-        defaultCluster?.IsExpanded = true;
-#endif
-
         _dialogService = Application.Current.GetRequiredService<IDialogService>();
 
         DebugFactoryEvents(Factory);

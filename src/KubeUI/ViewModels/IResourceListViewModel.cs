@@ -1,12 +1,13 @@
 ﻿using Avalonia.Collections;
 using Avalonia.Controls.DataGridFiltering;
+using Avalonia.Controls.DataGridSelection;
 using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls.Selection;
 using k8s;
 using k8s.Models;
 using KubeUI.Client;
 using KubeUI.Resources;
-using Yarp.Kubernetes.Controller.Client;
+using Kubernetes.Controller.Client;
 
 namespace KubeUI.ViewModels
 {
@@ -22,6 +23,7 @@ namespace KubeUI.ViewModels
         IDataGridFilteringAdapterFactory FilteringAdapterFactory { get; }
         IFilteringModel FilteringModel { get; set; }
         ISelectionModel SelectionModel { get; }
+        IDataGridSelectionModelFactory SelectionModelFactory { get; }
         IEnumerable View { get; }
     }
 }

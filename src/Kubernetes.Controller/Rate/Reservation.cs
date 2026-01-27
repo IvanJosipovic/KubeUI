@@ -5,7 +5,7 @@ using System;
 
 #pragma warning disable CS0169 // The field 'Reservation.limit' is never used
 
-namespace Yarp.Kubernetes.Controller.Rate;
+namespace Kubernetes.Controller.Rate;
 
 /// <summary>
 /// Class Reservation holds information about events that are permitted by a Limiter to happen after a delay.

@@ -4,7 +4,7 @@
 using k8s;
 using Microsoft.Extensions.Options;
 using System.Linq;
-using Yarp.Kubernetes.Controller.Client;
+using Kubernetes.Controller.Client;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -31,7 +31,7 @@ public static class KubernetesCoreExtensions
             {
                 var options = sp.GetRequiredService<IOptions<KubernetesClientOptions>>().Value;
 
-                return new Kubernetes(options.Configuration);
+                return new k8s.Kubernetes(options.Configuration);
             });
         }
 

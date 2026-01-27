@@ -15,7 +15,7 @@ using Xunit;
 using Yarp.Kubernetes.Tests.TestCluster;
 using Yarp.Kubernetes.Tests.Utils;
 
-namespace Yarp.Kubernetes.Controller.Client.Tests;
+namespace Kubernetes.Controller.Client.Tests;
 
 public class ResourceInformerTests
 {

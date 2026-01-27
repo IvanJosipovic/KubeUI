@@ -38,6 +38,7 @@ public partial class ResourceListView : UserControl
 
                 DataContext = vm;
             });
+
         }
 #endif
     }
@@ -50,15 +51,13 @@ public partial class ResourceListView : UserControl
         {
             GetGenericMethod(nameof(GenerateGrid))?.Invoke(this, null);
 
-            if (PART_Grid.SortingModel.Descriptors.Count > 0)
-            {
-                vm.SortingModel.Apply(PART_Grid.SortingModel.Descriptors);
-            }
-            
-            PART_Grid.SortingModel = vm.SortingModel;
-            PART_Grid.FilteringModel = vm.FilteringModel;
+            PART_Grid.SelectionModelFactory = vm.SelectionModelFactory;
             PART_Grid.SortingAdapterFactory = vm.SortingAdapterFactory;
             PART_Grid.FilteringAdapterFactory = vm.FilteringAdapterFactory;
+
+            PART_Grid.Selection = vm.SelectionModel;
+            PART_Grid.SortingModel = vm.SortingModel;
+            PART_Grid.FilteringModel = vm.FilteringModel;
         }
     }
 

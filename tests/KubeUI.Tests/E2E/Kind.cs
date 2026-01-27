@@ -4,7 +4,7 @@ using k8s.KubeConfigModels;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace KubeUI.Tests;
+namespace KubeUI.Tests.E2E;
 
 /// <summary>
 /// Interface for KIND https://github.com/kubernetes-sigs/kind/releases

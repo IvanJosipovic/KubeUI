@@ -6,8 +6,8 @@ using System.Diagnostics.CodeAnalysis;
 using k8s;
 using k8s.Models;
 using Microsoft.Extensions.Configuration;
-using Yarp.Kubernetes.Controller;
-using Yarp.Kubernetes.Controller.Client;
+using Kubernetes.Controller;
+using Kubernetes.Controller.Client;
 
 namespace Microsoft.Extensions.DependencyInjection;
 

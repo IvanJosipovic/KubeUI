@@ -1,5 +1,5 @@
 <Application
-    x:Class="KubeUI.Tests.TestApp"
+    x:Class="KubeUI.Tests.Infra.TestApp"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"

@@ -2,10 +2,12 @@ using System.Collections.Specialized;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Avalonia.Controls.DataGridFiltering;
+using Avalonia.Controls.DataGridSelection;
 using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls.Selection;
 using Avalonia.Controls.Templates;
 using Avalonia.Data.Core;
+using AvaloniaEdit.Utils;
 using DynamicData;
 using DynamicData.Binding;
 using Humanizer;
@@ -13,7 +15,7 @@ using k8s;
 using k8s.Models;
 using KubeUI.Client;
 using KubeUI.Resources;
-using Yarp.Kubernetes.Controller.Client;
+using Kubernetes.Controller.Client;
 using SortDirection = KubeUI.Resources.SortDirection;
 
 namespace KubeUI.ViewModels;
@@ -34,11 +36,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     [ObservableProperty]
     public partial ISourceCache<T, string> Objects { get; set; }
 
-    [ObservableProperty]
-    public partial T SelectedItem { get; set; }
+    public T SelectedItem => ((SelectionModel<T>)SelectionModel).SelectedItem;
 
-    [ObservableProperty]
-    public partial ObservableCollection<T> SelectedItems { get; set; } = [];
+    public IReadOnlyList<T> SelectedItems => ((SelectionModel<T>)SelectionModel).SelectedItems;
 
     [ObservableProperty]
     public partial string SearchQuery { get; set; }
@@ -47,6 +47,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     public partial ResourceConfigBase<T> ResourceConfig { get; set; }
 
     private IDisposable? _subscription;
+
+    private string[] _lastSelectedKeys = [];
+    private bool _isRestoringSelection;
 
     // new
 
@@ -80,6 +83,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         OwnsViewFilter = true
     };
 
+    public IDataGridSelectionModelFactory SelectionModelFactory => _selectionModelFactory;
+
+    private DynamicDataSelectionModelFactory<T> _selectionModelFactory { get; set; }
+
     public ISelectionModel SelectionModel { get; } = new SelectionModel<T>()
     {
         SingleSelect = false
@@ -87,6 +94,11 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     [ObservableProperty]
     public partial ObservableCollection<DataGridColumnDefinition> ColumnDefinitions { get; private set; } = [];
+
+    private static string KeyOf(T item) => item.Namespace() + "/" + item.Name();
+
+    [ObservableProperty]
+    public partial string? SelectedKey { get; set; }
 
     public ResourceListViewModel()
     {
@@ -116,11 +128,99 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _filteringAdapterFactory = new DynamicDataFilteringAdapterFactory<T>(ResourceConfig);
         _filterSubject = new BehaviorSubject<Func<T, bool>>(_filteringAdapterFactory.FilterPredicate);
 
+        _selectionModelFactory = new DynamicDataSelectionModelFactory<T>(SelectionModel);
+
         _subscription = Objects.Connect()
-                                        .Filter(_filterSubject)
-                                        .ObserveOn(AvaloniaScheduler.Instance)
-                                        .SortAndBind(out _view, _sortSubject)
-                                        .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Setting Resource List Filter: {ns} ", typeof(T)));
+        .Filter(_filterSubject)
+        .ObserveOn(AvaloniaScheduler.Instance)
+        .SortAndBind(out _view, _sortSubject, new SortAndBindOptions
+        {
+            ResetOnFirstTimeLoad = true,
+            UseReplaceForUpdates = true,
+            UseBinarySearch = true,
+            InitialCapacity = Objects.Count
+        })
+        .Subscribe(change =>
+        {
+            var selectedKeysSnapshot = _lastSelectedKeys;
+            if (selectedKeysSnapshot.Length == 0 && SelectedKey is not null)
+                selectedKeysSnapshot = [SelectedKey];
+
+            if (selectedKeysSnapshot.Length == 0)
+                return;
+
+            // Defer until after the DataGrid finishes applying its own selection logic for this change.
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (_isRestoringSelection)
+                    return;
+
+                var viewList = _view;
+                if (viewList is null || viewList.Count == 0)
+                    return;
+
+                // Reapply full selection snapshot as a batch. We must not compute the snapshot
+                // from SelectionModel *after* the grid processed the update, because it may have
+                // already dropped part of the selection (e.g. the "below" item).
+                _isRestoringSelection = true;
+                try
+                {
+                    // If the grid/selection model fell back to selecting a neighbor (often the item below)
+                    // while the replaced item was temporarily deselected, force a deterministic restore.
+                    // Only do this for the single-selection case to avoid disrupting multi-select.
+                    if (selectedKeysSnapshot.Length == 1 && (SelectionModel.SelectedIndexes?.Count ?? 0) <= 1)
+                    {
+                        SelectionModel.Clear();
+                    }
+
+                    var indexes = new List<int>(selectedKeysSnapshot.Length);
+                    for (var i = 0; i < viewList.Count; i++)
+                    {
+                        var key = KeyOf(viewList[i]);
+                        if (selectedKeysSnapshot.Contains(key))
+                            indexes.Add(i);
+                    }
+
+                    if (indexes.Count == 0)
+                        return;
+
+                    indexes.Sort();
+
+                    foreach (var idx in indexes)
+                        SelectionModel.Select(idx);
+                }
+                finally
+                {
+                    _isRestoringSelection = false;
+                }
+
+                //SelectedItem = SelectionModel.SelectedItem as T;
+                SelectedKey = SelectedItem is null ? null : KeyOf(SelectedItem);
+            }, DispatcherPriority.Send);
+        }, ex => _logger.LogError(ex, "Error Setting Resource List Filter: {ns} ", typeof(T)));
+
+        SelectionModel.SelectionChanged += SelectionModel_SelectionChanged;
+    }
+
+    private void SelectionModel_SelectionChanged(object? sender, SelectionModelSelectionChangedEventArgs e)
+    {
+        if (_isRestoringSelection)
+            return;
+
+        // If the selection change is purely a deselection (common during item replacement
+        // when the grid temporarily drops the old instance), do not overwrite the snapshot.
+        // We need the previous snapshot to restore selection by key.
+        if ((e.SelectedIndexes?.Count ?? 0) == 0 && (e.DeselectedIndexes?.Count ?? 0) > 0)
+            return;
+
+        //SelectedItems.Clear();
+        //foreach (var item in SelectionModel.SelectedItems.OfType<T>())
+        //    SelectedItems.Add(item);
+
+        //SelectedItem = SelectionModel.SelectedItem as T;
+        SelectedKey = SelectedItem is null ? null : KeyOf(SelectedItem);
+
+        _lastSelectedKeys = SelectedItems.Select(KeyOf).ToArray();
     }
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
@@ -615,5 +715,20 @@ public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAd
             changed = true;
             return true;
         }
+    }
+}
+
+public sealed class DynamicDataSelectionModelFactory<T> : IDataGridSelectionModelFactory where T : class, IKubernetesObject<V1ObjectMeta>, new()
+{
+    private readonly ISelectionModel _selectionModel;
+
+    public DynamicDataSelectionModelFactory(ISelectionModel selectionModel)
+    {
+        _selectionModel = selectionModel;
+    }
+
+    public ISelectionModel Create()
+    {
+        return _selectionModel;
     }
 }

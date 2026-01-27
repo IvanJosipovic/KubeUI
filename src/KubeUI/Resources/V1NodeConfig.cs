@@ -4,8 +4,8 @@ using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
 using k8s.Models;
-using Yarp.Kubernetes.Controller;
-using Yarp.Kubernetes.Controller.Client;
+using Kubernetes.Controller;
+using Kubernetes.Controller.Client;
 using static KubeUI.Client.Cluster;
 
 namespace KubeUI.Resources;

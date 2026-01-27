@@ -36,7 +36,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Kubernetes.Controller\Yarp.Kubernetes.Controller.csproj" />
+    <ProjectReference Include="..\..\src\Kubernetes.Controller\Kubernetes.Controller.csproj" />
   </ItemGroup>
 
 </Project>

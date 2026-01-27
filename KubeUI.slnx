@@ -9,10 +9,10 @@
     <File Path="README.md" />
     <File Path="Settings.XamlStyler" />
   </Folder>
-  <Project Path="src/Kubernetes.Controller/Yarp.Kubernetes.Controller.csproj" />
+  <Project Path="src/Kubernetes.Controller/Kubernetes.Controller.csproj" />
   <Project Path="src/KubeUI.Desktop/KubeUI.Desktop.csproj" />
   <Project Path="src/KubeUI/KubeUI.csproj" />
-  <Project Path="tests/Kubernetes.Tests/Yarp.Kubernetes.Tests.csproj" />
+  <Project Path="tests/Kubernetes.Controller.Tests/Kubernetes.Controller.Tests.csproj" />
   <Project Path="tests/KubeUI.Tests/KubeUI.Tests.csproj" />
 </Solution>
 

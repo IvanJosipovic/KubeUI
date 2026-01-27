@@ -27,8 +27,8 @@ using Polly;
 using Swordfish.NET.Collections;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
-using Yarp.Kubernetes.Controller;
-using Yarp.Kubernetes.Controller.Client;
+using Kubernetes.Controller;
+using Kubernetes.Controller.Client;
 
 namespace KubeUI.Client;
 
@@ -159,7 +159,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                         InnerHandler = new ResilienceHandler(pipe.Build())
                     };
 
-                    Client = new Kubernetes(config);
+                    Client = new k8s.Kubernetes(config);
 
                     NativeAPIGroupDiscoveryList = await GetAPIGroupDiscoveryList();
 
@@ -855,7 +855,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private async Task<V2beta1APIGroupDiscoveryList> GetAPIGroupDiscoveryList(bool native = true)
     {
-        var mi = typeof(Kubernetes).GetMethod("SendRequest", BindingFlags.NonPublic | BindingFlags.Instance);
+        var mi = typeof(k8s.Kubernetes).GetMethod("SendRequest", BindingFlags.NonPublic | BindingFlags.Instance);
 
         var gen = mi.MakeGenericMethod([typeof(V2beta1APIGroupDiscoveryList)]);
 

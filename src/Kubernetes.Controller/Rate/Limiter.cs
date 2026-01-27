@@ -5,7 +5,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Yarp.Kubernetes.Controller.Rate;
+namespace Kubernetes.Controller.Rate;
 
 /// <summary>
 /// <para>

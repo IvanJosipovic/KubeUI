@@ -8,7 +8,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Yarp.Kubernetes.Controller.Hosting;
+namespace Kubernetes.Controller.Hosting;
 
 /// <summary>
 /// Class BackgroundHostedService.

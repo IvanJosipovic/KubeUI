@@ -5,7 +5,7 @@ using k8s.Models;
 using System;
 using System.Reflection;
 
-namespace Yarp.Kubernetes.Controller.Client;
+namespace Kubernetes.Controller.Client;
 
 public struct GroupApiVersionKind : IEquatable<GroupApiVersionKind>
 {

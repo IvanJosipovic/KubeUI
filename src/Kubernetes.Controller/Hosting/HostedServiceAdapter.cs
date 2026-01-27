@@ -5,7 +5,7 @@ using Microsoft.Extensions.Hosting;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Yarp.Kubernetes.Controller.Hosting;
+namespace Kubernetes.Controller.Hosting;
 
 /// <summary>
 /// Delegates start and stop calls to service-specific interface.

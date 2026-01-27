@@ -40,7 +40,7 @@ public partial class Cluster
 
     private async Task InitMetrics()
     {
-        var kube = Client as Kubernetes;
+        var kube = Client as k8s.Kubernetes;
 
         var model = new V1SelfSubjectAccessReview()
         {
