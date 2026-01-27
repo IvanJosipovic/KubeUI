@@ -48,9 +48,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private IDisposable? _subscription;
 
-    private string[] _lastSelectedKeys = [];
-    private bool _isRestoringSelection;
-
     // new
 
     public IEnumerable View => _view;
@@ -95,11 +92,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     [ObservableProperty]
     public partial ObservableCollection<DataGridColumnDefinition> ColumnDefinitions { get; private set; } = [];
 
-    private static string KeyOf(T item) => item.Namespace() + "/" + item.Name();
-
-    [ObservableProperty]
-    public partial string? SelectedKey { get; set; }
-
     public ResourceListViewModel()
     {
         _logger = Application.Current.GetRequiredService<ILogger<ResourceListViewModel<T>>>();
@@ -140,63 +132,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             UseBinarySearch = true,
             InitialCapacity = Objects.Count
         })
-        .Subscribe(change =>
+        .Subscribe(changeSet =>
         {
-            var selectedKeysSnapshot = _lastSelectedKeys;
-            if (selectedKeysSnapshot.Length == 0 && SelectedKey is not null)
-                selectedKeysSnapshot = [SelectedKey];
-
-            if (selectedKeysSnapshot.Length == 0)
-                return;
-
-            // Defer until after the DataGrid finishes applying its own selection logic for this change.
-            Dispatcher.UIThread.Post(() =>
-            {
-                if (_isRestoringSelection)
-                    return;
-
-                var viewList = _view;
-                if (viewList is null || viewList.Count == 0)
-                    return;
-
-                // Reapply full selection snapshot as a batch. We must not compute the snapshot
-                // from SelectionModel *after* the grid processed the update, because it may have
-                // already dropped part of the selection (e.g. the "below" item).
-                _isRestoringSelection = true;
-                try
-                {
-                    // If the grid/selection model fell back to selecting a neighbor (often the item below)
-                    // while the replaced item was temporarily deselected, force a deterministic restore.
-                    // Only do this for the single-selection case to avoid disrupting multi-select.
-                    if (selectedKeysSnapshot.Length == 1 && (SelectionModel.SelectedIndexes?.Count ?? 0) <= 1)
-                    {
-                        SelectionModel.Clear();
-                    }
-
-                    var indexes = new List<int>(selectedKeysSnapshot.Length);
-                    for (var i = 0; i < viewList.Count; i++)
-                    {
-                        var key = KeyOf(viewList[i]);
-                        if (selectedKeysSnapshot.Contains(key))
-                            indexes.Add(i);
-                    }
-
-                    if (indexes.Count == 0)
-                        return;
-
-                    indexes.Sort();
-
-                    foreach (var idx in indexes)
-                        SelectionModel.Select(idx);
-                }
-                finally
-                {
-                    _isRestoringSelection = false;
-                }
-
-                //SelectedItem = SelectionModel.SelectedItem as T;
-                SelectedKey = SelectedItem is null ? null : KeyOf(SelectedItem);
-            }, DispatcherPriority.Send);
+        
         }, ex => _logger.LogError(ex, "Error Setting Resource List Filter: {ns} ", typeof(T)));
 
         SelectionModel.SelectionChanged += SelectionModel_SelectionChanged;
@@ -204,23 +142,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private void SelectionModel_SelectionChanged(object? sender, SelectionModelSelectionChangedEventArgs e)
     {
-        if (_isRestoringSelection)
-            return;
 
-        // If the selection change is purely a deselection (common during item replacement
-        // when the grid temporarily drops the old instance), do not overwrite the snapshot.
-        // We need the previous snapshot to restore selection by key.
-        if ((e.SelectedIndexes?.Count ?? 0) == 0 && (e.DeselectedIndexes?.Count ?? 0) > 0)
-            return;
-
-        //SelectedItems.Clear();
-        //foreach (var item in SelectionModel.SelectedItems.OfType<T>())
-        //    SelectedItems.Add(item);
-
-        //SelectedItem = SelectionModel.SelectedItem as T;
-        SelectedKey = SelectedItem is null ? null : KeyOf(SelectedItem);
-
-        _lastSelectedKeys = SelectedItems.Select(KeyOf).ToArray();
     }
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
@@ -296,15 +218,29 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                         Header = columnDefinition.Name,
                         CellTemplate = new FuncDataTemplate<T>((item, _) =>
                             {
-                                var control = Application.Current.GetRequiredService(columnDefinition.CustomControl) as Control;
-                                control.DataContext = item;
-
-                                if (control is IInitializeCluster init)
+                                try
                                 {
-                                    init.Initialize(Cluster);
-                                }
+                                    var control = Application.Current.GetRequiredService(columnDefinition.CustomControl) as Control;
 
-                                return control;
+                                    if (control is IDisplayFunc init2)
+                                    {
+                                        init2.SetDisplayFunc(columnDefinition.DisplayValue);
+                                    }
+
+                                    if (control is IInitializeCluster init)
+                                    {
+                                        init.Initialize(Cluster);
+                                    }
+
+                                    control.DataContext = item;
+
+                                    return control;
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogError(ex, "Error creating Control");
+                                    return new TextBlock() { Text = ex.Message };
+                                }
                             }),
                         CanUserSort = true,
                         CustomSortComparer = s_noopSortComparer,

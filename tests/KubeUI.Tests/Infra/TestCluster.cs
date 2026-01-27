@@ -175,7 +175,26 @@ public class TestCluster : ICluster
 
         var container = (ContainerClass<T>)Objects[kind];
 
-        container.Items.AddOrUpdate(item);
+        container.Items.Edit(o =>
+        {
+            var key = o.GetKey(item);
+            var original = o.Lookup(key);
+
+            if (original.HasValue)
+            {
+                original.Value.Metadata.Name = item.Metadata.Name;
+                original.Value.Metadata.NamespaceProperty = item.Metadata.NamespaceProperty;
+                original.Value.Metadata.Labels = item.Metadata.Labels;
+                //item.Adapt(original.Value);
+                o.Refresh(key);
+                //o.AddOrUpdate(original.Value);
+                //o.AddOrUpdate(item);
+            }
+            else
+            {
+                o.AddOrUpdate(item);
+            }
+        });
     }
 
     public bool CanI<T>(Client.Cluster.Verb verb, string? @namespace, string? subresource) where T : class, IKubernetesObject<V1ObjectMeta>, new()

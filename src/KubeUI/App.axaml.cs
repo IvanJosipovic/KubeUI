@@ -16,6 +16,7 @@ using LiveChartsCore.Drawing;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
 using LiveChartsCore.Themes;
+using Mapster;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using NReco.Logging.File;
@@ -84,6 +85,12 @@ public partial class App : Application
                                             })
                                         )
         );
+
+        TypeAdapterConfig.GlobalSettings
+            .Default
+            .MaxDepth(1)
+            .ShallowCopyForSameType(true)
+            .PreserveReference(true);
 
         var builder = Microsoft.Extensions.Hosting.Host.CreateEmptyApplicationBuilder(new()
         {

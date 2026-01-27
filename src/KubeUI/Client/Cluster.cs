@@ -1,7 +1,6 @@
 using System.Net.Http.Json;
 using System.Reactive.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Xml;
 using Avalonia.Collections;
 using Dock.Model.Controls;
@@ -21,6 +20,7 @@ using k8s.Models;
 using KubernetesCRDModelGen;
 using KubeUI;
 using KubeUI.Resources;
+using Mapster;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http.Resilience;
 using Polly;
@@ -472,7 +472,23 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                     break;
                 case WatchEventType.Modified:
-                    items.AddOrUpdate(item);
+                    //items.AddOrUpdate(item);
+                    items.Edit(o =>
+                    {
+                        var key = o.GetKey(item);
+                        var original = o.Lookup(key);
+                        if (original.HasValue)
+                        {
+                            item.Adapt(original.Value);
+                            o.Refresh(key);
+                            //o.AddOrUpdate(original.Value);
+                            //o.AddOrUpdate(item);
+                        }
+                        else
+                        {
+                            o.AddOrUpdate(item);
+                        }
+                    });
                     break;
                 case WatchEventType.Deleted:
                     items.Remove(item);

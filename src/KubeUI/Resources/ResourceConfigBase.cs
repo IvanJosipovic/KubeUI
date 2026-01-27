@@ -323,7 +323,7 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
 
     public SortDirection Sort { get; set; } = SortDirection.None;
 
-    public Type? CustomControl { get; set; }
+    public Type? CustomControl { get; set; } = typeof(ResourceTextCell);
 
     public string? Width { get; set; }
 
