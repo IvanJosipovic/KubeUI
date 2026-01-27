@@ -36,7 +36,7 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
             new ResourceListColumn<Corev1Event, string>()
             {
                 Name = "Source",
-                Field = x => x?.Source?.Component ?? "",
+                Field = x => x?.Source?.Component ?? (x?.ReportingComponent) ?? "",
                 Width = "*"
             },
             new ResourceListColumn<Corev1Event, int>()
