@@ -18,7 +18,7 @@ public class ResourceListViewTests
     private static V1Pod Pod(string ns, string name)
         => new()
         {
-            ApiVersion = V1Pod.KubeApiVersion + "/" + V1Pod.KubeApiVersion,
+            ApiVersion = V1Pod.KubeApiVersion,
             Kind = V1Pod.KubeKind,
             Metadata = new V1ObjectMeta
             {
