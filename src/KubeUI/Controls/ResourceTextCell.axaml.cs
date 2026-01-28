@@ -5,7 +5,6 @@ using KubeUI.Client;
 
 namespace KubeUI.Controls;
 
-
 public interface IDisplayFunc
 {
     void SetDisplayFunc(Func<object, string> selector);
@@ -79,6 +78,6 @@ public sealed partial class ResourceTextCell : UserControl, IInitializeCluster, 
 
     public void Dispose()
     {
-        _cluster?.OnChange += _cluster_OnChange;
+        _cluster?.OnChange -= _cluster_OnChange;
     }
 }
