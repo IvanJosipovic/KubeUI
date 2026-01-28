@@ -45,8 +45,30 @@
                     VerticalAlignment="Stretch"
                     VerticalContentAlignment="Center"
                     Background="Transparent"
-                    Text="{Binding SearchQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    Text="{Binding SearchQuery}"
                     Watermark="Search" />
+
+                <u:MultiComboBox
+                    Grid.Column="1"
+                    Width="200"
+                    MaxHeight="20"
+                    HorizontalAlignment="Right"
+                    Classes="ClearButton"
+                    IsVisible="{ReflectionBinding ResourceConfig.IsNamespaced}"
+                    ItemsSource="{Binding Cluster.Namespaces}"
+                    SelectedItems="{Binding Cluster.SelectedNamespaces}"
+                    Watermark="{x:Static assets:Resources.ResourceListView_SelectNamespace}">
+                    <u:MultiComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="models:V1Namespace">
+                            <Label Content="{Binding Metadata.Name}" />
+                        </DataTemplate>
+                    </u:MultiComboBox.ItemTemplate>
+                    <u:MultiComboBox.SelectedItemTemplate>
+                        <DataTemplate x:DataType="models:V1Namespace">
+                            <Label Content="{Binding Metadata.Name}" />
+                        </DataTemplate>
+                    </u:MultiComboBox.SelectedItemTemplate>
+                </u:MultiComboBox>
             </Grid>
         </Grid>
 
@@ -55,21 +77,21 @@
             CanUserReorderColumns="True"
             CanUserResizeColumns="True"
             CanUserSortColumns="True"
-            ItemsSource="{Binding View}"
             ColumnDefinitionsSource="{Binding ColumnDefinitions}"
-            Selection="{Binding SelectionModel}"
-            SortingModel="{Binding SortingModel}"
             FilteringModel="{Binding FilteringModel}"
             GridLinesVisibility="All"
             IsReadOnly="True"
+            ItemsSource="{Binding View}"
             MinColumnWidth="90"
             RowHeight="{Binding SettingsService.Settings.ListRowHeight}"
+            Selection="{Binding SelectionModel}"
             SelectionMode="Extended"
+            SortingModel="{Binding SortingModel}"
             UseLogicalScrollable="True">
             <DataGrid.KeyBindings>
                 <KeyBinding
                     Command="{ReflectionBinding ResourceConfig.ViewCommand}"
-                    CommandParameter="{ReflectionBinding #PART_Grid.SelectedItems}"
+                    CommandParameter="{Binding SelectionModel.SelectedItems}"
                     Gesture="Enter" />
             </DataGrid.KeyBindings>
             <DataGrid.Styles>

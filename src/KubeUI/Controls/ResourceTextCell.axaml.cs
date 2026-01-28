@@ -28,7 +28,7 @@ public sealed partial class ResourceTextCell : UserControl, IInitializeCluster, 
 #if DEBUG
         if (Design.IsDesignMode)
         {
-            _displayFunc = (x) => ((V1Namespace)x).Name(); 
+            _displayFunc = (x) => ((V1Namespace)x).Name();
             DataContext = new V1Namespace()
             {
                 Metadata = new()
@@ -48,7 +48,14 @@ public sealed partial class ResourceTextCell : UserControl, IInitializeCluster, 
         if (DataContext is IKubernetesObject<V1ObjectMeta> obj)
         {
             _viewModel = obj;
-            PrettyString = _displayFunc.Invoke(obj);
+            try
+            {
+                PrettyString = _displayFunc.Invoke(obj);
+            }
+            catch (Exception)
+            {
+                PrettyString = string.Empty;
+            }
         }
         else
         {
