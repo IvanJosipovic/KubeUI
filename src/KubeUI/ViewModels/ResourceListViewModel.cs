@@ -17,6 +17,7 @@ using KubeUI.Client;
 using KubeUI.Resources;
 using Kubernetes.Controller.Client;
 using SortDirection = KubeUI.Resources.SortDirection;
+using Swordfish.NET.Collections.Auxiliary;
 
 namespace KubeUI.ViewModels;
 
@@ -47,8 +48,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     public partial ResourceConfigBase<T> ResourceConfig { get; set; }
 
     private IDisposable? _subscription;
-
-    // new
 
     public IEnumerable View => _view;
 
@@ -134,7 +133,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         })
         .Subscribe(changeSet =>
         {
-        
+
         }, ex => _logger.LogError(ex, "Error Setting Resource List Filter: {ns} ", typeof(T)));
 
         SelectionModel.SelectionChanged += SelectionModel_SelectionChanged;
@@ -151,13 +150,13 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
         if (e.PropertyName == nameof(SearchQuery))
         {
-            SetFilter();
+            //SetFilter();
         }
     }
 
     private void SelectedNamespaces_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        //SetFilter();
+        SetFilter();
     }
 
     private void SetFilter()
@@ -167,24 +166,28 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(SearchQuery))
-        {
-            FilteringModel.Clear();
-            return;
-        }
-
-        var query = SearchQuery.Trim();
         FilteringModel.Clear();
 
-        foreach (var col in ResourceConfig.Columns())
+        foreach (var col in ColumnDefinitions)
         {
-            var descriptor = new FilteringDescriptor(
-                col,
-                FilteringOperator.Contains,
-                null,
-                query);
+            if (col.Header == "Namespace") //todo better lookup for standard columns
+            {
+                if (Cluster.SelectedNamespaces.Count > 0)
+                {
+                    var descriptor = new FilteringDescriptor(
+                        col,
+                        FilteringOperator.In,
+                        propertyPath: null,
+                        value: null,
+                        values: Cluster.SelectedNamespaces.Select(x => x.Name() as object).ToList());
 
-            FilteringModel.SetOrUpdate(descriptor);
+                    FilteringModel.SetOrUpdate(descriptor);
+                }
+                else
+                {
+                    FilteringModel.Remove(col);
+                }
+            }
         }
     }
 
@@ -217,31 +220,31 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                     {
                         Header = columnDefinition.Name,
                         CellTemplate = new FuncDataTemplate<T>((item, _) =>
+                        {
+                            try
                             {
-                                try
+                                var control = Application.Current.GetRequiredService(columnDefinition.CustomControl) as Control;
+
+                                if (control is IDisplayFunc init2)
                                 {
-                                    var control = Application.Current.GetRequiredService(columnDefinition.CustomControl) as Control;
-
-                                    if (control is IDisplayFunc init2)
-                                    {
-                                        init2.SetDisplayFunc(columnDefinition.DisplayValue);
-                                    }
-
-                                    if (control is IInitializeCluster init)
-                                    {
-                                        init.Initialize(Cluster);
-                                    }
-
-                                    control.DataContext = item;
-
-                                    return control;
+                                    init2.SetDisplayFunc(columnDefinition.DisplayValue);
                                 }
-                                catch (Exception ex)
+
+                                if (control is IInitializeCluster init)
                                 {
-                                    _logger.LogError(ex, "Error creating Control");
-                                    return new TextBlock() { Text = ex.Message };
+                                    init.Initialize(Cluster);
                                 }
-                            }),
+
+                                control.DataContext = item;
+
+                                return control;
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Error creating Control");
+                                return new TextBlock() { Text = ex.Message };
+                            }
+                        }),
                         CanUserSort = true,
                         CustomSortComparer = s_noopSortComparer,
                         SortDirection = columnDefinition.Sort == SortDirection.None ? null : columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending,
@@ -251,20 +254,21 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 }
                 else
                 {
-                    column = builder.Text(
-                        header: columnDefinition.Name,
-                        property: CreateProperty(columnDefinition.Name, p => columnDefinition.DisplayValue(p)),
-                        getter: p => columnDefinition.DisplayValue(p),
-                        setter : null,
-                        configure: ct =>
-                        {
-                            ct.CanUserSort = true;
-                            ct.CustomSortComparer = s_noopSortComparer;
-                            ct.SortDirection = columnDefinition.Sort == SortDirection.None ? null : columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending;
-                            ct.Width = columnDefinition.Width != null ? converter.ConvertFromString(columnDefinition.Width) as DataGridLength? : null;
-                            ct.ValueType = columnDefinition.ValueType;
-                        }
-                    );
+                    throw new NotImplementedException();
+                    //column = builder.Text(
+                    //    header: columnDefinition.Name,
+                    //    property: CreateProperty(columnDefinition.Name, p => columnDefinition.DisplayValue(p)),
+                    //    getter: p => columnDefinition.DisplayValue(p),
+                    //    setter : null,
+                    //    configure: ct =>
+                    //    {
+                    //        ct.CanUserSort = true;
+                    //        ct.CustomSortComparer = s_noopSortComparer;
+                    //        ct.SortDirection = columnDefinition.Sort == SortDirection.None ? null : columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending;
+                    //        ct.Width = columnDefinition.Width != null ? converter.ConvertFromString(columnDefinition.Width) as DataGridLength? : null;
+                    //        ct.ValueType = columnDefinition.ValueType;
+                    //    }
+                    //);
                 }
 
                 ColumnDefinitions.Add(column);
@@ -274,20 +278,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 _logger.LogWarning(ex, "Unable to generate column for: ");
             }
         }
-    }
-
-    private static IPropertyInfo CreateProperty<TValue>(
-    string name,
-    Func<T, TValue> getter,
-    Action<T, TValue>? setter = null)
-    {
-        return new ClrPropertyInfo(
-            name,
-            target => getter((T)target),
-            setter == null
-                ? null
-                : (target, value) => setter((T)target, value is null ? default! : (TValue)value),
-            typeof(TValue));
     }
 
     private void SortingModelOnSortingChanged(object? sender, SortingChangedEventArgs e)
