@@ -472,7 +472,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                     break;
                 case WatchEventType.Modified:
-                    //items.AddOrUpdate(item);
                     items.Edit(o =>
                     {
                         var key = o.GetKey(item);
@@ -481,8 +480,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
                         {
                             item.Adapt(original.Value);
                             o.Refresh(key);
-                            //o.AddOrUpdate(original.Value);
-                            //o.AddOrUpdate(item);
                         }
                         else
                         {

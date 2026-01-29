@@ -1,15 +1,17 @@
-using Avalonia.Threading;
-using Avalonia.Headless.XUnit;
-using FluentAssertions;
-using k8s.Models;
-using KubeUI.ViewModels;
-using KubeUI.Tests.Infra;
+using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
-using KubeUI.Views;
-using System.Reflection;
+using Avalonia.Controls.Selection;
+using Avalonia.Headless.XUnit;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
+using FluentAssertions;
 using FluentAvalonia.Core;
+using k8s;
+using k8s.Models;
+using KubeUI.Tests.Infra;
+using KubeUI.ViewModels;
+using KubeUI.Views;
 
 namespace KubeUI.Tests;
 
@@ -28,9 +30,32 @@ public class ResourceListViewTests
             }
         };
 
-    private static async Task AddOrUpdateAsync(TestCluster cluster, V1Pod pod)
+    private static Corev1Event Event(string ns, string name)
+    => new()
     {
-        await cluster.AddOrUpdateResource(pod);
+        ApiVersion = Corev1Event.KubeApiVersion,
+        Kind = Corev1Event.KubeKind,
+        Metadata = new V1ObjectMeta
+        {
+            NamespaceProperty = ns,
+            Name = name,
+            CreationTimestamp = DateTime.UtcNow,
+        },
+        LastTimestamp = DateTime.UtcNow,
+    };
+
+    private static V1Namespace NamespaceResource(string name)
+        => new()
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = name
+            }
+        };
+
+    private static async Task AddOrUpdateAsync<T>(TestCluster cluster, T resource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        await cluster.AddOrUpdateResource(resource);
         Dispatcher.UIThread.RunJobs();
     }
 
@@ -68,8 +93,8 @@ public class ResourceListViewTests
     }
 
 
-    [AvaloniaFact]
-    public async Task MultiSelect_replace_middle_preserves_all_selected()
+    [AvaloniaFact(DisplayName = "All select update middle")]
+    public async Task all_select_update_middle_preserves_all_selected()
     {
         var window = new MainWindow
         {
@@ -114,8 +139,8 @@ public class ResourceListViewTests
         vm.SelectedItems[2].Name().Should().Be("c");
     }
 
-    [AvaloniaFact]
-    public async Task SingleSelect_replace_preserves_only_selected_item_no_fallback_neighbor()
+    [AvaloniaFact(DisplayName = "Single select update middle")]
+    public async Task single_select_update__preserves_only_selected()
     {
         var window = new MainWindow
         {
@@ -157,8 +182,117 @@ public class ResourceListViewTests
         vm.SelectedItem.Name().Should().Be("b");
     }
 
-    [AvaloniaFact]
-    public async Task Refresh_in_place_mutation_updates_grid_text()
+    [AvaloniaFact(DisplayName = "Single select with sort due to update")]
+    public async Task single_select_with_sort_preserves_only_selected()
+    {
+        var window = new MainWindow
+        {
+            Width = 1200,
+            Height = 800
+        };
+        var cluster = new TestCluster();
+
+        var vm = Application.Current.GetRequiredService<ResourceListViewModel<Corev1Event>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+
+        window.Content = view;
+        window.Show();
+
+        // Seed 3 items
+        await AddOrUpdateAsync(cluster, Event("ns", "a"));
+        await AddOrUpdateAsync(cluster, Event("ns", "b"));
+        await AddOrUpdateAsync(cluster, Event("ns", "c"));
+
+        vm.View.ElementAt(0).As<Corev1Event>().Name().Should().Be("c");
+        vm.View.ElementAt(1).As<Corev1Event>().Name().Should().Be("b");
+        vm.View.ElementAt(2).As<Corev1Event>().Name().Should().Be("a");
+
+
+        // Select only middle
+        vm.SelectionModel.Select(1);
+
+        vm.SelectionModel.SelectedIndexes.Should().BeEquivalentTo([1]);
+
+        // Replace 'b' with new instance (same key)
+        await AddOrUpdateAsync(cluster, Event("ns", "b"));
+
+
+        vm.View.ElementAt(0).As<Corev1Event>().Name().Should().Be("b");
+        vm.View.ElementAt(1).As<Corev1Event>().Name().Should().Be("c");
+        vm.View.ElementAt(2).As<Corev1Event>().Name().Should().Be("a");
+
+        vm.SelectionModel.SelectedIndexes.Should().BeEquivalentTo([0]);
+
+        vm.SelectedItems.Count.Should().Be(1);
+
+        vm.SelectedItems[0].Namespace().Should().Be("ns");
+        vm.SelectedItems[0].Name().Should().Be("b");
+
+
+        vm.SelectedItem.Namespace().Should().Be("ns");
+        vm.SelectedItem.Name().Should().Be("b");
+    }
+
+    [AvaloniaFact(DisplayName = "All select with sort due to update")]
+    public async Task all_select_with_sort_preserves_all_selected()
+    {
+        var window = new MainWindow
+        {
+            Width = 1200,
+            Height = 800
+        };
+        var cluster = new TestCluster();
+
+        var vm = Application.Current.GetRequiredService<ResourceListViewModel<Corev1Event>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+
+        window.Content = view;
+        window.Show();
+
+        // Seed 3 items
+        await AddOrUpdateAsync(cluster, Event("ns", "a"));
+        await AddOrUpdateAsync(cluster, Event("ns", "b"));
+        await AddOrUpdateAsync(cluster, Event("ns", "c"));
+
+        vm.View.ElementAt(0).As<Corev1Event>().Name().Should().Be("c");
+        vm.View.ElementAt(1).As<Corev1Event>().Name().Should().Be("b");
+        vm.View.ElementAt(2).As<Corev1Event>().Name().Should().Be("a");
+
+
+        // Select all 3
+        vm.SelectionModel.Select(0);
+        vm.SelectionModel.Select(1);
+        vm.SelectionModel.Select(2);
+
+        vm.SelectionModel.SelectedIndexes.Should().BeEquivalentTo([0, 1, 2]);
+
+        // Replace 'b' with new instance (same key)
+        await AddOrUpdateAsync(cluster, Event("ns", "b"));
+
+        vm.View.ElementAt(0).As<Corev1Event>().Name().Should().Be("b");
+        vm.View.ElementAt(1).As<Corev1Event>().Name().Should().Be("c");
+        vm.View.ElementAt(2).As<Corev1Event>().Name().Should().Be("a");
+
+        vm.SelectionModel.SelectedIndexes.Should().BeEquivalentTo([0, 1, 2]);
+
+        vm.SelectedItems.Count.Should().Be(3);
+
+        vm.SelectedItems[0].Namespace().Should().Be("ns");
+        vm.SelectedItems[0].Name().Should().Be("b");
+
+
+        vm.SelectedItem.Namespace().Should().Be("ns");
+        vm.SelectedItem.Name().Should().Be("b");
+    }
+
+    [AvaloniaFact(DisplayName = "Update check DataGrid Text update")]
+    public async Task UpdateResourceTextBox()
     {
         var window = new MainWindow
         {
@@ -189,11 +323,43 @@ public class ResourceListViewTests
         before.Should().Contain("a");
 
         // Mutate in place and trigger DynamicData refresh.
-        pod.Metadata.Name = "a2";
+        pod.Metadata.Name = "b";
         await AddOrUpdateAsync(cluster, pod);
 
         var after = GetFirstRowFirstColumnText(grid, 0, 0);
         after.Should().NotBeNull();
-        after.Should().Contain("a2");
+        after.Should().Contain("b");
+    }
+
+    [AvaloniaFact(DisplayName = "Namespace filter preserves selection when included")]
+    public async Task namespace_filter_preserves_selection_when_included()
+    {
+        var window = new MainWindow
+        {
+            Width = 1200,
+            Height = 800
+        };
+        var cluster = new TestCluster();
+
+        var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+
+        window.Content = view;
+        window.Show();
+
+        await AddOrUpdateAsync(cluster, Pod("ns1", "a"));
+        await AddOrUpdateAsync(cluster, Pod("ns2", "b"));
+
+        vm.SelectionModel.Select(0);
+
+        cluster.SelectedNamespaces.Add(NamespaceResource("ns1"));
+        Dispatcher.UIThread.RunJobs();
+
+        vm.SelectedItem.Should().NotBeNull();
+        vm.SelectedItem!.Namespace().Should().Be("ns1");
+        vm.SelectedItem.Name().Should().Be("a");
     }
 }

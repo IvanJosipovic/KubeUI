@@ -304,7 +304,7 @@ public interface IResourceListColumn
     string Name { get; }
     string? Width { get; }
     SortDirection Sort { get; set; }
-    Type? CustomControl { get; }
+    Type CustomControl { get; }
 
     Type ItemType { get; }
     Type ValueType { get; }
@@ -323,7 +323,7 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
 
     public SortDirection Sort { get; set; } = SortDirection.None;
 
-    public Type? CustomControl { get; set; } = typeof(ResourceTextCell);
+    public Type CustomControl { get; set; } = typeof(ResourceTextCell);
 
     public string? Width { get; set; }
 

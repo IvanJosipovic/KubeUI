@@ -11,6 +11,7 @@ using KubeUI.Resources;
 using KubeUI.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Kubernetes.Controller.Client;
+using Mapster;
 
 namespace KubeUI.Tests.Infra;
 
@@ -88,9 +89,16 @@ public class TestCluster : ICluster
             throw new InvalidOperationException("Avalonia Application.Current is not initialized.");
 
         var svc = Application.Current.GetRequiredService<IServiceProvider>();
+
         if (kind == GroupApiVersionKind.From<V1Pod>())
         {
             var cfg = svc.GetRequiredService<ResourceConfigBase<V1Pod>>();
+            cfg.Initialize(this);
+            return cfg;
+        }
+        else if (kind == GroupApiVersionKind.From<Corev1Event>())
+        {
+            var cfg = svc.GetRequiredService<ResourceConfigBase<Corev1Event>>();
             cfg.Initialize(this);
             return cfg;
         }
@@ -182,13 +190,8 @@ public class TestCluster : ICluster
 
             if (original.HasValue)
             {
-                original.Value.Metadata.Name = item.Metadata.Name;
-                original.Value.Metadata.NamespaceProperty = item.Metadata.NamespaceProperty;
-                original.Value.Metadata.Labels = item.Metadata.Labels;
-                //item.Adapt(original.Value);
+                item.Adapt(original.Value);
                 o.Refresh(key);
-                //o.AddOrUpdate(original.Value);
-                //o.AddOrUpdate(item);
             }
             else
             {

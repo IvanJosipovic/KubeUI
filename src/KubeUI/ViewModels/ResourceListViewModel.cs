@@ -30,14 +30,14 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     [ObservableProperty]
     public partial ICluster Cluster { get; set; }
 
-    public GroupApiVersionKind Kind { get; } = GroupApiVersionKind.From<T>();
+    public GroupApiVersionKind Kind => GroupApiVersionKind.From<T>();
 
     [ObservableProperty]
     public partial ISourceCache<T, string> Objects { get; set; }
 
-    public T SelectedItem => ((SelectionModel<T>)SelectionModel).SelectedItem;
+    public T? SelectedItem => ((SelectionModel<T>)SelectionModel).SelectedItem;
 
-    public IReadOnlyList<T> SelectedItems => ((SelectionModel<T>)SelectionModel).SelectedItems;
+    public IReadOnlyList<T?> SelectedItems => ((SelectionModel<T>)SelectionModel).SelectedItems;
 
     [ObservableProperty]
     public partial string SearchQuery { get; set; }
@@ -81,6 +81,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private DynamicDataSelectionModelFactory<T> _selectionModelFactory { get; set; }
 
+    private readonly HashSet<string> _selectedKeys = new(StringComparer.Ordinal);
+    private bool _suppressSelectionChanged;
+    private bool _isUpdatingCollection;
+
     public ISelectionModel SelectionModel { get; } = new SelectionModel<T>()
     {
         SingleSelect = false
@@ -96,6 +100,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
         SortingModel.SortingChanged += SortingModelOnSortingChanged;
         FilteringModel.FilteringChanged += FilteringModelOnFilteringChanged;
+        ((SelectionModel<T>)SelectionModel).SelectionChanged += SelectionModelOnSelectionChanged;
     }
 
     public void Initialize(ICluster cluster)
@@ -120,6 +125,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _selectionModelFactory = new DynamicDataSelectionModelFactory<T>(SelectionModel);
 
         _subscription = Objects.Connect()
+        .Do(_ => _isUpdatingCollection = true)
         .Filter(_filterSubject)
         .ObserveOn(AvaloniaScheduler.Instance)
         .SortAndBind(out _view, _sortSubject, new SortAndBindOptions
@@ -129,17 +135,18 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             UseBinarySearch = true,
             InitialCapacity = Objects.Count
         })
-        .Subscribe(changeSet =>
+        .Subscribe(change =>
         {
-
-        }, ex => _logger.LogError(ex, "Error Setting Resource List Filter: {ns} ", typeof(T)));
-
-        SelectionModel.SelectionChanged += SelectionModel_SelectionChanged;
-    }
-
-    private void SelectionModel_SelectionChanged(object? sender, SelectionModelSelectionChangedEventArgs e)
-    {
-
+            if (change.Count == 1 && change.First().Reason == ChangeReason.Refresh)
+            {
+                PreserveSelectionByKey();
+            }
+            _isUpdatingCollection = false;
+        }, ex =>
+        {
+            _isUpdatingCollection = false;
+            _logger.LogError(ex, "Error Setting Resource List Filter: {ns} ", typeof(T));
+        });
     }
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
@@ -159,11 +166,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private void SetFilter()
     {
-        if (FilteringModel == null)
-        {
-            return;
-        }
-
         FilteringModel.Clear();
 
         foreach (var col in ColumnDefinitions)
@@ -177,7 +179,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                         FilteringOperator.In,
                         propertyPath: null,
                         value: null,
-                        values: Cluster.SelectedNamespaces.Select(x => x.Name() as object).ToList());
+                        values: [.. Cluster.SelectedNamespaces.Select(x => x.Name() as object)]);
 
                     FilteringModel.SetOrUpdate(descriptor);
                 }
@@ -196,6 +198,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
         SortingModel.SortingChanged -= SortingModelOnSortingChanged;
         FilteringModel.FilteringChanged -= FilteringModelOnFilteringChanged;
+        ((SelectionModel<T>)SelectionModel).SelectionChanged -= SelectionModelOnSelectionChanged;
     }
 
     private void GenerateColumnDefinitions()
@@ -210,64 +213,42 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         {
             try
             {
-                DataGridColumnDefinition column = null;
-
-                if (columnDefinition.CustomControl != null)
+                var column = new DataGridControlTemplateColumnDefinition()
                 {
-                    column = new DataGridControlTemplateColumnDefinition()
+                    Header = columnDefinition.Name,
+                    CellTemplate = new FuncDataTemplate<T>((item, _) =>
                     {
-                        Header = columnDefinition.Name,
-                        CellTemplate = new FuncDataTemplate<T>((item, _) =>
+                        try
                         {
-                            try
+                            var control = Application.Current.GetRequiredService(columnDefinition.CustomControl) as Control;
+
+                            if (control is IDisplayFunc init2)
                             {
-                                var control = Application.Current.GetRequiredService(columnDefinition.CustomControl) as Control;
-
-                                if (control is IDisplayFunc init2)
-                                {
-                                    init2.SetDisplayFunc(columnDefinition.DisplayValue);
-                                }
-
-                                if (control is IInitializeCluster init)
-                                {
-                                    init.Initialize(Cluster);
-                                }
-
-                                control.DataContext = item;
-
-                                return control;
+                                init2.SetDisplayFunc(columnDefinition.DisplayValue);
                             }
-                            catch (Exception ex)
+
+                            if (control is IInitializeCluster init)
                             {
-                                _logger.LogError(ex, "Error creating Control");
-                                return new TextBlock() { Text = ex.Message };
+                                init.Initialize(Cluster);
                             }
-                        }),
-                        CanUserSort = true,
-                        CustomSortComparer = s_noopSortComparer,
-                        SortDirection = columnDefinition.Sort == SortDirection.None ? null : columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending,
-                        Width = columnDefinition.Width != null ? converter.ConvertFromString(columnDefinition.Width) as DataGridLength? : null,
-                        ValueType = columnDefinition.ValueType,
-                    };
-                }
-                else
-                {
-                    throw new NotImplementedException();
-                    //column = builder.Text(
-                    //    header: columnDefinition.Name,
-                    //    property: CreateProperty(columnDefinition.Name, p => columnDefinition.DisplayValue(p)),
-                    //    getter: p => columnDefinition.DisplayValue(p),
-                    //    setter : null,
-                    //    configure: ct =>
-                    //    {
-                    //        ct.CanUserSort = true;
-                    //        ct.CustomSortComparer = s_noopSortComparer;
-                    //        ct.SortDirection = columnDefinition.Sort == SortDirection.None ? null : columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending;
-                    //        ct.Width = columnDefinition.Width != null ? converter.ConvertFromString(columnDefinition.Width) as DataGridLength? : null;
-                    //        ct.ValueType = columnDefinition.ValueType;
-                    //    }
-                    //);
-                }
+
+                            control.DataContext = item;
+
+                            return control;
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error creating Control");
+                            return new TextBlock() { Text = ex.Message };
+                        }
+                    }),
+                    CanUserSort = true,
+                    CustomSortComparer = s_noopSortComparer,
+                    SortDirection = columnDefinition.Sort == SortDirection.None ? null : columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending,
+                    Width = columnDefinition.Width != null ? converter.ConvertFromString(columnDefinition.Width) as DataGridLength? : null,
+                    ValueType = columnDefinition.ValueType,
+                };
+
 
                 ColumnDefinitions.Add(column);
             }
@@ -288,6 +269,76 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     {
         _filteringAdapterFactory.UpdateFilter(e.NewDescriptors);
         _filterSubject.OnNext(_filteringAdapterFactory.FilterPredicate);
+    }
+
+    private static string? GetKey(T item)
+    {
+        var meta = item?.Metadata;
+        if (meta is null)
+        {
+            return null;
+        }
+
+        var ns = meta.NamespaceProperty ?? string.Empty;
+        var name = meta.Name ?? string.Empty;
+
+        return ns + "/" + name;
+    }
+
+    private void PreserveSelectionByKey()
+    {
+        if (_view is null)
+        {
+            return;
+        }
+
+        var selection = (SelectionModel<T>)SelectionModel;
+
+        if (_selectedKeys.Count == 0)
+        {
+            return;
+        }
+
+        _suppressSelectionChanged = true;
+        selection.Clear();
+
+        for (var i = 0; i < _view.Count; i++)
+        {
+            var key = GetKey(_view[i]);
+            if (key != null && _selectedKeys.Contains(key))
+            {
+                selection.Select(i);
+
+                if (selection.SingleSelect)
+                {
+                    break;
+                }
+            }
+        }
+
+        _suppressSelectionChanged = false;
+    }
+
+    private void SelectionModelOnSelectionChanged(object? sender, SelectionModelSelectionChangedEventArgs<T> e)
+    {
+        if (_isUpdatingCollection)
+        {
+            return;
+        }
+
+        var selection = (SelectionModel<T>)SelectionModel;
+
+        if (_suppressSelectionChanged)
+        {
+            return;
+        }
+
+        _selectedKeys.Clear();
+
+        foreach (var key in selection.SelectedItems.Select(GetKey).Where(k => k != null))
+        {
+            _selectedKeys.Add(key!);
+        }
     }
 }
 

@@ -5,6 +5,7 @@
     <File Path=".github/workflows/cicd.yml" />
     <File Path=".releaserc.json" />
     <File Path=".vsconfig" />
+    <File Path="docker-compose.yaml" />
     <File Path="global.json" />
     <File Path="README.md" />
     <File Path="Settings.XamlStyler" />
