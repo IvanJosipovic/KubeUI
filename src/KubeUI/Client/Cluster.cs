@@ -469,7 +469,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     {
                         items.AddOrUpdate(item);
                     }
-
                     break;
                 case WatchEventType.Modified:
                     items.Edit(o =>

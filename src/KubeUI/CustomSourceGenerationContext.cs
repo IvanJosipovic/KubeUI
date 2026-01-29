@@ -23,6 +23,9 @@ namespace KubeUI;
 [JsonSerializable(typeof(KubernetesObject))]
 [JsonSerializable(typeof(ValueType))]
 [JsonSerializable(typeof(WatchEventType))]
+[JsonSerializable(typeof(IReadOnlyDictionary<object, object>))]
+[JsonSerializable(typeof(IReadOnlyCollection<KeyValuePair<object, object>>))]
+[JsonSerializable(typeof(IDeserializationCallback))]
 
 [JsonSerializable(typeof(KubernetesList<V1CustomResourceDefinition>))]
 [JsonSerializable(typeof(k8s.Watcher<V1CustomResourceDefinition>.WatchEvent))]

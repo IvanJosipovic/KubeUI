@@ -241,7 +241,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                             _logger.LogError(ex, "Error creating Control");
                             return new TextBlock() { Text = ex.Message };
                         }
-                    }),
+                    }, supportsRecycling: true),
                     CanUserSort = true,
                     CustomSortComparer = s_noopSortComparer,
                     SortDirection = columnDefinition.Sort == SortDirection.None ? null : columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending,

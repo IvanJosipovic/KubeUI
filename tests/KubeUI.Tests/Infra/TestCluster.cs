@@ -102,8 +102,14 @@ public class TestCluster : ICluster
             cfg.Initialize(this);
             return cfg;
         }
+        else if (kind == GroupApiVersionKind.From<V1Namespace>())
+        {
+            var cfg = svc.GetRequiredService<ResourceConfigBase<V1Namespace>>();
+            cfg.Initialize(this);
+            return cfg;
+        }
 
-        throw new NotSupportedException($"TestCluster.GetResourceConfig only supports V1Pod in unit tests. Requested: {kind}");
+        throw new NotSupportedException($"TestCluster.GetResourceConfig only supports limited resources in unit tests. Requested: {kind}");
     }
 
     private sealed class TestResourceConfig : IResourceConfig
@@ -190,12 +196,22 @@ public class TestCluster : ICluster
 
             if (original.HasValue)
             {
+                // Copy the incoming (updated) item into the cached instance.
+                // The previous direction overwrote the update with stale data.
                 item.Adapt(original.Value);
+
+                // Notify DynamicData that the item changed.
                 o.Refresh(key);
+
+                // Mimic real cluster behavior where watchers raise change events.
+                OnChange?.Invoke(WatchEventType.Modified, kind, original.Value);
             }
             else
             {
                 o.AddOrUpdate(item);
+
+                // Mimic the initial add event.
+                OnChange?.Invoke(WatchEventType.Added, kind, item);
             }
         });
     }

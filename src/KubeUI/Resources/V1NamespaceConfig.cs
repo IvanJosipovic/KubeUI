@@ -19,7 +19,7 @@ public sealed partial class V1NamespaceConfig : ResourceConfigBase<V1Namespace>
             new ResourceListColumn<V1Namespace, string>()
             {
                 Name = "Status",
-                Field = x => x.Status.Phase,
+                Field = x => x.Status?.Phase ?? string.Empty,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             AgeColumn(),

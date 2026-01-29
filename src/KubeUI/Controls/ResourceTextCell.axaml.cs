@@ -10,7 +10,7 @@ public interface IDisplayFunc
     void SetDisplayFunc(Func<object, string> selector);
 }
 
-public sealed partial class ResourceTextCell : UserControl, IInitializeCluster, IDisplayFunc, IDisposable
+public sealed partial class ResourceTextCell : UserControl, IInitializeCluster, IDisplayFunc
 {
     private ICluster _cluster;
 
@@ -19,7 +19,7 @@ public sealed partial class ResourceTextCell : UserControl, IInitializeCluster, 
     private IKubernetesObject<V1ObjectMeta>? _viewModel;
 
     [GeneratedDirectProperty]
-    public partial string PrettyString { get; set; }
+    public partial string PrettyString { get; set; } = string.Empty;
 
     public ResourceTextCell()
     {
@@ -45,12 +45,40 @@ public sealed partial class ResourceTextCell : UserControl, IInitializeCluster, 
     {
         base.OnDataContextChanged(e);
 
+        SetPrettyString();
+    }
+
+    protected override void OnLoaded(RoutedEventArgs e)
+    {
+        base.OnLoaded(e);
+        _cluster.OnChange += _cluster_OnChange;
+    }
+
+    protected override void OnUnloaded(RoutedEventArgs e)
+    {
+        base.OnUnloaded(e);
+        _cluster?.OnChange -= _cluster_OnChange;
+    }
+
+    public void Initialize(ICluster cluster)
+    {
+        _cluster = cluster;
+    }
+
+    public void SetDisplayFunc(Func<object, string> selector)
+    {
+        _displayFunc = selector;
+    }
+
+    private void SetPrettyString()
+    {
         if (DataContext is IKubernetesObject<V1ObjectMeta> obj)
         {
             _viewModel = obj;
+
             try
             {
-                PrettyString = _displayFunc.Invoke(obj);
+                PrettyString = _displayFunc.Invoke(obj) ?? string.Empty;
             }
             catch (Exception)
             {
@@ -62,29 +90,15 @@ public sealed partial class ResourceTextCell : UserControl, IInitializeCluster, 
             PrettyString = string.Empty;
         }
     }
-
-    public void Initialize(ICluster cluster)
-    {
-        _cluster = cluster;
-
-        _cluster.OnChange += _cluster_OnChange;
-    }
-
-    public void SetDisplayFunc(Func<object, string> selector)
-    {
-        _displayFunc = selector;
-    }
-
     private void _cluster_OnChange(WatchEventType arg1, GroupApiVersionKind arg2, IKubernetesObject<V1ObjectMeta> arg3)
     {
         if (_viewModel?.Name() == arg3.Name() && _viewModel?.Namespace() == arg3.Namespace())
         {
-            Dispatcher.UIThread.Invoke(() => DataContext = arg3, DispatcherPriority.Background);
+            Dispatcher.UIThread.Invoke(() =>
+            {
+                DataContext = arg3;
+                SetPrettyString();
+            }, DispatcherPriority.Normal);
         }
-    }
-
-    public void Dispose()
-    {
-        _cluster?.OnChange -= _cluster_OnChange;
     }
 }

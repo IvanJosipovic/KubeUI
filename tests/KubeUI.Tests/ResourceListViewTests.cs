@@ -313,7 +313,7 @@ public class ResourceListViewTests
 
         var grid = view.FindControl<DataGrid>("PART_Grid");
         grid.Should().NotBeNull();
-        grid = grid!;
+
 
         var pod = Pod("ns", "a");
         await AddOrUpdateAsync(cluster, pod);
@@ -329,6 +329,55 @@ public class ResourceListViewTests
         var after = GetFirstRowFirstColumnText(grid, 0, 0);
         after.Should().NotBeNull();
         after.Should().Contain("b");
+    }
+
+    [AvaloniaFact(DisplayName = "Update check DataGrid Text update2")]
+    public async Task UpdateResourceTextBox2()
+    {
+        var window = new MainWindow
+        {
+            Width = 1200,
+            Height = 800
+        };
+
+        var cluster = new TestCluster();
+
+        var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Namespace>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+
+        window.Content = view;
+        window.Show();
+
+        var grid = view.FindControl<DataGrid>("PART_Grid");
+        grid.Should().NotBeNull();
+
+        var ns = new V1Namespace()
+        {
+            Metadata = new()
+            {
+                Name = "a"
+            }
+        };
+
+        await AddOrUpdateAsync(cluster, ns);
+
+        var before = GetFirstRowFirstColumnText(grid, 0, 1);
+        before.Should().NotBeNull();
+        before.Should().BeEmpty();
+
+        ns.Metadata.Labels = new Dictionary<string, string>()
+        {
+            {"test", "value" }
+        };
+
+        await AddOrUpdateAsync(cluster, ns);
+
+        var after = GetFirstRowFirstColumnText(grid, 0, 1);
+        after.Should().NotBeNull();
+        after.Should().Contain("test=value");
     }
 
     [AvaloniaFact(DisplayName = "Namespace filter preserves selection when included")]
