@@ -1,13 +1,9 @@
 name: Validate Renovate Config
 
 on:
-  workflow_dispatch:
-  push:
-    branches:
-      - 'main'
-      - 'alpha'
-      - 'beta'
   pull_request:
+    paths:
+      - .github/renovate.json
     types: [opened, reopened, synchronize]
 
 jobs:
