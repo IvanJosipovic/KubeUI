@@ -94,7 +94,7 @@ public sealed class AvaloniaScheduler : LocalScheduler
         {
             var composite = new CompositeDisposable(2);
 
-            composite.Add(DispatcherTimer.RunOnce(() => composite.Add(action(this, state)), dueTime));
+            composite.Add(DispatcherTimer.RunOnce(() => composite.Add(action(this, state)), dueTime, DispatcherPriority.Background));
 
             return composite;
         }

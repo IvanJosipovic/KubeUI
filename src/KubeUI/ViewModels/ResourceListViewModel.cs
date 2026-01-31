@@ -91,10 +91,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     [ObservableProperty]
     public partial ISearchModel SearchModel { get; set; } = new SearchModel()
     {
-        HighlightMode = SearchHighlightMode.Cell,
-        HighlightCurrent = true,
+        HighlightMode = SearchHighlightMode.None,
+        HighlightCurrent = false,
         WrapNavigation = true,
-        UpdateSelectionOnNavigate = true
+        UpdateSelectionOnNavigate = false
     };
 
     public IDataGridSelectionModelFactory SelectionModelFactory => _selectionModelFactory;
@@ -194,6 +194,11 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private void SetFilter()
     {
+        if (!ResourceConfig.IsNamespaced)
+        {
+            return;
+        }
+
         FilteringModel.Clear();
 
         foreach (var col in ColumnDefinitions)
@@ -215,6 +220,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 {
                     FilteringModel.Remove(col);
                 }
+
+                return;
             }
         }
     }
@@ -300,7 +307,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                         SearchTextProvider = columnDefinition.DisplayValue,
                     }
                 };
-
 
                 ColumnDefinitions.Add(column);
             }
