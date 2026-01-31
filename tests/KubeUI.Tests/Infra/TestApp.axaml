@@ -6,11 +6,13 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:semi="https://irihi.tech/semi"
     xmlns:styling="using:FluentAvalonia.Styling"
+    xmlns:u-semi="https://irihi.tech/ursa/themes/semi"
     d:DesignHeight="450"
     d:DesignWidth="800"
     mc:Ignorable="d">
     <Application.Styles>
         <semi:SemiTheme Locale="en-US" />
+        <u-semi:SemiTheme Locale="en-US" />
         <styling:FluentAvaloniaTheme />
         <!--
             https://theme.xaml.live/

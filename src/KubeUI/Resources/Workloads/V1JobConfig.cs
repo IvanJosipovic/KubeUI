@@ -27,6 +27,6 @@ public sealed partial class V1JobConfig : ResourceConfigBase<V1Job>
                 Field = x => x.Status?.Conditions?.FirstOrDefault(y => y.Status == "True")?.Type ?? "",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
-            ];
+        ];
     }
 }

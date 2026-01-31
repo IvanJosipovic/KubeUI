@@ -21,14 +21,12 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
             new ResourceListColumn<V1Service, string>()
             {
                 Name = "Type",
-                Display = x => x.Spec.Type,
                 Field = x => x.Spec.Type,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             new ResourceListColumn<V1Service, string>()
             {
                 Name = "Cluster IP",
-                Display = x => x.Spec.ClusterIP,
                 Field = x => x.Spec.ClusterIP,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },

@@ -10,6 +10,7 @@ using Avalonia.Controls.DataGridSelection;
 using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls.Selection;
 using Avalonia.Controls.Templates;
+using Avalonia.Styling;
 using AvaloniaEdit.Utils;
 using DynamicData;
 using DynamicData.Binding;
@@ -90,7 +91,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     [ObservableProperty]
     public partial ISearchModel SearchModel { get; set; } = new SearchModel()
     {
-        HighlightMode = SearchHighlightMode.TextAndCell,
+        HighlightMode = SearchHighlightMode.Cell,
         HighlightCurrent = true,
         WrapNavigation = true,
         UpdateSelectionOnNavigate = true
@@ -294,6 +295,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                     SortDirection = columnDefinition.Sort == SortDirection.None ? null : columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending,
                     Width = columnDefinition.Width != null ? converter.ConvertFromString(columnDefinition.Width) as DataGridLength? : null,
                     ValueType = columnDefinition.ValueType,
+                    Options = new()
+                    {
+                        SearchTextProvider = columnDefinition.DisplayValue,
+                    }
                 };
 
 
@@ -784,7 +789,7 @@ public sealed class DynamicDataSearchAdapterFactory<T> : IDataGridSearchAdapterF
 
     public void UpdatePredicate(IReadOnlyList<SearchDescriptor> descriptors)
     {
-        SearchPredicate = BuildPredicate(descriptors);;
+        SearchPredicate = BuildPredicate(descriptors);
     }
 
     private Func<T, bool> BuildPredicate(IReadOnlyList<SearchDescriptor> descriptors)
@@ -860,7 +865,7 @@ public sealed class DynamicDataSearchAdapterFactory<T> : IDataGridSearchAdapterF
     {
         if (descriptor.Scope != SearchScope.ExplicitColumns)
         {
-            return _resourceConfig.Columns().Select(x => new ColumnSelector(x.Name, x.DisplayValue)).ToList();
+            return [.. _resourceConfig.Columns().Select(x => new ColumnSelector(x.Name, x.DisplayValue))];
         }
 
         if (descriptor.ColumnIds == null || descriptor.ColumnIds.Count == 0)
@@ -906,7 +911,7 @@ public sealed class DynamicDataSearchAdapterFactory<T> : IDataGridSearchAdapterF
             out IReadOnlyList<SearchResult> results)
         {
             _update(descriptors);
-            results = Array.Empty<SearchResult>();
+            results = [];
             return false;
         }
     }

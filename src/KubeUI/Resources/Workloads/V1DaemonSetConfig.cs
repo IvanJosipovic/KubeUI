@@ -23,14 +23,12 @@ public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>
             new ResourceListColumn<V1DaemonSet, int>()
             {
                 Name = "Pods",
-                Display = x => x.Status.NumberReady.ToString(),
                 Field = x => x.Status.NumberReady,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<V1DaemonSet, string>()
             {
                 Name = "Node Selector",
-                Display = x => x.Spec.Selector.MatchLabels.Select(z => z.Key + "=" + z.Value).Aggregate((x,y) => x + ", " + y),
                 Field = x => x.Spec.Selector.MatchLabels.Select(z => z.Key + "=" + z.Value).Aggregate((x,y) => x + ", " + y),
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },

@@ -42,7 +42,6 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
             new ResourceListColumn<Corev1Event, int>()
             {
                 Name = "Count",
-                Display = x => (x.Count ?? 0).ToString(),
                 Field = x => x.Count ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
