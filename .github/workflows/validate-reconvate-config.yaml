@@ -1,0 +1,15 @@
+name: Validate Renovate Config
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'main'
+      - 'alpha'
+      - 'beta'
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+jobs:
+  call-workflow:
+    uses: IvanJosipovic/templates/.github/workflows/validate-renovate-config.yaml@main
