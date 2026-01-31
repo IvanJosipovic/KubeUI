@@ -1,0 +1,13 @@
+name: Validate Renovate Config
+
+on:
+  pull_request:
+    paths:
+      - .github/renovate.json
+    types: [opened, reopened, synchronize]
+
+jobs:
+  call-workflow:
+    permissions:
+      contents: read
+    uses: IvanJosipovic/templates/.github/workflows/validate-renovate-config.yaml@main
