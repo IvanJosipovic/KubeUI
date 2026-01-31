@@ -165,10 +165,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         })
         .Subscribe(change =>
         {
-            //if (change.Count == 1 && change.First().Reason == ChangeReason.Refresh)
-            //{
-                PreserveSelectionByKey();
-            //}
+            PreserveSelectionByKey();
             _isUpdatingCollection = false;
         }, ex =>
         {
