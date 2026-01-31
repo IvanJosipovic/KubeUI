@@ -12,7 +12,7 @@ using Xunit;
 using Xunit.Sdk;
 using Yarp.Kubernetes.Common;
 
-namespace Yarp.Kubernetes.Controller.Rate.Tests;
+namespace Kubernetes.Controller.Rate.Tests;
 
 public class LimiterTests
 {

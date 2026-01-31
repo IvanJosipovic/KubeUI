@@ -5,7 +5,7 @@ using System;
 using Xunit;
 using Yarp.Kubernetes.Common;
 
-namespace Yarp.Kubernetes.Controller.Rate.Tests;
+namespace Kubernetes.Controller.Rate.Tests;
 
 public class ReservationTests
 {

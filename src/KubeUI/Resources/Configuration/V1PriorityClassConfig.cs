@@ -14,14 +14,12 @@ public sealed partial class V1PriorityClassConfig : ResourceConfigBase<V1Priorit
             new ResourceListColumn<V1PriorityClass, int>()
             {
                 Name = "Value",
-                Display = x => x.Value.ToString(),
                 Field = x => x.Value,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             new ResourceListColumn<V1PriorityClass, bool?>()
             {
                 Name = "Global Default",
-                Display = x => (x.GlobalDefault ?? false).ToString(),
                 Field = x => x.GlobalDefault ?? false,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },

@@ -4,7 +4,7 @@ using k8s;
 using k8s.KubeConfigModels;
 using KubeUI.Client;
 
-namespace KubeUI.Tests;
+namespace KubeUI.Tests.E2E;
 
 public class TestHarness : IDisposable
 {
@@ -14,7 +14,7 @@ public class TestHarness : IDisposable
 
     public ClusterManager ClusterManager { get; set; }
 
-    public Kubernetes Kubernetes { get; set; }
+    public k8s.Kubernetes Kubernetes { get; set; }
 
     public K8SConfiguration KubeConfig { get; set; }
 
@@ -35,7 +35,6 @@ public class TestHarness : IDisposable
 
         await Cluster.Connect();
     }
-
 
     public async Task<ICluster> GetClusterFromServiceAccount(string @namespace, string name)
     {

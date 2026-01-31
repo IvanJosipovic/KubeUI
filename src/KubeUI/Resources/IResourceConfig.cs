@@ -1,6 +1,6 @@
 ﻿using Avalonia.Styling;
 using KubeUI.Client;
-using Yarp.Kubernetes.Controller.Client;
+using Kubernetes.Controller.Client;
 
 namespace KubeUI.Resources
 {

@@ -1,24 +1,19 @@
 using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
 using Avalonia.Markup.Xaml;
-using CommunityToolkit.Mvvm.ComponentModel;
-using Dock.Model.Core;
 using HanumanInstitute.MvvmDialogs;
-using KubernetesCRDModelGen;
+using KubeUI;
 using KubeUI.Client;
-using KubeUI.ViewModels;
-using KubeUI.Views;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Moq;
 
-namespace KubeUI.Tests;
+namespace KubeUI.Tests.Infra;
 
 public class TestApp : Application
 {
-    public static IHost Host { get; private set; }
+    public static IHost Host { get; private set; } = null!;
 
     public override void Initialize()
     {

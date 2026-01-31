@@ -1,37 +1,19 @@
-﻿using System.Collections.Concurrent;
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Headless.XUnit;
 using FluentAssertions;
 using k8s.Models;
-using KubeUI.Client;
+using KubeUI.Tests.Infra;
 using KubeUI.ViewModels;
-using Yarp.Kubernetes.Controller;
 using static KubeUI.ViewModels.VisualizationViewModel;
 
 namespace KubeUI.Tests;
 
-public class VisualizationTests
+public class VisualizationViewTests
 {
-    private static ICluster GetTestCluster()
-    {
-        var cluster = new TestCluster();
-
-        var ns = new V1Namespace()
-        {
-            Metadata = new() { Name = "default" }
-        };
-
-        cluster.AddOrUpdateResource(ns).GetAwaiter().GetResult();
-
-        cluster.SelectedNamespaces.Add(ns);
-
-        return cluster;
-    }
-
     [AvaloniaFact]
     public async Task LinkOwners()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1Deployment
         {
@@ -80,7 +62,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkConfigMapInPodEnv()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap
         {
@@ -134,7 +116,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkConfigMapInPodInitEnv()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap
         {
@@ -187,7 +169,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkConfigMapInPodEnvFrom()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap
         {
@@ -237,7 +219,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkConfigMapInPodInitEnvFrom()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap
         {
@@ -287,7 +269,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkConfigMapInPodVolume()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap
         {
@@ -331,7 +313,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkConfigMapInDeploymentEnv()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap
         {
@@ -382,7 +364,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkConfigMapInDeploymentInitEnv()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -430,7 +412,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkConfigMapInDeploymentEnvFrom()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -475,7 +457,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkConfigMapInDeploymentInitEnvFrom()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -520,7 +502,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkConfigMapInDeploymentVolume()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -559,7 +541,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkConfigMapInDaemonSetEnv()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -607,7 +589,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkConfigMapInDaemonSetInitEnv()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -655,7 +637,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkConfigMapInDaemonSetEnvFrom()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -700,7 +682,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkConfigMapInDaemonSetInitEnvFrom()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -745,7 +727,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkConfigMapInDaemonSetVolume()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -784,7 +766,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkConfigMapInStatefulSetEnv()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -832,7 +814,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkConfigMapInStatefulSetInitEnv()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -880,7 +862,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkConfigMapInStatefulSetEnvFrom()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -925,7 +907,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkConfigMapInStatefulSetInitEnvFrom()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -970,7 +952,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkConfigMapInStatefulSetVolume()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -1011,7 +993,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkConfigMapInReplicaSetEnv()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -1060,7 +1042,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkConfigMapInReplicaSetInitEnv()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -1109,7 +1091,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkConfigMapInReplicaSetEnvFrom()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -1155,7 +1137,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkConfigMapInReplicaSetInitEnvFrom()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -1201,7 +1183,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkConfigMapInReplicaSetVolume()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -1245,7 +1227,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkSecretInDeploymentEnv()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1293,7 +1275,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkSecretInDeploymentInitEnv()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1341,7 +1323,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkSecretInDeploymentEnvFrom()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1386,7 +1368,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkSecretInDeploymentInitEnvFrom()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1431,7 +1413,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkSecretInDeploymentVolume()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1470,7 +1452,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkSecretInDaemonSetEnv()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1518,7 +1500,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkSecretInDaemonSetInitEnv()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1566,7 +1548,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkSecretInDaemonSetEnvFrom()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1611,7 +1593,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkSecretInDaemonSetInitEnvFrom()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1656,7 +1638,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkSecretInDaemonSetVolume()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1695,7 +1677,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkSecretInStatefulSetEnv()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1743,7 +1725,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkSecretInStatefulSetInitEnv()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1791,7 +1773,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkSecretInStatefulSetEnvFrom()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1836,7 +1818,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkSecretInStatefulSetInitEnvFrom()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1881,7 +1863,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkSecretInStatefulSetVolume()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1920,7 +1902,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkSecretInReplicaSetEnv()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1969,7 +1951,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkSecretInReplicaSetInitEnv()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -2018,7 +2000,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkSecretInReplicaSetEnvFrom()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -2064,7 +2046,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkSecretInReplicaSetInitEnvFrom()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -2110,7 +2092,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkSecretInReplicaSetVolume()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -2150,7 +2132,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkSecretInServiceAccount()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1Secret
         {
@@ -2191,7 +2173,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkEvent()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new Corev1Event
         {
@@ -2229,7 +2211,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkPodToEndpointSlice()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1Pod
         {
@@ -2272,7 +2254,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkPodToEndpointEndpoints()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1Pod
         {
@@ -2321,7 +2303,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkIngressToService()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1Service
         {
@@ -2378,7 +2360,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkIngressDefaultBackend()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1Service
         {
@@ -2420,7 +2402,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkPersistentVolumeClaimToPersistantVolume()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1PersistentVolumeClaim
         {
@@ -2461,7 +2443,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkRoleBindingToServiceAccount()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1RoleBinding 
         {
@@ -2502,7 +2484,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkRoleBindingToRole()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1RoleBinding
         {
@@ -2539,7 +2521,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkRoleBindingClusterRole()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1RoleBinding
         {
@@ -2575,7 +2557,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkClusterRoleBindingToServiceAccount()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ClusterRoleBinding
         {
@@ -2616,7 +2598,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkClusterRoleBindingClusterRole()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ClusterRoleBinding
         {
@@ -2654,7 +2636,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkServiceAccountInPod()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ServiceAccount
         {
@@ -2690,7 +2672,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkServiceAccountInDeployment()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ServiceAccount
         {
@@ -2732,7 +2714,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkServiceAccountInStatefulSet()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ServiceAccount { Metadata = new() { Name = "my-sa", NamespaceProperty = "default" } });
 
@@ -2767,7 +2749,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkServiceAccountInDaemonSet()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ServiceAccount { Metadata = new() { Name = "my-sa", NamespaceProperty = "default" } });
 
@@ -2802,7 +2784,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkServiceAccountInReplicaSet()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1ServiceAccount { Metadata = new() { Name = "my-sa", NamespaceProperty = "default" } });
 
@@ -2842,7 +2824,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkPersistentVolumeClaimInPod()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1PersistentVolumeClaim
         {
@@ -2886,7 +2868,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkPersistentVolumeClaimInDeployment()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1PersistentVolumeClaim
         {
@@ -2936,7 +2918,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkPersistentVolumeClaimInStatefulSet()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1PersistentVolumeClaim
         {
@@ -2986,7 +2968,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkPersistentVolumeClaimInDaemonSet()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1PersistentVolumeClaim
         {
@@ -3036,7 +3018,7 @@ public class VisualizationTests
     [AvaloniaFact]
     public async Task LinkPersistentVolumeClaimInReplicaSet()
     {
-        var cluster = GetTestCluster();
+        var cluster = TestCluster.Get();
 
         await cluster.AddOrUpdateResource(new V1PersistentVolumeClaim
         {

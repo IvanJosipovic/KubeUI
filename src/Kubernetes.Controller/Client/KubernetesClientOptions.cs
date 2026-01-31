@@ -3,7 +3,7 @@
 
 using k8s;
 
-namespace Yarp.Kubernetes.Controller.Client;
+namespace Kubernetes.Controller.Client;
 
 /// <summary>
 /// Class KubernetesClientOptions.

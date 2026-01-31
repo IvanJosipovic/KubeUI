@@ -8,10 +8,10 @@ using k8s.Autorest;
 using k8s.Models;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Yarp.Kubernetes.Controller.Hosting;
-using Yarp.Kubernetes.Controller.Rate;
+using Kubernetes.Controller.Hosting;
+using Kubernetes.Controller.Rate;
 
-namespace Yarp.Kubernetes.Controller.Client;
+namespace Kubernetes.Controller.Client;
 
 /// <summary>
 /// Class ResourceInformer.

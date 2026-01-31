@@ -7,7 +7,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
-namespace Yarp.Kubernetes.Controller;
+namespace Kubernetes.Controller;
 
 /// <summary>
 /// Struct NamespacedName is a value that acts as a dictionary key. It is a comparable

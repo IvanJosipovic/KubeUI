@@ -30,14 +30,12 @@ public sealed partial class V1PodDisruptionBudgetConfig : ResourceConfigBase<V1P
             new ResourceListColumn<V1PodDisruptionBudget, int>()
             {
                 Name = "Current Healthy",
-                Display = x => x.Status.CurrentHealthy.ToString(),
                 Field = x => x.Status.CurrentHealthy,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<V1PodDisruptionBudget, int>()
             {
                 Name = "Desired Healthy",
-                Display = x => x.Status.DesiredHealthy.ToString(),
                 Field = x => x.Status.DesiredHealthy,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },

@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Yarp.Kubernetes.Tests.Hosting.Fakes;
 
-namespace Yarp.Kubernetes.Controller.Hosting.Tests;
+namespace Kubernetes.Controller.Hosting.Tests;
 
 public class BackgroundHostedServiceTests
 {

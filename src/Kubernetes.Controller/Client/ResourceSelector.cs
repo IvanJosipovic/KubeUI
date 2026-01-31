@@ -4,7 +4,7 @@
 using k8s;
 using k8s.Models;
 
-namespace Yarp.Kubernetes.Controller.Client;
+namespace Kubernetes.Controller.Client;
 
 /// <summary>
 /// Provides a mechanism for <see cref="IResourceInformer{TResource}"/> to constrain search based on fields in the resource.

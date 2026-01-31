@@ -23,7 +23,6 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
             new ResourceListColumn<V1StatefulSet, int>()
             {
                 Name = "Replicas",
-                Display = x => x.Status.Replicas.ToString(),
                 Field = x => x.Status.Replicas,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },

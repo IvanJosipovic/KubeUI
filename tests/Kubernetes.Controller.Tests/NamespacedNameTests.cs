@@ -5,7 +5,7 @@ using k8s.Models;
 using System.Collections.Generic;
 using Xunit;
 
-namespace Yarp.Kubernetes.Controller.Tests;
+namespace Kubernetes.Controller.Tests;
 
 public class NamespacedNameTests
 {

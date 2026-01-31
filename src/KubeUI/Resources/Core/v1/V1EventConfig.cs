@@ -3,7 +3,7 @@ using Avalonia.Styling;
 using k8s.Models;
 using KubeUI.Controls;
 
-namespace KubeUI.Resources;
+namespace KubeUI.Resources.Core.v1;
 
 public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
 {
@@ -36,22 +36,20 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
             new ResourceListColumn<Corev1Event, string>()
             {
                 Name = "Source",
-                Field = x => x?.Source?.Component ?? "",
+                Field = x => x?.Source?.Component ?? (x?.ReportingComponent) ?? "",
                 Width = "*"
             },
             new ResourceListColumn<Corev1Event, int>()
             {
                 Name = "Count",
-                Display = x => (x.Count ?? 0).ToString(),
                 Field = x => x.Count ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<Corev1Event, DateTime?>()
             {
                 Name = "Last Seen",
-                CustomControl = typeof(LastSeenCell),
-                Field = x => x.LastTimestamp,
-                Display = x => x.LastTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
+                CustomControl = typeof(EventLastSeenCell),
+                Field = x => x.LastTimestamp ?? (x.EventTime ?? x.Metadata.CreationTimestamp),
                 Sort = SortDirection.Descending,
                 Width = "80"
             },

@@ -16,7 +16,6 @@ public sealed partial class V1LeaseConfig : ResourceConfigBase<V1Lease>
             new ResourceListColumn<V1Lease, string>()
             {
                 Name = "Holder",
-                Display = x => x.Spec.HolderIdentity ?? "",
                 Field = x => x.Spec.HolderIdentity ?? "",
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },

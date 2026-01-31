@@ -1,6 +1,6 @@
 ﻿using k8s.Models;
 
-namespace KubeUI.Resources;
+namespace KubeUI.Resources.Core.v1;
 
 public sealed partial class V1NamespaceConfig : ResourceConfigBase<V1Namespace>
 {
@@ -13,13 +13,13 @@ public sealed partial class V1NamespaceConfig : ResourceConfigBase<V1Namespace>
             new ResourceListColumn<V1Namespace, string>()
             {
                 Name = "Labels",
-                Field = x => x.Metadata.Labels.Select(x => x.Key + "=" + x.Value).Aggregate((x,y) => x + ", " + y),
+                Field = x => x.Metadata.Labels?.Select(x => x.Key + "=" + x.Value).Aggregate((x,y) => x + ", " + y) ?? "",
                 Width = "2*"
             },
             new ResourceListColumn<V1Namespace, string>()
             {
                 Name = "Status",
-                Field = x => x.Status.Phase,
+                Field = x => x.Status?.Phase ?? "",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             AgeColumn(),

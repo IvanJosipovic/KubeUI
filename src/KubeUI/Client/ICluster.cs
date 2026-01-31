@@ -2,10 +2,10 @@
 using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
-using Yarp.Kubernetes.Controller.Client;
+using Kubernetes.Controller.Client;
 using KubeUI.Resources;
 using static KubeUI.Client.Cluster;
-using Yarp.Kubernetes.Controller;
+using Kubernetes.Controller;
 using DynamicData;
 
 namespace KubeUI.Client;
@@ -40,6 +40,8 @@ public interface ICluster
     PortForwarder AddServicePortForward(string @namespace, string serviceName, int servicePort);
     string KubeConfigPath { get; set; }
     string Name { get; set; }
+    bool IsExpanded { get; set; }
+
     Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task Connect();
     Task DeleteResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();

@@ -5,7 +5,7 @@ using AvaloniaEdit.Folding;
 using k8s;
 using k8s.Models;
 using KubeUI.Client;
-using Yarp.Kubernetes.Controller.Client;
+using Kubernetes.Controller.Client;
 using static KubeUI.Client.Cluster;
 
 namespace KubeUI.ViewModels;
@@ -53,6 +53,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
     public void Initialize(ICluster cluster, IKubernetesObject<V1ObjectMeta> @object)
     {
         Cluster = cluster;
+        Cluster.OnChange += Cluster_OnChange;
         Object = @object;
 
         Id = $"{nameof(ResourceYamlViewModel)}-{Cluster.Name}-{Object.ApiVersion}/{Object.Kind}/{Object.Metadata.NamespaceProperty}/{Object.Metadata.Name}";
@@ -64,10 +65,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         {
             var ObjectClone = Utilities.CloneObject(Object);
 
-            if (ObjectClone.Metadata != null)
-            {
-                ObjectClone.Metadata.ManagedFields = null;
-            }
+            ObjectClone.Metadata?.ManagedFields = null;
 
             ObjectClone?.Metadata?.Annotations?.Remove("kubectl.kubernetes.io/last-applied-configuration");
 
@@ -86,11 +84,6 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         if (e.PropertyName == nameof(Object) || e.PropertyName == nameof(EditMode) || e.PropertyName == nameof(HideNoisyFields))
         {
             SetYamlDocument();
-        }
-
-        if (e.PropertyName == nameof(Cluster))
-        {
-            Cluster.OnChange += Cluster_OnChange;
         }
     }
 

@@ -14,7 +14,6 @@ public sealed partial class V1RuntimeClassConfig : ResourceConfigBase<V1RuntimeC
             new ResourceListColumn<V1RuntimeClass, string>()
             {
                 Name = "Handler",
-                Display = x => x.Handler,
                 Field = x => x.Handler,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },

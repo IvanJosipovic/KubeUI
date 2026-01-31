@@ -19,10 +19,11 @@ public sealed partial class V1PersistentVolumeClaimConfig : ResourceConfigBase<V
                 Field = x => x.Spec.StorageClassName,
                 Width = "*",
             },
-            new ResourceListColumn<V1PersistentVolumeClaim, string>()
+            new ResourceListColumn<V1PersistentVolumeClaim, decimal>()
             {
                 Name = "Size",
-                Field = x => x.Spec.Resources.Requests["storage"].CanonicalizeString(ResourceQuantity.SuffixFormat.BinarySI),
+                Display = x => x.Spec.Resources?.Requests["storage"]?.CanonicalizeString(ResourceQuantity.SuffixFormat.BinarySI) ?? "",
+                Field = x => x.Spec.Resources?.Requests["storage"]?.ToDecimal() ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             AgeColumn(),

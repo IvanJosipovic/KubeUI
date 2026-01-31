@@ -3,7 +3,7 @@
 
 using Microsoft.Extensions.Hosting;
 using System.Linq;
-using Yarp.Kubernetes.Controller.Hosting;
+using Kubernetes.Controller.Hosting;
 
 namespace Microsoft.Extensions.DependencyInjection;
 

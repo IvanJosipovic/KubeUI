@@ -3,14 +3,12 @@ using Avalonia;
 using Avalonia.Headless.XUnit;
 using FluentAssertions;
 using k8s;
-using k8s.KubeConfigModels;
 using k8s.Models;
-using Yarp.Kubernetes.Controller.Client;
-using KubeUI.Tests;
-using Yarp.Kubernetes.Controller;
+using Kubernetes.Controller.Client;
 using System.Collections;
+using KubeUI.Client;
 
-namespace KubeUI.Client.Tests;
+namespace KubeUI.Tests.E2E;
 
 public class ClusterEndToEndTests
 {
