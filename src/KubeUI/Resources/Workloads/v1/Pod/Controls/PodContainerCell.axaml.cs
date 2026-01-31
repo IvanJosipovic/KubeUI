@@ -95,7 +95,7 @@ public partial class PodContainerCell : UserControl, IInitializeCluster
             _viewModel = pod;
 
             var coll = new ObservableCollection<ViewModel>();
-            if (pod.Status.ContainerStatuses != null)
+            if (pod?.Status?.ContainerStatuses != null)
             {
                 coll.AddRange(pod.Status.ContainerStatuses.Select(x => new ViewModel()
                 {
@@ -103,7 +103,7 @@ public partial class PodContainerCell : UserControl, IInitializeCluster
                     Brush = (IBrush)ContainerStatusToBrushConverter.Instance().Convert(x, typeof(IBrush), null, CultureInfo.InvariantCulture)
                 }));
             }
-            if (pod.Status.InitContainerStatuses != null)
+            if (pod?.Status?.InitContainerStatuses != null)
             {
                 coll.AddRange(pod.Status.InitContainerStatuses.Select(x => new ViewModel()
                 {
