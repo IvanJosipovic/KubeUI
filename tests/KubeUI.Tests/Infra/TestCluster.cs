@@ -228,6 +228,12 @@ public class TestCluster : ICluster
 
     public Task DeleteResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
+        var kind = GroupApiVersionKind.From<T>();
+
+        var container = (ContainerClass<T>)Objects[kind];
+
+        container.Items.Remove(item);
+
         return Task.CompletedTask;
     }
 

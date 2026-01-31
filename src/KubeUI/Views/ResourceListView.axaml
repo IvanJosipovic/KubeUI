@@ -84,6 +84,7 @@
             ItemsSource="{Binding View}"
             MinColumnWidth="90"
             RowHeight="{Binding SettingsService.Settings.ListRowHeight}"
+            SearchModel="{Binding SearchModel}"
             Selection="{Binding SelectionModel}"
             SelectionMode="Extended"
             SortingModel="{Binding SortingModel}"

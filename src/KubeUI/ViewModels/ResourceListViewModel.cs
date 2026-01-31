@@ -1,7 +1,11 @@
 using System.Collections.Specialized;
+using System.Globalization;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Text;
+using System.Text.RegularExpressions;
 using Avalonia.Controls.DataGridFiltering;
+using Avalonia.Controls.DataGridSearching;
 using Avalonia.Controls.DataGridSelection;
 using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls.Selection;
@@ -12,9 +16,9 @@ using DynamicData.Binding;
 using Humanizer;
 using k8s;
 using k8s.Models;
+using Kubernetes.Controller.Client;
 using KubeUI.Client;
 using KubeUI.Resources;
-using Kubernetes.Controller.Client;
 using SortDirection = KubeUI.Resources.SortDirection;
 
 namespace KubeUI.ViewModels;
@@ -77,6 +81,21 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         OwnsViewFilter = true
     };
 
+    private BehaviorSubject<Func<T, bool>> _searchSubject;
+
+    public IDataGridSearchAdapterFactory SearchAdapterFactory => _searchAdapterFactory;
+
+    private DynamicDataSearchAdapterFactory<T> _searchAdapterFactory;
+
+    [ObservableProperty]
+    public partial ISearchModel SearchModel { get; set; } = new SearchModel()
+    {
+        HighlightMode = SearchHighlightMode.TextAndCell,
+        HighlightCurrent = true,
+        WrapNavigation = true,
+        UpdateSelectionOnNavigate = true
+    };
+
     public IDataGridSelectionModelFactory SelectionModelFactory => _selectionModelFactory;
 
     private DynamicDataSelectionModelFactory<T> _selectionModelFactory { get; set; }
@@ -100,6 +119,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
         SortingModel.SortingChanged += SortingModelOnSortingChanged;
         FilteringModel.FilteringChanged += FilteringModelOnFilteringChanged;
+        SearchModel.SearchChanged += SearchModelOnSearchChanged;
         ((SelectionModel<T>)SelectionModel).SelectionChanged += SelectionModelOnSelectionChanged;
     }
 
@@ -121,14 +141,21 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _sortSubject = new BehaviorSubject<IComparer<T>>(_sortingAdapterFactory.SortComparer);
         _filteringAdapterFactory = new DynamicDataFilteringAdapterFactory<T>(ResourceConfig);
         _filterSubject = new BehaviorSubject<Func<T, bool>>(_filteringAdapterFactory.FilterPredicate);
+        _searchAdapterFactory = new DynamicDataSearchAdapterFactory<T>(ResourceConfig);
+        _searchSubject = new BehaviorSubject<Func<T, bool>>(_searchAdapterFactory.SearchPredicate);
+
 
         _selectionModelFactory = new DynamicDataSelectionModelFactory<T>(SelectionModel);
+
+        SetFilter();
+        ApplySearch();
 
         _subscription = Objects.Connect()
         .Do(_ => _isUpdatingCollection = true)
         .Filter(_filterSubject)
+        .Filter(_searchSubject)
         .ObserveOn(AvaloniaScheduler.Instance)
-        .SortAndBind(out _view, _sortSubject, new SortAndBindOptions
+        .SortAndBind(out _view, _sortSubject, new()
         {
             ResetOnFirstTimeLoad = true,
             UseReplaceForUpdates = true,
@@ -137,10 +164,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         })
         .Subscribe(change =>
         {
-            if (change.Count == 1 && change.First().Reason == ChangeReason.Refresh)
-            {
+            //if (change.Count == 1 && change.First().Reason == ChangeReason.Refresh)
+            //{
                 PreserveSelectionByKey();
-            }
+            //}
             _isUpdatingCollection = false;
         }, ex =>
         {
@@ -155,7 +182,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
         if (e.PropertyName == nameof(SearchQuery))
         {
-            //SetFilter();
+            ApplySearch();
         }
     }
 
@@ -191,6 +218,25 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         }
     }
 
+    private void ApplySearch()
+    {
+        if (string.IsNullOrWhiteSpace(SearchQuery))
+        {
+            SearchModel.Clear();
+            return;
+        }
+
+        SearchModel.SetOrUpdate(new(
+            SearchQuery.Trim(),
+            matchMode: SearchMatchMode.Contains,
+            termMode: SearchTermCombineMode.All,
+            scope: SearchScope.AllColumns,
+            comparison: StringComparison.OrdinalIgnoreCase,
+            wholeWord: false,
+            normalizeWhitespace: true,
+            ignoreDiacritics: true));
+    }
+
     public void Dispose()
     {
         _subscription?.Dispose();
@@ -198,6 +244,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
         SortingModel.SortingChanged -= SortingModelOnSortingChanged;
         FilteringModel.FilteringChanged -= FilteringModelOnFilteringChanged;
+        SearchModel.SearchChanged -= SearchModelOnSearchChanged;
         ((SelectionModel<T>)SelectionModel).SelectionChanged -= SelectionModelOnSelectionChanged;
     }
 
@@ -339,6 +386,12 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         {
             _selectedKeys.Add(key!);
         }
+    }
+
+    private void SearchModelOnSearchChanged(object? sender, SearchChangedEventArgs e)
+    {
+        _searchAdapterFactory.UpdatePredicate(e.NewDescriptors);
+        _searchSubject.OnNext(_searchAdapterFactory.SearchPredicate);
     }
 }
 
@@ -705,5 +758,511 @@ public sealed class DynamicDataSelectionModelFactory<T> : IDataGridSelectionMode
     public ISelectionModel Create()
     {
         return _selectionModel;
+    }
+}
+
+/// <summary>
+/// Adapter factory that translates SearchModel descriptors into a DynamicData search predicate.
+/// It can push search criteria upstream while letting the grid compute match highlighting.
+/// </summary>
+public sealed class DynamicDataSearchAdapterFactory<T> : IDataGridSearchAdapterFactory where T : class, IKubernetesObject<V1ObjectMeta>, new()
+{
+    private readonly ResourceConfigBase<T> _resourceConfig;
+
+    public DynamicDataSearchAdapterFactory(ResourceConfigBase<T> resourceConfig)
+    {
+        _resourceConfig = resourceConfig;
+        SearchPredicate = static _ => true;
+    }
+
+    public Func<T, bool> SearchPredicate { get; private set; }
+
+    public DataGridSearchAdapter Create(DataGrid grid, ISearchModel model)
+    {
+        return new DynamicDataSearchAdapter(model, () => grid.ColumnDefinitions, UpdatePredicate);
+    }
+
+    public void UpdatePredicate(IReadOnlyList<SearchDescriptor> descriptors)
+    {
+        SearchPredicate = BuildPredicate(descriptors);;
+    }
+
+    private Func<T, bool> BuildPredicate(IReadOnlyList<SearchDescriptor> descriptors)
+    {
+        if (descriptors == null || descriptors.Count == 0)
+        {
+            return static _ => true;
+        }
+
+        var compiled = new List<Func<T, bool>>();
+        foreach (var descriptor in descriptors)
+        {
+            var predicate = Compile(descriptor);
+            if (predicate != null)
+            {
+                compiled.Add(predicate);
+            }
+        }
+
+        if (compiled.Count == 0)
+        {
+            return static _ => true;
+        }
+
+        return item =>
+        {
+            for (int i = 0; i < compiled.Count; i++)
+            {
+                if (compiled[i](item))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+    }
+
+    private Func<T, bool>? Compile(SearchDescriptor descriptor)
+    {
+        if (descriptor == null)
+        {
+            return null;
+        }
+
+        var columns = SelectColumns(descriptor);
+        if (columns.Count == 0)
+        {
+            return null;
+        }
+
+        return item =>
+        {
+            for (int i = 0; i < columns.Count; i++)
+            {
+                var text = columns[i].Getter(item);
+                if (string.IsNullOrEmpty(text))
+                {
+                    continue;
+                }
+
+                if (TextMatcher.HasMatch(text, descriptor))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+    }
+
+    private List<ColumnSelector> SelectColumns(SearchDescriptor descriptor)
+    {
+        if (descriptor.Scope != SearchScope.ExplicitColumns)
+        {
+            return _resourceConfig.Columns().Select(x => new ColumnSelector(x.Name, x.DisplayValue)).ToList();
+        }
+
+        if (descriptor.ColumnIds == null || descriptor.ColumnIds.Count == 0)
+        {
+            return [];
+        }
+
+        var selected = new List<ColumnSelector>();
+        foreach (var id in descriptor.ColumnIds)
+        {
+            if (id is not string path)
+            {
+                continue;
+            }
+
+            var column = _resourceConfig.Columns().FirstOrDefault(c => string.Equals(c.Name, path, StringComparison.Ordinal));
+            if (column != null)
+            {
+                selected.Add(new ColumnSelector(column.Name, column.DisplayValue));
+            }
+        }
+
+        return selected;
+    }
+
+    private sealed class DynamicDataSearchAdapter : DataGridSearchAdapter
+    {
+        private readonly Action<IReadOnlyList<SearchDescriptor>> _update;
+
+        public DynamicDataSearchAdapter(
+            ISearchModel model,
+            Func<IEnumerable<DataGridColumn>> columns,
+            Action<IReadOnlyList<SearchDescriptor>> update
+            )
+            : base(model, columns)
+        {
+            _update = update;
+        }
+
+        protected override bool TryApplyModelToView(
+            IReadOnlyList<SearchDescriptor> descriptors,
+            IReadOnlyList<SearchDescriptor> previousDescriptors,
+            out IReadOnlyList<SearchResult> results)
+        {
+            _update(descriptors);
+            results = Array.Empty<SearchResult>();
+            return false;
+        }
+    }
+
+    private sealed class ColumnSelector
+    {
+        public ColumnSelector(string id, Func<T, string> getter)
+        {
+            Id = id;
+            Getter = getter;
+        }
+
+        public string Id { get; }
+
+        public Func<T, string> Getter { get; }
+    }
+
+    private static class TextMatcher
+    {
+        public static bool HasMatch(string text, SearchDescriptor descriptor)
+        {
+            if (descriptor == null || string.IsNullOrEmpty(text))
+            {
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(descriptor.Query))
+            {
+                return descriptor.AllowEmpty && text.Length > 0;
+            }
+
+            var normalizedText = NormalizeText(text, descriptor.NormalizeWhitespace, descriptor.IgnoreDiacritics);
+            var query = NormalizeQuery(descriptor.Query, descriptor.NormalizeWhitespace, descriptor.IgnoreDiacritics);
+
+            if (descriptor.MatchMode == SearchMatchMode.Regex || descriptor.MatchMode == SearchMatchMode.Wildcard)
+            {
+                var pattern = descriptor.MatchMode == SearchMatchMode.Wildcard
+                    ? WildcardToRegex(query)
+                    : query;
+
+                if (descriptor.WholeWord)
+                {
+                    pattern = $@"\b(?:{pattern})\b";
+                }
+
+                var options = RegexOptions.Compiled;
+                if (IsIgnoreCase(descriptor.Comparison))
+                {
+                    options |= RegexOptions.IgnoreCase;
+                }
+
+                if (IsCultureInvariant(descriptor.Comparison))
+                {
+                    options |= RegexOptions.CultureInvariant;
+                }
+
+                try
+                {
+                    return Regex.IsMatch(normalizedText, pattern, options);
+                }
+                catch (ArgumentException)
+                {
+                    return false;
+                }
+            }
+
+            var terms = Tokenize(query);
+            if (terms.Count == 0)
+            {
+                return false;
+            }
+
+            var comparison = descriptor.Comparison ?? StringComparison.OrdinalIgnoreCase;
+            bool any = descriptor.TermMode == SearchTermCombineMode.Any;
+
+            foreach (var term in terms)
+            {
+                if (string.IsNullOrEmpty(term))
+                {
+                    continue;
+                }
+
+                var matched = FindTermMatch(normalizedText, term, descriptor.MatchMode, comparison, descriptor.WholeWord);
+                if (matched && any)
+                {
+                    return true;
+                }
+
+                if (!matched && !any)
+                {
+                    return false;
+                }
+            }
+
+            return !any;
+        }
+
+        private static bool FindTermMatch(
+            string text,
+            string term,
+            SearchMatchMode mode,
+            StringComparison comparison,
+            bool wholeWord)
+        {
+            switch (mode)
+            {
+                case SearchMatchMode.StartsWith:
+                    return text.StartsWith(term, comparison) && IsWholeWord(text, 0, term.Length, wholeWord);
+                case SearchMatchMode.EndsWith:
+                    if (!text.EndsWith(term, comparison))
+                    {
+                        return false;
+                    }
+
+                    var start = text.Length - term.Length;
+                    return IsWholeWord(text, start, term.Length, wholeWord);
+                case SearchMatchMode.Equals:
+                    return string.Equals(text, term, comparison) && IsWholeWord(text, 0, term.Length, wholeWord);
+                default:
+                    return FindAllOccurrences(text, term, comparison, wholeWord);
+            }
+        }
+
+        private static bool FindAllOccurrences(
+            string text,
+            string term,
+            StringComparison comparison,
+            bool wholeWord)
+        {
+            if (string.IsNullOrEmpty(term))
+            {
+                return false;
+            }
+
+            int startIndex = 0;
+            while (startIndex < text.Length)
+            {
+                int index = text.IndexOf(term, startIndex, comparison);
+                if (index < 0)
+                {
+                    break;
+                }
+
+                if (IsWholeWord(text, index, term.Length, wholeWord))
+                {
+                    return true;
+                }
+
+                startIndex = index + term.Length;
+            }
+
+            return false;
+        }
+
+        private static bool IsWholeWord(string text, int start, int length, bool wholeWord)
+        {
+            if (!wholeWord)
+            {
+                return true;
+            }
+
+            bool startBoundary = start == 0 || !IsWordChar(text[start - 1]);
+            int endIndex = start + length;
+            bool endBoundary = endIndex >= text.Length || !IsWordChar(text[endIndex]);
+
+            return startBoundary && endBoundary;
+        }
+
+        private static bool IsWordChar(char c)
+        {
+            return char.IsLetterOrDigit(c) || c == '_';
+        }
+
+        private static List<string> Tokenize(string query)
+        {
+            var terms = new List<string>();
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return terms;
+            }
+
+            var builder = new StringBuilder();
+            bool inQuote = false;
+
+            foreach (var ch in query)
+            {
+                if (ch == '"')
+                {
+                    inQuote = !inQuote;
+                    continue;
+                }
+
+                if (!inQuote && char.IsWhiteSpace(ch))
+                {
+                    Flush(builder, terms);
+                    continue;
+                }
+
+                builder.Append(ch);
+            }
+
+            Flush(builder, terms);
+            return terms;
+        }
+
+        private static void Flush(StringBuilder builder, List<string> terms)
+        {
+            if (builder.Length == 0)
+            {
+                return;
+            }
+
+            var term = builder.ToString().Trim();
+            if (!string.IsNullOrEmpty(term))
+            {
+                terms.Add(term);
+            }
+
+            builder.Clear();
+        }
+
+        private static string NormalizeText(string text, bool normalizeWhitespace, bool ignoreDiacritics)
+        {
+            if (!normalizeWhitespace && !ignoreDiacritics)
+            {
+                return text;
+            }
+
+            var chars = new List<char>();
+            for (int i = 0; i < text.Length; i++)
+            {
+                var ch = text[i];
+                if (ignoreDiacritics)
+                {
+                    var decomposed = ch.ToString().Normalize(NormalizationForm.FormD);
+                    foreach (var d in decomposed)
+                    {
+                        if (IsDiacritic(d))
+                        {
+                            continue;
+                        }
+
+                        chars.Add(d);
+                    }
+                }
+                else
+                {
+                    chars.Add(ch);
+                }
+            }
+
+            if (!normalizeWhitespace)
+            {
+                return new string(chars.ToArray());
+            }
+
+            var builder = new StringBuilder();
+            bool wasWhitespace = false;
+
+            for (int i = 0; i < chars.Count; i++)
+            {
+                var ch = chars[i];
+                bool isWhitespace = char.IsWhiteSpace(ch);
+                if (isWhitespace)
+                {
+                    if (wasWhitespace)
+                    {
+                        continue;
+                    }
+
+                    builder.Append(' ');
+                    wasWhitespace = true;
+                }
+                else
+                {
+                    builder.Append(ch);
+                    wasWhitespace = false;
+                }
+            }
+
+            return builder.ToString();
+        }
+
+        private static string NormalizeQuery(string query, bool normalizeWhitespace, bool ignoreDiacritics)
+        {
+            if (!normalizeWhitespace && !ignoreDiacritics)
+            {
+                return query;
+            }
+
+            var normalized = NormalizeText(query, normalizeWhitespace, ignoreDiacritics);
+            return normalizeWhitespace ? normalized.Trim() : normalized;
+        }
+
+        private static bool IsDiacritic(char ch)
+        {
+            return CharUnicodeInfo.GetUnicodeCategory(ch) == UnicodeCategory.NonSpacingMark;
+        }
+
+        private static string WildcardToRegex(string pattern)
+        {
+            var builder = new StringBuilder();
+            foreach (var ch in pattern)
+            {
+                switch (ch)
+                {
+                    case '*':
+                        builder.Append(".*");
+                        break;
+                    case '?':
+                        builder.Append(".");
+                        break;
+                    default:
+                        builder.Append(Regex.Escape(ch.ToString()));
+                        break;
+                }
+            }
+
+            return builder.ToString();
+        }
+
+        private static bool IsIgnoreCase(StringComparison? comparison)
+        {
+            if (!comparison.HasValue)
+            {
+                return true;
+            }
+
+            switch (comparison.Value)
+            {
+                case StringComparison.CurrentCultureIgnoreCase:
+                case StringComparison.InvariantCultureIgnoreCase:
+                case StringComparison.OrdinalIgnoreCase:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static bool IsCultureInvariant(StringComparison? comparison)
+        {
+            if (!comparison.HasValue)
+            {
+                return true;
+            }
+
+            switch (comparison.Value)
+            {
+                case StringComparison.Ordinal:
+                case StringComparison.OrdinalIgnoreCase:
+                case StringComparison.InvariantCulture:
+                case StringComparison.InvariantCultureIgnoreCase:
+                    return true;
+                default:
+                    return false;
+            }
+        }
     }
 }

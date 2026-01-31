@@ -411,4 +411,34 @@ public class ResourceListViewTests
         vm.SelectedItem!.Namespace().Should().Be("ns1");
         vm.SelectedItem.Name().Should().Be("a");
     }
+
+    [AvaloniaFact(DisplayName = "Delete Resource")]
+    public async Task delete_resource()
+    {
+        var window = new MainWindow
+        {
+            Width = 1200,
+            Height = 800
+        };
+
+        var cluster = new TestCluster();
+
+        var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+
+        window.Content = view;
+        window.Show();
+
+        await AddOrUpdateAsync(cluster, Pod("ns1", "a"));
+
+        vm.View.Count().Should().Be(1);
+
+        await cluster.DeleteResource(Pod("ns1", "a"));
+        Dispatcher.UIThread.RunJobs();
+
+        vm.View.Count().Should().Be(0);
+    }
 }

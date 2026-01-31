@@ -3,7 +3,7 @@ using Avalonia.Styling;
 using k8s.Models;
 using KubeUI.Controls;
 
-namespace KubeUI.Resources;
+namespace KubeUI.Resources.Core.v1;
 
 public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
 {
@@ -49,7 +49,7 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
             new ResourceListColumn<Corev1Event, DateTime?>()
             {
                 Name = "Last Seen",
-                CustomControl = typeof(LastSeenCell),
+                CustomControl = typeof(EventLastSeenCell),
                 Field = x => x.LastTimestamp ?? (x.EventTime ?? x.Metadata.CreationTimestamp),
                 Sort = SortDirection.Descending,
                 Width = "80"

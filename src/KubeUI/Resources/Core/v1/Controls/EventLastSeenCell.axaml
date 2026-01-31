@@ -1,5 +1,5 @@
 <UserControl
-    x:Class="KubeUI.Controls.LastSeenCell"
+    x:Class="KubeUI.Controls.EventLastSeenCell"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -14,6 +14,6 @@
         Margin="12,0,12,0"
         HorizontalAlignment="Left"
         VerticalAlignment="Center"
-        Text="{Binding PrettyString, RelativeSource={RelativeSource AncestorType=local:LastSeenCell}}"
-        ToolTip.Tip="{Binding PrettyString, RelativeSource={RelativeSource AncestorType=local:LastSeenCell}}" />
+        Text="{Binding PrettyString, RelativeSource={RelativeSource AncestorType=local:EventLastSeenCell}}"
+        ToolTip.Tip="{Binding PrettyString, RelativeSource={RelativeSource AncestorType=local:EventLastSeenCell}}" />
 </UserControl>

@@ -1,6 +1,6 @@
 ﻿using k8s.Models;
 
-namespace KubeUI.Resources;
+namespace KubeUI.Resources.Core.v1;
 
 public sealed partial class V1NamespaceConfig : ResourceConfigBase<V1Namespace>
 {

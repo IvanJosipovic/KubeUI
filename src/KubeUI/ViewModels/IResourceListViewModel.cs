@@ -8,6 +8,7 @@ using k8s.Models;
 using KubeUI.Client;
 using KubeUI.Resources;
 using Kubernetes.Controller.Client;
+using Avalonia.Controls.DataGridSearching;
 
 namespace KubeUI.ViewModels
 {
@@ -25,5 +26,7 @@ namespace KubeUI.ViewModels
         ISelectionModel SelectionModel { get; }
         IDataGridSelectionModelFactory SelectionModelFactory { get; }
         IEnumerable View { get; }
+        ISearchModel SearchModel { get; set; }
+        IDataGridSearchAdapterFactory SearchAdapterFactory { get; }
     }
 }

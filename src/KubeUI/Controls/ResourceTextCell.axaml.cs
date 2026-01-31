@@ -12,7 +12,7 @@ public interface IDisplayFunc
 
 public sealed partial class ResourceTextCell : UserControl, IInitializeCluster, IDisplayFunc
 {
-    private ICluster _cluster;
+    private ICluster? _cluster;
 
     private Func<object, string> _displayFunc;
 
@@ -48,12 +48,6 @@ public sealed partial class ResourceTextCell : UserControl, IInitializeCluster, 
         SetPrettyString();
     }
 
-    protected override void OnLoaded(RoutedEventArgs e)
-    {
-        base.OnLoaded(e);
-        _cluster.OnChange += _cluster_OnChange;
-    }
-
     protected override void OnUnloaded(RoutedEventArgs e)
     {
         base.OnUnloaded(e);
@@ -63,6 +57,7 @@ public sealed partial class ResourceTextCell : UserControl, IInitializeCluster, 
     public void Initialize(ICluster cluster)
     {
         _cluster = cluster;
+        _cluster.OnChange += _cluster_OnChange;
     }
 
     public void SetDisplayFunc(Func<object, string> selector)
@@ -90,6 +85,7 @@ public sealed partial class ResourceTextCell : UserControl, IInitializeCluster, 
             PrettyString = string.Empty;
         }
     }
+
     private void _cluster_OnChange(WatchEventType arg1, GroupApiVersionKind arg2, IKubernetesObject<V1ObjectMeta> arg3)
     {
         if (_viewModel?.Name() == arg3.Name() && _viewModel?.Namespace() == arg3.Namespace())

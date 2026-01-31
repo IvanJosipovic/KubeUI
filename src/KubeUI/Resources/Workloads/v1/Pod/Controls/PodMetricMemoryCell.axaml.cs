@@ -6,9 +6,12 @@ namespace KubeUI.Controls;
 
 public partial class PodMetricMemoryCell : UserControl, IInitializeCluster
 {
-    public ICluster? Cluster { get; private set; }
+    private ICluster? _cluster;
 
     private static readonly DispatcherTimer s_timer = new(DispatcherPriority.Default);
+
+    [GeneratedDirectProperty]
+    public partial string PrettyString { get; set; } = string.Empty;
 
     public PodMetricMemoryCell()
     {
@@ -19,8 +22,6 @@ public partial class PodMetricMemoryCell : UserControl, IInitializeCluster
             s_timer.Interval = TimeSpan.FromSeconds(1);
             s_timer.Start();
         }
-
-        s_timer.Tick += Timer_Tick;
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -31,33 +32,18 @@ public partial class PodMetricMemoryCell : UserControl, IInitializeCluster
 
     private void Timer_Tick(object? sender, EventArgs e) => Update();
 
-    public static readonly DirectProperty<PodMetricMemoryCell, string> PrettyStringProperty =
-        AvaloniaProperty.RegisterDirect<PodMetricMemoryCell, string>(
-            nameof(PrettyString),
-            o => o.PrettyString,
-            (o, v) => o.PrettyString = v);
-
-    private string _prettyString = string.Empty;
-    public string PrettyString
-    {
-        get => _prettyString;
-        private set => SetAndRaise(PrettyStringProperty, ref _prettyString, value);
-    }
-
     private void Update()
     {
-        if (Cluster == null || DataContext is not V1Pod pod)
+        if (_cluster == null || DataContext is not V1Pod pod)
         {
-            PrettyString = string.Empty;
             return;
         }
 
-        var metric = Cluster.PodMetrics.FirstOrDefault(m =>
+        var metric = _cluster.PodMetrics.FirstOrDefault(m =>
             m.Name() == pod.Name() && m.Namespace() == pod.Namespace());
 
         if (metric == null)
         {
-            PrettyString = string.Empty;
             return;
         }
 
@@ -72,6 +58,12 @@ public partial class PodMetricMemoryCell : UserControl, IInitializeCluster
         }
     }
 
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        s_timer.Tick += Timer_Tick;
+    }
+
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
@@ -80,7 +72,6 @@ public partial class PodMetricMemoryCell : UserControl, IInitializeCluster
 
     public void Initialize(ICluster cluster)
     {
-        Cluster = cluster;
-        Update();
+        _cluster = cluster;
     }
 }

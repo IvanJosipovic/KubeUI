@@ -6,6 +6,8 @@ namespace KubeUI.Converters;
 
 public class ContainerStatusToBrushConverter : IValueConverter
 {
+    public static ContainerStatusToBrushConverter Instance() => new();
+
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         if (value is not V1ContainerStatus status)
