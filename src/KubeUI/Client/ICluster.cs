@@ -2,10 +2,9 @@
 using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
-using Kubernetes.Controller.Client;
+using KubernetesClient.Informer.Client;
 using KubeUI.Resources;
 using static KubeUI.Client.Cluster;
-using Kubernetes.Controller;
 using DynamicData;
 
 namespace KubeUI.Client;

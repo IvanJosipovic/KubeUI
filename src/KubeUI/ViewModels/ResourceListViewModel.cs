@@ -17,7 +17,7 @@ using DynamicData.Binding;
 using Humanizer;
 using k8s;
 using k8s.Models;
-using Kubernetes.Controller.Client;
+using KubernetesClient.Informer.Client;
 using KubeUI.Client;
 using KubeUI.Resources;
 using SortDirection = KubeUI.Resources.SortDirection;

@@ -4,7 +4,7 @@ using Avalonia.Headless.XUnit;
 using FluentAssertions;
 using k8s;
 using k8s.Models;
-using Kubernetes.Controller.Client;
+using KubernetesClient.Informer.Client;
 using System.Collections;
 using KubeUI.Client;
 

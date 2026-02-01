@@ -4,7 +4,7 @@ using Dock.Model.Core;
 using FluentIcons.Common;
 using KubeUI.Client;
 using Swordfish.NET.Collections;
-using Kubernetes.Controller.Client;
+using KubernetesClient.Informer.Client;
 
 namespace KubeUI.ViewModels;
 

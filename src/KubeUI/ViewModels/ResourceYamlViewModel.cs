@@ -5,7 +5,7 @@ using AvaloniaEdit.Folding;
 using k8s;
 using k8s.Models;
 using KubeUI.Client;
-using Kubernetes.Controller.Client;
+using KubernetesClient.Informer.Client;
 using static KubeUI.Client.Cluster;
 
 namespace KubeUI.ViewModels;

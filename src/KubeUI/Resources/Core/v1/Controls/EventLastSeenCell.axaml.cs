@@ -1,6 +1,6 @@
 using k8s;
 using k8s.Models;
-using Kubernetes.Controller.Client;
+using KubernetesClient.Informer.Client;
 using KubeUI.Client;
 
 namespace KubeUI.Controls;

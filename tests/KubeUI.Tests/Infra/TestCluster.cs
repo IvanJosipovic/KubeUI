@@ -10,7 +10,7 @@ using KubeUI.Client;
 using KubeUI.Resources;
 using KubeUI.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
-using Kubernetes.Controller.Client;
+using KubernetesClient.Informer.Client;
 using Mapster;
 
 namespace KubeUI.Tests.Infra;

@@ -7,7 +7,7 @@ using k8s;
 using k8s.Models;
 using KubeUI.Client;
 using KubeUI.Resources;
-using Kubernetes.Controller.Client;
+using KubernetesClient.Informer.Client;
 using Avalonia.Controls.DataGridSearching;
 
 namespace KubeUI.ViewModels
