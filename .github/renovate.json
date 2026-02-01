@@ -18,7 +18,10 @@
   "packageRules": [
     {
       "matchManagers": [ "nuget" ],
-      "matchPackageNames": [ "OpenTelemetry.Instrumentation.Process" ],
+      "matchPackageNames": [
+        "OpenTelemetry.Instrumentation.Process",
+        "OpenTelemetry.Resources.OperatingSystem"
+      ],
       "ignoreUnstable": false,
       "respectLatest": false
     },
