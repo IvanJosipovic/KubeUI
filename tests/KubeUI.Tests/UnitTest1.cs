@@ -3,7 +3,7 @@ using FluentAssertions;
 using k8s.Models;
 using KubeUI.ViewModels;
 using KubeUI.Views;
-using Kubernetes.Controller.Client;
+using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Tests;
 

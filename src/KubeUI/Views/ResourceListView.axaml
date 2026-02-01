@@ -10,8 +10,6 @@
     xmlns:u="https://irihi.tech/ursa"
     xmlns:ursa="clr-namespace:Ursa.Controls"
     xmlns:viewmodels="using:KubeUI.ViewModels"
-    HorizontalAlignment="Stretch"
-    VerticalAlignment="Stretch"
     d:DesignHeight="450"
     d:DesignWidth="800"
     x:DataType="viewmodels:IResourceListViewModel">
@@ -87,8 +85,7 @@
             SearchModel="{Binding SearchModel}"
             Selection="{Binding SelectionModel}"
             SelectionMode="Extended"
-            SortingModel="{Binding SortingModel}"
-            UseLogicalScrollable="True">
+            SortingModel="{Binding SortingModel}">
             <DataGrid.KeyBindings>
                 <KeyBinding
                     Command="{ReflectionBinding ResourceConfig.ViewCommand}"
