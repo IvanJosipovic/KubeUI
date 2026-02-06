@@ -259,8 +259,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
         var converter = new DataGridLengthConverter();
 
-        var builder = DataGridColumnDefinitionBuilder.For<T>();
-
         foreach (var columnDefinition in ResourceConfig.Columns())
         {
             try
@@ -301,7 +299,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                     ValueType = columnDefinition.ValueType,
                     Options = new()
                     {
-                        SearchTextProvider = columnDefinition.DisplayValue,
+                        // Causes lag on large lists
+                        //SearchTextProvider = columnDefinition.DisplayValue,
                     }
                 };
 

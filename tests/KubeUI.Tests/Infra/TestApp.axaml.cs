@@ -17,6 +17,8 @@ public class TestApp : Application
 
     public override void Initialize()
     {
+        AvaloniaXamlLoader.Load(this);
+
         var builder = Microsoft.Extensions.Hosting.Host.CreateEmptyApplicationBuilder(new()
         {
             ApplicationName = "KubeUI.Desktop",
@@ -24,10 +26,11 @@ public class TestApp : Application
             ContentRootPath = Directory.GetCurrentDirectory(),
         });
 
-
         // Services
         builder.Services.AddServices();
         builder.Services.AddLogging();
+
+        builder.Services.AddSingleton<ISettingsService, TestSettingsService>();
 
         var dialog = new Mock<IDialogService>();
         builder.Services.AddSingleton<IDialogService>(dialog.Object);
@@ -39,11 +42,7 @@ public class TestApp : Application
 
         Host = builder.Build();
 
-        Host.Services.GetRequiredService<ISettingsService>().Settings = new Settings();
-
         Resources[typeof(IServiceProvider)] = Host.Services;
         _ = Host.RunAsync();
-
-        AvaloniaXamlLoader.Load(this);
     }
 }
