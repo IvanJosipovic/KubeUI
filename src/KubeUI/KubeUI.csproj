@@ -53,9 +53,9 @@
     <PackageReference Include="AvaloniaTerminal" Version="1.0.0-alpha.7" />
     <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.1.1" Condition="'$(Configuration)' == 'Debug'" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-    <PackageReference Include="Dock.Avalonia" Version="11.3.11.2" />
-    <PackageReference Include="Dock.Avalonia.Themes.Fluent" Version="11.3.11.2" />
-    <PackageReference Include="Dock.Model.Mvvm" Version="11.3.11.2" />
+    <PackageReference Include="Dock.Avalonia" Version="11.3.11.6" />
+    <PackageReference Include="Dock.Avalonia.Themes.Fluent" Version="11.3.11.6" />
+    <PackageReference Include="Dock.Model.Mvvm" Version="11.3.11.6" />
     <PackageReference Include="DynamicData" Version="9.4.1" />
     <PackageReference Include="FluentAvaloniaUI" Version="2.4.1" />
     <PackageReference Include="FluentIcons.Avalonia" Version="2.0.317" />
@@ -82,7 +82,7 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.0" />
     <PackageReference Include="OpenTelemetry.Resources.OperatingSystem" Version="1.15.0-beta.1" />
     <PackageReference Include="PanAndZoom" Version="11.3.9.1" />
-    <PackageReference Include="ProDataGrid" Version="11.3.9-preview.36" />
+    <PackageReference Include="ProDataGrid" Version="11.3.11-preview.6" />
     <PackageReference Include="PropertyGenerator.Avalonia" Version="1.2.6" />
     <PackageReference Include="roslynator.analyzers" Version="4.15.0" PrivateAssets="all" />
     <PackageReference Include="Semi.Avalonia" Version="11.3.7.2" />
