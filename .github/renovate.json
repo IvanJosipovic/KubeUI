@@ -92,6 +92,15 @@
         "OpenTelemetry",
         "OpenTelemetry.*"
       ]
+    },
+    {
+      "groupName": "AvaloniaEdit",
+      "separateMajorMinor": true,
+      "groupSlug": "avaloniaedit",
+      "matchPackageNames": [
+        "AvaloniaEdit.TextMate",
+        "Avalonia.AvaloniaEdit"
+      ]
     }
   ],
   "customManagers": [
