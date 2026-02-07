@@ -89,8 +89,8 @@
     <PackageReference Include="ServiceScan.SourceGenerator" Version="2.4.1" PrivateAssets="all" />
     <PackageReference Include="Svg.Controls.Skia.Avalonia" Version="11.3.9.2" />
     <PackageReference Include="Swordfish.NET.CollectionsV3" Version="3.3.16" />
-    <PackageReference Include="TextMateSharp" Version="1.0.70" />
-    <PackageReference Include="TextMateSharp.Grammars" Version="1.0.70" />
+    <PackageReference Include="TextMateSharp" Version="2.0.3" />
+    <PackageReference Include="TextMateSharp.Grammars" Version="2.0.3" />
     <PackageReference Include="Velopack" Version="0.0.1298" />
     <PackageReference Include="Xaml.Behaviors.Avalonia" Version="11.3.9.4" />
     <PackageReference Include="YamlDotNet.System.Text.Json" Version="1.7.1" />
