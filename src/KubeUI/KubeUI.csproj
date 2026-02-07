@@ -44,11 +44,11 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.3.11" />
-    <PackageReference Include="Avalonia.AvaloniaEdit" Version="11.3.0" />
+    <PackageReference Include="Avalonia.AvaloniaEdit" Version="11.4.1" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.11" />
     <PackageReference Include="Avalonia.Skia" Version="11.3.11" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.11" />
-    <PackageReference Include="AvaloniaEdit.TextMate" Version="11.3.0" />
+    <PackageReference Include="AvaloniaEdit.TextMate" Version="11.4.1" />
     <PackageReference Include="AvaloniaGraphControl" Version="0.7.0" />
     <PackageReference Include="AvaloniaTerminal" Version="1.0.0-alpha.7" />
     <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.1.1" Condition="'$(Configuration)' == 'Debug'" />
@@ -89,8 +89,8 @@
     <PackageReference Include="ServiceScan.SourceGenerator" Version="2.4.1" PrivateAssets="all" />
     <PackageReference Include="Svg.Controls.Skia.Avalonia" Version="11.3.9.2" />
     <PackageReference Include="Swordfish.NET.CollectionsV3" Version="3.3.16" />
-    <PackageReference Include="TextMateSharp" Version="1.0.70" />
-    <PackageReference Include="TextMateSharp.Grammars" Version="1.0.70" />
+    <PackageReference Include="TextMateSharp" Version="2.0.3" />
+    <PackageReference Include="TextMateSharp.Grammars" Version="2.0.3" />
     <PackageReference Include="Velopack" Version="0.0.1298" />
     <PackageReference Include="Xaml.Behaviors.Avalonia" Version="11.3.9.4" />
     <PackageReference Include="YamlDotNet.System.Text.Json" Version="1.7.1" />
