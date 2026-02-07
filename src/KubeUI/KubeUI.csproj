@@ -58,7 +58,7 @@
     <PackageReference Include="Dock.Model.Mvvm" Version="11.3.11.2" />
     <PackageReference Include="DynamicData" Version="9.4.1" />
     <PackageReference Include="FluentAvaloniaUI" Version="2.4.1" />
-    <PackageReference Include="FluentIcons.Avalonia" Version="2.0.317" />
+    <PackageReference Include="FluentIcons.Avalonia" Version="2.0.318" />
     <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia" Version="2.1.0" />
     <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia.Fluent" Version="2.1.0" />
     <PackageReference Include="Humanizer.Core" Version="3.0.1" />
