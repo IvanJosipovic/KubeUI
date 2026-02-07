@@ -22,7 +22,6 @@
 
     <Grid>
         <DataGrid x:Name="ClustersGrid"
-            MinHeight="{Binding Settings.Settings.ListRowHeight}"
             CanUserReorderColumns="True"
             CanUserResizeColumns="True"
             GridLinesVisibility="All"
@@ -47,7 +46,8 @@
                     Width="*"
                     Binding="{Binding Name}"
                     FontSize="{Binding Settings.Settings.FontSize}"
-                    Header="Name" />
+                    Header="Name"
+                    SortDirection="Ascending" />
                 <controls:MyDataGridTextColumn
                     Binding="{Binding KubeConfigPath}"
                     FontSize="{Binding Settings.Settings.FontSize}"

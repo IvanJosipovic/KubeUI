@@ -16,6 +16,7 @@ using LiveChartsCore.Drawing;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
 using LiveChartsCore.Themes;
+using Mapster;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using NReco.Logging.File;
@@ -54,7 +55,6 @@ public partial class App : Application
                                         theme =>
                                             theme.OnInitialized(() =>
                                             {
-                                                //theme.RequestedTheme = requestedTheme;
                                                 theme.AnimationsSpeed = TimeSpan.FromMilliseconds(800);
                                                 theme.EasingFunction = EasingFunctions.ExponentialOut;
 
@@ -85,6 +85,12 @@ public partial class App : Application
                                             })
                                         )
         );
+
+        TypeAdapterConfig.GlobalSettings
+            .Default
+            .MaxDepth(1)
+            .ShallowCopyForSameType(true)
+            .PreserveReference(true);
 
         var builder = Microsoft.Extensions.Hosting.Host.CreateEmptyApplicationBuilder(new()
         {
@@ -211,7 +217,6 @@ public partial class App : Application
         Host.Services.GetRequiredService<ISettingsService>().LoadSettings();
 
         logger = Host.Services.GetRequiredService<ILogger<App>>();
-
 
         KubernetesJson.AddJsonOptions(x =>
         {

@@ -4,7 +4,7 @@ using Dock.Model.Core;
 using FluentIcons.Common;
 using KubeUI.Client;
 using Swordfish.NET.Collections;
-using Yarp.Kubernetes.Controller.Client;
+using KubernetesClient.Informer.Client;
 
 namespace KubeUI.ViewModels;
 
@@ -41,7 +41,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
             _ = Task.Run(async () => await SelectNavigationLink(navLink));
         }
 
-        if (item is NavigationItem nav)
+        if (item is NavigationItem nav && nav.NavigationItems.Count > 0)
         {
             nav.IsExpanded = !nav.IsExpanded;
         }

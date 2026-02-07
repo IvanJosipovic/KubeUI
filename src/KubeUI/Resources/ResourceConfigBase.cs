@@ -2,6 +2,7 @@
 using Avalonia.Controls.Notifications;
 using Avalonia.Styling;
 using Dock.Model.Core;
+using DynamicData.Binding;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
@@ -10,10 +11,7 @@ using Humanizer;
 using k8s;
 using k8s.Models;
 using KubeUI.Client;
-using KubeUI.Controls;
-using OpenTelemetry.Resources;
-using Yarp.Kubernetes.Controller;
-using Yarp.Kubernetes.Controller.Client;
+using KubernetesClient.Informer.Client;
 using static KubeUI.Client.Cluster;
 
 namespace KubeUI.Resources;
@@ -107,7 +105,6 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             Name = "Age",
             CustomControl = typeof(AgeCell),
             Field = x => x.Metadata.CreationTimestamp,
-            Display = x => x.Metadata.CreationTimestamp?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
             Width = "80"
         };
     }
@@ -304,28 +301,48 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
 public interface IResourceListColumn
 {
-    string Name { get; set; }
-
+    string Name { get; }
+    string? Width { get; }
     SortDirection Sort { get; set; }
+    Type CustomControl { get; }
 
-    Type? CustomControl { get; set; }
+    Type ItemType { get; }
+    Type ValueType { get; }
 
-    string? Width { get; set; }
+    Func<object, IComparable?> SortKey { get; }
+    Func<object, string> DisplayValue { get; }
 }
 
-public class ResourceListColumn<T, T2> : IResourceListColumn where T : class, IKubernetesObject<V1ObjectMeta>, new()
+public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     public required string Name { get; set; }
 
-    public required Func<T, T2> Field { get; set; }
+    public required Func<T, TValue> Field { get; set; }
 
     public Func<T, string>? Display { get; set; }
 
-    public SortDirection Sort { get; set; }
+    public SortDirection Sort { get; set; } = SortDirection.None;
 
-    public Type? CustomControl { get; set; }
+    public Type CustomControl { get; set; } = typeof(ResourceTextCell);
 
     public string? Width { get; set; }
+
+    public Type ItemType => typeof(T);
+
+    public Type ValueType => typeof(TValue);
+
+    public Func<object, IComparable?> SortKey =>
+        o => (IComparable?)(object?)Field((T)o);
+
+    public Func<object, string> DisplayValue =>
+        o =>
+        {
+            var t = (T)o;
+            if (Display != null)
+                return Display(t);
+            var v = Field(t);
+            return v?.ToString() ?? "";
+        };
 }
 
 public enum SortDirection

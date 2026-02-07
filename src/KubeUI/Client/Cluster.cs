@@ -1,7 +1,6 @@
 using System.Net.Http.Json;
 using System.Reactive.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Xml;
 using Avalonia.Collections;
 using Dock.Model.Controls;
@@ -21,14 +20,14 @@ using k8s.Models;
 using KubernetesCRDModelGen;
 using KubeUI;
 using KubeUI.Resources;
+using Mapster;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http.Resilience;
 using Polly;
 using Swordfish.NET.Collections;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
-using Yarp.Kubernetes.Controller;
-using Yarp.Kubernetes.Controller.Client;
+using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Client;
 
@@ -159,7 +158,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                         InnerHandler = new ResilienceHandler(pipe.Build())
                     };
 
-                    Client = new Kubernetes(config);
+                    Client = new k8s.Kubernetes(config);
 
                     NativeAPIGroupDiscoveryList = await GetAPIGroupDiscoveryList();
 
@@ -459,7 +458,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
                             else
                             {
                                 items.AddOrUpdate(item);
-                                //Dispatcher.UIThread.Post(() => items.AddOrUpdate(item), DispatcherPriority.Background);
 
                                 _logger.LogInformation("Completed processing new CRD {name}", crd.Name());
                             }
@@ -469,17 +467,26 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     else
                     {
                         items.AddOrUpdate(item);
-                        //Dispatcher.UIThread.Post(() => items.AddOrUpdate(item), DispatcherPriority.Background);
                     }
-
                     break;
                 case WatchEventType.Modified:
-                    items.AddOrUpdate(item);
-                    //Dispatcher.UIThread.Post(() => items.AddOrUpdate(item), DispatcherPriority.Background);
+                    items.Edit(o =>
+                    {
+                        var key = o.GetKey(item);
+                        var original = o.Lookup(key);
+                        if (original.HasValue)
+                        {
+                            item.Adapt(original.Value);
+                            o.Refresh(key);
+                        }
+                        else
+                        {
+                            o.AddOrUpdate(item);
+                        }
+                    });
                     break;
                 case WatchEventType.Deleted:
                     items.Remove(item);
-                    //Dispatcher.UIThread.Post(() => items.Remove(item), DispatcherPriority.Background);
                     if (item is V1CustomResourceDefinition crd2)
                     {
                         APIGroupDiscoveryList = GetAPIGroupDiscoveryList(false).GetAwaiter().GetResult();
@@ -859,7 +866,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private async Task<V2beta1APIGroupDiscoveryList> GetAPIGroupDiscoveryList(bool native = true)
     {
-        var mi = typeof(Kubernetes).GetMethod("SendRequest", BindingFlags.NonPublic | BindingFlags.Instance);
+        var mi = typeof(k8s.Kubernetes).GetMethod("SendRequest", BindingFlags.NonPublic | BindingFlags.Instance);
 
         var gen = mi.MakeGenericMethod([typeof(V2beta1APIGroupDiscoveryList)]);
 

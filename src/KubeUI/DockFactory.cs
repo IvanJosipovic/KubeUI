@@ -33,6 +33,7 @@ public class DockFactory : Factory
         nav.CanClose = false;
         nav.CanFloat = false;
         nav.CanDrag = false;
+        nav.CanDockAsDocument = false;
 
         _leftDock = new ToolDock
         {
@@ -198,16 +199,6 @@ public class DockFactory : Factory
                 dockable.Proportion = orgProportion;
             }
         }
-    }
-
-    public override void DockAsDocument(IDockable dockable)
-    {
-        if (dockable.Id == nameof(NavigationViewModel))
-        {
-            return;
-        }
-
-        base.DockAsDocument(dockable);
     }
 }
 

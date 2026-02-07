@@ -1,7 +1,7 @@
 ﻿using k8s;
 using k8s.Models;
 using Swordfish.NET.Collections;
-using Yarp.Kubernetes.Controller.Client;
+using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Client;
 

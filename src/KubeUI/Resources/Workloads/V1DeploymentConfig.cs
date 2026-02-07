@@ -23,21 +23,20 @@ public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment
             new ResourceListColumn<V1Deployment, int>()
             {
                 Name = "Pods",
-                Display = x => $"{x.Status?.AvailableReplicas.GetValueOrDefault()}/{x.Spec?.Replicas}",
-                Field = x => x.Status.AvailableReplicas.GetValueOrDefault(),
+                Display = x => $"{x.Status?.AvailableReplicas ?? 0}/{x.Spec?.Replicas ?? 0}",
+                Field = x => x.Status?.AvailableReplicas ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<V1Deployment, int>()
             {
                 Name = "Replicas",
-                Display = x => x.Spec.Replicas.GetValueOrDefault().ToString(),
-                Field = x => x.Spec.Replicas.GetValueOrDefault(),
+                Field = x => x.Spec.Replicas ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<V1Deployment, string>()
             {
                 Name = "Available",
-                Field = x => x.Status.Conditions == null ? "" : x.Status.Conditions.FirstOrDefault(x => x.Type == "Available")?.Status ?? "",
+                Field = x => x.Status?.Conditions?.FirstOrDefault(x => x.Type == "Available")?.Status ?? "",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             AgeColumn(),

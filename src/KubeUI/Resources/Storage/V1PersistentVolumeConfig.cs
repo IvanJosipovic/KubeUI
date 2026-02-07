@@ -17,10 +17,11 @@ public sealed partial class V1PersistentVolumeConfig : ResourceConfigBase<V1Pers
                 Field = x => x.Spec.StorageClassName,
                 Width = "*",
             },
-            new ResourceListColumn<V1PersistentVolume, string>()
+            new ResourceListColumn<V1PersistentVolume, decimal>()
             {
                 Name = "Size",
-                Field = x => x.Spec.Capacity["storage"].CanonicalizeString(ResourceQuantity.SuffixFormat.BinarySI),
+                Display = x => x.Spec.Capacity["storage"]?.CanonicalizeString(ResourceQuantity.SuffixFormat.BinarySI) ?? "",
+                Field = x => x.Spec.Capacity["storage"]?.ToDecimal() ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             new ResourceListColumn<V1PersistentVolume, string>()

@@ -12,6 +12,7 @@ namespace KubeUI.Resources.Workloads.v1.Pod;
 public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 {
     public override bool IsNamespaced => true;
+
     public override string Category => "Workloads";
 
     public override int Order => 0;
@@ -26,7 +27,6 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                     Name = "Containers",
                     CustomControl = typeof(PodContainerCell),
                     Field = x => x.Spec.Containers.Count + ((x.Spec.InitContainers?.Count) ?? 0),
-                    Display = x => (x.Spec.Containers.Count + ((x.Spec.InitContainers?.Count) ?? 0)).ToString(),
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },
                 NamespaceColumn(),
@@ -34,7 +34,6 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 {
                     Name = "Restarts",
                     Field = x => x.Status.ContainerStatuses?.Sum(x => x.RestartCount) ?? 0,
-                    Display = x => x.Status.ContainerStatuses?.Sum(x => x.RestartCount).ToString() ?? "0",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListColumn<V1Pod, string>()
@@ -72,7 +71,6 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 Name = "CPU",
                 CustomControl = typeof(PodMetricCPUCell),
                 Field = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
-                Display = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]).ToString() ?? "",
                 Width = "80"
             });
             cols.Insert(4, new ResourceListColumn<V1Pod, decimal>()
@@ -80,7 +78,6 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 Name = "Memory",
                 CustomControl = typeof(PodMetricMemoryCell),
                 Field = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
-                Display = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]).ToString() ?? "",
                 Width = "80"
             });
         }
