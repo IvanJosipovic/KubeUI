@@ -85,27 +85,27 @@ jobs:
           - rid: win-x64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
-            packParam: --icon ${{ github.workspace }}/src/KubeUI/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
+            packParam: --icon src/KubeUI/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
           - rid: win-arm64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
-            packParam: --icon ${{ github.workspace }}/src/KubeUI/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
+            packParam: --icon src/KubeUI/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
           - rid: linux-x64
             fileName: KubeUI.Desktop
             runs-on: ubuntu-latest
-            packParam: --icon ${{ github.workspace }}/docs/icon-512.png --categories Development;IDE;
+            packParam: --icon docs/icon-512.png --categories Development;IDE;
           - rid: linux-arm64
             fileName: KubeUI.Desktop
             runs-on: ubuntu-latest
-            packParam: --icon ${{ github.workspace }}/docs/icon-512.png--categories Development;IDE;
+            packParam: --icon docs/icon-512.png--categories Development;IDE;
           - rid: osx-x64
             fileName: KubeUI.Desktop
             runs-on: macos-latest
-            packParam: --icon ${{ github.workspace }}/src/KubeUI/Assets/icon.icns --plist info.plist
+            packParam: --icon src/KubeUI/Assets/icon.icns --plist info.plist
           - rid: osx-arm64
             fileName: KubeUI.Desktop
             runs-on: macos-latest
-            packParam: --icon ${{ github.workspace }}/src/KubeUI/Assets/icon.icns --plist info.plist
+            packParam: --icon src/KubeUI/Assets/icon.icns --plist info.plist
     steps:
       - uses: actions/checkout@v6
         with:
@@ -178,14 +178,13 @@ jobs:
         env:
           CHANGELOG: ${{ needs.semantic-release.outputs.new_release_notes }}
 
-      - name: Create Release
-        working-directory: src/KubeUI.Desktop
+      - name: Create Package
+        working-directory: 
         run: |
           vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} -c ${{ matrix.rid }} --pre
-          vpk pack --packTitle KubeUI -u KubeUI -v ${{ needs.semantic-release.outputs.new_release_version }} -p bin/publish -c ${{ matrix.rid }} -e ${{ matrix.fileName }} -o packed ${{ matrix.packParam }} --packAuthors "Ivan Josipovic" --releaseNotes CHANGELOG.md
+          vpk pack --packTitle KubeUI -u KubeUI -v ${{ needs.semantic-release.outputs.new_release_version }} -p src/KubeUI.Desktop/bin/publish -c ${{ matrix.rid }} -e ${{ matrix.fileName }} -o packed ${{ matrix.packParam }} --packAuthors "Ivan Josipovic" --releaseNotes CHANGELOG.md
 
       - name: Remove unnecessary assets
-        working-directory: src/KubeUI.Desktop
         shell: pwsh
         run: |
           Remove-Item -Path packed/assets.*
@@ -195,7 +194,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.rid }}-artifacts
-          path: src/KubeUI.Desktop/packed
+          path: packed
 
   release:
     if: needs.semantic-release.outputs.new_release_published == 'true'
