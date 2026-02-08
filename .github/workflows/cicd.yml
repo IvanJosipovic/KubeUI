@@ -93,11 +93,11 @@ jobs:
           - rid: linux-x64
             fileName: KubeUI.Desktop
             runs-on: ubuntu-latest
-            packParam: --icon ${{ github.workspace }}/docs/icon-512.png
+            packParam: --icon ${{ github.workspace }}/docs/icon-512.png --categories Development;IDE;
           - rid: linux-arm64
             fileName: KubeUI.Desktop
             runs-on: ubuntu-latest
-            packParam: --icon ${{ github.workspace }}/docs/icon-512.png
+            packParam: --icon ${{ github.workspace }}/docs/icon-512.png--categories Development;IDE;
           - rid: osx-x64
             fileName: KubeUI.Desktop
             runs-on: macos-latest
