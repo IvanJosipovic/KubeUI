@@ -176,10 +176,11 @@ jobs:
         env:
           CHANGELOG: ${{ needs.semantic-release.outputs.new_release_notes }}
 
-      - name: Download Releases
-        if: needs.semantic-release.outputs.new_release_published == 'true'
-        run: |
-          vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} -c ${{ matrix.rid }} --pre -o packed
+      # Disabled due to https://github.com/velopack/velopack/issues/666
+      # - name: Download Releases
+      #   if: needs.semantic-release.outputs.new_release_published == 'true'
+      #   run: |
+      #     vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} -c ${{ matrix.rid }} --pre -o packed
 
       - name: Create Package
         run: |
