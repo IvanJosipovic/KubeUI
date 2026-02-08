@@ -101,11 +101,11 @@ jobs:
           - rid: osx-x64
             fileName: KubeUI.Desktop
             runs-on: macos-latest
-            packParam: --icon src/KubeUI/Assets/icon.icns --plist info.plist
+            packParam: --icon src/KubeUI/Assets/icon.icns --plist src/KubeUI.Desktop/info.plist
           - rid: osx-arm64
             fileName: KubeUI.Desktop
             runs-on: macos-latest
-            packParam: --icon src/KubeUI/Assets/icon.icns --plist info.plist
+            packParam: --icon src/KubeUI/Assets/icon.icns --plist src/KubeUI.Desktop/info.plist
     steps:
       - uses: actions/checkout@v6
         with:
@@ -181,7 +181,7 @@ jobs:
       - name: Create Package
         run: |
           vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} -c ${{ matrix.rid }} --pre
-          vpk pack --packTitle KubeUI -u KubeUI -v ${{ needs.semantic-release.outputs.new_release_version }} -p src/KubeUI.Desktop/bin/publish -c ${{ matrix.rid }} -e ${{ matrix.fileName }} -o packed ${{ matrix.packParam }} --packAuthors "Ivan Josipovic" --releaseNotes CHANGELOG.md
+          vpk pack --packTitle KubeUI -u KubeUI -v ${{ needs.semantic-release.outputs.new_release_version }} -p src/KubeUI.Desktop/bin/publish -c ${{ matrix.rid }} -e ${{ matrix.fileName }} -o packed ${{ matrix.packParam }} --packAuthors "Ivan Josipovic" --releaseNotes src/KubeUI.Desktop/CHANGELOG.md
 
       - name: Remove unnecessary assets
         shell: pwsh
