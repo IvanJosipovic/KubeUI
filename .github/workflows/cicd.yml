@@ -97,7 +97,7 @@ jobs:
           - rid: linux-arm64
             fileName: KubeUI.Desktop
             runs-on: ubuntu-latest
-            packParam: --icon docs/icon-512.png--categories Development;IDE;
+            packParam: --icon docs/icon-512.png --categories Development;IDE;
           - rid: osx-x64
             fileName: KubeUI.Desktop
             runs-on: macos-latest
