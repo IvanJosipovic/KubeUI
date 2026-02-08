@@ -172,15 +172,15 @@ jobs:
             "N/A" | Out-File -FilePath CHANGELOG.md
           } else {
             $env:CHANGELOG | Out-File -FilePath CHANGELOG.md
+            (Get-Content -Path CHANGELOG.md -Raw) -replace '&', 'and' | Set-Content -Path CHANGELOG.md -NoNewline -Encoding utf8
           }
         env:
           CHANGELOG: ${{ needs.semantic-release.outputs.new_release_notes }}
 
-      # Disabled due to https://github.com/velopack/velopack/issues/666
-      # - name: Download Releases
-      #   if: needs.semantic-release.outputs.new_release_published == 'true'
-      #   run: |
-      #     vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} -c ${{ matrix.rid }} --pre -o packed
+      - name: Download Releases
+        if: needs.semantic-release.outputs.new_release_published == 'true'
+        run: |
+          vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} -c ${{ matrix.rid }} --pre -o packed
 
       - name: Create Package
         run: |
