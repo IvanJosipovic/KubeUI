@@ -25,7 +25,7 @@ public class ResourceYamlViewTests
         var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
         foldings.Count.Should().Be(2);
         foldings[0].Name.TrimEnd().Should().Be($"prop2:");
-        foldings[1].Name.TrimEnd().Should().Be($"prop2Nested:");
+        foldings[1].Name.TrimEnd().Should().Be($"  prop2Nested:");
     }
 
     [Fact]
@@ -66,7 +66,7 @@ public class ResourceYamlViewTests
         foldings.Count.Should().Be(4);
         foldings[0].Name.TrimEnd().Should().Be($"prop1:");
         foldings[1].Name.TrimEnd().Should().Be($"- prop1Nested1:");
-        foldings[2].Name.TrimEnd().Should().Be($"- prop1Nested1Prop2: val1");
+        foldings[2].Name.TrimEnd().Should().Be($"  - prop1Nested1Prop2: val1");
 
         foldings[3].Name.TrimEnd().Should().Be($"- prop1Nested2:");
     }

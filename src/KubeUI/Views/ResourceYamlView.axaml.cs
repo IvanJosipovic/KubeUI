@@ -44,7 +44,7 @@ public sealed partial class ResourceYamlView : UserControl
         if (Design.IsDesignMode)
         {
             var cluster = Application.Current.GetRequiredService<ClusterManager>().GetDefault();
-            cluster.Connect();
+            cluster.Connect().GetAwaiter().GetResult();
             var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
 
             var obj = new V1Namespace()
@@ -77,8 +77,6 @@ public sealed partial class ResourceYamlView : UserControl
             _foldingManager = FoldingManager.Install(Editor.TextArea);
 
             UpdateFoldings();
-
-
         }
     }
 
@@ -223,15 +221,6 @@ internal static class YamlFoldingStrategy
     private static bool IsCommentLine(ReadOnlyMemory<char> memory) =>
         memory.Span.TrimStart().StartsWith("#");
 
-    private static string GetTrimmedLineString(ReadOnlyMemory<char> memory)
-    {
-        var span = memory.Span;
-        var start = 0;
-        while (start < span.Length && char.IsWhiteSpace(span[start]))
-            start++;
-        return start == 0 ? span.ToString() : new string(span[start..]);
-    }
-
     public static IEnumerable<NewFolding> CreateNewFoldings(TextDocument document, out int firstErrorOffset)
     {
         try
@@ -280,7 +269,7 @@ internal static class YamlFoldingStrategy
                 var fold = new NewFolding
                 {
                     StartOffset = line.Offset,
-                    Name = GetTrimmedLineString(text)
+                    Name = text.ToString()
                 };
 
                 var endLine = nextLine;
