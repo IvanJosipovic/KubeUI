@@ -61,11 +61,20 @@ namespace KubeUI.Assets {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Contact:.
+        /// </summary>
+        public static string AboutView_Contact {
+            get {
+                return ResourceManager.GetString("AboutView_Contact", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Created by Ivan Josipovic.
         /// </summary>
-        public static string AboutView_Header {
+        public static string AboutView_CreatedBy {
             get {
-                return ResourceManager.GetString("AboutView_Header", resourceCulture);
+                return ResourceManager.GetString("AboutView_CreatedBy", resourceCulture);
             }
         }
         
@@ -93,6 +102,15 @@ namespace KubeUI.Assets {
         public static string AboutView_Version_StringFormat {
             get {
                 return ResourceManager.GetString("AboutView_Version_StringFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Website:.
+        /// </summary>
+        public static string AboutView_Website {
+            get {
+                return ResourceManager.GetString("AboutView_Website", resourceCulture);
             }
         }
         
@@ -879,6 +897,15 @@ namespace KubeUI.Assets {
         public static string SettingsView_Title {
             get {
                 return ResourceManager.GetString("SettingsView_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to An update is available!.
+        /// </summary>
+        public static string UpdateView_Header {
+            get {
+                return ResourceManager.GetString("UpdateView_Header", resourceCulture);
             }
         }
         
