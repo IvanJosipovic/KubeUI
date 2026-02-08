@@ -1,15 +1,8 @@
-using System;
-using System.Linq;
-using System.Reflection;
-using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Input;
-using Avalonia.Interactivity;
 using Avalonia.Styling;
-using AvaloniaEdit;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Folding;
 using AvaloniaEdit.TextMate;
+using k8s.Models;
 using KubeUI.Client;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
@@ -22,7 +15,7 @@ public sealed partial class ResourceYamlView : UserControl
     private readonly ISettingsService _settingsService;
 
     private Installation? _textMateInstallation;
-    private RegistryOptions _registryOptions = null!;
+    private readonly RegistryOptions _registryOptions = null!;
     private FoldingManager? _foldingManager;
 
     public ResourceYamlView()
@@ -40,47 +33,68 @@ public sealed partial class ResourceYamlView : UserControl
 
         InitializeComponent();
 
-        Loaded += OnLoaded;
-        Unloaded += OnUnloaded;
-    }
-
-    private void OnLoaded(object? sender, RoutedEventArgs e)
-    {
         _registryOptions = new RegistryOptions(Application.Current!.ActualThemeVariant == ThemeVariant.Light
             ? ThemeName.Light
             : ThemeName.DarkPlus);
 
-        _textMateInstallation = Editor.InstallTextMate(_registryOptions, true);
-        _textMateInstallation.SetGrammar(_registryOptions
-            .GetScopeByLanguageId(_registryOptions.GetLanguageByExtension(".yaml").Id));
-
-        _foldingManager = FoldingManager.Install(Editor.TextArea);
-
-
-        if (DataContext is ResourceYamlViewModel vm && vm.AllFoldings != null)
-        {
-            try
-            {
-                _foldingManager.UpdateFoldings(vm.AllFoldings, -1);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Error loading foldings");
-            }
-        }
-
-        UpdateFoldings();
-
-        Application.Current!.ActualThemeVariantChanged += ThemeChanged;
         Editor.TextChanged += Editor_TextChanged;
+        Application.Current!.ActualThemeVariantChanged += ThemeChanged;
 
-        // Restore scroll position
-        if (DataContext is ResourceYamlViewModel vm2)
-            SetOffset(vm2.ScrollOffset);
+#if DEBUG
+        if (Design.IsDesignMode)
+        {
+            var cluster = Application.Current.GetRequiredService<ClusterManager>().GetDefault();
+            cluster.Connect();
+            var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
+
+            var obj = new V1Namespace()
+            {
+                Metadata = new()
+                {
+                    Name = "test"
+                }
+            };
+
+            vm.Initialize(cluster, obj);
+
+            DataContext = vm;
+        }
+#endif
     }
 
-    private void OnUnloaded(object? sender, RoutedEventArgs e)
+    protected override void OnDataContextChanged(EventArgs e)
     {
+        base.OnDataContextChanged(e);
+
+        if (DataContext is ResourceYamlViewModel vm)
+        {
+            Editor.Document = vm.YamlDocument;
+
+            _textMateInstallation = Editor.InstallTextMate(_registryOptions, true);
+            _textMateInstallation.SetGrammar(_registryOptions
+                .GetScopeByLanguageId(_registryOptions.GetLanguageByExtension(".yaml").Id));
+
+            _foldingManager = FoldingManager.Install(Editor.TextArea);
+
+            UpdateFoldings();
+
+
+        }
+    }
+
+    protected override void OnLoaded(RoutedEventArgs e)
+    {
+        base.OnLoaded(e);
+        if (DataContext is ResourceYamlViewModel vm)
+        {
+            SetOffset(vm.ScrollOffset);
+        }
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+
         Application.Current!.ActualThemeVariantChanged -= ThemeChanged;
         Editor.TextChanged -= Editor_TextChanged;
 
@@ -123,7 +137,21 @@ public sealed partial class ResourceYamlView : UserControl
     private void UpdateFoldings()
     {
         if (_foldingManager == null) return;
-        YamlFoldingStrategy.UpdateFoldings(_foldingManager, Editor.Document);
+        if (DataContext is ResourceYamlViewModel vm)
+        {
+            if (vm.AllFoldings != null)
+            {
+                try
+                {
+                    _foldingManager.UpdateFoldings(vm.AllFoldings, -1);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Error loading foldings");
+                }
+            }
+            YamlFoldingStrategy.UpdateFoldings(_foldingManager, Editor.Document);
+        }
     }
 
     private void SetOffset(Vector offset)
@@ -150,6 +178,14 @@ public sealed partial class ResourceYamlView : UserControl
 
 internal static class YamlFoldingStrategy
 {
+    // Plan (pseudocode):
+    // 1) For each line, skip blank/comment-only lines as fold starts.
+    // 2) Find the next non-blank/comment line.
+    // 3) If the next meaningful line is not more indented, no fold.
+    // 4) If it is more indented, create a fold that spans until the last line
+    //    that is either blank/comment or has indent greater than the base indent.
+    // 5) Ensure end offsets are safe even when trailing blank/comment lines exist.
+
     public static void UpdateFoldings(FoldingManager? manager, TextDocument? document)
     {
         if (manager == null || document == null) return;
@@ -157,35 +193,124 @@ internal static class YamlFoldingStrategy
         manager.UpdateFoldings(newFoldings, firstErrorOffset);
     }
 
+    private static int CountLeadingSpaces(ReadOnlyMemory<char> memory, out bool isSequenceItem)
+    {
+        var span = memory.Span;
+        var count = 0;
+        while (count < span.Length && span[count] == ' ')
+            count++;
+
+        isSequenceItem = count < span.Length && span[count] == '-' &&
+            (count + 1 == span.Length || span[count + 1] == ' ');
+
+        return count;
+    }
+
+    private static bool IsMappingKey(ReadOnlyMemory<char> memory)
+    {
+        var span = memory.Span;
+        var hashIndex = span.IndexOf('#');
+        if (hashIndex >= 0)
+            span = span[..hashIndex];
+
+        span = span.TrimEnd();
+        return span.Length > 0 && span[^1] == ':';
+    }
+
+    private static bool IsBlankLine(ReadOnlyMemory<char> memory) =>
+        memory.Span.Trim().Length == 0;
+
+    private static bool IsCommentLine(ReadOnlyMemory<char> memory) =>
+        memory.Span.TrimStart().StartsWith("#");
+
+    private static string GetTrimmedLineString(ReadOnlyMemory<char> memory)
+    {
+        var span = memory.Span;
+        var start = 0;
+        while (start < span.Length && char.IsWhiteSpace(span[start]))
+            start++;
+        return start == 0 ? span.ToString() : new string(span[start..]);
+    }
+
     public static IEnumerable<NewFolding> CreateNewFoldings(TextDocument document, out int firstErrorOffset)
     {
         try
         {
             var foldMarkers = new List<NewFolding>();
-            var lines = document.Text.Split('\n');
 
-            for (int i = 0; i < lines.Length; i++)
+            foreach (var line in document.Lines)
             {
-                var currentLine = lines[i];
-                var currentLineIndent = CountIndents(currentLine);
-                var lineCount = i;
-                NewFolding? fold = null;
+                var text = document.GetTextAsMemory(line.Offset, line.Length);
+                if (IsBlankLine(text) || IsCommentLine(text))
+                    continue;
 
-                while (IsNextLineFoldable(lines, lineCount, currentLineIndent))
+                var baseIndent = CountLeadingSpaces(text, out var baseIsSequenceItem);
+                var baseIsMappingKey = IsMappingKey(text);
+                var baseAllowsSameIndentSequence = baseIsMappingKey && !baseIsSequenceItem;
+                var nextLine = line.NextLine;
+
+                // Find the first meaningful next line.
+                while (nextLine != null)
                 {
-                    fold ??= new NewFolding
+                    var nextText = document.GetTextAsMemory(nextLine.Offset, nextLine.Length);
+                    if (IsBlankLine(nextText) || IsCommentLine(nextText))
                     {
-                        StartOffset = document.GetOffset(i + 1, 1),
-                        Name = currentLine
-                    };
-                    lineCount++;
+                        nextLine = nextLine.NextLine;
+                        continue;
+                    }
+                    break;
                 }
 
-                if (fold != null)
+                if (nextLine == null)
+                    continue;
+
+                var nextLineText = document.GetTextAsMemory(nextLine.Offset, nextLine.Length);
+                var nextIndent = CountLeadingSpaces(nextLineText, out var nextIsSequenceItem);
+
+                var isFoldStart = nextIndent > baseIndent;
+                if (!isFoldStart && baseAllowsSameIndentSequence &&
+                    nextIndent == baseIndent && nextIsSequenceItem)
                 {
-                    fold.EndOffset = document.GetOffset(lineCount + 1, lines[lineCount].Length + 1);
-                    foldMarkers.Add(fold);
+                    isFoldStart = true;
                 }
+
+                if (!isFoldStart)
+                    continue;
+
+                var fold = new NewFolding
+                {
+                    StartOffset = line.Offset,
+                    Name = GetTrimmedLineString(text)
+                };
+
+                var endLine = nextLine;
+                var scan = nextLine.NextLine;
+
+                while (scan != null)
+                {
+                    var scanText = document.GetTextAsMemory(scan.Offset, scan.Length);
+                    if (IsBlankLine(scanText) || IsCommentLine(scanText))
+                    {
+                        endLine = scan;
+                        scan = scan.NextLine;
+                        continue;
+                    }
+
+                    var scanIndent = CountLeadingSpaces(scanText, out var scanIsSequenceItem);
+                    if (scanIndent < baseIndent)
+                        break;
+                    if (scanIndent == baseIndent)
+                    {
+                        if (!baseAllowsSameIndentSequence || !scanIsSequenceItem)
+                            break;
+                    }
+
+                    endLine = scan;
+                    scan = scan.NextLine;
+                }
+
+                fold.EndOffset = endLine.EndOffset;
+                foldMarkers.Add(fold);
             }
 
             firstErrorOffset = -1;
@@ -197,31 +322,5 @@ internal static class YamlFoldingStrategy
             firstErrorOffset = 0;
             return [];
         }
-    }
-
-    private static bool IsNextLineFoldable(string[] lines, int i, int currentLineIndent)
-    {
-        var nextLine = i + 1 < lines.Length ? lines[i + 1] : null;
-        if (nextLine == null) return false;
-
-        var nextIndent = CountIndents(nextLine);
-        if (nextLine == "\n" || nextLine == "\r" ||
-            (currentLineIndent < nextLine.Length &&
-             nextLine[currentLineIndent] == '-' &&
-             !lines[i].Trim().StartsWith("-")))
-            return true;
-
-        return nextIndent > currentLineIndent;
-    }
-
-    private static int CountIndents(string line)
-    {
-        int indent = 0;
-        foreach (var ch in line)
-        {
-            if (ch == ' ') indent++;
-            else break;
-        }
-        return indent;
     }
 }

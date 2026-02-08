@@ -14,10 +14,6 @@
     x:DataType="vm:ResourceYamlViewModel"
     mc:Ignorable="d">
 
-    <Design.DataContext>
-        <vm:ResourceYamlViewModel />
-    </Design.DataContext>
-
     <Grid
         HorizontalAlignment="Stretch"
         VerticalAlignment="Stretch"
@@ -59,7 +55,6 @@
         <!--  YAML editor  -->
         <ae:TextEditor Name="Editor" Grid.Row="1"
             Background="{DynamicResource SystemAltHighColor}"
-            Document="{Binding YamlDocument, Mode=TwoWay}"
             FontFamily="Cascadia Mono"
             FontSize="{Binding Settings.Settings.ConsoleFontSize}"
             FontWeight="Normal"
@@ -70,9 +65,10 @@
             WordWrap="{Binding WordWrap}">
             <ae:TextEditor.Options>
                 <ae:TextEditorOptions
-                    AllowScrollBelowDocument="false"
+                    AllowScrollBelowDocument="False"
                     EnableEmailHyperlinks="False"
-                    EnableHyperlinks="false"
+                    EnableHyperlinks="False"
+                    HighlightCurrentLine="True"
                     ShowBoxForControlCharacters="False" />
             </ae:TextEditor.Options>
             <ae:TextEditor.KeyBindings>
