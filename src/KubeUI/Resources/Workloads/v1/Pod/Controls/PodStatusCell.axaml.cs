@@ -11,6 +11,8 @@ public sealed partial class PodStatusCell : UserControl, IInitializeCluster
 
     private V1Pod? _viewModel;
 
+    private GroupApiVersionKind _groupApiVersionKind = GroupApiVersionKind.From<V1Pod>();
+
     [GeneratedDirectProperty]
     public partial string PrettyString { get; set; }
 
@@ -64,13 +66,13 @@ public sealed partial class PodStatusCell : UserControl, IInitializeCluster
         }
     }
 
-    private void _cluster_OnChange(WatchEventType arg1, GroupApiVersionKind arg2, IKubernetesObject<V1ObjectMeta> arg3)
+    private void _cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)
     {
-        if (_viewModel?.Name() == arg3.Name() && _viewModel?.Namespace() == arg3.Namespace())
+        if (_groupApiVersionKind == groupApiVersionKind && _viewModel?.Name() == resource.Name() && _viewModel?.Namespace() == resource.Namespace())
         {
             Dispatcher.UIThread.Invoke(() =>
             {
-                DataContext = arg3;
+                DataContext = resource;
                 SetPrettyString();
             }, DispatcherPriority.Normal);
         }

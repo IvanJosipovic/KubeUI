@@ -95,8 +95,6 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
 
         Id = nameof(ClusterViewModel) + "-" + Cluster.Name + "-" + Title;
 
-        Cluster.SeedResource<Corev1Event>().GetAwaiter().GetResult();
-
         if (EventsVM is IInitializeCluster init)
         {
             init.Initialize(Cluster);

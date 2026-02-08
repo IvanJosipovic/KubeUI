@@ -189,13 +189,16 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         resource.ApiVersion = Kind.GroupApiVersion;
         resource.Metadata = new()
         {
-            Name = "temp"
+            Name = "temp",
         };
 
+        if (IsNamespaced)
+        {
+            resource.Metadata.NamespaceProperty = "default";
+        }
+
         var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
-        vm.Cluster = Cluster;
-        vm.Object = resource;
-        vm.Id = $"{nameof(ViewYaml)}-{Cluster.Name}-new";
+        vm.Initialize(Cluster, resource);
         vm.EditMode = true;
 
         _factory.AddToBottom(vm);

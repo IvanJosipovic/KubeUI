@@ -14,7 +14,7 @@ public sealed partial class ResourceTextCell : UserControl, IInitializeCluster, 
 {
     private ICluster? _cluster;
 
-    private Func<object, string> _displayFunc;
+    private Func<object, string>? _displayFunc;
 
     private IKubernetesObject<V1ObjectMeta>? _viewModel;
 
@@ -73,7 +73,7 @@ public sealed partial class ResourceTextCell : UserControl, IInitializeCluster, 
 
             try
             {
-                PrettyString = _displayFunc.Invoke(obj) ?? string.Empty;
+                PrettyString = _displayFunc?.Invoke(obj) ?? string.Empty;
             }
             catch (Exception)
             {
@@ -86,13 +86,16 @@ public sealed partial class ResourceTextCell : UserControl, IInitializeCluster, 
         }
     }
 
-    private void _cluster_OnChange(WatchEventType arg1, GroupApiVersionKind arg2, IKubernetesObject<V1ObjectMeta> arg3)
+    private void _cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)
     {
-        if (_viewModel?.Name() == arg3.Name() && _viewModel?.Namespace() == arg3.Namespace())
+        if (_viewModel?.Kind == resource.Kind
+            && _viewModel.ApiVersion == resource.ApiVersion
+            && _viewModel?.Name() == resource.Name()
+            && _viewModel?.Namespace() == resource.Namespace())
         {
             Dispatcher.UIThread.Invoke(() =>
             {
-                DataContext = arg3;
+                DataContext = resource;
                 SetPrettyString();
             }, DispatcherPriority.Normal);
         }
