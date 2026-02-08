@@ -883,6 +883,15 @@ namespace KubeUI.Assets {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Update.
+        /// </summary>
+        public static string UpdateView_Title {
+            get {
+                return ResourceManager.GetString("UpdateView_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Visualization.
         /// </summary>
         public static string VisualizationViewModel_Title {

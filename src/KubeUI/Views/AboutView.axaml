@@ -15,15 +15,43 @@
         <vm:AboutViewModel />
     </Design.DataContext>
     <StackPanel>
-        <TextBlock Padding="5,0,0,0" Text="{x:Static assets:Resources.AboutView_Header}" />
-        <HyperlinkButton
-            Padding="5,0,0,0"
-            Content="admin@KubeUI.com"
-            NavigateUri="mailto:admin@KubeUI.com" />
-        <TextBlock Padding="5,0,0,0" Text="{Binding Version, StringFormat={x:Static assets:Resources.AboutView_Version_StringFormat}}" />
-        <HyperlinkButton
-            Padding="5,0,0,0"
-            Content="https://KubeUI.com"
-            NavigateUri="https://KubeUI.com" />
+        <Image
+            Width="128"
+            Height="128"
+            Margin="0,15,0,5"
+            HorizontalAlignment="Center"
+            Source="{SvgImage /Assets/kube/infrastructure_components/unlabeled/control-plane.svg}" />
+
+        <TextBlock
+            HorizontalAlignment="Center"
+            FontSize="24"
+            Text="KubeUI" />
+        <TextBlock HorizontalAlignment="Center" Text="{Binding Version, StringFormat={x:Static assets:Resources.AboutView_Version_StringFormat}}" />
+
+        <TextBlock
+            Padding="0,15,0,0"
+            HorizontalAlignment="Center"
+            Text="{x:Static assets:Resources.AboutView_Header}" />
+
+        <StackPanel
+            Margin="0,15,0,0"
+            HorizontalAlignment="Center"
+            Orientation="Horizontal">
+            <TextBlock Text="Contact:" />
+            <HyperlinkButton
+                Padding="2,-2,0,0"
+                Content="admin@KubeUI.com"
+                NavigateUri="mailto:admin@KubeUI.com" />
+        </StackPanel>
+        <StackPanel
+            Margin="0,5,0,0"
+            HorizontalAlignment="Center"
+            Orientation="Horizontal">
+            <TextBlock Padding="0,0,0,0" Text="Website:" />
+            <HyperlinkButton
+                Padding="2,-2,0,0"
+                Content="KubeUI.com"
+                NavigateUri="https://KubeUI.com" />
+        </StackPanel>
     </StackPanel>
 </UserControl>
