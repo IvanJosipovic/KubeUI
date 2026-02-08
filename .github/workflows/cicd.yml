@@ -85,27 +85,27 @@ jobs:
           - rid: win-x64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
-            packParam: --icon ../KubeUI/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
+            packParam: --icon ${{ github.workspace }}/src/KubeUI/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
           - rid: win-arm64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
-            packParam: --icon ../KubeUI/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
+            packParam: --icon ${{ github.workspace }}/src/KubeUI/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
           - rid: linux-x64
             fileName: KubeUI.Desktop
             runs-on: ubuntu-latest
-            packParam: ''
+            packParam: --icon ${{ github.workspace }}/docs/icon-512.png --categories Development;IDE;
           - rid: linux-arm64
             fileName: KubeUI.Desktop
             runs-on: ubuntu-latest
-            packParam: ''
+            packParam: --icon ${{ github.workspace }}/docs/icon-512.png--categories Development;IDE;
           - rid: osx-x64
             fileName: KubeUI.Desktop
             runs-on: macos-latest
-            packParam: --icon ../KubeUI/Assets/icon.icns --plist info.plist
+            packParam: --icon ${{ github.workspace }}/src/KubeUI/Assets/icon.icns --plist info.plist
           - rid: osx-arm64
             fileName: KubeUI.Desktop
             runs-on: macos-latest
-            packParam: --icon ../KubeUI/Assets/icon.icns --plist info.plist
+            packParam: --icon ${{ github.workspace }}/src/KubeUI/Assets/icon.icns --plist info.plist
     steps:
       - uses: actions/checkout@v6
         with:
