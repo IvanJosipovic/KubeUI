@@ -85,7 +85,7 @@
     <PackageReference Include="ProDataGrid" Version="11.3.11-preview.6" />
     <PackageReference Include="PropertyGenerator.Avalonia" Version="1.2.6" />
     <PackageReference Include="roslynator.analyzers" Version="4.15.0" PrivateAssets="all" />
-    <PackageReference Include="Semi.Avalonia" Version="11.3.7.2" />
+    <PackageReference Include="Semi.Avalonia" Version="11.3.7.3" />
     <PackageReference Include="ServiceScan.SourceGenerator" Version="2.4.1" PrivateAssets="all" />
     <PackageReference Include="Svg.Controls.Skia.Avalonia" Version="11.3.9.2" />
     <PackageReference Include="Swordfish.NET.CollectionsV3" Version="3.3.16" />
