@@ -30,7 +30,7 @@
                 Grid.Column="1"
                 Width="200"
                 VerticalContentAlignment="Center"
-                Content="{ReflectionBinding View.Count, StringFormat=Items: {0}}" />
+                Content="{ReflectionBinding View.Count, StringFormat='Items: {0}'}" />
 
             <Grid
                 Grid.Column="2"
@@ -39,7 +39,6 @@
                 <TextBox
                     Grid.Column="0"
                     Width="200"
-                    HorizontalAlignment="Right"
                     VerticalAlignment="Stretch"
                     VerticalContentAlignment="Center"
                     Background="Transparent"
@@ -58,14 +57,35 @@
                     Watermark="{x:Static assets:Resources.ResourceListView_SelectNamespace}">
                     <u:MultiComboBox.ItemTemplate>
                         <DataTemplate x:DataType="models:V1Namespace">
-                            <Label Content="{Binding Metadata.Name}" />
+                            <TextBlock Text="{Binding Metadata.Name}" />
                         </DataTemplate>
                     </u:MultiComboBox.ItemTemplate>
                     <u:MultiComboBox.SelectedItemTemplate>
                         <DataTemplate x:DataType="models:V1Namespace">
-                            <Label Content="{Binding Metadata.Name}" />
+                            <TextBlock Text="{Binding Metadata.Name}" />
                         </DataTemplate>
                     </u:MultiComboBox.SelectedItemTemplate>
+                    <u:MultiComboBox.Styles>
+                        <Style Selector="u|MultiComboBoxItem">
+                            <Setter Property="Padding" Value="4,2,4,2" />
+                            <Setter Property="Width" Value="200" />
+                            <Setter Property="MinHeight" Value="22" />
+                        </Style>
+                        <Style Selector="u|MultiComboBoxSelectedItemList">
+                            <Setter Property="Interaction.Behaviors">
+                                <BehaviorCollectionTemplate>
+                                    <BehaviorCollection>
+                                        <EventTriggerBehavior EventName="PointerReleased">
+                                            <ChangePropertyAction
+                                                PropertyName="IsDropDownOpen"
+                                                TargetObject="{Binding $parent[u:MultiComboBox]}"
+                                                Value="{Binding !$parent[u:MultiComboBox].IsDropDownOpen}" />
+                                        </EventTriggerBehavior>
+                                    </BehaviorCollection>
+                                </BehaviorCollectionTemplate>
+                            </Setter>
+                        </Style>
+                    </u:MultiComboBox.Styles>
                 </u:MultiComboBox>
             </Grid>
         </Grid>

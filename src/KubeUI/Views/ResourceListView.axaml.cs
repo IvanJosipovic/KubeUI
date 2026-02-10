@@ -38,7 +38,6 @@ public partial class ResourceListView : UserControl
 
                 DataContext = vm;
             });
-
         }
 #endif
     }

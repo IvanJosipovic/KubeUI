@@ -40,13 +40,6 @@
 
         <doc:DockControl Grid.Row="1"
             Margin="4"
-            Layout="{Binding Layout}">
-            <doc:DockControl.Styles>
-                <Style Selector="DocumentTabStrip#PART_TabStrip /template/ ScrollViewer#PART_ScrollViewer /template/ ScrollBar#PART_HorizontalScrollBar">
-                    <Setter Property="MinHeight" Value="4" />
-                    <Setter Property="MaxHeight" Value="4" />
-                </Style>
-            </doc:DockControl.Styles>
-        </doc:DockControl>
+            Layout="{Binding Layout}" />
     </Grid>
 </UserControl>
