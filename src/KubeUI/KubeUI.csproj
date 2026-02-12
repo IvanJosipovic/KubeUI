@@ -82,7 +82,7 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.0" />
     <PackageReference Include="OpenTelemetry.Resources.OperatingSystem" Version="1.15.0-beta.1" />
     <PackageReference Include="PanAndZoom" Version="11.3.9.1" />
-    <PackageReference Include="ProDataGrid" Version="11.3.11-preview.8" />
+    <PackageReference Include="ProDataGrid" Version="11.3.11-preview.13" />
     <PackageReference Include="PropertyGenerator.Avalonia" Version="1.2.6" />
     <PackageReference Include="roslynator.analyzers" Version="4.15.0" PrivateAssets="all" />
     <PackageReference Include="Semi.Avalonia" Version="11.3.7.3" />
