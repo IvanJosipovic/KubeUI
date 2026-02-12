@@ -255,6 +255,12 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private void GenerateColumnDefinitions()
     {
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.InvokeAsync(GenerateColumnDefinitions).GetAwaiter().GetResult();
+            return;
+        }
+
         ColumnDefinitions.Clear();
 
         var converter = new DataGridLengthConverter();
