@@ -399,6 +399,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         {
             _selectedKeys.Add(key!);
         }
+
+        OnPropertyChanged(nameof(SelectedItem));
+        OnPropertyChanged(nameof(SelectedItems));
     }
 
     private void SearchModelOnSearchChanged(object? sender, SearchChangedEventArgs e)

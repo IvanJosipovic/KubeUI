@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
@@ -410,6 +411,130 @@ public class ResourceListViewTests
         vm.SelectedItem.Should().NotBeNull();
         vm.SelectedItem!.Namespace().Should().Be("ns1");
         vm.SelectedItem.Name().Should().Be("a");
+    }
+
+    [AvaloniaFact(DisplayName = "Namespace filter selects remaining item when selection filtered out")]
+    public async Task namespace_filter_selects_remaining_item_when_selection_filtered_out()
+    {
+        var window = new MainWindow
+        {
+            Width = 1200,
+            Height = 800
+        };
+        var cluster = new TestCluster();
+
+        var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+
+        window.Content = view;
+        window.Show();
+
+        await AddOrUpdateAsync(cluster, Pod("ns1", "a"));
+        await AddOrUpdateAsync(cluster, Pod("ns2", "b"));
+        await AddOrUpdateAsync(cluster, Pod("ns3", "c"));
+        await AddOrUpdateAsync(cluster, Pod("ns4", "d"));
+        await AddOrUpdateAsync(cluster, Pod("ns5", "e"));
+
+        vm.SelectionModel.Select(1);
+        vm.SelectedItem.Should().NotBeNull();
+        vm.SelectedItem!.Namespace().Should().Be("ns2");
+
+        cluster.SelectedNamespaces.Add(NamespaceResource("ns4"));
+        Dispatcher.UIThread.RunJobs();
+
+        vm.SelectionModel.SelectedIndexes.Should().BeEquivalentTo([0]);
+        vm.SelectedItem.Should().NotBeNull();
+        vm.SelectedItem!.Namespace().Should().Be("ns4");
+        vm.SelectedItem.Name().Should().Be("d");
+
+        var grid = view.FindControl<DataGrid>("PART_Grid");
+        grid.Should().NotBeNull();
+
+        var menuItem = grid.ContextMenu?.Items.OfType<MenuItem>().FirstOrDefault(x => x.Header?.ToString() == "View");
+        menuItem.Should().NotBeNull();
+
+        var parameters = menuItem!.CommandParameter as IList;
+        parameters.Should().NotBeNull();
+        parameters!.Count.Should().Be(1);
+        var selected = parameters[0].As<V1Pod>();
+        selected.Namespace().Should().Be("ns4");
+        selected.Name().Should().Be("d");
+    }
+
+    [AvaloniaFact(DisplayName = "Namespace filter updates context menu selection")]
+    public async Task namespace_filter_updates_context_menu_selection()
+    {
+        var window = new MainWindow
+        {
+            Width = 1200,
+            Height = 800
+        };
+        var cluster = new TestCluster();
+
+        var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+
+        window.Content = view;
+        window.Show();
+
+        var podA = Pod("ns1", "a");
+        podA.Spec = new V1PodSpec
+        {
+            Containers = [new V1Container { Name = "a-container" }]
+        };
+        var podB = Pod("ns2", "b");
+        podB.Spec = new V1PodSpec
+        {
+            Containers = [new V1Container { Name = "b-container" }]
+        };
+        var podC = Pod("ns3", "c");
+        podC.Spec = new V1PodSpec
+        {
+            Containers = [new V1Container { Name = "c-container" }]
+        };
+        var podD = Pod("ns4", "d");
+        podD.Spec = new V1PodSpec
+        {
+            Containers = [new V1Container { Name = "d-container" }]
+        };
+        var podE = Pod("ns5", "e");
+        podE.Spec = new V1PodSpec
+        {
+            Containers = [new V1Container { Name = "e-container" }]
+        };
+
+        await AddOrUpdateAsync(cluster, podA);
+        await AddOrUpdateAsync(cluster, podB);
+        await AddOrUpdateAsync(cluster, podC);
+        await AddOrUpdateAsync(cluster, podD);
+        await AddOrUpdateAsync(cluster, podE);
+
+        vm.SelectionModel.Select(1);
+
+        cluster.SelectedNamespaces.Add(NamespaceResource("ns4"));
+        Dispatcher.UIThread.RunJobs();
+
+        var grid = view.FindControl<DataGrid>("PART_Grid");
+        grid.Should().NotBeNull();
+
+        var contextMenu = grid.ContextMenu;
+        contextMenu.Should().NotBeNull();
+        contextMenu!.PlacementTarget = grid;
+        contextMenu.Open(grid);
+        Dispatcher.UIThread.RunJobs();
+
+        var portForwardMenu = contextMenu.Items.OfType<MenuItem>().FirstOrDefault(x => x.Header?.ToString() == "Port Forwarding");
+        portForwardMenu.Should().NotBeNull();
+
+        var containers = portForwardMenu!.ItemsSource.OfType<V1Container>().ToList();
+        containers.Should().ContainSingle();
+        containers[0].Name.Should().Be("d-container");
     }
 
     [AvaloniaFact(DisplayName = "Delete Resource")]
