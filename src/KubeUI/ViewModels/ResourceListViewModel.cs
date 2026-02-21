@@ -150,6 +150,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
         GenerateColumnDefinitions();
 
+        SetNamespaceFilter();
+
         _subscription = Objects.Connect()
             .Do(_ => _isUpdatingCollection = true)
             .Filter(_filterSubject)
