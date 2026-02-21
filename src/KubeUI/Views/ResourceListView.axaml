@@ -105,7 +105,11 @@
             SearchModel="{Binding SearchModel}"
             Selection="{Binding SelectionModel}"
             SelectionMode="Extended"
-            SortingModel="{Binding SortingModel}">
+            SortingModel="{Binding SortingModel}"
+            UseLogicalScrollable="True">
+            <DataGrid.RowHeightEstimator>
+                <DefaultRowHeightEstimator />
+            </DataGrid.RowHeightEstimator>
             <DataGrid.KeyBindings>
                 <KeyBinding
                     Command="{ReflectionBinding ResourceConfig.ViewCommand}"
