@@ -130,7 +130,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         Title = Kind.Kind.Humanize(LetterCasing.Title).Pluralize();
         Id = Cluster.Name + "-" + Kind;
         ResourceConfig = (ResourceConfigBase<T>)Cluster.GetResourceConfig(Kind);
-        GenerateColumnDefinitions();
         Cluster.SeedResource<T>().GetAwaiter().GetResult();
 
         Objects = Cluster.GetResourceSourceCache<T>();
@@ -140,38 +139,38 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
         _sortingAdapterFactory = new DynamicDataSortingAdapterFactory<T>(ResourceConfig);
         _sortSubject = new BehaviorSubject<IComparer<T>>(_sortingAdapterFactory.SortComparer);
+
         _filteringAdapterFactory = new DynamicDataFilteringAdapterFactory<T>(ResourceConfig);
         _filterSubject = new BehaviorSubject<Func<T, bool>>(_filteringAdapterFactory.FilterPredicate);
+
         _searchAdapterFactory = new DynamicDataSearchAdapterFactory<T>(ResourceConfig);
         _searchSubject = new BehaviorSubject<Func<T, bool>>(_searchAdapterFactory.SearchPredicate);
 
-
         _selectionModelFactory = new DynamicDataSelectionModelFactory<T>(SelectionModel);
 
-        SetFilter();
-        ApplySearch();
+        GenerateColumnDefinitions();
 
         _subscription = Objects.Connect()
-        .Do(_ => _isUpdatingCollection = true)
-        .Filter(_filterSubject)
-        .Filter(_searchSubject)
-        .ObserveOn(AvaloniaScheduler.Instance)
-        .SortAndBind(out _view, _sortSubject, new()
-        {
-            ResetOnFirstTimeLoad = true,
-            UseReplaceForUpdates = true,
-            UseBinarySearch = true,
-            InitialCapacity = Objects.Count
-        })
-        .Subscribe(change =>
-        {
-            PreserveSelectionByKey();
-            _isUpdatingCollection = false;
-        }, ex =>
-        {
-            _isUpdatingCollection = false;
-            _logger.LogError(ex, "Error Setting Resource List Filter: {ns} ", typeof(T));
-        });
+            .Do(_ => _isUpdatingCollection = true)
+            .Filter(_filterSubject)
+            .Filter(_searchSubject)
+            .ObserveOn(AvaloniaScheduler.Instance)
+            .SortAndBind(out _view, _sortSubject, new()
+            {
+                ResetOnFirstTimeLoad = true,
+                UseReplaceForUpdates = true,
+                UseBinarySearch = true,
+                InitialCapacity = Objects.Count
+            })
+            .Subscribe(change =>
+            {
+                PreserveSelectionByKey();
+                _isUpdatingCollection = false;
+            }, ex =>
+            {
+                _isUpdatingCollection = false;
+                _logger.LogError(ex, "Error Setting Resource List Filter: {ns} ", typeof(T));
+            });
     }
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
@@ -186,10 +185,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private void SelectedNamespaces_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        SetFilter();
+        SetNamespaceFilter();
     }
 
-    private void SetFilter()
+    private void SetNamespaceFilter()
     {
         if (!ResourceConfig.IsNamespaced)
         {
@@ -300,7 +299,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                     }, supportsRecycling: true),
                     CanUserSort = true,
                     CustomSortComparer = s_noopSortComparer,
-                    SortDirection = columnDefinition.Sort == SortDirection.None ? null : columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending,
                     Width = columnDefinition.Width != null ? converter.ConvertFromString(columnDefinition.Width) as DataGridLength? : null,
                     ValueType = columnDefinition.ValueType,
                     Options = new()
@@ -311,6 +309,12 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 };
 
                 ColumnDefinitions.Add(column);
+
+                if (columnDefinition.Sort != SortDirection.None)
+                {
+                    SortingModel.SetOrUpdate(new(column, columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending, null, column.CustomSortComparer));
+                }
+
             }
             catch (Exception ex)
             {

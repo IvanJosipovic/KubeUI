@@ -51,7 +51,6 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public virtual IList<IResourceListColumn> Columns()
     {
-
         if (IsNamespaced)
         {
             return
