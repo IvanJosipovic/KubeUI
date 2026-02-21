@@ -1,8 +1,8 @@
 using System.Collections;
+using System.ComponentModel;
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Selection;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -565,5 +565,84 @@ public class ResourceListViewTests
         Dispatcher.UIThread.RunJobs();
 
         vm.View.Count().Should().Be(0);
+    }
+
+    [AvaloniaFact(DisplayName = "Reattach keeps only saved sort descriptors")]
+    public async Task reattach_keeps_only_saved_sort_descriptors()
+    {
+        var window = new MainWindow
+        {
+            Width = 1200,
+            Height = 800
+        };
+        var cluster = new TestCluster();
+
+        var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Namespace>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+
+        window.Content = view;
+        window.Show();
+
+        var nsA = NamespaceResource("a");
+        nsA.Metadata.Labels = new Dictionary<string, string> { { "env", "prod" } };
+        var nsB = NamespaceResource("b");
+        nsB.Metadata.Labels = new Dictionary<string, string> { { "env", "dev" } };
+        var nsC = NamespaceResource("c");
+        nsC.Metadata.Labels = new Dictionary<string, string> { { "env", "dev" } };
+
+        await AddOrUpdateAsync(cluster, nsA);
+        await AddOrUpdateAsync(cluster, nsB);
+        await AddOrUpdateAsync(cluster, nsC);
+
+        var labelsColumn = vm.ColumnDefinitions.First(x => x.Header?.ToString() == "Labels");
+
+        vm.SortingModel.Clear();
+
+        vm.SortingModel.SetOrUpdate(new(labelsColumn, ListSortDirection.Descending, null, labelsColumn.CustomSortComparer));
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.SortingModel.Descriptors.Count.Should().Be(1);
+        ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).Header.Should().Be("Labels");
+
+        view.DataContext = null;
+        Dispatcher.UIThread.RunJobs();
+        view.DataContext = vm;
+        Dispatcher.UIThread.RunJobs();
+
+        vm.SortingModel.Descriptors.Count.Should().Be(1);
+        ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).Header.Should().Be("Labels");
+    }
+
+    [AvaloniaFact(DisplayName = "Namespace filter initializes from selected namespaces")]
+    public async Task namespace_filter_initializes_from_selected_namespaces()
+    {
+        var window = new MainWindow
+        {
+            Width = 1200,
+            Height = 800
+        };
+        var cluster = new TestCluster();
+
+        cluster.SelectedNamespaces.Add(NamespaceResource("default"));
+
+        var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.FilteringModel.Descriptors.Should().ContainSingle();
+        var descriptor = vm.FilteringModel.Descriptors[0];
+        descriptor.Values.Should().ContainSingle();
+        descriptor.Values[0].Should().Be("default");
     }
 }

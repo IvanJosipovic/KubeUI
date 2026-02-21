@@ -42,7 +42,7 @@ public class TestCluster : ICluster
     public bool ListNamespaces { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     public ClusterStatus Status { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     public IKubernetes? Client { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-    public IReadOnlyList<V1Namespace> Namespaces { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    public IReadOnlyList<V1Namespace> Namespaces { get; set; } = new ObservableCollection<V1Namespace>();
     public K8SConfiguration KubeConfig { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     public ModelCache ModelCache { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     public ObservableCollection<NavigationItem> NavigationItems { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }

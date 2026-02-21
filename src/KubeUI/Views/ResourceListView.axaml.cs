@@ -54,11 +54,6 @@ public partial class ResourceListView : UserControl
             PART_Grid.SortingAdapterFactory = vm.SortingAdapterFactory;
             PART_Grid.FilteringAdapterFactory = vm.FilteringAdapterFactory;
             PART_Grid.SearchAdapterFactory = vm.SearchAdapterFactory;
-
-            PART_Grid.Selection = vm.SelectionModel;
-            PART_Grid.SortingModel = vm.SortingModel;
-            PART_Grid.FilteringModel = vm.FilteringModel;
-            PART_Grid.SearchModel = vm.SearchModel;
         }
     }
 
