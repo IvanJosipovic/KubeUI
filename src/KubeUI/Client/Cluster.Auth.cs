@@ -69,7 +69,7 @@ public partial class Cluster
 
         // check index first
         var keyCheck = BuildReviewKey(kind, verbString, @namespace, subresource);
-        if (_selfSubjectAccessReviewIndex.TryGetValue(keyCheck, out var existing) && existing != null)
+        if (_selfSubjectAccessReviewIndex.TryGetValue(keyCheck, out _))
         {
             return;
         }
