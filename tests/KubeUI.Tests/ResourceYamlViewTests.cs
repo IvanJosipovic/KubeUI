@@ -1,5 +1,5 @@
 using AvaloniaEdit.Document;
-using FluentAssertions;
+using Shouldly;
 using k8s.Models;
 using KubeUI.ViewModels;
 using KubeUI.Views;
@@ -19,13 +19,13 @@ public class ResourceYamlViewTests
               prop2Nested:
                 prop2NestedProp1: val0
             prop3:
-            """;
+            """.ReplaceLineEndings("\n");
 
 
         var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
-        foldings.Count.Should().Be(2);
-        foldings[0].Name.TrimEnd().Should().Be($"prop2:");
-        foldings[1].Name.TrimEnd().Should().Be($"  prop2Nested:");
+        foldings.Count.ShouldBe(2);
+        foldings[0].Name.TrimEnd().ShouldBe($"prop2:");
+        foldings[1].Name.TrimEnd().ShouldBe($"  prop2Nested:");
     }
 
     [Fact]
@@ -37,12 +37,12 @@ public class ResourceYamlViewTests
             - prop1Nested1:
             - prop1Nested2:
             - prop1Nested3:
-            """;
+            """.ReplaceLineEndings("\n");
 
 
         var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
-        foldings.Count.Should().Be(1);
-        foldings[0].Name.TrimEnd().Should().Be($"prop1:");
+        foldings.Count.ShouldBe(1);
+        foldings[0].Name.TrimEnd().ShouldBe($"prop1:");
     }
 
     [Fact]
@@ -59,16 +59,16 @@ public class ResourceYamlViewTests
               - prop1Nested2Prop1: val3
               - prop1Nested2Prop2: val4
             - prop1Nested3:
-            """;
+            """.ReplaceLineEndings("\n");
 
 
         var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
-        foldings.Count.Should().Be(4);
-        foldings[0].Name.TrimEnd().Should().Be($"prop1:");
-        foldings[1].Name.TrimEnd().Should().Be($"- prop1Nested1:");
-        foldings[2].Name.TrimEnd().Should().Be($"  - prop1Nested1Prop2: val1");
+        foldings.Count.ShouldBe(4);
+        foldings[0].Name.TrimEnd().ShouldBe($"prop1:");
+        foldings[1].Name.TrimEnd().ShouldBe($"- prop1Nested1:");
+        foldings[2].Name.TrimEnd().ShouldBe($"  - prop1Nested1Prop2: val1");
 
-        foldings[3].Name.TrimEnd().Should().Be($"- prop1Nested2:");
+        foldings[3].Name.TrimEnd().ShouldBe($"- prop1Nested2:");
     }
 
     [Fact]
@@ -83,11 +83,11 @@ public class ResourceYamlViewTests
               prop1Nested: val
 
             prop2: val
-            """;
+            """.ReplaceLineEndings("\n");
 
         var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
-        foldings.Count.Should().Be(1);
-        foldings[0].Name.TrimEnd().Should().Be($"prop1:");
+        foldings.Count.ShouldBe(1);
+        foldings[0].Name.TrimEnd().ShouldBe($"prop1:");
     }
 
     [Fact]
@@ -97,10 +97,10 @@ public class ResourceYamlViewTests
         text.Text = """
             prop1: val
             prop2: val
-            """;
+            """.ReplaceLineEndings("\n");
 
         var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
-        foldings.Count.Should().Be(0);
+        foldings.Count.ShouldBe(0);
     }
 
     [Fact]
@@ -110,10 +110,10 @@ public class ResourceYamlViewTests
         text.Text = """
             - item1
             - item2
-            """;
+            """.ReplaceLineEndings("\n");
 
         var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
-        foldings.Count.Should().Be(0);
+        foldings.Count.ShouldBe(0);
     }
 
     [Fact]
@@ -124,10 +124,10 @@ public class ResourceYamlViewTests
             - item1:
               child1: val
             - item2
-            """;
+            """.ReplaceLineEndings("\n");
 
         var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
-        foldings.Count.Should().Be(1);
-        foldings[0].Name.TrimEnd().Should().Be($"- item1:");
+        foldings.Count.ShouldBe(1);
+        foldings[0].Name.TrimEnd().ShouldBe($"- item1:");
     }
 }

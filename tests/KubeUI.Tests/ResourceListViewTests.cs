@@ -6,7 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using FluentAssertions;
+using Shouldly;
 using FluentAvalonia.Core;
 using k8s;
 using k8s.Models;
@@ -63,7 +63,7 @@ public class ResourceListViewTests
     private static IEnumerable<DataGridRow> GetAllRows(DataGrid grid)
     {
         var mi = grid.GetType().GetMethod("GetAllRows", BindingFlags.Instance | BindingFlags.NonPublic);
-        mi.Should().NotBeNull("ProDataGrid DataGrid should expose internal GetAllRows()");
+        mi.ShouldNotBeNull("ProDataGrid DataGrid should expose internal GetAllRows()");
         return (IEnumerable<DataGridRow>)mi!.Invoke(grid, null)!;
     }
 
@@ -88,7 +88,7 @@ public class ResourceListViewTests
         var rows = GetAllRows(grid).Where(x => x.IsVisible).ToList();
 
         var dataGridRow = rows[row];
-        dataGridRow.Should().NotBeNull();
+        dataGridRow.ShouldNotBeNull();
 
         return GetCellText(grid, dataGridRow!, column);
     }
@@ -123,21 +123,21 @@ public class ResourceListViewTests
         vm.SelectionModel.Select(1);
         vm.SelectionModel.Select(2);
 
-        vm.SelectionModel.SelectedIndexes.Should().BeEquivalentTo([0, 1, 2]);
+        vm.SelectionModel.SelectedIndexes.ShouldBe([0, 1, 2]);
 
         // Replace 'b' with a new instance (same key)
         await AddOrUpdateAsync(cluster, Pod("ns", "b"));
 
-        vm.SelectionModel.SelectedIndexes.Should().BeEquivalentTo([0, 1, 2]);
+        vm.SelectionModel.SelectedIndexes.ShouldBe([0, 1, 2]);
 
-        vm.SelectedItems.Count.Should().Be(3);
+        vm.SelectedItems.Count.ShouldBe(3);
 
-        vm.SelectedItems[0].Namespace().Should().Be("ns");
-        vm.SelectedItems[0].Name().Should().Be("a");
-        vm.SelectedItems[1].Namespace().Should().Be("ns");
-        vm.SelectedItems[1].Name().Should().Be("b");
-        vm.SelectedItems[2].Namespace().Should().Be("ns");
-        vm.SelectedItems[2].Name().Should().Be("c");
+        vm.SelectedItems[0].Namespace().ShouldBe("ns");
+        vm.SelectedItems[0].Name().ShouldBe("a");
+        vm.SelectedItems[1].Namespace().ShouldBe("ns");
+        vm.SelectedItems[1].Name().ShouldBe("b");
+        vm.SelectedItems[2].Namespace().ShouldBe("ns");
+        vm.SelectedItems[2].Name().ShouldBe("c");
     }
 
     [AvaloniaFact(DisplayName = "Single select update middle")]
@@ -167,20 +167,20 @@ public class ResourceListViewTests
         // Select only middle
         vm.SelectionModel.Select(1);
 
-        vm.SelectionModel.SelectedIndexes.Should().BeEquivalentTo([1]);
+        vm.SelectionModel.SelectedIndexes.ShouldBe([1]);
 
         // Replace 'b' with new instance (same key)
         await AddOrUpdateAsync(cluster, Pod("ns", "b"));
 
-        vm.SelectionModel.SelectedIndexes.Should().BeEquivalentTo([1]);
+        vm.SelectionModel.SelectedIndexes.ShouldBe([1]);
 
-        vm.SelectedItems.Count.Should().Be(1);
+        vm.SelectedItems.Count.ShouldBe(1);
 
-        vm.SelectedItems[0].Namespace().Should().Be("ns");
-        vm.SelectedItems[0].Name().Should().Be("b");
+        vm.SelectedItems[0].Namespace().ShouldBe("ns");
+        vm.SelectedItems[0].Name().ShouldBe("b");
 
-        vm.SelectedItem.Namespace().Should().Be("ns");
-        vm.SelectedItem.Name().Should().Be("b");
+        vm.SelectedItem.Namespace().ShouldBe("ns");
+        vm.SelectedItem.Name().ShouldBe("b");
     }
 
     [AvaloniaFact(DisplayName = "Single select with sort due to update")]
@@ -207,34 +207,34 @@ public class ResourceListViewTests
         await AddOrUpdateAsync(cluster, Event("ns", "b"));
         await AddOrUpdateAsync(cluster, Event("ns", "c"));
 
-        vm.View.ElementAt(0).As<Corev1Event>().Name().Should().Be("c");
-        vm.View.ElementAt(1).As<Corev1Event>().Name().Should().Be("b");
-        vm.View.ElementAt(2).As<Corev1Event>().Name().Should().Be("a");
+        vm.View.ElementAt(0).ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
+        vm.View.ElementAt(1).ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
+        vm.View.ElementAt(2).ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
 
 
         // Select only middle
         vm.SelectionModel.Select(1);
 
-        vm.SelectionModel.SelectedIndexes.Should().BeEquivalentTo([1]);
+        vm.SelectionModel.SelectedIndexes.ShouldBe([1]);
 
         // Replace 'b' with new instance (same key)
         await AddOrUpdateAsync(cluster, Event("ns", "b"));
 
 
-        vm.View.ElementAt(0).As<Corev1Event>().Name().Should().Be("b");
-        vm.View.ElementAt(1).As<Corev1Event>().Name().Should().Be("c");
-        vm.View.ElementAt(2).As<Corev1Event>().Name().Should().Be("a");
+        vm.View.ElementAt(0).ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
+        vm.View.ElementAt(1).ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
+        vm.View.ElementAt(2).ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
 
-        vm.SelectionModel.SelectedIndexes.Should().BeEquivalentTo([0]);
+        vm.SelectionModel.SelectedIndexes.ShouldBe([0]);
 
-        vm.SelectedItems.Count.Should().Be(1);
+        vm.SelectedItems.Count.ShouldBe(1);
 
-        vm.SelectedItems[0].Namespace().Should().Be("ns");
-        vm.SelectedItems[0].Name().Should().Be("b");
+        vm.SelectedItems[0].Namespace().ShouldBe("ns");
+        vm.SelectedItems[0].Name().ShouldBe("b");
 
 
-        vm.SelectedItem.Namespace().Should().Be("ns");
-        vm.SelectedItem.Name().Should().Be("b");
+        vm.SelectedItem.Namespace().ShouldBe("ns");
+        vm.SelectedItem.Name().ShouldBe("b");
     }
 
     [AvaloniaFact(DisplayName = "All select with sort due to update")]
@@ -261,9 +261,9 @@ public class ResourceListViewTests
         await AddOrUpdateAsync(cluster, Event("ns", "b"));
         await AddOrUpdateAsync(cluster, Event("ns", "c"));
 
-        vm.View.ElementAt(0).As<Corev1Event>().Name().Should().Be("c");
-        vm.View.ElementAt(1).As<Corev1Event>().Name().Should().Be("b");
-        vm.View.ElementAt(2).As<Corev1Event>().Name().Should().Be("a");
+        vm.View.ElementAt(0).ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
+        vm.View.ElementAt(1).ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
+        vm.View.ElementAt(2).ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
 
 
         // Select all 3
@@ -271,25 +271,25 @@ public class ResourceListViewTests
         vm.SelectionModel.Select(1);
         vm.SelectionModel.Select(2);
 
-        vm.SelectionModel.SelectedIndexes.Should().BeEquivalentTo([0, 1, 2]);
+        vm.SelectionModel.SelectedIndexes.ShouldBe([0, 1, 2]);
 
         // Replace 'b' with new instance (same key)
         await AddOrUpdateAsync(cluster, Event("ns", "b"));
 
-        vm.View.ElementAt(0).As<Corev1Event>().Name().Should().Be("b");
-        vm.View.ElementAt(1).As<Corev1Event>().Name().Should().Be("c");
-        vm.View.ElementAt(2).As<Corev1Event>().Name().Should().Be("a");
+        vm.View.ElementAt(0).ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
+        vm.View.ElementAt(1).ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
+        vm.View.ElementAt(2).ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
 
-        vm.SelectionModel.SelectedIndexes.Should().BeEquivalentTo([0, 1, 2]);
+        vm.SelectionModel.SelectedIndexes.ShouldBe([0, 1, 2]);
 
-        vm.SelectedItems.Count.Should().Be(3);
+        vm.SelectedItems.Count.ShouldBe(3);
 
-        vm.SelectedItems[0].Namespace().Should().Be("ns");
-        vm.SelectedItems[0].Name().Should().Be("b");
+        vm.SelectedItems[0].Namespace().ShouldBe("ns");
+        vm.SelectedItems[0].Name().ShouldBe("b");
 
 
-        vm.SelectedItem.Namespace().Should().Be("ns");
-        vm.SelectedItem.Name().Should().Be("b");
+        vm.SelectedItem.Namespace().ShouldBe("ns");
+        vm.SelectedItem.Name().ShouldBe("b");
     }
 
     [AvaloniaFact(DisplayName = "Update check DataGrid Text update")]
@@ -313,23 +313,23 @@ public class ResourceListViewTests
         window.Show();
 
         var grid = view.FindControl<DataGrid>("PART_Grid");
-        grid.Should().NotBeNull();
+        grid.ShouldNotBeNull();
 
 
         var pod = Pod("ns", "a");
         await AddOrUpdateAsync(cluster, pod);
 
         var before = GetFirstRowFirstColumnText(grid, 0, 0);
-        before.Should().NotBeNull();
-        before.Should().Contain("a");
+        before.ShouldNotBeNull();
+        before.ShouldContain("a");
 
         // Mutate in place and trigger DynamicData refresh.
         pod.Metadata.Name = "b";
         await AddOrUpdateAsync(cluster, pod);
 
         var after = GetFirstRowFirstColumnText(grid, 0, 0);
-        after.Should().NotBeNull();
-        after.Should().Contain("b");
+        after.ShouldNotBeNull();
+        after.ShouldContain("b");
     }
 
     [AvaloniaFact(DisplayName = "Update check DataGrid Text update2")]
@@ -353,7 +353,7 @@ public class ResourceListViewTests
         window.Show();
 
         var grid = view.FindControl<DataGrid>("PART_Grid");
-        grid.Should().NotBeNull();
+        grid.ShouldNotBeNull();
 
         var ns = new V1Namespace()
         {
@@ -366,8 +366,8 @@ public class ResourceListViewTests
         await AddOrUpdateAsync(cluster, ns);
 
         var before = GetFirstRowFirstColumnText(grid, 0, 1);
-        before.Should().NotBeNull();
-        before.Should().BeEmpty();
+        before.ShouldNotBeNull();
+        before.ShouldBeEmpty();
 
         ns.Metadata.Labels = new Dictionary<string, string>()
         {
@@ -377,8 +377,8 @@ public class ResourceListViewTests
         await AddOrUpdateAsync(cluster, ns);
 
         var after = GetFirstRowFirstColumnText(grid, 0, 1);
-        after.Should().NotBeNull();
-        after.Should().Contain("test=value");
+        after.ShouldNotBeNull();
+        after.ShouldContain("test=value");
     }
 
     [AvaloniaFact(DisplayName = "Namespace filter preserves selection when included")]
@@ -408,9 +408,9 @@ public class ResourceListViewTests
         cluster.SelectedNamespaces.Add(NamespaceResource("ns1"));
         Dispatcher.UIThread.RunJobs();
 
-        vm.SelectedItem.Should().NotBeNull();
-        vm.SelectedItem!.Namespace().Should().Be("ns1");
-        vm.SelectedItem.Name().Should().Be("a");
+        vm.SelectedItem.ShouldNotBeNull();
+        vm.SelectedItem!.Namespace().ShouldBe("ns1");
+        vm.SelectedItem.Name().ShouldBe("a");
     }
 
     [AvaloniaFact(DisplayName = "Namespace filter selects remaining item when selection filtered out")]
@@ -439,29 +439,29 @@ public class ResourceListViewTests
         await AddOrUpdateAsync(cluster, Pod("ns5", "e"));
 
         vm.SelectionModel.Select(1);
-        vm.SelectedItem.Should().NotBeNull();
-        vm.SelectedItem!.Namespace().Should().Be("ns2");
+        vm.SelectedItem.ShouldNotBeNull();
+        vm.SelectedItem!.Namespace().ShouldBe("ns2");
 
         cluster.SelectedNamespaces.Add(NamespaceResource("ns4"));
         Dispatcher.UIThread.RunJobs();
 
-        vm.SelectionModel.SelectedIndexes.Should().BeEquivalentTo([0]);
-        vm.SelectedItem.Should().NotBeNull();
-        vm.SelectedItem!.Namespace().Should().Be("ns4");
-        vm.SelectedItem.Name().Should().Be("d");
+        vm.SelectionModel.SelectedIndexes.ShouldBe([0]);
+        vm.SelectedItem.ShouldNotBeNull();
+        vm.SelectedItem!.Namespace().ShouldBe("ns4");
+        vm.SelectedItem.Name().ShouldBe("d");
 
         var grid = view.FindControl<DataGrid>("PART_Grid");
-        grid.Should().NotBeNull();
+        grid.ShouldNotBeNull();
 
         var menuItem = grid.ContextMenu?.Items.OfType<MenuItem>().FirstOrDefault(x => x.Header?.ToString() == "View");
-        menuItem.Should().NotBeNull();
+        menuItem.ShouldNotBeNull();
 
         var parameters = menuItem!.CommandParameter as IList;
-        parameters.Should().NotBeNull();
-        parameters!.Count.Should().Be(1);
-        var selected = parameters[0].As<V1Pod>();
-        selected.Namespace().Should().Be("ns4");
-        selected.Name().Should().Be("d");
+        parameters.ShouldNotBeNull();
+        parameters!.Count.ShouldBe(1);
+        var selected = parameters[0].ShouldBeOfType<V1Pod>();
+        selected.Namespace().ShouldBe("ns4");
+        selected.Name().ShouldBe("d");
     }
 
     [AvaloniaFact(DisplayName = "Namespace filter updates context menu selection")]
@@ -521,20 +521,20 @@ public class ResourceListViewTests
         Dispatcher.UIThread.RunJobs();
 
         var grid = view.FindControl<DataGrid>("PART_Grid");
-        grid.Should().NotBeNull();
+        grid.ShouldNotBeNull();
 
         var contextMenu = grid.ContextMenu;
-        contextMenu.Should().NotBeNull();
+        contextMenu.ShouldNotBeNull();
         contextMenu!.PlacementTarget = grid;
         contextMenu.Open(grid);
         Dispatcher.UIThread.RunJobs();
 
         var portForwardMenu = contextMenu.Items.OfType<MenuItem>().FirstOrDefault(x => x.Header?.ToString() == "Port Forwarding");
-        portForwardMenu.Should().NotBeNull();
+        portForwardMenu.ShouldNotBeNull();
 
         var containers = portForwardMenu!.ItemsSource.OfType<V1Container>().ToList();
-        containers.Should().ContainSingle();
-        containers[0].Name.Should().Be("d-container");
+        containers.Count.ShouldBe(1);
+        containers[0].Name.ShouldBe("d-container");
     }
 
     [AvaloniaFact(DisplayName = "Delete Resource")]
@@ -559,12 +559,12 @@ public class ResourceListViewTests
 
         await AddOrUpdateAsync(cluster, Pod("ns1", "a"));
 
-        vm.View.Count().Should().Be(1);
+        vm.View.Count().ShouldBe(1);
 
         await cluster.DeleteResource(Pod("ns1", "a"));
         Dispatcher.UIThread.RunJobs();
 
-        vm.View.Count().Should().Be(0);
+        vm.View.Count().ShouldBe(0);
     }
 
     [AvaloniaFact(DisplayName = "Reattach keeps only saved sort descriptors")]
@@ -605,16 +605,16 @@ public class ResourceListViewTests
 
         Dispatcher.UIThread.RunJobs();
 
-        vm.SortingModel.Descriptors.Count.Should().Be(1);
-        ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).Header.Should().Be("Labels");
+        vm.SortingModel.Descriptors.Count.ShouldBe(1);
+        ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).Header.ShouldBe("Labels");
 
         view.DataContext = null;
         Dispatcher.UIThread.RunJobs();
         view.DataContext = vm;
         Dispatcher.UIThread.RunJobs();
 
-        vm.SortingModel.Descriptors.Count.Should().Be(1);
-        ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).Header.Should().Be("Labels");
+        vm.SortingModel.Descriptors.Count.ShouldBe(1);
+        ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).Header.ShouldBe("Labels");
     }
 
     [AvaloniaFact(DisplayName = "Namespace filter initializes from selected namespaces")]
@@ -640,9 +640,9 @@ public class ResourceListViewTests
 
         Dispatcher.UIThread.RunJobs();
 
-        vm.FilteringModel.Descriptors.Should().ContainSingle();
+        vm.FilteringModel.Descriptors.Count.ShouldBe(1);
         var descriptor = vm.FilteringModel.Descriptors[0];
-        descriptor.Values.Should().ContainSingle();
-        descriptor.Values[0].Should().Be("default");
+        descriptor.Values.Count.ShouldBe(1);
+        descriptor.Values[0].ShouldBe("default");
     }
 }
