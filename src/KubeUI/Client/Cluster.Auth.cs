@@ -115,9 +115,12 @@ public partial class Cluster
             var key = BuildReviewKey(kind, verbString, @namespace, subresource);
             _selfSubjectAccessReviewIndex[key] = resp;
         }
-        catch
+        catch (ArgumentException ex)
         {
-            // ignore indexing failures
+            _logger.LogWarning(
+                ex,
+                "Failed to index V1SelfSubjectAccessReview for key '{Key}'. Ignoring indexing failure.",
+                BuildReviewKey(kind, verbString, @namespace, subresource));
         }
     }
 
