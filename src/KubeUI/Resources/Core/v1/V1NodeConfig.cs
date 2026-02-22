@@ -209,8 +209,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
                 {
                     await Cluster.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Name(), item.Namespace());
 
-                    await Cluster.SeedResource<V1Pod>();
-                    await Cluster.IsResourceReady<V1Pod>();
+                    await Cluster.SeedResource<V1Pod>(true);
                     var pods = Cluster.GetResourceList<V1Pod>();
 
                     foreach (var pod in pods)

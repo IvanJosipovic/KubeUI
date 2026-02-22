@@ -46,7 +46,7 @@ public interface ICluster
     Task DeleteResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task ImportFolder(string path);
     Task ImportYaml(Stream stream);
-    Task SeedResource<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task UpdatePermissionsAllNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task<bool> IsResourceReady<T>(CancellationToken? token = null) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task<bool> UpdateCanI(Type type, Verb verb, string? @namespace = null, string? subresource = null);

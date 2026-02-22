@@ -271,7 +271,7 @@ public class TestCluster : ICluster
         throw new NotImplementedException();
     }
 
-    public Task SeedResource<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var kind = GroupApiVersionKind.From<T>();
 
