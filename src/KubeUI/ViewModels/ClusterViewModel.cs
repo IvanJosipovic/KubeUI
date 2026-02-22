@@ -40,10 +40,8 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
             return;
         }
 
-        await Cluster.SeedResource<V1Pod>();
-        await Cluster.IsResourceReady<V1Pod>();
-        await Cluster.SeedResource<V1Node>();
-        await Cluster.IsResourceReady<V1Node>();
+        await Cluster.SeedResource<V1Pod>(true);
+        await Cluster.SeedResource<V1Node>(true);
         var pods = Cluster.GetResourceList<V1Pod>();
         var nodes = Cluster.GetResourceList<V1Node>();
 

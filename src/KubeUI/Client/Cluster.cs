@@ -365,7 +365,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         }
     }
 
-    public async Task SeedResource<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public async Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         _logger.LogDebug("Starting Seed: {type}", typeof(T));
 
@@ -435,6 +435,13 @@ public sealed partial class Cluster : ObservableObject, ICluster
         else
         {
             _seedLimiter.Release();
+        }
+
+        if (waitForReady)
+        {
+            _logger.LogDebug("Waiting for Ready: {type}", typeof(T));
+            await IsResourceReady<T>();
+            _logger.LogDebug("Ready: {type}", typeof(T));
         }
 
         _logger.LogDebug("Finished Seed: {type}", typeof(T));

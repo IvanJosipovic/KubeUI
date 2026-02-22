@@ -91,8 +91,7 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
             var service = _cluster.GetResource<V1Service>(Namespace, Name);
             var servicePort = service.Spec.Ports.First(x => x.Port == Port);
 
-            await _cluster.SeedResource<V1EndpointSlice>();
-            await _cluster.IsResourceReady<V1EndpointSlice>();
+            await _cluster.SeedResource<V1EndpointSlice>(true);
             var endpointSlices = _cluster.GetResourceList<V1EndpointSlice>();
 
             var endpointSlice = endpointSlices.FirstOrDefault(x => x.Namespace() == service.Namespace() && x.GetLabel("kubernetes.io/service-name") == service.Name());
