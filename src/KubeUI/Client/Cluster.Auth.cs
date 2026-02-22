@@ -9,14 +9,31 @@ public partial class Cluster
 {
     private readonly ConcurrentDictionary<string, V1SelfSubjectAccessReview> _selfSubjectAccessReviewIndex = new();
 
+    private static string BuildReviewKeyCore(
+        string group,
+        string pluralName,
+        string version,
+        string verbString,
+        string? @namespace = null,
+        string? subresource = null)
+    {
+        return $"{verbString}:{(string.IsNullOrEmpty(group) ? "" : group)}:{pluralName}:{(@namespace ?? "")}:{(subresource ?? "")}:{(string.IsNullOrEmpty(version) ? "" : version)}";
+    }
+
     internal static string BuildReviewKey(GroupApiVersionKind kind, string verbString, string? @namespace = null, string? subresource = null)
     {
-        return $"{verbString}:{(string.IsNullOrEmpty(kind.Group) ? "" : kind.Group)}:{kind.PluralName}:{(@namespace ?? "")}:{(subresource ?? "")}:{(string.IsNullOrEmpty(kind.ApiVersion) ? "" : kind.ApiVersion)}";
+        return BuildReviewKeyCore(
+            kind.Group,
+            kind.PluralName,
+            kind.ApiVersion,
+            verbString,
+            @namespace,
+            subresource);
     }
 
     internal static string BuildReviewKeyFromParts(string group, string pluralName, string version, string verbString, string? @namespace = null, string? subresource = null)
     {
-        return $"{verbString}:{(string.IsNullOrEmpty(group) ? "" : group)}:{pluralName}:{(@namespace ?? "")}:{(subresource ?? "")}:{(string.IsNullOrEmpty(version) ? "" : version)}";
+        return BuildReviewKeyCore(group, pluralName, version, verbString, @namespace, subresource);
     }
 
     internal static V1SelfSubjectAccessReview? FindReviewIndexed(IReadOnlyDictionary<string, V1SelfSubjectAccessReview> index, GroupApiVersionKind kind, string verbString, string? @namespace = null, string? subresource = null)
