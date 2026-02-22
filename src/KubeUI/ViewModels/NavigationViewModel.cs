@@ -25,7 +25,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
         //_notificationManager = Application.Current.GetRequiredService<INotificationManager>();
     }
 
-    public void TreeView_SelectionChanged(object? item)
+    public async void TreeView_SelectionChanged(object? item)
     {
         if (item is Cluster cluster)
         {
@@ -38,7 +38,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
         }
         else if (item is NavigationLink navLink)
         {
-            _ = SelectNavigationLink(navLink);
+            await SelectNavigationLink(navLink);
         }
 
         if (item is NavigationItem nav && nav.NavigationItems.Count > 0)
