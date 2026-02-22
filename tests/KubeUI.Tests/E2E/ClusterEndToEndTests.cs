@@ -2,7 +2,6 @@ using System.Collections;
 using System.Text;
 using Avalonia;
 using Avalonia.Headless.XUnit;
-using Avalonia.Threading;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -313,8 +312,6 @@ spec:
 
         var fooRef = _seedMethodInfo.MakeGenericMethod(type);
         await (Task)fooRef.Invoke(testHarness.Cluster, [true]);
-
-        await Task.Delay(TimeSpan.FromSeconds(5));
 
         var kind = testHarness.Cluster.Objects[GroupApiVersionKind.From(type)];
 
