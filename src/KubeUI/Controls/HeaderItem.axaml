@@ -15,6 +15,5 @@
                 </Style>
             </local:PropertyItem.Styles>
         </local:PropertyItem>
-        <ItemsControl ItemsSource="{Binding Controls, RelativeSource={RelativeSource AncestorType=local:HeaderItem}}" />
     </StackPanel>
 </UserControl>

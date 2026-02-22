@@ -1,0 +1,31 @@
+<UserControl
+    x:Class="KubeUI.Controls.CollectionItem"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:KubeUI.Controls"
+    HorizontalAlignment="Stretch"
+    VerticalAlignment="Stretch"
+    d:DesignHeight="80"
+    d:DesignWidth="400"
+    x:DataType="local:PropertyItem">
+    <UserControl.Styles>
+        <Style Selector="SelectableTextBlock">
+            <Setter Property="Padding" Value="5" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid VerticalAlignment="Top" ColumnDefinitions="*,2*">
+        <SelectableTextBlock Grid.Row="0"
+            Grid.Column="0"
+            Text="{Binding Key, RelativeSource={RelativeSource AncestorType=local:CollectionItem}}"
+            TextWrapping="NoWrap"
+            ToolTip.Tip="{Binding Key, RelativeSource={RelativeSource AncestorType=local:CollectionItem}}" />
+        <ScrollViewer Grid.Row="0"
+            Grid.Column="1"
+            MaxHeight="200"
+            VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemTemplate="{Binding ItemTemplate, RelativeSource={RelativeSource AncestorType=local:CollectionItem}}" ItemsSource="{Binding Value, RelativeSource={RelativeSource AncestorType=local:CollectionItem}}" />
+        </ScrollViewer>
+    </Grid>
+</UserControl>

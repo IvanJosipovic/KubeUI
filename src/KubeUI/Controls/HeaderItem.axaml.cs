@@ -5,9 +5,6 @@ public partial class HeaderItem : UserControl
     [GeneratedDirectProperty]
     public partial string Text { get; set; }
 
-    [GeneratedDirectProperty]
-    public partial ObservableCollection<Control> Controls { get; set; }
-
     public HeaderItem()
     {
         InitializeComponent();
@@ -16,10 +13,6 @@ public partial class HeaderItem : UserControl
         if (Design.IsDesignMode)
         {
             Text = "Test123";
-
-            Controls = [
-                            new TextBox() {Text = "Text"},
-                        ];
         }
 #endif
     }

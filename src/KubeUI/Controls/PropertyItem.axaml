@@ -14,18 +14,20 @@
             <Setter Property="Padding" Value="5" />
         </Style>
     </UserControl.Styles>
+    <Border BorderBrush="{DynamicResource SystemAltHighColor}" BorderThickness="0,0,0,1">
+        <Grid VerticalAlignment="Top" ColumnDefinitions="*,2*">
+            <SelectableTextBlock Grid.Row="0"
+                Grid.Column="0"
+                Text="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}}"
+                TextWrapping="NoWrap"
+                ToolTip.Tip="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}}" />
+            <ScrollViewer Grid.Row="0"
+                Grid.Column="1"
+                MaxHeight="200"
+                VerticalScrollBarVisibility="Auto">
+                <SelectableTextBlock Text="{Binding Value, RelativeSource={RelativeSource AncestorType=local:PropertyItem}}" TextWrapping="Wrap" />
+            </ScrollViewer>
+        </Grid>
+    </Border>
 
-    <Grid VerticalAlignment="Top" ColumnDefinitions="*,2*">
-        <SelectableTextBlock Grid.Row="0"
-            Grid.Column="0"
-            Text="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}}"
-            TextWrapping="NoWrap"
-            ToolTip.Tip="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}}" />
-        <ScrollViewer Grid.Row="0"
-            Grid.Column="1"
-            MaxHeight="200"
-            VerticalScrollBarVisibility="Auto">
-            <SelectableTextBlock Text="{Binding Value, RelativeSource={RelativeSource AncestorType=local:PropertyItem}}" TextWrapping="Wrap" />
-        </ScrollViewer>
-    </Grid>
 </UserControl>

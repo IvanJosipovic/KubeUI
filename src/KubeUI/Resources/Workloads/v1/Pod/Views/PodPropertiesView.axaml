@@ -5,10 +5,11 @@
     xmlns:c="using:KubeUI.Controls"
     xmlns:converters="using:KubeUI.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:generic="using:System.Collections.Generic"
     xmlns:local="using:KubeUI"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="using:k8s.Models"
-    d:DesignHeight="800"
+    d:DesignHeight="3000"
     d:DesignWidth="400"
     x:DataType="models:V1Pod"
     mc:Ignorable="d">
@@ -18,14 +19,87 @@
                 <c:PropertyItem Key="Name" Value="{Binding Name}" />
                 <c:PropertyItem Key="Image" Value="{Binding Image}" />
                 <c:PropertyItem Key="Pull Policy" Value="{Binding ImagePullPolicy}" />
+                <c:CollectionItem Key="Ports" Value="{Binding Ports}">
+                    <c:CollectionItem.ItemTemplate>
+                        <DataTemplate x:DataType="models:V1ContainerPort">
+                            <SelectableTextBlock Text="{Binding ContainerPort}" TextWrapping="Wrap" />
+                        </DataTemplate>
+                    </c:CollectionItem.ItemTemplate>
+                </c:CollectionItem>
+                <c:CollectionItem Key="Environment" Value="{Binding Env}">
+                    <c:CollectionItem.ItemTemplate>
+                        <DataTemplate x:DataType="models:V1EnvVar">
+                            <SelectableTextBlock TextWrapping="Wrap">
+                                <SelectableTextBlock.Text>
+                                    <MultiBinding StringFormat="{}{0}={1}">
+                                        <Binding Path="Name" />
+                                        <Binding Path="Value" />
+                                    </MultiBinding>
+                                </SelectableTextBlock.Text>
+                            </SelectableTextBlock>
+                        </DataTemplate>
+                    </c:CollectionItem.ItemTemplate>
+                </c:CollectionItem>
+                <c:CollectionItem Key="Mounts" Value="{Binding VolumeMounts}">
+                    <c:CollectionItem.ItemTemplate>
+                        <DataTemplate x:DataType="models:V1VolumeMount">
+                            <SelectableTextBlock Text="{Binding MountPath}" TextWrapping="Wrap" />
+                        </DataTemplate>
+                    </c:CollectionItem.ItemTemplate>
+                </c:CollectionItem>
+                <c:CollectionItem Key="Command" Value="{Binding Command}" />
+                <c:CollectionItem Key="Arguments" Value="{Binding Args}" />
+                <c:CollectionItem Key="Requests" Value="{Binding Resources.Requests}" />
+                <c:CollectionItem Key="Limits" Value="{Binding Resources.Limits}" />
             </StackPanel>
         </DataTemplate>
     </UserControl.Resources>
     <StackPanel>
-        <c:PropertyItem Key="ControlledBy" Value="{Binding ., Converter={x:Static converters:Converters.ObjectOwnerNameConverter}}" />
+        <c:HeaderItem Text="Properties" />
+        <c:PropertyItem Key="Created" Value="{Binding Metadata.CreationTimestamp}" />
+        <c:PropertyItem Key="Name" Value="{Binding Metadata.Name}" />
+        <c:PropertyItem Key="Namespace" Value="{Binding Metadata.NamespaceProperty}" />
+        <c:CollectionItem Key="Labels" Value="{Binding Metadata.Labels}">
+            <c:CollectionItem.ItemTemplate>
+                <DataTemplate x:DataType="{x:Type generic:KeyValuePair, x:TypeArguments=x:String, x:TypeArguments=x:String}">
+                    <SelectableTextBlock TextWrapping="Wrap">
+                        <SelectableTextBlock.Text>
+                            <MultiBinding StringFormat="{}{0}={1}">
+                                <Binding Path="Key" />
+                                <Binding Path="Value" />
+                            </MultiBinding>
+                        </SelectableTextBlock.Text>
+                    </SelectableTextBlock>
+                </DataTemplate>
+            </c:CollectionItem.ItemTemplate>
+        </c:CollectionItem>
+        <c:CollectionItem Key="Annotations" Value="{Binding Metadata.Annotations}">
+            <c:CollectionItem.ItemTemplate>
+                <DataTemplate x:DataType="{x:Type generic:KeyValuePair, x:TypeArguments=x:String, x:TypeArguments=x:String}">
+                    <SelectableTextBlock TextWrapping="Wrap">
+                        <SelectableTextBlock.Text>
+                            <MultiBinding StringFormat="{}{0}={1}">
+                                <Binding Path="Key" />
+                                <Binding Path="Value" />
+                            </MultiBinding>
+                        </SelectableTextBlock.Text>
+                    </SelectableTextBlock>
+                </DataTemplate>
+            </c:CollectionItem.ItemTemplate>
+        </c:CollectionItem>
+        <c:PropertyItem Key="Controlled By" Value="{Binding ., Converter={x:Static converters:Converters.ObjectOwnerNameConverter}}" />
+
+        <c:HeaderItem Text="Status" />
         <c:PropertyItem Key="Status" Value="{Binding Status.Phase}" />
         <c:PropertyItem Key="Node" Value="{Binding Spec.NodeName}" />
         <c:PropertyItem Key="Pod IP" Value="{Binding Status.PodIP}" />
+        <c:PropertyItem Key="Pod IPs" Value="{Binding Status.PodIPs.Count}" />
+        <c:PropertyItem Key="Service Account" Value="{Binding Spec.ServiceAccountName}" />
+        <c:PropertyItem Key="QoS Class" Value="{Binding Status.QosClass}" />
+        <c:PropertyItem Key="Conditions" Value="{Binding Status.Conditions.Count}" />
+        <c:PropertyItem Key="Tolerations" Value="{Binding Spec.Tolerations.Count}" />
+        <c:PropertyItem Key="Secrets" Value="{Binding Spec.ImagePullSecrets.Count}" />
+        <c:PropertyItem Key="Pod Volumes" Value="{Binding Spec.Volumes.Count}" />
 
         <c:ExpandableSection
             Header="Init Containers"
@@ -36,6 +110,10 @@
 
         <c:ExpandableSection Header="Containers" IsExpanded="True">
             <ItemsControl ItemTemplate="{StaticResource V1ContainerTemplate}" ItemsSource="{Binding Spec.Containers}" />
+        </c:ExpandableSection>
+
+        <c:ExpandableSection Header="Events" IsExpanded="True">
+            <TextBlock Text="No events found" />
         </c:ExpandableSection>
     </StackPanel>
 </UserControl>
