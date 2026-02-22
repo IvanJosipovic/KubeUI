@@ -1,4 +1,6 @@
-﻿using k8s;
+﻿using System.Linq;
+using System.Collections.Concurrent;
+using k8s;
 using k8s.Models;
 using Swordfish.NET.Collections;
 using KubernetesClient.Informer.Client;
@@ -7,7 +9,33 @@ namespace KubeUI.Client;
 
 public partial class Cluster
 {
-    private ConcurrentObservableCollection<V1SelfSubjectAccessReview> _selfSubjectAccessReviews { get; } = [];
+    private readonly ConcurrentDictionary<string, V1SelfSubjectAccessReview> _selfSubjectAccessReviewIndex = new();
+
+    internal static string BuildReviewKey(GroupApiVersionKind kind, string verbString, string? @namespace = null, string? subresource = null)
+    {
+        return $"{verbString}:{(string.IsNullOrEmpty(kind.Group) ? "" : kind.Group)}:{kind.PluralName}:{(@namespace ?? "")}:{(subresource ?? "")}:{(string.IsNullOrEmpty(kind.ApiVersion) ? "" : kind.ApiVersion)}";
+    }
+
+    internal static string BuildReviewKeyFromParts(string group, string pluralName, string version, string verbString, string? @namespace = null, string? subresource = null)
+    {
+        return $"{verbString}:{(string.IsNullOrEmpty(group) ? "" : group)}:{pluralName}:{(@namespace ?? "")}:{(subresource ?? "")}:{(string.IsNullOrEmpty(version) ? "" : version)}";
+    }
+
+    internal static V1SelfSubjectAccessReview? FindReviewIndexed(IReadOnlyDictionary<string, V1SelfSubjectAccessReview> index, GroupApiVersionKind kind, string verbString, string? @namespace = null, string? subresource = null)
+    {
+        var key = BuildReviewKey(kind, verbString, @namespace, subresource);
+        if (index.TryGetValue(key, out var review))
+            return review;
+        return null;
+    }
+
+    internal static V1SelfSubjectAccessReview? FindReviewIndexedByParts(IReadOnlyDictionary<string, V1SelfSubjectAccessReview> index, string group, string pluralName, string version, string verbString, string? @namespace = null, string? subresource = null)
+    {
+        var key = BuildReviewKeyFromParts(group, pluralName, version, verbString, @namespace, subresource);
+        if (index.TryGetValue(key, out var review))
+            return review;
+        return null;
+    }
 
     [ObservableProperty]
     public partial bool ListNamespaces { get; set; }
@@ -37,16 +65,11 @@ public partial class Cluster
     {
         var kind = GroupApiVersionKind.From(type);
 
-        var review = _selfSubjectAccessReviews.ToList().FirstOrDefault(x =>
-            x.Spec.ResourceAttributes.Group == (string.IsNullOrEmpty(kind.Group) ? null : kind.Group) &&
-            x.Spec.ResourceAttributes.NamespaceProperty == (string.IsNullOrEmpty(@namespace) ? null : @namespace) &&
-            x.Spec.ResourceAttributes.Resource == kind.PluralName &&
-            x.Spec.ResourceAttributes.Subresource == (string.IsNullOrEmpty(subresource) ? null : subresource) &&
-            x.Spec.ResourceAttributes.Verb == verb.ToString().ToLowerInvariant() &&
-            x.Spec.ResourceAttributes.Version == (string.IsNullOrEmpty(kind.ApiVersion) ? null : kind.ApiVersion)
-        );
+        var verbString = verb.ToString().ToLowerInvariant();
 
-        if (review != null)
+        // check index first
+        var keyCheck = BuildReviewKey(kind, verbString, @namespace, subresource);
+        if (_selfSubjectAccessReviewIndex.TryGetValue(keyCheck, out var existing) && existing != null)
         {
             return;
         }
@@ -71,39 +94,36 @@ public partial class Cluster
 
         var resp = await Client.AuthorizationV1.CreateSelfSubjectAccessReviewAsync(model);
 
-        _selfSubjectAccessReviews.Add(resp);
+        // maintain simple index for fast lookups
+        try
+        {
+            var key = BuildReviewKey(kind, verbString, @namespace, subresource);
+            _selfSubjectAccessReviewIndex[key] = resp;
+        }
+        catch
+        {
+            // ignore indexing failures
+        }
     }
 
     public bool CanI(Type type, Verb verb, string? @namespace = null, string? subresource = null)
     {
         var kind = GroupApiVersionKind.From(type);
+        var verbString = verb.ToString().ToLowerInvariant();
 
-        // If checking namespace permissions, we should check if we have cluster level first
+        // If checking namespace permissions, check index for cluster-level first
         if (!string.IsNullOrEmpty(@namespace))
         {
-            var global = _selfSubjectAccessReviews.ToList().FirstOrDefault(x =>
-                x.Spec.ResourceAttributes.Verb == verb.ToString().ToLowerInvariant() &&
-                x.Spec.ResourceAttributes.Resource == kind.PluralName &&
-                x.Spec.ResourceAttributes.Group == (string.IsNullOrEmpty(kind.Group) ? null : kind.Group) &&
-                x.Spec.ResourceAttributes.NamespaceProperty == null &&
-                x.Spec.ResourceAttributes.Subresource == (string.IsNullOrEmpty(subresource) ? null : subresource) &&
-                x.Spec.ResourceAttributes.Version == kind.ApiVersion
-            );
-
-            if (global?.Status.Allowed == true)
+            var globalKey = BuildReviewKey(kind, verbString, null, subresource);
+            if (_selfSubjectAccessReviewIndex.TryGetValue(globalKey, out var global) && global?.Status?.Allowed == true)
             {
                 return true;
             }
         }
 
-        var review = _selfSubjectAccessReviews.ToList().FirstOrDefault(x =>
-            x.Spec.ResourceAttributes.Verb == verb.ToString().ToLowerInvariant() &&
-            x.Spec.ResourceAttributes.Resource == kind.PluralName &&
-            x.Spec.ResourceAttributes.Group == (string.IsNullOrEmpty(kind.Group) ? null : kind.Group) &&
-            x.Spec.ResourceAttributes.NamespaceProperty == (string.IsNullOrEmpty(@namespace) ? null : @namespace) &&
-            x.Spec.ResourceAttributes.Subresource == (string.IsNullOrEmpty(subresource) ? null : subresource) &&
-            x.Spec.ResourceAttributes.Version == kind.ApiVersion
-        );
+        // try indexed lookup first
+        var key = BuildReviewKey(kind, verbString, @namespace, subresource);
+        _selfSubjectAccessReviewIndex.TryGetValue(key, out var review);
 
         if (review == null)
         {
