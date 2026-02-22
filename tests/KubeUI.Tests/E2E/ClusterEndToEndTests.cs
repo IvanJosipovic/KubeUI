@@ -697,7 +697,11 @@ rules:
 
         await testHarness.Cluster.ImportYaml(stream);
 
-        var cluster = await testHarness.GetClusterFromServiceAccount("my-app", "my-serviceaccount");
+        await testHarness.Cluster.SeedResource<V1ServiceAccount>(true);
+
+        await WaitForResourceAsync<V1ServiceAccount>(testHarness.Cluster, "my-app", "my-serviceaccount");
+
+        var cluster = await testHarness.GetClusterFromServiceAccountSecret("my-app", "my-serviceaccount");
 
         await cluster.Connect();
 
@@ -725,7 +729,11 @@ rules:
 
         await testHarness.Cluster.ImportYaml(stream);
 
-        var cluster = await testHarness.GetClusterFromServiceAccount("my-app", "my-serviceaccount");
+        await testHarness.Cluster.SeedResource<V1ServiceAccount>(true);
+
+        await WaitForResourceAsync<V1ServiceAccount>(testHarness.Cluster, "my-app", "my-serviceaccount");
+
+        var cluster = await testHarness.GetClusterFromServiceAccountSecret("my-app", "my-serviceaccount");
 
         var settings = Application.Current.GetRequiredService<ISettingsService>();
 
@@ -790,8 +798,10 @@ rules:
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(yamlLimitedRbacNoNamespace));
 
         await testHarness.Cluster.ImportYaml(stream);
+        await testHarness.Cluster.SeedResource<V1ServiceAccount>(true);
+        await WaitForResourceAsync<V1ServiceAccount>(testHarness.Cluster, "my-app", "my-serviceaccount");
 
-        var cluster = await testHarness.GetClusterFromServiceAccount("my-app", "my-serviceaccount");
+        var cluster = await testHarness.GetClusterFromServiceAccountSecret("my-app", "my-serviceaccount");
 
         var settings = Application.Current.GetRequiredService<ISettingsService>();
 
