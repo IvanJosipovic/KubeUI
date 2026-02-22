@@ -17,7 +17,7 @@ public partial class Cluster
         string? @namespace = null,
         string? subresource = null)
     {
-        return $"{verbString}:{(string.IsNullOrEmpty(group) ? "" : group)}:{pluralName}:{(@namespace ?? "")}:{(subresource ?? "")}:{(string.IsNullOrEmpty(version) ? "" : version)}";
+        return $"{verbString}:{(string.IsNullOrEmpty(group) ? "" : group)}:{pluralName}:{(string.IsNullOrEmpty(@namespace) ? "" : @namespace)}:{(string.IsNullOrEmpty(subresource) ? "" : subresource)}:{(string.IsNullOrEmpty(version) ? "" : version)}";
     }
 
     internal static string BuildReviewKey(GroupApiVersionKind kind, string verbString, string? @namespace = null, string? subresource = null)
