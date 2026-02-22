@@ -10,17 +10,17 @@ public partial class Cluster
     private readonly ConcurrentDictionary<string, V1SelfSubjectAccessReview> _selfSubjectAccessReviewIndex = new();
 
     private static string BuildReviewKeyCore(
-        string group,
+        string? group,
         string pluralName,
         string version,
         string verbString,
         string? @namespace = null,
         string? subresource = null)
     {
-        return $"{verbString}:{(string.IsNullOrEmpty(group) ? "" : group)}:{pluralName}:{(string.IsNullOrEmpty(@namespace) ? "" : @namespace)}:{(string.IsNullOrEmpty(subresource) ? "" : subresource)}:{(string.IsNullOrEmpty(version) ? "" : version)}";
+        return $"{verbString}:{(string.IsNullOrEmpty(group) ? "" : group)}:{pluralName}:{(string.IsNullOrEmpty(@namespace) ? "" : @namespace)}:{(string.IsNullOrEmpty(subresource) ? "" : subresource)}:{version}";
     }
 
-    internal static string BuildReviewKey(GroupApiVersionKind kind, string verbString, string? @namespace = null, string? subresource = null)
+    private static string BuildReviewKey(GroupApiVersionKind kind, string verbString, string? @namespace = null, string? subresource = null)
     {
         return BuildReviewKeyCore(
             kind.Group,
@@ -29,11 +29,6 @@ public partial class Cluster
             verbString,
             @namespace,
             subresource);
-    }
-
-    internal static string BuildReviewKeyFromParts(string group, string pluralName, string version, string verbString, string? @namespace = null, string? subresource = null)
-    {
-        return BuildReviewKeyCore(group, pluralName, version, verbString, @namespace, subresource);
     }
 
     [ObservableProperty]
