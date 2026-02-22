@@ -36,22 +36,6 @@ public partial class Cluster
         return BuildReviewKeyCore(group, pluralName, version, verbString, @namespace, subresource);
     }
 
-    internal static V1SelfSubjectAccessReview? FindReviewIndexed(IReadOnlyDictionary<string, V1SelfSubjectAccessReview> index, GroupApiVersionKind kind, string verbString, string? @namespace = null, string? subresource = null)
-    {
-        var key = BuildReviewKey(kind, verbString, @namespace, subresource);
-        if (index.TryGetValue(key, out var review))
-            return review;
-        return null;
-    }
-
-    internal static V1SelfSubjectAccessReview? FindReviewIndexedByParts(IReadOnlyDictionary<string, V1SelfSubjectAccessReview> index, string group, string pluralName, string version, string verbString, string? @namespace = null, string? subresource = null)
-    {
-        var key = BuildReviewKeyFromParts(group, pluralName, version, verbString, @namespace, subresource);
-        if (index.TryGetValue(key, out var review))
-            return review;
-        return null;
-    }
-
     [ObservableProperty]
     public partial bool ListNamespaces { get; set; }
 
