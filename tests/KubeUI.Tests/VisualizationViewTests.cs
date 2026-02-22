@@ -58,6 +58,106 @@ public class VisualizationViewTests
         vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
     }
 
+    [AvaloniaFact]
+    public async Task LinkArgoCDTracking()
+    {
+        var cluster = TestCluster.Get();
+
+        var namespaceResource = new V1Namespace
+        {
+            Metadata = new()
+            {
+                Name = "oidc-guard"
+            }
+        };
+
+        await cluster.AddOrUpdateResource(namespaceResource);
+        cluster.SelectedNamespaces.Add(namespaceResource);
+
+        var argoNamespace = new V1Namespace
+        {
+            Metadata = new()
+            {
+                Name = "argocd"
+            }
+        };
+
+        await cluster.AddOrUpdateResource(argoNamespace);
+        cluster.SelectedNamespaces.Add(argoNamespace);
+
+        await cluster.AddOrUpdateResource(new V1CustomResourceDefinition
+        {
+            Metadata = new()
+            {
+                Name = "applications.argoproj.io"
+            },
+            Spec = new()
+            {
+                Group = "argoproj.io",
+                Scope = "Namespaced",
+                Names = new()
+                {
+                    Plural = "applications",
+                    Singular = "application",
+                    Kind = "Application",
+                    ShortNames = ["app", "apps"]
+                },
+                Versions =
+                [
+                    new()
+                    {
+                        Name = "v1alpha1",
+                        Served = true,
+                        Storage = true,
+                        Schema = new()
+                        {
+                            OpenAPIV3Schema = new()
+                            {
+                                Type = "object"
+                            }
+                        }
+                    }
+                ]
+            }
+        });
+
+        await cluster.AddOrUpdateResource(new ArgoApplication
+        {
+            ApiVersion = "argoproj.io/v1alpha1",
+            Kind = "Application",
+            Metadata = new()
+            {
+                Name = "my-app",
+                NamespaceProperty = "argocd"
+            }
+        });
+
+        await cluster.AddOrUpdateResource(new V1Secret
+        {
+            Metadata = new()
+            {
+                Name = "oidc-guard",
+                NamespaceProperty = "oidc-guard",
+                Annotations = new Dictionary<string, string>
+                {
+                    ["argocd.argoproj.io/tracking-id"] = "my-app:/Secret:oidc-guard/oidc-guard"
+                }
+            },
+            StringData = new Dictionary<string, string>
+            {
+                ["appsettings.Production.json"] = "test"
+            },
+            Type = "Opaque"
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Graph.Edges.Count.ShouldBe(1);
+        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<ArgoApplication>();
+        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
+    }
+
     #region ConfigMap
 
     [AvaloniaFact]
@@ -2127,106 +2227,6 @@ public class VisualizationViewTests
 
         vm.Graph.Edges.Count.ShouldBe(1);
         vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ReplicaSet>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
-    }
-
-    [AvaloniaFact]
-    public async Task LinkArgoTrackingAnnotationt()
-    {
-        var cluster = TestCluster.Get();
-
-        var namespaceResource = new V1Namespace
-        {
-            Metadata = new()
-            {
-                Name = "oidc-guard"
-            }
-        };
-
-        await cluster.AddOrUpdateResource(namespaceResource);
-        cluster.SelectedNamespaces.Add(namespaceResource);
-
-        var argoNamespace = new V1Namespace
-        {
-            Metadata = new()
-            {
-                Name = "argocd"
-            }
-        };
-
-        await cluster.AddOrUpdateResource(argoNamespace);
-        cluster.SelectedNamespaces.Add(argoNamespace);
-
-        await cluster.AddOrUpdateResource(new V1CustomResourceDefinition
-        {
-            Metadata = new()
-            {
-                Name = "applications.argoproj.io"
-            },
-            Spec = new()
-            {
-                Group = "argoproj.io",
-                Scope = "Namespaced",
-                Names = new()
-                {
-                    Plural = "applications",
-                    Singular = "application",
-                    Kind = "Application",
-                    ShortNames = ["app", "apps"]
-                },
-                Versions =
-                [
-                    new()
-                    {
-                        Name = "v1alpha1",
-                        Served = true,
-                        Storage = true,
-                        Schema = new()
-                        {
-                            OpenAPIV3Schema = new()
-                            {
-                                Type = "object"
-                            }
-                        }
-                    }
-                ]
-            }
-        });
-
-        await cluster.AddOrUpdateResource(new ArgoApplication
-        {
-            ApiVersion = "argoproj.io/v1alpha1",
-            Kind = "Application",
-            Metadata = new()
-            {
-                Name = "my-app",
-                NamespaceProperty = "argocd"
-            }
-        });
-
-        await cluster.AddOrUpdateResource(new V1Secret
-        {
-            Metadata = new()
-            {
-                Name = "oidc-guard",
-                NamespaceProperty = "oidc-guard",
-                Annotations = new Dictionary<string, string>
-                {
-                    ["argocd.argoproj.io/tracking-id"] = "my-app:/Secret:oidc-guard/oidc-guard"
-                }
-            },
-            StringData = new Dictionary<string, string>
-            {
-                ["appsettings.Production.json"] = "test"
-            },
-            Type = "Opaque"
-        });
-
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
-        vm.Initialize(cluster);
-
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<ArgoApplication>();
         vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
     }
 
