@@ -130,7 +130,7 @@ public partial class Cluster
             throw new Exception(error);
         }
 
-        return review?.Status.Allowed == true;
+        return review?.Status?.Allowed == true;
     }
 
     public bool CanI<T>(Verb verb, string? @namespace = null, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
