@@ -4,6 +4,9 @@ using KubeUI;
 using KubeUI.Tests.Infra;
 
 [assembly: AvaloniaTestApplication(typeof(TestAppBuilder))]
+[assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly, DisableTestParallelization = true)]
+
+namespace KubeUI.Tests.Infra;
 
 public class TestAppBuilder
 {
