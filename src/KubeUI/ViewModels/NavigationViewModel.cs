@@ -34,11 +34,11 @@ public sealed partial class NavigationViewModel : ViewModelBase
         }
         else if (item is ResourceNavigationLink resourceNavLink)
         {
-            _ = Task.Run(() => SelectResourceNavigationLink(resourceNavLink));
+            SelectResourceNavigationLink(resourceNavLink);
         }
         else if (item is NavigationLink navLink)
         {
-            _ = Task.Run(async () => await SelectNavigationLink(navLink));
+            _ = SelectNavigationLink(navLink);
         }
 
         if (item is NavigationItem nav && nav.NavigationItems.Count > 0)
@@ -60,7 +60,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
 
         nav.Count ??= nav.Cluster.GetResourceCount(nav.ControlType);
 
-        Dispatcher.UIThread.Post(() => Factory.AddToDocuments(vm));
+        Factory.AddToDocuments(vm);
     }
 
     private async Task SelectNavigationLink(NavigationLink link)
@@ -118,7 +118,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
                 init.Initialize(link.Cluster);
             }
 
-            Dispatcher.UIThread.Post(() => Factory.AddToDocuments(vm));
+            Factory.AddToDocuments(vm);
         }
     }
 }
