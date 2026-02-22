@@ -63,8 +63,8 @@
     <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia" Version="2.1.0" />
     <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia.Fluent" Version="2.1.0" />
     <PackageReference Include="Humanizer.Core" Version="3.0.1" />
-    <PackageReference Include="Irihi.Ursa" Version="1.14.1" />
-    <PackageReference Include="Irihi.Ursa.Themes.Semi" Version="1.14.1" />
+    <PackageReference Include="Irihi.Ursa" Version="1.15.0" />
+    <PackageReference Include="Irihi.Ursa.Themes.Semi" Version="1.15.0" />
     <PackageReference Include="JsonPathLINQ" Version="1.0.0-alpha.11" />
     <PackageReference Include="KubernetesClient" Version="18.0.13" />
     <PackageReference Include="KubernetesClient.Informer" Version="1.0.0-alpha.2" />
