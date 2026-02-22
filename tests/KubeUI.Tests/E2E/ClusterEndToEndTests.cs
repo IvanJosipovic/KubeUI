@@ -1,7 +1,7 @@
 using System.Text;
 using Avalonia;
 using Avalonia.Headless.XUnit;
-using FluentAssertions;
+using Shouldly;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -36,12 +36,12 @@ public class ClusterEndToEndTests
         await testHarness.Cluster.AddOrUpdateResource(ns);
 
         var ns2 = await testHarness.Kubernetes.CoreV1.ReadNamespaceAsync("test");
-        ns2.Name().Should().Be("test");
+        ns2.Name().ShouldBe("test");
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
         var ns3 = testHarness.Cluster.GetResource<V1Namespace>(null, "test");
-        ns3.Name().Should().Be("test");
+        ns3.Name().ShouldBe("test");
     }
 
     [AvaloniaFact]
@@ -72,13 +72,13 @@ public class ClusterEndToEndTests
         await testHarness.Cluster.AddOrUpdateResource(secret);
 
         var ns2 = await testHarness.Kubernetes.CoreV1.ReadNamespacedSecretAsync("test", "default");
-        ns2.Name().Should().Be("test");
+        ns2.Name().ShouldBe("test");
 
         await Task.Delay(TimeSpan.FromSeconds(15));
 
         var ns3 = testHarness.Cluster.GetResource<V1Secret>("default", "test");
-        ns3.Name().Should().Be("test");
-        ns3.Namespace().Should().Be("default");
+        ns3.Name().ShouldBe("test");
+        ns3.Namespace().ShouldBe("default");
     }
 
     [AvaloniaFact]
@@ -106,7 +106,7 @@ public class ClusterEndToEndTests
         await Task.Delay(TimeSpan.FromSeconds(2));
 
         var ns2 = testHarness.Cluster.GetResource<V1Namespace>(null, "test");
-        ns2.Name().Should().Be("test");
+        ns2.Name().ShouldBe("test");
     }
 
     [AvaloniaFact]
@@ -139,8 +139,8 @@ public class ClusterEndToEndTests
         await Task.Delay(TimeSpan.FromSeconds(2));
 
         var ns2 = testHarness.Cluster.GetResource<V1Secret>("default", "test");
-        ns2.Name().Should().Be("test");
-        ns2.Namespace().Should().Be("default");
+        ns2.Name().ShouldBe("test");
+        ns2.Namespace().ShouldBe("default");
     }
 
     [AvaloniaFact]
@@ -154,7 +154,7 @@ public class ClusterEndToEndTests
         await testHarness.Cluster.IsResourceReady<V1Namespace>();
 
         var ns = testHarness.Cluster.GetResourceList<V1Namespace>();
-        ns.Count.Should().BeGreaterThan(1);
+        ns.Count.ShouldBeGreaterThan(1);
     }
 
     [AvaloniaFact]
@@ -187,8 +187,8 @@ public class ClusterEndToEndTests
         await Task.Delay(TimeSpan.FromSeconds(2));
 
         var ns2 = testHarness.Cluster.GetResource<V1Namespace>(null, ns.Name());
-        ns2.Name().Should().Be("test");
-        ns2.Metadata.Labels["test"].Should().Be("test");
+        ns2.Name().ShouldBe("test");
+        ns2.Metadata.Labels["test"].ShouldBe("test");
     }
 
     [AvaloniaFact]
@@ -226,9 +226,9 @@ public class ClusterEndToEndTests
         await Task.Delay(TimeSpan.FromSeconds(2));
 
         var ns2 = testHarness.Cluster.GetResource<V1Secret>("default", "test");
-        ns2.Name().Should().Be("test");
-        ns2.Namespace().Should().Be("default");
-        ns2.Metadata.Labels["test"].Should().Be("test");
+        ns2.Name().ShouldBe("test");
+        ns2.Namespace().ShouldBe("default");
+        ns2.Metadata.Labels["test"].ShouldBe("test");
     }
 
     [AvaloniaFact]
@@ -259,7 +259,7 @@ public class ClusterEndToEndTests
 
         await Task.Delay(TimeSpan.FromSeconds(10));
 
-        testHarness.Cluster.GetResourceList<V1Namespace>().All(x => x.Name() != "test").Should().BeTrue();
+        testHarness.Cluster.GetResourceList<V1Namespace>().All(x => x.Name() != "test").ShouldBeTrue();
     }
 
     [AvaloniaFact]
@@ -291,7 +291,7 @@ public class ClusterEndToEndTests
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
-        testHarness.Cluster.GetResourceList<V1Secret>().All(x => x.Name() != "test").Should().BeTrue();
+        testHarness.Cluster.GetResourceList<V1Secret>().All(x => x.Name() != "test").ShouldBeTrue();
     }
 
     [AvaloniaFact]
@@ -323,12 +323,12 @@ public class ClusterEndToEndTests
         await Task.Delay(TimeSpan.FromSeconds(2));
 
         var ns2 = await testHarness.Kubernetes.CoreV1.ReadNamespaceAsync("test");
-        ns2.Name().Should().Be("test");
+        ns2.Name().ShouldBe("test");
 
         await Task.Delay(TimeSpan.FromSeconds(5));
 
         var ns3 = testHarness.Cluster.GetResource<V1Namespace>(null, "test");
-        ns3.Name().Should().Be("test");
+        ns3.Name().ShouldBe("test");
     }
 
     private string yamlCRD = @"
@@ -403,16 +403,16 @@ spec:
 
         var items = kind.GetType().GetProperty("Items").GetValue(kind);
 
-        items.GetType().GetProperty("Count").GetValue(items).Should().Be(1);
+        items.GetType().GetProperty("Count").GetValue(items).ShouldBe(1);
 
         foreach (object item in (IList)items.GetType().GetProperty("Items").GetValue(items))
         {
             var obj = (IKubernetesObject<V1ObjectMeta>)item;
 
-            obj.Name().Should().Be("test1");
-            obj.Namespace().Should().Be("default");
+            obj.Name().ShouldBe("test1");
+            obj.Namespace().ShouldBe("default");
             var spec = obj.GetType().GetProperty("Spec").GetValue(obj);
-            spec.GetType().GetProperty("SomeString").GetValue(spec).Should().Be("myValue");
+            spec.GetType().GetProperty("SomeString").GetValue(spec).ShouldBe("myValue");
         }
     }
 
@@ -797,14 +797,14 @@ rules:
         await Task.Delay(TimeSpan.FromSeconds(15));
 
         var nodes = cluster.GetResourceList<V1Node>();
-        nodes.Count.Should().Be(1);
+        nodes.Count.ShouldBe(1);
 
         var secrets = cluster.GetResourceList<V1Secret>();
         await Task.Delay(TimeSpan.FromSeconds(15));
 
-        secrets.Count.Should().Be(1);
-        secrets.First().Namespace().Should().Be("my-app");
-        secrets.First().Name().Should().Be("my-serviceaccount");
+        secrets.Count.ShouldBe(1);
+        secrets.First().Namespace().ShouldBe("my-app");
+        secrets.First().Name().ShouldBe("my-serviceaccount");
     }
 
     [AvaloniaFact]
@@ -834,12 +834,12 @@ rules:
         await Task.Delay(TimeSpan.FromSeconds(5));
 
         var nodes = cluster.GetResourceList<V1Node>();
-        nodes.Count.Should().Be(1);
+        nodes.Count.ShouldBe(1);
 
         var secrets = cluster.GetResourceList<V1Secret>();
-        secrets.Count.Should().Be(1);
-        secrets.First().Namespace().Should().Be("my-app");
-        secrets.First().Name().Should().Be("my-serviceaccount");
+        secrets.Count.ShouldBe(1);
+        secrets.First().Namespace().ShouldBe("my-app");
+        secrets.First().Name().ShouldBe("my-serviceaccount");
     }
 
     [AvaloniaFact]
@@ -850,29 +850,29 @@ rules:
 
         var cluster = testHarness.Cluster;
 
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Create)).Should().BeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Delete)).Should().BeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Get)).Should().BeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.List)).Should().BeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Patch)).Should().BeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Update)).Should().BeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Watch)).Should().BeTrue();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Create)).ShouldBeTrue();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Delete)).ShouldBeTrue();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Get)).ShouldBeTrue();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.List)).ShouldBeTrue();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Patch)).ShouldBeTrue();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Update)).ShouldBeTrue();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Watch)).ShouldBeTrue();
 
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Get, "log")).Should().BeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Create, "exec")).Should().BeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Create, "portforward")).Should().BeTrue();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Get, "log")).ShouldBeTrue();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Create, "exec")).ShouldBeTrue();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Create, "portforward")).ShouldBeTrue();
 
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Create, "default")).Should().BeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Delete, "default")).Should().BeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Get, "default")).Should().BeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.List, "default")).Should().BeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Patch, "default")).Should().BeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Update, "default")).Should().BeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Watch, "default")).Should().BeTrue();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Create, "default")).ShouldBeTrue();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Delete, "default")).ShouldBeTrue();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Get, "default")).ShouldBeTrue();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.List, "default")).ShouldBeTrue();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Patch, "default")).ShouldBeTrue();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Update, "default")).ShouldBeTrue();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Watch, "default")).ShouldBeTrue();
 
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Get, "default", "log")).Should().BeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Create, "default", "exec")).Should().BeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Create, "default", "portforward")).Should().BeTrue();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Get, "default", "log")).ShouldBeTrue();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Create, "default", "exec")).ShouldBeTrue();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Create, "default", "portforward")).ShouldBeTrue();
     }
 
     [AvaloniaFact]
@@ -898,37 +898,37 @@ rules:
         await cluster.SeedResource<V1Pod>();
         await cluster.IsResourceReady<V1Pod>();
 
-        (await cluster.UpdateCanI<V1Namespace>(Cluster.Verb.Create)).Should().BeFalse();
-        (await cluster.UpdateCanI<V1Namespace>(Cluster.Verb.Delete)).Should().BeFalse();
-        (await cluster.UpdateCanI<V1Namespace>(Cluster.Verb.Get)).Should().BeFalse();
-        (await cluster.UpdateCanI<V1Namespace>(Cluster.Verb.List)).Should().BeFalse();
-        (await cluster.UpdateCanI<V1Namespace>(Cluster.Verb.Patch)).Should().BeFalse();
-        (await cluster.UpdateCanI<V1Namespace>(Cluster.Verb.Update)).Should().BeFalse();
-        (await cluster.UpdateCanI<V1Namespace>(Cluster.Verb.Watch)).Should().BeFalse();
+        (await cluster.UpdateCanI<V1Namespace>(Cluster.Verb.Create)).ShouldBeFalse();
+        (await cluster.UpdateCanI<V1Namespace>(Cluster.Verb.Delete)).ShouldBeFalse();
+        (await cluster.UpdateCanI<V1Namespace>(Cluster.Verb.Get)).ShouldBeFalse();
+        (await cluster.UpdateCanI<V1Namespace>(Cluster.Verb.List)).ShouldBeFalse();
+        (await cluster.UpdateCanI<V1Namespace>(Cluster.Verb.Patch)).ShouldBeFalse();
+        (await cluster.UpdateCanI<V1Namespace>(Cluster.Verb.Update)).ShouldBeFalse();
+        (await cluster.UpdateCanI<V1Namespace>(Cluster.Verb.Watch)).ShouldBeFalse();
 
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Create)).Should().BeFalse();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Delete)).Should().BeFalse();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Get)).Should().BeFalse();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.List)).Should().BeFalse();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Patch)).Should().BeFalse();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Update)).Should().BeFalse();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Watch)).Should().BeFalse();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Create)).ShouldBeFalse();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Delete)).ShouldBeFalse();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Get)).ShouldBeFalse();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.List)).ShouldBeFalse();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Patch)).ShouldBeFalse();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Update)).ShouldBeFalse();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Watch)).ShouldBeFalse();
 
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Get, "log")).Should().BeFalse();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Create, "exec")).Should().BeFalse();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Create, "portforward")).Should().BeFalse();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Get, "log")).ShouldBeFalse();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Create, "exec")).ShouldBeFalse();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Create, "portforward")).ShouldBeFalse();
 
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Create, "my-app")).Should().BeFalse();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Delete, "my-app")).Should().BeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Get, "my-app")).Should().BeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.List, "my-app")).Should().BeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Patch, "my-app")).Should().BeFalse();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Update, "my-app")).Should().BeFalse();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Watch, "my-app")).Should().BeTrue();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Create, "my-app")).ShouldBeFalse();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Delete, "my-app")).ShouldBeTrue();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Get, "my-app")).ShouldBeTrue();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.List, "my-app")).ShouldBeTrue();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Patch, "my-app")).ShouldBeFalse();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Update, "my-app")).ShouldBeFalse();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Watch, "my-app")).ShouldBeTrue();
 
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Get, "my-app", "log")).Should().BeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Create, "my-app", "exec")).Should().BeTrue();
-        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Create, "my-app", "portforward")).Should().BeTrue();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Get, "my-app", "log")).ShouldBeTrue();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Create, "my-app", "exec")).ShouldBeTrue();
+        (await cluster.UpdateCanI<V1Pod>(Cluster.Verb.Create, "my-app", "portforward")).ShouldBeTrue();
     }
 
     #endregion
