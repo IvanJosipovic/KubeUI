@@ -2230,6 +2230,224 @@ public class VisualizationViewTests
         vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
     }
 
+    [AvaloniaFact]
+    public async Task LinkEventToPod_GraphInitialized()
+    {
+        var cluster = TestCluster.Get();
+
+        await cluster.AddOrUpdateResource(new V1Pod
+        {
+            Metadata = new() { Name = "my-pod", NamespaceProperty = "default" }
+        });
+
+        await cluster.AddOrUpdateResource(new V1Event
+        {
+            Metadata = new() { Name = "pod-event", NamespaceProperty = "default" },
+            InvolvedObject = new V1ObjectReference
+            {
+                Kind = "Pod",
+                Name = "my-pod",
+                NamespaceProperty = "default"
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Graph.ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkIngressToService_GraphInitialized()
+    {
+        var cluster = TestCluster.Get();
+
+        await cluster.AddOrUpdateResource(new V1Service
+        {
+            Metadata = new() { Name = "my-service", NamespaceProperty = "default" },
+            Spec = new V1ServiceSpec
+            {
+                Selector = new Dictionary<string, string> { ["app"] = "demo" },
+                Ports = new List<V1ServicePort>
+                {
+                    new() { Port = 80 }
+                }
+            }
+        });
+
+        await cluster.AddOrUpdateResource(new V1Ingress
+        {
+            Metadata = new() { Name = "my-ingress", NamespaceProperty = "default" },
+            Spec = new V1IngressSpec
+            {
+                Rules = new List<V1IngressRule>
+                {
+                    new()
+                    {
+                        Http = new V1HTTPIngressRuleValue
+                        {
+                            Paths = new List<V1HTTPIngressPath>
+                            {
+                                new()
+                                {
+                                    Path = "/",
+                                    PathType = "Prefix",
+                                    Backend = new V1IngressBackend
+                                    {
+                                        Service = new V1IngressServiceBackend
+                                        {
+                                            Name = "my-service",
+                                            Port = new V1ServiceBackendPort { Number = 80 }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Graph.ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkEndpointSliceToService_GraphInitialized()
+    {
+        var cluster = TestCluster.Get();
+
+        await cluster.AddOrUpdateResource(new V1Service
+        {
+            Metadata = new() { Name = "my-service", NamespaceProperty = "default" }
+        });
+
+        await cluster.AddOrUpdateResource(new V1EndpointSlice
+        {
+            Metadata = new()
+            {
+                Name = "my-service-slice",
+                NamespaceProperty = "default",
+                Labels = new Dictionary<string, string>
+                {
+                    ["kubernetes.io/service-name"] = "my-service"
+                }
+            },
+            AddressType = "IPv4",
+            Endpoints = new List<DiscoveryV1Endpoint>
+            {
+                new()
+                {
+                    Addresses = new List<string> { "10.0.0.1" }
+                }
+            },
+            Ports = new List<DiscoveryV1EndpointPort>
+            {
+                new()
+                {
+                    Port = 80
+                }
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Graph.ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkServiceAccountToPod_GraphInitialized()
+    {
+        var cluster = TestCluster.Get();
+
+        await cluster.AddOrUpdateResource(new V1ServiceAccount
+        {
+            Metadata = new() { Name = "my-sa", NamespaceProperty = "default" }
+        });
+
+        await cluster.AddOrUpdateResource(new V1Pod
+        {
+            Metadata = new() { Name = "my-pod", NamespaceProperty = "default" },
+            Spec = new V1PodSpec
+            {
+                ServiceAccountName = "my-sa",
+                Containers = new List<V1Container>
+                {
+                    new() { Name = "c", Image = "nginx" }
+                }
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Graph.ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkPersistentVolumeClaimToPod_GraphInitialized()
+    {
+        var cluster = TestCluster.Get();
+
+        await cluster.AddOrUpdateResource(new V1PersistentVolumeClaim
+        {
+            Metadata = new() { Name = "my-pvc", NamespaceProperty = "default" },
+            Spec = new V1PersistentVolumeClaimSpec
+            {
+                AccessModes = new List<string> { "ReadWriteOnce" },
+                Resources = new V1ResourceRequirements
+                {
+                    Requests = new Dictionary<string, ResourceQuantity>
+                    {
+                        ["storage"] = new ResourceQuantity("1Gi")
+                    }
+                }
+            }
+        });
+
+        await cluster.AddOrUpdateResource(new V1Pod
+        {
+            Metadata = new() { Name = "my-pod", NamespaceProperty = "default" },
+            Spec = new V1PodSpec
+            {
+                Containers = new List<V1Container>
+                {
+                    new()
+                    {
+                        Name = "c",
+                        Image = "nginx",
+                        VolumeMounts = new List<V1VolumeMount>
+                        {
+                            new()
+                            {
+                                Name = "pvc-vol",
+                                MountPath = "/data"
+                            }
+                        }
+                    }
+                },
+                Volumes = new List<V1Volume>
+                {
+                    new()
+                    {
+                        Name = "pvc-vol",
+                        PersistentVolumeClaim = new V1PersistentVolumeClaimVolumeSource
+                        {
+                            ClaimName = "my-pvc"
+                        }
+                    }
+                }
+            }
+        });
+
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        vm.Initialize(cluster);
+
+        vm.Graph.ShouldNotBeNull();
+    }
     #endregion
 }
 
