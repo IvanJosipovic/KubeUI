@@ -3168,13 +3168,14 @@ public class VisualizationViewTests
     }
 
     #endregion
-}
-[KubernetesEntity(Group = "argoproj.io", ApiVersion = "v1alpha1", Kind = "Application", PluralName = "applications")]
-public sealed class ArgoApplication : IKubernetesObject<V1ObjectMeta>
-{
-    public string ApiVersion { get; set; } = "argoproj.io/v1alpha1";
 
-    public string Kind { get; set; } = "Application";
+    [KubernetesEntity(Group = "argoproj.io", ApiVersion = "v1alpha1", Kind = "Application", PluralName = "applications")]
+    public sealed class ArgoApplication : IKubernetesObject<V1ObjectMeta>
+    {
+        public string ApiVersion { get; set; } = "argoproj.io/v1alpha1";
 
-    public V1ObjectMeta Metadata { get; set; } = new();
+        public string Kind { get; set; } = "Application";
+
+        public V1ObjectMeta Metadata { get; set; } = new();
+    }
 }
