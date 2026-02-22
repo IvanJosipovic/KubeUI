@@ -36,7 +36,7 @@ public class TestHarness : IDisposable
         await Cluster.Connect();
     }
 
-    public async Task<ICluster> GetClusterFromServiceAccount(string @namespace, string name)
+    public async Task<ICluster> GetClusterFromServiceAccountSecret(string @namespace, string name)
     {
         var secret = await Kubernetes.CoreV1.ReadNamespacedSecretAsync(name, @namespace);
 
