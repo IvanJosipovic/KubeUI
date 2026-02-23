@@ -96,7 +96,7 @@ jobs:
         run: |
           $decoded = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String("${{ steps.get-metrics.outputs.body_b64 }}"))
           $escaped = $decoded -replace '%', '%25' -replace "`r", '' -replace "`n", '%0A' -replace '\|', '%7C'
-          echo "body=$escaped" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          echo "body=$escaped" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
       - name: Create or update Download Metrics discussion
         uses: abirismyname/create-discussion@v2.1.0
