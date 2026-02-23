@@ -92,8 +92,10 @@ jobs:
 
       - name: Decode body for discussion
         id: decode-body
+        shell: pwsh
         run: |
-          echo "body=$(echo ${{ steps.get-metrics.outputs.body_b64 }} | base64 -d)" >> $GITHUB_ENV
+          $decoded = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String("${{ steps.get-metrics.outputs.body_b64 }}"))
+          "body=$decoded" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Create or update Download Metrics discussion
         uses: abirismyname/create-discussion@v2.1.0
