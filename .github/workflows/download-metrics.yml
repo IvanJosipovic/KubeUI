@@ -87,7 +87,7 @@ jobs:
           $mermaid += "`n```"
           Write-Host $mermaid
           $output = "$metricsTable`n`n$mermaid"
-          echo "body=$output" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "body=$output" >> $env:GITHUB_OUTPUT
 
       - name: Create or update Download Metrics discussion
         uses: abirismyname/create-discussion@v2.1.0
