@@ -80,18 +80,19 @@ jobs:
           $mermaid += "`n  y-axis Downloads"
           $series = @('Windows_x64','Windows_arm64','Linux_x64','Linux_arm64','macOS_x64','macOS_arm64')
           foreach ($s in $series) {
-            $mermaid += "`n  series $s: "
+            $mermaid += "`n  series ${s}: "
             $mermaid += ($history | ForEach-Object { $_.$s }) -join ','
           }
           $mermaid += "`n  x $($dates -join ',')"
           $mermaid += "`n```"
           Write-Host $mermaid
-          echo "metricsTable=$metricsTable`n$mermaid" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          $output = "$metricsTable`n`n$mermaid"
+          echo "body=$output" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
       - name: Create or update Download Metrics discussion
         uses: abirismyname/create-discussion@v2.1.0
         with:
           title: Download Metrics
-          body: ${{ steps.get-metrics.outputs.metricsTable }}
+          body: ${{ steps.get-metrics.outputs.body }}
           category-name: General
           github-token: ${{ secrets.GITHUB_TOKEN }}
