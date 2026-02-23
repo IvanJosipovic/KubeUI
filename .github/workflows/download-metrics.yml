@@ -77,11 +77,26 @@ jobs:
           $output = "$metricsTable"
           Set-Content -Path body.md -Value $output -Encoding UTF8
 
-      - name: Create or update Download Metrics discussion
-        uses: abirismyname/create-discussion@v2.1.0
-        with:
-          title: Download Metrics
-          body-filepath: body.md
-          category-name: General
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: List all discussions (troubleshoot)
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $repo = "${{ github.repository }}"
+          $url = "https://api.github.com/repos/$repo/discussions"
+          $headers = @{ Authorization = "Bearer $env:GITHUB_TOKEN"; Accept = "application/vnd.github.v3+json" }
+          $result = Invoke-RestMethod -Uri $url -Headers $headers
+          $result | Format-Table id, title, html_url
 
+      - name: Update discussion body
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api graphql \
+          -f query='mutation($id: ID!, $body: String!) {
+              updateDiscussion(input: { discussionId: $id, body: $body }) {
+                discussion { id }
+              }
+            }' \
+            -f id="D_kwDOCsJEA84AkUSH" \
+            -f body="$(cat body.md)"
