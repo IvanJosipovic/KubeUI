@@ -74,19 +74,7 @@ jobs:
           $metricsTable += "`n| macOS | arm64 | $($osArchMetrics.macOS_arm64) |"
           Write-Host $metricsTable
 
-          # Build Mermaid chart
-          $mermaid = "```mermaid`nlinechart`n  title Downloads Over Time`n  x-axis Date"
-          $dates = $history | ForEach-Object { $_.date }
-          $mermaid += "`n  y-axis Downloads"
-          $series = @('Windows_x64','Windows_arm64','Linux_x64','Linux_arm64','macOS_x64','macOS_arm64')
-          foreach ($s in $series) {
-            $mermaid += "`n  series ${s}: "
-            $mermaid += ($history | ForEach-Object { $_.$s }) -join ','
-          }
-          $mermaid += "`n  x $($dates -join ',')"
-          $mermaid += "`n"
-          Write-Host $mermaid
-          $output = "$metricsTable`n`n$mermaid"
+          $output = "$metricsTable"
           Set-Content -Path body.md -Value $output -Encoding UTF8
 
       - name: Create or update Download Metrics discussion
