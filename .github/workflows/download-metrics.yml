@@ -87,7 +87,7 @@ jobs:
           $mermaid += "`n```"
           Write-Host $mermaid
           $output = "$metricsTable`n`n$mermaid"
-          $escaped = $output -replace '"', '`"'
+          $escaped = $output -replace '"', '``"'
           echo "body=$escaped" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
       - name: Create or update Download Metrics discussion
