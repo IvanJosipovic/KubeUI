@@ -6,12 +6,12 @@ permissions:
 
 on:
   schedule:
-    - cron: '0 * * * *'
+    - cron: '0 0 * * *'
   workflow_dispatch:
 
 jobs:
   download-metrics:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - name: get-metrics
         id: get-metrics
@@ -29,7 +29,7 @@ jobs:
           }
           $history = @()
           foreach ($release in $json) {
-            $date = $release.published_at.Substring(0,10)
+            $date = $release.published_at.ToString('yyyy-MM-dd')
             $row = [ordered]@{
               date = $date
               Windows_x64 = 0
@@ -74,25 +74,14 @@ jobs:
           $metricsTable += "`n| macOS | arm64 | $($osArchMetrics.macOS_arm64) |"
           Write-Host $metricsTable
 
-          # Build Mermaid chart
-          $mermaid = "```mermaid`nlinechart`n  title Downloads Over Time`n  x-axis Date"
-          $dates = $history | ForEach-Object { $_.date }
-          $mermaid += "`n  y-axis Downloads"
-          $series = @('Windows_x64','Windows_arm64','Linux_x64','Linux_arm64','macOS_x64','macOS_arm64')
-          foreach ($s in $series) {
-            $mermaid += "`n  series ${s}: "
-            $mermaid += ($history | ForEach-Object { $_.$s }) -join ','
-          }
-          $mermaid += "`n  x $($dates -join ',')"
-          $mermaid += "`n```"
-          Write-Host $mermaid
-          $output = "$metricsTable`n`n$mermaid"
-          echo "body=$output" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          $output = "$metricsTable"
+          Set-Content -Path body.md -Value $output -Encoding UTF8
 
       - name: Create or update Download Metrics discussion
         uses: abirismyname/create-discussion@v2.1.0
         with:
           title: Download Metrics
-          body: ${{ steps.get-metrics.outputs.body }}
+          body-filepath: body.md
           category-name: General
           github-token: ${{ secrets.GITHUB_TOKEN }}
+
