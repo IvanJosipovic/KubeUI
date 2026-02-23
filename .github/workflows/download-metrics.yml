@@ -87,23 +87,13 @@ jobs:
           $mermaid += "`n"
           Write-Host $mermaid
           $output = "$metricsTable`n`n$mermaid"
-          $encoded = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($output))
-          echo "body_b64=$encoded" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-
-      - name: Decode body for discussion
-        id: decode-body
-        shell: pwsh
-        run: |
-          $decoded = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String("${{ steps.get-metrics.outputs.body_b64 }}"))
-          $escaped = $decoded -replace '%', '%25' -replace "`r", '' -replace "`n", '%0A' -replace '\|', '%7C'
-          echo "body_env=$escaped" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "body_raw=$decoded" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          Set-Content -Path body.md -Value $output -Encoding UTF8
 
       - name: Create or update Download Metrics discussion
         uses: abirismyname/create-discussion@v2.1.0
         with:
           title: Download Metrics
-          body: ${{ steps.decode-body.outputs.body_raw }}
+          body-filepath: body.md
           category-name: General
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
