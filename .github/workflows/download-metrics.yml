@@ -77,6 +77,17 @@ jobs:
           $output = "$metricsTable"
           Set-Content -Path body.md -Value $output -Encoding UTF8
 
+      - name: List all discussions (troubleshoot)
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $repo = "${{ github.repository }}"
+          $url = "https://api.github.com/repos/$repo/discussions"
+          $headers = @{ Authorization = "Bearer $env:GITHUB_TOKEN"; Accept = "application/vnd.github.v3+json" }
+          $result = Invoke-RestMethod -Uri $url -Headers $headers
+          $result | Format-Table id, title, html_url
+
       - name: Update discussion body
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
