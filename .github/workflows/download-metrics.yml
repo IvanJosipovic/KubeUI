@@ -1,0 +1,97 @@
+name: Download Metrics
+
+permissions:
+  discussions: write
+  contents: read
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  download-metrics:
+    runs-on: windows-latest
+    steps:
+      - name: get-metrics
+        id: get-metrics
+        shell: pwsh
+        run: |
+          $url = 'https://api.github.com/repos/ivanjosipovic/kubeui/releases'
+          $json = Invoke-RestMethod -Uri $url
+          $osArchMetrics = @{
+            Windows_x64 = 0
+            Windows_arm64 = 0
+            Linux_x64 = 0
+            Linux_arm64 = 0
+            macOS_x64 = 0
+            macOS_arm64 = 0
+          }
+          $history = @()
+          foreach ($release in $json) {
+            $date = $release.published_at.Substring(0,10)
+            $row = [ordered]@{
+              date = $date
+              Windows_x64 = 0
+              Windows_arm64 = 0
+              Linux_x64 = 0
+              Linux_arm64 = 0
+              macOS_x64 = 0
+              macOS_arm64 = 0
+            }
+            foreach ($asset in $release.assets) {
+              $name = $asset.name.ToLower()
+              if ($name -like 'releases.*.json') { continue }
+              if ($name -like '*win*' -and $name -like '*x64*') {
+                $osArchMetrics.Windows_x64 += $asset.download_count
+                $row.Windows_x64 += $asset.download_count
+              } elseif ($name -like '*win*' -and $name -like '*arm64*') {
+                $osArchMetrics.Windows_arm64 += $asset.download_count
+                $row.Windows_arm64 += $asset.download_count
+              } elseif ($name -like '*linux*' -and $name -like '*x64*') {
+                $osArchMetrics.Linux_x64 += $asset.download_count
+                $row.Linux_x64 += $asset.download_count
+              } elseif ($name -like '*linux*' -and $name -like '*arm64*') {
+                $osArchMetrics.Linux_arm64 += $asset.download_count
+                $row.Linux_arm64 += $asset.download_count
+              } elseif ($name -like '*osx*' -and $name -like '*x64*') {
+                $osArchMetrics.macOS_x64 += $asset.download_count
+                $row.macOS_x64 += $asset.download_count
+              } elseif ($name -like '*osx*' -and $name -like '*arm64*') {
+                $osArchMetrics.macOS_arm64 += $asset.download_count
+                $row.macOS_arm64 += $asset.download_count
+              }
+            }
+            $history += $row
+          }
+          Write-Host "Download Metrics by OS and Architecture:"
+          $metricsTable = "| Platform | Architecture | Downloads |`n|---|---|---|"
+          $metricsTable += "`n| Windows | x64 | $($osArchMetrics.Windows_x64) |"
+          $metricsTable += "`n| Windows | arm64 | $($osArchMetrics.Windows_arm64) |"
+          $metricsTable += "`n| Linux | x64 | $($osArchMetrics.Linux_x64) |"
+          $metricsTable += "`n| Linux | arm64 | $($osArchMetrics.Linux_arm64) |"
+          $metricsTable += "`n| macOS | x64 | $($osArchMetrics.macOS_x64) |"
+          $metricsTable += "`n| macOS | arm64 | $($osArchMetrics.macOS_arm64) |"
+          Write-Host $metricsTable
+
+          # Build Mermaid chart
+          $mermaid = "```mermaid`nlinechart`n  title Downloads Over Time`n  x-axis Date"
+          $dates = $history | ForEach-Object { $_.date }
+          $mermaid += "`n  y-axis Downloads"
+          $series = @('Windows_x64','Windows_arm64','Linux_x64','Linux_arm64','macOS_x64','macOS_arm64')
+          foreach ($s in $series) {
+            $mermaid += "`n  series $s: "
+            $mermaid += ($history | ForEach-Object { $_.$s }) -join ','
+          }
+          $mermaid += "`n  x $($dates -join ',')"
+          $mermaid += "`n```"
+          Write-Host $mermaid
+          echo "metricsTable=$metricsTable`n$mermaid" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Create or update Download Metrics discussion
+        uses: abirismyname/create-discussion@v2.1.0
+        with:
+          title: Download Metrics
+          body: ${{ steps.get-metrics.outputs.metricsTable }}
+          category-name: General
+          github-token: ${{ secrets.GITHUB_TOKEN }}
