@@ -84,7 +84,7 @@ jobs:
             $mermaid += ($history | ForEach-Object { $_.$s }) -join ','
           }
           $mermaid += "`n  x $($dates -join ',')"
-          $mermaid += "`n```"
+          $mermaid += "`n"
           Write-Host $mermaid
           $output = "$metricsTable`n`n$mermaid"
           "body=$output" >> $env:GITHUB_OUTPUT
