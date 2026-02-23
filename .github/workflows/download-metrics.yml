@@ -86,5 +86,5 @@ jobs:
           curl -X PATCH \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/${{ github.repository }}/discussions/$DISCUSSION_ID \
+            https://api.github.com/repos/ivanjosipovic/kubeui/discussions/1179 \
             -d "{\"body\": $BODY}"
