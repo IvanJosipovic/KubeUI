@@ -70,7 +70,7 @@
     <PackageReference Include="Irihi.Ursa.Themes.Semi" Version="1.15.0" />
     <PackageReference Include="JsonPathLINQ" Version="1.0.0-alpha.11" />
     <PackageReference Include="KubernetesClient" Version="19.0.2" />
-    <PackageReference Include="KubernetesClient.Informer" Version="1.0.0-alpha.3" />
+    <PackageReference Include="KubernetesClient.Informer" Version="1.0.0-alpha.4" />
     <PackageReference Include="KubernetesCRDModelGen" Version="1.2.3" />
     <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.0.0-rc6.1" />
     <PackageReference Include="Mapster" Version="7.4.0" />
