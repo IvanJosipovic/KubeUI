@@ -3,7 +3,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:converters="using:KubeUI.Converters"
     xmlns:core="using:Dock.Model.Core"
-    xmlns:k="using:KubeUI">
+    xmlns:k="using:KubeUI"
+    xmlns:u="https://irihi.tech/ursa">
     <Styles.Resources>
         <ResourceDictionary>
             <ResourceDictionary.ThemeDictionaries>
@@ -30,9 +31,32 @@
                         Stroke="Gray"
                         StrokeThickness="0.6"
                         ToolTip.Tip="{ReflectionBinding Cluster.Name}" />
-                    <TextBlock Padding="{DynamicResource DockHeaderContentPadding}" Text="{Binding Title}" />
+                    <TextBlock
+                        Padding="{DynamicResource DockHeaderContentPadding}"
+                        VerticalAlignment="Center"
+                        Text="{Binding Title}" />
                 </StackPanel>
             </DataTemplate>
+        </Setter>
+    </Style>
+
+    <Style Selector="u|MultiComboBoxItem">
+        <Setter Property="Padding" Value="4,2,4,2" />
+        <Setter Property="Width" Value="200" />
+        <Setter Property="MinHeight" Value="22" />
+    </Style>
+    <Style Selector="u|MultiComboBoxSelectedItemList">
+        <Setter Property="Interaction.Behaviors">
+            <BehaviorCollectionTemplate>
+                <BehaviorCollection>
+                    <EventTriggerBehavior EventName="PointerReleased">
+                        <ChangePropertyAction
+                            PropertyName="IsDropDownOpen"
+                            TargetObject="{Binding $parent[u:MultiComboBox]}"
+                            Value="{Binding !$parent[u:MultiComboBox].IsDropDownOpen}" />
+                    </EventTriggerBehavior>
+                </BehaviorCollection>
+            </BehaviorCollectionTemplate>
         </Setter>
     </Style>
 </Styles>

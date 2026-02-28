@@ -44,7 +44,7 @@
             HorizontalAlignment="Right"
             Orientation="Horizontal">
             <u:MultiComboBox
-                Width="300"
+                Width="200"
                 MaxHeight="20"
                 Classes="ClearButton"
                 ItemsSource="{Binding Cluster.Namespaces}"
@@ -52,13 +52,13 @@
 
                 <u:MultiComboBox.SelectedItemTemplate>
                     <DataTemplate x:DataType="k8s:V1Namespace">
-                        <Label Content="{Binding Metadata.Name}" />
+                        <TextBlock Text="{Binding Metadata.Name}" />
                     </DataTemplate>
                 </u:MultiComboBox.SelectedItemTemplate>
 
                 <u:MultiComboBox.ItemTemplate>
                     <DataTemplate x:DataType="k8s:V1Namespace">
-                        <Label Content="{Binding Metadata.Name}" />
+                        <TextBlock Text="{Binding Metadata.Name}" />
                     </DataTemplate>
                 </u:MultiComboBox.ItemTemplate>
 

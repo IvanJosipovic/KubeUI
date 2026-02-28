@@ -27,7 +27,7 @@ public interface ICluster
     IKubernetes? Client { get; set; }
     IResourceConfig GetResourceConfig(GroupApiVersionKind kind);
     IResourceConfig GetResourceConfig<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
-    IReadOnlyList<V1Namespace> Namespaces { get; set; }
+    ReadOnlyObservableCollection<V1Namespace> Namespaces { get; set; }
     K8SConfiguration KubeConfig { get; set; }
     ModelCache ModelCache { get; set; }
     ObservableCollection<NavigationItem> NavigationItems { get; set; }
