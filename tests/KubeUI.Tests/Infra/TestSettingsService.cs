@@ -10,10 +10,6 @@ public class TestSettingsService : ISettingsService
     {
     }
 
-    public void LoadSettings()
-    {
-    }
-
     public void SaveSettings()
     {
     }

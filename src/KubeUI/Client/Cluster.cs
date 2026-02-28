@@ -181,7 +181,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     {
                         var settings = _settingsService.Settings.GetClusterSettings(this);
 
-                        if (settings.Namespaces.Count == 0)
+                        if (settings?.Namespaces?.Count == 0)
                         {
                             Connected = false;
                             Status = ClusterStatus.Errored;
