@@ -8,15 +8,26 @@ public sealed partial class SettingsService : ObservableObject, ISettingsService
 {
     private readonly ILogger<SettingsService> _logger;
 
+    private Settings? _settings;
+
     public Settings Settings
     {
         get
         {
-            return Application.Current.GetRequiredService<IConfiguration>().Get<Settings>() ?? new Settings();
+            if (_settings != null)
+            {
+                return _settings;
+            }
+
+            _settings = Application.Current.GetRequiredService<IConfiguration>().Get<Settings>() ?? new Settings();
+
+            return _settings;
         }
         set
         {
+            _settings = value;
             SaveSettings();
+            OnPropertyChanged(nameof(Settings));
         }
     }
 
