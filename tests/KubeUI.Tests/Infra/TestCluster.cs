@@ -12,6 +12,7 @@ using KubeUI.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using KubernetesClient.Informer.Client;
 using Mapster;
+using Avalonia.Media;
 
 namespace KubeUI.Tests.Infra;
 
@@ -53,6 +54,7 @@ public class TestCluster : ICluster
     public string KubeConfigPath { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     public string Name { get; set; } = "test";
     public bool IsExpanded { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    public IBrush ClusterColor { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
 

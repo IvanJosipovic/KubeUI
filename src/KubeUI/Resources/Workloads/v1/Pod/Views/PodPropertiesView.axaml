@@ -22,7 +22,7 @@
         </DataTemplate>
     </UserControl.Resources>
     <StackPanel>
-        <c:PropertyItem Key="ControlledBy" Value="{Binding ., Converter={x:Static converters:Converters.ObjectOwnerNameConverter}}" />
+        <c:PropertyItem Key="ControlledBy" Value="{Binding ., Converter={x:Static converters:Converters.ObjectOwnerName}}" />
         <c:PropertyItem Key="Status" Value="{Binding Status.Phase}" />
         <c:PropertyItem Key="Node" Value="{Binding Spec.NodeName}" />
         <c:PropertyItem Key="Pod IP" Value="{Binding Status.PodIP}" />

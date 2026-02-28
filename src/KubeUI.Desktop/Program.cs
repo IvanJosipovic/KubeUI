@@ -1,5 +1,6 @@
 ﻿using System;
 using Avalonia;
+using KubeUI.Assets;
 using Velopack;
 
 namespace KubeUI.Desktop;

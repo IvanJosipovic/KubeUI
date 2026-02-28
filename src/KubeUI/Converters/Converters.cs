@@ -12,7 +12,7 @@ public static class Converters
     /// <summary>
     /// A value converter that returns the Controller Name if value is a IKubernetesObject<V1ObjectMeta>
     /// </summary>
-    public static readonly IValueConverter ObjectOwnerNameConverter =
+    public static readonly IValueConverter ObjectOwnerName =
         new FuncValueConverter<object, string>(value =>
         {
             if (value is IKubernetesObject<V1ObjectMeta> obj)
@@ -23,8 +23,5 @@ public static class Converters
             return "N/A";
         });
 
-
-    public static readonly IValueConverter InverseBooleanConverter = new FuncValueConverter<bool, bool>(b => !b);
-
-    public static readonly IValueConverter NotNullConverter = new FuncValueConverter<object, bool>((x) => x != null);
+    public static readonly IValueConverter NotNull = new FuncValueConverter<object, bool>((x) => x != null && x != AvaloniaProperty.UnsetValue);
 }

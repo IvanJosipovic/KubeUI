@@ -40,7 +40,7 @@ public interface ICluster
     string KubeConfigPath { get; set; }
     string Name { get; set; }
     bool IsExpanded { get; set; }
-
+    IBrush ClusterColor { get; set; }
     Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task Connect();
     Task DeleteResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
