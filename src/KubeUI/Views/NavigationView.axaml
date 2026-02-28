@@ -36,7 +36,10 @@
         SelectionChanged="TreeView_SelectionChanged">
         <TreeView.DataTemplates>
             <TreeDataTemplate x:DataType="client:ICluster" ItemsSource="{Binding NavigationItems}">
-                <StackPanel Margin="-5,0,0,0" Orientation="Horizontal">
+                <StackPanel
+                    Margin="-5,0,0,0"
+                    VerticalAlignment="Center"
+                    Orientation="Horizontal">
                     <Interaction.Behaviors>
                         <DataTriggerBehavior Binding="{Binding Status}" Value="{x:Static client:ClusterStatus.None}">
                             <SetToolTipTipAction Tip="Click to Connect" />
@@ -51,28 +54,13 @@
                             <SetToolTipTipAction Tip="Connected" />
                         </DataTriggerBehavior>
                     </Interaction.Behaviors>
-                    <Ellipse Name="Target"
+                    <Rectangle Name="Target"
                         Width="10"
                         Height="10"
-                        MinHeight="10"
                         Margin="0,0,4,0"
+                        Fill="{Binding ClusterColor}"
                         Stroke="Gray"
-                        StrokeThickness="1">
-                        <Interaction.Behaviors>
-                            <DataTriggerBehavior Binding="{Binding Status}" Value="{x:Static client:ClusterStatus.None}">
-                                <ChangePropertyAction PropertyName="Fill" Value="Red" />
-                            </DataTriggerBehavior>
-                            <DataTriggerBehavior Binding="{Binding Status}" Value="{x:Static client:ClusterStatus.Connecting}">
-                                <ChangePropertyAction PropertyName="Fill" Value="Orange" />
-                            </DataTriggerBehavior>
-                            <DataTriggerBehavior Binding="{Binding Status}" Value="{x:Static client:ClusterStatus.Errored}">
-                                <ChangePropertyAction PropertyName="Fill" Value="Yellow" />
-                            </DataTriggerBehavior>
-                            <DataTriggerBehavior Binding="{Binding Status}" Value="{x:Static client:ClusterStatus.Connected}">
-                                <ChangePropertyAction PropertyName="Fill" Value="LimeGreen" />
-                            </DataTriggerBehavior>
-                        </Interaction.Behaviors>
-                    </Ellipse>
+                        StrokeThickness="0.6" />
                     <TextBlock VerticalAlignment="Center" Text="{Binding Name}" />
                 </StackPanel>
             </TreeDataTemplate>
@@ -88,9 +76,9 @@
             </TreeDataTemplate>
             <TreeDataTemplate x:DataType="vm:NavigationItem" ItemsSource="{Binding NavigationItems}">
                 <StackPanel Margin="-5,0,0,0" Orientation="Horizontal">
-                    <ic:FluentIcon Icon="{Binding FluentIcon}" IsVisible="{Binding FluentIcon, Converter={x:Static converters:Converters.NotNullConverter}}" />
-                    <PathIcon Data="{Binding StyleIcon, Converter={x:Static converters:StaticResourceConverter.Instance}}" IsVisible="{Binding StyleIcon, Converter={x:Static converters:Converters.NotNullConverter}}" />
-                    <Svg IsVisible="{Binding SvgIcon, Converter={x:Static converters:Converters.NotNullConverter}}" Path="{Binding SvgIcon}" />
+                    <ic:FluentIcon Icon="{Binding FluentIcon}" IsVisible="{Binding FluentIcon, Converter={x:Static converters:Converters.NotNull}}" />
+                    <PathIcon Data="{Binding StyleIcon, Converter={x:Static converters:StaticResourceConverter.Instance}}" IsVisible="{Binding StyleIcon, Converter={x:Static converters:Converters.NotNull}}" />
+                    <Svg IsVisible="{Binding SvgIcon, Converter={x:Static converters:Converters.NotNull}}" Path="{Binding SvgIcon}" />
                     <TextBlock VerticalAlignment="Center" Text="{Binding Name}" />
                 </StackPanel>
             </TreeDataTemplate>

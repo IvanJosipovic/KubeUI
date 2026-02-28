@@ -1,6 +1,7 @@
 ﻿using Avalonia;
 using Avalonia.Headless;
 using KubeUI;
+using KubeUI.Assets;
 using KubeUI.Tests.Infra;
 
 [assembly: AvaloniaTestApplication(typeof(TestAppBuilder))]

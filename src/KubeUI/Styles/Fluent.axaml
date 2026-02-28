@@ -1,4 +1,9 @@
-﻿<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+﻿<Styles
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="using:KubeUI.Converters"
+    xmlns:core="using:Dock.Model.Core"
+    xmlns:k="using:KubeUI">
     <Styles.Resources>
         <ResourceDictionary>
             <ResourceDictionary.ThemeDictionaries>
@@ -12,4 +17,22 @@
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>
     </Styles.Resources>
+    <Style Selector="DocumentControl">
+        <Setter Property="HeaderTemplate">
+            <DataTemplate x:DataType="core:IDockable" DataType="core:IDockable">
+                <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                    <Rectangle
+                        Width="10"
+                        Height="10"
+                        Margin="0,0,2,0"
+                        Fill="{ReflectionBinding Cluster.ClusterColor}"
+                        IsVisible="{ReflectionBinding Cluster, FallbackValue=False, Converter={x:Static converters:Converters.NotNull}}"
+                        Stroke="Gray"
+                        StrokeThickness="0.6"
+                        ToolTip.Tip="{ReflectionBinding Cluster.Name}" />
+                    <TextBlock Padding="{DynamicResource DockHeaderContentPadding}" Text="{Binding Title}" />
+                </StackPanel>
+            </DataTemplate>
+        </Setter>
+    </Style>
 </Styles>
