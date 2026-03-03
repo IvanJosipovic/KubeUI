@@ -26,12 +26,12 @@ public static class Program
     public static AppBuilder BuildAvaloniaApp()
     => BuildAvaloniaAppWithServices();
 
-    public static AppBuilder BuildAvaloniaAppWithServices(bool release = false)
-        => AppBuilder.Configure(() => new App(BuildLauncherServices(release)))
+    public static AppBuilder BuildAvaloniaAppWithServices()
+        => AppBuilder.Configure(() => new App(BuildLauncherServices()))
             .ConfigureFonts(fontManager => fontManager.AddFontCollection(new CascadiaMonoFontCollection()))
             .WithInterFont();
 
-    private static ServiceProvider BuildLauncherServices(bool release = false)
+    private static ServiceProvider BuildLauncherServices()
     {
         // retrieve service collection, add all required services & view models
         var services = new ServiceCollection();
@@ -83,7 +83,7 @@ public static class Program
             .PreserveReference(true);
 
         var cfg = new ConfigurationManager();
-        if (release)
+        if (!Design.IsDesignMode)
         {
             cfg.AddJsonFile(SettingsService.GetSettingsFilePath(), true, true);
         }
@@ -92,14 +92,15 @@ public static class Program
         var settings = cfg.Get<Settings>() ?? new Settings();
 
         services.AddServices();
+        services.AddLogging(x => x.SetMinimumLevel(LogLevel.Debug));
 
-        if (release)
+        if (!Design.IsDesignMode)
         {
             if (settings.TelemetryEnabled)
                 services.AddTelemetry();
 
             if (settings.LoggingEnabled)
-                services.AddFileLogging(settings);
+                services.AddFileLogging();
         }
 
         services.AddSingleton<IDialogFactory, FluentDialogFactory>(x => (FluentDialogFactory)new DialogFactory().AddFluent());
@@ -113,19 +114,11 @@ public static class Program
         return services.BuildServiceProvider();
     }
 
-    private static IServiceCollection AddFileLogging(this IServiceCollection services, Settings settings)
+    private static IServiceCollection AddFileLogging(this IServiceCollection services)
     {
         services.AddLogging(loggingBuilder =>
         {
-            loggingBuilder.ClearProviders();
-            loggingBuilder.SetMinimumLevel(LogLevel.Debug);
-
-            // Send only Warnings and above to OTEL
-#if !DEBUG
-            loggingBuilder.AddFilter<OpenTelemetryLoggerProvider>("*", LogLevel.Warning);
-#endif
-
-            if (settings.LoggingEnabled && SettingsService.EnsureSettingDirExists())
+            if (SettingsService.EnsureSettingDirExists())
             {
                 loggingBuilder.AddFile(Path.Combine(SettingsService.GetSettingsPath(), "app.log"), x =>
                 {
@@ -143,6 +136,11 @@ public static class Program
     {
         const string key = "ff9c67da-5f13-46e9-9450-7e1dda139c08";
         var version = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+
+#if !DEBUG
+        // Send only Warnings and above to OTEL
+        services.AddLogging(x => x.AddFilter<OpenTelemetryLoggerProvider>("*", LogLevel.Warning));
+#endif
 
         services.AddOpenTelemetry()
             .ConfigureResource(resource => resource
@@ -164,9 +162,9 @@ public static class Program
 #if DEBUG
                     e.Endpoint = new Uri("http://localhost:4317");
 #else
-                        e.Endpoint = new Uri("https://otel.kubeui.com/v1/logs");
-                        e.Headers = $"key={key}";
-                        e.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+                    e.Endpoint = new Uri("https://otel.kubeui.com/v1/logs");
+                    e.Headers = $"key={key}";
+                    e.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
 #endif
                 });
             },
@@ -186,9 +184,9 @@ public static class Program
 #if DEBUG
                     e.Endpoint = new Uri("http://localhost:4317");
 #else
-                        e.Endpoint = new Uri("https://otel.kubeui.com/v1/metrics");
-                        e.Headers = $"key={key}";
-                        e.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+                    e.Endpoint = new Uri("https://otel.kubeui.com/v1/metrics");
+                    e.Headers = $"key={key}";
+                    e.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
 #endif
                 });
             })
