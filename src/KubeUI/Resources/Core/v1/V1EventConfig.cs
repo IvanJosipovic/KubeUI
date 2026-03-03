@@ -2,6 +2,7 @@
 using Avalonia.Styling;
 using k8s.Models;
 using KubeUI.Controls;
+using KubeUI.Views;
 
 namespace KubeUI.Resources.Core.v1;
 
@@ -56,6 +57,8 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
             AgeColumn(),
         ];
     }
+
+    public override Control[] Properties(Corev1Event resource) => [new EventPropertiesView()];
 
     public override IStyle ListStyle()
     {

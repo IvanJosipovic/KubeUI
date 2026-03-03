@@ -10,7 +10,6 @@ public partial class CollectionItem : UserControl
     [GeneratedDirectProperty]
     public partial IEnumerable Value { get; set; }
 
-
     [GeneratedDirectProperty]
     public partial IDataTemplate ItemTemplate { get; set; }
 

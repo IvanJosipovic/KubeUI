@@ -29,7 +29,7 @@
                 <c:CollectionItem Key="Environment" Value="{Binding Env}">
                     <c:CollectionItem.ItemTemplate>
                         <DataTemplate x:DataType="models:V1EnvVar">
-                            <SelectableTextBlock TextWrapping="Wrap">
+                            <SelectableTextBlock>
                                 <SelectableTextBlock.Text>
                                     <MultiBinding StringFormat="{}{0}={1}">
                                         <Binding Path="Name" />
@@ -43,7 +43,7 @@
                 <c:CollectionItem Key="Mounts" Value="{Binding VolumeMounts}">
                     <c:CollectionItem.ItemTemplate>
                         <DataTemplate x:DataType="models:V1VolumeMount">
-                            <SelectableTextBlock Text="{Binding MountPath}" TextWrapping="Wrap" />
+                            <SelectableTextBlock Text="{Binding MountPath}" />
                         </DataTemplate>
                     </c:CollectionItem.ItemTemplate>
                 </c:CollectionItem>
@@ -55,14 +55,10 @@
         </DataTemplate>
     </UserControl.Resources>
     <StackPanel>
-        <c:HeaderItem Text="Properties" />
-        <c:PropertyItem Key="Created" Value="{Binding Metadata.CreationTimestamp}" />
-        <c:PropertyItem Key="Name" Value="{Binding Metadata.Name}" />
-        <c:PropertyItem Key="Namespace" Value="{Binding Metadata.NamespaceProperty}" />
         <c:CollectionItem Key="Labels" Value="{Binding Metadata.Labels}">
             <c:CollectionItem.ItemTemplate>
                 <DataTemplate x:DataType="{x:Type generic:KeyValuePair, x:TypeArguments=x:String, x:TypeArguments=x:String}">
-                    <SelectableTextBlock TextWrapping="Wrap">
+                    <SelectableTextBlock>
                         <SelectableTextBlock.Text>
                             <MultiBinding StringFormat="{}{0}={1}">
                                 <Binding Path="Key" />
@@ -76,7 +72,7 @@
         <c:CollectionItem Key="Annotations" Value="{Binding Metadata.Annotations}">
             <c:CollectionItem.ItemTemplate>
                 <DataTemplate x:DataType="{x:Type generic:KeyValuePair, x:TypeArguments=x:String, x:TypeArguments=x:String}">
-                    <SelectableTextBlock TextWrapping="Wrap">
+                    <SelectableTextBlock>
                         <SelectableTextBlock.Text>
                             <MultiBinding StringFormat="{}{0}={1}">
                                 <Binding Path="Key" />
