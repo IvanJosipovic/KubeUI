@@ -2,6 +2,7 @@
 using Avalonia;
 using k8s;
 using k8s.KubeConfigModels;
+using k8s.Models;
 using KubeUI.Client;
 
 namespace KubeUI.Tests.E2E;
@@ -36,9 +37,24 @@ public class TestHarness : IDisposable
         await Cluster.Connect();
     }
 
-    public async Task<ICluster> GetClusterFromServiceAccount(string @namespace, string name)
+    public async Task<ICluster> GetClusterFromServiceAccountSecret(string @namespace, string name)
     {
-        var secret = await Kubernetes.CoreV1.ReadNamespacedSecretAsync(name, @namespace);
+        var timeout = TimeSpan.FromMinutes(2);
+        var start = DateTime.UtcNow;
+        V1Secret secret;
+        while (true)
+        {
+            secret = await Kubernetes.CoreV1.ReadNamespacedSecretAsync(name, @namespace);
+            if (secret.Data != null && secret.Data.ContainsKey("token"))
+            {
+                break;
+            }
+            if (DateTime.UtcNow - start > timeout)
+            {
+                throw new InvalidOperationException($"Secret '{name}' in namespace '{@namespace}' does not contain a 'token' entry after waiting 2 minutes.");
+            }
+            await Task.Delay(TimeSpan.FromSeconds(2));
+        }
 
         // Test is prepped, generate KubeConfig
 

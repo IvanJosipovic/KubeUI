@@ -12,6 +12,7 @@ using KubeUI.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using KubernetesClient.Informer.Client;
 using Mapster;
+using Avalonia.Media;
 
 namespace KubeUI.Tests.Infra;
 
@@ -42,7 +43,7 @@ public class TestCluster : ICluster
     public bool ListNamespaces { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     public ClusterStatus Status { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     public IKubernetes? Client { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-    public IReadOnlyList<V1Namespace> Namespaces { get; set; } = new ObservableCollection<V1Namespace>();
+    public ReadOnlyObservableCollection<V1Namespace> Namespaces { get; set; } = ReadOnlyObservableCollection<V1Namespace>.Empty;
     public K8SConfiguration KubeConfig { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     public ModelCache ModelCache { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     public ObservableCollection<NavigationItem> NavigationItems { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
@@ -53,6 +54,7 @@ public class TestCluster : ICluster
     public string KubeConfigPath { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     public string Name { get; set; } = "test";
     public bool IsExpanded { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    public IBrush ClusterColor { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
 

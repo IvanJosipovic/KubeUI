@@ -1,0 +1,102 @@
+name: Download Metrics
+
+permissions:
+  discussions: write
+  contents: read
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  download-metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - name: get-metrics
+        id: get-metrics
+        shell: pwsh
+        run: |
+          $url = 'https://api.github.com/repos/ivanjosipovic/kubeui/releases'
+          $json = Invoke-RestMethod -Uri $url
+          $osArchMetrics = @{
+            Windows_x64 = 0
+            Windows_arm64 = 0
+            Linux_x64 = 0
+            Linux_arm64 = 0
+            macOS_x64 = 0
+            macOS_arm64 = 0
+          }
+          $history = @()
+          foreach ($release in $json) {
+            $date = $release.published_at.ToString('yyyy-MM-dd')
+            $row = [ordered]@{
+              date = $date
+              Windows_x64 = 0
+              Windows_arm64 = 0
+              Linux_x64 = 0
+              Linux_arm64 = 0
+              macOS_x64 = 0
+              macOS_arm64 = 0
+            }
+            foreach ($asset in $release.assets) {
+              $name = $asset.name.ToLower()
+              if ($name -like 'releases.*.json') { continue }
+              if ($name -like '*win*' -and $name -like '*x64*') {
+                $osArchMetrics.Windows_x64 += $asset.download_count
+                $row.Windows_x64 += $asset.download_count
+              } elseif ($name -like '*win*' -and $name -like '*arm64*') {
+                $osArchMetrics.Windows_arm64 += $asset.download_count
+                $row.Windows_arm64 += $asset.download_count
+              } elseif ($name -like '*linux*' -and $name -like '*x64*') {
+                $osArchMetrics.Linux_x64 += $asset.download_count
+                $row.Linux_x64 += $asset.download_count
+              } elseif ($name -like '*linux*' -and $name -like '*arm64*') {
+                $osArchMetrics.Linux_arm64 += $asset.download_count
+                $row.Linux_arm64 += $asset.download_count
+              } elseif ($name -like '*osx*' -and $name -like '*x64*') {
+                $osArchMetrics.macOS_x64 += $asset.download_count
+                $row.macOS_x64 += $asset.download_count
+              } elseif ($name -like '*osx*' -and $name -like '*arm64*') {
+                $osArchMetrics.macOS_arm64 += $asset.download_count
+                $row.macOS_arm64 += $asset.download_count
+              }
+            }
+            $history += $row
+          }
+          Write-Host "Download Metrics by OS and Architecture:"
+          $metricsTable = "| Platform | Architecture | Downloads |`n|---|---|---|"
+          $metricsTable += "`n| Windows | x64 | $($osArchMetrics.Windows_x64) |"
+          $metricsTable += "`n| Windows | arm64 | $($osArchMetrics.Windows_arm64) |"
+          $metricsTable += "`n| Linux | x64 | $($osArchMetrics.Linux_x64) |"
+          $metricsTable += "`n| Linux | arm64 | $($osArchMetrics.Linux_arm64) |"
+          $metricsTable += "`n| macOS | x64 | $($osArchMetrics.macOS_x64) |"
+          $metricsTable += "`n| macOS | arm64 | $($osArchMetrics.macOS_arm64) |"
+          Write-Host $metricsTable
+
+          $output = "$metricsTable"
+          Set-Content -Path body.md -Value $output -Encoding UTF8
+
+      - name: List all discussions (troubleshoot)
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $repo = "${{ github.repository }}"
+          $url = "https://api.github.com/repos/$repo/discussions"
+          $headers = @{ Authorization = "Bearer $env:GITHUB_TOKEN"; Accept = "application/vnd.github.v3+json" }
+          $result = Invoke-RestMethod -Uri $url -Headers $headers
+          $result | Format-Table id, title, html_url
+
+      - name: Update discussion body
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api graphql \
+          -f query='mutation($id: ID!, $body: String!) {
+              updateDiscussion(input: { discussionId: $id, body: $body }) {
+                discussion { id }
+              }
+            }' \
+            -f id="D_kwDOCsJEA84AkUSH" \
+            -f body="$(cat body.md)"

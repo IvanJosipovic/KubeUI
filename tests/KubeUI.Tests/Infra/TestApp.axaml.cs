@@ -1,48 +1,43 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
 using Avalonia.Markup.Xaml;
 using HanumanInstitute.MvvmDialogs;
-using KubeUI;
 using KubeUI.Client;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Moq;
 
 namespace KubeUI.Tests.Infra;
 
 public class TestApp : Application
 {
-    public static IHost Host { get; private set; } = null!;
+    public IServiceProvider Services { get; set; }
+
+    public static TopLevel TopLevel { get; private set; }
 
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
 
-        var builder = Microsoft.Extensions.Hosting.Host.CreateEmptyApplicationBuilder(new()
-        {
-            ApplicationName = "KubeUI.Desktop",
-            Configuration = new ConfigurationManager(),
-            ContentRootPath = Directory.GetCurrentDirectory(),
-        });
+        var services = new ServiceCollection();
 
         // Services
-        builder.Services.AddServices();
-        builder.Services.AddLogging();
+        services.AddServices();
+        services.AddLogging();
 
-        builder.Services.AddSingleton<ISettingsService, TestSettingsService>();
+        services.AddSingleton<ISettingsService, TestSettingsService>();
 
         var dialog = new Mock<IDialogService>();
-        builder.Services.AddSingleton<IDialogService>(dialog.Object);
+        services.AddSingleton<IDialogService>(dialog.Object);
 
         var notifications = new Mock<INotificationManager>();
-        builder.Services.AddSingleton<INotificationManager>(notifications.Object);
+        services.AddSingleton<INotificationManager>(notifications.Object);
 
-        builder.Services.AddSingleton<ServiceDescriptor[]>([.. builder.Services]);
+        services.AddSingleton<ServiceDescriptor[]>([.. services]);
 
-        Host = builder.Build();
+        Services = services.BuildServiceProvider();
 
-        Resources[typeof(IServiceProvider)] = Host.Services;
-        _ = Host.RunAsync();
+        Resources[typeof(IServiceProvider)] = Services;
     }
 }

@@ -1,9 +1,13 @@
 ﻿using Avalonia;
 using Avalonia.Headless;
 using KubeUI;
+using KubeUI.Assets;
 using KubeUI.Tests.Infra;
 
 [assembly: AvaloniaTestApplication(typeof(TestAppBuilder))]
+[assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly, DisableTestParallelization = true)]
+
+namespace KubeUI.Tests.Infra;
 
 public class TestAppBuilder
 {

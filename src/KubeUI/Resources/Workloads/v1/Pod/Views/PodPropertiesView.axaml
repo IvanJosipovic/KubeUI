@@ -87,8 +87,7 @@
                 </DataTemplate>
             </c:CollectionItem.ItemTemplate>
         </c:CollectionItem>
-        <c:PropertyItem Key="Controlled By" Value="{Binding ., Converter={x:Static converters:Converters.ObjectOwnerNameConverter}}" />
-
+        <c:PropertyItem Key="Controlled By" Value="{Binding ., Converter={x:Static converters:Converters.ObjectOwnerName}}" />
         <c:HeaderItem Text="Status" />
         <c:PropertyItem Key="Status" Value="{Binding Status.Phase}" />
         <c:PropertyItem Key="Node" Value="{Binding Spec.NodeName}" />

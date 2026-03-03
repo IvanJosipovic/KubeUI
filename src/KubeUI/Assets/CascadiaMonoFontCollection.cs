@@ -1,6 +1,6 @@
 ﻿using Avalonia.Media.Fonts;
 
-namespace KubeUI;
+namespace KubeUI.Assets;
 
 public sealed class CascadiaMonoFontCollection : EmbeddedFontCollection
 {

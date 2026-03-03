@@ -110,6 +110,8 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         LinkConfigMap(Resources, graph);
         LinkSecret(Resources, graph);
 
+        LinkArgoCDTracking(Resources, graph);
+
         LinkServiceAccount(Resources, graph);
 
         LinkPersistantVolumeClaim(Resources, graph);
@@ -1992,6 +1994,31 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    private static void LinkArgoCDTracking(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
+    {
+        foreach (var resource in resources)
+        {
+            var annotations = resource.Resource?.Metadata?.Annotations;
+            if (annotations != null && annotations.TryGetValue("argocd.argoproj.io/tracking-id", out var trackingId))
+            {
+                var firstColon = trackingId.IndexOf(':');
+                if (firstColon > 0)
+                {
+                    var appName = trackingId.Substring(0, firstColon);
+                    // Find Argo Application resource with matching appName, ApiVersion, and Kind
+                    var argoApp = resources.FirstOrDefault(r =>
+                        r.Resource?.Metadata?.Name == appName &&
+                        r.Resource?.ApiVersion == "argoproj.io/v1alpha1" &&
+                        r.Resource?.Kind == "Application");
+                    if (argoApp != null)
+                    {
+                        graph.Edges.Add(new Edge(argoApp, resource));
                     }
                 }
             }

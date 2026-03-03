@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using Avalonia.Styling;
+using Microsoft.Extensions.Configuration;
 
 namespace KubeUI.Client;
 
@@ -7,7 +8,28 @@ public sealed partial class SettingsService : ObservableObject, ISettingsService
 {
     private readonly ILogger<SettingsService> _logger;
 
-    public Settings Settings { get; set; }
+    private Settings? _settings;
+
+    public Settings Settings
+    {
+        get
+        {
+            if (_settings != null)
+            {
+                return _settings;
+            }
+
+            _settings = LoadSettingsFromFile();
+
+            return _settings;
+        }
+        set
+        {
+            _settings = value;
+            SaveSettings();
+            OnPropertyChanged(nameof(Settings));
+        }
+    }
 
     public SettingsService(ILogger<SettingsService> logger)
     {
@@ -22,13 +44,6 @@ public sealed partial class SettingsService : ObservableObject, ISettingsService
     public static string GetSettingsFilePath()
     {
         return Path.Combine(GetSettingsPath(), "settings.json");
-    }
-
-    public void LoadSettings()
-    {
-        Settings = LoadSettingsFromFile();
-
-        ApplySettings();
     }
 
     public static Settings LoadSettingsFromFile()

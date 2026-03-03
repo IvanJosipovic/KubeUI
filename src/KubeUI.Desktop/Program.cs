@@ -1,5 +1,6 @@
 ﻿using System;
 using Avalonia;
+using KubeUI.Assets;
 using Velopack;
 
 namespace KubeUI.Desktop;
@@ -19,11 +20,6 @@ internal class Program
 
     // Avalonia configuration, don't remove; also used by visual designer.
     public static AppBuilder BuildAvaloniaApp()
-        => AppBuilder.Configure<App>()
-            .UsePlatformDetect()
-            .ConfigureFonts(fontManager =>
-            {
-                fontManager.AddFontCollection(new CascadiaMonoFontCollection());
-            })
-            .WithInterFont();
+        => KubeUI.Program.BuildAvaloniaAppWithServices()
+            .UsePlatformDetect();
 }

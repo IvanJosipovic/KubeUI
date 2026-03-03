@@ -27,7 +27,7 @@ public interface ICluster
     IKubernetes? Client { get; set; }
     IResourceConfig GetResourceConfig(GroupApiVersionKind kind);
     IResourceConfig GetResourceConfig<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
-    IReadOnlyList<V1Namespace> Namespaces { get; set; }
+    ReadOnlyObservableCollection<V1Namespace> Namespaces { get; set; }
     K8SConfiguration KubeConfig { get; set; }
     ModelCache ModelCache { get; set; }
     ObservableCollection<NavigationItem> NavigationItems { get; set; }
@@ -40,7 +40,7 @@ public interface ICluster
     string KubeConfigPath { get; set; }
     string Name { get; set; }
     bool IsExpanded { get; set; }
-
+    IBrush ClusterColor { get; set; }
     Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task Connect();
     Task DeleteResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();

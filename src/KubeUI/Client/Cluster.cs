@@ -3,6 +3,7 @@ using System.Reactive.Linq;
 using System.Reflection;
 using System.Xml;
 using Avalonia.Collections;
+using Avalonia.Media.Immutable;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using DynamicData;
@@ -17,6 +18,7 @@ using Humanizer;
 using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubernetesCRDModelGen;
 using KubeUI;
 using KubeUI.Resources;
@@ -27,7 +29,6 @@ using Polly;
 using Swordfish.NET.Collections;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
-using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Client;
 
@@ -80,6 +81,9 @@ public sealed partial class Cluster : ObservableObject, ICluster
     public partial ClusterStatus Status { get; set; }
 
     [ObservableProperty]
+    public partial IBrush ClusterColor { get; set; } = Brushes.Red;
+
+    [ObservableProperty]
     public partial bool Connected { get; set; }
 
     [ObservableProperty]
@@ -95,7 +99,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
     public partial bool IsExpanded { get; set; }
 
     [ObservableProperty]
-    public partial IReadOnlyList<V1Namespace> Namespaces { get; set; }
+    public partial ReadOnlyObservableCollection<V1Namespace> Namespaces { get; set; }
 
     [ObservableProperty]
     public partial ObservableCollection<V1Namespace> SelectedNamespaces { get; set; } = [];
@@ -130,6 +134,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 try
                 {
                     Status = ClusterStatus.Connecting;
+                    ClusterColor = Brushes.Orange;
                     KubernetesClientConfiguration config;
 
                     if (string.IsNullOrEmpty(KubeConfigPath))
@@ -176,7 +181,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     {
                         var settings = _settingsService.Settings.GetClusterSettings(this);
 
-                        if (settings.Namespaces.Count == 0)
+                        if (settings?.Namespaces?.Count == 0)
                         {
                             Connected = false;
                             Status = ClusterStatus.Errored;
@@ -219,6 +224,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                     Connected = true;
                     Status = ClusterStatus.Connected;
+                    ClusterColor = RandomBrush();
 
                     await AddDefaultNavigation();
                     await InitMetrics();
@@ -230,6 +236,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     Connected = false;
 
                     Status = ClusterStatus.Errored;
+                    ClusterColor = Brushes.Red;
 
                     var factory = Application.Current.GetRequiredService<IFactory>();
 
@@ -262,6 +269,12 @@ public sealed partial class Cluster : ObservableObject, ICluster
             _connectionLimiter.Release();
             _logger.LogInformation("Connected to {name}", Name);
         }
+    }
+
+    private static IBrush RandomBrush()
+    {
+        var p = typeof(Brushes).GetProperties(BindingFlags.Public | BindingFlags.Static).Where(x => x.Name != nameof(Brushes.Red) && x.Name != nameof(Brushes.Orange)).ToArray();
+        return (IBrush)p[Random.Shared.Next(p.Length)].GetValue(null)!;
     }
 
     private async Task AddDefaultNavigation()

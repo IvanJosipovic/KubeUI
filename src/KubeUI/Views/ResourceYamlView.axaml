@@ -21,7 +21,7 @@
 
         <!--  Read-only toolbar  -->
         <StackPanel Grid.Row="0"
-            IsVisible="{Binding EditMode, Converter={x:Static converters:Converters.InverseBooleanConverter}}"
+            IsVisible="{Binding !EditMode}"
             Orientation="Horizontal">
             <Button Command="{Binding SetEditModeCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Edit}">
                 <ic:FluentIcon Icon="DocumentEdit" />
@@ -59,7 +59,7 @@
             FontSize="{Binding Settings.Settings.ConsoleFontSize}"
             FontWeight="Normal"
             HorizontalScrollBarVisibility="Auto"
-            IsReadOnly="{Binding EditMode, Converter={x:Static converters:Converters.InverseBooleanConverter}}"
+            IsReadOnly="{Binding !EditMode}"
             ShowLineNumbers="True"
             VerticalScrollBarVisibility="Visible"
             WordWrap="{Binding WordWrap}">
