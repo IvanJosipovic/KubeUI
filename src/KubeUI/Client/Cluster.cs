@@ -273,7 +273,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private static IBrush RandomBrush()
     {
-        var p = typeof(Brushes).GetProperties(BindingFlags.Public | BindingFlags.Static).Where(x => x.Name != nameof(Brushes.Red) || x.Name != nameof(Brushes.Orange)).ToArray();
+        var p = typeof(Brushes).GetProperties(BindingFlags.Public | BindingFlags.Static).Where(x => x.Name != nameof(Brushes.Red) && x.Name != nameof(Brushes.Orange)).ToArray();
         return (IBrush)p[Random.Shared.Next(p.Length)].GetValue(null)!;
     }
 
