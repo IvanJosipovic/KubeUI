@@ -16,6 +16,7 @@
     <Grid RowDefinitions="Auto,*">
         <!--  Top Bar  -->
         <Grid Grid.Row="0"
+            Height="32"
             Margin="0,0,0,4"
             ColumnDefinitions="Auto,Auto,*">
             <Button
@@ -65,27 +66,7 @@
                             <TextBlock Text="{Binding Metadata.Name}" />
                         </DataTemplate>
                     </u:MultiComboBox.SelectedItemTemplate>
-                    <u:MultiComboBox.Styles>
-                        <Style Selector="u|MultiComboBoxItem">
-                            <Setter Property="Padding" Value="4,2,4,2" />
-                            <Setter Property="Width" Value="200" />
-                            <Setter Property="MinHeight" Value="22" />
-                        </Style>
-                        <Style Selector="u|MultiComboBoxSelectedItemList">
-                            <Setter Property="Interaction.Behaviors">
-                                <BehaviorCollectionTemplate>
-                                    <BehaviorCollection>
-                                        <EventTriggerBehavior EventName="PointerReleased">
-                                            <ChangePropertyAction
-                                                PropertyName="IsDropDownOpen"
-                                                TargetObject="{Binding $parent[u:MultiComboBox]}"
-                                                Value="{Binding !$parent[u:MultiComboBox].IsDropDownOpen}" />
-                                        </EventTriggerBehavior>
-                                    </BehaviorCollection>
-                                </BehaviorCollectionTemplate>
-                            </Setter>
-                        </Style>
-                    </u:MultiComboBox.Styles>
+                    <u:MultiComboBox.Styles />
                 </u:MultiComboBox>
             </Grid>
         </Grid>

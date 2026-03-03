@@ -99,7 +99,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
     public partial bool IsExpanded { get; set; }
 
     [ObservableProperty]
-    public partial IReadOnlyList<V1Namespace> Namespaces { get; set; }
+    public partial ReadOnlyObservableCollection<V1Namespace> Namespaces { get; set; }
 
     [ObservableProperty]
     public partial ObservableCollection<V1Namespace> SelectedNamespaces { get; set; } = [];
@@ -224,12 +224,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                     Connected = true;
                     Status = ClusterStatus.Connected;
-                    // Assign a random color when connecting
-                    var random = new Random(DateTimeOffset.Now.Microsecond);
-                    ClusterColor = new ImmutableSolidColorBrush(Color.FromRgb(
-                        (byte)random.Next(64, 192),
-                        (byte)random.Next(64, 192),
-                        (byte)random.Next(64, 192)));
+                    ClusterColor = RandomBrush();
 
                     await AddDefaultNavigation();
                     await InitMetrics();
@@ -274,6 +269,12 @@ public sealed partial class Cluster : ObservableObject, ICluster
             _connectionLimiter.Release();
             _logger.LogInformation("Connected to {name}", Name);
         }
+    }
+
+    private static IBrush RandomBrush()
+    {
+        var p = typeof(Brushes).GetProperties(BindingFlags.Public | BindingFlags.Static).Where(x => x.Name != nameof(Brushes.Red) && x.Name != nameof(Brushes.Orange)).ToArray();
+        return (IBrush)p[Random.Shared.Next(p.Length)].GetValue(null)!;
     }
 
     private async Task AddDefaultNavigation()
