@@ -19,7 +19,7 @@ public sealed partial class SettingsService : ObservableObject, ISettingsService
                 return _settings;
             }
 
-            _settings = Application.Current.GetRequiredService<IConfiguration>().Get<Settings>() ?? new Settings();
+            _settings = LoadSettingsFromFile();
 
             return _settings;
         }
@@ -44,6 +44,27 @@ public sealed partial class SettingsService : ObservableObject, ISettingsService
     public static string GetSettingsFilePath()
     {
         return Path.Combine(GetSettingsPath(), "settings.json");
+    }
+
+    public static Settings LoadSettingsFromFile()
+    {
+        try
+        {
+            var path = GetSettingsFilePath();
+
+            if (File.Exists(path))
+            {
+                using var fs = new FileStream(path, FileMode.Open, FileAccess.Read);
+
+                if (fs.CanRead)
+                {
+                    return JsonSerializer.Deserialize<Settings>(fs);
+                }
+            }
+        }
+        catch (Exception) { }
+
+        return new Settings();
     }
 
     public static bool EnsureSettingDirExists()

@@ -22,9 +22,6 @@ public class TestApp : Application
 
         var services = new ServiceCollection();
 
-        var cfg = new ConfigurationManager();
-        services.AddSingleton<IConfiguration>(cfg);
-
         // Services
         services.AddServices();
         services.AddLogging();

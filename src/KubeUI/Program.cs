@@ -10,7 +10,6 @@ using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
 using LiveChartsCore.Themes;
 using Mapster;
-using Microsoft.Extensions.Configuration;
 using NReco.Logging.File;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
@@ -82,14 +81,7 @@ public static class Program
             .ShallowCopyForSameType(true)
             .PreserveReference(true);
 
-        var cfg = new ConfigurationManager();
-        if (!Design.IsDesignMode)
-        {
-            cfg.AddJsonFile(SettingsService.GetSettingsFilePath(), true, true);
-        }
-        services.AddSingleton<IConfiguration>(cfg);
-
-        var settings = cfg.Get<Settings>() ?? new Settings();
+        var settings = SettingsService.LoadSettingsFromFile();
 
         services.AddServices();
         services.AddLogging(x => x.SetMinimumLevel(LogLevel.Debug));
