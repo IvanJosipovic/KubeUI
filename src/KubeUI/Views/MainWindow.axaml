@@ -24,18 +24,12 @@
             <NativeMenuItem Header="{x:Static assets:Resources.MainView_Menu_File}">
                 <NativeMenuItem.Menu>
                     <NativeMenu>
-                        <NativeMenuItem
-                            Command="{Binding OpenClustersCommand}"
-                            Header="{x:Static assets:Resources.MainView_Menu_File_Clusters}" />
-                        <NativeMenuItem
-                            Command="{Binding OpenSettingsCommand}"
-                            Header="{x:Static assets:Resources.MainView_Menu_File_Settings}" />
+                        <NativeMenuItem Command="{Binding OpenClustersCommand}" Header="{x:Static assets:Resources.MainView_Menu_File_Clusters}" />
+                        <NativeMenuItem Command="{Binding OpenSettingsCommand}" Header="{x:Static assets:Resources.MainView_Menu_File_Settings}" />
 
                         <NativeMenuItemSeparator />
 
-                        <NativeMenuItem
-                            Command="{Binding CloseCommand}"
-                            Header="{x:Static assets:Resources.MainView_Menu_File_Exit}" />
+                        <NativeMenuItem Command="{Binding CloseCommand}" Header="{x:Static assets:Resources.MainView_Menu_File_Exit}" />
                     </NativeMenu>
                 </NativeMenuItem.Menu>
             </NativeMenuItem>
@@ -43,12 +37,8 @@
             <NativeMenuItem Header="{x:Static assets:Resources.MainView_Menu_Window}">
                 <NativeMenuItem.Menu>
                     <NativeMenu>
-                        <NativeMenuItem
-                            Command="{Binding ResetLayoutCommand}"
-                            Header="{x:Static assets:Resources.MainView_Menu_Window_ResetLayout}" />
-                        <NativeMenuItem
-                            Command="{Binding SwitchThemeCommand}"
-                            Header="{x:Static assets:Resources.MainView_Menu_Window_SwitchTheme}" />
+                        <NativeMenuItem Command="{Binding ResetLayoutCommand}" Header="{x:Static assets:Resources.MainView_Menu_Window_ResetLayout}" />
+                        <NativeMenuItem Command="{Binding SwitchThemeCommand}" Header="{x:Static assets:Resources.MainView_Menu_Window_SwitchTheme}" />
                     </NativeMenu>
                 </NativeMenuItem.Menu>
             </NativeMenuItem>
@@ -56,9 +46,7 @@
             <NativeMenuItem Header="{x:Static assets:Resources.MainView_Menu_Help}">
                 <NativeMenuItem.Menu>
                     <NativeMenu>
-                        <NativeMenuItem
-                            Command="{Binding OpenAboutCommand}"
-                            Header="{x:Static assets:Resources.MainView_Menu_Help_About}" />
+                        <NativeMenuItem Command="{Binding OpenAboutCommand}" Header="{x:Static assets:Resources.MainView_Menu_Help_About}" />
                     </NativeMenu>
                 </NativeMenuItem.Menu>
             </NativeMenuItem>

@@ -19,19 +19,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 
     private void Settings_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        Save();
-    }
-
-    [RelayCommand]
-    private void Save()
-    {
         SettingsService.SaveSettings();
-    }
-
-    [RelayCommand]
-    private void Load()
-    {
-        SettingsService.LoadSettings();
     }
 
     public void Dispose()

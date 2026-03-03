@@ -23,7 +23,6 @@ public sealed partial class ClusterListViewModel : ViewModelBase
 
         Title = Assets.Resources.ClusterListViewModel_Title;
         Id = nameof(ClusterListViewModel);
-        //SelectedItem = ClusterManager.Clusters.FirstOrDefault();
     }
 
     [ObservableProperty]
