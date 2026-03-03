@@ -40,27 +40,51 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
             return;
         }
 
-        await Cluster.SeedResource<V1Pod>();
-        await Cluster.IsResourceReady<V1Pod>();
-        await Cluster.SeedResource<V1Node>();
-        await Cluster.IsResourceReady<V1Node>();
+        await Cluster.SeedResource<V1Pod>(true);
+        await Cluster.SeedResource<V1Node>(true);
         var pods = Cluster.GetResourceList<V1Pod>();
         var nodes = Cluster.GetResourceList<V1Node>();
+
+        var allPodContainers = pods.SelectMany(p => p.Spec?.Containers ?? []).ToArray();
+        var allMetricContainers = (Cluster.PodMetrics ?? []).SelectMany(m => m.Containers ?? []).ToArray();
 
         PodGaugeData.TotalPods.Value = pods.Count;
         PodGaugeData.MaxPods.Value = nodes.Sum(x => x.Status.Capacity?.TryGetValue("pods", out var value) == true ? value.ToDouble() : 0);
 
         CPUGaugeData.CpuAllocatable.Value = nodes.Sum(x => x.Status.Allocatable?.TryGetValue("cpu", out var value) == true ? value.ToDouble() : 0);
         CPUGaugeData.CpuCapacity.Value = nodes.Sum(x => x.Status.Capacity?.TryGetValue("cpu", out var value) == true ? value.ToDouble() : 0);
-        CPUGaugeData.CpuRequests.Value = pods.Sum(x => x.Spec.Containers.Sum(y => y.Resources?.Requests?.TryGetValue("cpu", out var value) == true ? value.ToDouble() : 0));
-        CPUGaugeData.CpuLimits.Value = pods.Sum(x => x.Spec.Containers.Sum(y => y.Resources?.Limits?.TryGetValue("cpu", out var value) == true ? value.ToDouble() : 0));
-        CPUGaugeData.CpuUsage.Value = Cluster.PodMetrics.Sum(x => x.Containers.Sum(y => y.Usage?.TryGetValue("cpu", out var value) == true ? value.ToDouble() : 0));
+
+        CPUGaugeData.CpuRequests.Value = allPodContainers.Sum(c =>
+            c.Resources?.Requests?.TryGetValue("cpu", out var q) == true
+                ? q.ToDouble()
+                : 0d);
+
+        CPUGaugeData.CpuLimits.Value = allPodContainers.Sum(c =>
+            c.Resources?.Limits?.TryGetValue("cpu", out var q) == true
+                ? q.ToDouble()
+                : 0d);
+
+        CPUGaugeData.CpuUsage.Value = allMetricContainers.Sum(c =>
+            c.Usage?.TryGetValue("cpu", out var q) == true
+                ? q.ToDouble()
+                : 0d);
 
         MemoryGaugeData.MemoryAllocatable.Value = nodes.Sum(x => x.Status.Allocatable?.TryGetValue("memory", out var value) == true ? value.ToDouble() : 0) / 1048576 / 1024;
         MemoryGaugeData.MemoryCapacity.Value = nodes.Sum(x => x.Status.Capacity?.TryGetValue("memory", out var value) == true ? value.ToDouble() : 0) / 1048576 / 1024;
-        MemoryGaugeData.MemoryRequests.Value = pods.Sum(x => x.Spec.Containers.Sum(y => y.Resources?.Requests?.TryGetValue("memory", out var value) == true ? value.ToDouble() : 0)) / 1048576 / 1024;
-        MemoryGaugeData.MemoryLimits.Value = pods.Sum(x => x.Spec.Containers.Sum(y => y.Resources?.Limits?.TryGetValue("memory", out var value) == true ? value.ToDouble() : 0)) / 1048576 / 1024;
-        MemoryGaugeData.MemoryUsage.Value = Cluster.PodMetrics.Sum(x => x.Containers.Sum(y => y.Usage?.TryGetValue("memory", out var value) == true ? value.ToDouble() : 0)) / 1048576 / 1024;
+        MemoryGaugeData.MemoryRequests.Value = allPodContainers.Sum(c =>
+            c.Resources?.Requests?.TryGetValue("memory", out var q) == true
+                ? q.ToDouble()
+                : 0d) / 1048576 / 1024;
+
+        MemoryGaugeData.MemoryLimits.Value = allPodContainers.Sum(c =>
+            c.Resources?.Limits?.TryGetValue("memory", out var q) == true
+                ? q.ToDouble()
+                : 0d) / 1048576 / 1024;
+
+        MemoryGaugeData.MemoryUsage.Value = allMetricContainers.Sum(c =>
+            c.Usage?.TryGetValue("memory", out var q) == true
+                ? q.ToDouble()
+                : 0d) / 1048576 / 1024;
     }
 
     public void Initialize(ICluster cluster)
@@ -68,8 +92,6 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
         Cluster = cluster;
 
         Id = nameof(ClusterViewModel) + "-" + Cluster.Name + "-" + Title;
-
-        Cluster.SeedResource<Corev1Event>().GetAwaiter().GetResult();
 
         if (EventsVM is IInitializeCluster init)
         {

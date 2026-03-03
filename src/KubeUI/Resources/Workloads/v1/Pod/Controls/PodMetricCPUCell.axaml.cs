@@ -5,12 +5,12 @@ namespace KubeUI.Controls;
 
 public partial class PodMetricCPUCell : UserControl, IInitializeCluster
 {
-    public ICluster? Cluster { get; private set; }
+    private ICluster? _cluster;
 
     private static readonly DispatcherTimer s_timer = new(DispatcherPriority.Default);
 
     [GeneratedDirectProperty]
-    public partial string PrettyString { get; set; }
+    public partial string PrettyString { get; set; } = string.Empty;
 
     public PodMetricCPUCell()
     {
@@ -21,8 +21,6 @@ public partial class PodMetricCPUCell : UserControl, IInitializeCluster
             s_timer.Interval = TimeSpan.FromSeconds(1);
             s_timer.Start();
         }
-
-        s_timer.Tick += Timer_Tick;
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -35,31 +33,27 @@ public partial class PodMetricCPUCell : UserControl, IInitializeCluster
 
     private void Update()
     {
-        if (Cluster == null)
+        if (_cluster == null || DataContext is not V1Pod pod)
         {
-            PrettyString = string.Empty;
             return;
         }
 
-        if (DataContext is not V1Pod pod)
-        {
-            PrettyString = string.Empty;
-            return;
-        }
-
-        // Locate matching pod metric
-        var metric = Cluster.PodMetrics.FirstOrDefault(x =>
+        var metric = _cluster.PodMetrics.FirstOrDefault(x =>
             x.Name() == pod.Name() && x.Namespace() == pod.Namespace());
 
         if (metric == null)
         {
-            PrettyString = string.Empty;
             return;
         }
 
-        // Sum container CPU usage; assumes "cpu" exists and ToDecimal() extension is available
         var usage = metric.Containers.Sum(c => c.Usage["cpu"].ToDecimal());
         PrettyString = $"{usage:F3}c";
+    }
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        s_timer.Tick += Timer_Tick;
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
@@ -70,7 +64,6 @@ public partial class PodMetricCPUCell : UserControl, IInitializeCluster
 
     public void Initialize(ICluster cluster)
     {
-        Cluster = cluster;
-        Update();
+        _cluster = cluster;
     }
 }

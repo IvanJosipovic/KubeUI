@@ -33,6 +33,7 @@ public class DockFactory : Factory
         nav.CanClose = false;
         nav.CanFloat = false;
         nav.CanDrag = false;
+        nav.CanDockAsDocument = false;
 
         _leftDock = new ToolDock
         {
@@ -199,16 +200,6 @@ public class DockFactory : Factory
             }
         }
     }
-
-    public override void DockAsDocument(IDockable dockable)
-    {
-        if (dockable.Id == nameof(NavigationViewModel))
-        {
-            return;
-        }
-
-        base.DockAsDocument(dockable);
-    }
 }
 
 public static class FactoryExtensions
@@ -232,7 +223,8 @@ public static class FactoryExtensions
             return false;
         }
 
-        factory.AddDockable(documents, vm);
+        var insertIndex = documents.VisibleDockables?.Count ?? 0;
+        factory.InsertDockable(documents, vm, insertIndex);
         factory.SetActiveDockable(vm);
         factory.SetFocusedDockable(documents, vm);
 
@@ -253,7 +245,8 @@ public static class FactoryExtensions
             return false;
         }
 
-        factory.AddDockable(bottomToolsDock, vm);
+        var insertIndex = bottomToolsDock.VisibleDockables?.Count ?? 0;
+        factory.InsertDockable(bottomToolsDock, vm, insertIndex);
         factory.SetActiveDockable(vm);
         factory.SetFocusedDockable(bottomToolsDock, vm);
 

@@ -16,7 +16,7 @@ public sealed partial class V1ConfigMapConfig : ResourceConfigBase<V1ConfigMap>
             new ResourceListColumn<V1ConfigMap, string>()
             {
                 Name = "Keys",
-                Display = x => x.Data != null && x.Data.Keys.Count > 0 ? x.Data.Keys.Aggregate((a,b) => a + ", " + b) : "",
+                Display = x => x.Data?.Keys.Count > 0 ? x.Data.Keys.Aggregate((a,b) => a + ", " + b) : "",
                 Field = x => x.Data?.Keys.FirstOrDefault() ?? "",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },

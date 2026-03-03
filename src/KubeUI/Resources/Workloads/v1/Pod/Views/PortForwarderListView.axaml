@@ -23,7 +23,8 @@
                 <c:MyDataGridTextColumn
                     Binding="{Binding Type}"
                     FontSize="{Binding Settings.Settings.FontSize}"
-                    Header="Type" />
+                    Header="Type"
+                    SortDirection="Ascending" />
                 <c:MyDataGridTextColumn
                     Width="*"
                     Binding="{Binding Name}"

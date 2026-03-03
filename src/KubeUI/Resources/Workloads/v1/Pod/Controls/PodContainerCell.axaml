@@ -5,48 +5,39 @@
     xmlns:conv="clr-namespace:KubeUI.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:k8s="using:k8s.Models"
+    xmlns:local="using:KubeUI.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     HorizontalAlignment="Left"
     VerticalAlignment="Center"
-    x:DataType="k8s:V1Pod">
-    <UserControl.Styles>
-        <Style Selector="Ellipse.statusDot">
-            <Setter Property="Width" Value="10" />
-            <Setter Property="Height" Value="10" />
-            <Setter Property="Stroke" Value="Gray" />
-            <Setter Property="StrokeThickness" Value="1" />
-            <Setter Property="Margin" Value="0,0,4,0" />
-        </Style>
-    </UserControl.Styles>
-    <UserControl.Resources>
-        <conv:ContainerStatusToBrushConverter x:Key="ContainerStatusToBrushConverter" />
-
-        <DataTemplate x:Key="ContainerStatusTemplate" x:DataType="k8s:V1ContainerStatus">
-            <Ellipse Classes="statusDot" Fill="{Binding Converter={StaticResource ContainerStatusToBrushConverter}}">
-                <ToolTip.Tip>
-                    <StackPanel>
-                        <TextBlock Text="{Binding Name, StringFormat='{}Name: {0}'}" />
-                    </StackPanel>
-                </ToolTip.Tip>
-            </Ellipse>
-        </DataTemplate>
-    </UserControl.Resources>
-
+    d:DesignHeight="50"
+    d:DesignWidth="200">
     <StackPanel Margin="10,0,0,0" Orientation="Horizontal">
-        <ItemsControl ItemTemplate="{StaticResource ContainerStatusTemplate}" ItemsSource="{Binding Status.ContainerStatuses}">
+        <ItemsControl ItemsSource="{Binding ContainerStatuses, RelativeSource={RelativeSource AncestorType=local:PodContainerCell}}">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <StackPanel Orientation="Horizontal" />
                 </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
-        </ItemsControl>
-
-        <ItemsControl ItemTemplate="{StaticResource ContainerStatusTemplate}" ItemsSource="{Binding Status.InitContainerStatuses}">
-            <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <StackPanel Orientation="Horizontal" />
-                </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="local:PodContainerCell+ViewModel">
+                    <Ellipse Fill="{Binding Brush}">
+                        <ToolTip.Tip>
+                            <StackPanel>
+                                <TextBlock Text="{Binding Name, StringFormat='Name: {0}'}" />
+                            </StackPanel>
+                        </ToolTip.Tip>
+                        <Ellipse.Styles>
+                            <Style Selector="Ellipse">
+                                <Setter Property="Width" Value="10" />
+                                <Setter Property="Height" Value="10" />
+                                <Setter Property="Stroke" Value="Gray" />
+                                <Setter Property="StrokeThickness" Value="1" />
+                                <Setter Property="Margin" Value="0,0,4,0" />
+                            </Style>
+                        </Ellipse.Styles>
+                    </Ellipse>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
         </ItemsControl>
     </StackPanel>
 </UserControl>

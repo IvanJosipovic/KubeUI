@@ -1,10 +1,18 @@
-using Avalonia.Media; // Add this if not already present
+using k8s;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
+using KubeUI.Client;
 
 namespace KubeUI.Resources.Workloads.v1.Pod.Controls;
 
-public sealed partial class PodStatusCell : UserControl
+public sealed partial class PodStatusCell : UserControl, IInitializeCluster
 {
+    private ICluster? _cluster;
+
+    private V1Pod? _viewModel;
+
+    private GroupApiVersionKind _groupApiVersionKind = GroupApiVersionKind.From<V1Pod>();
+
     [GeneratedDirectProperty]
     public partial string PrettyString { get; set; }
 
@@ -19,9 +27,21 @@ public sealed partial class PodStatusCell : UserControl
     protected override void OnDataContextChanged(EventArgs e)
     {
         base.OnDataContextChanged(e);
+        SetPrettyString();
+    }
 
+    protected override void OnUnloaded(RoutedEventArgs e)
+    {
+        base.OnUnloaded(e);
+        _cluster?.OnChange -= _cluster_OnChange;
+    }
+
+    private void SetPrettyString()
+    {
         if (DataContext is V1Pod pod)
         {
+            _viewModel = pod;
+
             if (pod.Metadata?.DeletionTimestamp.HasValue == true)
             {
                 PrettyString = "Terminating";
@@ -44,5 +64,23 @@ public sealed partial class PodStatusCell : UserControl
         {
             PrettyString = string.Empty;
         }
+    }
+
+    private void _cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)
+    {
+        if (_groupApiVersionKind == groupApiVersionKind && _viewModel?.Name() == resource.Name() && _viewModel?.Namespace() == resource.Namespace())
+        {
+            Dispatcher.UIThread.Invoke(() =>
+            {
+                DataContext = resource;
+                SetPrettyString();
+            }, DispatcherPriority.Normal);
+        }
+    }
+
+    public void Initialize(ICluster cluster)
+    {
+        _cluster = cluster;
+        _cluster.OnChange += _cluster_OnChange;
     }
 }

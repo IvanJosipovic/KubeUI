@@ -20,19 +20,19 @@ public sealed partial class V1IngressClassConfig : ResourceConfigBase<V1IngressC
             new ResourceListColumn<V1IngressClass, string>()
             {
                 Name = "API Group",
-                Field = x => x.Spec.Parameters != null ? x.Spec.Parameters.ApiGroup : "",
+                Field = x => x.Spec?.Parameters?.ApiGroup ?? "",
                 Width = "*",
             },
             new ResourceListColumn<V1IngressClass, string>()
             {
                 Name = "Scope",
-                Field = x => x.Spec.Parameters != null ? x.Spec.Parameters.Scope : "",
+                Field = x => x.Spec.Parameters?.Scope ?? "",
                 Width = "*",
             },
             new ResourceListColumn<V1IngressClass, string>()
             {
                 Name = "Kind",
-                Field = x => x.Spec.Parameters != null ? x.Spec.Parameters.Kind : "",
+                Field = x => x.Spec.Parameters?.Kind ?? "",
                 Width = "*",
             },
             AgeColumn(),

@@ -2,7 +2,7 @@
 using k8s.Models;
 using KubeUI.Client;
 using KubeUI.Resources;
-using Yarp.Kubernetes.Controller.Client;
+using KubernetesClient.Informer.Client;
 
 namespace KubeUI.ViewModels;
 

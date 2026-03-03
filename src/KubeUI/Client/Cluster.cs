@@ -1,9 +1,9 @@
 using System.Net.Http.Json;
 using System.Reactive.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Xml;
 using Avalonia.Collections;
+using Avalonia.Media.Immutable;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using DynamicData;
@@ -18,17 +18,17 @@ using Humanizer;
 using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubernetesCRDModelGen;
 using KubeUI;
 using KubeUI.Resources;
+using Mapster;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http.Resilience;
 using Polly;
 using Swordfish.NET.Collections;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
-using Yarp.Kubernetes.Controller;
-using Yarp.Kubernetes.Controller.Client;
 
 namespace KubeUI.Client;
 
@@ -81,6 +81,9 @@ public sealed partial class Cluster : ObservableObject, ICluster
     public partial ClusterStatus Status { get; set; }
 
     [ObservableProperty]
+    public partial IBrush ClusterColor { get; set; } = Brushes.Red;
+
+    [ObservableProperty]
     public partial bool Connected { get; set; }
 
     [ObservableProperty]
@@ -96,7 +99,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
     public partial bool IsExpanded { get; set; }
 
     [ObservableProperty]
-    public partial IReadOnlyList<V1Namespace> Namespaces { get; set; }
+    public partial ReadOnlyObservableCollection<V1Namespace> Namespaces { get; set; }
 
     [ObservableProperty]
     public partial ObservableCollection<V1Namespace> SelectedNamespaces { get; set; } = [];
@@ -131,6 +134,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 try
                 {
                     Status = ClusterStatus.Connecting;
+                    ClusterColor = Brushes.Orange;
                     KubernetesClientConfiguration config;
 
                     if (string.IsNullOrEmpty(KubeConfigPath))
@@ -159,7 +163,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                         InnerHandler = new ResilienceHandler(pipe.Build())
                     };
 
-                    Client = new Kubernetes(config);
+                    Client = new k8s.Kubernetes(config);
 
                     NativeAPIGroupDiscoveryList = await GetAPIGroupDiscoveryList();
 
@@ -177,7 +181,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     {
                         var settings = _settingsService.Settings.GetClusterSettings(this);
 
-                        if (settings.Namespaces.Count == 0)
+                        if (settings?.Namespaces?.Count == 0)
                         {
                             Connected = false;
                             Status = ClusterStatus.Errored;
@@ -220,6 +224,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
                     Connected = true;
                     Status = ClusterStatus.Connected;
+                    ClusterColor = RandomBrush();
 
                     await AddDefaultNavigation();
                     await InitMetrics();
@@ -231,6 +236,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     Connected = false;
 
                     Status = ClusterStatus.Errored;
+                    ClusterColor = Brushes.Red;
 
                     var factory = Application.Current.GetRequiredService<IFactory>();
 
@@ -263,6 +269,12 @@ public sealed partial class Cluster : ObservableObject, ICluster
             _connectionLimiter.Release();
             _logger.LogInformation("Connected to {name}", Name);
         }
+    }
+
+    private static IBrush RandomBrush()
+    {
+        var p = typeof(Brushes).GetProperties(BindingFlags.Public | BindingFlags.Static).Where(x => x.Name != nameof(Brushes.Red) && x.Name != nameof(Brushes.Orange)).ToArray();
+        return (IBrush)p[Random.Shared.Next(p.Length)].GetValue(null)!;
     }
 
     private async Task AddDefaultNavigation()
@@ -366,7 +378,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
         }
     }
 
-    public async Task SeedResource<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public async Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         _logger.LogDebug("Starting Seed: {type}", typeof(T));
 
@@ -400,9 +412,12 @@ public sealed partial class Cluster : ObservableObject, ICluster
             {
                 var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>());
                 container.Informers.Add(informer);
-                informer.Register(GetResourceInformerCallback<T>());
-                informer.StartWatching();
-                _ = informer.RunInfinite(CancellationToken.None);
+                _ = Task.Run(() =>
+                {
+                    informer.Register(GetResourceInformerCallback<T>());
+                    informer.StartWatching();
+                    _ = informer.RunInfinite(CancellationToken.None);
+                });
             }
             else
             {
@@ -419,9 +434,13 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     {
                         var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), @namespace: ns);
                         container.Informers.Add(informer);
-                        informer.Register(GetResourceInformerCallback<T>());
-                        informer.StartWatching();
-                        _ = informer.RunInfinite(CancellationToken.None);
+
+                        _ = Task.Run(() =>
+                        {
+                            informer.Register(GetResourceInformerCallback<T>());
+                            informer.StartWatching();
+                            _ = informer.RunInfinite(CancellationToken.None);
+                        });
                     }
                 }
             }
@@ -429,6 +448,13 @@ public sealed partial class Cluster : ObservableObject, ICluster
         else
         {
             _seedLimiter.Release();
+        }
+
+        if (waitForReady)
+        {
+            _logger.LogDebug("Waiting for Ready: {type}", typeof(T));
+            await IsResourceReady<T>();
+            _logger.LogDebug("Ready: {type}", typeof(T));
         }
 
         _logger.LogDebug("Finished Seed: {type}", typeof(T));
@@ -459,7 +485,6 @@ public sealed partial class Cluster : ObservableObject, ICluster
                             else
                             {
                                 items.AddOrUpdate(item);
-                                //Dispatcher.UIThread.Post(() => items.AddOrUpdate(item), DispatcherPriority.Background);
 
                                 _logger.LogInformation("Completed processing new CRD {name}", crd.Name());
                             }
@@ -469,17 +494,26 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     else
                     {
                         items.AddOrUpdate(item);
-                        //Dispatcher.UIThread.Post(() => items.AddOrUpdate(item), DispatcherPriority.Background);
                     }
-
                     break;
                 case WatchEventType.Modified:
-                    items.AddOrUpdate(item);
-                    //Dispatcher.UIThread.Post(() => items.AddOrUpdate(item), DispatcherPriority.Background);
+                    items.Edit(o =>
+                    {
+                        var key = o.GetKey(item);
+                        var original = o.Lookup(key);
+                        if (original.HasValue)
+                        {
+                            item.Adapt(original.Value);
+                            o.Refresh(key);
+                        }
+                        else
+                        {
+                            o.AddOrUpdate(item);
+                        }
+                    });
                     break;
                 case WatchEventType.Deleted:
                     items.Remove(item);
-                    //Dispatcher.UIThread.Post(() => items.Remove(item), DispatcherPriority.Background);
                     if (item is V1CustomResourceDefinition crd2)
                     {
                         APIGroupDiscoveryList = GetAPIGroupDiscoveryList(false).GetAwaiter().GetResult();
@@ -859,7 +893,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private async Task<V2beta1APIGroupDiscoveryList> GetAPIGroupDiscoveryList(bool native = true)
     {
-        var mi = typeof(Kubernetes).GetMethod("SendRequest", BindingFlags.NonPublic | BindingFlags.Instance);
+        var mi = typeof(k8s.Kubernetes).GetMethod("SendRequest", BindingFlags.NonPublic | BindingFlags.Instance);
 
         var gen = mi.MakeGenericMethod([typeof(V2beta1APIGroupDiscoveryList)]);
 

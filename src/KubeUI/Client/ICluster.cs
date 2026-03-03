@@ -2,10 +2,9 @@
 using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
-using Yarp.Kubernetes.Controller.Client;
+using KubernetesClient.Informer.Client;
 using KubeUI.Resources;
 using static KubeUI.Client.Cluster;
-using Yarp.Kubernetes.Controller;
 using DynamicData;
 
 namespace KubeUI.Client;
@@ -28,7 +27,7 @@ public interface ICluster
     IKubernetes? Client { get; set; }
     IResourceConfig GetResourceConfig(GroupApiVersionKind kind);
     IResourceConfig GetResourceConfig<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
-    IReadOnlyList<V1Namespace> Namespaces { get; set; }
+    ReadOnlyObservableCollection<V1Namespace> Namespaces { get; set; }
     K8SConfiguration KubeConfig { get; set; }
     ModelCache ModelCache { get; set; }
     ObservableCollection<NavigationItem> NavigationItems { get; set; }
@@ -40,12 +39,14 @@ public interface ICluster
     PortForwarder AddServicePortForward(string @namespace, string serviceName, int servicePort);
     string KubeConfigPath { get; set; }
     string Name { get; set; }
+    bool IsExpanded { get; set; }
+    IBrush ClusterColor { get; set; }
     Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task Connect();
     Task DeleteResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task ImportFolder(string path);
     Task ImportYaml(Stream stream);
-    Task SeedResource<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task UpdatePermissionsAllNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task<bool> IsResourceReady<T>(CancellationToken? token = null) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task<bool> UpdateCanI(Type type, Verb verb, string? @namespace = null, string? subresource = null);

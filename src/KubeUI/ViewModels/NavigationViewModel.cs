@@ -4,7 +4,7 @@ using Dock.Model.Core;
 using FluentIcons.Common;
 using KubeUI.Client;
 using Swordfish.NET.Collections;
-using Yarp.Kubernetes.Controller.Client;
+using KubernetesClient.Informer.Client;
 
 namespace KubeUI.ViewModels;
 
@@ -25,7 +25,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
         //_notificationManager = Application.Current.GetRequiredService<INotificationManager>();
     }
 
-    public void TreeView_SelectionChanged(object? item)
+    public async void TreeView_SelectionChanged(object? item)
     {
         if (item is Cluster cluster)
         {
@@ -34,14 +34,14 @@ public sealed partial class NavigationViewModel : ViewModelBase
         }
         else if (item is ResourceNavigationLink resourceNavLink)
         {
-            _ = Task.Run(() => SelectResourceNavigationLink(resourceNavLink));
+            SelectResourceNavigationLink(resourceNavLink);
         }
         else if (item is NavigationLink navLink)
         {
-            _ = Task.Run(async () => await SelectNavigationLink(navLink));
+            await SelectNavigationLink(navLink);
         }
 
-        if (item is NavigationItem nav)
+        if (item is NavigationItem nav && nav.NavigationItems.Count > 0)
         {
             nav.IsExpanded = !nav.IsExpanded;
         }
@@ -60,7 +60,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
 
         nav.Count ??= nav.Cluster.GetResourceCount(nav.ControlType);
 
-        Dispatcher.UIThread.Post(() => Factory.AddToDocuments(vm));
+        Factory.AddToDocuments(vm);
     }
 
     private async Task SelectNavigationLink(NavigationLink link)
@@ -118,7 +118,7 @@ public sealed partial class NavigationViewModel : ViewModelBase
                 init.Initialize(link.Cluster);
             }
 
-            Dispatcher.UIThread.Post(() => Factory.AddToDocuments(vm));
+            Factory.AddToDocuments(vm);
         }
     }
 }

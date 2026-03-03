@@ -18,11 +18,16 @@ public static class KubernetesYaml
     public static readonly IDeserializer Deserializer =
         new DeserializerBuilder()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
+            
             .WithTypeConverter(new IntOrStringYamlConverter())
             .WithTypeConverter(new ByteArrayStringYamlConverter())
             .WithTypeConverter(new ResourceQuantityYamlConverter())
             .WithTypeConverter(new SystemTextJsonYamlTypeConverter())
+            .WithTypeConverter(new KubernetesDateTimeYamlConverter())
+            .WithTypeConverter(new KubernetesDateTimeOffsetYamlConverter())
+
             .WithTypeInspector(x => new SystemTextJsonTypeInspector(x))
+            
             .WithAttemptingUnquotedStringTypeDeserialization()
             .IgnoreUnmatchedProperties()
             .Build();
@@ -31,14 +36,20 @@ public static class KubernetesYaml
         new SerializerBuilder()
             .DisableAliases()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
+            
             .WithTypeConverter(new IntOrStringYamlConverter())
             .WithTypeConverter(new ByteArrayStringYamlConverter())
             .WithTypeConverter(new ResourceQuantityYamlConverter())
-            .WithEventEmitter(e => new StringQuotingEmitter(e))
-            .WithEventEmitter(e => new FloatEmitter(e))
+            .WithTypeConverter(new KubernetesDateTimeYamlConverter())
+            .WithTypeConverter(new KubernetesDateTimeOffsetYamlConverter())
+
             .WithTypeConverter(new SystemTextJsonYamlTypeConverter(true))
+
             .WithTypeInspector(x => new SystemTextJsonTypeInspector(x))
             .WithTypeInspector(x => new SortedTypeInspector(x))
+        
+            .WithEventEmitter(e => new StringQuotingEmitter(e))
+            .WithEventEmitter(e => new FloatEmitter(e))
             .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull)
             .BuildValueSerializer();
 
@@ -135,10 +146,8 @@ public static class KubernetesYaml
     /// <returns>collection of objects</returns>
     public static async Task<List<object>> LoadAllFromFileAsync(string fileName, IDictionary<string, Type> typeMap = null)
     {
-        using (var fileStream = File.OpenRead(fileName))
-        {
-            return await LoadAllFromStreamAsync(fileStream, typeMap).ConfigureAwait(false);
-        }
+        await using var fileStream = File.OpenRead(fileName);
+        return await LoadAllFromStreamAsync(fileStream, typeMap).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -159,23 +168,23 @@ public static class KubernetesYaml
         typeMap?.ToList().ForEach(x => mergedTypeMap[x.Key] = x.Value);
 
         var types = new List<Type>();
-        var parser = new Parser(new StringReader(content));
+        var parser = new MergingParser(new Parser(new StringReader(content)));
         parser.Consume<StreamStart>();
         while (parser.Accept<DocumentStart>(out _))
         {
-            var obj = Deserializer.Deserialize<KubernetesObject>(parser);
-            types.Add(mergedTypeMap[obj.ApiVersion + "/" + obj.Kind]);
+            var dict = Deserializer.Deserialize<Dictionary<object, object>>(parser);
+            types.Add(mergedTypeMap[dict["apiVersion"] + "/" + dict["kind"]]);
         }
 
-        parser = new Parser(new StringReader(content));
+        parser = new MergingParser(new Parser(new StringReader(content)));
         parser.Consume<StreamStart>();
         var ix = 0;
         var results = new List<object>();
         while (parser.Accept<DocumentStart>(out _))
         {
             var objType = types[ix++];
-            var obj = Deserializer.Deserialize(parser, objType);
-            results.Add(obj);
+                var obj = Deserializer.Deserialize(parser, objType);
+                results.Add(obj);
         }
 
         return results;
@@ -183,27 +192,27 @@ public static class KubernetesYaml
 
     public static async Task<T> LoadFromStreamAsync<T>(Stream stream)
     {
-        var reader = new StreamReader(stream);
+        using var reader = new StreamReader(stream);
         var content = await reader.ReadToEndAsync().ConfigureAwait(false);
         return Deserialize<T>(content);
     }
 
     public static async Task<T> LoadFromFileAsync<T>(string file)
     {
-        using (var fs = File.OpenRead(file))
-        {
-            return await LoadFromStreamAsync<T>(fs).ConfigureAwait(false);
-        }
+        await using var fs = File.OpenRead(file);
+        return await LoadFromStreamAsync<T>(fs).ConfigureAwait(false);
     }
 
     public static TValue Deserialize<TValue>(string yaml)
     {
-        return Deserializer.Deserialize<TValue>(yaml);
+        using var reader = new StringReader(yaml);
+        return Deserializer.Deserialize<TValue>(new MergingParser(new Parser(reader)));
     }
 
     public static TValue Deserialize<TValue>(Stream yaml)
     {
-        return Deserializer.Deserialize<TValue>(new StreamReader(yaml));
+        using var reader = new StreamReader(yaml);
+        return Deserializer.Deserialize<TValue>(new MergingParser(new Parser(reader)));
     }
 
     public static string SerializeAll(IEnumerable<object> values)

@@ -28,7 +28,7 @@ public sealed partial class ClusterManager : ObservableObject, IDisposable
 
     private readonly ISettingsService _settingsService;
 
-    private IDictionary<string, FileSystemWatcher> _fileWatchers = new Dictionary<string, FileSystemWatcher>();
+    private readonly IDictionary<string, FileSystemWatcher> _fileWatchers = new Dictionary<string, FileSystemWatcher>();
 
     public ClusterManager(ILogger<ClusterManager> logger, IServiceProvider serviceProvider, IFactory factory, ISettingsService settingsService)
     {
@@ -100,17 +100,14 @@ public sealed partial class ClusterManager : ObservableObject, IDisposable
 
     private void Watcher_Changed(object sender, FileSystemEventArgs e)
     {
-        Dispatcher.UIThread.Post(() =>
+        try
         {
-            try
-            {
-                LoadFromConfigFromPath(e.FullPath);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error Watching Kube Config {0}", e.FullPath);
-            }
-        }, DispatcherPriority.Background);
+            LoadFromConfigFromPath(e.FullPath);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error Watching Kube Config {0}", e.FullPath);
+        }
     }
 
     private void LoadClusters()
@@ -181,7 +178,7 @@ public sealed partial class ClusterManager : ObservableObject, IDisposable
 
                         if (!Clusters.Any(x => x.Name == cluster.Name && x.KubeConfigPath == cluster.KubeConfigPath))
                         {
-                            Clusters.Add(cluster);
+                            Dispatcher.UIThread.Invoke(() => Clusters.Add(cluster), DispatcherPriority.Background);
                         }
                     }
                     //todo remove all clusters which are no longer in the config

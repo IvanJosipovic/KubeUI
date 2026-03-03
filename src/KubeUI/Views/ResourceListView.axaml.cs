@@ -1,9 +1,5 @@
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using Avalonia.Collections;
 using Avalonia.Controls.Primitives;
-using Avalonia.Controls.Templates;
-using Avalonia.Data.Converters;
 using Avalonia.Styling;
 using Dock.Model.Core;
 using FluentIcons.Avalonia;
@@ -50,9 +46,14 @@ public partial class ResourceListView : UserControl
     {
         base.OnDataContextChanged(e);
 
-        if (DataContext != null)
+        if (DataContext is IResourceListViewModel vm)
         {
             GetGenericMethod(nameof(GenerateGrid))?.Invoke(this, null);
+
+            PART_Grid.SelectionModelFactory = vm.SelectionModelFactory;
+            PART_Grid.SortingAdapterFactory = vm.SortingAdapterFactory;
+            PART_Grid.FilteringAdapterFactory = vm.FilteringAdapterFactory;
+            PART_Grid.SearchAdapterFactory = vm.SearchAdapterFactory;
         }
     }
 
@@ -86,90 +87,9 @@ public partial class ResourceListView : UserControl
     private void GenerateGrid<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var viewModel = (ResourceListViewModel<T>)DataContext!;
-
-        PART_Grid.Columns.Clear();
-
         if (viewModel.ResourceConfig.ListStyle() != null)
         {
             PART_Grid.Styles.Add(viewModel.ResourceConfig.ListStyle());
-        }
-
-        var converter = new DataGridLengthConverter();
-
-        foreach (var columnDefinition in viewModel.ResourceConfig.Columns())
-        {
-            try
-            {
-                var columnDisplay = (Func<T, string>)columnDefinition.GetType().GetProperty(nameof(ResourceListColumn<,>.Display)).GetValue(columnDefinition);
-
-                var columnField = columnDefinition.GetType().GetProperty(nameof(ResourceListColumn<,>.Field)).GetValue(columnDefinition);
-
-                // Create Sort FuncComparer
-                var colType = columnField.GetType().GenericTypeArguments[1];
-                var sortConverterType = typeof(MyFuncComparer<,>).MakeGenericType(typeof(T), colType);
-                var sortConverter = (IComparer)Activator.CreateInstance(sortConverterType, columnField);
-
-                DataGridColumn column = null;
-
-                if (columnDefinition.CustomControl != null)
-                {
-                    column = new DataGridTemplateColumn()
-                    {
-                        Header = columnDefinition.Name,
-                        CustomSortComparer = sortConverter,
-                        CanUserSort = true,
-                        CellTemplate = new FuncDataTemplate<T>((item, _) =>
-                        {
-                            var control = Application.Current.GetRequiredService(columnDefinition.CustomControl) as Control;
-                            control.DataContext = item;
-
-                            if (control is IInitializeCluster init)
-                            {
-                                init.Initialize(viewModel.Cluster);
-                            }
-
-                            return control;
-                        }),
-                    };
-                }
-                else
-                {
-                    // Create Display FuncValueConverter
-                    column = new MyDataGridTextColumn
-                    {
-                        Binding = new Binding()
-                        {
-                            Converter = new FuncValueConverter<T, string>(x =>
-                            {
-                                if (x == null)
-                                    return "";
-                                // Use columnDisplay if not null, otherwise use columnField as a Func<T, string>
-                                if (columnDisplay != null)
-                                    return columnDisplay(x);
-                                else if (columnField is Func<T, string> fieldFunc)
-                                    return fieldFunc(x);
-                                else
-                                    throw new Exception("Column is miss-configured");
-                            }),
-                            Mode = BindingMode.OneWay
-                        },
-                        Header = columnDefinition.Name,
-                        CanUserSort = true,
-                        CustomSortComparer = sortConverter,
-                    };
-                }
-
-                if (!string.IsNullOrEmpty(columnDefinition.Width) && converter.ConvertFromString(columnDefinition.Width) is DataGridLength width)
-                {
-                    column.Width = width;
-                }
-
-                PART_Grid.Columns.Add(column);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Unable to generate column for: ");
-            }
         }
 
         PART_Grid.ContextMenu ??= new ContextMenu();
@@ -346,92 +266,4 @@ public partial class ResourceListView : UserControl
 
         return styles;
     }
-
-    private void SetSort<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
-    {
-        if (DataContext == null)
-        {
-            return;
-        }
-
-        var viewModel = (ResourceListViewModel<T>)DataContext!;
-
-        if (string.IsNullOrEmpty(viewModel.SortColumnName))
-        {
-            var columnDefinition = viewModel.ResourceConfig.Columns().First(x => x.Sort != SortDirection.None);
-
-            var column = PART_Grid.Columns.First(x => x.Header.ToString() == columnDefinition.Name);
-
-            Dispatcher.UIThread.Post(() =>
-            {
-                if (column != null && columnDefinition != null)
-                {
-                    try
-                    {
-                        column.Sort(columnDefinition.Sort == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error Setting Sort");
-                    }
-                }
-            });
-        }
-        else
-        {
-            var column = PART_Grid.Columns.First(x => x.Header.ToString() == viewModel.SortColumnName);
-
-            Dispatcher.UIThread.Post(() =>
-            {
-                if (viewModel != null)
-                {
-                    try
-                    {
-                        column.Sort(viewModel.SortDirection == SortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error Setting Sort");
-                    }
-                }
-            });
-        }
-    }
-
-    private void PART_Grid_PropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
-    {
-        var ViewModel = (IResourceListViewModel)DataContext;
-
-        if (e.Property.Name == "CollectionView")
-        {
-            GetGenericMethod(nameof(SetSort))?.Invoke(this, null);
-        }
-    }
-
-    private void PART_Grid_Sorting(object? sender, DataGridColumnEventArgs e)
-    {
-        Dispatcher.UIThread.Post(() =>
-        {
-            var ViewModel = (IResourceListViewModel)DataContext;
-
-            var direction = e.Column.SortDescription;
-
-            if (direction != null)
-            {
-                ViewModel.SortColumnName = e.Column.Header.ToString();
-                ViewModel.SortDirection = direction.Value == ListSortDirection.Ascending ? SortDirection.Ascending : SortDirection.Descending;
-            }
-        }, DispatcherPriority.Background);
-    }
-}
-
-public static class DataGridExtensions
-{
-    extension(DataGridColumn col)
-    {
-        public ListSortDirection? SortDescription => GetSortDescription(col).Direction;
-    }
-
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "GetSortDescription")]
-    public static extern DataGridSortDescription GetSortDescription(DataGridColumn column);
 }
