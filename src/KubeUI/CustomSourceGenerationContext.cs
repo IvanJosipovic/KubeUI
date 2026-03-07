@@ -2,7 +2,9 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using AvaloniaEdit.Editing;
 using k8s;
+using k8s.KubeConfigModels;
 using k8s.Models;
 using static k8s.KubernetesJson;
 
@@ -104,6 +106,9 @@ namespace KubeUI;
 [JsonSerializable(typeof(k8s.Watcher<V1ReplicaSet>.WatchEvent))]
 [JsonSerializable(typeof(KubernetesList<V1StatefulSet>))]
 [JsonSerializable(typeof(k8s.Watcher<V1StatefulSet>.WatchEvent))]
+
+[JsonSerializable(typeof(ExecCredentialResponse))]
+[JsonSerializable(typeof(ExecCredentialResponse.ExecStatus))]
 
 [JsonSourceGenerationOptions(
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
