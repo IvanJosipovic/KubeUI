@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using Avalonia.Controls.Notifications;
+using Dock.Model.Core;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
@@ -98,6 +99,8 @@ public static class Program
         services.AddSingleton<IDialogFactory, FluentDialogFactory>(x => (FluentDialogFactory)new DialogFactory().AddFluent());
         services.AddSingleton<IDialogManager, MyDialogManager>(x => new MyDialogManager(dialogFactory: x.GetRequiredService<IDialogFactory>(), logger: x.GetRequiredService<ILogger<DialogManager>>()));
         services.AddSingleton<IDialogService, DialogService>(x => new DialogService(x.GetRequiredService<IDialogManager>()));
+
+        services.AddSingleton<IFactory>(sp => Dispatcher.UIThread.Invoke<IFactory>(() => new DockFactory(sp.GetRequiredService<ILogger<DockFactory>>())));
 
         services.AddSingleton<INotificationManager>(_ => Dispatcher.UIThread.Invoke<INotificationManager>(() => new WindowNotificationManager(App.TopLevel) { MaxItems = 4 }));
 

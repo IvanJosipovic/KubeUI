@@ -258,22 +258,31 @@ public static class FactoryExtensions
         var rightDock = factory.GetDockable<IToolDock>("RightDock");
 
         var root = factory.GetDockable<IRootDock>("Root");
+
         var pinnedDoc = root.RightPinnedDockables?.FirstOrDefault(x => x.Id == vm.Id);
 
         if (pinnedDoc != null)
         {
+            vm.PinnedBounds = pinnedDoc.PinnedBounds;
             factory.RemoveDockable(pinnedDoc, false);
         }
 
-        var existingDock = rightDock.VisibleDockables.FirstOrDefault(x => x.Id == vm.Id);
+        var existingDock = factory.FindDockableById(vm.Id);
 
         if (existingDock != null)
         {
             factory.RemoveDockable(existingDock, false);
         }
 
-        factory?.InsertDockable(rightDock, vm, 0);
+        var insertIndex = rightDock.VisibleDockables?.Count ?? 0;
+        factory.InsertDockable(rightDock, vm, insertIndex);
         factory?.SetActiveDockable(vm);
         factory?.SetFocusedDockable(rightDock, vm);
+
+        if (pinnedDoc != null)
+        {
+            factory.PinDockable(vm);
+            factory.PreviewPinnedDockable(vm);
+        }
     }
 }
