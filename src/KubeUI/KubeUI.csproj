@@ -52,7 +52,7 @@
     <PackageReference Include="AvaloniaEdit.TextMate" Version="11.4.1" />
     <PackageReference Include="AvaloniaGraphControl" Version="0.7.0" />
     <PackageReference Include="AvaloniaTerminal" Version="1.0.0-alpha.7" />
-    <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.0-beta2">
+    <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.0-beta3">
       <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
