@@ -162,7 +162,14 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 UseBinarySearch = true,
                 InitialCapacity = Objects.Count
             })
-            .Subscribe(_ => _selectionModel.EndDataUpdate(_view), ex => _logger.LogError(ex, "Error Setting Resource List Filter: {ns} ", typeof(T)));
+            .Subscribe(
+                _ => _selectionModel.EndDataUpdate(_view),
+                ex =>
+                {
+                    _selectionModel.EndDataUpdate(_view);
+                    _logger.LogError(ex, "Error Setting Resource List Filter: {ns} ", typeof(T));
+                }
+            );
     }
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
