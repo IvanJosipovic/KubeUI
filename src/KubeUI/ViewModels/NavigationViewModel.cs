@@ -1,10 +1,11 @@
 ﻿using Avalonia.Controls.Notifications;
 using Avalonia.Platform.Storage;
+using Dock.Model.Controls;
 using Dock.Model.Core;
 using FluentIcons.Common;
+using KubernetesClient.Informer.Client;
 using KubeUI.Client;
 using Swordfish.NET.Collections;
-using KubernetesClient.Informer.Client;
 
 namespace KubeUI.ViewModels;
 
@@ -49,8 +50,15 @@ public sealed partial class NavigationViewModel : ViewModelBase
 
     private void SelectResourceNavigationLink(ResourceNavigationLink nav)
     {
-        var resourceListType = typeof(ResourceListViewModel<>).MakeGenericType(nav.ControlType);
+        var expectedId = $"{nav.Cluster.Name}-{GroupApiVersionKind.From(nav.ControlType)}";
 
+        if (TryActivateExistingDocument(expectedId))
+        {
+            nav.Count ??= nav.Cluster.GetResourceCount(nav.ControlType);
+            return;
+        }
+
+        var resourceListType = typeof(ResourceListViewModel<>).MakeGenericType(nav.ControlType);
         var vm = Application.Current.GetRequiredService(resourceListType) as IDockable;
 
         if (vm is IInitializeCluster init)
@@ -120,6 +128,25 @@ public sealed partial class NavigationViewModel : ViewModelBase
 
             Factory.AddToDocuments(vm);
         }
+    }
+
+    private bool TryActivateExistingDocument(string? id)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return false;
+        }
+
+        var existing = Factory.FindDockableById(id);
+
+        if (existing == null)
+        {
+            return false;
+        }
+        var documents = Factory.GetDockable<IDocumentDock>("Documents");
+        Factory.SetActiveDockable(existing);
+        Factory.SetFocusedDockable(documents, existing);
+        return true;
     }
 }
 

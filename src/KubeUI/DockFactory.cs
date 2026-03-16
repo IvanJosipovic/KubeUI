@@ -220,6 +220,11 @@ public static class FactoryExtensions
             factory.SetActiveDockable(existing);
             factory.SetFocusedDockable(documents, existing);
 
+            if (vm is IDisposable disp)
+            {
+                disp.Dispose();
+            }
+
             return false;
         }
 
