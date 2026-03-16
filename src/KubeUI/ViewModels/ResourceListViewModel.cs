@@ -52,6 +52,11 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private IDisposable? _subscription;
 
+    private readonly IdentitySelectionModel<T> _selectionModel = new()
+    {
+        SingleSelect = false
+    };
+
     public IEnumerable View => _view;
 
     private ReadOnlyObservableCollection<T> _view;
@@ -101,14 +106,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private DynamicDataSelectionModelFactory<T> _selectionModelFactory { get; set; }
 
-    private readonly HashSet<string> _selectedKeys = new(StringComparer.Ordinal);
-    private bool _suppressSelectionChanged;
-    private bool _isUpdatingCollection;
-
-    public ISelectionModel SelectionModel { get; } = new SelectionModel<T>()
-    {
-        SingleSelect = false
-    };
+    public ISelectionModel SelectionModel => _selectionModel;
 
     [ObservableProperty]
     public partial ObservableCollection<DataGridColumnDefinition> ColumnDefinitions { get; private set; } = [];
@@ -121,7 +119,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         SortingModel.SortingChanged += SortingModelOnSortingChanged;
         FilteringModel.FilteringChanged += FilteringModelOnFilteringChanged;
         SearchModel.SearchChanged += SearchModelOnSearchChanged;
-        ((SelectionModel<T>)SelectionModel).SelectionChanged += SelectionModelOnSelectionChanged;
+        _selectionModel.SelectionChanged += SelectionModelOnSelectionChanged;
     }
 
     public void Initialize(ICluster cluster)
@@ -153,7 +151,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         SetNamespaceFilter();
 
         _subscription = Objects.Connect()
-            .Do(_ => _isUpdatingCollection = true)
+            .Do(_ => _selectionModel.BeginDataUpdate())
             .Filter(_filterSubject)
             .Filter(_searchSubject)
             .ObserveOn(AvaloniaScheduler.Instance)
@@ -164,15 +162,14 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 UseBinarySearch = true,
                 InitialCapacity = Objects.Count
             })
-            .Subscribe(change =>
-            {
-                PreserveSelectionByKey();
-                _isUpdatingCollection = false;
-            }, ex =>
-            {
-                _isUpdatingCollection = false;
-                _logger.LogError(ex, "Error Setting Resource List Filter: {ns} ", typeof(T));
-            });
+            .Subscribe(
+                _ => _selectionModel.EndDataUpdate(_view),
+                ex =>
+                {
+                    _selectionModel.EndDataUpdate(_view);
+                    _logger.LogError(ex, "Error Setting Resource List Filter: {ns} ", typeof(T));
+                }
+            );
     }
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
@@ -251,7 +248,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         SortingModel.SortingChanged -= SortingModelOnSortingChanged;
         FilteringModel.FilteringChanged -= FilteringModelOnFilteringChanged;
         SearchModel.SearchChanged -= SearchModelOnSearchChanged;
-        ((SelectionModel<T>)SelectionModel).SelectionChanged -= SelectionModelOnSelectionChanged;
+        _selectionModel.SelectionChanged -= SelectionModelOnSelectionChanged;
     }
 
     private void GenerateColumnDefinitions()
@@ -337,75 +334,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _filterSubject.OnNext(_filteringAdapterFactory.FilterPredicate);
     }
 
-    private static string? GetKey(T item)
-    {
-        var meta = item?.Metadata;
-        if (meta is null)
-        {
-            return null;
-        }
-
-        var ns = meta.NamespaceProperty ?? string.Empty;
-        var name = meta.Name ?? string.Empty;
-
-        return ns + "/" + name;
-    }
-
-    private void PreserveSelectionByKey()
-    {
-        if (_view is null)
-        {
-            return;
-        }
-
-        var selection = (SelectionModel<T>)SelectionModel;
-
-        if (_selectedKeys.Count == 0)
-        {
-            return;
-        }
-
-        _suppressSelectionChanged = true;
-        selection.Clear();
-
-        for (var i = 0; i < _view.Count; i++)
-        {
-            var key = GetKey(_view[i]);
-            if (key != null && _selectedKeys.Contains(key))
-            {
-                selection.Select(i);
-
-                if (selection.SingleSelect)
-                {
-                    break;
-                }
-            }
-        }
-
-        _suppressSelectionChanged = false;
-    }
-
     private void SelectionModelOnSelectionChanged(object? sender, SelectionModelSelectionChangedEventArgs<T> e)
     {
-        if (_isUpdatingCollection)
-        {
-            return;
-        }
-
-        var selection = (SelectionModel<T>)SelectionModel;
-
-        if (_suppressSelectionChanged)
-        {
-            return;
-        }
-
-        _selectedKeys.Clear();
-
-        foreach (var key in selection.SelectedItems.Select(GetKey).Where(k => k != null))
-        {
-            _selectedKeys.Add(key!);
-        }
-
         OnPropertyChanged(nameof(SelectedItem));
         OnPropertyChanged(nameof(SelectedItems));
     }
@@ -414,6 +344,126 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     {
         _searchAdapterFactory.UpdatePredicate(e.NewDescriptors);
         _searchSubject.OnNext(_searchAdapterFactory.SearchPredicate);
+    }
+
+}
+
+public sealed class IdentitySelectionModel<TResource> : SelectionModel<TResource> where TResource : class, IKubernetesObject<V1ObjectMeta>, new()
+{
+    private HashSet<ResourceIdentity> _selectedResourceKeys = [];
+
+    private int _dataUpdateDepth;
+
+    private bool _isRestoringSelection;
+
+    public IdentitySelectionModel()
+    {
+        SelectionChanged += OnSelectionChanged;
+    }
+
+    public void BeginDataUpdate()
+    {
+        if (_dataUpdateDepth == 0)
+        {
+            CaptureSelectedKeys();
+        }
+
+        _dataUpdateDepth++;
+    }
+
+    public void EndDataUpdate(ReadOnlyObservableCollection<TResource> view)
+    {
+        if (_dataUpdateDepth == 0)
+        {
+            return;
+        }
+
+        _dataUpdateDepth--;
+
+        if (_dataUpdateDepth > 0)
+        {
+            return;
+        }
+
+        RestoreSelection(view);
+    }
+
+    private void OnSelectionChanged(object? sender, SelectionModelSelectionChangedEventArgs<TResource> e)
+    {
+        if (_isRestoringSelection || _dataUpdateDepth > 0)
+        {
+            return;
+        }
+
+        CaptureSelectedKeys();
+    }
+
+    private void RestoreSelection(ReadOnlyObservableCollection<TResource> view)
+    {
+        if (_selectedResourceKeys.Count == 0 || view.Count == 0)
+        {
+            return;
+        }
+
+        var targetIndexes = new List<int>();
+        for (var i = 0; i < view.Count; i++)
+        {
+            if (_selectedResourceKeys.Contains(CreateResourceIdentity(view[i])))
+            {
+                targetIndexes.Add(i);
+            }
+        }
+
+        if (targetIndexes.Count == 0 || SelectedIndexes.SequenceEqual(targetIndexes))
+        {
+            return;
+        }
+
+        _isRestoringSelection = true;
+
+        try
+        {
+            Clear();
+            foreach (var index in targetIndexes)
+            {
+                Select(index);
+            }
+        }
+        finally
+        {
+            _isRestoringSelection = false;
+        }
+    }
+
+    private void CaptureSelectedKeys()
+    {
+        if (SelectedItems.Count == 0)
+        {
+            _selectedResourceKeys = [];
+            return;
+        }
+
+        var keys = new HashSet<ResourceIdentity>();
+        for (var i = 0; i < SelectedItems.Count; i++)
+        {
+            var item = SelectedItems[i];
+            if (item != null)
+            {
+                keys.Add(CreateResourceIdentity(item));
+            }
+        }
+
+        _selectedResourceKeys = keys;
+    }
+
+    private static ResourceIdentity CreateResourceIdentity(TResource resource)
+    {
+        return new(resource.Namespace() ?? string.Empty, resource.Name() ?? string.Empty);
+    }
+
+    private readonly record struct ResourceIdentity(string Namespace, string Name)
+    {
+        public override string ToString() => $"{Namespace}/{Name}";
     }
 }
 
