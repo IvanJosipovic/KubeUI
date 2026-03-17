@@ -16,9 +16,33 @@ jobs:
       - name: get-metrics
         id: get-metrics
         shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $url = 'https://api.github.com/repos/ivanjosipovic/kubeui/releases'
-          $json = Invoke-RestMethod -Uri $url
+          $repo = "${{ github.repository }}"
+          $headers = @{
+            Authorization = "Bearer $env:GITHUB_TOKEN"
+            Accept = "application/vnd.github+json"
+            "X-GitHub-Api-Version" = "2022-11-28"
+            "User-Agent" = "kubeui-download-metrics-workflow"
+          }
+
+          $releases = @()
+          $page = 1
+          $perPage = 100
+
+          do {
+            $url = "https://api.github.com/repos/$repo/releases?per_page=$perPage&page=$page"
+            $batch = Invoke-RestMethod -Uri $url -Headers $headers
+
+            if ($batch) {
+              $releases += $batch
+            }
+
+            $page++
+          } while ($batch.Count -eq $perPage)
+
+          Write-Host "Fetched $($releases.Count) releases"
           $osArchMetrics = @{
             Windows_x64 = 0
             Windows_arm64 = 0
@@ -28,7 +52,7 @@ jobs:
             macOS_arm64 = 0
           }
           $history = @()
-          foreach ($release in $json) {
+          foreach ($release in $releases) {
             $date = $release.published_at.ToString('yyyy-MM-dd')
             $row = [ordered]@{
               date = $date
