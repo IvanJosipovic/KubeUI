@@ -37,41 +37,9 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
             {
                 Header = "Restart",
                 FluentIcon = Icon.ArrowSync,
-                CommandPath = nameof(RestartStatefulSetCommand),
-                CommandParameterPath = "SelectedItem"
+                CommandPath = nameof(RestartCommand),
+                CommandParameterPath = "SelectedItems"
             },
         ];
-    }
-
-    [RelayCommand(CanExecute = nameof(CanRestartStatefulSet))]
-    private async Task RestartStatefulSet(V1StatefulSet statefulSet)
-    {
-        try
-        {
-            ContentDialogSettings settings = new()
-            {
-                Title = Assets.Resources.ResourceListViewModel_Restart_Title,
-                Content = string.Format(Assets.Resources.ResourceListViewModel_Restart_Content, statefulSet.Name()),
-                PrimaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Primary,
-                SecondaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Secondary,
-                DefaultButton = ContentDialogButton.Secondary
-            };
-
-            var result = await _dialogService.ShowContentDialogAsync(this, settings);
-
-            if (result == ContentDialogResult.Primary)
-            {
-                await Cluster.Client.AppsV1.PatchNamespacedStatefulSetAsync(new V1Patch(sRestartControllerPatch, V1Patch.PatchType.MergePatch), statefulSet.Metadata.Name, statefulSet.Metadata.NamespaceProperty);
-            }
-        }
-        catch (Exception ex)
-        {
-            Utilities.HandleException(_logger, _notificationManager, ex, "Error Restarting StatefulSet", sendNotification: true);
-        }
-    }
-
-    private bool CanRestartStatefulSet(V1StatefulSet statefulSet)
-    {
-        return statefulSet != null && Cluster.CanI<V1StatefulSet>(Verb.Patch, statefulSet.Namespace());
     }
 }

@@ -663,9 +663,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     public async Task DeleteResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        var api = GroupApiVersionKind.From<T>();
-
-        using var client = new GenericClient(Client, api.Group, api.ApiVersion, api.PluralName, false);
+        using var client = Client.GetGenericClient<T>();
 
         if (string.IsNullOrEmpty(item.Namespace()))
         {
@@ -732,9 +730,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     public async Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        var api = GroupApiVersionKind.From<T>();
-
-        using var client = new GenericClient(Client, api.Group, api.ApiVersion, api.PluralName, false);
+        using var client = Client.GetGenericClient<T>();
 
         if (IsResourceNamespaced<T>() && string.IsNullOrEmpty(item.Namespace()))
         {

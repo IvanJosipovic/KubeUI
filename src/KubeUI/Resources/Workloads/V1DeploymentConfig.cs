@@ -50,41 +50,9 @@ public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment
             {
                 Header = "Restart",
                 FluentIcon = Icon.ArrowSync,
-                CommandPath = nameof(RestartDeploymentCommand),
-                CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<V1Deployment>>(x => x.SelectedItem)
+                CommandPath = nameof(RestartCommand),
+                CommandParameterPath = "SelectedItems"
             },
         ];
-    }
-
-    [RelayCommand(CanExecute = nameof(CanRestartDeployment))]
-    private async Task RestartDeployment(V1Deployment deployment)
-    {
-        try
-        {
-            ContentDialogSettings settings = new()
-            {
-                Title = Assets.Resources.ResourceListViewModel_Restart_Title,
-                Content = string.Format(Assets.Resources.ResourceListViewModel_Restart_Content, deployment.Name()),
-                PrimaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Primary,
-                SecondaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Secondary,
-                DefaultButton = ContentDialogButton.Secondary
-            };
-
-            var result = await _dialogService.ShowContentDialogAsync(this, settings);
-
-            if (result == ContentDialogResult.Primary)
-            {
-                await Cluster.Client.AppsV1.PatchNamespacedDeploymentAsync(new V1Patch(sRestartControllerPatch, V1Patch.PatchType.MergePatch), deployment.Metadata.Name, deployment.Metadata.NamespaceProperty);
-            }
-        }
-        catch (Exception ex)
-        {
-            Utilities.HandleException(_logger, _notificationManager, ex, "Error Restarting Deployment", sendNotification: true);
-        }
-    }
-
-    private bool CanRestartDeployment(V1Deployment deployment)
-    {
-        return deployment != null && Cluster.CanI<V1Deployment>(Verb.Patch, deployment.Namespace());
     }
 }

@@ -2,7 +2,6 @@
 using Avalonia.Controls.Notifications;
 using Avalonia.Styling;
 using Dock.Model.Core;
-using DynamicData.Binding;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
@@ -10,8 +9,8 @@ using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using Humanizer;
 using k8s;
 using k8s.Models;
-using KubeUI.Client;
 using KubernetesClient.Informer.Client;
+using KubeUI.Client;
 using static KubeUI.Client.Cluster;
 
 namespace KubeUI.Resources;
@@ -146,20 +145,6 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         (Verb.Update, null),
         (Verb.Watch, null),
     ];
-
-    public static readonly string sRestartControllerPatch = $$"""
-    {
-        "spec": {
-            "template": {
-                "metadata": {
-                    "annotations": {
-                        "kubectl.kubernetes.io/restartedAt": "{{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}}"
-                    }
-                }
-            }
-        }
-    }
-    """;
 
     public async Task UpdatePermissions()
     {
@@ -296,6 +281,63 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     public bool CanViewYaml(IList? items)
     {
         return items?.Count == 1;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRestart))]
+    private async Task Restart(IList resource)
+    {
+        try
+        {
+            ContentDialogSettings settings = new()
+            {
+                Title = Assets.Resources.ResourceListViewModel_Restart_Title,
+                Content = string.Format(Assets.Resources.ResourceListViewModel_Restart_Content, resource.Count),
+                PrimaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Primary,
+                SecondaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Secondary,
+                DefaultButton = ContentDialogButton.Secondary
+            };
+
+            var result = await _dialogService.ShowContentDialogAsync(this, settings);
+
+            if (result == ContentDialogResult.Primary)
+            {
+                    string sRestartControllerPatch = $$"""
+                    {
+                        "spec": {
+                            "template": {
+                                "metadata": {
+                                    "annotations": {
+                                        "kubectl.kubernetes.io/restartedAt": "{{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}}"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    """;
+
+
+                foreach (var item in resource.Cast<IKubernetesObject<V1ObjectMeta>>())
+                {
+                    using var genClient = Cluster.Client.GetGenericClient(item);
+
+                    await genClient.PatchNamespacedAsync<KubernetesObject>(new V1Patch(sRestartControllerPatch, V1Patch.PatchType.MergePatch), item.Metadata.NamespaceProperty, item.Metadata.Name);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Utilities.HandleException(_logger, _notificationManager, ex, "Error Restarting", sendNotification: true);
+        }
+    }
+
+    private bool CanRestart(IList deployments)
+    {
+        return deployments?.Count > 0 && deployments.Cast<IKubernetesObject<V1ObjectMeta>>().GroupBy(x => x.Namespace()).All(grp =>
+        {
+            var first = grp.First();
+
+            return Cluster.CanI(first.GetType(), Verb.Patch, first.Namespace());
+        });
     }
 
     #endregion

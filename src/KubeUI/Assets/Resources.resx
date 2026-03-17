@@ -342,7 +342,7 @@ Are you sure?</value>
     <value>Restart Workload?</value>
   </data>
   <data name="ResourceListViewModel_Restart_Content" xml:space="preserve">
-    <value>This will restart {0}.
+    <value>This will restart {0} Resources.
 Are you sure?</value>
   </data>
   <data name="ResourceListViewModel_Restart_Primary" xml:space="preserve">
