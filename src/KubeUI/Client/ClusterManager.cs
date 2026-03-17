@@ -145,10 +145,9 @@ public sealed partial class ClusterManager : ObservableObject, IDisposable
 
         if (File.Exists(path))
         {
-            if (!_settingsService.Settings.KubeConfigs.Contains(path))
+            if (!SettingsContainsKubeConfig(path))
             {
-                _settingsService.Settings.KubeConfigs.Add(path);
-                _settingsService.SaveSettings();
+                AddKubeConfig(path);
             }
 
             try
@@ -176,9 +175,9 @@ public sealed partial class ClusterManager : ObservableObject, IDisposable
 
                         cluster.KubeConfigPath = config.FileName;
 
-                        if (!Clusters.Any(x => x.Name == cluster.Name && x.KubeConfigPath == cluster.KubeConfigPath))
+                        if (!ClusterExists(cluster.Name, cluster.KubeConfigPath))
                         {
-                            Dispatcher.UIThread.Invoke(() => Clusters.Add(cluster), DispatcherPriority.Background);
+                            AddCluster(cluster);
                         }
                     }
                     //todo remove all clusters which are no longer in the config
@@ -209,8 +208,55 @@ public sealed partial class ClusterManager : ObservableObject, IDisposable
 
             cluster.KubeConfigPath = kubeConfig.FileName;
 
-            Clusters.Add(cluster);
+            AddCluster(cluster);
         }
+    }
+
+    private bool SettingsContainsKubeConfig(string path)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            return _settingsService.Settings.KubeConfigs.Contains(path);
+        }
+
+        return Dispatcher.UIThread.InvokeAsync(() => _settingsService.Settings.KubeConfigs.Contains(path), DispatcherPriority.Background).GetAwaiter().GetResult();
+    }
+
+    private void AddKubeConfig(string path)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            _settingsService.Settings.KubeConfigs.Add(path);
+            _settingsService.SaveSettings();
+            return;
+        }
+
+        Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            _settingsService.Settings.KubeConfigs.Add(path);
+            _settingsService.SaveSettings();
+        }, DispatcherPriority.Background).GetAwaiter().GetResult();
+    }
+
+    private bool ClusterExists(string name, string kubeConfigPath)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            return Clusters.Any(x => x.Name == name && x.KubeConfigPath == kubeConfigPath);
+        }
+
+        return Dispatcher.UIThread.InvokeAsync(() => Clusters.Any(x => x.Name == name && x.KubeConfigPath == kubeConfigPath), DispatcherPriority.Background).GetAwaiter().GetResult();
+    }
+
+    private void AddCluster(ICluster cluster)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            Clusters.Add(cluster);
+            return;
+        }
+
+        Dispatcher.UIThread.InvokeAsync(() => Clusters.Add(cluster), DispatcherPriority.Background).GetAwaiter().GetResult();
     }
 
     public ICluster? GetCluster(string name)

@@ -279,20 +279,11 @@ public sealed partial class Cluster : ObservableObject, ICluster
 
     private async Task AddDefaultNavigation()
     {
-        NavigationItems.Add(new NavigationLink() { Name = "Settings", ControlType = typeof(ClusterSettingsViewModel), Cluster = this, FluentIcon = Icon.Settings, Order = 0 });
-        NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.ClusterViewModel_Title, ControlType = typeof(ClusterViewModel), Cluster = this, SvgIcon = "/Assets/kube/infrastructure_components/unlabeled/control-plane.svg", Order = 1 });
-        NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.VisualizationViewModel_Title, ControlType = typeof(VisualizationViewModel), Cluster = this, FluentIcon = Icon.SearchVisual, Order = 2 });
-        NavigationItems.Add(new NavigationLink() { Name = "Load Yaml", Cluster = this, Id = "load-yaml", FluentIcon = Icon.ArrowUpload, Order = 3 });
-        NavigationItems.Add(new NavigationLink() { Name = "Load Folder", Cluster = this, Id = "load-folder", FluentIcon = Icon.FolderAdd, Order = 4 });
-
-        NavigationItems.Add(new NavigationItem() { Name = "Workloads", Order = 8 });
-        NavigationItems.Add(new NavigationItem() { Name = "Configuration", Order = 9 });
-
+        var workloadsNavItem = new NavigationItem() { Name = "Workloads", Order = 8 };
+        var configurationNavItem = new NavigationItem() { Name = "Configuration", Order = 9 };
         var networkNavItem = new NavigationItem() { Name = "Network", Order = 10 };
-
-        NavigationItems.Add(networkNavItem);
-        NavigationItems.Add(new NavigationItem() { Name = "Storage", Order = 11 });
-        NavigationItems.Add(new NavigationItem() { Name = "Access Control", Order = 12 });
+        var storageNavItem = new NavigationItem() { Name = "Storage", Order = 11 };
+        var accessControlNavItem = new NavigationItem() { Name = "Access Control", Order = 12 };
 
         _crdNavigationLink = new NavigationItem
         {
@@ -301,7 +292,21 @@ public sealed partial class Cluster : ObservableObject, ICluster
             NavigationItems = new ObservableSortedCollection<NavigationItem>(new NavigationItemNameComparer())
         };
 
-        NavigationItems.Add(_crdNavigationLink);
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            NavigationItems.Add(new NavigationLink() { Name = "Settings", ControlType = typeof(ClusterSettingsViewModel), Cluster = this, FluentIcon = Icon.Settings, Order = 0 });
+            NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.ClusterViewModel_Title, ControlType = typeof(ClusterViewModel), Cluster = this, SvgIcon = "/Assets/kube/infrastructure_components/unlabeled/control-plane.svg", Order = 1 });
+            NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.VisualizationViewModel_Title, ControlType = typeof(VisualizationViewModel), Cluster = this, FluentIcon = Icon.SearchVisual, Order = 2 });
+            NavigationItems.Add(new NavigationLink() { Name = "Load Yaml", Cluster = this, Id = "load-yaml", FluentIcon = Icon.ArrowUpload, Order = 3 });
+            NavigationItems.Add(new NavigationLink() { Name = "Load Folder", Cluster = this, Id = "load-folder", FluentIcon = Icon.FolderAdd, Order = 4 });
+
+            NavigationItems.Add(workloadsNavItem);
+            NavigationItems.Add(configurationNavItem);
+            NavigationItems.Add(networkNavItem);
+            NavigationItems.Add(storageNavItem);
+            NavigationItems.Add(accessControlNavItem);
+            NavigationItems.Add(_crdNavigationLink);
+        }, DispatcherPriority.Background);
 
         foreach (var config in ResourceConfigs)
         {
@@ -321,7 +326,7 @@ public sealed partial class Cluster : ObservableObject, ICluster
                 {
                     if (CanI<V1Pod>(Verb.Create, "portforward"))
                     {
-                        Dispatcher.UIThread.Post(() => networkNavItem.NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.PortForwarderListViewModel_Title, ControlType = typeof(PortForwarderListViewModel), Cluster = this, FluentIcon = Icon.CloudFlow, Order = 6 }), DispatcherPriority.Background);
+                        await Dispatcher.UIThread.InvokeAsync(() => networkNavItem.NavigationItems.Add(new NavigationLink() { Name = Assets.Resources.PortForwarderListViewModel_Title, ControlType = typeof(PortForwarderListViewModel), Cluster = this, FluentIcon = Icon.CloudFlow, Order = 6 }), DispatcherPriority.Background);
                     }
                 }
 
@@ -335,19 +340,29 @@ public sealed partial class Cluster : ObservableObject, ICluster
                     nav.Count = GetResourceCount<V1CustomResourceDefinition>();
 #endif
 
-                    Dispatcher.UIThread.Post(() => _crdNavigationLink.NavigationItems.Add(nav), DispatcherPriority.Background);
+                    await Dispatcher.UIThread.InvokeAsync(() => _crdNavigationLink.NavigationItems.Add(nav), DispatcherPriority.Background);
                     continue;
                 }
 
                 if (string.IsNullOrEmpty(config.Value.Category))
                 {
-                    Dispatcher.UIThread.Post(() => NavigationItems.Add(nav), DispatcherPriority.Background);
+                    await Dispatcher.UIThread.InvokeAsync(() => NavigationItems.Add(nav), DispatcherPriority.Background);
                 }
                 else
                 {
-                    var category = NavigationItems.First(x => x is not null && x.Name == config.Value.Category);
-
-                    Dispatcher.UIThread.Post(() => category.NavigationItems.Add(nav), DispatcherPriority.Background);
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        var category = NavigationItems.FirstOrDefault(x => x is not null && x.Name == config.Value.Category);
+                        if (category != null)
+                        {
+                            category.NavigationItems.Add(nav);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Navigation category not found for {type}: {category}", config.Value.Type, config.Value.Category);
+                            NavigationItems.Add(nav);
+                        }
+                    }, DispatcherPriority.Background);
                 }
             }
 

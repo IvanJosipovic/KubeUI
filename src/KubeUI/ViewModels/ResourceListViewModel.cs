@@ -151,10 +151,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         SetNamespaceFilter();
 
         _subscription = Objects.Connect()
+            .ObserveOn(AvaloniaScheduler.Instance)
             .Do(_ => _selectionModel.BeginDataUpdate())
             .Filter(_filterSubject)
             .Filter(_searchSubject)
-            .ObserveOn(AvaloniaScheduler.Instance)
             .SortAndBind(out _view, _sortSubject, new()
             {
                 ResetOnFirstTimeLoad = true,
@@ -189,35 +189,40 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private void SetNamespaceFilter()
     {
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.InvokeAsync(SetNamespaceFilter).GetAwaiter().GetResult();
+            return;
+        }
+
         if (!ResourceConfig.IsNamespaced)
         {
             return;
         }
 
-        FilteringModel.Clear();
+        var namespaceColumn = ColumnDefinitions.FirstOrDefault(col =>
+            col.Header is string header &&
+            string.Equals(header, "Namespace", StringComparison.Ordinal));
 
-        foreach (var col in ColumnDefinitions)
+        if (namespaceColumn == null)
         {
-            if (col.Header == "Namespace") //todo better lookup for standard columns
-            {
-                if (Cluster.SelectedNamespaces.Count > 0)
-                {
-                    var descriptor = new FilteringDescriptor(
-                        col,
-                        FilteringOperator.In,
-                        propertyPath: null,
-                        value: null,
-                        values: [.. Cluster.SelectedNamespaces.Select(x => x.Name() as object)]);
+            return;
+        }
 
-                    FilteringModel.SetOrUpdate(descriptor);
-                }
-                else
-                {
-                    FilteringModel.Remove(col);
-                }
+        if (Cluster.SelectedNamespaces.Count > 0)
+        {
+            var descriptor = new FilteringDescriptor(
+                namespaceColumn,
+                FilteringOperator.In,
+                propertyPath: null,
+                value: null,
+                values: [.. Cluster.SelectedNamespaces.Select(x => x.Name() as object)]);
 
-                return;
-            }
+            FilteringModel.SetOrUpdate(descriptor);
+        }
+        else
+        {
+            FilteringModel.Remove(namespaceColumn);
         }
     }
 
@@ -509,13 +514,25 @@ public sealed class DynamicDataSortingAdapterFactory<T> : IDataGridSortingAdapte
                 continue;
             }
 
+            IComparable? SafeSelect(T item)
+            {
+                try
+                {
+                    return selector(item);
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+
             comparer = comparer == null
                 ? descriptor.Direction == ListSortDirection.Ascending
-                    ? SortExpressionComparer<T>.Ascending(selector)
-                    : SortExpressionComparer<T>.Descending(selector)
+                    ? SortExpressionComparer<T>.Ascending(SafeSelect)
+                    : SortExpressionComparer<T>.Descending(SafeSelect)
                 : descriptor.Direction == ListSortDirection.Ascending
-                    ? comparer.ThenByAscending(selector)
-                    : comparer.ThenByDescending(selector);
+                    ? comparer.ThenByAscending(SafeSelect)
+                    : comparer.ThenByDescending(SafeSelect);
         }
 
         return comparer ?? s_noopComparer;
@@ -533,7 +550,13 @@ public sealed class DynamicDataSortingAdapterFactory<T> : IDataGridSortingAdapte
             return null;
         }
 
-        return _resourceConfig.Columns().First(x => x.Name == header).SortKey;
+        var column = _resourceConfig.Columns().FirstOrDefault(x => x.Name == header);
+        if (column == null)
+        {
+            return null;
+        }
+
+        return column.SortKey;
     }
 
     private sealed class DynamicDataSortingAdapter : DataGridSortingAdapter
@@ -636,13 +659,35 @@ public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAd
         if (descriptor.Predicate != null)
         {
             var predicate = descriptor.Predicate;
-            return item => predicate(item);
+            return item =>
+            {
+                try
+                {
+                    return predicate(item);
+                }
+                catch
+                {
+                    return false;
+                }
+            };
         }
 
         var selector = CreateSelector(descriptor);
         if (selector == null)
         {
             return null;
+        }
+
+        object? SafeSelect(T item)
+        {
+            try
+            {
+                return selector(item);
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         var culture = descriptor.Culture ?? System.Globalization.CultureInfo.InvariantCulture;
@@ -652,17 +697,17 @@ public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAd
 
         return descriptor.Operator switch
         {
-            FilteringOperator.Equals => item => Equals(selector(item), value),
-            FilteringOperator.NotEquals => item => !Equals(selector(item), value),
-            FilteringOperator.Contains => item => Contains(selector(item), value, stringComparison),
-            FilteringOperator.StartsWith => item => StartsWith(selector(item), value, stringComparison),
-            FilteringOperator.EndsWith => item => EndsWith(selector(item), value, stringComparison),
-            FilteringOperator.GreaterThan => item => Compare(selector(item), value, culture) > 0,
-            FilteringOperator.GreaterThanOrEqual => item => Compare(selector(item), value, culture) >= 0,
-            FilteringOperator.LessThan => item => Compare(selector(item), value, culture) < 0,
-            FilteringOperator.LessThanOrEqual => item => Compare(selector(item), value, culture) <= 0,
-            FilteringOperator.Between => item => Between(selector(item), values, culture),
-            FilteringOperator.In => item => In(selector(item), values),
+            FilteringOperator.Equals => item => Equals(SafeSelect(item), value),
+            FilteringOperator.NotEquals => item => !Equals(SafeSelect(item), value),
+            FilteringOperator.Contains => item => Contains(SafeSelect(item), value, stringComparison),
+            FilteringOperator.StartsWith => item => StartsWith(SafeSelect(item), value, stringComparison),
+            FilteringOperator.EndsWith => item => EndsWith(SafeSelect(item), value, stringComparison),
+            FilteringOperator.GreaterThan => item => Compare(SafeSelect(item), value, culture) > 0,
+            FilteringOperator.GreaterThanOrEqual => item => Compare(SafeSelect(item), value, culture) >= 0,
+            FilteringOperator.LessThan => item => Compare(SafeSelect(item), value, culture) < 0,
+            FilteringOperator.LessThanOrEqual => item => Compare(SafeSelect(item), value, culture) <= 0,
+            FilteringOperator.Between => item => Between(SafeSelect(item), values, culture),
+            FilteringOperator.In => item => In(SafeSelect(item), values),
             _ => s_alwaysTrue
         };
     }
@@ -679,7 +724,13 @@ public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAd
             return null;
         }
 
-        return _resourceConfig.Columns().First(x => x.Name == header).DisplayValue;
+        var column = _resourceConfig.Columns().FirstOrDefault(x => x.Name == header);
+        if (column == null)
+        {
+            return null;
+        }
+
+        return column.DisplayValue;
     }
 
     private static bool Contains(object? source, object? target, StringComparison comparison)
@@ -912,7 +963,16 @@ public sealed class DynamicDataSearchAdapterFactory<T> : IDataGridSearchAdapterF
         {
             for (int i = 0; i < columns.Count; i++)
             {
-                var text = columns[i].Getter(item);
+                string? text;
+                try
+                {
+                    text = columns[i].Getter(item);
+                }
+                catch
+                {
+                    continue;
+                }
+
                 if (string.IsNullOrEmpty(text))
                 {
                     continue;

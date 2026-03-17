@@ -30,6 +30,8 @@ public partial class App : Application
 
         //Logger.Sink = Services.GetRequiredService<ILogSink>();
         AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+        Dispatcher.UIThread.UnhandledException += OnUnhandledException;
+        TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
     }
 
     public override void Initialize()
@@ -73,7 +75,7 @@ public partial class App : Application
 
     private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
-        _logger.LogCritical(e.ExceptionObject as Exception, "Unhandled Exception");
+        _logger.LogCritical(e.ExceptionObject as Exception, "Unhandled domain exception (terminating: {IsTerminating})", e.IsTerminating);
         GracefulShutdown();
     }
 
@@ -97,6 +99,19 @@ public partial class App : Application
         Services.GetRequiredService<ISettingsService>().ApplySettings();
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+    {
+        _logger.LogError(e.Exception, "Unobserved task exception");
+
+        // Prevent the exception from terminating the process
+        e.SetObserved();
+    }
+
+    private void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+    {
+        _logger.LogCritical(e.Exception, "UI Thread Unhandled Exception");
     }
 
     private void GracefulShutdown()
