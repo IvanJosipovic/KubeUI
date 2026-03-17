@@ -164,7 +164,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
                     .SortAndBind(out var filteredObjects, SortExpressionComparer<V1Namespace>.Ascending(p => p.Name()))
                     .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Namespace Observable"));
 
-                    Namespaces = filteredObjects;
+                    Namespaces ??= filteredObjects;
 
                     Connected = true;
                     Status = ClusterStatus.Connected;

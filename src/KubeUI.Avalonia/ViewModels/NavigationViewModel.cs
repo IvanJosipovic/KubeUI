@@ -22,6 +22,8 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     private const int LoadYamlOrder = -470;
     private const int LoadFolderOrder = -460;
     private const int PortForwardersOrder = -450;
+    private const int NetworkCategoryOrder = 10;
+    private const string NetworkCategoryName = "Network";
 
     private readonly ILogger<NavigationViewModel> _logger;
     private readonly Dictionary<ClusterWorkspaceViewModel, ClusterNavigationNode> _clusterNodes = [];
@@ -42,7 +44,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
         if (ClusterCatalog.Clusters is INotifyCollectionChanged collection)
         {
-            collection.CollectionChanged += ClusterCatalog_CollectionChanged;
+            collection.CollectionChanged += OnClusterCatalogCollectionChanged;
         }
 
         ReloadClusters();
@@ -52,7 +54,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     {
         if (ClusterCatalog.Clusters is INotifyCollectionChanged collection)
         {
-            collection.CollectionChanged -= ClusterCatalog_CollectionChanged;
+            collection.CollectionChanged -= OnClusterCatalogCollectionChanged;
         }
 
         foreach (var cluster in _clusterNodes.Keys.ToList())
@@ -65,14 +67,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     {
         if (item is ClusterNavigationNode clusterNode)
         {
-            clusterNode.IsExpanded = !clusterNode.IsExpanded;
-
-            if (!clusterNode.Cluster.Connected)
-            {
-                await clusterNode.Cluster.Connect();
-            }
-
-            RebuildClusterNavigation(clusterNode);
+            await HandleClusterSelectionAsync(clusterNode);
         }
         else if (item is ResourceNavigationLink resourceNavLink)
         {
@@ -83,13 +78,39 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             await SelectNavigationLink(navLink);
         }
 
-        if (item is NavigationItem nav && nav.NavigationItems.Count > 0)
+        if (item is NavigationItem nav && nav.NavigationItems.Count > 0 && item is not ClusterNavigationNode)
         {
             nav.IsExpanded = !nav.IsExpanded;
         }
     }
 
-    private void ClusterCatalog_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    private async Task HandleClusterSelectionAsync(ClusterNavigationNode clusterNode)
+    {
+        var cluster = clusterNode.Cluster;
+
+        if (cluster.Connected)
+        {
+            clusterNode.IsExpanded = !clusterNode.IsExpanded;
+            RebuildClusterNavigation(clusterNode);
+            return;
+        }
+
+        try
+        {
+            await cluster.Connect();
+        }
+        catch (Exception ex)
+        {
+            Utilities.HandleException(_logger, _notificationManager, ex, "Error connecting to cluster", sendNotification: true);
+            RebuildClusterNavigation(clusterNode);
+            return;
+        }
+
+        clusterNode.IsExpanded = true;
+        RebuildClusterNavigation(clusterNode);
+    }
+
+    private void OnClusterCatalogCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         ReloadClusters();
     }
@@ -113,46 +134,62 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                 Cluster = cluster,
             };
 
-            RebuildClusterNavigation(node);
             _clusterNodes.Add(cluster, node);
             Clusters.Add(node);
+            RebuildClusterNavigation(node);
+
+            if (cluster.NavigationReady)
+            {
+                Dispatcher.UIThread.Post(() => RebuildClusterNavigation(cluster));
+            }
         }
     }
 
     private void SubscribeCluster(ClusterWorkspaceViewModel cluster)
     {
-        cluster.OnChange += Cluster_OnChange;
+        cluster.OnChange += OnClusterChange;
 
         if (cluster is INotifyPropertyChanged propertyChanged)
         {
-            propertyChanged.PropertyChanged += Cluster_PropertyChanged;
+            propertyChanged.PropertyChanged += OnClusterPropertyChanged;
         }
     }
 
     private void UnsubscribeCluster(ClusterWorkspaceViewModel cluster)
     {
-        cluster.OnChange -= Cluster_OnChange;
+        cluster.OnChange -= OnClusterChange;
 
         if (cluster is INotifyPropertyChanged propertyChanged)
         {
-            propertyChanged.PropertyChanged -= Cluster_PropertyChanged;
+            propertyChanged.PropertyChanged -= OnClusterPropertyChanged;
         }
     }
 
-    private void Cluster_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    private void OnClusterPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (sender is not ClusterWorkspaceViewModel cluster)
         {
             return;
         }
 
-        if (e.PropertyName is nameof(ClusterWorkspaceViewModel.Connected) or nameof(ClusterWorkspaceViewModel.Status))
+        if (e.PropertyName is nameof(ClusterWorkspaceViewModel.Connected) or nameof(ClusterWorkspaceViewModel.NavigationReady))
+        {
+            if (cluster.Connected)
+            {
+                cluster.IsExpanded = true;
+            }
+
+            Dispatcher.UIThread.Post(() => RebuildClusterNavigation(cluster));
+            return;
+        }
+
+        if (e.PropertyName == nameof(ClusterWorkspaceViewModel.Status))
         {
             Dispatcher.UIThread.Post(() => RebuildClusterNavigation(cluster));
         }
     }
 
-    private void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind kind, IKubernetesObject<V1ObjectMeta> item)
+    private void OnClusterChange(WatchEventType eventType, GroupApiVersionKind kind, IKubernetesObject<V1ObjectMeta> item)
     {
         if (item is not V1CustomResourceDefinition)
         {
@@ -188,20 +225,29 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private IEnumerable<NavigationItem> BuildNavigationItems(ClusterWorkspaceViewModel cluster)
     {
+        if (!ShouldPopulateClusterNavigation(cluster))
+        {
+            return [];
+        }
+
         var items = new List<NavigationItem>
         {
             CreateNavigationLink(cluster, NavigationTargets.ClusterWorkspace, Assets.Resources.ClusterViewModel_Title, ClusterWorkspaceOrder),
             CreateNavigationLink(cluster, NavigationTargets.Visualization, Assets.Resources.VisualizationViewModel_Title, VisualizationOrder),
             CreateNavigationLink(cluster, NavigationTargets.ClusterSettings, Assets.Resources.ClusterSettingsViewModel_Title, ClusterSettingsOrder),
             CreateNavigationLink(cluster, "load-yaml", Assets.Resources.NavigationViewModel_LoadYaml, LoadYamlOrder),
-            CreateNavigationLink(cluster, "load-folder", Assets.Resources.NavigationViewModel_LoadFolder, LoadFolderOrder),
-            CreateNavigationLink(cluster, NavigationTargets.PortForwarders, Assets.Resources.PortForwarderListViewModel_Title, PortForwardersOrder)
+            CreateNavigationLink(cluster, "load-folder", Assets.Resources.NavigationViewModel_LoadFolder, LoadFolderOrder)
         };
 
         var categories = new Dictionary<string, NavigationItem>(StringComparer.Ordinal);
 
         foreach (var resourceConfig in cluster.GetResourceConfigs().OrderBy(config => config.Order).ThenBy(config => config.Name, StringComparer.Ordinal))
         {
+            if (!CanListAndWatchResource(cluster, resourceConfig))
+            {
+                continue;
+            }
+
             var link = CreateResourceNavigationLink(cluster, resourceConfig);
 
             if (string.IsNullOrWhiteSpace(resourceConfig.Category))
@@ -212,21 +258,70 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
             if (!categories.TryGetValue(resourceConfig.Category, out var category))
             {
-                category = new NavigationItem
-                {
-                    Id = $"{cluster.Name}-category-{resourceConfig.Category}",
-                    Name = resourceConfig.Category,
-                    Order = resourceConfig.Order,
-                };
-
-                categories.Add(resourceConfig.Category, category);
-                items.Add(category);
+                category = EnsureCategory(items, categories, cluster, resourceConfig.Category, resourceConfig.Order);
             }
 
             category.NavigationItems.Add(link);
         }
 
+        if (CanShowPortForwarders(cluster))
+        {
+            var networkCategory = EnsureCategory(items, categories, cluster, NetworkCategoryName, NetworkCategoryOrder);
+            networkCategory.NavigationItems.Add(CreateNavigationLink(cluster, NavigationTargets.PortForwarders, Assets.Resources.PortForwarderListViewModel_Title, PortForwardersOrder));
+        }
+
         return items;
+    }
+
+    private bool CanShowPortForwarders(ClusterWorkspaceViewModel cluster)
+    {
+        try
+        {
+            return cluster.CanIAnyNamespace(typeof(V1Pod), Verb.Create, "portforward");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Unable to evaluate port forward permissions for cluster {Cluster}", cluster.Name);
+            return false;
+        }
+    }
+
+    private static NavigationItem EnsureCategory(List<NavigationItem> items, Dictionary<string, NavigationItem> categories, ClusterWorkspaceViewModel cluster, string categoryName, int order)
+    {
+        if (categories.TryGetValue(categoryName, out var category))
+        {
+            return category;
+        }
+
+        category = new NavigationItem
+        {
+            Id = $"{cluster.Name}-category-{categoryName}",
+            Name = categoryName,
+            Order = order,
+        };
+
+        categories.Add(categoryName, category);
+        items.Add(category);
+        return category;
+    }
+
+    private static bool ShouldPopulateClusterNavigation(ClusterWorkspaceViewModel cluster)
+    {
+        return cluster.Status is ClusterStatus.Connecting or ClusterStatus.Connected;
+    }
+
+    private bool CanListAndWatchResource(ClusterWorkspaceViewModel cluster, IResourceConfig resourceConfig)
+    {
+        try
+        {
+            return cluster.CanIAnyNamespace(resourceConfig.Type, Verb.List)
+                && cluster.CanIAnyNamespace(resourceConfig.Type, Verb.Watch);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Unable to evaluate resource permissions for {Type}", resourceConfig.Type.FullName);
+            return false;
+        }
     }
 
     private static NavigationLink CreateNavigationLink(ClusterWorkspaceViewModel cluster, string id, string name, int order)
@@ -238,14 +333,15 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             Name = name,
             ViewModelKey = id,
             Order = order,
+            SvgIcon = null,
             FluentIcon = id switch
             {
                 NavigationTargets.ClusterWorkspace => Icon.Desktop,
                 NavigationTargets.Visualization => Icon.DataUsage,
                 NavigationTargets.ClusterSettings => Icon.Settings,
                 NavigationTargets.PortForwarders => Icon.CloudFlow,
-                "load-yaml" => Icon.Code,
-                "load-folder" => Icon.FolderOpen,
+                "load-yaml" => Icon.ArrowUpload,
+                "load-folder" => Icon.FolderAdd,
                 _ => null,
             }
         };

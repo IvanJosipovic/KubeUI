@@ -32,6 +32,9 @@ public sealed class TestCluster : IClusterRuntime, INotifyPropertyChanged
     private string _kubeConfigPath = string.Empty;
     private string _name = "test";
 
+    public Func<Task>? ConnectBehavior { get; set; }
+    public bool CanCreatePodPortForward { get; set; } = true;
+
     public TestCluster()
     {
         _readonlyNamespaces = new ReadOnlyObservableCollection<V1Namespace>(_namespaces);
@@ -135,6 +138,11 @@ public sealed class TestCluster : IClusterRuntime, INotifyPropertyChanged
 
     public Task Connect()
     {
+        if (ConnectBehavior != null)
+        {
+            return ConnectBehavior();
+        }
+
         Connected = true;
         Status = ClusterStatus.Connected;
         return Task.CompletedTask;
@@ -142,6 +150,11 @@ public sealed class TestCluster : IClusterRuntime, INotifyPropertyChanged
 
     public bool CanI(Type type, Verb verb, string? @namespace = null, string? subresource = null)
     {
+        if (type == typeof(V1Pod) && verb == Verb.Create && string.Equals(subresource, "portforward", StringComparison.Ordinal))
+        {
+            return CanCreatePodPortForward;
+        }
+
         return true;
     }
 
@@ -152,6 +165,11 @@ public sealed class TestCluster : IClusterRuntime, INotifyPropertyChanged
 
     public bool CanIAnyNamespace(Type type, Verb verb, string? subresource = null)
     {
+        if (type == typeof(V1Pod) && verb == Verb.Create && string.Equals(subresource, "portforward", StringComparison.Ordinal))
+        {
+            return CanCreatePodPortForward;
+        }
+
         return true;
     }
 

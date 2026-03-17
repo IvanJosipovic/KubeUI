@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using FluentIcons.Common;
 using Swordfish.NET.Collections;
 
@@ -19,10 +20,59 @@ public partial class ClusterNavigationNode : ObservableObject
     [ObservableProperty]
     public partial ObservableCollection<NavigationItem> NavigationItems { get; set; } = new ObservableSortedCollection<NavigationItem>(new NavigationItemOrderComparer());
 
+    private INotifyPropertyChanged? _clusterPropertyChanged;
+
     public bool IsExpanded
     {
         get => Cluster.IsExpanded;
-        set => Cluster.IsExpanded = value;
+        set
+        {
+            if (Cluster.IsExpanded == value)
+            {
+                return;
+            }
+
+            Cluster.IsExpanded = value;
+            OnPropertyChanged(nameof(IsExpanded));
+        }
+    }
+
+    partial void OnClusterChanged(ClusterWorkspaceViewModel value)
+    {
+        UnsubscribeCluster();
+        SubscribeCluster(value);
+
+        OnPropertyChanged(nameof(IsExpanded));
+    }
+
+    private void SubscribeCluster(ClusterWorkspaceViewModel cluster)
+    {
+        if (cluster is not INotifyPropertyChanged propertyChanged)
+        {
+            return;
+        }
+
+        propertyChanged.PropertyChanged += OnClusterPropertyChanged;
+        _clusterPropertyChanged = propertyChanged;
+    }
+
+    private void UnsubscribeCluster()
+    {
+        if (_clusterPropertyChanged is null)
+        {
+            return;
+        }
+
+        _clusterPropertyChanged.PropertyChanged -= OnClusterPropertyChanged;
+        _clusterPropertyChanged = null;
+    }
+
+    private void OnClusterPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ClusterWorkspaceViewModel.IsExpanded))
+        {
+            OnPropertyChanged(nameof(IsExpanded));
+        }
     }
 }
 

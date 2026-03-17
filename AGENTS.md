@@ -150,3 +150,4 @@ References:
 - Avoid static state (except truly immutable constants).
 - Prefer explicit types where clarity is improved; avoid `var` in public APIs.
 - All public APIs must be documented and unit-tested.
+- No, 'hacks' or weird workarounds, if you think you have to, ask for guidance

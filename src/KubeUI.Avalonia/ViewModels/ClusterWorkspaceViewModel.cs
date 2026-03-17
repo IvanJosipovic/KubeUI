@@ -1,4 +1,3 @@
-using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Reflection;
 using Avalonia.Media.Immutable;
@@ -17,13 +16,6 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
     private readonly ILogger<ClusterWorkspaceViewModel> _logger;
     private readonly Dictionary<GroupApiVersionKind, IResourceConfig> _resourceConfigs = [];
 
-    private INotifyCollectionChanged? _runtimeNamespacesCollection;
-    private INotifyCollectionChanged? _runtimeNodeMetricsCollection;
-    private INotifyCollectionChanged? _runtimePodMetricsCollection;
-    private INotifyCollectionChanged? _runtimePortForwardersCollection;
-
-    private readonly ObservableCollection<V1Namespace> _namespaces = [];
-
     public ClusterWorkspaceViewModel(
         IClusterRuntime runtime,
         IServiceProvider serviceProvider,
@@ -35,7 +27,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
         Title = runtime.Name;
         Id = $"cluster-workspace-{runtime.Name}";
-        Namespaces = new ReadOnlyObservableCollection<V1Namespace>(_namespaces);
+        BindRuntimeCollections();
 
         SubscribeRuntime();
         UpdateClusterColor();
@@ -62,6 +54,9 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     [ObservableProperty]
     public partial ObservableCollection<PortForwarder> PortForwarders { get; set; } = [];
+
+    [ObservableProperty]
+    private bool _navigationReady;
 
     public IReadOnlyDictionary<GroupApiVersionKind, object> Objects => Runtime.Objects;
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
@@ -120,7 +115,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         set => Runtime.Name = value;
     }
 
-    public ReadOnlyObservableCollection<V1Namespace> Namespaces { get; }
+    public ReadOnlyObservableCollection<V1Namespace> Namespaces => Runtime.Namespaces;
 
     ObservableCollection<NodeMetrics> IClusterRuntime.NodeMetrics => Runtime.NodeMetrics;
     ObservableCollection<PodMetrics> IClusterRuntime.PodMetrics => Runtime.PodMetrics;
@@ -220,22 +215,17 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     public PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort)
     {
-        var result = Runtime.AddPodPortForward(@namespace, podName, containerPort);
-        SyncPortForwarders();
-        return result;
+        return Runtime.AddPodPortForward(@namespace, podName, containerPort);
     }
 
     public PortForwarder AddServicePortForward(string @namespace, string serviceName, int servicePort)
     {
-        var result = Runtime.AddServicePortForward(@namespace, serviceName, servicePort);
-        SyncPortForwarders();
-        return result;
+        return Runtime.AddServicePortForward(@namespace, serviceName, servicePort);
     }
 
     public void RemovePortForward(PortForwarder pf)
     {
         Runtime.RemovePortForward(pf);
-        SyncPortForwarders();
     }
 
     public Task UpdatePermissionsAllNamespaceAsync(Type type, Verb verb, string? subresource = null)
@@ -285,30 +275,41 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     public void Dispose()
     {
-        Runtime.OnChange -= Runtime_OnChange;
+        Runtime.OnChange -= OnRuntimeChange;
 
         if (Runtime is INotifyPropertyChanged propertyChanged)
         {
-            propertyChanged.PropertyChanged -= Runtime_PropertyChanged;
+            propertyChanged.PropertyChanged -= OnRuntimePropertyChanged;
         }
-
-        UnsubscribeRuntimeCollection(_runtimeNamespacesCollection, RuntimeCollectionChanged);
-        UnsubscribeRuntimeCollection(_runtimeNodeMetricsCollection, RuntimeCollectionChanged);
-        UnsubscribeRuntimeCollection(_runtimePodMetricsCollection, RuntimeCollectionChanged);
-        UnsubscribeRuntimeCollection(_runtimePortForwardersCollection, RuntimeCollectionChanged);
     }
 
     private async Task RefreshWorkspaceStateAsync()
     {
+        NavigationReady = false;
+
         await EnsureBuiltInResourceConfigsAsync();
         await EnsureDynamicResourceConfigsAsync();
-        SyncAllCollections();
         UpdateClusterColor();
+        NotifyRuntimeStateChanged();
+
+        NavigationReady = true;
+    }
+
+    private void NotifyRuntimeStateChanged()
+    {
         OnPropertyChanged(nameof(Connected));
         OnPropertyChanged(nameof(Status));
         OnPropertyChanged(nameof(Name));
         OnPropertyChanged(nameof(ListNamespaces));
+        OnPropertyChanged(nameof(Namespaces));
         OnPropertyChanged(nameof(IsMetricsAvailable));
+    }
+
+    private void BindRuntimeCollections()
+    {
+        NodeMetrics = Runtime.NodeMetrics;
+        PodMetrics = Runtime.PodMetrics;
+        PortForwarders = Runtime.PortForwarders;
     }
 
     private async Task EnsureBuiltInResourceConfigsAsync()
@@ -379,6 +380,8 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         ((dynamic)resourceConfig).Generate(crd);
 
         _resourceConfigs[api] = resourceConfig;
+
+        PulseNavigationReady();
     }
 
     private async Task RefreshResourceConfigPermissionsAsync()
@@ -393,25 +396,24 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
             {
                 _logger.LogDebug(ex, "Unable to refresh permissions for {Kind}", resourceConfig.Kind);
             }
+            finally
+            {
+                PulseNavigationReady();
+            }
         }
     }
 
     private void SubscribeRuntime()
     {
-        Runtime.OnChange += Runtime_OnChange;
+        Runtime.OnChange += OnRuntimeChange;
 
         if (Runtime is INotifyPropertyChanged propertyChanged)
         {
-            propertyChanged.PropertyChanged += Runtime_PropertyChanged;
+            propertyChanged.PropertyChanged += OnRuntimePropertyChanged;
         }
-
-        SubscribeRuntimeCollection(ref _runtimeNamespacesCollection, Runtime.Namespaces);
-        SubscribeRuntimeCollection(ref _runtimeNodeMetricsCollection, Runtime.NodeMetrics);
-        SubscribeRuntimeCollection(ref _runtimePodMetricsCollection, Runtime.PodMetrics);
-        SubscribeRuntimeCollection(ref _runtimePortForwardersCollection, Runtime.PortForwarders);
     }
 
-    private void Runtime_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    private void OnRuntimePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         Dispatcher.UIThread.Post(async () =>
         {
@@ -423,6 +425,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
                 case nameof(IClusterRuntime.Status):
                     UpdateClusterColor();
                     OnPropertyChanged(nameof(Status));
+                    OnPropertyChanged(nameof(IsMetricsAvailable));
                     break;
                 case nameof(IClusterRuntime.Name):
                     Title = Runtime.Name;
@@ -432,26 +435,13 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
                     OnPropertyChanged(nameof(ListNamespaces));
                     break;
                 case nameof(IClusterRuntime.Namespaces):
-                    SubscribeRuntimeCollection(ref _runtimeNamespacesCollection, Runtime.Namespaces);
-                    SyncNamespaces();
-                    break;
-                case nameof(IClusterRuntime.NodeMetrics):
-                    SubscribeRuntimeCollection(ref _runtimeNodeMetricsCollection, Runtime.NodeMetrics);
-                    SyncNodeMetrics();
-                    break;
-                case nameof(IClusterRuntime.PodMetrics):
-                    SubscribeRuntimeCollection(ref _runtimePodMetricsCollection, Runtime.PodMetrics);
-                    SyncPodMetrics();
-                    break;
-                case nameof(IClusterRuntime.PortForwarders):
-                    SubscribeRuntimeCollection(ref _runtimePortForwardersCollection, Runtime.PortForwarders);
-                    SyncPortForwarders();
+                    OnPropertyChanged(nameof(Namespaces));
                     break;
             }
         });
     }
 
-    private void Runtime_OnChange(WatchEventType eventType, GroupApiVersionKind kind, IKubernetesObject<V1ObjectMeta> item)
+    private void OnRuntimeChange(WatchEventType eventType, GroupApiVersionKind kind, IKubernetesObject<V1ObjectMeta> item)
     {
         OnChange?.Invoke(eventType, kind, item);
 
@@ -484,62 +474,10 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         });
     }
 
-    private void RuntimeCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    private void PulseNavigationReady()
     {
-        Dispatcher.UIThread.Post(SyncAllCollections);
-    }
-
-    private void SyncAllCollections()
-    {
-        SyncNamespaces();
-        SyncNodeMetrics();
-        SyncPodMetrics();
-        SyncPortForwarders();
-    }
-
-    private void SyncNamespaces()
-    {
-        ReplaceCollection(_namespaces, Runtime.Namespaces);
-    }
-
-    private void SyncNodeMetrics()
-    {
-        ReplaceCollection(NodeMetrics, Runtime.NodeMetrics);
-    }
-
-    private void SyncPodMetrics()
-    {
-        ReplaceCollection(PodMetrics, Runtime.PodMetrics);
-    }
-
-    private void SyncPortForwarders()
-    {
-        ReplaceCollection(PortForwarders, Runtime.PortForwarders);
-    }
-
-    private static void ReplaceCollection<T>(ObservableCollection<T> target, IEnumerable<T> source)
-    {
-        target.Clear();
-
-        foreach (var item in source)
-        {
-            target.Add(item);
-        }
-    }
-
-    private void SubscribeRuntimeCollection(ref INotifyCollectionChanged? target, object? collection)
-    {
-        UnsubscribeRuntimeCollection(target, RuntimeCollectionChanged);
-        target = collection as INotifyCollectionChanged;
-        target?.CollectionChanged += RuntimeCollectionChanged;
-    }
-
-    private static void UnsubscribeRuntimeCollection(INotifyCollectionChanged? collection, NotifyCollectionChangedEventHandler handler)
-    {
-        if (collection != null)
-        {
-            collection.CollectionChanged -= handler;
-        }
+        NavigationReady = true;
+        NavigationReady = false;
     }
 
     private void UpdateClusterColor()
