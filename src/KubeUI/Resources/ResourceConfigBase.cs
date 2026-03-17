@@ -341,14 +341,22 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         }
     }
 
-    private bool CanRestart(IList deployments)
+    private bool CanRestart(IList? items)
     {
-        return deployments?.Count > 0 && deployments.Cast<IKubernetesObject<V1ObjectMeta>>().GroupBy(x => x.Namespace()).All(grp =>
+        if (items == null || items.Count == 0)
         {
-            var first = grp.First();
+            return false;
+        }
 
-            return Cluster.CanI(first.GetType(), Verb.Patch, first.Namespace());
-        });
+        foreach (var item in items.Cast<T>().ToList().GroupBy(x => x.Namespace()))
+        {
+            if (!Cluster.CanI<T>(Verb.Patch, item.Key))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     #endregion
