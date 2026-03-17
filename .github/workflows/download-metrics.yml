@@ -51,44 +51,88 @@ jobs:
             macOS_x64 = 0
             macOS_arm64 = 0
           }
-          $history = @()
+
+          $now = (Get-Date).ToUniversalTime()
+          $weekCurrentStart = $now.AddDays(-7)
+          $weekPreviousStart = $now.AddDays(-14)
+          $monthCurrentStart = $now.AddDays(-30)
+          $monthPreviousStart = $now.AddDays(-60)
+          $yearCurrentStart = $now.AddDays(-365)
+          $yearPreviousStart = $now.AddDays(-730)
+
+          $weeklyDownloads = 0
+          $weeklyPreviousDownloads = 0
+          $monthlyDownloads = 0
+          $monthlyPreviousDownloads = 0
+          $yearlyDownloads = 0
+          $yearlyPreviousDownloads = 0
+
           foreach ($release in $releases) {
-            $date = $release.published_at.ToString('yyyy-MM-dd')
-            $row = [ordered]@{
-              date = $date
-              Windows_x64 = 0
-              Windows_arm64 = 0
-              Linux_x64 = 0
-              Linux_arm64 = 0
-              macOS_x64 = 0
-              macOS_arm64 = 0
-            }
+            $releasePublishedAt = [datetime]$release.published_at
             foreach ($asset in $release.assets) {
               $name = $asset.name.ToLower()
               if ($name -like 'releases.*.json') { continue }
+
+              $downloadCount = [int]$asset.download_count
+
+              if ($releasePublishedAt -ge $weekCurrentStart) {
+                $weeklyDownloads += $downloadCount
+              } elseif ($releasePublishedAt -ge $weekPreviousStart) {
+                $weeklyPreviousDownloads += $downloadCount
+              }
+
+              if ($releasePublishedAt -ge $monthCurrentStart) {
+                $monthlyDownloads += $downloadCount
+              } elseif ($releasePublishedAt -ge $monthPreviousStart) {
+                $monthlyPreviousDownloads += $downloadCount
+              }
+
+              if ($releasePublishedAt -ge $yearCurrentStart) {
+                $yearlyDownloads += $downloadCount
+              } elseif ($releasePublishedAt -ge $yearPreviousStart) {
+                $yearlyPreviousDownloads += $downloadCount
+              }
+
               if ($name -like '*win*' -and $name -like '*x64*') {
-                $osArchMetrics.Windows_x64 += $asset.download_count
-                $row.Windows_x64 += $asset.download_count
+                $osArchMetrics.Windows_x64 += $downloadCount
               } elseif ($name -like '*win*' -and $name -like '*arm64*') {
-                $osArchMetrics.Windows_arm64 += $asset.download_count
-                $row.Windows_arm64 += $asset.download_count
+                $osArchMetrics.Windows_arm64 += $downloadCount
               } elseif ($name -like '*linux*' -and $name -like '*x64*') {
-                $osArchMetrics.Linux_x64 += $asset.download_count
-                $row.Linux_x64 += $asset.download_count
+                $osArchMetrics.Linux_x64 += $downloadCount
               } elseif ($name -like '*linux*' -and $name -like '*arm64*') {
-                $osArchMetrics.Linux_arm64 += $asset.download_count
-                $row.Linux_arm64 += $asset.download_count
+                $osArchMetrics.Linux_arm64 += $downloadCount
               } elseif ($name -like '*osx*' -and $name -like '*x64*') {
-                $osArchMetrics.macOS_x64 += $asset.download_count
-                $row.macOS_x64 += $asset.download_count
+                $osArchMetrics.macOS_x64 += $downloadCount
               } elseif ($name -like '*osx*' -and $name -like '*arm64*') {
-                $osArchMetrics.macOS_arm64 += $asset.download_count
-                $row.macOS_arm64 += $asset.download_count
+                $osArchMetrics.macOS_arm64 += $downloadCount
               }
             }
-            $history += $row
           }
+
+          function Get-TrendLabel([int]$current, [int]$previous) {
+            if ($current -gt $previous) { return 'up' }
+            if ($current -lt $previous) { return 'down' }
+            return 'flat'
+          }
+
+          function Get-ChangePercent([int]$current, [int]$previous) {
+            if ($previous -eq 0) {
+              if ($current -eq 0) { return '0.0%' }
+              return 'n/a'
+            }
+
+            $pct = (($current - $previous) / [double]$previous) * 100
+            return ('{0:N1}%' -f $pct)
+          }
+
           Write-Host "Download Metrics by OS and Architecture:"
+          $totalDownloads =
+            $osArchMetrics.Windows_x64 +
+            $osArchMetrics.Windows_arm64 +
+            $osArchMetrics.Linux_x64 +
+            $osArchMetrics.Linux_arm64 +
+            $osArchMetrics.macOS_x64 +
+            $osArchMetrics.macOS_arm64
           $metricsTable = "| Platform | Architecture | Downloads |`n|---|---|---|"
           $metricsTable += "`n| Windows | x64 | $($osArchMetrics.Windows_x64) |"
           $metricsTable += "`n| Windows | arm64 | $($osArchMetrics.Windows_arm64) |"
@@ -96,9 +140,18 @@ jobs:
           $metricsTable += "`n| Linux | arm64 | $($osArchMetrics.Linux_arm64) |"
           $metricsTable += "`n| macOS | x64 | $($osArchMetrics.macOS_x64) |"
           $metricsTable += "`n| macOS | arm64 | $($osArchMetrics.macOS_arm64) |"
-          Write-Host $metricsTable
+          $metricsTable += "`n| Total | all | $totalDownloads |"
 
-          $output = "$metricsTable"
+          $statsTable = "| Period | Downloads | Previous Period | Trend | Change |`n|---|---|---|---|---|"
+          $statsTable += "`n| Weekly (7d) | $weeklyDownloads | $weeklyPreviousDownloads | $(Get-TrendLabel -current $weeklyDownloads -previous $weeklyPreviousDownloads) | $(Get-ChangePercent -current $weeklyDownloads -previous $weeklyPreviousDownloads) |"
+          $statsTable += "`n| Monthly (30d) | $monthlyDownloads | $monthlyPreviousDownloads | $(Get-TrendLabel -current $monthlyDownloads -previous $monthlyPreviousDownloads) | $(Get-ChangePercent -current $monthlyDownloads -previous $monthlyPreviousDownloads) |"
+          $statsTable += "`n| Yearly (365d) | $yearlyDownloads | $yearlyPreviousDownloads | $(Get-TrendLabel -current $yearlyDownloads -previous $yearlyPreviousDownloads) | $(Get-ChangePercent -current $yearlyDownloads -previous $yearlyPreviousDownloads) |"
+
+          Write-Host $metricsTable
+          Write-Host "Download Stats and Trends:"
+          Write-Host $statsTable
+
+          $output = "$metricsTable`n`n$statsTable"
           Set-Content -Path body.md -Value $output -Encoding UTF8
 
       - name: List all discussions (troubleshoot)
