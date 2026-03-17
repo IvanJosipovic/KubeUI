@@ -1,6 +1,6 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.Concurrent;
+using System.Collections.ObjectModel;
 using Avalonia;
-using Avalonia.Collections;
 using DynamicData;
 using k8s;
 using k8s.KubeConfigModels;
@@ -34,7 +34,9 @@ public class TestCluster : ICluster
         return cluster;
     }
 
-    public AvaloniaDictionary<GroupApiVersionKind, object> Objects { get; } = [];
+    public ConcurrentDictionary<GroupApiVersionKind, object> Objects { get; } = [];
+
+    IReadOnlyDictionary<GroupApiVersionKind, object> IClusterRuntime.Objects => Objects;
 
     public bool Connected { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
@@ -43,7 +45,7 @@ public class TestCluster : ICluster
     public bool ListNamespaces { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     public ClusterStatus Status { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     public IKubernetes? Client { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-    public ReadOnlyObservableCollection<V1Namespace> Namespaces { get; set; } = ReadOnlyObservableCollection<V1Namespace>.Empty;
+    public ReadOnlyObservableCollection<V1Namespace> Namespaces { get; set; } = new(new ObservableCollection<V1Namespace>());
     public K8SConfiguration KubeConfig { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     public ModelCache ModelCache { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     public ObservableCollection<NavigationItem> NavigationItems { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
@@ -68,12 +70,12 @@ public class TestCluster : ICluster
         throw new NotImplementedException();
     }
 
-    public bool CanI(Type type, Client.Cluster.Verb verb, string? @namespace = null, string? subresource = null)
+    public bool CanI(Type type, Verb verb, string? @namespace = null, string? subresource = null)
     {
         throw new NotImplementedException();
     }
 
-    public bool CanIAnyNamespace(Type type, Client.Cluster.Verb verb, string? subresource = null)
+    public bool CanIAnyNamespace(Type type, Verb verb, string? subresource = null)
     {
         throw new NotImplementedException();
     }
@@ -85,8 +87,6 @@ public class TestCluster : ICluster
 
     public IResourceConfig GetResourceConfig(GroupApiVersionKind kind)
     {
-        // ResourceListViewModel expects a ResourceConfigBase<T> for the requested kind.
-        // Use the app DI container to resolve the real config for that resource type.
         if (Application.Current is null)
             throw new InvalidOperationException("Avalonia Application.Current is not initialized.");
 
@@ -178,7 +178,7 @@ public class TestCluster : ICluster
         throw new NotImplementedException();
     }
 
-    public Task<bool> UpdateCanI(Type type, Client.Cluster.Verb verb, string? @namespace = null, string? subresource = null)
+    public Task<bool> UpdateCanI(Type type, Verb verb, string? @namespace = null, string? subresource = null)
     {
         throw new NotImplementedException();
     }
@@ -198,32 +198,24 @@ public class TestCluster : ICluster
 
             if (original.HasValue)
             {
-                // Copy the incoming (updated) item into the cached instance.
-                // The previous direction overwrote the update with stale data.
                 item.Adapt(original.Value);
-
-                // Notify DynamicData that the item changed.
                 o.Refresh(key);
-
-                // Mimic real cluster behavior where watchers raise change events.
                 OnChange?.Invoke(WatchEventType.Modified, kind, original.Value);
             }
             else
             {
                 o.AddOrUpdate(item);
-
-                // Mimic the initial add event.
                 OnChange?.Invoke(WatchEventType.Added, kind, item);
             }
         });
     }
 
-    public bool CanI<T>(Client.Cluster.Verb verb, string? @namespace, string? subresource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public bool CanI<T>(Verb verb, string? @namespace, string? subresource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         return true;
     }
 
-    public bool CanIAnyNamespace<T>(Client.Cluster.Verb verb, string? subresource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public bool CanIAnyNamespace<T>(Verb verb, string? subresource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         return true;
     }
@@ -290,18 +282,19 @@ public class TestCluster : ICluster
         return Task.CompletedTask;
     }
 
-    public Task<bool> UpdateCanI<T>(Client.Cluster.Verb verb, string? @namespace, string? subresource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public Task<bool> UpdateCanI<T>(Verb verb, string? @namespace, string? subresource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         throw new NotImplementedException();
     }
 
-    public Task<bool> UpdateCanIAnyNamespaceAsync<T>(Client.Cluster.Verb verb, string? subresource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public Task<bool> UpdateCanIAnyNamespaceAsync<T>(Verb verb, string? subresource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         throw new NotImplementedException();
     }
 
-    public Task UpdatePermissionsAllNamespaceAsync<T>(Client.Cluster.Verb verb, string? subresource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public Task UpdatePermissionsAllNamespaceAsync<T>(Verb verb, string? subresource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         throw new NotImplementedException();
     }
 }
+

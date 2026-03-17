@@ -84,7 +84,7 @@ Reference: https://github.com/wieslawsoltes/Xaml.Behaviors
 Reference: https://github.com/wieslawsoltes/Dock
 
 - Use Dock.Model.* to represent the docking layout state.
-- Use Dock.Avalonia for the view layer and Dock.Model.ReactiveUI for MVVM
+- Use Dock.Avalonia for the view layer and Dock.Model.MVVM
   integration.
 - Persist layout state to user settings and restore on startup.
 - Keep layout logic in ViewModels; Views only render the Dock model.

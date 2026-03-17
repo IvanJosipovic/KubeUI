@@ -1,8 +1,8 @@
 using System.Diagnostics;
+using System.Reflection;
 using Avalonia.Controls.Templates;
 using Dock.Model.Core;
 using KubeUI.Client;
-using KubeUI.Views;
 
 namespace KubeUI;
 
@@ -10,6 +10,7 @@ public sealed class ViewLocator : IDataTemplate
 {
     private readonly ILogger<ViewLocator> _logger;
     private readonly Instrumentation _instrumentation;
+    private Type[]? _types;
 
     public ViewLocator(ILogger<ViewLocator> logger, Instrumentation instrumentation)
     {
@@ -17,87 +18,103 @@ public sealed class ViewLocator : IDataTemplate
         _instrumentation = instrumentation;
     }
 
-    private Type[] _types;
-
     public Control Build(object? data)
     {
+        ArgumentNullException.ThrowIfNull(data);
+
         var modelType = data.GetType();
-        Type viewType;
+        var viewType = ResolveViewType(modelType);
 
-        if (modelType.IsGenericType)
-        {
-            _types ??= GetType().Assembly.GetExportedTypes();
-
-            var genericModelType = modelType.GetGenericTypeDefinition();
-
-            var name = genericModelType.FullName;
-            name = name[..name.IndexOf('`')];
-            name = name.Replace("ViewModel", "View");
-
-            viewType = Type.GetType(name);
-
-            if (viewType == null)
-            {
-                var genericViewType = _types.FirstOrDefault(x =>
-                    (
-                        (x.BaseType.GenericTypeArguments[0].IsGenericType && x.BaseType?.GenericTypeArguments[0].GetGenericTypeDefinition() == genericModelType)
-                        ||
-                        (x.BaseType?.GenericTypeArguments[0] == genericModelType)
-                    )
-                );
-
-                if (genericViewType != null)
-                {
-                    viewType = genericViewType.MakeGenericType(modelType.GenericTypeArguments[0]);
-                }
-            }
-        }
-        else
-        {
-            viewType = Type.GetType(modelType.FullName.Replace("ViewModel", "View"));
-        }
-
-        if (viewType is { })
+        if (viewType is not null)
         {
             var instance = Application.Current.GetRequiredService(viewType);
-            if (instance is { })
-            {
-                _instrumentation.ViewOpened.Add(1, new TagList()
-                {
-                    { "view", GetPrettyName(instance.GetType()) },
-                });
-                return (Control)instance;
-            }
+            _instrumentation.ViewOpened.Add(1, new TagList { { "view", GetPrettyName(instance.GetType()) } });
+            return (Control)instance;
         }
 
-        _logger.LogCritical("Unable to load View for ViewModel: {view}", modelType.FullName);
-
+        _logger.LogCritical("Unable to load View for ViewModel: {ViewModel}", modelType.FullName);
         return new TextBlock { Text = "Unable to load View for ViewModel: " + modelType.FullName };
-    }
-
-    private static string GetPrettyName(Type type)
-    {
-        var prettyName = type.Name;
-
-        if (type.IsGenericType)
-        {
-            var genericArguments = type.GetGenericArguments();
-            var genericTypeName = type.GetGenericTypeDefinition().Name;
-            var genericTypeIndex = genericTypeName.IndexOf('`');
-            if (genericTypeIndex >= 0)
-            {
-                genericTypeName = genericTypeName.Substring(0, genericTypeIndex);
-            }
-
-            var argumentNames = genericArguments.Select(arg => GetPrettyName(arg)).ToArray();
-            prettyName = $"{genericTypeName}<{string.Join(", ", argumentNames)}>";
-        }
-
-        return prettyName;
     }
 
     public bool Match(object? data)
     {
-        return data is ObservableObject || data is IDockable;
+        return data is ObservableObject or IDockable;
+    }
+
+    private Type? ResolveViewType(Type modelType)
+    {
+        var expectedName = GetUnboundFullName(modelType).Replace("ViewModel", "View", StringComparison.Ordinal);
+        var viewType = GetViewTypes().FirstOrDefault(type => string.Equals(GetUnboundFullName(type), expectedName, StringComparison.Ordinal));
+
+        if (viewType is null)
+        {
+            return null;
+        }
+
+        if (viewType.IsGenericTypeDefinition && modelType.IsGenericType)
+        {
+            return viewType.MakeGenericType(modelType.GetGenericArguments());
+        }
+
+        return viewType;
+    }
+
+    private Type[] GetViewTypes()
+    {
+        if (_types is not null)
+        {
+            return _types;
+        }
+
+        _types = AppDomain.CurrentDomain.GetAssemblies()
+            .Where(assembly => assembly.GetName().Name?.StartsWith("KubeUI", StringComparison.Ordinal) == true)
+            .SelectMany(GetExportedTypes)
+            .Where(type => type is not null)
+            .Cast<Type>()
+            .ToArray();
+
+        return _types;
+    }
+
+    private static IEnumerable<Type?> GetExportedTypes(Assembly assembly)
+    {
+        try
+        {
+            return assembly.GetExportedTypes();
+        }
+        catch (ReflectionTypeLoadException ex)
+        {
+            return ex.Types;
+        }
+    }
+
+    private static string GetPrettyName(Type type)
+    {
+        if (!type.IsGenericType)
+        {
+            return type.Name;
+        }
+
+        var genericTypeName = type.GetGenericTypeDefinition().Name;
+        var genericTypeIndex = genericTypeName.IndexOf('`');
+        if (genericTypeIndex >= 0)
+        {
+            genericTypeName = genericTypeName[..genericTypeIndex];
+        }
+
+        var argumentNames = type.GetGenericArguments().Select(GetPrettyName);
+        return $"{genericTypeName}<{string.Join(", ", argumentNames)}>";
+    }
+
+    private static string GetUnboundFullName(Type type)
+    {
+        var fullName = type.IsGenericType ? type.GetGenericTypeDefinition().FullName : type.FullName;
+        ArgumentNullException.ThrowIfNull(fullName);
+
+        var genericTypeIndex = fullName.IndexOf('`');
+        return genericTypeIndex >= 0 ? fullName[..genericTypeIndex] : fullName;
     }
 }
+
+
+

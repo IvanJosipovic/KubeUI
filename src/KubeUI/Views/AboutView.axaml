@@ -2,7 +2,7 @@
     x:Class="KubeUI.Views.AboutView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:assets="clr-namespace:KubeUI.Assets"
+    xmlns:assets="clr-namespace:KubeUI.Assets;assembly=KubeUI.Core"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:views="clr-namespace:KubeUI.Views"
@@ -55,3 +55,4 @@
         </StackPanel>
     </StackPanel>
 </UserControl>
+

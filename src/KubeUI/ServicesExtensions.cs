@@ -1,34 +1,28 @@
-﻿using Avalonia.Controls.Templates;
+using Avalonia.Controls.Templates;
 using Avalonia.Logging;
-using Dock.Model.Core;
-using KubernetesCRDModelGen;
 using KubeUI.Client;
-using KubeUI.Resources;
-using KubeUI.Views;
+using KubeUI.ViewModels;
+using Microsoft.Extensions.Hosting;
+using ServiceScan.SourceGenerator;
 
 namespace KubeUI;
 
-public static partial class ServicesExtensions
+public static partial class KubeUIShellServiceCollectionExtensions
 {
+    public static IServiceCollection AddKubeUIShellServices(this IServiceCollection services)
+    {
+        services.AddKubeUIShellGeneratedServices();
+        services.AddSingleton<Instrumentation>();
+        services.AddSingleton<ILogSink, LogSink>();
+        services.AddSingleton<ViewLocator>();
+        services.AddSingleton<IDataTemplate>(sp => sp.GetRequiredService<ViewLocator>());
+        services.AddSingleton<ISettingsService, SettingsService>();
+        services.AddSingleton<IHostApplicationLifetime, Host>();
+        return services;
+    }
+
     [GenerateServiceRegistrations(AssignableTo = typeof(Window), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI")]
     [GenerateServiceRegistrations(AssignableTo = typeof(UserControl), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI")]
-
-    [GenerateServiceRegistrations(AssignableTo = typeof(ViewModelBase), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false)]
-    [GenerateServiceRegistrations(AssignableTo = typeof(ResourceConfigBase<>), Lifetime = ServiceLifetime.Transient, AsSelf = false, AsImplementedInterfaces = false)]
-    [GenerateServiceRegistrations(AssignableTo = typeof(CRDResourceConfig<>), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false)]
-
-    [GenerateServiceRegistrations(AssignableTo = typeof(ICluster), Lifetime = ServiceLifetime.Transient, AsSelf = false, AsImplementedInterfaces = false)]
-
-    [GenerateServiceRegistrations(AssignableTo = typeof(ModelCache), Lifetime = ServiceLifetime.Transient)]
-
-    [GenerateServiceRegistrations(AssignableTo = typeof(Instrumentation), Lifetime = ServiceLifetime.Singleton)]
-    [GenerateServiceRegistrations(AssignableTo = typeof(ILogSink), Lifetime = ServiceLifetime.Singleton, AsImplementedInterfaces = true)]
-    [GenerateServiceRegistrations(AssignableTo = typeof(ISettingsService), Lifetime = ServiceLifetime.Singleton, AsImplementedInterfaces = false)]
-    [GenerateServiceRegistrations(AssignableTo = typeof(IDataTemplate), Lifetime = ServiceLifetime.Singleton, AsSelf = true)]
-    [GenerateServiceRegistrations(AssignableTo = typeof(ClusterManager), Lifetime = ServiceLifetime.Singleton)]
-    [GenerateServiceRegistrations(AssignableTo = typeof(Host), Lifetime = ServiceLifetime.Singleton, AsImplementedInterfaces = true, AsSelf = false)]
-
-    [GenerateServiceRegistrations(FromAssemblyOf = typeof(IGenerator), AssignableTo = typeof(IGenerator), Lifetime = ServiceLifetime.Singleton)]
-
-    public static partial IServiceCollection AddServices(this IServiceCollection services);
+    [GenerateServiceRegistrations(AssignableTo = typeof(ViewModelBase), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI")]
+    private static partial IServiceCollection AddKubeUIShellGeneratedServices(this IServiceCollection services);
 }

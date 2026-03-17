@@ -18,7 +18,7 @@ public sealed partial class MainViewModel : ViewModelBase
     private partial ISettingsService SettingsService { get; set; }
 
     [ObservableProperty]
-    public partial ClusterManager ClusterManager { get; set; }
+    public partial IClusterCatalog ClusterCatalog { get; set; }
 
     private readonly IDialogService _dialogService;
 
@@ -28,7 +28,7 @@ public sealed partial class MainViewModel : ViewModelBase
 
         SettingsService = Application.Current.GetRequiredService<ISettingsService>();
 
-        ClusterManager = Application.Current.GetRequiredService<ClusterManager>();
+        ClusterCatalog = Application.Current.GetRequiredService<IClusterCatalog>();
 
         _dialogService = Application.Current.GetRequiredService<IDialogService>();
 
@@ -256,7 +256,7 @@ public sealed partial class MainViewModel : ViewModelBase
         {
             try
             {
-                ClusterManager.LoadFromConfigFromPath(file.Path.LocalPath);
+                ClusterCatalog.LoadFromConfigFromPath(file.Path.LocalPath);
             }
             catch (Exception ex)
             {

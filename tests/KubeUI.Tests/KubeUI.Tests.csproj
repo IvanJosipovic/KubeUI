@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -29,6 +29,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\KubeUI\KubeUI.csproj" />
+    <ProjectReference Include="..\..\src\KubeUI.Infrastructure.Kubernetes\KubeUI.Infrastructure.Kubernetes.csproj" />
+    <ProjectReference Include="..\..\src\KubeUI.Presentation\KubeUI.Presentation.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -44,4 +46,3 @@
   </ItemGroup>
 
 </Project>
-

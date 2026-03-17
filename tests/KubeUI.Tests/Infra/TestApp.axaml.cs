@@ -6,7 +6,6 @@ using Avalonia.Threading;
 using Dock.Model.Core;
 using HanumanInstitute.MvvmDialogs;
 using KubeUI.Client;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -25,8 +24,9 @@ public class TestApp : Application
 
         var services = new ServiceCollection();
 
-        // Services
-        services.AddServices();
+        services.AddKubeUIShellServices();
+        services.AddKubeUIPresentationServices();
+        services.AddKubeUIKubernetesInfrastructureServices();
         services.AddLogging();
 
         services.AddSingleton<ISettingsService, TestSettingsService>();
@@ -36,12 +36,15 @@ public class TestApp : Application
 
         var notifications = new Mock<INotificationManager>();
         services.AddSingleton<INotificationManager>(notifications.Object);
-        services.AddSingleton<IFactory>(sp => Dispatcher.UIThread.Invoke<IFactory>(() => new DockFactory(sp.GetRequiredService<ILogger<DockFactory>>())));
-
+        services.AddSingleton<IFactory>(sp => Dispatcher.UIThread.Invoke(() => (IFactory)new DockFactory(sp.GetRequiredService<ILogger<DockFactory>>())));
         services.AddSingleton<ServiceDescriptor[]>([.. services]);
 
-        Services = services.BuildServiceProvider();
+        var provider = services.BuildServiceProvider();
+        provider.ConfigureKubeUIKubernetesJson();
 
+        Services = provider;
         Resources[typeof(IServiceProvider)] = Services;
     }
 }
+
+

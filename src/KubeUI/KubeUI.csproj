@@ -40,6 +40,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\KubeUI.Core\KubeUI.Core.csproj" />
+    <ProjectReference Include="..\KubeUI.Presentation\KubeUI.Presentation.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
 
@@ -69,9 +74,6 @@
     <PackageReference Include="Irihi.Ursa" Version="1.15.0" />
     <PackageReference Include="Irihi.Ursa.Themes.Semi" Version="1.15.0" />
     <PackageReference Include="JsonPathLINQ" Version="1.0.0-alpha.11" />
-    <PackageReference Include="KubernetesClient" Version="19.0.2" />
-    <PackageReference Include="KubernetesClient.Informer" Version="1.0.0-alpha.4" />
-    <PackageReference Include="KubernetesCRDModelGen" Version="1.2.8" />
     <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.0.0-rc6.1" />
     <PackageReference Include="Mapster" Version="7.4.0" />
     <PackageReference Include="Markdig" Version="1.1.1" />
@@ -97,22 +99,6 @@
     <PackageReference Include="TextMateSharp.Grammars" Version="2.0.3" />
     <PackageReference Include="Velopack" Version="0.0.1298" />
     <PackageReference Include="Xaml.Behaviors.Avalonia" Version="11.3.9.5" />
-    <PackageReference Include="YamlDotNet.System.Text.Json" Version="1.7.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Update="Assets\Resources.resx">
-      <Generator>PublicResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Update="Assets\Resources.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
   </ItemGroup>
 
 </Project>
