@@ -16,7 +16,7 @@ using KubeUI.Views;
 
 namespace KubeUI.Avalonia.Tests;
 
-public class ResourceListViewTests
+public class ResourceListViewModelTests
 {
     private static V1Pod Pod(string ns, string name)
         => new()

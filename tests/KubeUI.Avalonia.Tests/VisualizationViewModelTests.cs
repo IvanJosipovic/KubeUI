@@ -9,7 +9,7 @@ using static KubeUI.ViewModels.VisualizationViewModel;
 
 namespace KubeUI.Avalonia.Tests;
 
-public class VisualizationViewTests
+public class VisualizationViewModelTests
 {
     [AvaloniaFact]
     public async Task LinkOwners()

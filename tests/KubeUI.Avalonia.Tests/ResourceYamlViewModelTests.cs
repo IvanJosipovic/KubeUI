@@ -7,7 +7,7 @@ using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Avalonia.Tests;
 
-public class ResourceYamlViewTests
+public class ResourceYamlViewModelTests
 {
     [Fact]
     public void YamlFolding_FoldsNestedMappings()

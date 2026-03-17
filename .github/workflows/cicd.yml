@@ -39,12 +39,17 @@ jobs:
       - name: Test
         run: dotnet test -c Release --collect:"XPlat Code Coverage" --no-build --logger "trx;LogFileName=test-results.trx"
 
+      - name: Test Kubernetes E2E
+        run: dotnet test tests/KubeUI.Kubernetes.Tests/KubeUI.Kubernetes.Tests.csproj -c Release --no-build --logger "trx;LogFileName=kind-test-results.trx"
+        env:
+          KUBEUI_RUN_KIND_TESTS: 1
+
       - name: Test Report
         uses: dorny/test-reporter@v2
         if: success() || failure()
         with:
           name: KubeUI Tests
-          path: tests/**/TestResults/test-results.trx
+          path: tests/**/TestResults/*.trx
           reporter: dotnet-trx
 
       - name: Coverage

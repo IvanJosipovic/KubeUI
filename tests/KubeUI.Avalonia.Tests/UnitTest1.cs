@@ -1,20 +1,13 @@
 using AvaloniaEdit.Document;
-using Shouldly;
 using k8s.Models;
+using Shouldly;
 using KubeUI.ViewModels;
 using KubeUI.Views;
-using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Avalonia.Tests;
 
 public class UnitTest1
 {
-    [Fact]
-    public void Test1()
-    {
-        GroupApiVersionKind.From<V1Pod>().Kind.ShouldBe("Pod");
-    }
-
     [Fact]
     public void PathBuilder()
     {

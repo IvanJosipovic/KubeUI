@@ -12,7 +12,6 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia.Headless.XUnit" Version="11.3.12" />
-    <PackageReference Include="CliWrap" Version="3.10.0" />
     <PackageReference Include="coverlet.collector" Version="8.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -37,6 +36,10 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Shared\Infra\TestClusterRuntime.cs" Link="Infra\TestClusterRuntime.cs" />
   </ItemGroup>
 
   <ItemGroup>
