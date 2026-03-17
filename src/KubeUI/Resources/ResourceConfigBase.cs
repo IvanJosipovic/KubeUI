@@ -284,49 +284,60 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     }
 
     [RelayCommand(CanExecute = nameof(CanRestart))]
-    private async Task Restart(IList resource)
+    private async Task Restart(IList items)
     {
-        try
+        ContentDialogSettings settings = new()
         {
-            ContentDialogSettings settings = new()
-            {
-                Title = Assets.Resources.ResourceListViewModel_Restart_Title,
-                Content = string.Format(Assets.Resources.ResourceListViewModel_Restart_Content, resource.Count),
-                PrimaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Primary,
-                SecondaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Secondary,
-                DefaultButton = ContentDialogButton.Secondary
-            };
+            Title = Assets.Resources.ResourceListViewModel_Restart_Title,
+            Content = string.Format(Assets.Resources.ResourceListViewModel_Restart_Content, items.Count),
+            PrimaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Primary,
+            SecondaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Secondary,
+            DefaultButton = ContentDialogButton.Secondary
+        };
 
-            var result = await _dialogService.ShowContentDialogAsync(this, settings);
+        var result = await _dialogService.ShowContentDialogAsync(this, settings);
 
-            if (result == ContentDialogResult.Primary)
-            {
-                    string sRestartControllerPatch = $$"""
-                    {
-                        "spec": {
-                            "template": {
-                                "metadata": {
-                                    "annotations": {
-                                        "kubectl.kubernetes.io/restartedAt": "{{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}}"
-                                    }
+        string sRestartControllerPatch = $$"""
+                {
+                    "spec": {
+                        "template": {
+                            "metadata": {
+                                "annotations": {
+                                    "kubectl.kubernetes.io/restartedAt": "{{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}}"
                                 }
                             }
                         }
                     }
-                    """;
+                }
+                """;
 
+        if (result == ContentDialogResult.Primary)
+        {
+            var exceptions = new List<Exception>();
 
-                foreach (var item in resource.Cast<IKubernetesObject<V1ObjectMeta>>())
+            foreach (var item in items.Cast<T>().ToList())
+            {
+                try
                 {
                     using var genClient = Cluster.Client.GetGenericClient(item);
 
-                    await genClient.PatchNamespacedAsync<KubernetesObject>(new V1Patch(sRestartControllerPatch, V1Patch.PatchType.MergePatch), item.Metadata.NamespaceProperty, item.Metadata.Name);
+                    await genClient.PatchNamespacedAsync<T>(new V1Patch(sRestartControllerPatch, V1Patch.PatchType.MergePatch), item.Metadata.NamespaceProperty, item.Metadata.Name);
+                }
+                catch (JsonException ex)
+                {
+                    _logger.LogWarning(ex, $"JsonException occurred while deleting resource {item.Namespace()}/{item.Name()}");
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex);
+                    Utilities.HandleException(_logger, _notificationManager, ex, $"Error Restarting {item.Namespace()}/{item.Name()}", sendNotification: true);
                 }
             }
-        }
-        catch (Exception ex)
-        {
-            Utilities.HandleException(_logger, _notificationManager, ex, "Error Restarting", sendNotification: true);
+
+            if (exceptions.Count > 0)
+            {
+                _logger.LogError(new AggregateException(exceptions), "Error Restarting Resources");
+            }
         }
     }
 

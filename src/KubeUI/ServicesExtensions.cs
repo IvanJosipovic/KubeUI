@@ -26,7 +26,6 @@ public static partial class ServicesExtensions
     [GenerateServiceRegistrations(AssignableTo = typeof(ISettingsService), Lifetime = ServiceLifetime.Singleton, AsImplementedInterfaces = false)]
     [GenerateServiceRegistrations(AssignableTo = typeof(IDataTemplate), Lifetime = ServiceLifetime.Singleton, AsSelf = true)]
     [GenerateServiceRegistrations(AssignableTo = typeof(ClusterManager), Lifetime = ServiceLifetime.Singleton)]
-    [GenerateServiceRegistrations(AssignableTo = typeof(Host), Lifetime = ServiceLifetime.Singleton, AsImplementedInterfaces = true, AsSelf = false)]
 
     [GenerateServiceRegistrations(FromAssemblyOf = typeof(IGenerator), AssignableTo = typeof(IGenerator), Lifetime = ServiceLifetime.Singleton)]
 
