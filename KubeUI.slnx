@@ -12,11 +12,8 @@
   </Folder>
   <Project Path="benchmarks/KubeUI.Benchmarks/KubeUI.Benchmarks.csproj" />
   <Project Path="src/KubeUI.Desktop/KubeUI.Desktop.csproj" />
-  <Project Path="src/KubeUI.Core/KubeUI.Core.csproj" />
-  <Project Path="src/KubeUI.Infrastructure.Kubernetes/KubeUI.Infrastructure.Kubernetes.csproj" />
-  <Project Path="src/KubeUI.Presentation/KubeUI.Presentation.csproj" />
-  <Project Path="src/KubeUI/KubeUI.csproj" />
-  <Project Path="tests/KubeUI.Core.Tests/KubeUI.Core.Tests.csproj" />
-  <Project Path="tests/KubeUI.Tests/KubeUI.Tests.csproj" />
+  <Project Path="src/KubeUI.Kubernetes/KubeUI.Kubernetes.csproj" />
+  <Project Path="src/KubeUI.Avalonia/KubeUI.Avalonia.csproj" />
+  <Project Path="tests/KubeUI.Kubernetes.Tests/KubeUI.Kubernetes.Tests.csproj" />
+  <Project Path="tests/KubeUI.Avalonia.Tests/KubeUI.Avalonia.Tests.csproj" />
 </Solution>
-

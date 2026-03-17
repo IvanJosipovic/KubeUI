@@ -13,8 +13,8 @@
     <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <EnableCompressionInSingleFile>false</EnableCompressionInSingleFile>
-    <PackageIcon>..\KubeUI\Assets\icon.ico</PackageIcon>
-    <ApplicationIcon>..\KubeUI\Assets\icon.ico</ApplicationIcon>
+    <PackageIcon>..\KubeUI.Avalonia\Assets\icon.ico</PackageIcon>
+    <ApplicationIcon>..\KubeUI.Avalonia\Assets\icon.ico</ApplicationIcon>
     <DebugType>embedded</DebugType>
   </PropertyGroup>
 
@@ -23,8 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\KubeUI\KubeUI.csproj" />
-    <ProjectReference Include="..\KubeUI.Infrastructure.Kubernetes\KubeUI.Infrastructure.Kubernetes.csproj" />
+    <ProjectReference Include="..\KubeUI.Avalonia\KubeUI.Avalonia.csproj" />
+    <ProjectReference Include="..\KubeUI.Kubernetes\KubeUI.Kubernetes.csproj" />
   </ItemGroup>
 </Project>
-

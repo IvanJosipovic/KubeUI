@@ -31,15 +31,12 @@ Docker
 ## 2) Architecture
 
 ### Layering
-- UI (Avalonia Views + XAML): visual composition only.
-- Presentation (ViewModels): state, commands, reactive composition.
-- Domain/Services: business logic, parsing, validation, domain rules.
-- Infrastructure: file system, persistence, external integrations.
+- KubeUI.Kubernetes: all non-UI Kubernetes/runtime/shared contracts
+- KubeUI.Avalonia: all Avalonia UI, view models, resource configs, shell glue
+- KubeUI.Desktop: executable host and composition root
 
 ### Boundaries
-- UI depends on Presentation; Presentation depends on Domain; Infrastructure is
-  depended on by Domain or Presentation via interfaces.
-- No reference from Domain to UI or Avalonia types.
+- KubeUI.Desktop depends on KubeUI.Avalonia depends on KubeUI.Kubernetes
 
 ## 3) Avalonia UI best practices (aligned with Avalonia codebase)
 
@@ -142,8 +139,7 @@ References:
 - https://docs.avaloniaui.net/docs/testing/setting-up-the-headless-platform
 
 - All production code must be covered by unit tests; xUnit is required for unit testing.
-- UI tests must use Avalonia Headless (xUnit integration) and follow the headless testing
-  guidance and helpers for input simulation.
+- UI tests must use Avalonia Headless (xUnit integration) and follow the headless testing guidance and helpers for input simulation.
 - Unit-test ViewModels and Domain services.
 - Use integration tests for parsing, IO, and docking layout persistence.
 - UI tests should validate navigation flows, docking, and editor behaviors.

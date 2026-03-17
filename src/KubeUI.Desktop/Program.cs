@@ -57,9 +57,8 @@ internal static class Program
 
         var settings = SettingsService.LoadSettingsFromFile();
 
-        services.AddKubeUIShellServices();
-        services.AddKubeUIPresentationServices();
-        services.AddKubeUIKubernetesInfrastructureServices();
+        services.AddKubeUIAvaloniaServices();
+        services.AddKubeUIKubernetesServices();
         services.AddLogging(x => x.SetMinimumLevel(LogLevel.Debug));
 
         if (!Design.IsDesignMode)

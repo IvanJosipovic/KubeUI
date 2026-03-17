@@ -126,7 +126,7 @@ jobs:
       - name: Install Velopack
         shell: pwsh
         run: |
-         $csprojPath = "src/KubeUI/KubeUI.csproj"
+         $csprojPath = "src/KubeUI.Avalonia/KubeUI.Avalonia.csproj"
 
          [xml]$csprojXml = Get-Content -Path $csprojPath
 
@@ -219,3 +219,4 @@ jobs:
       uses: cycjimmy/semantic-release-action@v4
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

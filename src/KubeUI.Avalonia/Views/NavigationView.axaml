@@ -1,0 +1,87 @@
+<UserControl
+    x:Class="KubeUI.Views.NavigationView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:coreClient="clr-namespace:KubeUI.Client;assembly=KubeUI.Kubernetes"
+    xmlns:converters="using:KubeUI.Converters"
+    xmlns:custom="using:Avalonia.Xaml.Interactions.Custom"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:ic="using:FluentIcons.Avalonia"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="clr-namespace:KubeUI.ViewModels"
+    d:DesignHeight="600"
+    d:DesignWidth="300"
+    x:DataType="vm:NavigationViewModel"
+    mc:Ignorable="d">
+
+    <Design.DataContext>
+        <vm:NavigationViewModel />
+    </Design.DataContext>
+
+    <UserControl.Styles>
+        <Style Selector="TreeViewItem">
+            <Setter Property="IsExpanded" Value="{ReflectionBinding IsExpanded}" />
+        </Style>
+        <Style Selector="Svg, PathIcon, ic|FluentIcon">
+            <Setter Property="Height" Value="17" />
+            <Setter Property="Width" Value="17" />
+            <Setter Property="Margin" Value="0,0,4,0" />
+        </Style>
+    </UserControl.Styles>
+    <TreeView
+        Margin="-5,0,0,0"
+        AutoScrollToSelectedItem="False"
+        ItemsSource="{Binding Clusters}"
+        SelectionChanged="TreeView_SelectionChanged">
+        <TreeView.DataTemplates>
+            <TreeDataTemplate x:DataType="vm:ClusterNavigationNode" ItemsSource="{Binding NavigationItems}">
+                <StackPanel
+                    Margin="-5,0,0,0"
+                    VerticalAlignment="Center"
+                    Orientation="Horizontal">
+                    <Interaction.Behaviors>
+                        <DataTriggerBehavior Binding="{Binding Cluster.Status}" Value="{x:Static coreClient:ClusterStatus.None}">
+                            <SetToolTipTipAction Tip="Click to Connect" />
+                        </DataTriggerBehavior>
+                        <DataTriggerBehavior Binding="{Binding Cluster.Status}" Value="{x:Static coreClient:ClusterStatus.Connecting}">
+                            <SetToolTipTipAction Tip="Connecting..." />
+                        </DataTriggerBehavior>
+                        <DataTriggerBehavior Binding="{Binding Cluster.Status}" Value="{x:Static coreClient:ClusterStatus.Errored}">
+                            <SetToolTipTipAction Tip="Errored" />
+                        </DataTriggerBehavior>
+                        <DataTriggerBehavior Binding="{Binding Cluster.Status}" Value="{x:Static coreClient:ClusterStatus.Connected}">
+                            <SetToolTipTipAction Tip="Connected" />
+                        </DataTriggerBehavior>
+                    </Interaction.Behaviors>
+                    <Rectangle Name="Target"
+                        Width="10"
+                        Height="10"
+                        Margin="0,0,4,0"
+                        Fill="{Binding Cluster.ClusterColor}"
+                        Stroke="Gray"
+                        StrokeThickness="0.6" />
+                    <TextBlock VerticalAlignment="Center" Text="{Binding Cluster.Name}" />
+                </StackPanel>
+            </TreeDataTemplate>
+            <TreeDataTemplate x:DataType="vm:ResourceNavigationLink" ItemsSource="{Binding NavigationItems}">
+                <StackPanel Margin="-5,0,0,0" Orientation="Horizontal">
+                    <Svg Path="{Binding IconPath}" />
+                    <TextBlock VerticalAlignment="Center" Text="{Binding Name}" />
+                    <TextBlock
+                        Margin="4,0,0,0"
+                        VerticalAlignment="Center"
+                        Text="{Binding Count^}" />
+                </StackPanel>
+            </TreeDataTemplate>
+            <TreeDataTemplate x:DataType="vm:NavigationItem" ItemsSource="{Binding NavigationItems}">
+                <StackPanel Margin="-5,0,0,0" Orientation="Horizontal">
+                    <ic:FluentIcon Icon="{Binding FluentIcon}" IsVisible="{Binding FluentIcon, Converter={x:Static converters:Converters.NotNull}}" />
+                    <PathIcon Data="{Binding StyleIcon, Converter={x:Static converters:StaticResourceConverter.Instance}}" IsVisible="{Binding StyleIcon, Converter={x:Static converters:Converters.NotNull}}" />
+                    <Svg IsVisible="{Binding SvgIcon, Converter={x:Static converters:Converters.NotNull}}" Path="{Binding SvgIcon}" />
+                    <TextBlock VerticalAlignment="Center" Text="{Binding Name}" />
+                </StackPanel>
+            </TreeDataTemplate>
+        </TreeView.DataTemplates>
+    </TreeView>
+</UserControl>
+
