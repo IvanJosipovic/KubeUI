@@ -14,6 +14,7 @@ public interface IClusterRuntime
     bool IsMetricsAvailable { get; }
     bool ListNamespaces { get; set; }
     event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
+    event Action<V1CustomResourceDefinition>? OnCustomResourceDefinitionReady;
     IKubernetes? Client { get; set; }
     K8SConfiguration KubeConfig { get; set; }
     ModelCache ModelCache { get; set; }

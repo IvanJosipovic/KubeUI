@@ -24,6 +24,7 @@ namespace KubeUI.Client;
 
 public sealed partial class Cluster : ObservableObject, IClusterRuntime
 {
+    private const int MaxQueuedCustomResourceDefinitionsPerBatch = 25;
     private ILoggerFactory _loggerFactory;
 
     private ILogger<Cluster> _logger;
@@ -39,10 +40,13 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
     public V2beta1APIGroupDiscoveryList APIGroupDiscoveryList { get; private set; }
 
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
+    public event Action<V1CustomResourceDefinition>? OnCustomResourceDefinitionReady;
 
     private readonly SemaphoreSlim _connectionLimiter = new(1,1);
 
     private readonly SemaphoreSlim _seedLimiter = new(1,1);
+    private readonly SemaphoreSlim _customResourceDefinitionSignal = new(0);
+    private readonly ConcurrentDictionary<string, V1CustomResourceDefinition> _pendingCustomResourceDefinitions = new(StringComparer.Ordinal);
 
     public ConcurrentDictionary<GroupApiVersionKind, object> Objects { get; } = [];
 
@@ -85,6 +89,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         ModelCache.AddToCache(typeof(V1Deployment).Assembly, kubeAssemblyXmlDoc);
         _settingsService = settingsService;
         _serviceProvider = serviceProvider;
+
+        _ = Task.Run(ProcessQueuedCustomResourceDefinitionsAsync);
     }
 
     public async Task Connect()
@@ -283,23 +289,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
                 case WatchEventType.Added:
                     if (item is V1CustomResourceDefinition crd)
                     {
-                        _logger.LogInformation("Processing new CRD {name}", crd.Name());
-
-                        ProcessNewCRD(crd)
-                        .ContinueWith(t =>
-                        {
-                            if (t.Exception != null)
-                            {
-                                _logger.LogError("Exception in ProcessNewCRD: {exception}", t.Exception.Flatten());
-                            }
-                            else
-                            {
-                                items.AddOrUpdate(item);
-
-                                _logger.LogInformation("Completed processing new CRD {name}", crd.Name());
-                            }
-
-                        }).GetAwaiter().GetResult();
+                        items.AddOrUpdate(item);
+                        QueueCustomResourceDefinition(crd);
                     }
                     else
                     {
@@ -321,18 +312,96 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
                             o.AddOrUpdate(item);
                         }
                     });
+
+                    if (item is V1CustomResourceDefinition modifiedCrd)
+                    {
+                        QueueCustomResourceDefinition(modifiedCrd);
+                    }
                     break;
                 case WatchEventType.Deleted:
                     items.Remove(item);
                     if (item is V1CustomResourceDefinition crd2)
                     {
-                        APIGroupDiscoveryList = GetAPIGroupDiscoveryList(false).GetAwaiter().GetResult();
+                        RemoveQueuedCustomResourceDefinition(crd2);
+                        _ = Task.Run(RefreshApiGroupDiscoveryListAsync);
                     }
                     break;
             }
 
             OnChange?.Invoke(eventType, kind, item);
         });
+    }
+
+    private void QueueCustomResourceDefinition(V1CustomResourceDefinition crd)
+    {
+        _pendingCustomResourceDefinitions[GetCustomResourceDefinitionKey(crd)] = crd;
+        _customResourceDefinitionSignal.Release();
+    }
+
+    private void RemoveQueuedCustomResourceDefinition(V1CustomResourceDefinition crd)
+    {
+        _pendingCustomResourceDefinitions.TryRemove(GetCustomResourceDefinitionKey(crd), out _);
+    }
+
+    private static string GetCustomResourceDefinitionKey(V1CustomResourceDefinition crd)
+    {
+        return crd.Name();
+    }
+
+    private async Task ProcessQueuedCustomResourceDefinitionsAsync()
+    {
+        while (true)
+        {
+            await _customResourceDefinitionSignal.WaitAsync().ConfigureAwait(false);
+
+            var processed = 0;
+
+            while (processed < MaxQueuedCustomResourceDefinitionsPerBatch && TryTakeQueuedCustomResourceDefinition(out var crd))
+            {
+                processed++;
+
+                try
+                {
+                    _logger.LogInformation("Processing queued CRD {name}", crd.Name());
+
+                    if (await ProcessNewCRD(crd).ConfigureAwait(false))
+                    {
+                        OnCustomResourceDefinitionReady?.Invoke(crd);
+                        _logger.LogInformation("Completed processing queued CRD {name}", crd.Name());
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error processing queued CRD {name}", crd.Name());
+                }
+            }
+        }
+    }
+
+    private bool TryTakeQueuedCustomResourceDefinition(out V1CustomResourceDefinition crd)
+    {
+        foreach (var pending in _pendingCustomResourceDefinitions)
+        {
+            if (_pendingCustomResourceDefinitions.TryRemove(pending.Key, out crd))
+            {
+                return true;
+            }
+        }
+
+        crd = null!;
+        return false;
+    }
+
+    private async Task RefreshApiGroupDiscoveryListAsync()
+    {
+        try
+        {
+            APIGroupDiscoveryList = await GetAPIGroupDiscoveryList(false).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unable to refresh API discovery for cluster {name}", Name);
+        }
     }
 
     private async Task<bool> ProcessNewCRD(V1CustomResourceDefinition crd)
@@ -350,7 +419,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
             ModelCache.AddToCache(assembly.Item1, assembly.Item2);
         }
 
-        APIGroupDiscoveryList = await GetAPIGroupDiscoveryList(false);
+        await RefreshApiGroupDiscoveryListAsync().ConfigureAwait(false);
 
         return true;
     }

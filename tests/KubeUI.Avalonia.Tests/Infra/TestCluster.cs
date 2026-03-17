@@ -45,6 +45,7 @@ public sealed class TestCluster : IClusterRuntime, INotifyPropertyChanged
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
+    public event Action<V1CustomResourceDefinition>? OnCustomResourceDefinitionReady;
 
     public static ClusterWorkspaceViewModel Get()
     {
@@ -391,5 +392,10 @@ public sealed class TestCluster : IClusterRuntime, INotifyPropertyChanged
 
         field = value;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    public void RaiseCustomResourceDefinitionReady(V1CustomResourceDefinition crd)
+    {
+        OnCustomResourceDefinitionReady?.Invoke(crd);
     }
 }

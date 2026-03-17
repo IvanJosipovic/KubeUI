@@ -50,6 +50,12 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     [ObservableProperty]
     public partial ResourceConfigBase<T> ResourceConfig { get; set; }
 
+    [ObservableProperty]
+    public partial bool IsLoading { get; set; }
+
+    [ObservableProperty]
+    public partial Exception? LoadError { get; set; }
+
     private IDisposable? _subscription;
 
     private readonly IdentitySelectionModel<T> _selectionModel = new()
@@ -128,12 +134,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         Title = Kind.Kind.Humanize(LetterCasing.Title).Pluralize();
         Id = Cluster.Name + "-" + Kind;
         ResourceConfig = (ResourceConfigBase<T>)Cluster.GetResourceConfig(Kind);
-        Cluster.SeedResource<T>().GetAwaiter().GetResult();
-
-        Objects = Cluster.GetResourceSourceCache<T>();
-        Cluster.SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
-
-        _subscription?.Dispose();
 
         _sortingAdapterFactory = new DynamicDataSortingAdapterFactory<T>(ResourceConfig);
         _sortSubject = new BehaviorSubject<IComparer<T>>(_sortingAdapterFactory.SortComparer);
@@ -147,29 +147,19 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _selectionModelFactory = new DynamicDataSelectionModelFactory<T>(SelectionModel);
 
         GenerateColumnDefinitions();
-
         SetNamespaceFilter();
 
-        _subscription = Objects.Connect()
-            .ObserveOn(AvaloniaScheduler.Instance)
-            .Do(_ => _selectionModel.BeginDataUpdate())
-            .Filter(_filterSubject)
-            .Filter(_searchSubject)
-            .SortAndBind(out _view, _sortSubject, new()
-            {
-                ResetOnFirstTimeLoad = true,
-                UseReplaceForUpdates = true,
-                UseBinarySearch = true,
-                InitialCapacity = Objects.Count
-            })
-            .Subscribe(
-                _ => _selectionModel.EndDataUpdate(_view),
-                ex =>
-                {
-                    _selectionModel.EndDataUpdate(_view);
-                    _logger.LogError(ex, "Error Setting Resource List Filter: {ns} ", typeof(T));
-                }
-            );
+        var seedTask = Cluster.SeedResource<T>();
+
+        if (seedTask.IsCompletedSuccessfully)
+        {
+            LoadError = null;
+            IsLoading = false;
+            BindObjects();
+            return;
+        }
+
+        _ = LoadAsync(seedTask);
     }
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
@@ -249,11 +239,79 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     {
         _subscription?.Dispose();
 
-        Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
+        if (Cluster != null)
+        {
+            Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
+        }
+
         SortingModel.SortingChanged -= SortingModelOnSortingChanged;
         FilteringModel.FilteringChanged -= FilteringModelOnFilteringChanged;
         SearchModel.SearchChanged -= SearchModelOnSearchChanged;
         _selectionModel.SelectionChanged -= SelectionModelOnSelectionChanged;
+    }
+
+    private async Task LoadAsync(Task seedTask)
+    {
+        try
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                IsLoading = true;
+                LoadError = null;
+            });
+
+            await seedTask.ConfigureAwait(false);
+
+            await Dispatcher.UIThread.InvokeAsync(BindObjects);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading resource list for {Type}", typeof(T));
+
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                LoadError = ex;
+            });
+        }
+        finally
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                IsLoading = false;
+            });
+        }
+    }
+
+    private void BindObjects()
+    {
+        Objects = Cluster.GetResourceSourceCache<T>();
+        Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
+        Cluster.SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
+
+        _subscription?.Dispose();
+
+        SetNamespaceFilter();
+
+        _subscription = Objects.Connect()
+            .ObserveOn(AvaloniaScheduler.Instance)
+            .Do(_ => _selectionModel.BeginDataUpdate())
+            .Filter(_filterSubject)
+            .Filter(_searchSubject)
+            .SortAndBind(out _view, _sortSubject, new()
+            {
+                ResetOnFirstTimeLoad = true,
+                UseReplaceForUpdates = true,
+                UseBinarySearch = true,
+                InitialCapacity = Objects.Count
+            })
+            .Subscribe(
+                _ => _selectionModel.EndDataUpdate(_view),
+                ex =>
+                {
+                    _selectionModel.EndDataUpdate(_view);
+                    _logger.LogError(ex, "Error Setting Resource List Filter: {ns} ", typeof(T));
+                }
+            );
     }
 
     private void GenerateColumnDefinitions()

@@ -17,6 +17,7 @@ namespace KubeUI.ViewModels;
 
 public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 {
+    private static readonly TimeSpan ResourceNavigationRebuildDelay = TimeSpan.FromMilliseconds(200);
     private const int ClusterWorkspaceOrder = -500;
     private const int VisualizationOrder = -490;
     private const int ClusterSettingsOrder = -480;
@@ -25,8 +26,9 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     private const int PortForwardersOrder = -450;
     private const int NetworkCategoryOrder = 10;
     private const int CategoryOrderOffset = 1000;
-    private const int CustomResourceDefinitionsBottomOrder = int.MaxValue - 100;
+    private const int CustomResourceDefinitionsCategoryOrder = 13 + CategoryOrderOffset;
     private const string NetworkCategoryName = "Network";
+    private const string CustomResourceDefinitionsCategoryName = "Custom Resource Definitions";
 
     private static readonly Dictionary<string, int> CategoryOrderOverrides = new(StringComparer.Ordinal)
     {
@@ -40,6 +42,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private readonly ILogger<NavigationViewModel> _logger;
     private readonly Dictionary<ClusterWorkspaceViewModel, ClusterNavigationNode> _clusterNodes = [];
+    private readonly Dictionary<ClusterWorkspaceViewModel, CancellationTokenSource> _clusterRebuildDelays = [];
     private INotificationManager _notificationManager => Application.Current.GetRequiredService<INotificationManager>();
 
     [ObservableProperty]
@@ -150,17 +153,12 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             _clusterNodes.Add(cluster, node);
             Clusters.Add(node);
             RebuildClusterNavigation(node);
-
-            if (cluster.NavigationReady)
-            {
-                Dispatcher.UIThread.Post(() => RebuildClusterNavigation(cluster));
-            }
         }
     }
 
     private void SubscribeCluster(ClusterWorkspaceViewModel cluster)
     {
-        cluster.OnChange += OnClusterChange;
+        cluster.ResourceConfigsChanged += OnClusterResourceConfigsChanged;
 
         if (cluster is INotifyPropertyChanged propertyChanged)
         {
@@ -170,11 +168,17 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private void UnsubscribeCluster(ClusterWorkspaceViewModel cluster)
     {
-        cluster.OnChange -= OnClusterChange;
+        cluster.ResourceConfigsChanged -= OnClusterResourceConfigsChanged;
 
         if (cluster is INotifyPropertyChanged propertyChanged)
         {
             propertyChanged.PropertyChanged -= OnClusterPropertyChanged;
+        }
+
+        if (_clusterRebuildDelays.Remove(cluster, out var cancellationTokenSource))
+        {
+            cancellationTokenSource.Cancel();
+            cancellationTokenSource.Dispose();
         }
     }
 
@@ -185,7 +189,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        if (e.PropertyName is nameof(ClusterWorkspaceViewModel.Connected) or nameof(ClusterWorkspaceViewModel.NavigationReady))
+        if (e.PropertyName == nameof(ClusterWorkspaceViewModel.Connected))
         {
             if (cluster.Connected)
             {
@@ -202,18 +206,40 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private void OnClusterChange(WatchEventType eventType, GroupApiVersionKind kind, IKubernetesObject<V1ObjectMeta> item)
+    private void OnClusterResourceConfigsChanged(ClusterWorkspaceViewModel cluster)
     {
-        if (item is not V1CustomResourceDefinition)
+        ScheduleClusterNavigationRebuild(cluster, ResourceNavigationRebuildDelay);
+    }
+
+    private void ScheduleClusterNavigationRebuild(ClusterWorkspaceViewModel cluster, TimeSpan delay)
+    {
+        if (_clusterRebuildDelays.Remove(cluster, out var existing))
         {
-            return;
+            existing.Cancel();
+            existing.Dispose();
         }
 
-        Dispatcher.UIThread.Post(() =>
+        var cancellationTokenSource = new CancellationTokenSource();
+        _clusterRebuildDelays[cluster] = cancellationTokenSource;
+
+        _ = Task.Run(async () =>
         {
-            foreach (var node in _clusterNodes.Values)
+            try
             {
-                RebuildClusterNavigation(node);
+                await Task.Delay(delay, cancellationTokenSource.Token).ConfigureAwait(false);
+                await Dispatcher.UIThread.InvokeAsync(() => RebuildClusterNavigation(cluster));
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            finally
+            {
+                if (_clusterRebuildDelays.TryGetValue(cluster, out var current) && ReferenceEquals(current, cancellationTokenSource))
+                {
+                    _clusterRebuildDelays.Remove(cluster);
+                }
+
+                cancellationTokenSource.Dispose();
             }
         });
     }
@@ -228,10 +254,14 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private void RebuildClusterNavigation(ClusterNavigationNode node)
     {
+        var expandedState = new Dictionary<string, bool>(StringComparer.Ordinal);
+        CaptureExpandedState(node.NavigationItems, expandedState);
+
         node.NavigationItems.Clear();
 
         foreach (var item in BuildNavigationItems(node.Cluster))
         {
+            ApplyExpandedState(item, expandedState);
             node.NavigationItems.Add(item);
         }
     }
@@ -254,7 +284,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
         var categories = new Dictionary<string, NavigationItem>(StringComparer.Ordinal);
         var customResourceConfigs = new List<IResourceConfig>();
-        ResourceNavigationLink? customResourceDefinitionsLink = null;
+        ResourceNavigationLink? definitionsLink = null;
 
         foreach (var resourceConfig in cluster.GetResourceConfigs().OrderBy(config => config.Order).ThenBy(config => config.Name, StringComparer.Ordinal))
         {
@@ -273,8 +303,11 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
             if (resourceConfig.Type == typeof(V1CustomResourceDefinition))
             {
-                customResourceDefinitionsLink = link;
-                link.Order = CustomResourceDefinitionsBottomOrder;
+                definitionsLink = link;
+                definitionsLink.Name = "Definitions";
+                definitionsLink.Order = -1;
+                definitionsLink.Count ??= TryGetResourceCount(cluster, typeof(V1CustomResourceDefinition));
+                continue;
             }
 
             if (string.IsNullOrWhiteSpace(resourceConfig.Category))
@@ -297,7 +330,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             networkCategory.NavigationItems.Add(CreateNavigationLink(cluster, NavigationTargets.PortForwarders, Assets.Resources.PortForwarderListViewModel_Title, PortForwardersOrder));
         }
 
-        PopulateCustomResourceGroups(customResourceDefinitionsLink, customResourceConfigs, cluster);
+        PopulateCustomResourceDefinitions(definitionsLink, customResourceConfigs, items, cluster);
 
         return items;
     }
@@ -346,46 +379,122 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         return defaultOrder + CategoryOrderOffset;
     }
 
-    private static void PopulateCustomResourceGroups(ResourceNavigationLink? crdLink, IEnumerable<IResourceConfig> customResourceConfigs, ClusterWorkspaceViewModel cluster)
+    private static void PopulateCustomResourceDefinitions(ResourceNavigationLink? definitionsLink, IEnumerable<IResourceConfig> customResourceConfigs, List<NavigationItem> items, ClusterWorkspaceViewModel cluster)
     {
-        if (crdLink == null)
+        if (definitionsLink == null)
         {
             return;
         }
 
         var configs = customResourceConfigs as IList<IResourceConfig> ?? customResourceConfigs.ToList();
 
-        if (configs.Count == 0)
+        var root = new NavigationItem
         {
-            return;
-        }
+            Id = $"{cluster.Name}-custom-resource-definitions",
+            Name = CustomResourceDefinitionsCategoryName,
+            Order = CustomResourceDefinitionsCategoryOrder,
+        };
 
-        var groups = configs
-            .GroupBy(config => string.IsNullOrWhiteSpace(config.Kind.Group) ? "core" : config.Kind.Group, StringComparer.Ordinal)
-            .OrderBy(group => group.Key, StringComparer.Ordinal);
+        root.NavigationItems.Add(definitionsLink);
 
-        foreach (var group in groups)
+        foreach (var config in configs.OrderBy(config => config.Kind.Group, StringComparer.Ordinal).ThenBy(config => config.Name, StringComparer.Ordinal))
         {
-            var groupName = string.IsNullOrWhiteSpace(group.Key) ? "core" : group.Key;
-            var groupNode = new NavigationItem
-            {
-                Id = $"{cluster.Name}-crd-group-{groupName}",
-                Name = groupName,
-                Order = 0,
-            };
+            var currentList = root.NavigationItems;
+            var pathParts = ConstructCustomResourceGroupPath(config.Kind.Group);
+            var path = new List<string>(pathParts.Count);
 
-            foreach (var config in group.OrderBy(config => config.Name, StringComparer.Ordinal))
+            foreach (var part in pathParts)
             {
-                groupNode.NavigationItems.Add(CreateResourceNavigationLink(cluster, config));
+                path.Add(part);
+                var pathKey = string.Join("/", path);
+                var groupId = $"{cluster.Name}-crd-group-{pathKey}";
+                var groupNode = currentList.FirstOrDefault(x => x.Id == groupId);
+
+                if (groupNode == null)
+                {
+                    groupNode = new NavigationItem
+                    {
+                        Id = groupId,
+                        Name = part,
+                        Order = 0,
+                    };
+
+                    currentList.Add(groupNode);
+                }
+
+                currentList = groupNode.NavigationItems;
             }
 
-            crdLink.NavigationItems.Add(groupNode);
+            currentList.Add(CreateResourceNavigationLink(cluster, config));
+        }
+
+        items.Add(root);
+    }
+
+    private static IReadOnlyList<string> ConstructCustomResourceGroupPath(string? group)
+    {
+        if (string.IsNullOrWhiteSpace(group))
+        {
+            return ["core"];
+        }
+
+        var levels = group.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (levels.Length <= 2)
+        {
+            return [group];
+        }
+
+        var fqdnList = new List<string>(levels.Length - 1)
+        {
+            $"{levels[^2]}.{levels[^1]}"
+        };
+
+        for (var i = levels.Length - 3; i >= 0; i--)
+        {
+            fqdnList.Add(string.Join('.', levels, i, levels.Length - i));
+        }
+
+        return fqdnList;
+    }
+
+    private static void CaptureExpandedState(IEnumerable<NavigationItem> items, Dictionary<string, bool> expandedState)
+    {
+        foreach (var item in items)
+        {
+            expandedState[item.Id] = item.IsExpanded;
+            CaptureExpandedState(item.NavigationItems, expandedState);
+        }
+    }
+
+    private static void ApplyExpandedState(NavigationItem item, IReadOnlyDictionary<string, bool> expandedState)
+    {
+        if (expandedState.TryGetValue(item.Id, out var isExpanded))
+        {
+            item.IsExpanded = isExpanded;
+        }
+
+        foreach (var child in item.NavigationItems)
+        {
+            ApplyExpandedState(child, expandedState);
         }
     }
 
     private static bool ShouldPopulateClusterNavigation(ClusterWorkspaceViewModel cluster)
     {
         return cluster.Status is ClusterStatus.Connecting or ClusterStatus.Connected;
+    }
+
+    private static IObservable<int>? TryGetResourceCount(ClusterWorkspaceViewModel cluster, Type resourceType)
+    {
+        try
+        {
+            var kind = GroupApiVersionKind.From(resourceType);
+            return cluster.Objects.ContainsKey(kind) ? cluster.GetResourceCount(resourceType) : null;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private bool CanListAndWatchResource(ClusterWorkspaceViewModel cluster, IResourceConfig resourceConfig)

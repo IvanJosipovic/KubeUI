@@ -96,7 +96,7 @@ public class NavigationViewModelTests
     }
 
     [AvaloniaFact]
-    public void navigation_items_rebuild_after_navigation_ready_pulse()
+    public async Task navigation_items_rebuild_after_resource_config_batch_publish()
     {
         var runtime = new TestCluster
         {
@@ -105,20 +105,17 @@ public class NavigationViewModelTests
         };
 
         var workspace = runtime.CreateWorkspace();
-        workspace.NavigationReady = false;
 
         var vm = Application.Current.GetRequiredService<NavigationViewModel>();
         vm.ClusterCatalog.Clusters.Add(workspace);
-        Dispatcher.UIThread.RunJobs();
-
-        workspace.NavigationReady = false;
         Dispatcher.UIThread.RunJobs();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         var rebuilds = 0;
         clusterNode.NavigationItems.CollectionChanged += (_, _) => rebuilds++;
 
-        workspace.NavigationReady = true;
+        workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha Resources"));
+        await Task.Delay(250);
         Dispatcher.UIThread.RunJobs();
 
         rebuilds.ShouldBeGreaterThan(0);
@@ -185,10 +182,7 @@ public class NavigationViewModelTests
         Dispatcher.UIThread.RunJobs();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-        var resourceLinks = clusterNode.NavigationItems.OfType<ResourceNavigationLink>().ToList();
-
-        resourceLinks.Count.ShouldBeGreaterThan(0);
-        resourceLinks.Last().ControlType.ShouldBe(typeof(V1CustomResourceDefinition));
+        clusterNode.NavigationItems.Last().Name.ShouldBe("Custom Resource Definitions");
     }
 
     [AvaloniaFact]
@@ -219,24 +213,35 @@ public class NavigationViewModelTests
 
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha Resources"));
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceBeta), "Beta Resources"));
+        workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceNested), "Nested Resources"));
 
         var vm = Application.Current.GetRequiredService<NavigationViewModel>();
         vm.ClusterCatalog.Clusters.Add(workspace);
         Dispatcher.UIThread.RunJobs();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-        var crdLink = clusterNode.NavigationItems
-            .OfType<ResourceNavigationLink>()
-            .Single(x => x.ControlType == typeof(V1CustomResourceDefinition));
+        var crdRoot = clusterNode.NavigationItems
+            .Single(x => x.Name == "Custom Resource Definitions");
 
-        var groupNames = crdLink.NavigationItems
+        var rootNames = crdRoot.NavigationItems
             .OfType<NavigationItem>()
             .Select(x => x.Name)
             .ToList();
 
-        groupNames.ShouldBe(new[] { "alpha.kubeui.com", "beta.kubeui.com" });
+        rootNames.ShouldContain("Definitions");
+        rootNames.ShouldContain("kubeui.com");
 
-        var alphaGroup = crdLink.NavigationItems
+        var definitionsLink = crdRoot.NavigationItems
+            .OfType<ResourceNavigationLink>()
+            .Single(x => x.ControlType == typeof(V1CustomResourceDefinition));
+
+        definitionsLink.Name.ShouldBe("Definitions");
+
+        var rootGroup = crdRoot.NavigationItems
+            .OfType<NavigationItem>()
+            .Single(x => x.Name == "kubeui.com");
+
+        var alphaGroup = rootGroup.NavigationItems
             .OfType<NavigationItem>()
             .Single(x => x.Name == "alpha.kubeui.com");
 
@@ -246,10 +251,47 @@ public class NavigationViewModelTests
             .ControlType
             .ShouldBe(typeof(TestCustomResourceAlpha));
 
+        var testGroup = rootGroup.NavigationItems
+            .OfType<NavigationItem>()
+            .Single(x => x.Name == "test.kubeui.com");
+
+        var nestedGroup = testGroup.NavigationItems
+            .OfType<NavigationItem>()
+            .Single(x => x.Name == "mygroup.test.kubeui.com");
+
+        nestedGroup.NavigationItems
+            .OfType<ResourceNavigationLink>()
+            .Single()
+            .ControlType
+            .ShouldBe(typeof(TestCustomResourceNested));
+
         clusterNode.NavigationItems
             .OfType<ResourceNavigationLink>()
             .Any(x => x.ControlType == typeof(TestCustomResourceAlpha))
             .ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public async Task custom_resource_definitions_root_preserves_expansion_on_rebuild()
+    {
+        var runtime = new TestCluster();
+        var workspace = runtime.CreateWorkspace();
+        workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha Resources"));
+
+        var vm = Application.Current.GetRequiredService<NavigationViewModel>();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        var crdRoot = clusterNode.NavigationItems.Single(x => x.Name == "Custom Resource Definitions");
+        crdRoot.IsExpanded = true;
+
+        workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceBeta), "Beta Resources"));
+        await Task.Delay(250);
+        Dispatcher.UIThread.RunJobs();
+
+        var rebuiltRoot = clusterNode.NavigationItems.Single(x => x.Name == "Custom Resource Definitions");
+        rebuiltRoot.IsExpanded.ShouldBeTrue();
     }
 }
 
@@ -266,6 +308,14 @@ internal class TestCustomResourceBeta : IKubernetesObject<V1ObjectMeta>
 {
     public string ApiVersion { get; set; } = "beta.kubeui.com/v1";
     public string Kind { get; set; } = "TestCustomResourceBeta";
+    public V1ObjectMeta Metadata { get; set; } = new();
+}
+
+[KubernetesEntity(Group = "mygroup.test.kubeui.com", ApiVersion = "v1", Kind = "TestCustomResourceNested")]
+internal class TestCustomResourceNested : IKubernetesObject<V1ObjectMeta>
+{
+    public string ApiVersion { get; set; } = "mygroup.test.kubeui.com/v1";
+    public string Kind { get; set; } = "TestCustomResourceNested";
     public V1ObjectMeta Metadata { get; set; } = new();
 }
 

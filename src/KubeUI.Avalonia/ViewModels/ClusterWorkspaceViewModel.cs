@@ -14,9 +14,14 @@ namespace KubeUI.ViewModels;
 
 public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterRuntime, IDisposable
 {
+    private const int CustomResourceConfigBatchSize = 25;
+    private static readonly TimeSpan CustomResourceConfigBatchWindow = TimeSpan.FromMilliseconds(200);
+
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ClusterWorkspaceViewModel> _logger;
     private readonly ConcurrentDictionary<GroupApiVersionKind, IResourceConfig> _resourceConfigs = new();
+    private readonly ConcurrentDictionary<string, PendingCustomResourceDefinitionChange> _pendingCustomResourceDefinitions = new(StringComparer.Ordinal);
+    private readonly SemaphoreSlim _pendingCustomResourceDefinitionSignal = new(0);
 
     public ClusterWorkspaceViewModel(
         IClusterRuntime runtime,
@@ -33,6 +38,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
         SubscribeRuntime();
         UpdateClusterColor();
+        _ = Task.Run(ProcessPendingCustomResourceDefinitionsAsync);
         _ = RefreshWorkspaceStateAsync();
     }
 
@@ -56,12 +62,18 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     [ObservableProperty]
     public partial ObservableCollection<PortForwarder> PortForwarders { get; set; } = [];
-
+    
     [ObservableProperty]
-    private bool _navigationReady;
+    public partial int ResourceConfigVersion { get; set; }
 
     public IReadOnlyDictionary<GroupApiVersionKind, object> Objects => Runtime.Objects;
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
+    public event Action<V1CustomResourceDefinition>? OnCustomResourceDefinitionReady
+    {
+        add => Runtime.OnCustomResourceDefinitionReady += value;
+        remove => Runtime.OnCustomResourceDefinitionReady -= value;
+    }
+    public event Action<ClusterWorkspaceViewModel>? ResourceConfigsChanged;
 
     public bool Connected
     {
@@ -277,12 +289,13 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
     internal void AddResourceConfigForTest(IResourceConfig resourceConfig)
     {
         _resourceConfigs[resourceConfig.Kind] = resourceConfig;
-        PulseNavigationReady();
+        NotifyResourceConfigsChanged();
     }
 
     public void Dispose()
     {
         Runtime.OnChange -= OnRuntimeChange;
+        Runtime.OnCustomResourceDefinitionReady -= HandleCustomResourceDefinitionReady;
 
         if (Runtime is INotifyPropertyChanged propertyChanged)
         {
@@ -292,14 +305,10 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     private async Task RefreshWorkspaceStateAsync()
     {
-        NavigationReady = false;
-
         await EnsureBuiltInResourceConfigsAsync();
-        await EnsureDynamicResourceConfigsAsync();
+        await EnsureDynamicResourceConfigsAsync().ConfigureAwait(false);
         UpdateClusterColor();
         NotifyRuntimeStateChanged();
-
-        NavigationReady = true;
     }
 
     private void NotifyRuntimeStateChanged()
@@ -353,28 +362,28 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
         foreach (var crd in Runtime.GetResourceList<V1CustomResourceDefinition>())
         {
-            await EnsureCustomResourceConfigAsync(crd);
+            QueueCustomResourceDefinitionChange(crd, CustomResourceDefinitionChangeKind.Upsert);
         }
     }
 
-    private async Task EnsureCustomResourceConfigAsync(V1CustomResourceDefinition crd)
+    private async Task<PendingCustomResourceConfig?> BuildCustomResourceConfigAsync(V1CustomResourceDefinition crd)
     {
         var version = crd.Spec?.Versions?.FirstOrDefault(x => x.Served && x.Storage);
         if (version == null)
         {
-            return;
+            return null;
         }
 
         var resourceType = Runtime.ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
         if (resourceType == null)
         {
-            return;
+            return null;
         }
 
         if (!await Runtime.UpdateCanIAnyNamespaceAsync(resourceType, Verb.List).ConfigureAwait(false)
             || !await Runtime.UpdateCanIAnyNamespaceAsync(resourceType, Verb.Watch).ConfigureAwait(false))
         {
-            return;
+            return null;
         }
 
         var api = GroupApiVersionKind.From(resourceType);
@@ -385,9 +394,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         await resourceConfig.UpdatePermissions().ConfigureAwait(false);
         ((dynamic)resourceConfig).Generate(crd);
 
-        _resourceConfigs[api] = resourceConfig;
-
-        PulseNavigationReady();
+        return new PendingCustomResourceConfig(api, resourceConfig);
     }
 
     private async Task RefreshResourceConfigPermissionsAsync()
@@ -402,16 +409,15 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
             {
                 _logger.LogDebug(ex, "Unable to refresh permissions for {Kind}", resourceConfig.Kind);
             }
-            finally
-            {
-                PulseNavigationReady();
-            }
         }
+
+        NotifyResourceConfigsChanged();
     }
 
     private void SubscribeRuntime()
     {
         Runtime.OnChange += OnRuntimeChange;
+        Runtime.OnCustomResourceDefinitionReady += HandleCustomResourceDefinitionReady;
 
         if (Runtime is INotifyPropertyChanged propertyChanged)
         {
@@ -458,58 +464,149 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
         if (eventType == WatchEventType.Deleted)
         {
-            RemoveCustomResourceConfig(crd);
+            QueueCustomResourceDefinitionChange(crd, CustomResourceDefinitionChangeKind.Delete);
             return;
         }
-
-        _ = HandleCustomResourceDefinitionUpdateAsync(crd);
     }
 
-    private async Task HandleCustomResourceDefinitionUpdateAsync(V1CustomResourceDefinition crd)
+    private void HandleCustomResourceDefinitionReady(V1CustomResourceDefinition crd)
     {
-        try
+        QueueCustomResourceDefinitionChange(crd, CustomResourceDefinitionChangeKind.Upsert);
+    }
+
+    private void QueueCustomResourceDefinitionChange(V1CustomResourceDefinition crd, CustomResourceDefinitionChangeKind kind)
+    {
+        _pendingCustomResourceDefinitions[crd.Name()] = new PendingCustomResourceDefinitionChange(kind, crd);
+        _pendingCustomResourceDefinitionSignal.Release();
+    }
+
+    private async Task ProcessPendingCustomResourceDefinitionsAsync()
+    {
+        while (true)
         {
-            await EnsureCustomResourceConfigAsync(crd).ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating custom resource config for {Crd}", crd.Name());
+            await _pendingCustomResourceDefinitionSignal.WaitAsync().ConfigureAwait(false);
+
+            var changes = await DrainPendingCustomResourceDefinitionChangesAsync().ConfigureAwait(false);
+            if (changes.Count == 0)
+            {
+                continue;
+            }
+
+            var builtConfigs = new List<PendingCustomResourceConfig>(changes.Count);
+            var removedKinds = new List<GroupApiVersionKind>();
+
+            foreach (var change in changes)
+            {
+                try
+                {
+                    if (change.Kind == CustomResourceDefinitionChangeKind.Delete)
+                    {
+                        var removedKind = TryResolveCustomResourceKind(change.Crd);
+                        if (removedKind != null)
+                        {
+                            removedKinds.Add(removedKind.Value);
+                        }
+
+                        continue;
+                    }
+
+                    var builtConfig = await BuildCustomResourceConfigAsync(change.Crd).ConfigureAwait(false);
+                    if (builtConfig != null)
+                    {
+                        builtConfigs.Add(builtConfig);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error processing queued custom resource definition {Crd}", change.Crd.Name());
+                }
+            }
+
+            if (builtConfigs.Count == 0 && removedKinds.Count == 0)
+            {
+                continue;
+            }
+
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                foreach (var removedKind in removedKinds)
+                {
+                    _resourceConfigs.TryRemove(removedKind, out _);
+                }
+
+                foreach (var builtConfig in builtConfigs)
+                {
+                    _resourceConfigs[builtConfig.Kind] = builtConfig.ResourceConfig;
+                }
+
+                NotifyResourceConfigsChanged();
+            });
         }
     }
 
-    private void RemoveCustomResourceConfig(V1CustomResourceDefinition crd)
+    private async Task<List<PendingCustomResourceDefinitionChange>> DrainPendingCustomResourceDefinitionChangesAsync()
+    {
+        var changes = new List<PendingCustomResourceDefinitionChange>(CustomResourceConfigBatchSize);
+        CollectPendingCustomResourceDefinitionChanges(changes);
+
+        var deadline = DateTime.UtcNow + CustomResourceConfigBatchWindow;
+        while (changes.Count < CustomResourceConfigBatchSize)
+        {
+            var remaining = deadline - DateTime.UtcNow;
+            if (remaining <= TimeSpan.Zero)
+            {
+                break;
+            }
+
+            if (!await _pendingCustomResourceDefinitionSignal.WaitAsync(remaining).ConfigureAwait(false))
+            {
+                break;
+            }
+
+            CollectPendingCustomResourceDefinitionChanges(changes);
+        }
+
+        return changes;
+    }
+
+    private void CollectPendingCustomResourceDefinitionChanges(List<PendingCustomResourceDefinitionChange> changes)
+    {
+        foreach (var pending in _pendingCustomResourceDefinitions)
+        {
+            if (changes.Count >= CustomResourceConfigBatchSize)
+            {
+                break;
+            }
+
+            if (_pendingCustomResourceDefinitions.TryRemove(pending.Key, out var change))
+            {
+                changes.Add(change);
+            }
+        }
+    }
+
+    private GroupApiVersionKind? TryResolveCustomResourceKind(V1CustomResourceDefinition crd)
     {
         var version = crd.Spec?.Versions?.FirstOrDefault(x => x.Served && x.Storage);
         if (version == null)
         {
-            return;
+            return null;
         }
 
         var resourceType = Runtime.ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
-        if (resourceType == null)
-        {
-            return;
-        }
-
-        _resourceConfigs.TryRemove(GroupApiVersionKind.From(resourceType), out _);
-        PulseNavigationReady();
+        return resourceType == null ? null : GroupApiVersionKind.From(resourceType);
     }
 
-    private void PulseNavigationReady()
+    private void NotifyResourceConfigsChanged()
     {
-        void Pulse()
+        if (!Dispatcher.UIThread.CheckAccess())
         {
-            NavigationReady = true;
-            NavigationReady = false;
-        }
-
-        if (Dispatcher.UIThread.CheckAccess())
-        {
-            Pulse();
+            _ = Dispatcher.UIThread.InvokeAsync(NotifyResourceConfigsChanged);
             return;
         }
 
-        _ = Dispatcher.UIThread.InvokeAsync(Pulse);
+        ResourceConfigVersion++;
+        ResourceConfigsChanged?.Invoke(this);
     }
 
     private void UpdateClusterColor()
@@ -538,3 +635,13 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         return (IBrush)properties[Random.Shared.Next(properties.Length)].GetValue(null)!;
     }
 }
+
+internal enum CustomResourceDefinitionChangeKind
+{
+    Upsert,
+    Delete,
+}
+
+internal sealed record PendingCustomResourceDefinitionChange(CustomResourceDefinitionChangeKind Kind, V1CustomResourceDefinition Crd);
+
+internal sealed record PendingCustomResourceConfig(GroupApiVersionKind Kind, IResourceConfig ResourceConfig);
