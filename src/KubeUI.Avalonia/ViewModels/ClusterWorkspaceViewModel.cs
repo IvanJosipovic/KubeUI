@@ -1,7 +1,9 @@
+using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Reflection;
 using Avalonia.Media.Immutable;
 using DynamicData;
+using Avalonia.Threading;
 using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
@@ -14,7 +16,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ClusterWorkspaceViewModel> _logger;
-    private readonly Dictionary<GroupApiVersionKind, IResourceConfig> _resourceConfigs = [];
+    private readonly ConcurrentDictionary<GroupApiVersionKind, IResourceConfig> _resourceConfigs = new();
 
     public ClusterWorkspaceViewModel(
         IClusterRuntime runtime,
@@ -125,7 +127,6 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
     public async Task Connect()
     {
         await Runtime.Connect();
-        await RefreshWorkspaceStateAsync();
     }
 
     public Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -270,7 +271,13 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     public IEnumerable<IResourceConfig> GetResourceConfigs()
     {
-        return _resourceConfigs.Values;
+        return _resourceConfigs.Values.ToList();
+    }
+
+    internal void AddResourceConfigForTest(IResourceConfig resourceConfig)
+    {
+        _resourceConfigs[resourceConfig.Kind] = resourceConfig;
+        PulseNavigationReady();
     }
 
     public void Dispose()
@@ -314,27 +321,26 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     private async Task EnsureBuiltInResourceConfigsAsync()
     {
-        if (_resourceConfigs.Count > 0)
+        if (_resourceConfigs.Count == 0)
         {
-            return;
+            var serviceDescriptors = _serviceProvider.GetRequiredService<ServiceDescriptor[]>();
+            var types = serviceDescriptors
+                .Where(t => t.ServiceType.IsGenericType
+                    && t.ServiceType.GetGenericTypeDefinition() == typeof(ResourceConfigBase<>)
+                    && t.ServiceType.GenericTypeArguments.Length == 1)
+                .Select(x => x.ServiceType)
+                .Distinct()
+                .ToList();
+
+            foreach (var type in types)
+            {
+                var resourceConfig = (IResourceConfig)_serviceProvider.GetRequiredService(type);
+                resourceConfig.Initialize(this);
+                _resourceConfigs[resourceConfig.Kind] = resourceConfig;
+            }
         }
 
-        var serviceDescriptors = _serviceProvider.GetRequiredService<ServiceDescriptor[]>();
-        var types = serviceDescriptors
-            .Where(t => t.ServiceType.IsGenericType
-                && t.ServiceType.GetGenericTypeDefinition() == typeof(ResourceConfigBase<>)
-                && t.ServiceType.GenericTypeArguments.Length == 1)
-            .Select(x => x.ServiceType)
-            .Distinct()
-            .ToList();
-
-        foreach (var type in types)
-        {
-            var resourceConfig = (IResourceConfig)_serviceProvider.GetRequiredService(type);
-            resourceConfig.Initialize(this);
-            _resourceConfigs[resourceConfig.Kind] = resourceConfig;
-        }
-
+        // Permissions can change across reconnects; always refresh cached resource config permissions.
         await RefreshResourceConfigPermissionsAsync();
     }
 
@@ -365,8 +371,8 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
             return;
         }
 
-        if (!await Runtime.UpdateCanIAnyNamespaceAsync(resourceType, Verb.List)
-            || !await Runtime.UpdateCanIAnyNamespaceAsync(resourceType, Verb.Watch))
+        if (!await Runtime.UpdateCanIAnyNamespaceAsync(resourceType, Verb.List).ConfigureAwait(false)
+            || !await Runtime.UpdateCanIAnyNamespaceAsync(resourceType, Verb.Watch).ConfigureAwait(false))
         {
             return;
         }
@@ -376,7 +382,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         var resourceConfig = (IResourceConfig)_serviceProvider.GetRequiredService(resourceConfigType);
 
         resourceConfig.Initialize(this);
-        await resourceConfig.UpdatePermissions();
+        await resourceConfig.UpdatePermissions().ConfigureAwait(false);
         ((dynamic)resourceConfig).Generate(crd);
 
         _resourceConfigs[api] = resourceConfig;
@@ -450,34 +456,60 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
             return;
         }
 
-        _ = Dispatcher.UIThread.InvokeAsync(async () =>
+        if (eventType == WatchEventType.Deleted)
         {
-            if (eventType == WatchEventType.Deleted)
-            {
-                var version = crd.Spec?.Versions?.FirstOrDefault(x => x.Served && x.Storage);
-                if (version == null)
-                {
-                    return;
-                }
+            RemoveCustomResourceConfig(crd);
+            return;
+        }
 
-                var resourceType = Runtime.ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
-                if (resourceType == null)
-                {
-                    return;
-                }
+        _ = HandleCustomResourceDefinitionUpdateAsync(crd);
+    }
 
-                _resourceConfigs.Remove(GroupApiVersionKind.From(resourceType));
-                return;
-            }
+    private async Task HandleCustomResourceDefinitionUpdateAsync(V1CustomResourceDefinition crd)
+    {
+        try
+        {
+            await EnsureCustomResourceConfigAsync(crd).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating custom resource config for {Crd}", crd.Name());
+        }
+    }
 
-            await EnsureCustomResourceConfigAsync(crd);
-        });
+    private void RemoveCustomResourceConfig(V1CustomResourceDefinition crd)
+    {
+        var version = crd.Spec?.Versions?.FirstOrDefault(x => x.Served && x.Storage);
+        if (version == null)
+        {
+            return;
+        }
+
+        var resourceType = Runtime.ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
+        if (resourceType == null)
+        {
+            return;
+        }
+
+        _resourceConfigs.TryRemove(GroupApiVersionKind.From(resourceType), out _);
+        PulseNavigationReady();
     }
 
     private void PulseNavigationReady()
     {
-        NavigationReady = true;
-        NavigationReady = false;
+        void Pulse()
+        {
+            NavigationReady = true;
+            NavigationReady = false;
+        }
+
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            Pulse();
+            return;
+        }
+
+        _ = Dispatcher.UIThread.InvokeAsync(Pulse);
     }
 
     private void UpdateClusterColor()

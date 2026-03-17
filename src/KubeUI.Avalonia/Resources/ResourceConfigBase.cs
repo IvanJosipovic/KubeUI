@@ -43,6 +43,10 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public virtual bool IsNamespaced { get; private set; }
 
+    public virtual bool IsCustomResource => false;
+
+    public bool CanListAndWatch { get; private set; }
+
     public virtual int Order { get; }
 
     public virtual IStyle ListStyle() => null;
@@ -147,19 +151,50 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public async Task UpdatePermissions()
     {
+        CanListAndWatch = false;
+
+        await Cluster.UpdatePermissionsAllNamespaceAsync<T>(Verb.List).ConfigureAwait(false);
+        await Cluster.UpdatePermissionsAllNamespaceAsync<T>(Verb.Watch).ConfigureAwait(false);
+
+        try
+        {
+            CanListAndWatch = Cluster.CanIAnyNamespace<T>(Verb.List)
+                && Cluster.CanIAnyNamespace<T>(Verb.Watch);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Unable to evaluate cached list/watch permissions for {Type}", typeof(T).FullName);
+            CanListAndWatch = false;
+        }
+
+        if (!CanListAndWatch)
+        {
+            return;
+        }
+
         var tasks = new List<Task>();
 
         foreach (var (verb, subResource) in DefaultPermissions())
         {
+            if (verb is Verb.List or Verb.Watch)
+            {
+                continue;
+            }
+
             tasks.Add(Cluster.UpdatePermissionsAllNamespaceAsync<T>(verb, subResource));
         }
 
         foreach (var (verb, subResource) in CustomPermissions())
         {
+            if (verb is Verb.List or Verb.Watch)
+            {
+                continue;
+            }
+
             tasks.Add(Cluster.UpdatePermissionsAllNamespaceAsync<T>(verb, subResource));
         }
 
-        await Task.WhenAll(tasks);
+        await Task.WhenAll(tasks).ConfigureAwait(false);
     }
 
     #region Actions

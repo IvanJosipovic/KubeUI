@@ -1,5 +1,6 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Linq;
 using Avalonia.Controls.Notifications;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -23,7 +24,19 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     private const int LoadFolderOrder = -460;
     private const int PortForwardersOrder = -450;
     private const int NetworkCategoryOrder = 10;
+    private const int CategoryOrderOffset = 1000;
+    private const int CustomResourceDefinitionsBottomOrder = int.MaxValue - 100;
     private const string NetworkCategoryName = "Network";
+
+    private static readonly Dictionary<string, int> CategoryOrderOverrides = new(StringComparer.Ordinal)
+    {
+        ["Workloads"] = 8,
+        ["Configuration"] = 9,
+        ["Network"] = 10,
+        ["Storage"] = 11,
+        ["Access Control"] = 12,
+        ["Custom Resource Definitions"] = 13,
+    };
 
     private readonly ILogger<NavigationViewModel> _logger;
     private readonly Dictionary<ClusterWorkspaceViewModel, ClusterNavigationNode> _clusterNodes = [];
@@ -240,6 +253,8 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         };
 
         var categories = new Dictionary<string, NavigationItem>(StringComparer.Ordinal);
+        var customResourceConfigs = new List<IResourceConfig>();
+        ResourceNavigationLink? customResourceDefinitionsLink = null;
 
         foreach (var resourceConfig in cluster.GetResourceConfigs().OrderBy(config => config.Order).ThenBy(config => config.Name, StringComparer.Ordinal))
         {
@@ -248,7 +263,19 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                 continue;
             }
 
+            if (resourceConfig.IsCustomResource)
+            {
+                customResourceConfigs.Add(resourceConfig);
+                continue;
+            }
+
             var link = CreateResourceNavigationLink(cluster, resourceConfig);
+
+            if (resourceConfig.Type == typeof(V1CustomResourceDefinition))
+            {
+                customResourceDefinitionsLink = link;
+                link.Order = CustomResourceDefinitionsBottomOrder;
+            }
 
             if (string.IsNullOrWhiteSpace(resourceConfig.Category))
             {
@@ -269,6 +296,8 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             var networkCategory = EnsureCategory(items, categories, cluster, NetworkCategoryName, NetworkCategoryOrder);
             networkCategory.NavigationItems.Add(CreateNavigationLink(cluster, NavigationTargets.PortForwarders, Assets.Resources.PortForwarderListViewModel_Title, PortForwardersOrder));
         }
+
+        PopulateCustomResourceGroups(customResourceDefinitionsLink, customResourceConfigs, cluster);
 
         return items;
     }
@@ -297,12 +326,61 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         {
             Id = $"{cluster.Name}-category-{categoryName}",
             Name = categoryName,
-            Order = order,
+            // Keep uncategorized resources (e.g. Namespace/Node/Event) above category groups,
+            // while preserving alpha's deterministic category order.
+            Order = ResolveCategoryOrder(categoryName, order),
         };
 
         categories.Add(categoryName, category);
         items.Add(category);
         return category;
+    }
+
+    private static int ResolveCategoryOrder(string categoryName, int defaultOrder)
+    {
+        if (CategoryOrderOverrides.TryGetValue(categoryName, out var fixedOrder))
+        {
+            return fixedOrder + CategoryOrderOffset;
+        }
+
+        return defaultOrder + CategoryOrderOffset;
+    }
+
+    private static void PopulateCustomResourceGroups(ResourceNavigationLink? crdLink, IEnumerable<IResourceConfig> customResourceConfigs, ClusterWorkspaceViewModel cluster)
+    {
+        if (crdLink == null)
+        {
+            return;
+        }
+
+        var configs = customResourceConfigs as IList<IResourceConfig> ?? customResourceConfigs.ToList();
+
+        if (configs.Count == 0)
+        {
+            return;
+        }
+
+        var groups = configs
+            .GroupBy(config => string.IsNullOrWhiteSpace(config.Kind.Group) ? "core" : config.Kind.Group, StringComparer.Ordinal)
+            .OrderBy(group => group.Key, StringComparer.Ordinal);
+
+        foreach (var group in groups)
+        {
+            var groupName = string.IsNullOrWhiteSpace(group.Key) ? "core" : group.Key;
+            var groupNode = new NavigationItem
+            {
+                Id = $"{cluster.Name}-crd-group-{groupName}",
+                Name = groupName,
+                Order = 0,
+            };
+
+            foreach (var config in group.OrderBy(config => config.Name, StringComparer.Ordinal))
+            {
+                groupNode.NavigationItems.Add(CreateResourceNavigationLink(cluster, config));
+            }
+
+            crdLink.NavigationItems.Add(groupNode);
+        }
     }
 
     private static bool ShouldPopulateClusterNavigation(ClusterWorkspaceViewModel cluster)
@@ -312,16 +390,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private bool CanListAndWatchResource(ClusterWorkspaceViewModel cluster, IResourceConfig resourceConfig)
     {
-        try
-        {
-            return cluster.CanIAnyNamespace(resourceConfig.Type, Verb.List)
-                && cluster.CanIAnyNamespace(resourceConfig.Type, Verb.Watch);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug(ex, "Unable to evaluate resource permissions for {Type}", resourceConfig.Type.FullName);
-            return false;
-        }
+        return resourceConfig.CanListAndWatch;
     }
 
     private static NavigationLink CreateNavigationLink(ClusterWorkspaceViewModel cluster, string id, string name, int order)

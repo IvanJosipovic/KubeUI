@@ -13,6 +13,8 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : clas
 
     public override bool IsNamespaced => _showNamespaces;
 
+    public override bool IsCustomResource => true;
+
     private readonly List<IResourceListColumn> _columns = [];
 
     public void Generate(V1CustomResourceDefinition crd)

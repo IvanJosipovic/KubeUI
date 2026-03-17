@@ -7,7 +7,9 @@ namespace KubeUI.Resources
     public interface IResourceConfig : IInitializeCluster
     {
         bool IsNamespaced { get; }
+        bool CanListAndWatch { get; }
         bool ShowNewResource { get; }
+        bool IsCustomResource { get; }
         GroupApiVersionKind Kind { get; }
         IList<IResourceListColumn> Columns();
         IList<ResourceMenuItem> MenuItems();
