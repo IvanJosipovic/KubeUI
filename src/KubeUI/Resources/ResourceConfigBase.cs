@@ -2,7 +2,6 @@
 using Avalonia.Controls.Notifications;
 using Avalonia.Styling;
 using Dock.Model.Core;
-using DynamicData.Binding;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
@@ -10,8 +9,8 @@ using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using Humanizer;
 using k8s;
 using k8s.Models;
-using KubeUI.Client;
 using KubernetesClient.Informer.Client;
+using KubeUI.Client;
 using static KubeUI.Client.Cluster;
 
 namespace KubeUI.Resources;
@@ -146,20 +145,6 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         (Verb.Update, null),
         (Verb.Watch, null),
     ];
-
-    public static readonly string sRestartControllerPatch = $$"""
-    {
-        "spec": {
-            "template": {
-                "metadata": {
-                    "annotations": {
-                        "kubectl.kubernetes.io/restartedAt": "{{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}}"
-                    }
-                }
-            }
-        }
-    }
-    """;
 
     public async Task UpdatePermissions()
     {
@@ -296,6 +281,82 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     public bool CanViewYaml(IList? items)
     {
         return items?.Count == 1;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRestart))]
+    private async Task Restart(IList items)
+    {
+        ContentDialogSettings settings = new()
+        {
+            Title = Assets.Resources.ResourceListViewModel_Restart_Title,
+            Content = string.Format(Assets.Resources.ResourceListViewModel_Restart_Content, items.Count),
+            PrimaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Primary,
+            SecondaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Secondary,
+            DefaultButton = ContentDialogButton.Secondary
+        };
+
+        var result = await _dialogService.ShowContentDialogAsync(this, settings);
+
+        string sRestartControllerPatch = $$"""
+                {
+                    "spec": {
+                        "template": {
+                            "metadata": {
+                                "annotations": {
+                                    "kubectl.kubernetes.io/restartedAt": "{{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}}"
+                                }
+                            }
+                        }
+                    }
+                }
+                """;
+
+        if (result == ContentDialogResult.Primary)
+        {
+            var exceptions = new List<Exception>();
+
+            foreach (var item in items.Cast<T>().ToList())
+            {
+                try
+                {
+                    using var genClient = Cluster.Client.GetGenericClient(item);
+
+                    await genClient.PatchNamespacedAsync<T>(new V1Patch(sRestartControllerPatch, V1Patch.PatchType.MergePatch), item.Metadata.NamespaceProperty, item.Metadata.Name);
+                }
+                catch (JsonException ex)
+                {
+                    _logger.LogWarning(ex, $"JsonException occurred while deleting resource {item.Namespace()}/{item.Name()}");
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex);
+                    Utilities.HandleException(_logger, _notificationManager, ex, $"Error Restarting {item.Namespace()}/{item.Name()}", sendNotification: true);
+                }
+            }
+
+            if (exceptions.Count > 0)
+            {
+                _logger.LogError(new AggregateException(exceptions), "Error Restarting Resources");
+            }
+        }
+    }
+
+    private bool CanRestart(IList? items)
+    {
+        if (items == null || items.Count == 0)
+        {
+            return false;
+        }
+
+        foreach (var item in items.Cast<T>().ToList().GroupBy(x => x.Namespace()))
+        {
+            if (!Cluster.CanI<T>(Verb.Patch, item.Key))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     #endregion
