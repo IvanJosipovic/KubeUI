@@ -1,8 +1,8 @@
 <Application
-    x:Class="KubeUI.App"
+    x:Class="KubeUI.Avalonia.App"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:KubeUI"
+    xmlns:local="using:KubeUI.Avalonia"
     xmlns:semi="https://irihi.tech/semi"
     xmlns:styling="using:FluentAvalonia.Styling"
     xmlns:u-semi="https://irihi.tech/ursa/themes/semi">
@@ -84,4 +84,7 @@
     </Application.Styles>
 
 </Application>
+
+
+
 

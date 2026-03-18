@@ -1,8 +1,8 @@
-﻿using Avalonia.Styling;
-using KubeUI.Client;
+using Avalonia.Styling;
+using KubeUI.Kubernetes;
 using KubernetesClient.Informer.Client;
 
-namespace KubeUI.Resources
+namespace KubeUI.Avalonia.Resources
 {
     public interface IResourceConfig : IInitializeCluster
     {
@@ -21,3 +21,4 @@ namespace KubeUI.Resources
         Type Type { get; }
     }
 }
+

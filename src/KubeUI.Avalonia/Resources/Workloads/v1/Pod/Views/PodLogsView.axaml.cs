@@ -1,13 +1,12 @@
 using Avalonia.Styling;
-using KubeUI.Client;
+using KubeUI.Kubernetes;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
 
-namespace KubeUI.Views;
+namespace KubeUI.Avalonia.Views;
 
 public sealed partial class PodLogsView : UserControl
 {
-    public readonly ISettingsService _settingsService;
     private readonly Installation _textMateInstallation;
     private readonly RegistryOptions _registryOptions;
 
@@ -15,7 +14,6 @@ public sealed partial class PodLogsView : UserControl
 
     public PodLogsView()
     {
-        _settingsService = Application.Current.GetRequiredService<ISettingsService>();
         InitializeComponent();
 
         _registryOptions = new RegistryOptions(Application.Current.ActualThemeVariant == ThemeVariant.Light
@@ -82,3 +80,5 @@ public sealed partial class PodLogsView : UserControl
         }
     }
 }
+
+

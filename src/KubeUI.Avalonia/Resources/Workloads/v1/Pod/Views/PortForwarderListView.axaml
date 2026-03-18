@@ -1,54 +1,45 @@
 <UserControl
-    x:Class="KubeUI.Views.PortForwarderListView"
+    x:Class="KubeUI.Avalonia.Views.PortForwarderListView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:c="clr-namespace:KubeUI.Controls"
+    xmlns:c="clr-namespace:KubeUI.Avalonia.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:viewmodels="using:KubeUI.ViewModels"
-    xmlns:vm="using:KubeUI.ViewModels"
+    xmlns:viewmodels="using:KubeUI.Avalonia.ViewModels"
+    xmlns:vm="using:KubeUI.Avalonia.ViewModels"
     d:DesignHeight="400"
     d:DesignWidth="800"
     x:DataType="vm:PortForwarderListViewModel">
     <Grid>
         <DataGrid x:Name="PortForwardersGrid"
-            MinHeight="{Binding Settings.Settings.ListRowHeight}"
             CanUserReorderColumns="True"
             CanUserResizeColumns="True"
             GridLinesVisibility="All"
             IsReadOnly="True"
             ItemsSource="{Binding Cluster.PortForwarders}"
-            RowHeight="{Binding Settings.Settings.ListRowHeight}"
             SelectedItem="{Binding SelectedItem, Mode=TwoWay}">
             <DataGrid.Columns>
                 <c:MyDataGridTextColumn
                     Binding="{Binding Type}"
-                    FontSize="{Binding Settings.Settings.FontSize}"
                     Header="Type"
                     SortDirection="Ascending" />
                 <c:MyDataGridTextColumn
                     Width="*"
                     Binding="{Binding Name}"
-                    FontSize="{Binding Settings.Settings.FontSize}"
                     Header="Name" />
                 <c:MyDataGridTextColumn
                     Binding="{Binding Namespace}"
-                    FontSize="{Binding Settings.Settings.FontSize}"
                     Header="Namespace" />
                 <c:MyDataGridTextColumn
                     Binding="{Binding Port}"
-                    FontSize="{Binding Settings.Settings.FontSize}"
                     Header="Port" />
                 <c:MyDataGridTextColumn
                     Binding="{Binding LocalPort}"
-                    FontSize="{Binding Settings.Settings.FontSize}"
                     Header="Local Port" />
                 <c:MyDataGridTextColumn
                     Binding="{Binding Connections}"
-                    FontSize="{Binding Settings.Settings.FontSize}"
                     Header="Connections" />
                 <c:MyDataGridTextColumn
                     Binding="{Binding Status}"
-                    FontSize="{Binding Settings.Settings.FontSize}"
                     Header="Status" />
             </DataGrid.Columns>
             <DataGrid.ContextMenu>
@@ -63,12 +54,9 @@
                         Header="Remove" />
                 </ContextMenu>
             </DataGrid.ContextMenu>
-            <DataGrid.Styles>
-                <Style Selector="DataGridColumnHeader">
-                    <Setter Property="FontSize" Value="{Binding Settings.Settings.FontSize}" />
-                    <Setter Property="MinHeight" Value="{Binding Settings.Settings.ListRowHeight}" />
-                </Style>
-            </DataGrid.Styles>
         </DataGrid>
     </Grid>
 </UserControl>
+
+
+

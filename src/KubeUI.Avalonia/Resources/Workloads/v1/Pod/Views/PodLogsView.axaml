@@ -1,12 +1,12 @@
 <UserControl
-    x:Class="KubeUI.Views.PodLogsView"
+    x:Class="KubeUI.Avalonia.Views.PodLogsView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:assets="using:KubeUI.Assets"
+    xmlns:assets="using:KubeUI.Avalonia.Assets"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:edit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
     xmlns:ic="using:FluentIcons.Avalonia"
-    xmlns:vm="using:KubeUI.ViewModels"
+    xmlns:vm="using:KubeUI.Avalonia.ViewModels"
     d:DesignHeight="400"
     d:DesignWidth="500"
     x:DataType="vm:PodLogsViewModel">
@@ -62,7 +62,7 @@
             Background="{DynamicResource SystemAltHighColor}"
             Document="{Binding Logs, Mode=OneWay}"
             FontFamily="Cascadia Mono"
-            FontSize="{Binding SettingsService.Settings.FontSize}"
+            FontSize="{Binding SettingsService.Appearance.FontSize}"
             FontWeight="Normal"
             HorizontalScrollBarVisibility="Auto"
             IsReadOnly="True"
@@ -92,3 +92,7 @@
         </edit:TextEditor>
     </Grid>
 </UserControl>
+
+
+
+

@@ -5,10 +5,10 @@ using Dock.Model.Core;
 using FluentIcons.Avalonia;
 using k8s;
 using k8s.Models;
-using KubeUI.Client;
-using KubeUI.Resources;
+using KubeUI.Kubernetes;
+using KubeUI.Avalonia.Resources;
 
-namespace KubeUI.Views;
+namespace KubeUI.Avalonia.Views;
 
 public partial class ResourceListView : UserControl
 {
@@ -267,5 +267,6 @@ public partial class ResourceListView : UserControl
         return styles;
     }
 }
+
 
 

@@ -5,12 +5,12 @@ using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls.Selection;
 using k8s;
 using k8s.Models;
-using KubeUI.Client;
-using KubeUI.Resources;
+using KubeUI.Kubernetes;
+using KubeUI.Avalonia.Resources;
 using KubernetesClient.Informer.Client;
 using Avalonia.Controls.DataGridSearching;
 
-namespace KubeUI.ViewModels
+namespace KubeUI.Avalonia.ViewModels
 {
     public interface IResourceListViewModel
     {
@@ -30,4 +30,6 @@ namespace KubeUI.ViewModels
         IDataGridSearchAdapterFactory SearchAdapterFactory { get; }
     }
 }
+
+
 

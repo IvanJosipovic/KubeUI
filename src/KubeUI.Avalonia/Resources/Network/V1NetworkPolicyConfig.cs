@@ -1,6 +1,6 @@
 using k8s.Models;
 
-namespace KubeUI.Resources.Network;
+namespace KubeUI.Avalonia.Resources.Network;
 
 public sealed partial class V1NetworkPolicyConfig : ResourceConfigBase<V1NetworkPolicy>
 {
@@ -24,3 +24,4 @@ public sealed partial class V1NetworkPolicyConfig : ResourceConfigBase<V1Network
         ];
     }
 }
+

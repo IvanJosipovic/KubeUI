@@ -1,7 +1,7 @@
 using System.Globalization;
 using Avalonia.Data.Converters;
 
-namespace KubeUI.Views;
+namespace KubeUI.Avalonia.Views;
 
 public sealed partial class SettingsView : UserControl
 {
@@ -20,3 +20,4 @@ internal sealed class ThemeEqualityConverter : IValueConverter
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => (value is bool b && b && parameter is not null) ? parameter : BindingOperations.DoNothing;
 }
+

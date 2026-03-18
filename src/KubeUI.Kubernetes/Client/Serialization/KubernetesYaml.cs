@@ -8,7 +8,7 @@ using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 using YamlDotNet.System.Text.Json;
 
-namespace KubeUI.Client.Serialization;
+namespace KubeUI.Kubernetes.Serialization;
 
 /// <summary>
 /// This is a utility class that helps you load objects from YAML files.
@@ -259,3 +259,4 @@ public static class KubernetesYaml
         return stringBuilder.ToString();
     }
 }
+

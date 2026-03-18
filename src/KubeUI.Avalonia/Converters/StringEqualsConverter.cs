@@ -1,7 +1,7 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Avalonia.Data.Converters;
 
-namespace KubeUI.Converters;
+namespace KubeUI.Avalonia.Converters;
 
 public class StringEqualsConverter : IValueConverter
 {
@@ -22,3 +22,4 @@ public class StringEqualsConverter : IValueConverter
         throw new NotSupportedException();
     }
 }
+

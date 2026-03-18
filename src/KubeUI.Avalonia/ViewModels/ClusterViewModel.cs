@@ -1,10 +1,10 @@
 using Avalonia.Styling;
 using k8s.Models;
-using KubeUI.Client;
+using KubeUI.Kubernetes;
 using LiveChartsCore.Defaults;
 using LiveChartsCore.Kernel;
 
-namespace KubeUI.ViewModels;
+namespace KubeUI.Avalonia.ViewModels;
 
 public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster, INotifyPropertyChanged
 {
@@ -164,4 +164,6 @@ public partial class PodGaugeData : ObservableObject
 
     public static Func<ChartPoint, string> DataLabelsFormatter { get; } = p => $"{p.Coordinate.PrimaryValue:F0}";
 }
+
+
 

@@ -2,7 +2,7 @@ using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Threading;
 
-namespace KubeUI.Views;
+namespace KubeUI.Avalonia.Views;
 
 public partial class PortForwarderListView : UserControl
 {
@@ -11,3 +11,4 @@ public partial class PortForwarderListView : UserControl
         InitializeComponent();
     }
 }
+

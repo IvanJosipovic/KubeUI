@@ -1,9 +1,9 @@
 using AvaloniaEdit.Document;
 using k8s;
 using k8s.Models;
-using KubeUI.Client;
+using KubeUI.Kubernetes;
 
-namespace KubeUI.ViewModels;
+namespace KubeUI.Avalonia.ViewModels;
 
 public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 {
@@ -124,4 +124,6 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         _streamReader?.Dispose();
     }
 }
+
+
 

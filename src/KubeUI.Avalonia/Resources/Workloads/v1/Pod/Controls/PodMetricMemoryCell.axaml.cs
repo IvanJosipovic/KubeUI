@@ -1,8 +1,8 @@
 using Humanizer;
 using k8s.Models;
-using KubeUI.Client;
+using KubeUI.Kubernetes;
 
-namespace KubeUI.Controls;
+namespace KubeUI.Avalonia.Controls;
 
 public partial class PodMetricMemoryCell : UserControl, IInitializeCluster
 {
@@ -75,4 +75,5 @@ public partial class PodMetricMemoryCell : UserControl, IInitializeCluster
         _cluster = cluster;
     }
 }
+
 

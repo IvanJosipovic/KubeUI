@@ -1,4 +1,4 @@
-namespace KubeUI.Views;
+namespace KubeUI.Avalonia.Views;
 
 public partial class NavigationView : UserControl
 {
@@ -15,3 +15,4 @@ public partial class NavigationView : UserControl
         }
     }
 }
+

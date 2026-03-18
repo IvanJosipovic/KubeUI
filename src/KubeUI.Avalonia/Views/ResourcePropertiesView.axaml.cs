@@ -2,7 +2,7 @@ using System.Reflection;
 using k8s;
 using k8s.Models;
 
-namespace KubeUI.Views;
+namespace KubeUI.Avalonia.Views;
 
 public partial class ResourcePropertiesView : UserControl
 {
@@ -85,3 +85,4 @@ public partial class ResourcePropertiesView : UserControl
         }
     }
 }
+

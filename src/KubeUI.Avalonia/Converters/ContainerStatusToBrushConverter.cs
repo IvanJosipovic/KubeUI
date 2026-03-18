@@ -2,7 +2,7 @@ using System.Globalization;
 using Avalonia.Data.Converters;
 using k8s.Models;
 
-namespace KubeUI.Converters;
+namespace KubeUI.Avalonia.Converters;
 
 public class ContainerStatusToBrushConverter : IValueConverter
 {
@@ -49,3 +49,4 @@ public class ContainerStatusToBrushConverter : IValueConverter
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();
 }
+

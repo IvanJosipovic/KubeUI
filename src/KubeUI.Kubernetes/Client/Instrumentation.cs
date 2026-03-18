@@ -1,7 +1,7 @@
-﻿using System.Diagnostics.Metrics;
+using System.Diagnostics.Metrics;
 using System.Reflection;
 
-namespace KubeUI.Client;
+namespace KubeUI.Kubernetes;
 
 public class Instrumentation : IDisposable
 {
@@ -29,3 +29,4 @@ public class Instrumentation : IDisposable
         _meter.Dispose();
     }
 }
+

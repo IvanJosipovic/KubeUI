@@ -2,7 +2,7 @@ using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 
-namespace KubeUI.Client;
+namespace KubeUI.Kubernetes;
 
 public static class KubernetesClientExtensions
 {
@@ -18,3 +18,4 @@ public static class KubernetesClientExtensions
         return new GenericClient(client, api.Group, api.ApiVersion, api.PluralName, false);
     }
 }
+

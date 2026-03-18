@@ -5,9 +5,9 @@ using Avalonia.Input.Platform;
 using AvaloniaTerminal;
 using k8s;
 using k8s.Models;
-using KubeUI.Client;
+using KubeUI.Kubernetes;
 
-namespace KubeUI.ViewModels;
+namespace KubeUI.Avalonia.ViewModels;
 
 public sealed partial class PodConsoleViewModel2 : ViewModelBase, IDisposable
 {
@@ -163,5 +163,7 @@ public sealed partial class PodConsoleViewModel2 : ViewModelBase, IDisposable
         _refreshStream?.Dispose();
     }
 }
+
+
 
 

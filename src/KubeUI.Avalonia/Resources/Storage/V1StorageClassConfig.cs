@@ -1,6 +1,6 @@
 using k8s.Models;
 
-namespace KubeUI.Resources.Storage;
+namespace KubeUI.Avalonia.Resources.Storage;
 
 public sealed partial class V1StorageClassConfig : ResourceConfigBase<V1StorageClass>
 {
@@ -34,3 +34,4 @@ public sealed partial class V1StorageClassConfig : ResourceConfigBase<V1StorageC
         ];
     }
 }
+

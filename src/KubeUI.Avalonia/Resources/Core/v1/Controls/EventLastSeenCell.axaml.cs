@@ -1,9 +1,9 @@
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Client;
+using KubeUI.Kubernetes;
 
-namespace KubeUI.Controls;
+namespace KubeUI.Avalonia.Controls;
 
 public sealed partial class EventLastSeenCell : UserControl, IInitializeCluster
 {
@@ -116,4 +116,5 @@ public sealed partial class EventLastSeenCell : UserControl, IInitializeCluster
         _cluster.OnChange += _cluster_OnChange;
     }
 }
+
 

@@ -1,8 +1,8 @@
 using AvaloniaEdit.Document;
 using Shouldly;
 using k8s.Models;
-using KubeUI.ViewModels;
-using KubeUI.Views;
+using KubeUI.Avalonia.ViewModels;
+using KubeUI.Avalonia.Views;
 using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Avalonia.Tests;
@@ -131,3 +131,4 @@ public class ResourceYamlViewModelTests
         foldings[0].Name.TrimEnd().ShouldBe($"- item1:");
     }
 }
+

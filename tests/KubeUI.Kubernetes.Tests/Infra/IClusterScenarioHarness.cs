@@ -1,6 +1,6 @@
 using k8s;
 using k8s.Models;
-using KubeUI.Client;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Kubernetes.Tests.Infra;
 
@@ -18,3 +18,4 @@ public interface IClusterScenarioHarness : IAsyncDisposable
 
     Task<IClusterRuntime> CreateLimitedAccessClusterAsync(bool includeNamespaceFallback);
 }
+

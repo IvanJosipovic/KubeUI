@@ -1,6 +1,6 @@
-﻿using k8s.Models;
+using k8s.Models;
 
-namespace KubeUI.Resources.Configuration;
+namespace KubeUI.Avalonia.Resources.Configuration;
 
 public sealed partial class V1LimitRangeConfig : ResourceConfigBase<V1LimitRange>
 {
@@ -16,3 +16,4 @@ public sealed partial class V1LimitRangeConfig : ResourceConfigBase<V1LimitRange
         ];
     }
 }
+

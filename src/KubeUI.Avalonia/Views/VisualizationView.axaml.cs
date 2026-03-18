@@ -1,7 +1,7 @@
 using k8s.Models;
-using KubeUI.Client;
+using KubeUI.Kubernetes;
 
-namespace KubeUI.Views;
+namespace KubeUI.Avalonia.Views;
 
 public sealed partial class VisualizationView : UserControl
 {
@@ -32,5 +32,6 @@ public sealed partial class VisualizationView : UserControl
 #endif
     }
 }
+
 
 

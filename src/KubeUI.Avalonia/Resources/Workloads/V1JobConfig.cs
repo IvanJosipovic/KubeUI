@@ -1,6 +1,6 @@
-﻿using k8s.Models;
+using k8s.Models;
 
-namespace KubeUI.Resources.Workloads;
+namespace KubeUI.Avalonia.Resources.Workloads;
 
 public sealed partial class V1JobConfig : ResourceConfigBase<V1Job>
 {
@@ -30,3 +30,4 @@ public sealed partial class V1JobConfig : ResourceConfigBase<V1Job>
         ];
     }
 }
+

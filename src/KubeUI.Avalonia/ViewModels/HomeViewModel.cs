@@ -1,4 +1,4 @@
-﻿namespace KubeUI.ViewModels;
+namespace KubeUI.Avalonia.ViewModels;
 
 public sealed partial class HomeViewModel : ViewModelBase
 {
@@ -8,3 +8,4 @@ public sealed partial class HomeViewModel : ViewModelBase
         Id = nameof(HomeViewModel);
     }
 }
+

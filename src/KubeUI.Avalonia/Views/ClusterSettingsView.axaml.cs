@@ -1,6 +1,6 @@
-using KubeUI.Client;
+using KubeUI.Kubernetes;
 
-namespace KubeUI.Views;
+namespace KubeUI.Avalonia.Views;
 
 public sealed partial class ClusterSettingsView : UserControl
 {
@@ -29,5 +29,6 @@ public sealed partial class ClusterSettingsView : UserControl
 #endif
     }
 }
+
 
 

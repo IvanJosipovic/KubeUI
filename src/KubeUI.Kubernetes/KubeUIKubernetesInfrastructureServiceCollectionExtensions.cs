@@ -1,12 +1,12 @@
 using System.Text.Json.Serialization.Metadata;
 using k8s;
 using KubernetesCRDModelGen;
-using KubeUI.Client;
-using KubeUI.Client.Serialization;
+using KubeUI.Kubernetes;
+using KubeUI.Kubernetes.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace KubeUI;
+namespace KubeUI.Kubernetes;
 
 public static class KubeUIKubernetesInfrastructureServiceCollectionExtensions
 {
@@ -61,3 +61,6 @@ public static class KubeUIKubernetesInfrastructureServiceCollectionExtensions
         });
     }
 }
+
+
+

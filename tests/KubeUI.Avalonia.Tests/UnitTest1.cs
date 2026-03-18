@@ -1,8 +1,8 @@
 using AvaloniaEdit.Document;
 using k8s.Models;
 using Shouldly;
-using KubeUI.ViewModels;
-using KubeUI.Views;
+using KubeUI.Avalonia.ViewModels;
+using KubeUI.Avalonia.Views;
 
 namespace KubeUI.Avalonia.Tests;
 
@@ -17,3 +17,4 @@ public class UnitTest1
         Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Spec.Containers).ShouldBe("SelectedItem.Spec.Containers");
     }
 }
+

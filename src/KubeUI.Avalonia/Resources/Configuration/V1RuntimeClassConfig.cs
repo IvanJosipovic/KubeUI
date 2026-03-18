@@ -1,6 +1,6 @@
-﻿using k8s.Models;
+using k8s.Models;
 
-namespace KubeUI.Resources.Configuration;
+namespace KubeUI.Avalonia.Resources.Configuration;
 
 public sealed partial class V1RuntimeClassConfig : ResourceConfigBase<V1RuntimeClass>
 {
@@ -21,3 +21,4 @@ public sealed partial class V1RuntimeClassConfig : ResourceConfigBase<V1RuntimeC
         ];
     }
 }
+

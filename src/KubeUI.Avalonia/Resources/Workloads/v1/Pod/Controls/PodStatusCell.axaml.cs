@@ -1,9 +1,9 @@
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Client;
+using KubeUI.Kubernetes;
 
-namespace KubeUI.Resources.Workloads.v1.Pod.Controls;
+namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Controls;
 
 public sealed partial class PodStatusCell : UserControl, IInitializeCluster
 {
@@ -84,4 +84,5 @@ public sealed partial class PodStatusCell : UserControl, IInitializeCluster
         _cluster.OnChange += _cluster_OnChange;
     }
 }
+
 

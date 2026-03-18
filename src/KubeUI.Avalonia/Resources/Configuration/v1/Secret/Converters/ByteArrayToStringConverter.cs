@@ -1,8 +1,8 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Text;
 using Avalonia.Data.Converters;
 
-namespace KubeUI.Resources.Configuration.v1.Secret.Converters;
+namespace KubeUI.Avalonia.Resources.Configuration.v1.Secret.Converters;
 
 public sealed class ByteArrayToStringConverter : IValueConverter
 {
@@ -24,3 +24,4 @@ public sealed class ByteArrayToStringConverter : IValueConverter
         return Array.Empty<byte>();
     }
 }
+

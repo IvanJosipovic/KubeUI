@@ -1,7 +1,7 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Xml;
 
-namespace KubeUI;
+namespace KubeUI.Kubernetes;
 
 public static class ModelCacheExtensions
 {
@@ -131,3 +131,4 @@ public static class ModelCacheExtensions
         return null;
     }
 }
+

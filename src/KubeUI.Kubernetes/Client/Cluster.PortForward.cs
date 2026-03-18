@@ -1,4 +1,4 @@
-﻿namespace KubeUI.Client;
+namespace KubeUI.Kubernetes;
 
 public partial class Cluster
 {
@@ -47,3 +47,4 @@ public partial class Cluster
         PortForwarders.Remove(pf);
     }
 }
+

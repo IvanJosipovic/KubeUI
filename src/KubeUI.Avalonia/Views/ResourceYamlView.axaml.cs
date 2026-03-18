@@ -3,16 +3,15 @@ using AvaloniaEdit.Document;
 using AvaloniaEdit.Folding;
 using AvaloniaEdit.TextMate;
 using k8s.Models;
-using KubeUI.Client;
+using KubeUI.Kubernetes;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
 
-namespace KubeUI.Views;
+namespace KubeUI.Avalonia.Views;
 
 public sealed partial class ResourceYamlView : UserControl
 {
     private readonly ILogger<ResourceYamlView> _logger;
-    private readonly ISettingsService _settingsService;
 
     private Installation? _textMateInstallation;
     private readonly RegistryOptions _registryOptions = null!;
@@ -20,16 +19,14 @@ public sealed partial class ResourceYamlView : UserControl
 
     public ResourceYamlView()
         : this(
-            Application.Current.GetRequiredService<ILogger<ResourceYamlView>>(),
-            Application.Current.GetRequiredService<ISettingsService>())
+            Application.Current.GetRequiredService<ILogger<ResourceYamlView>>())
     {
         // Parameterless for XAML / designer.
     }
 
-    public ResourceYamlView(ILogger<ResourceYamlView> logger, ISettingsService settingsService)
+    public ResourceYamlView(ILogger<ResourceYamlView> logger)
     {
         _logger = logger;
-        _settingsService = settingsService;
 
         InitializeComponent();
 
@@ -313,5 +310,7 @@ internal static class YamlFoldingStrategy
         }
     }
 }
+
+
 
 

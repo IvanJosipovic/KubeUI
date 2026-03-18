@@ -2,7 +2,7 @@ using System.Collections;
 using System.Text;
 using k8s;
 using k8s.Models;
-using KubeUI.Client;
+using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Tests.Infra;
 using KubernetesClient.Informer.Client;
 using Shouldly;
@@ -165,7 +165,7 @@ public abstract class ClusterScenarioAssertions
         await using var harness = await CreateHarnessAsync();
         await harness.Cluster.SeedResource<V1Namespace>(true);
 
-        var yaml = KubeUI.Client.Serialization.KubernetesYaml.Serialize(new V1Namespace
+        var yaml = KubeUI.Kubernetes.Serialization.KubernetesYaml.Serialize(new V1Namespace
         {
             ApiVersion = V1Namespace.KubeApiVersion,
             Kind = V1Namespace.KubeKind,
@@ -184,7 +184,7 @@ public abstract class ClusterScenarioAssertions
         await using var harness = await CreateHarnessAsync();
         await harness.Cluster.SeedResource<V1CustomResourceDefinition>(true);
 
-        var crd = KubeUI.Client.Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(SharedScenarioData.CustomResourceDefinitionYaml);
+        var crd = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(SharedScenarioData.CustomResourceDefinitionYaml);
         await harness.CreateCustomResourceDefinitionAsync(crd);
 
         await WaitForResourceAsync<V1CustomResourceDefinition>(harness.Cluster, null, "tests.kubeui.com");
@@ -357,3 +357,5 @@ public abstract class ClusterScenarioAssertions
         return null;
     }
 }
+
+

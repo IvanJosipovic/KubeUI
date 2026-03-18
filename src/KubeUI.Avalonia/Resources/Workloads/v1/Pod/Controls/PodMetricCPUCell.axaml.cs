@@ -1,7 +1,7 @@
 using k8s.Models;
-using KubeUI.Client;
+using KubeUI.Kubernetes;
 
-namespace KubeUI.Controls;
+namespace KubeUI.Avalonia.Controls;
 
 public partial class PodMetricCPUCell : UserControl, IInitializeCluster
 {
@@ -67,4 +67,5 @@ public partial class PodMetricCPUCell : UserControl, IInitializeCluster
         _cluster = cluster;
     }
 }
+
 

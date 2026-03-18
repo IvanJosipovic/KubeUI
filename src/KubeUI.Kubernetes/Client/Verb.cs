@@ -1,4 +1,4 @@
-namespace KubeUI.Client;
+namespace KubeUI.Kubernetes;
 
 public enum Verb
 {
@@ -11,3 +11,4 @@ public enum Verb
     Watch,
     DeleteCollection
 }
+

@@ -1,4 +1,4 @@
-namespace KubeUI.Controls;
+namespace KubeUI.Avalonia.Controls;
 
 public partial class HeaderItem : UserControl
 {
@@ -24,3 +24,4 @@ public partial class HeaderItem : UserControl
 #endif
     }
 }
+

@@ -1,9 +1,9 @@
 <UserControl
-    x:Class="KubeUI.Controls.ResourceTextCell"
+    x:Class="KubeUI.Avalonia.Controls.ResourceTextCell"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:local="using:KubeUI.Controls"
+    xmlns:local="using:KubeUI.Avalonia.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     HorizontalAlignment="Left"
     VerticalAlignment="Center"
@@ -17,3 +17,6 @@
         Text="{Binding PrettyString, RelativeSource={RelativeSource AncestorType=local:ResourceTextCell}}"
         ToolTip.Tip="{Binding PrettyString, RelativeSource={RelativeSource AncestorType=local:ResourceTextCell}}" />
 </UserControl>
+
+
+

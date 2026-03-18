@@ -4,7 +4,7 @@ using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
 
-namespace KubeUI.Resources.Network;
+namespace KubeUI.Avalonia.Resources.Network;
 
 public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
 {
@@ -107,4 +107,5 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
         return false;
     }
 }
+
 

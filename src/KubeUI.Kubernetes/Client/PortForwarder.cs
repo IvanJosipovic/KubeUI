@@ -1,10 +1,10 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using k8s;
 using k8s.Models;
 
-namespace KubeUI.Client;
+namespace KubeUI.Kubernetes;
 
 public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>, IDisposable
 {
@@ -200,3 +200,4 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
         _isDisposing = true;
     }
 }
+

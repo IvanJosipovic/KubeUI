@@ -1,6 +1,6 @@
 using System.Xml;
 using k8s.Models;
-using KubeUI.Client;
+using KubeUI.Kubernetes;
 using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests;
@@ -31,3 +31,4 @@ public class ModelCacheTests
         cache.Cache[typeof(V1Pod).Assembly].ShouldBe(xml1);
     }
 }
+

@@ -8,7 +8,7 @@ using k8s.KubeConfigModels;
 using k8s.Models;
 using static k8s.KubernetesJson;
 
-namespace KubeUI;
+namespace KubeUI.Kubernetes;
 
 [JsonSerializable(typeof(Dictionary<object, object>))]
 [JsonSerializable(typeof(ICollection))]
@@ -119,4 +119,5 @@ namespace KubeUI;
 public partial class CustomSourceGenerationContext : JsonSerializerContext
 {
 }
+
 

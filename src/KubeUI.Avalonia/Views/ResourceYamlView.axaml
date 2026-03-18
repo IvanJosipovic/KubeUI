@@ -1,14 +1,14 @@
 <UserControl
-    x:Class="KubeUI.Views.ResourceYamlView"
+    x:Class="KubeUI.Avalonia.Views.ResourceYamlView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
-    xmlns:assets="clr-namespace:KubeUI.Assets;assembly=KubeUI.Avalonia"
-    xmlns:converters="using:KubeUI.Converters"
+    xmlns:assets="clr-namespace:KubeUI.Avalonia.Assets;assembly=KubeUI.Avalonia"
+    xmlns:converters="using:KubeUI.Avalonia.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:ic="using:FluentIcons.Avalonia"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:vm="clr-namespace:KubeUI.ViewModels"
+    xmlns:vm="clr-namespace:KubeUI.Avalonia.ViewModels"
     d:DesignHeight="450"
     d:DesignWidth="800"
     x:DataType="vm:ResourceYamlViewModel"
@@ -56,7 +56,7 @@
         <ae:TextEditor Name="Editor" Grid.Row="1"
             Background="{DynamicResource SystemAltHighColor}"
             FontFamily="Cascadia Mono"
-            FontSize="{Binding Settings.Settings.ConsoleFontSize}"
+            FontSize="{Binding Settings.Appearance.ConsoleFontSize}"
             FontWeight="Normal"
             HorizontalScrollBarVisibility="Auto"
             IsReadOnly="{Binding !EditMode}"
@@ -137,5 +137,9 @@
         </ae:TextEditor>
     </Grid>
 </UserControl>
+
+
+
+
 
 

@@ -1,7 +1,7 @@
 using Dock.Model.Core;
 using k8s.Models;
 
-namespace KubeUI.Resources;
+namespace KubeUI.Avalonia.Resources;
 
 public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBase<V1CustomResourceDefinition>
 {
@@ -82,4 +82,5 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
         return false;
     }
 }
+
 

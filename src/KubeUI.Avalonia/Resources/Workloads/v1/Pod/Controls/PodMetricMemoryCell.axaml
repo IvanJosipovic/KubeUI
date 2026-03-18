@@ -1,8 +1,8 @@
 <UserControl
-    x:Class="KubeUI.Controls.PodMetricMemoryCell"
+    x:Class="KubeUI.Avalonia.Controls.PodMetricMemoryCell"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:KubeUI.Controls"
+    xmlns:local="using:KubeUI.Avalonia.Controls"
     HorizontalAlignment="Left"
     VerticalAlignment="Center">
     <TextBlock
@@ -12,3 +12,6 @@
         Text="{Binding PrettyString, RelativeSource={RelativeSource AncestorType=local:PodMetricMemoryCell}}"
         ToolTip.Tip="{Binding PrettyString, RelativeSource={RelativeSource AncestorType=local:PodMetricMemoryCell}}" />
 </UserControl>
+
+
+

@@ -1,4 +1,4 @@
-namespace KubeUI.Views;
+namespace KubeUI.Avalonia.Views;
 
 public sealed partial class ClusterListView : UserControl
 {
@@ -7,3 +7,4 @@ public sealed partial class ClusterListView : UserControl
         InitializeComponent();
     }
 }
+

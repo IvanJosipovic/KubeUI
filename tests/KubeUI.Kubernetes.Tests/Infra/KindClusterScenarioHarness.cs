@@ -2,8 +2,8 @@ using System.Text;
 using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
-using KubeUI;
-using KubeUI.Client;
+using KubeUI.Avalonia;
+using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -22,6 +22,7 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
         services.AddLogging(builder => builder.AddDebug().SetMinimumLevel(LogLevel.Information));
         services.AddKubeUIKubernetesServices();
         services.AddSingleton<ISettingsService, TestSettingsService>();
+        services.AddSingleton<IClusterSettingsStore>(sp => sp.GetRequiredService<ISettingsService>().Clusters);
         services.AddSingleton<IHostApplicationLifetime, TestHostApplicationLifetime>();
 
         _services = services.BuildServiceProvider();
@@ -73,7 +74,7 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
         await ClusterScenarioAssertions.WaitForResourceAsync<V1ServiceAccount>(Cluster, "my-app", "my-serviceaccount");
 
         var secret = await WaitForServiceAccountTokenAsync("my-app", "my-serviceaccount");
-        var config = KubeUI.Client.Serialization.KubernetesYaml.Deserialize<K8SConfiguration>(KubeUI.Client.Serialization.KubernetesYaml.Serialize(KubeConfig));
+        var config = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<K8SConfiguration>(KubeUI.Kubernetes.Serialization.KubernetesYaml.Serialize(KubeConfig));
         var clusterName = includeNamespaceFallback ? "limited-fallback" : "limited";
 
         config.Clusters.First().Name = clusterName;
@@ -142,3 +143,5 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
         }
     }
 }
+
+

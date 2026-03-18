@@ -1,9 +1,9 @@
-﻿using Avalonia.Data.Converters;
+using Avalonia.Data.Converters;
 using Avalonia.Styling;
 using k8s.Models;
-using KubeUI.Controls;
+using KubeUI.Avalonia.Controls;
 
-namespace KubeUI.Resources.Core.v1;
+namespace KubeUI.Avalonia.Resources.Core.v1;
 
 public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
 {
@@ -81,3 +81,4 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
         return style;
     }
 }
+

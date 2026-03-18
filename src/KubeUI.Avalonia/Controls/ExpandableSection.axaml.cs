@@ -1,4 +1,4 @@
-namespace KubeUI.Controls;
+namespace KubeUI.Avalonia.Controls;
 
 public partial class ExpandableSection : Expander
 {
@@ -25,3 +25,4 @@ public partial class ExpandableSection : Expander
 
     protected override Type StyleKeyOverride => typeof(Expander);
 }
+

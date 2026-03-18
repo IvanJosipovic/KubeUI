@@ -1,6 +1,6 @@
 using k8s.Models;
 
-namespace KubeUI.Resources.Network;
+namespace KubeUI.Avalonia.Resources.Network;
 
 public sealed partial class V1IngressConfig : ResourceConfigBase<V1Ingress>
 {
@@ -31,3 +31,4 @@ public sealed partial class V1IngressConfig : ResourceConfigBase<V1Ingress>
         ];
     }
 }
+

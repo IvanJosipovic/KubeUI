@@ -1,10 +1,10 @@
 using k8s;
 using k8s.Models;
-using KubeUI.Client;
-using KubeUI.Resources;
+using KubeUI.Kubernetes;
+using KubeUI.Avalonia.Resources;
 using KubernetesClient.Informer.Client;
 
-namespace KubeUI.ViewModels;
+namespace KubeUI.Avalonia.ViewModels;
 
 public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
@@ -51,4 +51,5 @@ public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable
         Cluster?.OnChange -= Cluster_OnChange;
     }
 }
+
 

@@ -1,8 +1,9 @@
-﻿using KubeUI.Client;
+using KubeUI.Kubernetes;
 
-namespace KubeUI.ViewModels;
+namespace KubeUI.Avalonia.ViewModels;
 
 public interface IInitializeCluster
 {
     void Initialize(ClusterWorkspaceViewModel cluster);
 }
+

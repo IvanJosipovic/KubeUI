@@ -1,8 +1,8 @@
-﻿using Avalonia.Data.Converters;
+using Avalonia.Data.Converters;
 using k8s;
 using k8s.Models;
 
-namespace KubeUI.Converters;
+namespace KubeUI.Avalonia.Converters;
 
 /// <summary>
 /// Provides a set of useful <see cref="IValueConverter"/>s
@@ -25,3 +25,4 @@ public static class Converters
 
     public static readonly IValueConverter NotNull = new FuncValueConverter<object, bool>((x) => x != null && x != AvaloniaProperty.UnsetValue);
 }
+

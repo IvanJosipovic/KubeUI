@@ -1,6 +1,6 @@
-﻿using k8s.Models;
+using k8s.Models;
 
-namespace KubeUI.Resources.Configuration;
+namespace KubeUI.Avalonia.Resources.Configuration;
 
 public sealed partial class V1PriorityClassConfig : ResourceConfigBase<V1PriorityClass>
 {
@@ -27,3 +27,4 @@ public sealed partial class V1PriorityClassConfig : ResourceConfigBase<V1Priorit
         ];
     }
 }
+

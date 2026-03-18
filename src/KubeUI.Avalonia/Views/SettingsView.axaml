@@ -1,12 +1,12 @@
 <UserControl
-    x:Class="KubeUI.Views.SettingsView"
+    x:Class="KubeUI.Avalonia.Views.SettingsView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:local="clr-namespace:KubeUI;assembly=KubeUI.Kubernetes"
+    xmlns:local="clr-namespace:KubeUI.Avalonia;assembly=KubeUI.Avalonia"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:views="clr-namespace:KubeUI.Views"
-    xmlns:vm="clr-namespace:KubeUI.ViewModels"
+    xmlns:views="clr-namespace:KubeUI.Avalonia.Views"
+    xmlns:vm="clr-namespace:KubeUI.Avalonia.ViewModels"
     d:DesignHeight="450"
     d:DesignWidth="800"
     x:DataType="vm:SettingsViewModel"
@@ -29,15 +29,15 @@
                 <RadioButton
                     Content="Default"
                     GroupName="Theme"
-                    IsChecked="{Binding SettingsService.Settings.Theme, Converter={StaticResource ThemeEqualityConverter}, ConverterParameter={x:Static local:LocalThemeVariant.Default}}" />
+                    IsChecked="{Binding SettingsService.Appearance.Theme, Converter={StaticResource ThemeEqualityConverter}, ConverterParameter={x:Static local:LocalThemeVariant.Default}}" />
                 <RadioButton
                     Content="Light"
                     GroupName="Theme"
-                    IsChecked="{Binding SettingsService.Settings.Theme, Converter={StaticResource ThemeEqualityConverter}, ConverterParameter={x:Static local:LocalThemeVariant.Light}}" />
+                    IsChecked="{Binding SettingsService.Appearance.Theme, Converter={StaticResource ThemeEqualityConverter}, ConverterParameter={x:Static local:LocalThemeVariant.Light}}" />
                 <RadioButton
                     Content="Dark"
                     GroupName="Theme"
-                    IsChecked="{Binding SettingsService.Settings.Theme, Converter={StaticResource ThemeEqualityConverter}, ConverterParameter={x:Static local:LocalThemeVariant.Dark}}" />
+                    IsChecked="{Binding SettingsService.Appearance.Theme, Converter={StaticResource ThemeEqualityConverter}, ConverterParameter={x:Static local:LocalThemeVariant.Dark}}" />
             </StackPanel>
         </Grid>
 
@@ -83,7 +83,7 @@
                 Content="Font Size" />
             <NumericUpDown
                 Grid.Column="1"
-                Value="{Binding SettingsService.Settings.FontSize}" />
+                Value="{Binding SettingsService.Appearance.FontSize}" />
         </Grid>
 
         <Grid
@@ -94,7 +94,7 @@
                 Content="Console/Logs/Yaml Font Size" />
             <NumericUpDown
                 Grid.Column="1"
-                Value="{Binding SettingsService.Settings.ConsoleFontSize}" />
+                Value="{Binding SettingsService.Appearance.ConsoleFontSize}" />
         </Grid>
 
         <Grid
@@ -105,9 +105,13 @@
                 Content="List Row Height" />
             <NumericUpDown
                 Grid.Column="1"
-                Value="{Binding SettingsService.Settings.ListRowHeight}" />
+                Value="{Binding SettingsService.Appearance.ListRowHeight}" />
         </Grid>
     </StackPanel>
 </UserControl>
+
+
+
+
 
 

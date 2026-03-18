@@ -1,7 +1,7 @@
 using Avalonia.Data;
 using FluentIcons.Common;
 
-namespace KubeUI.Resources;
+namespace KubeUI.Avalonia.Resources;
 
 public interface IResourceListColumn
 {
@@ -36,3 +36,4 @@ public class ResourceMenuItem
     public ResourceMenuItem? ItemTemplate { get; set; }
     public IList<ResourceMenuItem> MenuItems { get; set; } = [];
 }
+

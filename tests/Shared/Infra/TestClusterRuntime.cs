@@ -9,7 +9,7 @@ using DynamicData.Kernel;
 using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
-using KubeUI.Client;
+using KubeUI.Kubernetes;
 using KubernetesClient.Informer.Client;
 using KubernetesCRDModelGen;
 using Mapster;
@@ -423,9 +423,9 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
 
         while (parser.Accept<DocumentStart>(out _))
         {
-            var doc = KubeUI.Client.Serialization.KubernetesYaml.Deserializer.Deserialize(parser);
-            var yaml = KubeUI.Client.Serialization.KubernetesYaml.Serialize(doc);
-            var obj = KubeUI.Client.Serialization.KubernetesYaml.Deserialize<KubernetesObject>(yaml);
+            var doc = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserializer.Deserialize(parser);
+            var yaml = KubeUI.Kubernetes.Serialization.KubernetesYaml.Serialize(doc);
+            var obj = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<KubernetesObject>(yaml);
 
             try
             {
@@ -437,7 +437,7 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
                     continue;
                 }
 
-                var model = KubeUI.Client.Serialization.KubernetesYaml.Deserializer.Deserialize(yaml, type);
+                var model = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserializer.Deserialize(yaml, type);
 
                 if (model != null)
                 {
@@ -506,3 +506,5 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }
+
+

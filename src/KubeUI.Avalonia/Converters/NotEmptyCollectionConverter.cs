@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using Avalonia.Data.Converters;
 
-namespace KubeUI.Converters;
+namespace KubeUI.Avalonia.Converters;
 
 public class NotEmptyCollectionConverter : IValueConverter
 {
@@ -28,3 +28,4 @@ public class NotEmptyCollectionConverter : IValueConverter
         throw new NotImplementedException();
     }
 }
+

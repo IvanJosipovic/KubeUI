@@ -1,11 +1,11 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using k8s;
 using k8s.Models;
 
-namespace KubeUI.Resources;
+namespace KubeUI.Avalonia.Resources;
 
 public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
@@ -287,3 +287,4 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : clas
         return enumValue.ToString();
     }
 }
+

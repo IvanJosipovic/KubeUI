@@ -1,17 +1,17 @@
 <UserControl
-    x:Class="KubeUI.Views.ClusterView"
+    x:Class="KubeUI.Avalonia.Views.ClusterView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:collections="using:Avalonia.Collections"
-    xmlns:converters="using:KubeUI.Converters"
+    xmlns:converters="using:KubeUI.Avalonia.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:geometries="using:LiveChartsCore.SkiaSharpView.Drawing.Geometries"
     xmlns:livechartscore="using:LiveChartsCore"
     xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
     xmlns:painting="using:LiveChartsCore.SkiaSharpView.Painting"
-    xmlns:views="using:KubeUI.Views"
+    xmlns:views="using:KubeUI.Avalonia.Views"
     xmlns:visualelements="using:LiveChartsCore.SkiaSharpView.VisualElements"
-    xmlns:vm="using:KubeUI.ViewModels"
+    xmlns:vm="using:KubeUI.Avalonia.ViewModels"
     d:DesignHeight="800"
     d:DesignWidth="1200"
     x:DataType="vm:ClusterViewModel">
@@ -206,3 +206,7 @@
         </Grid>
     </Grid>
 </UserControl>
+
+
+
+

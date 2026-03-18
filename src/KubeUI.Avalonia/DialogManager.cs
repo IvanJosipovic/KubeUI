@@ -1,7 +1,7 @@
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia;
 
-namespace KubeUI;
+namespace KubeUI.Avalonia;
 
 public class MyDialogManager : DialogManager
 {
@@ -14,4 +14,5 @@ public class MyDialogManager : DialogManager
         return GetMainWindow();
     }
 }
+
 

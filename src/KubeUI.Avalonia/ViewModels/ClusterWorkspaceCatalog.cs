@@ -1,7 +1,7 @@
 using System.Collections.Specialized;
 using Swordfish.NET.Collections;
 
-namespace KubeUI.ViewModels;
+namespace KubeUI.Avalonia.ViewModels;
 
 public sealed class ClusterWorkspaceComparer : IComparer<ClusterWorkspaceViewModel>
 {
@@ -115,3 +115,4 @@ public sealed class ClusterWorkspaceCatalog : IDisposable
         workspace.Dispose();
     }
 }
+

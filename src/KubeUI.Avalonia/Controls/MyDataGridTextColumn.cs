@@ -1,4 +1,4 @@
-﻿namespace KubeUI.Controls;
+namespace KubeUI.Avalonia.Controls;
 
 /// <summary>
 /// Custom DataGridTextColumn that binds the tooltip of the generated element to the column's binding.
@@ -17,3 +17,4 @@ public class MyDataGridTextColumn : DataGridTextColumn
         return control;
     }
 }
+

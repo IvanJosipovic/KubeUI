@@ -21,10 +21,11 @@
     <Using Include="Avalonia.Threading" />
     <Using Include="CommunityToolkit.Mvvm.ComponentModel" />
     <Using Include="CommunityToolkit.Mvvm.Input" />
-    <Using Include="KubeUI.Assets" />
-    <Using Include="KubeUI.Client" />
-    <Using Include="KubeUI.Controls" />
-    <Using Include="KubeUI.ViewModels" />
+    <Using Include="KubeUI.Avalonia" />
+    <Using Include="KubeUI.Avalonia.Assets" />
+    <Using Include="KubeUI.Avalonia.Controls" />
+    <Using Include="KubeUI.Avalonia.ViewModels" />
+    <Using Include="KubeUI.Kubernetes" />
     <Using Include="Microsoft.Extensions.DependencyInjection" />
     <Using Include="Microsoft.Extensions.Logging" />
     <Using Include="PropertyGenerator.Avalonia" />
@@ -53,7 +54,7 @@
     <EmbeddedResource Update="Assets\Resources.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-      <LogicalName>KubeUI.Assets.Resources.resources</LogicalName>
+      <LogicalName>KubeUI.Avalonia.Assets.Resources.resources</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
 

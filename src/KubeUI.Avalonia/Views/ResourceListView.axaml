@@ -1,15 +1,15 @@
 <UserControl
-    x:Class="KubeUI.Views.ResourceListView"
+    x:Class="KubeUI.Avalonia.Views.ResourceListView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:assets="using:KubeUI.Assets"
+    xmlns:assets="using:KubeUI.Avalonia.Assets"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:ic="using:FluentIcons.Avalonia"
-    xmlns:local="using:KubeUI.Views"
+    xmlns:local="using:KubeUI.Avalonia.Views"
     xmlns:models="using:k8s.Models"
     xmlns:u="https://irihi.tech/ursa"
     xmlns:ursa="clr-namespace:Ursa.Controls"
-    xmlns:viewmodels="using:KubeUI.ViewModels"
+    xmlns:viewmodels="using:KubeUI.Avalonia.ViewModels"
     d:DesignHeight="450"
     d:DesignWidth="800"
     x:DataType="viewmodels:IResourceListViewModel">
@@ -82,7 +82,6 @@
             IsReadOnly="True"
             ItemsSource="{Binding View}"
             MinColumnWidth="90"
-            RowHeight="{Binding SettingsService.Settings.ListRowHeight}"
             SearchModel="{Binding SearchModel}"
             Selection="{Binding SelectionModel}"
             SelectionMode="Extended"
@@ -97,20 +96,10 @@
                     CommandParameter="{Binding SelectionModel.SelectedItems}"
                     Gesture="Enter" />
             </DataGrid.KeyBindings>
-            <DataGrid.Styles>
-                <Style Selector="DataGridColumnHeader">
-                    <Setter Property="FontSize" Value="{Binding $parent[local:ResourceListView].DataContext.SettingsService.Settings.FontSize}" />
-                    <Setter Property="MinHeight" Value="{Binding $parent[local:ResourceListView].DataContext.SettingsService.Settings.ListRowHeight}" />
-                </Style>
-                <Style Selector="TextBlock">
-                    <Setter Property="MaxLines" Value="1" />
-                    <Setter Property="FontSize" Value="{Binding $parent[local:ResourceListView].DataContext.SettingsService.Settings.FontSize}" />
-                </Style>
-                <Style Selector="DataGridSearchTextBlock#CellTextBlock">
-                    <Setter Property="MaxLines" Value="1" />
-                    <Setter Property="FontSize" Value="{Binding $parent[local:ResourceListView].DataContext.SettingsService.Settings.FontSize}" />
-                </Style>
-            </DataGrid.Styles>
         </DataGrid>
     </Grid>
 </UserControl>
+
+
+
+

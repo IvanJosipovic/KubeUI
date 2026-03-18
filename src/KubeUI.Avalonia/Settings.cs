@@ -1,19 +1,7 @@
-using KubeUI.Client;
-
-namespace KubeUI;
-
-public enum LocalThemeVariant
-{
-    Default,
-    Light,
-    Dark,
-}
+namespace KubeUI.Avalonia;
 
 public sealed partial class Settings : ObservableObject
 {
-    [ObservableProperty]
-    public partial LocalThemeVariant Theme { get; set; } = LocalThemeVariant.Dark;
-
     [ObservableProperty]
     public partial bool LoggingEnabled { get; set; }
 
@@ -29,14 +17,16 @@ public sealed partial class Settings : ObservableObject
     [ObservableProperty]
     public partial ObservableCollection<string> KubeConfigs { get; set; } = [];
 
-    [ObservableProperty]
-    public partial decimal FontSize { get; set; } = 13;
+    public void AddKubeConfig(string path)
+    {
+        if (KubeConfigs.Contains(path))
+        {
+            return;
+        }
 
-    [ObservableProperty]
-    public partial decimal ConsoleFontSize { get; set; } = 12;
-
-    [ObservableProperty]
-    public partial decimal ListRowHeight { get; set; } = 30;
+        KubeConfigs.Add(path);
+        OnPropertyChanged(nameof(KubeConfigs));
+    }
 
     public ClusterSettings GetClusterSettings(IClusterRuntime cluster)
     {

@@ -1,14 +1,14 @@
 <UserControl
-    x:Class="KubeUI.Views.NavigationView"
+    x:Class="KubeUI.Avalonia.Views.NavigationView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:coreClient="clr-namespace:KubeUI.Client;assembly=KubeUI.Kubernetes"
-    xmlns:converters="using:KubeUI.Converters"
+    xmlns:coreClient="clr-namespace:KubeUI.Kubernetes;assembly=KubeUI.Kubernetes"
+    xmlns:converters="using:KubeUI.Avalonia.Converters"
     xmlns:custom="using:Avalonia.Xaml.Interactions.Custom"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:ic="using:FluentIcons.Avalonia"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:vm="clr-namespace:KubeUI.ViewModels"
+    xmlns:vm="clr-namespace:KubeUI.Avalonia.ViewModels"
     d:DesignHeight="600"
     d:DesignWidth="300"
     x:DataType="vm:NavigationViewModel"
@@ -84,4 +84,8 @@
         </TreeView.DataTemplates>
     </TreeView>
 </UserControl>
+
+
+
+
 

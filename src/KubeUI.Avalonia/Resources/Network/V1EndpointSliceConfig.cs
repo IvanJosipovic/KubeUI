@@ -1,6 +1,6 @@
 using k8s.Models;
 
-namespace KubeUI.Resources.Network;
+namespace KubeUI.Avalonia.Resources.Network;
 
 public sealed partial class V1EndpointSliceConfig : ResourceConfigBase<V1EndpointSlice>
 {
@@ -17,3 +17,4 @@ public sealed partial class V1EndpointSliceConfig : ResourceConfigBase<V1Endpoin
         ];
     }
 }
+

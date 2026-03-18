@@ -1,11 +1,11 @@
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
-using KubeUI.Client;
-using KubeUI.Views;
+using KubeUI.Kubernetes;
+using KubeUI.Avalonia.Views;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 
-namespace KubeUI;
+namespace KubeUI.Avalonia;
 
 public partial class App : Application
 {
@@ -20,6 +20,9 @@ public partial class App : Application
         Services = serviceProvider;
         _logger = Services.GetRequiredService<ILogger<App>>();
 
+        Resources["AppearanceSettings"] = Services.GetRequiredService<ISettingsService>().Appearance;
+        Resources["DataGridRowHeight"] = Convert.ToDouble(Services.GetRequiredService<ISettingsService>().Appearance.ListRowHeight);
+        Resources["DataGridFontSize"] = Convert.ToDouble(Services.GetRequiredService<ISettingsService>().Appearance.FontSize);
         Resources[typeof(IServiceProvider)] = Services;
         DataTemplates.Add(Services.GetRequiredService<ViewLocator>());
 
@@ -94,3 +97,6 @@ public partial class App : Application
         }
     }
 }
+
+
+

@@ -1,6 +1,6 @@
 using k8s.KubeConfigModels;
 
-namespace KubeUI.Client;
+namespace KubeUI.Kubernetes;
 
 public interface IClusterRuntimeCatalog
 {
@@ -11,3 +11,4 @@ public interface IClusterRuntimeCatalog
     void LoadFromConfigFromPath(string path);
     void RemoveCluster(IClusterRuntime cluster);
 }
+

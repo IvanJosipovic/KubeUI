@@ -1,6 +1,6 @@
-﻿using k8s.Models;
+using k8s.Models;
 
-namespace KubeUI.Resources.Configuration;
+namespace KubeUI.Avalonia.Resources.Configuration;
 
 public sealed partial class V1PodDisruptionBudgetConfig : ResourceConfigBase<V1PodDisruptionBudget>
 {
@@ -43,3 +43,4 @@ public sealed partial class V1PodDisruptionBudgetConfig : ResourceConfigBase<V1P
         ];
     }
 }
+

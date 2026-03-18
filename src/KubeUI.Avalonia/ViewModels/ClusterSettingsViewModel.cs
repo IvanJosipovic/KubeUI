@@ -1,6 +1,6 @@
-using KubeUI.Client;
+using KubeUI.Kubernetes;
 
-namespace KubeUI.ViewModels;
+namespace KubeUI.Avalonia.ViewModels;
 
 public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializeCluster
 {
@@ -52,4 +52,6 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
         }
     }
 }
+
+
 

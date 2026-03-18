@@ -1,10 +1,10 @@
-﻿using System.Globalization;
+using System.Globalization;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.EventEmitters;
 
-namespace KubeUI.Client.Serialization;
+namespace KubeUI.Kubernetes.Serialization;
 
 internal class FloatEmitter : ChainedEventEmitter
 {
@@ -30,3 +30,4 @@ internal class FloatEmitter : ChainedEventEmitter
         }
     }
 }
+

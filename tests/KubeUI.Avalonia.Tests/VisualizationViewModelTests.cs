@@ -3,9 +3,9 @@ using Avalonia.Headless.XUnit;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.ViewModels;
+using KubeUI.Avalonia.ViewModels;
 using Shouldly;
-using static KubeUI.ViewModels.VisualizationViewModel;
+using static KubeUI.Avalonia.ViewModels.VisualizationViewModel;
 
 namespace KubeUI.Avalonia.Tests;
 
@@ -3179,3 +3179,5 @@ public class VisualizationViewModelTests
         public V1ObjectMeta Metadata { get; set; } = new();
     }
 }
+
+

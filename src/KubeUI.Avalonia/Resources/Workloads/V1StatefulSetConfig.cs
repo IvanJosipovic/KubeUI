@@ -5,7 +5,7 @@ using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
 using k8s.Models;
 
-namespace KubeUI.Resources.Workloads;
+namespace KubeUI.Avalonia.Resources.Workloads;
 
 public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulSet>
 {
@@ -42,4 +42,5 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
         ];
     }
 }
+
 

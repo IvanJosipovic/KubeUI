@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 using k8s.Models;
 
-namespace KubeUI.Client;
+namespace KubeUI.Kubernetes;
 
 public class V2beta1APIGroupDiscoveryList
 {
@@ -98,3 +98,4 @@ public class V2beta1APIGroupDiscoveryListItemVersionResourceSubresource
     [JsonPropertyName("verbs")]
     public IList<string> verbs { get; set; } = [];
 }
+

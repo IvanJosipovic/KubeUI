@@ -1,7 +1,7 @@
 using System.Reflection;
 using AvaloniaEdit;
 
-namespace KubeUI.Views;
+namespace KubeUI.Avalonia.Views;
 
 public static class TextEditorExtensions
 {
@@ -18,3 +18,4 @@ public static class TextEditorExtensions
         }
     }
 }
+

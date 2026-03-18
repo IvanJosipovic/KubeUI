@@ -1,13 +1,13 @@
 <UserControl
-    x:Class="KubeUI.Views.MainView"
+    x:Class="KubeUI.Avalonia.Views.MainView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:assets="clr-namespace:KubeUI.Assets;assembly=KubeUI.Avalonia"
+    xmlns:assets="clr-namespace:KubeUI.Avalonia.Assets;assembly=KubeUI.Avalonia"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:doc="using:Dock.Avalonia.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:views="clr-namespace:KubeUI.Views"
-    xmlns:vm="clr-namespace:KubeUI.ViewModels"
+    xmlns:views="clr-namespace:KubeUI.Avalonia.Views"
+    xmlns:vm="clr-namespace:KubeUI.Avalonia.ViewModels"
     d:DesignHeight="450"
     d:DesignWidth="800"
     x:DataType="vm:MainViewModel"
@@ -43,5 +43,8 @@
             Layout="{Binding Layout}" />
     </Grid>
 </UserControl>
+
+
+
 
 

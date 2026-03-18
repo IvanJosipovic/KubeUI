@@ -1,6 +1,6 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 
-namespace KubeUI.Views;
+namespace KubeUI.Avalonia.Views;
 
 public partial class MainView : UserControl
 {
@@ -15,3 +15,4 @@ public partial class MainView : UserControl
         }
     }
 }
+

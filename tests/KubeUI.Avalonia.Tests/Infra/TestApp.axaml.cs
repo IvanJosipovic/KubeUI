@@ -5,7 +5,8 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using Dock.Model.Core;
 using HanumanInstitute.MvvmDialogs;
-using KubeUI.Client;
+using KubeUI.Avalonia;
+using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -29,6 +30,7 @@ public class TestApp : Application
         services.AddLogging();
 
         services.AddSingleton<ISettingsService, TestSettingsService>();
+        services.AddSingleton<IClusterSettingsStore>(sp => sp.GetRequiredService<ISettingsService>().Clusters);
 
         var dialog = new Mock<IDialogService>();
         services.AddSingleton<IDialogService>(dialog.Object);
@@ -45,5 +47,6 @@ public class TestApp : Application
         Resources[typeof(IServiceProvider)] = Services;
     }
 }
+
 
 

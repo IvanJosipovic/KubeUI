@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <Using Include="CommunityToolkit.Mvvm.ComponentModel" />
+    <Using Include="KubeUI.Kubernetes" />
     <Using Include="Microsoft.Extensions.DependencyInjection" />
     <Using Include="Microsoft.Extensions.Logging" />
     <Using Include="System.Collections" />

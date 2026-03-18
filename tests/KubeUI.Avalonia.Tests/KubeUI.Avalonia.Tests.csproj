@@ -32,6 +32,8 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="KubeUI.Avalonia" />
+    <Using Include="KubeUI.Kubernetes" />
   </ItemGroup>
 
   <ItemGroup>

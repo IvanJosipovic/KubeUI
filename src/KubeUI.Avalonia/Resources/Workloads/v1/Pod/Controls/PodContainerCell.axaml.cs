@@ -3,10 +3,10 @@ using DynamicData;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Client;
-using KubeUI.Converters;
+using KubeUI.Kubernetes;
+using KubeUI.Avalonia.Converters;
 
-namespace KubeUI.Controls;
+namespace KubeUI.Avalonia.Controls;
 
 public partial class PodContainerCell : UserControl, IInitializeCluster
 {
@@ -144,4 +144,6 @@ public partial class PodContainerCell : UserControl, IInitializeCluster
         public partial IBrush Brush { get; set; }
     };
 }
+
+
 

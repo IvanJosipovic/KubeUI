@@ -8,9 +8,9 @@ using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Resources;
+using KubeUI.Avalonia.Resources;
 
-namespace KubeUI.ViewModels;
+namespace KubeUI.Avalonia.ViewModels;
 
 public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterRuntime, IDisposable
 {
@@ -645,3 +645,4 @@ internal enum CustomResourceDefinitionChangeKind
 internal sealed record PendingCustomResourceDefinitionChange(CustomResourceDefinitionChangeKind Kind, V1CustomResourceDefinition Crd);
 
 internal sealed record PendingCustomResourceConfig(GroupApiVersionKind Kind, IResourceConfig ResourceConfig);
+

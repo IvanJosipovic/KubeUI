@@ -1,7 +1,7 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Avalonia.Data.Converters;
 
-namespace KubeUI.Converters;
+namespace KubeUI.Avalonia.Converters;
 
 class StaticResourceConverter : IValueConverter
 {
@@ -22,3 +22,4 @@ class StaticResourceConverter : IValueConverter
         throw new Exception("The method or operation is not implemented.");
     }
 }
+

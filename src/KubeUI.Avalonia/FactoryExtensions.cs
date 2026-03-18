@@ -1,7 +1,7 @@
 using Dock.Model.Controls;
 using Dock.Model.Core;
 
-namespace KubeUI;
+namespace KubeUI.Avalonia;
 
 public static class FactoryExtensions
 {
@@ -92,3 +92,4 @@ public static class FactoryExtensions
         }
     }
 }
+

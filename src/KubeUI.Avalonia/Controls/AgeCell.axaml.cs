@@ -1,7 +1,7 @@
 using k8s;
 using k8s.Models;
 
-namespace KubeUI.Controls;
+namespace KubeUI.Avalonia.Controls;
 
 public sealed partial class AgeCell : UserControl
 {
@@ -88,3 +88,4 @@ public sealed partial class AgeCell : UserControl
         }
     }
 }
+

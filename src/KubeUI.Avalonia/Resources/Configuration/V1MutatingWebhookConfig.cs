@@ -1,6 +1,6 @@
-﻿using k8s.Models;
+using k8s.Models;
 
-namespace KubeUI.Resources.Configuration;
+namespace KubeUI.Avalonia.Resources.Configuration;
 
 public sealed partial class V1MutatingWebhookConfig : ResourceConfigBase<V1MutatingWebhookConfiguration>
 {
@@ -21,3 +21,4 @@ public sealed partial class V1MutatingWebhookConfig : ResourceConfigBase<V1Mutat
         ];
     }
 }
+

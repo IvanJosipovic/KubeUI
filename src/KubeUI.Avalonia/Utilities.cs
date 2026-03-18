@@ -1,4 +1,4 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.Json;
 using Avalonia.Controls.Notifications;
@@ -7,7 +7,7 @@ using k8s.Autorest;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 
-namespace KubeUI;
+namespace KubeUI.Avalonia;
 
 public static class Utilities
 {
@@ -299,3 +299,4 @@ public static class Utilities
         return gen;
     }
 }
+

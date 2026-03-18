@@ -1,4 +1,4 @@
-﻿namespace KubeUI.ViewModels;
+namespace KubeUI.Avalonia.ViewModels;
 
 public sealed partial class ClusterErrorViewModel : ViewModelBase
 {
@@ -11,3 +11,4 @@ public sealed partial class ClusterErrorViewModel : ViewModelBase
     [ObservableProperty]
     public partial string? Error { get; set; }
 }
+

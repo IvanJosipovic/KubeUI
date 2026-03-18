@@ -1,16 +1,16 @@
 <UserControl
-    x:Class="KubeUI.Views.ClusterListView"
+    x:Class="KubeUI.Avalonia.Views.ClusterListView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:assets="clr-namespace:KubeUI.Assets"
-    xmlns:client="using:KubeUI.Client"
-    xmlns:controls="clr-namespace:KubeUI.Controls"
-    xmlns:converters="using:KubeUI.Converters"
+    xmlns:assets="clr-namespace:KubeUI.Avalonia.Assets"
+    xmlns:client="using:KubeUI.Kubernetes"
+    xmlns:controls="clr-namespace:KubeUI.Avalonia.Controls"
+    xmlns:converters="using:KubeUI.Avalonia.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:ic="using:FluentIcons.Avalonia"
-    xmlns:local="using:KubeUI.Views"
+    xmlns:local="using:KubeUI.Avalonia.Views"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:vm="clr-namespace:KubeUI.ViewModels"
+    xmlns:vm="clr-namespace:KubeUI.Avalonia.ViewModels"
     d:DesignHeight="450"
     d:DesignWidth="800"
     x:DataType="vm:ClusterListViewModel"
@@ -27,7 +27,6 @@
             GridLinesVisibility="All"
             IsReadOnly="True"
             ItemsSource="{Binding ClusterCatalog.Clusters}"
-            RowHeight="{Binding Settings.Settings.ListRowHeight}"
             SelectedItem="{Binding SelectedItem}">
             <DataGrid.ContextMenu>
                 <ContextMenu>
@@ -45,22 +44,18 @@
                 <controls:MyDataGridTextColumn
                     Width="*"
                     Binding="{Binding Name}"
-                    FontSize="{Binding Settings.Settings.FontSize}"
                     Header="Name"
                     SortDirection="Ascending" />
                 <controls:MyDataGridTextColumn
                     Binding="{Binding KubeConfigPath}"
-                    FontSize="{Binding Settings.Settings.FontSize}"
                     Header="KubeConfig" />
             </DataGrid.Columns>
-            <DataGrid.Styles>
-                <Style Selector="DataGridColumnHeader">
-                    <Setter Property="FontSize" Value="{Binding $parent[local:ClusterListView].DataContext.Settings.Settings.FontSize}" />
-                    <Setter Property="MinHeight" Value="{Binding $parent[local:ClusterListView].DataContext.Settings.Settings.ListRowHeight}" />
-                </Style>
-            </DataGrid.Styles>
         </DataGrid>
     </Grid>
 </UserControl>
+
+
+
+
 
 

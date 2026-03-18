@@ -1,13 +1,13 @@
 <UserControl
-    x:Class="KubeUI.Views.ClusterSettingsView"
+    x:Class="KubeUI.Avalonia.Views.ClusterSettingsView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:assets="clr-namespace:KubeUI.Assets"
+    xmlns:assets="clr-namespace:KubeUI.Avalonia.Assets"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:utils="clr-namespace:KubeUI.Utilities"
-    xmlns:views="clr-namespace:KubeUI.Views"
-    xmlns:vm="clr-namespace:KubeUI.ViewModels"
+    xmlns:utils="clr-namespace:KubeUI.Avalonia.Utilities"
+    xmlns:views="clr-namespace:KubeUI.Avalonia.Views"
+    xmlns:vm="clr-namespace:KubeUI.Avalonia.ViewModels"
     d:DesignHeight="450"
     d:DesignWidth="800"
     x:DataType="vm:ClusterSettingsViewModel"
@@ -54,4 +54,7 @@
         </Grid>
     </StackPanel>
 </UserControl>
+
+
+
 

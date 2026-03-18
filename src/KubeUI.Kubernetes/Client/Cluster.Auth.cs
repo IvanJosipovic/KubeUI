@@ -3,7 +3,7 @@ using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 
-namespace KubeUI.Client;
+namespace KubeUI.Kubernetes;
 
 public partial class Cluster
 {
@@ -210,4 +210,5 @@ public partial class Cluster
         await UpdatePermissionsAllNamespaceAsync(typeof(T), verb, subresource);
     }
 }
+
 

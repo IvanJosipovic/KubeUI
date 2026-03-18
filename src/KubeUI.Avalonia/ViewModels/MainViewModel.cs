@@ -4,11 +4,11 @@ using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
-using KubeUI.Client;
+using KubeUI.Kubernetes;
 using Velopack;
 using Velopack.Sources;
 
-namespace KubeUI.ViewModels;
+namespace KubeUI.Avalonia.ViewModels;
 
 public sealed partial class MainViewModel : ViewModelBase
 {
@@ -239,7 +239,7 @@ public sealed partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void SwitchTheme()
     {
-        SettingsService.Settings.Theme = SettingsService.Settings.Theme == LocalThemeVariant.Light ? LocalThemeVariant.Dark : LocalThemeVariant.Light;
+        SettingsService.Appearance.Theme = SettingsService.Appearance.Theme == LocalThemeVariant.Light ? LocalThemeVariant.Dark : LocalThemeVariant.Light;
         SettingsService.SaveSettings();
     }
 
@@ -325,4 +325,6 @@ public sealed partial class MainViewModel : ViewModelBase
         }
     }
 }
+
+
 

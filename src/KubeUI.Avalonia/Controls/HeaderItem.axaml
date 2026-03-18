@@ -1,9 +1,9 @@
 <UserControl
-    x:Class="KubeUI.Controls.HeaderItem"
+    x:Class="KubeUI.Avalonia.Controls.HeaderItem"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:local="using:KubeUI.Controls"
+    xmlns:local="using:KubeUI.Avalonia.Controls"
     d:DesignHeight="30"
     d:DesignWidth="200">
     <StackPanel>
@@ -18,3 +18,6 @@
         <ItemsControl ItemsSource="{Binding Controls, RelativeSource={RelativeSource AncestorType=local:HeaderItem}}" />
     </StackPanel>
 </UserControl>
+
+
+

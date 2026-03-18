@@ -3,10 +3,10 @@ using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
-using KubeUI.Resources.Workloads.v1.Pod.Controls;
-using KubeUI.Views;
+using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Controls;
+using KubeUI.Avalonia.Views;
 
-namespace KubeUI.Resources.Workloads.v1.Pod;
+namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 
 public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 {
@@ -301,4 +301,6 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         return false;
     }
 }
+
+
 

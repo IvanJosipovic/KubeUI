@@ -1,4 +1,4 @@
-﻿namespace KubeUI.Views;
+namespace KubeUI.Avalonia.Views;
 
 public partial class MainWindow : Window
 {
@@ -7,3 +7,4 @@ public partial class MainWindow : Window
         InitializeComponent();
     }
 }
+

@@ -2,9 +2,9 @@ using System.Diagnostics;
 using System.Reflection;
 using Avalonia.Controls.Templates;
 using Dock.Model.Core;
-using KubeUI.Client;
+using KubeUI.Kubernetes;
 
-namespace KubeUI;
+namespace KubeUI.Avalonia;
 
 public sealed class ViewLocator : IDataTemplate
 {
@@ -115,6 +115,8 @@ public sealed class ViewLocator : IDataTemplate
         return genericTypeIndex >= 0 ? fullName[..genericTypeIndex] : fullName;
     }
 }
+
+
 
 
 

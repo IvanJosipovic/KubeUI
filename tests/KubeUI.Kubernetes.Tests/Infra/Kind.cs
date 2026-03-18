@@ -88,7 +88,7 @@ public static class Kind
 
     public static async Task<K8SConfiguration> GetK8SConfiguration(string name)
     {
-        return KubeUI.Client.Serialization.KubernetesYaml.Deserialize<K8SConfiguration>(await GetKubeConfig(name));
+        return KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<K8SConfiguration>(await GetKubeConfig(name));
     }
 
     public static async Task<k8s.Kubernetes> GetKubernetesClient(string name)
@@ -106,3 +106,4 @@ public static class Kind
         }
     }
 }
+

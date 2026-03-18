@@ -1,6 +1,6 @@
 using k8s.Models;
 
-namespace KubeUI.Resources.AccessControl;
+namespace KubeUI.Avalonia.Resources.AccessControl;
 
 public sealed partial class V1ClusterRoleConfig : ResourceConfigBase<V1ClusterRole>
 {
@@ -14,3 +14,4 @@ public sealed partial class V1ClusterRoleConfig : ResourceConfigBase<V1ClusterRo
         ];
     }
 }
+

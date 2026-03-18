@@ -10,9 +10,9 @@ using Humanizer;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Client;
+using KubeUI.Kubernetes;
 
-namespace KubeUI.Resources;
+namespace KubeUI.Avalonia.Resources;
 
 public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourceConfig where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
@@ -428,5 +428,6 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
             return v?.ToString() ?? "";
         };
 }
+
 
 

@@ -1,4 +1,4 @@
-namespace KubeUI.Controls;
+namespace KubeUI.Avalonia.Controls;
 
 public partial class PropertyItem : UserControl
 {
@@ -22,3 +22,4 @@ public partial class PropertyItem : UserControl
 #endif
     }
 }
+

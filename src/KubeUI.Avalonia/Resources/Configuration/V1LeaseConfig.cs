@@ -1,6 +1,6 @@
-﻿using k8s.Models;
+using k8s.Models;
 
-namespace KubeUI.Resources.Configuration;
+namespace KubeUI.Avalonia.Resources.Configuration;
 
 public sealed partial class V1LeaseConfig : ResourceConfigBase<V1Lease>
 {
@@ -23,3 +23,4 @@ public sealed partial class V1LeaseConfig : ResourceConfigBase<V1Lease>
         ];
     }
 }
+

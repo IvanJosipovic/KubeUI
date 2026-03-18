@@ -1,7 +1,7 @@
-﻿using YamlDotNet.Serialization;
+using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.TypeInspectors;
 
-namespace KubeUI.Client.Serialization;
+namespace KubeUI.Kubernetes.Serialization;
 
 public class SortedTypeInspector : TypeInspectorSkeleton
 {
@@ -27,3 +27,4 @@ public class SortedTypeInspector : TypeInspectorSkeleton
         return _innerTypeInspector.GetProperties(type, container).OrderBy(x => x.Name);
     }
 }
+

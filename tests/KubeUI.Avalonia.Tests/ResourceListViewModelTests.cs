@@ -11,8 +11,8 @@ using FluentAvalonia.Core;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.ViewModels;
-using KubeUI.Views;
+using KubeUI.Avalonia.ViewModels;
+using KubeUI.Avalonia.Views;
 
 namespace KubeUI.Avalonia.Tests;
 
@@ -646,3 +646,4 @@ public class ResourceListViewModelTests
         descriptor.Values[0].ShouldBe("default");
     }
 }
+

@@ -1,6 +1,6 @@
 using Avalonia.Controls.ApplicationLifetimes;
 
-namespace KubeUI;
+namespace KubeUI.Avalonia;
 
 public static class TopLevelAccessor
 {
@@ -24,3 +24,4 @@ public static class TopLevelAccessor
         return GetCurrent() ?? throw new InvalidOperationException("No active Avalonia TopLevel is available.");
     }
 }
+

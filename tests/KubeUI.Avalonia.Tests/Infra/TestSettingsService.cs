@@ -1,16 +1,19 @@
-using KubeUI.Client;
+using Microsoft.Extensions.Logging;
 
 namespace KubeUI.Avalonia.Tests.Infra;
 
-public class TestSettingsService : ISettingsService
+public sealed class TestSettingsService : SettingsService
 {
-    public Settings Settings { get; set; } = new();
-
-    public void ApplySettings()
+    public TestSettingsService(ILogger<SettingsService> logger)
+        : base(logger)
     {
     }
 
-    public void SaveSettings()
+    public override void ApplySettings()
+    {
+    }
+
+    public override void SaveSettings()
     {
     }
 }

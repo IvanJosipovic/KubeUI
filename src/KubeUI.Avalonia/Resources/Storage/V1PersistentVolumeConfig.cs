@@ -1,6 +1,6 @@
 using k8s.Models;
 
-namespace KubeUI.Resources.Storage;
+namespace KubeUI.Avalonia.Resources.Storage;
 
 public sealed partial class V1PersistentVolumeConfig : ResourceConfigBase<V1PersistentVolume>
 {
@@ -40,3 +40,4 @@ public sealed partial class V1PersistentVolumeConfig : ResourceConfigBase<V1Pers
         ];
     }
 }
+

@@ -4,7 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using k8s.Models;
 
-namespace KubeUI.Resources.Configuration.v1.Secret.Views;
+namespace KubeUI.Avalonia.Resources.Configuration.v1.Secret.Views;
 
 public partial class SecretPropertiesView : UserControl
 {
@@ -54,3 +54,4 @@ public partial class SecretPropertiesView : UserControl
 #endif
     }
 }
+

@@ -1,21 +1,18 @@
-using KubeUI.Resources;
-using KubeUI.ViewModels;
+using KubeUI.Avalonia.Resources;
+using KubeUI.Avalonia.ViewModels;
 using ServiceScan.SourceGenerator;
 
-namespace KubeUI;
+namespace KubeUI.Avalonia;
 
-public static partial class KubeUIPresentationServiceCollectionExtensions
+public static partial class KubeUIAvaloniaResourceServiceCollectionExtensions
 {
-    public static IServiceCollection AddKubeUIPresentationServices(this IServiceCollection services)
+    public static IServiceCollection AddKubeUIAvaloniaResourceServices(this IServiceCollection services)
     {
         services.AddSingleton<ClusterWorkspaceCatalog>();
-        return services.AddKubeUIPresentationGeneratedServices();
+        return services.AddKubeUIAvaloniaResourceGeneratedServices();
     }
 
-    
-    
     [GenerateServiceRegistrations(AssignableTo = typeof(ResourceConfigBase<>), Lifetime = ServiceLifetime.Transient, AsSelf = false, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI.Avalonia")]
     [GenerateServiceRegistrations(AssignableTo = typeof(CRDResourceConfig<>), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI.Avalonia")]
-    private static partial IServiceCollection AddKubeUIPresentationGeneratedServices(this IServiceCollection services);
+    private static partial IServiceCollection AddKubeUIAvaloniaResourceGeneratedServices(this IServiceCollection services);
 }
-

@@ -1,9 +1,9 @@
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
-using KubeUI.Client;
+using KubeUI.Kubernetes;
 
-namespace KubeUI.ViewModels;
+namespace KubeUI.Avalonia.ViewModels;
 
 public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitializeCluster
 {
@@ -68,4 +68,6 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
         Id = cluster.Name + nameof(PortForwarderListViewModel);
     }
 }
+
+
 

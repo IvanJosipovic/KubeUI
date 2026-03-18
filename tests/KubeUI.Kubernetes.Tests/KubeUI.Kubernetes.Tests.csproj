@@ -24,6 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\KubeUI.Avalonia\KubeUI.Avalonia.csproj" />
     <ProjectReference Include="..\..\src\KubeUI.Kubernetes\KubeUI.Kubernetes.csproj" />
   </ItemGroup>
 
@@ -33,5 +34,6 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="KubeUI.Kubernetes" />
   </ItemGroup>
 </Project>

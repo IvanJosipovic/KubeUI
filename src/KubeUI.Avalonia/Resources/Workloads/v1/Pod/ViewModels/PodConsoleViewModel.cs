@@ -8,11 +8,11 @@ using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Rendering;
 using k8s;
 using k8s.Models;
-using KubeUI.Client;
+using KubeUI.Kubernetes;
 using XtermSharp;
-using Color = Avalonia.Media.Color;
+using Color = global::Avalonia.Media.Color;
 
-namespace KubeUI.ViewModels;
+namespace KubeUI.Avalonia.ViewModels;
 
 public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
 {
@@ -120,7 +120,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
         Height = height;
         if (Width > 0 && Height > 0)
         {
-            var size = CalculateTextSize("a", FontFamily, Convert.ToDouble(SettingsService.Settings.ConsoleFontSize));
+            var size = CalculateTextSize("a", FontFamily, Convert.ToDouble(SettingsService.Appearance.ConsoleFontSize));
             var cols = (int)((width) / size.Width);
             var rows = (int)((height) / (size.Height * 1.17));
             if (Terminal.Cols != cols || Terminal.Rows != rows)
@@ -134,7 +134,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
 
     public static Size CalculateTextSize(string text, string fontName, double myFontSize)
     {
-        var myFont = Avalonia.Media.FontFamily.Parse(fontName) ?? throw new ArgumentException($"The resource {fontName} is not a FontFamily.");
+        var myFont = global::Avalonia.Media.FontFamily.Parse(fontName) ?? throw new ArgumentException($"The resource {fontName} is not a FontFamily.");
 
         var typeface = new Typeface(myFont);
         var shaped = TextShaper.Current.ShapeText(text, new TextShaperOptions(typeface.GlyphTypeface, myFontSize));
@@ -761,5 +761,7 @@ public class ConsoleColorizer : DocumentColorizingTransformer
             element.TextRunProperties.SetFontRenderingEmSize(color.FontSize.Value);
     }
 }
+
+
 
 

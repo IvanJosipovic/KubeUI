@@ -1,6 +1,6 @@
-using KubeUI.Client.Serialization;
+using KubeUI.Kubernetes.Serialization;
 
-namespace KubeUI.Client.Serialization;
+namespace KubeUI.Kubernetes.Serialization;
 
 internal sealed class KubernetesYamlSerializer : IKubernetesYamlSerializer
 {
@@ -9,3 +9,5 @@ internal sealed class KubernetesYamlSerializer : IKubernetesYamlSerializer
         return KubernetesYaml.Serialize(value);
     }
 }
+
+

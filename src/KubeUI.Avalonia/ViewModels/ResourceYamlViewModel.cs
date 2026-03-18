@@ -4,11 +4,11 @@ using AvaloniaEdit.Document;
 using AvaloniaEdit.Folding;
 using k8s;
 using k8s.Models;
-using KubeUI.Client;
-using KubeUI.Client.Serialization;
+using KubeUI.Kubernetes;
+using KubeUI.Kubernetes.Serialization;
 using KubernetesClient.Informer.Client;
 
-namespace KubeUI.ViewModels;
+namespace KubeUI.Avalonia.ViewModels;
 
 public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 {
@@ -159,4 +159,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         }
     }
 }
+
+
+
 

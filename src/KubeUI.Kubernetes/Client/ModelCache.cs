@@ -4,7 +4,7 @@ using System.Xml;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 
-namespace KubeUI.Client;
+namespace KubeUI.Kubernetes;
 
 public sealed class ModelCache
 {
@@ -67,3 +67,4 @@ public sealed class ModelCache
         return TypeCache.ContainsKey($"{crd.Spec.Group}/{version}/{crd.Spec.Names.Kind}");
     }
 }
+

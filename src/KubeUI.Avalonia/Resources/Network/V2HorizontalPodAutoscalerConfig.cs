@@ -1,6 +1,6 @@
-﻿using k8s.Models;
+using k8s.Models;
 
-namespace KubeUI.Resources.Network;
+namespace KubeUI.Avalonia.Resources.Network;
 
 public sealed partial class V2HorizontalPodAutoscalerConfig : ResourceConfigBase<V2HorizontalPodAutoscaler>
 {
@@ -41,3 +41,4 @@ public sealed partial class V2HorizontalPodAutoscalerConfig : ResourceConfigBase
         ];
     }
 }
+

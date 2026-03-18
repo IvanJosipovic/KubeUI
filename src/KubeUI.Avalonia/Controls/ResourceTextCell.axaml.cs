@@ -1,9 +1,9 @@
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Client;
+using KubeUI.Kubernetes;
 
-namespace KubeUI.Controls;
+namespace KubeUI.Avalonia.Controls;
 
 public interface IDisplayFunc
 {
@@ -101,4 +101,5 @@ public sealed partial class ResourceTextCell : UserControl, IInitializeCluster, 
         }
     }
 }
+
 

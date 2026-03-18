@@ -1,5 +1,5 @@
 <UserControl
-    x:Class="KubeUI.Views.VisualizationView"
+    x:Class="KubeUI.Avalonia.Views.VisualizationView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:agc="clr-namespace:AvaloniaGraphControl;assembly=AvaloniaGraphControl"
@@ -7,12 +7,13 @@
     xmlns:converters="clr-namespace:NodifyM.Avalonia.Converters;assembly=NodifyM.Avalonia"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:ic="using:FluentIcons.Avalonia"
+    xmlns:panzoom="using:Avalonia.Controls.PanAndZoom"
     xmlns:k8s="using:k8s.Models"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:u="https://irihi.tech/ursa"
     xmlns:viewModelBase="clr-namespace:NodifyM.Avalonia.ViewModelBase;assembly=NodifyM.Avalonia"
-    xmlns:viewmodels="using:KubeUI.ViewModels"
-    xmlns:vm="clr-namespace:KubeUI.ViewModels"
+    xmlns:viewmodels="using:KubeUI.Avalonia.ViewModels"
+    xmlns:vm="clr-namespace:KubeUI.Avalonia.ViewModels"
     d:DesignHeight="980"
     d:DesignWidth="1200"
     x:DataType="vm:VisualizationViewModel"
@@ -66,52 +67,70 @@
         <ScrollViewer Grid.Row="1"
             HorizontalScrollBarVisibility="Auto"
             VerticalScrollBarVisibility="Auto">
-            <agc:GraphPanel Name="Graph"
-                Graph="{Binding Graph}"
-                LayoutMethod="{Binding LayoutMethod}">
-                <agc:GraphPanel.DataTemplates>
-                    <DataTemplate x:DataType="vm:VisualizationViewModel+ResourceNodeViewModel">
-                        <StackPanel Width="64" Margin="40,16,40,16">
-                            <ToolTip.Tip>
-                                <MultiBinding StringFormat="{} {0}/{1} {2}">
-                                    <Binding Path="Resource.ApiVersion" />
-                                    <Binding Path="Resource.Kind" />
-                                    <Binding Path="Resource.Metadata.Name" />
-                                </MultiBinding>
-                            </ToolTip.Tip>
-                            <Svg Width="64" Path="{Binding IconPath}">
-                                <Svg.ContextFlyout>
-                                    <MenuFlyout>
-                                        <MenuItem
-                                            Command="{Binding ViewPropertiesCommand}"
-                                            CommandParameter="{Binding Resource}"
-                                            Header="Properties" />
-                                        <MenuItem
-                                            Command="{Binding ViewYamlCommand}"
-                                            CommandParameter="{Binding Resource}"
-                                            Header="View Yaml" />
-                                    </MenuFlyout>
-                                </Svg.ContextFlyout>
-                            </Svg>
-                            <TextBlock
-                                Width="128"
-                                ClipToBounds="false"
-                                Text="{Binding Resource.Kind}"
-                                TextAlignment="Center"
-                                TextWrapping="NoWrap" />
-                            <TextBlock
-                                Width="128"
-                                ClipToBounds="false"
-                                Text="{Binding Resource.Metadata.Name}"
-                                TextAlignment="Center"
-                                TextWrapping="Wrap" />
-                        </StackPanel>
-                    </DataTemplate>
-                    <DataTemplate DataType="agc:Edge">
-                        <agc:Connection Brush="Green" />
-                    </DataTemplate>
-                </agc:GraphPanel.DataTemplates>
-            </agc:GraphPanel>
+            <panzoom:ZoomBorder
+                x:Name="ZoomBorder"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                ClipToBounds="True"
+                EnableConstrains="False"
+                EnableGestures="True"
+                Focusable="True"
+                PanButton="Left"
+                Stretch="None"
+                ZoomSpeed="1.5">
+                <panzoom:ZoomBorder.GestureRecognizers>
+                    <PinchGestureRecognizer />
+                </panzoom:ZoomBorder.GestureRecognizers>
+                <agc:GraphPanel Name="Graph"
+                    Graph="{Binding Graph}"
+                    LayoutMethod="{Binding LayoutMethod}">
+                    <agc:GraphPanel.DataTemplates>
+                        <DataTemplate x:DataType="vm:VisualizationViewModel+ResourceNodeViewModel">
+                            <StackPanel Width="64" Margin="40,16,40,16">
+                                <ToolTip.Tip>
+                                    <MultiBinding StringFormat="{} {0}/{1} {2}">
+                                        <Binding Path="Resource.ApiVersion" />
+                                        <Binding Path="Resource.Kind" />
+                                        <Binding Path="Resource.Metadata.Name" />
+                                    </MultiBinding>
+                                </ToolTip.Tip>
+                                <Svg Width="64" Path="{Binding IconPath}">
+                                    <Svg.ContextFlyout>
+                                        <MenuFlyout>
+                                            <MenuItem
+                                                Command="{Binding ViewPropertiesCommand}"
+                                                CommandParameter="{Binding Resource}"
+                                                Header="Properties" />
+                                            <MenuItem
+                                                Command="{Binding ViewYamlCommand}"
+                                                CommandParameter="{Binding Resource}"
+                                                Header="View Yaml" />
+                                        </MenuFlyout>
+                                    </Svg.ContextFlyout>
+                                </Svg>
+                                <TextBlock
+                                    Width="128"
+                                    ClipToBounds="false"
+                                    Text="{Binding Resource.Kind}"
+                                    TextAlignment="Center"
+                                    TextWrapping="NoWrap" />
+                                <TextBlock
+                                    Width="128"
+                                    ClipToBounds="false"
+                                    Text="{Binding Resource.Metadata.Name}"
+                                    TextAlignment="Center"
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+                        </DataTemplate>
+                        <DataTemplate DataType="agc:Edge">
+                            <agc:Connection Brush="Green" />
+                        </DataTemplate>
+                    </agc:GraphPanel.DataTemplates>
+                </agc:GraphPanel>
+            </panzoom:ZoomBorder>
         </ScrollViewer>
     </Grid>
 </UserControl>
+
+
+

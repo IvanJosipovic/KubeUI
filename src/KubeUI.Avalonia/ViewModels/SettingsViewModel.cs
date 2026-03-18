@@ -1,7 +1,7 @@
-﻿
-using KubeUI.Client;
 
-namespace KubeUI.ViewModels;
+using KubeUI.Kubernetes;
+
+namespace KubeUI.Avalonia.ViewModels;
 
 public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 {
@@ -27,3 +27,5 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
         SettingsService.Settings.PropertyChanged -= Settings_PropertyChanged;
     }
 }
+
+

@@ -6,9 +6,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Client;
-using KubeUI.Resources;
-using KubeUI.ViewModels;
+using KubeUI.Kubernetes;
+using KubeUI.Avalonia.Resources;
+using KubeUI.Avalonia.ViewModels;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -343,3 +343,4 @@ internal class FakeCustomResourceConfig : IResourceConfig
     public Type Type { get; }
     public void Initialize(ClusterWorkspaceViewModel cluster) { }
 }
+

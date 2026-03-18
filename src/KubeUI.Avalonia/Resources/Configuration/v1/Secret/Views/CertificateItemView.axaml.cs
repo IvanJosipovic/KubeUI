@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
-namespace KubeUI.Resources.Configuration.v1.Secret.Views;
+namespace KubeUI.Avalonia.Resources.Configuration.v1.Secret.Views;
 
 public partial class CertificateItemView : UserControl
 {
@@ -127,3 +127,4 @@ public partial class CertificateItemView : UserControl
         HasCert = false;
     }
 }
+

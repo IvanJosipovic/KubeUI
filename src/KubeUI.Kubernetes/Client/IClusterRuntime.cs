@@ -4,7 +4,7 @@ using k8s.KubeConfigModels;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 
-namespace KubeUI.Client;
+namespace KubeUI.Kubernetes;
 
 public interface IClusterRuntime
 {
@@ -52,3 +52,4 @@ public interface IClusterRuntime
     Task<bool> UpdateCanIAnyNamespaceAsync(Type type, Verb verb, string? subresource = null);
     Task<bool> UpdateCanIAnyNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new();
 }
+

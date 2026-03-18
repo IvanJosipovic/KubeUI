@@ -18,11 +18,11 @@ using Humanizer;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Client;
-using KubeUI.Resources;
-using SortDirection = KubeUI.Resources.SortDirection;
+using KubeUI.Kubernetes;
+using KubeUI.Avalonia.Resources;
+using SortDirection = KubeUI.Avalonia.Resources.SortDirection;
 
-namespace KubeUI.ViewModels;
+namespace KubeUI.Avalonia.ViewModels;
 
 public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluster, IDisposable, IResourceListViewModel where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
@@ -1456,4 +1456,7 @@ public sealed class DynamicDataSearchAdapterFactory<T> : IDataGridSearchAdapterF
         }
     }
 }
+
+
+
 

@@ -1,6 +1,6 @@
 using k8s.Models;
 
-namespace KubeUI.Views;
+namespace KubeUI.Avalonia.Views;
 
 public partial class PodPropertiesView : UserControl
 {
@@ -53,3 +53,4 @@ public partial class PodPropertiesView : UserControl
 #endif
     }
 }
+

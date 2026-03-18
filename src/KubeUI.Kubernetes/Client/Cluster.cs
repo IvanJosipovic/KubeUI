@@ -12,7 +12,7 @@ using k8s.KubeConfigModels;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubernetesCRDModelGen;
-using KubeUI;
+using KubeUI.Kubernetes;
 using Mapster;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http.Resilience;
@@ -20,7 +20,7 @@ using Polly;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 
-namespace KubeUI.Client;
+namespace KubeUI.Kubernetes;
 
 public sealed partial class Cluster : ObservableObject, IClusterRuntime
 {
@@ -29,7 +29,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
 
     private ILogger<Cluster> _logger;
 
-    private ISettingsService _settingsService;
+    private IClusterSettingsStore _settings;
 
     private IGenerator _generator;
 
@@ -76,7 +76,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
     [ObservableProperty]
     public partial ReadOnlyObservableCollection<V1Namespace> Namespaces { get; set; }
 
-    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ModelCache modelCache, IGenerator generator, ISettingsService settingsService, IServiceProvider serviceProvider)
+    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ModelCache modelCache, IGenerator generator, IClusterSettingsStore settings, IServiceProvider serviceProvider)
     {
         _loggerFactory = loggerFactory;
         _logger = logger;
@@ -87,7 +87,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         var kubeAssemblyXmlDoc = new XmlDocument();
         kubeAssemblyXmlDoc.Load(typeof(Generator).Assembly.GetManifestResourceStream("runtime.KubernetesClient.xml"));
         ModelCache.AddToCache(typeof(V1Deployment).Assembly, kubeAssemblyXmlDoc);
-        _settingsService = settingsService;
+        _settings = settings;
         _serviceProvider = serviceProvider;
 
         _ = Task.Run(ProcessQueuedCustomResourceDefinitionsAsync);
@@ -147,9 +147,9 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
                     // Cant list Namespaces
                     if (!ListNamespaces)
                     {
-                        var settings = _settingsService.Settings.GetClusterSettings(this);
+                        var namespaces = _settings.GetClusterNamespaces(this);
 
-                        if (settings?.Namespaces?.Count == 0)
+                        if (namespaces.Count == 0)
                         {
                             Connected = false;
                             Status = ClusterStatus.Errored;
@@ -159,7 +159,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
                             return;
                         }
 
-                        foreach (var item in settings.Namespaces)
+                        foreach (var item in namespaces)
                         {
                             namespaceCache.AddOrUpdate(new V1Namespace() { Metadata = new() { Name = item } });
                         }
@@ -724,4 +724,6 @@ public sealed class OperationKeyHandler : DelegatingHandler
         }
     }
 }
+
+
 

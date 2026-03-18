@@ -1,6 +1,6 @@
 using Avalonia;
 using KubeUI.Testing;
-using KubeUI.ViewModels;
+using KubeUI.Avalonia.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Avalonia.Tests.Infra;
@@ -31,3 +31,4 @@ public sealed class TestCluster : TestClusterRuntime
         return _workspace;
     }
 }
+

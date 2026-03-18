@@ -5,7 +5,7 @@ using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
 using k8s.Models;
 
-namespace KubeUI.Resources.Workloads;
+namespace KubeUI.Avalonia.Resources.Workloads;
 
 public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet>
 {
@@ -54,4 +54,5 @@ public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet
         ];
     }
 }
+
 

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using Avalonia.Data.Converters;
 
-namespace KubeUI.Resources.Configuration.v1.Secret.Converters;
+namespace KubeUI.Avalonia.Resources.Configuration.v1.Secret.Converters;
 
 public sealed class CertificateSanDnsConverter : IValueConverter
 {
@@ -70,3 +70,4 @@ public sealed class CertificateExpiryConverter : IValueConverter
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         throw new NotSupportedException();
 }
+

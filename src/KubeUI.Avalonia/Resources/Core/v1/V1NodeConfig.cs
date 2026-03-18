@@ -6,7 +6,7 @@ using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 
-namespace KubeUI.Resources;
+namespace KubeUI.Avalonia.Resources;
 
 public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 {
@@ -258,4 +258,5 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
         return items?.Count > 0 && Cluster.CanI<V1Node>(Verb.Patch);
     }
 }
+
 

@@ -1,9 +1,9 @@
 <Expander
-    x:Class="KubeUI.Controls.ExpandableSection"
+    x:Class="KubeUI.Avalonia.Controls.ExpandableSection"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:local="using:KubeUI.Controls"
+    xmlns:local="using:KubeUI.Avalonia.Controls"
     MinHeight="30"
     Padding="5"
     HorizontalAlignment="Stretch"
@@ -16,4 +16,7 @@
         </Style>
     </Expander.Styles>
 </Expander>
+
+
+
 

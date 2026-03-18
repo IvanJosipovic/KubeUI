@@ -3,21 +3,19 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Microsoft.Extensions.DependencyInjection;
-using KubeUI.Client;
+using KubeUI.Kubernetes;
 
-namespace KubeUI.Views;
+namespace KubeUI.Avalonia.Views;
 
 public sealed partial class PodConsoleView2 : UserControl
 {
     private readonly ILogger<PodConsoleView2> _logger;
-    private readonly ISettingsService _settings;
 
     public PodConsoleViewModel2? ViewModel => DataContext as PodConsoleViewModel2;
 
     public PodConsoleView2()
     {
         _logger = Application.Current.GetRequiredService<ILogger<PodConsoleView2>>();
-        _settings = Application.Current.GetRequiredService<ISettingsService>();
 
         InitializeComponent();
 
@@ -56,3 +54,5 @@ public sealed partial class PodConsoleView2 : UserControl
         }
     }
 }
+
+

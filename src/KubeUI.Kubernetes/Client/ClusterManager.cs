@@ -4,7 +4,7 @@ using k8s;
 using k8s.KubeConfigModels;
 using Swordfish.NET.Collections;
 
-namespace KubeUI.Client;
+namespace KubeUI.Kubernetes;
 
 public sealed class ClusterComparer : IComparer<IClusterRuntime>
 {
@@ -18,7 +18,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 {
     private readonly ILogger<ClusterManager> _logger;
     private readonly IServiceProvider _serviceProvider;
-    private readonly ISettingsService _settingsService;
+    private readonly IClusterSettingsStore _settings;
     private readonly IDictionary<string, FileSystemWatcher> _fileWatchers = new Dictionary<string, FileSystemWatcher>(StringComparer.Ordinal);
     private readonly object _syncRoot = new();
 
@@ -26,11 +26,11 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
     IEnumerable<IClusterRuntime> IClusterRuntimeCatalog.Clusters => Clusters;
 
-    public ClusterManager(ILogger<ClusterManager> logger, IServiceProvider serviceProvider, ISettingsService settingsService)
+    public ClusterManager(ILogger<ClusterManager> logger, IServiceProvider serviceProvider, IClusterSettingsStore settings)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
-        _settingsService = settingsService;
+        _settings = settings;
 
         KubernetesClientConfiguration.ExecStdError += KubernetesClientConfiguration_ExecStdError;
 
@@ -50,7 +50,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
     private void LoadClusters()
     {
-        if (!_settingsService.Settings.KubeConfigs.Contains(KubernetesClientConfiguration.KubeConfigDefaultLocation))
+        if (!_settings.KubeConfigPaths.Contains(KubernetesClientConfiguration.KubeConfigDefaultLocation))
         {
             try
             {
@@ -62,7 +62,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
             }
         }
 
-        foreach (var config in _settingsService.Settings.KubeConfigs)
+        foreach (var config in _settings.KubeConfigPaths)
         {
             try
             {
@@ -86,11 +86,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
         lock (_syncRoot)
         {
-            if (!_settingsService.Settings.KubeConfigs.Contains(path))
-            {
-                _settingsService.Settings.KubeConfigs.Add(path);
-                _settingsService.SaveSettings();
-            }
+            _settings.AddKubeConfigPath(path);
         }
 
         WatchKubeConfig(path);
@@ -251,3 +247,4 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
         }
     }
 }
+

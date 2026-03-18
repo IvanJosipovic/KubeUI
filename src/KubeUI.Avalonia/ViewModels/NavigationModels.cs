@@ -2,7 +2,7 @@ using System.ComponentModel;
 using FluentIcons.Common;
 using Swordfish.NET.Collections;
 
-namespace KubeUI.ViewModels;
+namespace KubeUI.Avalonia.ViewModels;
 
 public static class NavigationTargets
 {
@@ -167,4 +167,5 @@ public class NavigationItemOrderComparer : IComparer<NavigationItem>
         return string.Compare(x.Id, y.Id, StringComparison.Ordinal);
     }
 }
+
 

@@ -1,7 +1,8 @@
-﻿<Styles
+<Styles
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:converters="using:KubeUI.Converters"
+    xmlns:controls="using:KubeUI.Avalonia.Controls"
+    xmlns:converters="using:KubeUI.Avalonia.Converters"
     xmlns:core="using:Dock.Model.Core"
     xmlns:k="using:KubeUI"
     xmlns:u="https://irihi.tech/ursa">
@@ -40,6 +41,22 @@
         </Setter>
     </Style>
 
+    <Style Selector="DataGrid">
+        <Setter Property="RowHeight" Value="{DynamicResource DataGridRowHeight}" />
+        <Setter Property="FontSize" Value="{DynamicResource DataGridFontSize}" />
+    </Style>
+    <Style Selector="DataGridColumnHeader">
+        <Setter Property="FontSize" Value="{DynamicResource DataGridFontSize}" />
+    </Style>
+    <Style Selector="DataGrid TextBlock">
+        <Setter Property="MaxLines" Value="1" />
+        <Setter Property="FontSize" Value="{DynamicResource DataGridFontSize}" />
+    </Style>
+    <Style Selector="DataGridSearchTextBlock#CellTextBlock">
+        <Setter Property="MaxLines" Value="1" />
+        <Setter Property="FontSize" Value="{DynamicResource DataGridFontSize}" />
+    </Style>
+
     <Style Selector="u|MultiComboBoxItem">
         <Setter Property="Padding" Value="4,2,4,2" />
         <Setter Property="Width" Value="200" />
@@ -60,3 +77,4 @@
         </Setter>
     </Style>
 </Styles>
+

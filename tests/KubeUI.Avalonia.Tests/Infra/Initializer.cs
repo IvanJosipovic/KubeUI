@@ -1,7 +1,6 @@
 using Avalonia;
 using Avalonia.Headless;
-using KubeUI;
-using KubeUI.Assets;
+using KubeUI.Avalonia.Assets;
 using KubeUI.Avalonia.Tests.Infra;
 
 [assembly: AvaloniaTestApplication(typeof(TestAppBuilder))]
@@ -23,3 +22,4 @@ public class TestAppBuilder
         .WithInterFont()
         .UseSkia();
 }
+

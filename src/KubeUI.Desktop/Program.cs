@@ -7,9 +7,9 @@ using Dock.Model.Core;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
-using KubeUI;
-using KubeUI.Assets;
-using KubeUI.Client;
+using KubeUI.Avalonia;
+using KubeUI.Avalonia.Assets;
+using KubeUI.Kubernetes;
 using LiveChartsCore;
 using LiveChartsCore.Drawing;
 using LiveChartsCore.SkiaSharpView;
@@ -203,4 +203,5 @@ internal static class Program
         return services;
     }
 }
+
 

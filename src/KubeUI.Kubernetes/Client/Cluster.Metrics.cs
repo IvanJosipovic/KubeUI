@@ -1,7 +1,7 @@
-﻿using k8s;
+using k8s;
 using k8s.Models;
 
-namespace KubeUI.Client;
+namespace KubeUI.Kubernetes;
 
 public partial class Cluster
 {
@@ -111,3 +111,4 @@ public partial class Cluster
         }
     }
 }
+

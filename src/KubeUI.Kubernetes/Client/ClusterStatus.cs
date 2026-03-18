@@ -1,4 +1,4 @@
-namespace KubeUI.Client;
+namespace KubeUI.Kubernetes;
 
 public enum ClusterStatus
 {
@@ -7,3 +7,4 @@ public enum ClusterStatus
     Errored,
     Connected
 }
+

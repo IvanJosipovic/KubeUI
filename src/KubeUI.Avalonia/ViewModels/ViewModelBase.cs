@@ -1,7 +1,7 @@
-﻿using Dock.Model.Core;
+using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
 
-namespace KubeUI.ViewModels;
+namespace KubeUI.Avalonia.ViewModels;
 
 public abstract class ViewModelBase : Tool
 {
@@ -9,3 +9,4 @@ public abstract class ViewModelBase : Tool
 
     public bool IsPinned => Factory.IsDockablePinned(this);
 }
+

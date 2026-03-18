@@ -1,6 +1,6 @@
-﻿using Avalonia.Logging;
+using Avalonia.Logging;
 
-namespace KubeUI;
+namespace KubeUI.Avalonia;
 
 public class LogSink : ILogSink
 {
@@ -42,3 +42,4 @@ public class LogSink : ILogSink
         };
     }
 }
+

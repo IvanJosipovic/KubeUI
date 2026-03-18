@@ -4,10 +4,10 @@ using AvaloniaGraphControl;
 using Dock.Model.Core;
 using k8s;
 using k8s.Models;
-using KubeUI.Client;
+using KubeUI.Kubernetes;
 using static AvaloniaGraphControl.GraphPanel;
 
-namespace KubeUI.ViewModels;
+namespace KubeUI.Avalonia.ViewModels;
 
 public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeCluster, IDisposable
 {
@@ -2066,5 +2066,6 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
     }
 }
+
 
 

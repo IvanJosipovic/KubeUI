@@ -1,6 +1,6 @@
-using KubeUI.Client;
+using KubeUI.Kubernetes;
 
-namespace KubeUI.Views;
+namespace KubeUI.Avalonia.Views;
 
 public sealed partial class ClusterView : UserControl
 {
@@ -66,5 +66,6 @@ public sealed partial class ClusterView : UserControl
         _timer.Tick -= TimerOnTick;
     }
 }
+
 
 
