@@ -17,6 +17,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
     private Installation? _textMateInstallation;
     private RegistryOptions _registryOptions = null!;
     private FoldingManager? _foldingManager;
+    private ResourceYamlViewModel? _currentViewModel;
 
     protected override void OnAttached()
     {
@@ -46,9 +47,28 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
 
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
-        if (AssociatedObject?.DataContext is ResourceYamlViewModel vm)
+        if (AssociatedObject == null)
         {
-            InitializeEditor(vm);
+            return;
+        }
+
+        var nextViewModel = AssociatedObject.DataContext as ResourceYamlViewModel;
+        if (ReferenceEquals(_currentViewModel, nextViewModel))
+        {
+            if (nextViewModel != null)
+            {
+                InitializeEditor(nextViewModel);
+            }
+
+            return;
+        }
+
+        PersistEditorState(_currentViewModel);
+        _currentViewModel = nextViewModel;
+
+        if (nextViewModel != null)
+        {
+            InitializeEditor(nextViewModel);
         }
     }
 
@@ -94,25 +114,13 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
 
     private void DetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
     {
-        if (AssociatedObject?.DataContext is ResourceYamlViewModel vm && _foldingManager != null)
-        {
-            vm.AllFoldings = [.. _foldingManager.AllFoldings
-                .Select(f =>
-                {
-                    var tag = (NewFolding)f.Tag;
-                    tag.DefaultClosed = f.IsFolded;
-                    return tag;
-                })];
-
-            if (AssociatedObject.GetScrollViewer() is ScrollViewer sc)
-            {
-                vm.ScrollOffset = sc.Offset;
-            }
-        }
+        PersistEditorState(_currentViewModel);
     }
 
     protected override void OnDetaching()
     {
+        PersistEditorState(_currentViewModel);
+
         if (AssociatedObject != null)
         {
             AssociatedObject.DataContextChanged -= OnDataContextChanged;
@@ -131,6 +139,8 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
             FoldingManager.Uninstall(_foldingManager);
             _foldingManager = null;
         }
+
+        _currentViewModel = null;
 
         base.OnDetaching();
     }
@@ -152,7 +162,32 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         }
     }
 
-    private void Editor_TextChanged(object? sender, EventArgs e) => UpdateFoldings();
+    private void Editor_TextChanged(object? sender, EventArgs e)
+    {
+        PersistEditorState(_currentViewModel);
+        UpdateFoldings();
+    }
+
+    private void PersistEditorState(ResourceYamlViewModel? vm)
+    {
+        if (vm == null || AssociatedObject == null || _foldingManager == null)
+        {
+            return;
+        }
+
+        vm.AllFoldings = [.. _foldingManager.AllFoldings
+            .Select(f =>
+            {
+                var tag = (NewFolding)f.Tag;
+                tag.DefaultClosed = f.IsFolded;
+                return tag;
+            })];
+
+        if (AssociatedObject.GetScrollViewer() is ScrollViewer sc)
+        {
+            vm.ScrollOffset = sc.Offset;
+        }
+    }
 
     private void UpdateFoldings()
     {
