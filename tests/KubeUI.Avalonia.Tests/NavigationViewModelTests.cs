@@ -294,6 +294,72 @@ public class NavigationViewModelTests
         var rebuiltRoot = clusterNode.NavigationItems.Single(x => x.Name == "Custom Resource Definitions");
         rebuiltRoot.IsExpanded.ShouldBeTrue();
     }
+
+    [AvaloniaFact]
+    public async Task resource_navigation_links_keep_counts_after_rebuild()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+
+        var workspace = runtime.CreateWorkspace();
+
+        var vm = Application.Current.GetRequiredService<NavigationViewModel>();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        var resourceLink = clusterNode.NavigationItems
+            .OfType<ResourceNavigationLink>()
+            .FirstOrDefault(x => x.ControlType == typeof(V1Namespace));
+
+        resourceLink.ShouldNotBeNull();
+        resourceLink.Count.ShouldNotBeNull();
+
+        workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha Resources"));
+        await Task.Delay(250);
+        Dispatcher.UIThread.RunJobs();
+
+        var rebuiltResourceLink = clusterNode.NavigationItems
+            .OfType<ResourceNavigationLink>()
+            .FirstOrDefault(x => x.ControlType == typeof(V1Namespace));
+
+        rebuiltResourceLink.ShouldNotBeNull();
+        rebuiltResourceLink.Count.ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task crd_delta_does_not_rebuild_unrelated_resource_nodes()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+
+        var workspace = runtime.CreateWorkspace();
+
+        var vm = Application.Current.GetRequiredService<NavigationViewModel>();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        var namespaceLink = clusterNode.NavigationItems
+            .OfType<ResourceNavigationLink>()
+            .Single(x => x.ControlType == typeof(V1Namespace));
+
+        workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha Resources"));
+        await Task.Delay(250);
+        Dispatcher.UIThread.RunJobs();
+
+        var rebuiltNamespaceLink = clusterNode.NavigationItems
+            .OfType<ResourceNavigationLink>()
+            .Single(x => x.ControlType == typeof(V1Namespace));
+
+        ReferenceEquals(namespaceLink, rebuiltNamespaceLink).ShouldBeTrue();
+    }
 }
 
 [KubernetesEntity(Group = "alpha.kubeui.com", ApiVersion = "v1", Kind = "TestCustomResourceAlpha")]

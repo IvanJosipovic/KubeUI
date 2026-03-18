@@ -73,7 +73,8 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         add => Runtime.OnCustomResourceDefinitionReady += value;
         remove => Runtime.OnCustomResourceDefinitionReady -= value;
     }
-    public event Action<ClusterWorkspaceViewModel>? ResourceConfigsChanged;
+    public event Action<ClusterWorkspaceViewModel>? ResourcePermissionsChanged;
+    public event Action<ClusterWorkspaceViewModel, IReadOnlyList<PendingCustomResourceConfig>, IReadOnlyList<GroupApiVersionKind>>? CustomResourceDefinitionsChanged;
 
     public bool Connected
     {
@@ -289,7 +290,13 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
     internal void AddResourceConfigForTest(IResourceConfig resourceConfig)
     {
         _resourceConfigs[resourceConfig.Kind] = resourceConfig;
-        NotifyResourceConfigsChanged();
+        if (resourceConfig.IsCustomResource)
+        {
+            NotifyCustomResourceDefinitionsChanged([new PendingCustomResourceConfig(resourceConfig.Kind, resourceConfig)], []);
+            return;
+        }
+
+        NotifyResourcePermissionsChanged();
     }
 
     public void Dispose()
@@ -411,7 +418,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
             }
         }
 
-        NotifyResourceConfigsChanged();
+        NotifyResourcePermissionsChanged();
     }
 
     private void SubscribeRuntime()
@@ -539,7 +546,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
                     _resourceConfigs[builtConfig.Kind] = builtConfig.ResourceConfig;
                 }
 
-                NotifyResourceConfigsChanged();
+                NotifyCustomResourceDefinitionsChanged(builtConfigs, removedKinds);
             });
         }
     }
@@ -597,16 +604,28 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         return resourceType == null ? null : GroupApiVersionKind.From(resourceType);
     }
 
-    private void NotifyResourceConfigsChanged()
+    private void NotifyResourcePermissionsChanged()
     {
         if (!Dispatcher.UIThread.CheckAccess())
         {
-            _ = Dispatcher.UIThread.InvokeAsync(NotifyResourceConfigsChanged);
+            _ = Dispatcher.UIThread.InvokeAsync(NotifyResourcePermissionsChanged);
             return;
         }
 
         ResourceConfigVersion++;
-        ResourceConfigsChanged?.Invoke(this);
+        ResourcePermissionsChanged?.Invoke(this);
+    }
+
+    private void NotifyCustomResourceDefinitionsChanged(IReadOnlyList<PendingCustomResourceConfig> addedConfigs, IReadOnlyList<GroupApiVersionKind> removedKinds)
+    {
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            _ = Dispatcher.UIThread.InvokeAsync(() => NotifyCustomResourceDefinitionsChanged(addedConfigs, removedKinds));
+            return;
+        }
+
+        ResourceConfigVersion++;
+        CustomResourceDefinitionsChanged?.Invoke(this, addedConfigs, removedKinds);
     }
 
     private void UpdateClusterColor()
@@ -644,5 +663,5 @@ internal enum CustomResourceDefinitionChangeKind
 
 internal sealed record PendingCustomResourceDefinitionChange(CustomResourceDefinitionChangeKind Kind, V1CustomResourceDefinition Crd);
 
-internal sealed record PendingCustomResourceConfig(GroupApiVersionKind Kind, IResourceConfig ResourceConfig);
+public sealed record PendingCustomResourceConfig(GroupApiVersionKind Kind, IResourceConfig ResourceConfig);
 
