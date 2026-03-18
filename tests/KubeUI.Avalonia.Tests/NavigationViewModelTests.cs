@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -334,7 +335,8 @@ internal class FakeCustomResourceConfig : IResourceConfig
     public bool IsCustomResource => true;
     public GroupApiVersionKind Kind => GroupApiVersionKind.From(Type);
     public IList<IResourceListColumn> Columns() => Array.Empty<IResourceListColumn>();
-    public IList<ResourceMenuItem> MenuItems() => Array.Empty<ResourceMenuItem>();
+    public IEnumerable<MenuItemViewModel> GetDefaultMenuItems(IEnumerable? selectedItems) => Array.Empty<MenuItemViewModel>();
+    public IEnumerable<MenuItemViewModel> GetCustomMenuItems(IEnumerable? selectedItems) => Array.Empty<MenuItemViewModel>();
     public int Order { get; set; }
     public string Name { get; }
     public string? Category => null;

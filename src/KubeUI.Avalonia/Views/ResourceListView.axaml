@@ -3,6 +3,7 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:assets="using:KubeUI.Avalonia.Assets"
+    xmlns:converters="using:KubeUI.Avalonia.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:ic="using:FluentIcons.Avalonia"
     xmlns:local="using:KubeUI.Avalonia.Views"
@@ -87,6 +88,34 @@
             SelectionMode="Extended"
             SortingModel="{Binding SortingModel}"
             UseLogicalScrollable="True">
+            <DataGrid.ContextMenu>
+                <ContextMenu ItemsSource="{Binding ContextMenuItems}">
+                    <ContextMenu.Styles>
+                        <Style Selector="MenuItem" x:DataType="viewmodels:MenuItemViewModel">
+                            <Setter Property="Header" Value="{Binding Header}" />
+                            <Setter Property="Command" Value="{Binding Command}" />
+                            <Setter Property="CommandParameter" Value="{Binding CommandParameter}" />
+                            <Setter Property="ItemsSource" Value="{Binding Items}" />
+                            <Setter Property="Classes.separator" Value="{Binding IsSeparator}" />
+                            <Setter Property="Icon">
+                                <Template>
+                                    <Panel>
+                                        <ic:FluentIcon Icon="{Binding FluentIcon}" IsVisible="{Binding FluentIcon, Converter={x:Static converters:Converters.NotNull}}" />
+                                        <PathIcon Data="{Binding IconResource, Converter={x:Static converters:StaticResourceConverter.Instance}}" IsVisible="{Binding IconResource, Converter={x:Static converters:Converters.NotNull}}" />
+                                    </Panel>
+                                </Template>
+                            </Setter>
+                        </Style>
+                        <Style Selector="MenuItem.separator">
+                            <Setter Property="Template">
+                                <ControlTemplate>
+                                    <Separator />
+                                </ControlTemplate>
+                            </Setter>
+                        </Style>
+                    </ContextMenu.Styles>
+                </ContextMenu>
+            </DataGrid.ContextMenu>
             <DataGrid.RowHeightEstimator>
                 <DefaultRowHeightEstimator />
             </DataGrid.RowHeightEstimator>

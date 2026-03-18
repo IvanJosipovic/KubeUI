@@ -1,6 +1,7 @@
 using Avalonia.Styling;
 using KubeUI.Kubernetes;
 using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.ViewModels;
 
 namespace KubeUI.Avalonia.Resources
 {
@@ -12,7 +13,8 @@ namespace KubeUI.Avalonia.Resources
         bool IsCustomResource { get; }
         GroupApiVersionKind Kind { get; }
         IList<IResourceListColumn> Columns();
-        IList<ResourceMenuItem> MenuItems();
+        IEnumerable<MenuItemViewModel> GetDefaultMenuItems(IEnumerable? selectedItems);
+        IEnumerable<MenuItemViewModel> GetCustomMenuItems(IEnumerable? selectedItems);
         int Order { get; }
         string Name { get; }
         string? Category { get; }

@@ -3,6 +3,7 @@ using Avalonia.Controls.DataGridFiltering;
 using Avalonia.Controls.DataGridSelection;
 using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls.Selection;
+using System.Collections;
 using k8s;
 using k8s.Models;
 using KubeUI.Kubernetes;
@@ -26,6 +27,7 @@ namespace KubeUI.Avalonia.ViewModels
         ISelectionModel SelectionModel { get; }
         IDataGridSelectionModelFactory SelectionModelFactory { get; }
         IEnumerable View { get; }
+        IEnumerable<MenuItemViewModel> ContextMenuItems { get; }
         ISearchModel SearchModel { get; set; }
         IDataGridSearchAdapterFactory SearchAdapterFactory { get; }
     }

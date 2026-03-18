@@ -1,3 +1,4 @@
+using Avalonia.Collections;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
@@ -40,29 +41,23 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
         ];
     }
 
-    public override IList<ResourceMenuItem> MenuItems()
+    protected override IEnumerable<MenuItemViewModel> CreateCustomMenuItems(IEnumerable<V1Service>? selectedItems)
     {
+        var selectedItem = selectedItems?.FirstOrDefault();
+
         return [
             new()
             {
                 Header = "Port Forwarding",
-                ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Service>>(x => x.SelectedItem.Spec.Ports),
                 FluentIcon = Icon.CloudFlow,
-                ItemTemplate = new()
-                {
-                    HeaderBinding = new MultiBinding()
+                Items = selectedItem?.Spec?.Ports == null
+                    ? null
+                    : new AvaloniaList<MenuItemViewModel>(selectedItem.Spec.Ports.Select(p => new MenuItemViewModel()
                     {
-                        Bindings =
-                        [
-                            Utilities.FuncBinding<V1ServicePort>(x => x.Name),
-                            Utilities.FuncBinding<V1ServicePort>(x => x.Port),
-                        ],
-                        StringFormat = "{0} - {1}"
-                    },
-                    CommandPath = nameof(PortForwardServiceCommand),
-                    CommandParameterPath = ".",
-                    CommandParameterAddSelectedItem = true,
-                }
+                        Header = $"{p.Name} - {p.Port}",
+                        Command = PortForwardServiceCommand,
+                        CommandParameter = new ArrayList { selectedItem, p },
+                    }).ToList()),
             },
         ];
     }

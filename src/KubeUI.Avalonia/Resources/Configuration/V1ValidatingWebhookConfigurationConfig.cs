@@ -22,11 +22,5 @@ public sealed partial class V1ValidatingWebhookConfigurationConfig : ResourceCon
         ];
     }
 
-    public override IList<ResourceMenuItem> MenuItems()
-    {
-        return [
-
-        ];
-    }
 }
 

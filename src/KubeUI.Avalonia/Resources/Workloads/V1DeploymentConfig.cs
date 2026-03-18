@@ -42,15 +42,15 @@ public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment
         ];
     }
 
-    public override IList<ResourceMenuItem> MenuItems()
+    protected override IEnumerable<MenuItemViewModel> CreateCustomMenuItems(IEnumerable<V1Deployment>? selectedItems)
     {
         return [
             new()
             {
                 Header = "Restart",
                 FluentIcon = Icon.ArrowSync,
-                CommandPath = nameof(RestartCommand),
-                CommandParameterPath = "SelectedItems"
+                Command = RestartCommand,
+                CommandParameter = selectedItems?.ToList()
             },
         ];
     }

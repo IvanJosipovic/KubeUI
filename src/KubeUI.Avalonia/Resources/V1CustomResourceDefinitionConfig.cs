@@ -39,14 +39,16 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
         ];
     }
 
-    public override IList<ResourceMenuItem> MenuItems()
+    protected override IEnumerable<MenuItemViewModel> CreateCustomMenuItems(IEnumerable<V1CustomResourceDefinition>? selectedItems)
     {
+        var selectedItem = selectedItems?.FirstOrDefault();
+
         return [
             new()
             {
                 Header = "View Items",
-                CommandParameterPath = Utilities.PathBuilder<ResourceListViewModel<V1CustomResourceDefinition>>(x => x.SelectedItem),
-                CommandPath =  nameof(ListCRDCommand)
+                Command = ListCRDCommand,
+                CommandParameter = selectedItem
             },
         ];
     }
@@ -54,9 +56,24 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
     [RelayCommand(CanExecute = nameof(CanListCRD))]
     private void ListCRD(V1CustomResourceDefinition crd)
     {
-        var version = crd.Spec.Versions.First(x => x.Storage);
+        var spec = crd.Spec;
+        if (spec == null)
+        {
+            return;
+        }
 
-        var type = Cluster.ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
+        var version = spec.Versions?.FirstOrDefault(x => x.Storage);
+        if (version == null)
+        {
+            return;
+        }
+
+        var type = Cluster.ModelCache.GetResourceType(spec.Group, version.Name, spec.Names.Kind);
+        if (type == null)
+        {
+            return;
+        }
+
         var resourceListType = typeof(ResourceListViewModel<>).MakeGenericType(type);
 
         var vm = Application.Current.GetRequiredService(resourceListType) as IDockable;
@@ -71,15 +88,25 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
 
     private bool CanListCRD(V1CustomResourceDefinition? crd)
     {
-        if (crd != null)
+        if (crd == null || crd.Spec == null)
         {
-            var version = crd.Spec.Versions.First(x => x.Served && x.Storage);
-            var type = Cluster.ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
-
-            return Cluster.CanIAnyNamespace(type, Verb.List) && Cluster.CanIAnyNamespace(type, Verb.Watch);
+            return false;
         }
 
-        return false;
+        var spec = crd.Spec;
+        var version = spec.Versions?.FirstOrDefault(x => x.Served && x.Storage);
+        if (version == null)
+        {
+            return false;
+        }
+
+        var type = Cluster.ModelCache.GetResourceType(spec.Group, version.Name, spec.Names.Kind);
+        if (type == null)
+        {
+            return false;
+        }
+
+        return Cluster.CanIAnyNamespace(type, Verb.List) && Cluster.CanIAnyNamespace(type, Verb.Watch);
     }
 }
 

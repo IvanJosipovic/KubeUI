@@ -79,6 +79,7 @@ public partial class App : Application
     private void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         _logger.LogCritical(e.Exception, "UI Thread Unhandled Exception");
+        e.Handled = true;
     }
 
     private void GracefulShutdown()

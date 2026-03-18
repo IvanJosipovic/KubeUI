@@ -450,10 +450,7 @@ public class ResourceListViewModelTests
         vm.SelectedItem!.Namespace().ShouldBe("ns4");
         vm.SelectedItem.Name().ShouldBe("d");
 
-        var grid = view.FindControl<DataGrid>("PART_Grid");
-        grid.ShouldNotBeNull();
-
-        var menuItem = grid.ContextMenu?.Items.OfType<MenuItem>().FirstOrDefault(x => x.Header?.ToString() == "View");
+        var menuItem = vm.ContextMenuItems.FirstOrDefault(x => x.Header == "View");
         menuItem.ShouldNotBeNull();
 
         var parameters = menuItem!.CommandParameter as IList;
@@ -520,21 +517,44 @@ public class ResourceListViewModelTests
         cluster.SelectedNamespaces.Add(NamespaceResource("ns4"));
         Dispatcher.UIThread.RunJobs();
 
-        var grid = view.FindControl<DataGrid>("PART_Grid");
-        grid.ShouldNotBeNull();
-
-        var contextMenu = grid.ContextMenu;
-        contextMenu.ShouldNotBeNull();
-        contextMenu!.PlacementTarget = grid;
-        contextMenu.Open(grid);
-        Dispatcher.UIThread.RunJobs();
-
-        var portForwardMenu = contextMenu.Items.OfType<MenuItem>().FirstOrDefault(x => x.Header?.ToString() == "Port Forwarding");
+        var portForwardMenu = vm.ContextMenuItems.FirstOrDefault(x => x.Header == "Port Forwarding");
         portForwardMenu.ShouldNotBeNull();
 
-        var containers = portForwardMenu!.ItemsSource.OfType<V1Container>().ToList();
+        var containers = portForwardMenu!.Items?.ToList();
         containers.Count.ShouldBe(1);
-        containers[0].Name.ShouldBe("d-container");
+        containers[0].Header.ShouldBe("d-container");
+    }
+
+    [AvaloniaFact(DisplayName = "Pod-specific actions are hidden for multi-select")]
+    public async Task pod_specific_actions_are_hidden_for_multi_select()
+    {
+        var cluster = new TestCluster().CreateWorkspace();
+
+        var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var podA = Pod("ns1", "a");
+        podA.Spec = new V1PodSpec
+        {
+            Containers = [new V1Container { Name = "a-container" }]
+        };
+        await AddOrUpdateAsync(cluster, podA);
+
+        var podB = Pod("ns2", "b");
+        podB.Spec = new V1PodSpec
+        {
+            Containers = [new V1Container { Name = "b-container" }]
+        };
+        await AddOrUpdateAsync(cluster, podB);
+
+        vm.SelectionModel.Select(0);
+        vm.SelectionModel.Select(1);
+
+        var headers = vm.ContextMenuItems.Select(x => x.Header).ToList();
+
+        headers.ShouldNotContain("View Console");
+        headers.ShouldNotContain("View Logs");
+        headers.ShouldNotContain("Port Forwarding");
     }
 
     [AvaloniaFact(DisplayName = "Delete Resource")]

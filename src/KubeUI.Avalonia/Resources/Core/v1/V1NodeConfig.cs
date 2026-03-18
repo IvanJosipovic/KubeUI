@@ -65,29 +65,29 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
         ];
     }
 
-    public override IList<ResourceMenuItem> MenuItems()
+    protected override IEnumerable<MenuItemViewModel> CreateCustomMenuItems(IEnumerable<V1Node>? selectedItems)
     {
         return [
             new()
             {
                 Header = "Cordon",
                 FluentIcon = Icon.Stop,
-                CommandPath = nameof(CordonNodeCommand),
-                CommandParameterPath = "SelectedItems",
+                Command = CordonNodeCommand,
+                CommandParameter = selectedItems?.ToList(),
             },
             new()
             {
                 Header = "UnCordon",
                 FluentIcon = Icon.Play,
-                CommandPath = nameof(UnCordonNodeCommand),
-                CommandParameterPath = "SelectedItems",
+                Command = UnCordonNodeCommand,
+                CommandParameter = selectedItems?.ToList(),
             },
             new()
             {
                 Header = "Drain",
                 FluentIcon = Icon.ArrowSync,
-                CommandPath = nameof(DrainNodeCommand),
-                CommandParameterPath = "SelectedItems",
+                Command = DrainNodeCommand,
+                CommandParameter = selectedItems?.ToList(),
             },
         ];
     }

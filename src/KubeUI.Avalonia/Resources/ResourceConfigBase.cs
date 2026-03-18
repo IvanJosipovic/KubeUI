@@ -11,6 +11,7 @@ using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Kubernetes;
+using KubeUI.Avalonia.ViewModels;
 
 namespace KubeUI.Avalonia.Resources;
 
@@ -72,7 +73,12 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         }
     }
 
-    public virtual IList<ResourceMenuItem> MenuItems() => [];
+    public IEnumerable<MenuItemViewModel> GetCustomMenuItems(IEnumerable? selectedItems)
+    {
+        return CreateCustomMenuItems(selectedItems?.OfType<T>());
+    }
+
+    protected virtual IEnumerable<MenuItemViewModel> CreateCustomMenuItems(IEnumerable<T>? selectedItems) => [];
 
     public virtual IList<(Verb verb, string? subResource)> CustomPermissions() => [];
 
@@ -115,26 +121,31 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         Cluster = cluster;
     }
 
-    public IList<ResourceMenuItem> DefaultMenuItems() => [
+    public IEnumerable<MenuItemViewModel> GetDefaultMenuItems(IEnumerable? selectedItems)
+    {
+        return CreateDefaultMenuItems(selectedItems?.OfType<T>());
+    }
+
+    protected virtual IEnumerable<MenuItemViewModel> CreateDefaultMenuItems(IEnumerable<T>? selectedItems) => [
         new()
         {
             Header = "View",
-            CommandPath = nameof(ViewCommand),
-            CommandParameterPath = "SelectedItems",
+            Command = ViewCommand,
+            CommandParameter = selectedItems?.ToList(),
             FluentIcon = Icon.PanelRight,
         },
         new()
         {
             Header = "View Yaml",
-            CommandPath = nameof(ViewYamlCommand),
-            CommandParameterPath = "SelectedItems",
+            Command = ViewYamlCommand,
+            CommandParameter = selectedItems?.ToList(),
             FluentIcon = Icon.Code,
         },
         new()
         {
             Header = "Delete",
-            CommandPath = nameof(DeleteCommand),
-            CommandParameterPath = "SelectedItems",
+            Command = DeleteCommand,
+            CommandParameter = selectedItems?.ToList(),
             FluentIcon = Icon.Delete,
         }
     ];

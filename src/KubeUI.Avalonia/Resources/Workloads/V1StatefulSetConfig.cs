@@ -29,15 +29,15 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
         ];
     }
 
-    public override IList<ResourceMenuItem> MenuItems()
+    protected override IEnumerable<MenuItemViewModel> CreateCustomMenuItems(IEnumerable<V1StatefulSet>? selectedItems)
     {
         return [
             new()
             {
                 Header = "Restart",
                 FluentIcon = Icon.ArrowSync,
-                CommandPath = nameof(RestartCommand),
-                CommandParameterPath = "SelectedItems"
+                Command = RestartCommand,
+                CommandParameter = selectedItems?.ToList()
             },
         ];
     }

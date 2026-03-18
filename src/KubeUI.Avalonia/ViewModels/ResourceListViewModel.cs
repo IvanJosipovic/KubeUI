@@ -44,6 +44,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     public IReadOnlyList<T?> SelectedItems => ((SelectionModel<T>)SelectionModel).SelectedItems;
 
+    public IEnumerable<MenuItemViewModel> ContextMenuItems => BuildContextMenuItems();
+
     [ObservableProperty]
     public partial string SearchQuery { get; set; }
 
@@ -134,6 +136,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         Title = Kind.Kind.Humanize(LetterCasing.Title).Pluralize();
         Id = Cluster.Name + "-" + Kind;
         ResourceConfig = (ResourceConfigBase<T>)Cluster.GetResourceConfig(Kind);
+        OnPropertyChanged(nameof(ContextMenuItems));
 
         _sortingAdapterFactory = new DynamicDataSortingAdapterFactory<T>(ResourceConfig);
         _sortSubject = new BehaviorSubject<IComparer<T>>(_sortingAdapterFactory.SortComparer);
@@ -170,6 +173,29 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         {
             ApplySearch();
         }
+    }
+
+    private IEnumerable<MenuItemViewModel> BuildContextMenuItems()
+    {
+        if (ResourceConfig == null)
+        {
+            return [];
+        }
+
+        var items = new List<MenuItemViewModel>();
+        items.AddRange(ResourceConfig.GetDefaultMenuItems(SelectedItems));
+
+        var custom = ResourceConfig.GetCustomMenuItems(SelectedItems).ToList();
+        if (custom.Count > 0)
+        {
+            items.Add(new MenuItemViewModel
+            {
+                IsSeparator = true
+            });
+            items.AddRange(custom);
+        }
+
+        return items;
     }
 
     private void SelectedNamespaces_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -401,6 +427,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     {
         OnPropertyChanged(nameof(SelectedItem));
         OnPropertyChanged(nameof(SelectedItems));
+        OnPropertyChanged(nameof(ContextMenuItems));
     }
 
     private void SearchModelOnSearchChanged(object? sender, SearchChangedEventArgs e)

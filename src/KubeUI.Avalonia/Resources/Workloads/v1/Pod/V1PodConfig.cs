@@ -1,3 +1,4 @@
+using Avalonia.Collections;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
@@ -84,97 +85,87 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         return cols;
     }
 
-    public override IList<ResourceMenuItem> MenuItems()
+    protected override IEnumerable<MenuItemViewModel> CreateCustomMenuItems(IEnumerable<V1Pod>? selectedItems)
     {
+        var selectedList = selectedItems?.ToList();
+        if (selectedList == null || selectedList.Count != 1)
+        {
+            return [];
+        }
+
+        var selectedItem = selectedList[0];
+        var initContainers = selectedItem?.Spec?.InitContainers ?? [];
+        var containers = selectedItem?.Spec?.Containers ?? [];
+
         return [
             new()
             {
                 Header = "View Console",
                 FluentIcon = Icon.Desktop,
-                MenuItems =
-                [
+                Items = selectedItem == null ? null : new AvaloniaList<MenuItemViewModel>([
                     new()
                     {
                         Header = "Init",
-                        ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Spec.InitContainers),
-                        ItemTemplate = new()
+                        Items = new AvaloniaList<MenuItemViewModel>(initContainers.Select(c => new MenuItemViewModel()
                         {
-                            HeaderBinding = Utilities.FuncBinding<V1Container>(x => x.Name),
-                            CommandPath = nameof(ViewConsoleCommand),
-                            CommandParameterPath = ".",
-                            CommandParameterAddSelectedItem = true,
-                        }
+                            Header = c.Name,
+                            Command = ViewConsoleCommand,
+                            CommandParameter = new ArrayList { selectedItem, c },
+                        }).ToList()),
                     },
                     new()
                     {
                         Header = "Normal",
-                        ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Spec.Containers),
-                        ItemTemplate = new()
+                        Items = new AvaloniaList<MenuItemViewModel>(containers.Select(c => new MenuItemViewModel()
                         {
-                            HeaderBinding = Utilities.FuncBinding<V1Container>(x => x.Name),
-                            CommandPath =  nameof(ViewConsoleCommand),
-                            CommandParameterPath = ".",
-                            CommandParameterAddSelectedItem = true,
-                        }
+                            Header = c.Name,
+                            Command = ViewConsoleCommand,
+                            CommandParameter = new ArrayList { selectedItem, c },
+                        }).ToList()),
                     },
-                ]
+                ]),
             },
             new()
             {
                 Header = "View Logs",
                 FluentIcon = Icon.TextDescription,
-                MenuItems = [
+                Items = selectedItem == null ? null : new AvaloniaList<MenuItemViewModel>([
                     new()
                     {
                         Header = "Init",
-                        ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Spec.InitContainers),
-                        ItemTemplate = new()
+                        Items = new AvaloniaList<MenuItemViewModel>(initContainers.Select(c => new MenuItemViewModel()
                         {
-                            HeaderBinding = Utilities.FuncBinding<V1Container>(x => x.Name),
-                            CommandPath = nameof(ViewLogsCommand),
-                            CommandParameterPath = ".",
-                            CommandParameterAddSelectedItem = true,
-                        }
+                            Header = c.Name,
+                            Command = ViewLogsCommand,
+                            CommandParameter = new ArrayList { selectedItem, c },
+                        }).ToList()),
                     },
                     new()
                     {
                         Header = "Normal",
-                        ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Spec.Containers),
-                        ItemTemplate = new()
+                        Items = new AvaloniaList<MenuItemViewModel>(containers.Select(c => new MenuItemViewModel()
                         {
-                            HeaderBinding = Utilities.FuncBinding<V1Container>(x => x.Name),
-                            CommandPath =  nameof(ViewLogsCommand),
-                            CommandParameterPath = ".",
-                            CommandParameterAddSelectedItem = true,
-                        }
+                            Header = c.Name,
+                            Command = ViewLogsCommand,
+                            CommandParameter = new ArrayList { selectedItem, c },
+                        }).ToList()),
                     },
-                ],
+                ]),
             },
             new()
             {
                 Header = "Port Forwarding",
-                ItemSourcePath = Utilities.PathBuilder<ResourceListViewModel<V1Pod>>(x => x.SelectedItem.Spec.Containers),
                 FluentIcon = Icon.CloudFlow,
-                ItemTemplate = new()
+                Items = selectedItem == null ? null : new AvaloniaList<MenuItemViewModel>(containers.Select(c => new MenuItemViewModel()
                 {
-                    HeaderBinding = Utilities.FuncBinding<V1Container>(x => x.Name),
-                    ItemSourcePath = Utilities.PathBuilder<V1Container>(x => x.Ports),
-                    ItemTemplate = new()
+                    Header = c.Name,
+                    Items = new AvaloniaList<MenuItemViewModel>(c.Ports?.Select(p => new MenuItemViewModel()
                     {
-                        HeaderBinding = new MultiBinding()
-                        {
-                            Bindings =
-                            [
-                                Utilities.FuncBinding<V1ContainerPort>(x => x.Name),
-                                Utilities.FuncBinding<V1ContainerPort>(x => x.ContainerPort),
-                            ],
-                            StringFormat = "{0} - {1}"
-                        },
-                        CommandPath = nameof(PortForwardCommand),
-                        CommandParameterPath = ".",
-                        CommandParameterAddSelectedItem = true,
-                    }
-                }
+                        Header = $"{p.Name} - {p.ContainerPort}",
+                        Command = PortForwardCommand,
+                        CommandParameter = new ArrayList { selectedItem, p },
+                    }).ToList() ?? []),
+                }).ToList()),
             }
         ];
     }
