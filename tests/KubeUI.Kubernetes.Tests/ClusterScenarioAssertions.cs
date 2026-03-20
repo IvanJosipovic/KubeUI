@@ -188,16 +188,15 @@ public abstract class ClusterScenarioAssertions
         await harness.CreateCustomResourceDefinitionAsync(crd);
 
         await WaitForResourceAsync<V1CustomResourceDefinition>(harness.Cluster, null, "tests.kubeui.com");
+        var generatedType = await WaitForGeneratedTypeAsync(harness.Cluster, "kubeui.com", "v1beta1", "Test");
+        generatedType.ShouldNotBeNull();
 
         await harness.Cluster.ImportYaml(new MemoryStream(Encoding.UTF8.GetBytes(SharedScenarioData.CustomResourceYaml)));
-        var type = await WaitForGeneratedTypeAsync(harness.Cluster, "kubeui.com", "v1beta1", "Test");
-
-        type.ShouldNotBeNull();
 
         var seedMethod = harness.Cluster.GetType().GetMethod(nameof(IClusterRuntime.SeedResource))!;
-        await (Task)seedMethod.MakeGenericMethod(type!).Invoke(harness.Cluster, [true])!;
+        await (Task)seedMethod.MakeGenericMethod(generatedType!).Invoke(harness.Cluster, [true])!;
 
-        var kind = harness.Cluster.Objects[GroupApiVersionKind.From(type)];
+        var kind = harness.Cluster.Objects[GroupApiVersionKind.From(generatedType)];
         var items = kind.GetType().GetProperty("Items")!.GetValue(kind)!;
         items.GetType().GetProperty("Count")!.GetValue(items).ShouldBe(1);
 

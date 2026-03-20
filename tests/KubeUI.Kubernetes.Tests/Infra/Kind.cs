@@ -63,10 +63,9 @@ public static class Kind
     public static async Task DeleteCluster(string name)
     {
         var stdErrBuffer = new StringBuilder();
-        var kubeConfigPath = KubernetesClientConfiguration.KubeConfigDefaultLocation;
 
         await Cli.Wrap(Executable)
-            .WithArguments($"delete cluster --name {name} --kubeconfig \"{kubeConfigPath}\"")
+            .WithArguments($"delete cluster --name {name}")
             .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
             .ExecuteAsync();
 

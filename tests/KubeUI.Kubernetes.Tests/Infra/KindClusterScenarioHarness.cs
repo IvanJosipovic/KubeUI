@@ -73,9 +73,9 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
         await Cluster.SeedResource<V1ServiceAccount>(true);
         await ClusterScenarioAssertions.WaitForResourceAsync<V1ServiceAccount>(Cluster, "my-app", "my-serviceaccount");
 
-        var secret = await WaitForServiceAccountTokenAsync("my-app", "my-serviceaccount");
         var config = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<K8SConfiguration>(KubeUI.Kubernetes.Serialization.KubernetesYaml.Serialize(KubeConfig));
         var clusterName = includeNamespaceFallback ? "limited-fallback" : "limited";
+        var token = await CreateServiceAccountTokenAsync("my-app", "my-serviceaccount");
 
         config.Clusters.First().Name = clusterName;
         var context = config.Contexts.First();
@@ -85,7 +85,7 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
 
         var user = config.Users.First();
         user.Name = clusterName;
-        user.UserCredentials = new() { Token = Encoding.UTF8.GetString(secret.Data!["token"]) };
+        user.UserCredentials = new() { Token = token };
 
         var limited = await CreateClusterAsync(clusterName, config);
 
@@ -111,6 +111,29 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
         }
     }
 
+    private async Task<string> CreateServiceAccountTokenAsync(string @namespace, string name)
+    {
+        var tokenRequest = new Authenticationv1TokenRequest
+        {
+            ApiVersion = Authenticationv1TokenRequest.KubeGroup + "/" + Authenticationv1TokenRequest.KubeApiVersion,
+            Kind = Authenticationv1TokenRequest.KubeKind,
+            Spec = new V1TokenRequestSpec
+            {
+                ExpirationSeconds = 3600
+            }
+        };
+
+        var response = await Kubernetes.CoreV1.CreateNamespacedServiceAccountTokenAsync(tokenRequest, name, @namespace);
+        var token = response.Status?.Token;
+
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            throw new InvalidOperationException($"Unable to create a service account token for '{@namespace}/{name}'.");
+        }
+
+        return token;
+    }
+
     private async Task<IClusterRuntime> CreateClusterAsync(string name, K8SConfiguration config)
     {
         var cluster = _services.GetRequiredService<IClusterRuntime>();
@@ -121,27 +144,6 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
         return cluster;
     }
 
-    private async Task<V1Secret> WaitForServiceAccountTokenAsync(string @namespace, string name)
-    {
-        var timeout = TimeSpan.FromMinutes(2);
-        var start = DateTime.UtcNow;
-
-        while (true)
-        {
-            var secret = await Kubernetes.CoreV1.ReadNamespacedSecretAsync(name, @namespace);
-            if (secret.Data != null && secret.Data.ContainsKey("token"))
-            {
-                return secret;
-            }
-
-            if (DateTime.UtcNow - start > timeout)
-            {
-                throw new InvalidOperationException($"Secret '{name}' in namespace '{@namespace}' does not contain a token after waiting.");
-            }
-
-            await Task.Delay(TimeSpan.FromSeconds(2));
-        }
-    }
 }
 
 
