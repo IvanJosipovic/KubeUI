@@ -1,17 +1,29 @@
 using System.Collections;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.DataGridFiltering;
+using Avalonia.Controls.DataGridSearching;
+using Avalonia.Controls.DataGridSelection;
+using Avalonia.Controls.DataGridSorting;
+using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Selection;
+using Avalonia.Styling;
 using Dock.Model.Core;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Shouldly;
+using CommunityToolkit.Mvvm.Input;
 using FluentAvalonia.Core;
 using KubeUI.Avalonia;
+using KubeUI.Avalonia.Behaviors;
+using KubeUI.Avalonia.Resources;
 using k8s;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Avalonia.ViewModels;
 using KubeUI.Avalonia.Views;
@@ -669,38 +681,96 @@ public class ResourceListViewModelTests
     }
 
     [AvaloniaFact(DisplayName = "Double tap opens property view")]
-    public async Task double_tap_opens_property_view()
+    public void double_tap_opens_property_view()
     {
-        var factory = Application.Current.GetRequiredService<IFactory>();
-        factory.InitLayout(factory.CreateLayout());
+        var vm = new FakeDoubleTapResourceListViewModel(Pod("ns", "a"));
+        var row = new DataGridRow();
 
-        var window = new Window
-        {
-            Width = 1200,
-            Height = 800
-        };
-        var cluster = new TestCluster().CreateWorkspace();
+        ResourceListDoubleTapBehavior.Execute(vm, row).ShouldBeTrue();
+        vm.ViewInvocations.ShouldBe(1);
+    }
 
-        var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Pod>>();
-        vm.Initialize(cluster);
+    [AvaloniaFact(DisplayName = "Double tap on column header does not open property view")]
+    public void double_tap_on_column_header_does_not_open_property_view()
+    {
+        var vm = new FakeDoubleTapResourceListViewModel(Pod("ns", "a"));
 
-        var view = Application.Current.GetRequiredService<ResourceListView>();
-        view.DataContext = vm;
+        ResourceListDoubleTapBehavior.Execute(vm, new DataGridColumnHeader()).ShouldBeFalse();
+        vm.ViewInvocations.ShouldBe(0);
+    }
 
-        window.Content = view;
-        window.Show();
+    [AvaloniaFact(DisplayName = "Double tap on scrollbar does not open property view")]
+    public void double_tap_on_scrollbar_does_not_open_property_view()
+    {
+        var vm = new FakeDoubleTapResourceListViewModel(Pod("ns", "a"));
 
-        await AddOrUpdateAsync(cluster, Pod("ns", "a"));
+        ResourceListDoubleTapBehavior.Execute(vm, new ScrollBar()).ShouldBeFalse();
+        vm.ViewInvocations.ShouldBe(0);
+    }
+}
 
-        vm.SelectionModel.Select(0);
+internal sealed class FakeDoubleTapResourceListViewModel : IResourceListViewModel
+{
+    public FakeDoubleTapResourceListViewModel(object selectedItem)
+    {
+        var selectionModel = new SelectionModel<object>();
+        selectionModel.Source = new[] { selectedItem };
+        selectionModel.Select(0);
+        SelectionModel = selectionModel;
+        ResourceConfig = new FakeDoubleTapResourceConfig(() => ViewInvocations++);
+    }
 
-        factory.FindDockableById(nameof(ResourcePropertiesViewModel<>)).ShouldBeNull();
+    public int ViewInvocations { get; private set; }
 
-        var parameters = new ArrayList(vm.SelectionModel.SelectedItems.Where(static item => item != null).Cast<object>().ToArray());
-        vm.ResourceConfig.ViewCommand.Execute(parameters);
-        Dispatcher.UIThread.RunJobs();
+    public ClusterWorkspaceViewModel Cluster { get; set; } = null!;
+    public GroupApiVersionKind Kind => GroupApiVersionKind.From<V1Pod>();
+    public string SearchQuery { get; set; } = string.Empty;
+    public ISettingsService SettingsService => Application.Current.GetRequiredService<ISettingsService>();
+    public IResourceConfig ResourceConfig { get; }
+    public ObservableCollection<DataGridColumnDefinition> ColumnDefinitions { get; } = [];
+    public IDataGridSortingAdapterFactory SortingAdapterFactory => throw new NotImplementedException();
+    public ISortingModel SortingModel { get; set; } = new SortingModel();
+    public IDataGridFilteringAdapterFactory FilteringAdapterFactory => throw new NotImplementedException();
+    public IFilteringModel FilteringModel { get; set; } = new FilteringModel();
+    public ISelectionModel SelectionModel { get; }
+    public IDataGridSelectionModelFactory SelectionModelFactory => throw new NotImplementedException();
+    public IList View => Array.Empty<object>();
+    public IEnumerable<MenuItemViewModel> ContextMenuItems => [];
+    public ISearchModel SearchModel { get; set; } = new SearchModel();
+    public IDataGridSearchAdapterFactory SearchAdapterFactory => throw new NotImplementedException();
+}
 
-        factory.FindDockableById(nameof(ResourcePropertiesViewModel<>)).ShouldNotBeNull();
+internal sealed class FakeDoubleTapResourceConfig : IResourceConfig
+{
+    private readonly Action _onView;
+
+    public FakeDoubleTapResourceConfig(Action onView)
+    {
+        _onView = onView;
+        ViewCommand = new RelayCommand<IList>(
+            execute: items => _onView(),
+            canExecute: items => items?.Count == 1);
+    }
+
+    public bool IsNamespaced => true;
+    public bool CanListAndWatch => true;
+    public bool ShowNewResource => true;
+    public bool IsCustomResource => false;
+    public GroupApiVersionKind Kind => GroupApiVersionKind.From<V1Pod>();
+    public IList<IResourceListColumn> Columns() => Array.Empty<IResourceListColumn>();
+    public IEnumerable<MenuItemViewModel> GetDefaultMenuItems(IEnumerable? selectedItems) => Array.Empty<MenuItemViewModel>();
+    public IEnumerable<MenuItemViewModel> GetCustomMenuItems(IEnumerable? selectedItems) => Array.Empty<MenuItemViewModel>();
+    public int Order => 0;
+    public string Name => "Pods";
+    public string? Category => null;
+    public IStyle ListStyle() => null;
+    public Task UpdatePermissions() => Task.CompletedTask;
+    public Type Type => typeof(V1Pod);
+    public IRelayCommand NewResourceCommand => new RelayCommand(() => { });
+    public IRelayCommand<IList> ViewCommand { get; }
+
+    public void Initialize(ClusterWorkspaceViewModel cluster)
+    {
     }
 }
 

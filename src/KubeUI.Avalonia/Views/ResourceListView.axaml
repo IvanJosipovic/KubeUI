@@ -3,10 +3,10 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:assets="using:KubeUI.Avalonia.Assets"
+    xmlns:behaviors="using:KubeUI.Avalonia.Behaviors"
     xmlns:converters="using:KubeUI.Avalonia.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:ic="using:FluentIcons.Avalonia"
-    xmlns:ia="using:Avalonia.Xaml.Interactions.Core"
     xmlns:local="using:KubeUI.Avalonia.Views"
     xmlns:models="using:k8s.Models"
     xmlns:u="https://irihi.tech/ursa"
@@ -90,11 +90,7 @@
             SortingModel="{Binding SortingModel}"
             UseLogicalScrollable="True">
             <Interaction.Behaviors>
-                <ia:EventTriggerBehavior EventName="DoubleTapped">
-                    <ia:InvokeCommandAction
-                        Command="{Binding ResourceConfig.ViewCommand}"
-                        CommandParameter="{Binding SelectionModel.SelectedItems}" />
-                </ia:EventTriggerBehavior>
+                <behaviors:ResourceListDoubleTapBehavior />
             </Interaction.Behaviors>
             <DataGrid.ContextMenu>
                 <ContextMenu ItemsSource="{Binding ContextMenuItems}">
