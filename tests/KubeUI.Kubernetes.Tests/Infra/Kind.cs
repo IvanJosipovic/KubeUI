@@ -17,6 +17,9 @@ public static class Kind
 
     public static string FileName { get; } = "kind" + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "");
 
+    // Execute local downloaded binary on non-Windows systems
+    private static string Executable => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? FileName : $"./{FileName}";
+
     public static async Task DownloadClient()
     {
         if (File.Exists(FileName))
@@ -49,7 +52,7 @@ public static class Kind
         image ??= KubernetesVersion;
         var kubeConfigPath = KubernetesClientConfiguration.KubeConfigDefaultLocation;
 
-        await Cli.Wrap(FileName)
+        await Cli.Wrap(Executable)
             .WithArguments($"create cluster --name {name} --image {image} --kubeconfig \"{kubeConfigPath}\"" + (string.IsNullOrEmpty(config) ? "" : $" --config={config}"))
             .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
             .ExecuteAsync();
@@ -62,7 +65,7 @@ public static class Kind
         var stdErrBuffer = new StringBuilder();
         var kubeConfigPath = KubernetesClientConfiguration.KubeConfigDefaultLocation;
 
-        await Cli.Wrap(FileName)
+        await Cli.Wrap(Executable)
             .WithArguments($"delete cluster --name {name} --kubeconfig \"{kubeConfigPath}\"")
             .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
             .ExecuteAsync();
@@ -76,7 +79,7 @@ public static class Kind
         var stdErrBuffer = new StringBuilder();
         var kubeConfigPath = KubernetesClientConfiguration.KubeConfigDefaultLocation;
 
-        await Cli.Wrap(FileName)
+        var cmd = Cli.Wrap(Executable)
             .WithArguments($"get kubeconfig --name {name} --kubeconfig \"{kubeConfigPath}\"")
             .WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdOutBuffer))
             .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
