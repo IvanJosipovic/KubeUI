@@ -33,7 +33,7 @@
                 Grid.Column="1"
                 Width="200"
                 VerticalContentAlignment="Center"
-                Content="{Binding View.Count, StringFormat='Items: {0}'}" />
+                Content="{Binding ItemCount, StringFormat='Items: {0}'}" />
 
             <Grid
                 Grid.Column="2"
@@ -79,15 +79,15 @@
             CanUserResizeColumns="True"
             CanUserSortColumns="True"
             ColumnDefinitionsSource="{Binding ColumnDefinitions}"
-            FilteringModel="{Binding FilteringModel}"
+            FilteringModel="{Binding FilteringModel, Mode=OneWay}"
             GridLinesVisibility="All"
             IsReadOnly="True"
             ItemsSource="{Binding View}"
             MinColumnWidth="90"
-            SearchModel="{Binding SearchModel}"
-            Selection="{Binding SelectionModel}"
+            SearchModel="{Binding SearchModel, Mode=OneWay}"
+            Selection="{Binding SelectionModel, Mode=OneWay}"
             SelectionMode="Extended"
-            SortingModel="{Binding SortingModel}"
+            SortingModel="{Binding SortingModel, Mode=OneWay}"
             UseLogicalScrollable="True">
             <Interaction.Behaviors>
                 <behaviors:ResourceListDoubleTapBehavior />

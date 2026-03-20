@@ -663,6 +663,8 @@ public class ResourceListViewModelTests
         vm.View.ElementAt(0).ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
         vm.View.ElementAt(1).ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
         vm.View.ElementAt(2).ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
+        vm.SortingModel.Descriptors.Count.ShouldBe(1);
+        ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("labels");
 
         factory.SetActiveDockable(otherDockable);
         factory.SetFocusedDockable(documents, otherDockable);
@@ -678,6 +680,8 @@ public class ResourceListViewModelTests
         vm.View.ElementAt(0).ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
         vm.View.ElementAt(1).ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
         vm.View.ElementAt(2).ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
+        vm.SortingModel.Descriptors.Count.ShouldBe(1);
+        ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("labels");
     }
 
     [AvaloniaFact(DisplayName = "Reattach preserves DataGrid scroll offset")]
@@ -862,6 +866,8 @@ public class ResourceListViewModelTests
         vm.View.ElementAt(0).ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
         vm.View.ElementAt(1).ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
         vm.View.ElementAt(2).ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
+        vm.SortingModel.Descriptors.Count.ShouldBe(1);
+        ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("labels");
     }
 
     [AvaloniaFact(DisplayName = "Namespace filter initializes from selected namespaces")]
@@ -964,6 +970,7 @@ internal sealed class FakeDoubleTapResourceListViewModel : IResourceListViewMode
 
     public ClusterWorkspaceViewModel Cluster { get; set; } = null!;
     public GroupApiVersionKind Kind => GroupApiVersionKind.From<V1Pod>();
+    public int ItemCount => View.Count;
     public string SearchQuery { get; set; } = string.Empty;
     public ISettingsService SettingsService => Application.Current.GetRequiredService<ISettingsService>();
     public IResourceConfig ResourceConfig { get; }

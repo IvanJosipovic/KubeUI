@@ -1,6 +1,11 @@
+using Avalonia.Collections;
 using Avalonia.Controls.DataGridFiltering;
 using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls.Selection;
+using System.Collections;
+using k8s;
+using k8s.Models;
+using KubeUI.Kubernetes;
 using KubeUI.Avalonia.Resources;
 using KubernetesClient.Informer.Client;
 using Avalonia.Controls.DataGridSearching;
@@ -11,6 +16,7 @@ namespace KubeUI.Avalonia.ViewModels
     {
         ClusterWorkspaceViewModel Cluster { get; set; }
         GroupApiVersionKind Kind { get; }
+        int ItemCount { get; }
         string SearchQuery { get; set; }
         ISettingsService SettingsService { get; }
         IResourceConfig ResourceConfig { get; }

@@ -635,7 +635,13 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             Name = resourceConfig.Name,
             ControlType = resourceConfig.Type,
             Order = resourceConfig.Order,
-            Count = TryGetResourceCount(cluster, resourceConfig.Type),
+            // Throttle rapid updates to the resource count to reduce UI churn.
+            // Sample emits the latest value at most once per 100ms and ensures
+            // updates are observed on the Avalonia UI scheduler. Also avoid
+            // emitting duplicate consecutive values.
+            Count = TryGetResourceCount(cluster, resourceConfig.Type)
+                .Sample(TimeSpan.FromMilliseconds(100), AvaloniaScheduler.Instance)
+                .DistinctUntilChanged(),
         };
     }
 

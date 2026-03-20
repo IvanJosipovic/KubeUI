@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Threading;
 using Avalonia.Xaml.Interactivity;
 using Dock.Model.Core;
 using Dock.Model.Core.Events;
@@ -16,7 +17,11 @@ public sealed class ResourceListPersistenceBehavior : Behavior<DataGrid>
     private readonly IFactory _factory = Application.Current.GetRequiredService<IFactory>();
     private IResourceListViewModel? _currentViewModel;
     private bool _isCurrentViewModelActive;
+    private bool _hasBeenVisible;
     private IDisposable? _visibilitySubscription;
+    private bool _restoreScheduled;
+    private int _restoreAttempts;
+    private const int MaxRestoreAttempts = 50;
 
     protected override void OnAttached()
     {
@@ -40,7 +45,8 @@ public sealed class ResourceListPersistenceBehavior : Behavior<DataGrid>
                 }
                 else
                 {
-                    RequestRestoreState();
+                    _hasBeenVisible = true;
+                    ScheduleRestoreState();
                 }
             });
 
@@ -54,6 +60,9 @@ public sealed class ResourceListPersistenceBehavior : Behavior<DataGrid>
         _factory.ActiveDockableChanged -= FactoryActiveDockableChanged;
         _currentViewModel = null;
         _isCurrentViewModelActive = false;
+        _hasBeenVisible = false;
+        _restoreScheduled = false;
+        _restoreAttempts = 0;
 
         if (AssociatedObject != null)
         {
@@ -82,7 +91,7 @@ public sealed class ResourceListPersistenceBehavior : Behavior<DataGrid>
             _isCurrentViewModelActive = IsCurrentViewModelActive();
             if (_currentViewModel != null)
             {
-                RequestRestoreState();
+                ScheduleRestoreState();
             }
 
             return;
@@ -95,7 +104,7 @@ public sealed class ResourceListPersistenceBehavior : Behavior<DataGrid>
 
         if (_currentViewModel != null)
         {
-            RequestRestoreState();
+            ScheduleRestoreState();
         }
     }
 
@@ -109,7 +118,7 @@ public sealed class ResourceListPersistenceBehavior : Behavior<DataGrid>
         if (ReferenceEquals(dockable, _currentViewModel))
         {
             _isCurrentViewModelActive = true;
-            RequestRestoreState();
+            ScheduleRestoreState();
             return;
         }
 
@@ -187,6 +196,11 @@ public sealed class ResourceListPersistenceBehavior : Behavior<DataGrid>
             return;
         }
 
+        if (!_hasBeenVisible && vm.DataGridRuntimeState == null)
+        {
+            return;
+        }
+
         var grid = AssociatedObject;
         if (grid == null)
         {
@@ -221,6 +235,12 @@ public sealed class ResourceListPersistenceBehavior : Behavior<DataGrid>
             return;
         }
 
+        if (grid.Columns.Count == 0)
+        {
+            ScheduleRestoreState();
+            return;
+        }
+
         try
         {
             var runtimeState = vm.DataGridRuntimeState;
@@ -228,7 +248,19 @@ public sealed class ResourceListPersistenceBehavior : Behavior<DataGrid>
             {
                 var options = CreateStateOptions(vm, grid);
 
-                grid.RestoreState(runtimeState, DataGridStateSections.All, options);
+                var sections = DataGridStateSections.All & ~DataGridStateSections.Sorting;
+                grid.RestoreState(runtimeState, sections, options);
+
+                if (runtimeState.Sorting != null && vm.SortingModel != null)
+                {
+                    using (vm.SortingModel.DeferRefresh())
+                    {
+                        vm.SortingModel.MultiSort = runtimeState.Sorting.MultiSort;
+                        vm.SortingModel.CycleMode = runtimeState.Sorting.CycleMode;
+                        vm.SortingModel.OwnsViewSorts = runtimeState.Sorting.OwnsViewSorts;
+                        vm.SortingModel.Apply(runtimeState.Sorting.Descriptors ?? []);
+                    }
+                }
                 return;
             }
         }
@@ -238,5 +270,26 @@ public sealed class ResourceListPersistenceBehavior : Behavior<DataGrid>
         }
 
         // No VM-level fallback; if runtime restore fails, ignore.
+    }
+
+    private void ScheduleRestoreState()
+    {
+        if (_restoreScheduled)
+        {
+            return;
+        }
+
+        if (_restoreAttempts >= MaxRestoreAttempts)
+        {
+            return;
+        }
+
+        _restoreScheduled = true;
+        _restoreAttempts++;
+        Dispatcher.UIThread.Post(() =>
+        {
+            _restoreScheduled = false;
+            RequestRestoreState();
+        }, DispatcherPriority.Background);
     }
 }
