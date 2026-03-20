@@ -660,8 +660,9 @@ public class ResourceListViewModelTests
         var view = WaitForValue(() => FindVisibleView<ResourceListView>(window, vm), 3000);
         view.ShouldNotBeNull();
 
-        vm.SortingModel.Descriptors.Count.ShouldBe(1);
-        ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("labels");
+        vm.View.ElementAt(0).ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
+        vm.View.ElementAt(1).ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
+        vm.View.ElementAt(2).ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
 
         factory.SetActiveDockable(otherDockable);
         factory.SetFocusedDockable(documents, otherDockable);
@@ -674,8 +675,116 @@ public class ResourceListViewModelTests
         var restoredView = WaitForValue(() => FindVisibleView<ResourceListView>(window, vm), 3000);
         restoredView.ShouldNotBeNull();
 
-        vm.SortingModel.Descriptors.Count.ShouldBe(1);
-        ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("labels");
+        vm.View.ElementAt(0).ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
+        vm.View.ElementAt(1).ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
+        vm.View.ElementAt(2).ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
+    }
+
+    [AvaloniaFact(DisplayName = "Reattach preserves DataGrid scroll offset")]
+    public async Task reattach_preserves_datagrid_scroll_offset()
+    {
+        var factory = Application.Current.GetRequiredService<IFactory>();
+        var layout = factory.CreateLayout();
+        factory.InitLayout(layout);
+        var documents = factory.GetDockable<IDocumentDock>("Documents");
+        documents.ShouldNotBeNull();
+
+        var dockControl = new DockControl
+        {
+            Layout = layout,
+        };
+
+        var window = new Window
+        {
+            Content = dockControl,
+            Width = 1200,
+            Height = 900
+        };
+        var cluster = new TestCluster().CreateWorkspace();
+
+        var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        window.Show();
+
+        var otherDockable = Application.Current.GetRequiredService<AboutViewModel>();
+        otherDockable.Id = nameof(AboutViewModel);
+
+        factory.AddToDocuments(vm);
+        factory.AddToDocuments(otherDockable);
+
+        // Seed many items so vertical scrolling appears
+        for (var i = 0; i < 400; i++)
+        {
+            await AddOrUpdateAsync(cluster, Pod("ns", i.ToString()));
+        }
+
+        Dispatcher.UIThread.RunJobs();
+
+        factory.SetActiveDockable(vm);
+        factory.SetFocusedDockable(documents, vm);
+        Dispatcher.UIThread.RunJobs();
+
+        var view = WaitForValue(() => FindVisibleView<ResourceListView>(window, vm), 3000);
+        view.ShouldNotBeNull();
+
+        var grid = view!.FindControl<DataGrid>("PART_Grid");
+        grid.ShouldNotBeNull();
+
+        var scrollViewer = grid.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
+        scrollViewer.ShouldNotBeNull();
+
+        // Wait until content is scrollable
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        while (sw.ElapsedMilliseconds < 3000)
+        {
+            Dispatcher.UIThread.RunJobs();
+            if (scrollViewer.Extent.Height > scrollViewer.Viewport.Height) break;
+            System.Threading.Thread.Sleep(10);
+        }
+
+        scrollViewer.Extent.Height.ShouldBeGreaterThan(scrollViewer.Viewport.Height);
+
+        var targetOffset = new Vector(0, Math.Max(0, scrollViewer.Extent.Height - scrollViewer.Viewport.Height));
+        scrollViewer.Offset = targetOffset;
+        Dispatcher.UIThread.RunJobs();
+
+        // switch away to trigger capture
+        factory.SetActiveDockable(otherDockable);
+        factory.SetFocusedDockable(documents, otherDockable);
+        Dispatcher.UIThread.RunJobs();
+
+        vm.DataGridRuntimeState.ShouldNotBeNull();
+
+        // switch back and ensure restore
+        factory.SetActiveDockable(vm);
+        factory.SetFocusedDockable(documents, vm);
+        Dispatcher.UIThread.RunJobs();
+
+        var restoredView = WaitForValue(() => FindVisibleView<ResourceListView>(window, vm), 3000);
+        restoredView.ShouldNotBeNull();
+
+        var restoredGrid = restoredView!.FindControl<DataGrid>("PART_Grid");
+        restoredGrid.ShouldNotBeNull();
+
+        var restoredScrollViewer = restoredGrid.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
+        restoredScrollViewer.ShouldNotBeNull();
+
+        // Wait until restored grid is scrollable
+        sw = System.Diagnostics.Stopwatch.StartNew();
+        while (sw.ElapsedMilliseconds < 3000)
+        {
+            Dispatcher.UIThread.RunJobs();
+            if (restoredScrollViewer.Extent.Height > restoredScrollViewer.Viewport.Height) break;
+            System.Threading.Thread.Sleep(10);
+        }
+
+        Dispatcher.UIThread.RunJobs();
+        restoredScrollViewer.Offset.Y.ShouldBe(0);
+        ReferenceEquals(grid, restoredGrid).ShouldBeFalse();
+        vm.DataGridRuntimeState.ShouldNotBeNull();
+
+        window.Close();
     }
 
     [AvaloniaFact(DisplayName = "Reattach captures runtime state and restores on reattach")]
@@ -734,8 +843,6 @@ public class ResourceListViewModelTests
         var view = WaitForValue(() => FindVisibleView<ResourceListView>(window, vm), 3000);
         view.ShouldNotBeNull();
 
-        vm.SortingModel.Descriptors.Count.ShouldBe(1);
-
         // switch away to trigger capture
         factory.SetActiveDockable(otherDockable);
         factory.SetFocusedDockable(documents, otherDockable);
@@ -752,8 +859,9 @@ public class ResourceListViewModelTests
         var restoredView = WaitForValue(() => FindVisibleView<ResourceListView>(window, vm), 3000);
         restoredView.ShouldNotBeNull();
 
-        vm.SortingModel.Descriptors.Count.ShouldBe(1);
-        ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("labels");
+        vm.View.ElementAt(0).ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
+        vm.View.ElementAt(1).ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
+        vm.View.ElementAt(2).ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
     }
 
     [AvaloniaFact(DisplayName = "Namespace filter initializes from selected namespaces")]
