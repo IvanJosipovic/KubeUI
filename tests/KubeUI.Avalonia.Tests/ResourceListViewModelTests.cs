@@ -778,6 +778,7 @@ internal sealed class FakeDoubleTapResourceListViewModel : IResourceListViewMode
 
     public ClusterWorkspaceViewModel Cluster { get; set; } = null!;
     public GroupApiVersionKind Kind => GroupApiVersionKind.From<V1Pod>();
+    public int ItemCount => View.Count;
     public string SearchQuery { get; set; } = string.Empty;
     public ISettingsService SettingsService => Application.Current.GetRequiredService<ISettingsService>();
     public IResourceConfig ResourceConfig { get; }

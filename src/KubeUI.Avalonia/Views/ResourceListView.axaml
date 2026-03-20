@@ -33,7 +33,7 @@
                 Grid.Column="1"
                 Width="200"
                 VerticalContentAlignment="Center"
-                Content="{Binding View.Count, StringFormat='Items: {0}'}" />
+                Content="{Binding ItemCount, StringFormat='Items: {0}'}" />
 
             <Grid
                 Grid.Column="2"

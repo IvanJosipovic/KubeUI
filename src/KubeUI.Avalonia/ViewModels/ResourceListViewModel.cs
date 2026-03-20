@@ -61,6 +61,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     public partial Exception? LoadError { get; set; }
 
     private IDisposable? _subscription;
+    private IDisposable? _countSubscription;
 
     private readonly SelectionModel<T> _selectionModel = new()
     {
@@ -113,6 +114,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         WrapNavigation = true,
         UpdateSelectionOnNavigate = false
     };
+
+    [ObservableProperty]
+    public partial int ItemCount { get; set; }
 
     public ISelectionModel SelectionModel => _selectionModel;
 
@@ -280,6 +284,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     public void Dispose()
     {
         _subscription?.Dispose();
+        _countSubscription?.Dispose();
 
         if (Cluster != null)
         {
@@ -354,6 +359,20 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 _ => SynchronizeSelectionWithView(),
                 ex => _logger.LogError(ex, "Error Setting Resource List Filter: {ns} ", typeof(T))
             );
+
+        _countSubscription?.Dispose();
+        // Update count from the view (already filtered/searched/sorted). This
+        // avoids re-running the entire pipeline. Throttle updates to at most
+        // once per 100ms to reduce UI churn.
+        var countObs = Observable.FromEventPattern<NotifyCollectionChangedEventHandler, NotifyCollectionChangedEventArgs>(
+                h => ((INotifyCollectionChanged)view).CollectionChanged += h,
+                h => ((INotifyCollectionChanged)view).CollectionChanged -= h)
+                .Select(_ => view.Count)
+                .StartWith(view.Count)
+                .Sample(TimeSpan.FromMilliseconds(100), AvaloniaScheduler.Instance)
+                .DistinctUntilChanged();
+
+        _countSubscription = ((IObservable<int>)countObs).Subscribe(System.Reactive.Observer.Create<int>(c => ItemCount = c));
 
         _view = view;
     }

@@ -16,6 +16,7 @@ namespace KubeUI.Avalonia.ViewModels
     {
         ClusterWorkspaceViewModel Cluster { get; set; }
         GroupApiVersionKind Kind { get; }
+        int ItemCount { get; }
         string SearchQuery { get; set; }
         ISettingsService SettingsService { get; }
         IResourceConfig ResourceConfig { get; }
