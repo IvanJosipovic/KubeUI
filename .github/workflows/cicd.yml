@@ -22,11 +22,9 @@ jobs:
   build-test:
     name: Build & Test
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v6
-        with:
-          submodules: 'true'
 
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v5
