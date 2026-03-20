@@ -678,6 +678,84 @@ public class ResourceListViewModelTests
         ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("labels");
     }
 
+    [AvaloniaFact(DisplayName = "Reattach captures runtime state and restores on reattach")]
+    public async Task reattach_captures_runtime_state_and_restores_on_reattach()
+    {
+        var factory = Application.Current.GetRequiredService<IFactory>();
+        var layout = factory.CreateLayout();
+        factory.InitLayout(layout);
+        var documents = factory.GetDockable<IDocumentDock>("Documents");
+        documents.ShouldNotBeNull();
+
+        var dockControl = new DockControl
+        {
+            Layout = layout,
+        };
+
+        var window = new Window
+        {
+            Content = dockControl,
+            Width = 1200,
+            Height = 800
+        };
+        var cluster = new TestCluster().CreateWorkspace();
+
+        var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Namespace>>();
+        vm.Initialize(cluster);
+
+        window.Show();
+
+        var otherDockable = Application.Current.GetRequiredService<AboutViewModel>();
+        otherDockable.Id = nameof(AboutViewModel);
+
+        factory.AddToDocuments(vm);
+        factory.AddToDocuments(otherDockable);
+
+        var nsA = NamespaceResource("a");
+        var nsB = NamespaceResource("b");
+        var nsC = NamespaceResource("c");
+
+        await AddOrUpdateAsync(cluster, nsA);
+        await AddOrUpdateAsync(cluster, nsB);
+        await AddOrUpdateAsync(cluster, nsC);
+
+        var labelsColumn = vm.ColumnDefinitions.First(x => Equals(x.ColumnKey, "labels"));
+
+        vm.SortingModel.Clear();
+
+        vm.SortingModel.SetOrUpdate(new(labelsColumn, ListSortDirection.Descending, null, labelsColumn.CustomSortComparer));
+
+        Dispatcher.UIThread.RunJobs();
+
+        factory.SetActiveDockable(vm);
+        factory.SetFocusedDockable(documents, vm);
+        Dispatcher.UIThread.RunJobs();
+
+        var view = WaitForValue(() => FindVisibleView<ResourceListView>(window, vm), 3000);
+        view.ShouldNotBeNull();
+
+        vm.SortingModel.Descriptors.Count.ShouldBe(1);
+
+        // switch away to trigger capture
+        factory.SetActiveDockable(otherDockable);
+        factory.SetFocusedDockable(documents, otherDockable);
+        Dispatcher.UIThread.RunJobs();
+
+        // runtime snapshot should be captured on VM by behavior
+        vm.DataGridRuntimeState.ShouldNotBeNull();
+
+        // switch back and ensure restore
+        factory.SetActiveDockable(vm);
+        factory.SetFocusedDockable(documents, vm);
+        Dispatcher.UIThread.RunJobs();
+
+        var restoredView = WaitForValue(() => FindVisibleView<ResourceListView>(window, vm), 3000);
+        restoredView.ShouldNotBeNull();
+
+        vm.SortingModel.Descriptors.Count.ShouldBe(1);
+        ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("labels");
+    }
+
     [AvaloniaFact(DisplayName = "Namespace filter initializes from selected namespaces")]
     public async Task namespace_filter_initializes_from_selected_namespaces()
     {
@@ -792,6 +870,7 @@ internal sealed class FakeDoubleTapResourceListViewModel : IResourceListViewMode
     public IEnumerable<MenuItemViewModel> ContextMenuItems => [];
     public ISearchModel SearchModel { get; set; } = new SearchModel();
     public IDataGridSearchAdapterFactory SearchAdapterFactory => throw new NotImplementedException();
+    public global::Avalonia.Controls.DataGridState? DataGridRuntimeState { get; set; }
 }
 
 internal sealed class FakeDoubleTapResourceConfig : IResourceConfig

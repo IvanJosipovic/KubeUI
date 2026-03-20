@@ -494,6 +494,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         OnPropertyChanged(nameof(ContextMenuItems));
     }
 
+    // Runtime DataGrid state captured from ProDataGrid (in-memory snapshot)
+    public DataGridState? DataGridRuntimeState { get; set; }
+
+
     private void SearchModelOnSearchChanged(object? sender, SearchChangedEventArgs e)
     {
         _searchAdapterFactory.UpdatePredicate(e.NewDescriptors);

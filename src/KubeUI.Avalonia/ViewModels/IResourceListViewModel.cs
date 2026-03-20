@@ -1,11 +1,6 @@
-using Avalonia.Collections;
 using Avalonia.Controls.DataGridFiltering;
 using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls.Selection;
-using System.Collections;
-using k8s;
-using k8s.Models;
-using KubeUI.Kubernetes;
 using KubeUI.Avalonia.Resources;
 using KubernetesClient.Informer.Client;
 using Avalonia.Controls.DataGridSearching;
@@ -30,6 +25,8 @@ namespace KubeUI.Avalonia.ViewModels
         IEnumerable<MenuItemViewModel> ContextMenuItems { get; }
         ISearchModel SearchModel { get; set; }
         IDataGridSearchAdapterFactory SearchAdapterFactory { get; }
+        // Runtime DataGrid state captured from ProDataGrid (in-memory snapshot)
+        DataGridState? DataGridRuntimeState { get; set; }
     }
 }
 

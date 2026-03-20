@@ -91,6 +91,7 @@
             UseLogicalScrollable="True">
             <Interaction.Behaviors>
                 <behaviors:ResourceListDoubleTapBehavior />
+                <behaviors:ResourceListPersistenceBehavior />
             </Interaction.Behaviors>
             <DataGrid.ContextMenu>
                 <ContextMenu ItemsSource="{Binding ContextMenuItems}">
