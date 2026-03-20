@@ -79,7 +79,7 @@ public static class Kind
         var stdErrBuffer = new StringBuilder();
         var kubeConfigPath = KubernetesClientConfiguration.KubeConfigDefaultLocation;
 
-        var cmd = Cli.Wrap(Executable)
+        await Cli.Wrap(Executable)
             .WithArguments($"get kubeconfig --name {name} --kubeconfig \"{kubeConfigPath}\"")
             .WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdOutBuffer))
             .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
@@ -91,7 +91,13 @@ public static class Kind
 
     public static async Task<K8SConfiguration> GetK8SConfiguration(string name)
     {
-        return KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<K8SConfiguration>(await GetKubeConfig(name));
+        var kubeConfig = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<K8SConfiguration>(await GetKubeConfig(name));
+        if (kubeConfig is null)
+        {
+            throw new InvalidOperationException($"kind did not return a valid kubeconfig for cluster '{name}'.");
+        }
+
+        return kubeConfig;
     }
 
     public static async Task<k8s.Kubernetes> GetKubernetesClient(string name)
