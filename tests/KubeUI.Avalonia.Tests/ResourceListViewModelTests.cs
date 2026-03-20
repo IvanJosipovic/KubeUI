@@ -11,6 +11,8 @@ using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Selection;
 using Avalonia.Styling;
+using Dock.Avalonia.Controls;
+using Dock.Model.Controls;
 using Dock.Model.Core;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
@@ -604,8 +606,20 @@ public class ResourceListViewModelTests
     [AvaloniaFact(DisplayName = "Reattach keeps only saved sort descriptors")]
     public async Task reattach_keeps_only_saved_sort_descriptors()
     {
+        var factory = Application.Current.GetRequiredService<IFactory>();
+        var layout = factory.CreateLayout();
+        factory.InitLayout(layout);
+        var documents = factory.GetDockable<IDocumentDock>("Documents");
+        documents.ShouldNotBeNull();
+
+        var dockControl = new DockControl
+        {
+            Layout = layout,
+        };
+
         var window = new Window
         {
+            Content = dockControl,
             Width = 1200,
             Height = 800
         };
@@ -614,11 +628,13 @@ public class ResourceListViewModelTests
         var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Namespace>>();
         vm.Initialize(cluster);
 
-        var view = Application.Current.GetRequiredService<ResourceListView>();
-        view.DataContext = vm;
-
-        window.Content = view;
         window.Show();
+
+        var otherDockable = Application.Current.GetRequiredService<AboutViewModel>();
+        otherDockable.Id = nameof(AboutViewModel);
+
+        factory.AddToDocuments(vm);
+        factory.AddToDocuments(otherDockable);
 
         var nsA = NamespaceResource("a");
         nsA.Metadata.Labels = new Dictionary<string, string> { { "env", "prod" } };
@@ -639,13 +655,26 @@ public class ResourceListViewModelTests
 
         Dispatcher.UIThread.RunJobs();
 
+        factory.SetActiveDockable(vm);
+        factory.SetFocusedDockable(documents, vm);
+        Dispatcher.UIThread.RunJobs();
+
+        var view = WaitForValue(() => FindVisibleView<ResourceListView>(window, vm), 3000);
+        view.ShouldNotBeNull();
+
         vm.SortingModel.Descriptors.Count.ShouldBe(1);
         ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).Header.ShouldBe("Labels");
 
-        view.DataContext = null;
+        factory.SetActiveDockable(otherDockable);
+        factory.SetFocusedDockable(documents, otherDockable);
         Dispatcher.UIThread.RunJobs();
-        view.DataContext = vm;
+
+        factory.SetActiveDockable(vm);
+        factory.SetFocusedDockable(documents, vm);
         Dispatcher.UIThread.RunJobs();
+
+        var restoredView = WaitForValue(() => FindVisibleView<ResourceListView>(window, vm), 3000);
+        restoredView.ShouldNotBeNull();
 
         vm.SortingModel.Descriptors.Count.ShouldBe(1);
         ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).Header.ShouldBe("Labels");
@@ -706,6 +735,33 @@ public class ResourceListViewModelTests
 
         ResourceListDoubleTapBehavior.Execute(vm, new ScrollBar()).ShouldBeFalse();
         vm.ViewInvocations.ShouldBe(0);
+    }
+
+    private static TView? FindVisibleView<TView>(Visual root, object viewModel) where TView : Visual
+    {
+        return root.GetVisualDescendants()
+            .OfType<TView>()
+            .FirstOrDefault(view => view.IsVisible && ReferenceEquals((view as StyledElement)?.DataContext, viewModel));
+    }
+
+    private static T WaitForValue<T>(Func<T?> getter, int timeoutMs = 1000) where T : class
+    {
+        T? value = null;
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        while (sw.ElapsedMilliseconds < timeoutMs)
+        {
+            Dispatcher.UIThread.RunJobs();
+            value = getter();
+            if (value != null)
+            {
+                return value;
+            }
+
+            System.Threading.Thread.Sleep(10);
+        }
+
+        value.ShouldNotBeNull();
+        return value;
     }
 }
 

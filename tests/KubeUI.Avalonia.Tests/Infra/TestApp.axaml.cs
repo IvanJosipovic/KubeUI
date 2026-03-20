@@ -45,6 +45,15 @@ public class TestApp : Application
 
         Services = provider;
         Resources[typeof(IServiceProvider)] = Services;
+        Resources["AppearanceSettings"] = provider.GetRequiredService<ISettingsService>().Appearance;
+        Resources["DataGridRowHeight"] = Convert.ToDouble(provider.GetRequiredService<ISettingsService>().Appearance.ListRowHeight);
+        Resources["DataGridColumnHeaderMinHeight"] = Convert.ToDouble(provider.GetRequiredService<ISettingsService>().Appearance.ListRowHeight + 4m);
+        Resources["DataGridFontSize"] = Convert.ToDouble(provider.GetRequiredService<ISettingsService>().Appearance.FontSize);
+
+        if (!DataTemplates.OfType<ViewLocator>().Any())
+        {
+            DataTemplates.Add(provider.GetRequiredService<ViewLocator>());
+        }
 
         Dispatcher.UIThread.Invoke(() =>
         {

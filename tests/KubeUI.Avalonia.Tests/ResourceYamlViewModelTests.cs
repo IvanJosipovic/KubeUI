@@ -147,13 +147,26 @@ public class ResourceYamlViewModelTests
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesFoldState_WhenActiveDockableChanges()
     {
-        var window = new Window
+        var cluster = new TestCluster().CreateWorkspace();
+        var factory = Application.Current.GetRequiredService<IFactory>();
+        var layout = factory.CreateLayout();
+        factory.InitLayout(layout);
+        var documents = factory.GetDockable<IDocumentDock>("Documents");
+        documents.ShouldNotBeNull();
+
+        var dockControl = new DockControl
         {
-            Width = 800,
-            Height = 600,
+            Layout = layout,
         };
 
-        var cluster = new TestCluster().CreateWorkspace();
+        var window = new Window
+        {
+            Content = dockControl,
+            Width = 1200,
+            Height = 900,
+        };
+        window.Show();
+
         var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Namespace
         {
@@ -163,10 +176,11 @@ public class ResourceYamlViewModelTests
             },
         });
 
-        var view = Application.Current.GetRequiredService<ResourceYamlView>();
-        view.DataContext = vm;
-        window.Content = view;
-        window.Show();
+        var otherDockable = Application.Current.GetRequiredService<AboutViewModel>();
+        otherDockable.Id = nameof(AboutViewModel);
+
+        factory.AddToDocuments(vm);
+        factory.AddToDocuments(otherDockable);
 
         vm.YamlDocument.Text = """
             spec:
@@ -176,7 +190,11 @@ public class ResourceYamlViewModelTests
 
         Dispatcher.UIThread.RunJobs();
 
-        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        factory.SetActiveDockable(vm);
+        factory.SetFocusedDockable(documents, vm);
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = WaitForValue(() => FindVisibleYamlEditor(window, vm), 3000);
         editor.ShouldNotBeNull();
 
         var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
@@ -186,8 +204,18 @@ public class ResourceYamlViewModelTests
 
         foldingManager.AllFoldings.First().IsFolded = true;
 
+        factory.SetActiveDockable(otherDockable);
+        factory.SetFocusedDockable(documents, otherDockable);
         Dispatcher.UIThread.RunJobs();
 
+        factory.SetActiveDockable(vm);
+        factory.SetFocusedDockable(documents, vm);
+        Dispatcher.UIThread.RunJobs();
+
+        var restoredEditor = WaitForValue(() => FindVisibleYamlEditor(window, vm), 3000);
+        restoredEditor.ShouldNotBeNull();
+
+        behavior = Interaction.GetBehaviors(restoredEditor).OfType<YamlEditorBehavior>().Single();
         foldingManager = GetFoldingManager(behavior);
         foldingManager.ShouldNotBeNull();
         foldingManager.AllFoldings.First().IsFolded.ShouldBeTrue();
@@ -200,21 +228,33 @@ public class ResourceYamlViewModelTests
     {
         var cluster = new TestCluster().CreateWorkspace();
         var factory = Application.Current.GetRequiredService<IFactory>();
+        var layout = factory.CreateLayout();
+        factory.InitLayout(layout);
         var documents = factory.GetDockable<IDocumentDock>("Documents");
         documents.ShouldNotBeNull();
 
+        var dockControl = new DockControl
+        {
+            Layout = layout,
+        };
+
+        var window = new Window
+        {
+            Content = dockControl,
+            Width = 1200,
+            Height = 900,
+        };
+        window.Show();
+
         var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Namespace { Metadata = new V1ObjectMeta { Name = "test" } });
-        factory.AddToDocuments(vm);
+        vm.YamlDocument.Text = string.Join('\n', Enumerable.Range(0, 400).Select(i => $"line{i}: value"));
 
         var otherDockable = Application.Current.GetRequiredService<AboutViewModel>();
         otherDockable.Id = nameof(AboutViewModel);
-        factory.AddToDocuments(otherDockable);
 
-        var yamlView = Application.Current.GetRequiredService<ResourceYamlView>();
-        yamlView.DataContext = vm;
-        var window = new Window { Content = yamlView, Width = 800, Height = 600 };
-        window.Show();
+        factory.AddToDocuments(vm);
+        factory.AddToDocuments(otherDockable);
 
         Dispatcher.UIThread.RunJobs();
 
@@ -222,47 +262,58 @@ public class ResourceYamlViewModelTests
         factory.SetFocusedDockable(documents, vm);
         Dispatcher.UIThread.RunJobs();
 
-        // populate the document with many lines so the editor becomes scrollable
-        vm.YamlDocument.Text = string.Join('\n', Enumerable.Range(0, 200).Select(i => $"line{i}: value"));
-        Dispatcher.UIThread.RunJobs();
-
-        // wait for the editor to be available inside the yaml view
-        WaitFor(() => yamlView.GetVisualDescendants().OfType<AvaloniaEdit.TextEditor>().Any(), 2000);
-
-        var editor = yamlView.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        var editor = WaitForValue(() => FindVisibleYamlEditor(window, vm), 3000);
         editor.ShouldNotBeNull();
-        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorScrollBehavior>().Single();
 
         var scrollViewer = editor.GetScrollViewer();
         scrollViewer.ShouldNotBeNull();
 
-        // Wait until the editor is actually scrollable (content bigger than viewport)
         WaitFor(() =>
         {
             Dispatcher.UIThread.RunJobs();
             return scrollViewer.Extent.Height > scrollViewer.Viewport.Height;
         }, 3000);
 
-        // scroll to a target offset near the bottom
         var targetOffset = new Vector(0, Math.Max(0, scrollViewer.Extent.Height - scrollViewer.Viewport.Height));
-        RaiseDockableChanged(behavior, vm);
         scrollViewer.Offset = targetOffset;
         Dispatcher.UIThread.RunJobs();
-        scrollViewer.Offset.ShouldBe(targetOffset);
-        vm.ScrollOffset = targetOffset;
+        WaitFor(() => vm.ScrollOffset == targetOffset, 3000);
 
-        // switch away using the behavior's dockable-change path
-        RaiseDockableChanged(behavior, otherDockable);
+        factory.SetActiveDockable(otherDockable);
+        factory.SetFocusedDockable(documents, otherDockable);
         Dispatcher.UIThread.RunJobs();
 
-        // Simulate the hidden editor getting reset while inactive. The saved
-        // offset in the ViewModel should not be overwritten by that reset.
-        scrollViewer.Offset = default;
-        Dispatcher.UIThread.RunJobs();
         vm.ScrollOffset.ShouldBe(targetOffset);
 
-        RaiseDockableChanged(behavior, vm);
+        factory.SetActiveDockable(vm);
+        factory.SetFocusedDockable(documents, vm);
         Dispatcher.UIThread.RunJobs();
+
+        var restoredEditor = WaitForValue(() => FindVisibleYamlEditor(window, vm), 3000);
+        restoredEditor.ShouldNotBeNull();
+
+        var restoredScrollViewer = restoredEditor.GetScrollViewer();
+        restoredScrollViewer.ShouldNotBeNull();
+
+        WaitFor(() =>
+        {
+            Dispatcher.UIThread.RunJobs();
+            return restoredScrollViewer.Extent.Height > restoredScrollViewer.Viewport.Height;
+        }, 3000);
+
+        var restored = SpinWait.SpinUntil(() =>
+        {
+            Dispatcher.UIThread.RunJobs();
+            return restoredScrollViewer.Offset == targetOffset;
+        }, 3000);
+
+        if (!restored)
+        {
+            throw new ShouldAssertException(
+                $"Expected restored offset {targetOffset} but got {restoredScrollViewer.Offset}. "
+                + $"Saved view-model offset is {vm.ScrollOffset}. "
+                + $"Dock reused editor instance: {ReferenceEquals(editor, restoredEditor)}.");
+        }
 
         vm.ScrollOffset.ShouldBe(targetOffset);
 
@@ -505,81 +556,22 @@ public class ResourceYamlViewModelTests
         return pod;
     }
 
-    private static object? FindDockableById(object? dockable, string id)
+    private static AvaloniaEdit.TextEditor? FindVisibleYamlEditor(Visual root, ResourceYamlViewModel vm)
     {
-        if (dockable == null)
-        {
-            return null;
-        }
-
-        var dockableType = dockable.GetType();
-        var dockableId = dockableType.GetProperty("Id")?.GetValue(dockable) as string;
-        if (string.Equals(dockableId, id, StringComparison.Ordinal))
-        {
-            return dockable;
-        }
-
-        var visibleDockables = dockableType.GetProperty("VisibleDockables")?.GetValue(dockable) as System.Collections.IEnumerable;
-        if (visibleDockables == null)
-        {
-            return null;
-        }
-
-        foreach (var child in visibleDockables)
-        {
-            var match = FindDockableById(child, id);
-            if (match != null)
-            {
-                return match;
-            }
-        }
-
-        return null;
+        return root.GetVisualDescendants()
+            .OfType<AvaloniaEdit.TextEditor>()
+            .FirstOrDefault(editor => editor.IsVisible && ReferenceEquals(editor.DataContext, vm));
     }
 
-    private static object? FindFirstDockableByType(object? dockable, Type dockableType)
+    private static T WaitForValue<T>(Func<T?> getter, int timeoutMs = 1000) where T : class
     {
-        if (dockable == null)
+        T? value = null;
+        WaitFor(() =>
         {
-            return null;
-        }
-
-        if (dockableType.IsInstanceOfType(dockable))
-        {
-            return dockable;
-        }
-
-        var visibleDockables = dockable.GetType().GetProperty("VisibleDockables")?.GetValue(dockable) as System.Collections.IEnumerable;
-        if (visibleDockables == null)
-        {
-            return null;
-        }
-
-        foreach (var child in visibleDockables)
-        {
-            var match = FindFirstDockableByType(child, dockableType);
-            if (match != null)
-            {
-                return match;
-            }
-        }
-
-        return null;
-    }
-
-    private static void SetActiveDockable(object dockable, object activeDockable)
-    {
-        var property = dockable.GetType().GetProperty("ActiveDockable");
-        property.ShouldNotBeNull();
-        property!.SetValue(dockable, activeDockable);
-    }
-
-    private static void RaiseDockableChanged(object behavior, object dockable)
-    {
-        var method = behavior.GetType().GetMethod("FactoryDockableChanged", BindingFlags.Instance | BindingFlags.NonPublic);
-        method.ShouldNotBeNull();
-
-        method!.Invoke(behavior, [null, new { Dockable = dockable }]);
+            value = getter();
+            return value != null;
+        }, timeoutMs);
+        return value!;
     }
 
     private static void WaitFor(Func<bool> predicate, int timeoutMs = 1000)
