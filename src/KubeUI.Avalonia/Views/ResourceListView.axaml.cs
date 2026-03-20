@@ -49,7 +49,7 @@ public partial class ResourceListView : UserControl
         {
             GetGenericMethod(nameof(GenerateGrid))?.Invoke(this, null);
 
-            PART_Grid.SelectionModelFactory = vm.SelectionModelFactory;
+            PART_Grid.ReferenceIndexResolver = vm.ReferenceIndexResolver;
             PART_Grid.SortingAdapterFactory = vm.SortingAdapterFactory;
             PART_Grid.FilteringAdapterFactory = vm.FilteringAdapterFactory;
             PART_Grid.SearchAdapterFactory = vm.SearchAdapterFactory;

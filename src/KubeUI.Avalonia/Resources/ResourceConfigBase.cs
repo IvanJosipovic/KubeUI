@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text;
 using Avalonia.Controls.Notifications;
 using Avalonia.Styling;
 using Dock.Model.Core;
@@ -88,6 +89,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     {
         return new ResourceListColumn<T, string>()
         {
+            Key = "name",
             Name = "Name",
             Field = x => x.Metadata.Name,
             Width = "2*",
@@ -99,6 +101,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     {
         return new ResourceListColumn<T, string>()
         {
+            Key = "namespace",
             Name = "Namespace",
             Field = x => x.Metadata.NamespaceProperty,
             Width = "*",
@@ -109,6 +112,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     {
         return new ResourceListColumn<T, DateTime?>()
         {
+            Key = "age",
             Name = "Age",
             CustomControl = typeof(AgeCell),
             Field = x => x.Metadata.CreationTimestamp,
@@ -410,6 +414,25 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
 public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
+    private Func<T, TValue>? _fieldAccessor;
+    private IDataGridColumnValueAccessor? _valueAccessor;
+    private string? _key;
+
+    public string Key
+    {
+        get
+        {
+            if (_key != null)
+            {
+                return _key;
+            }
+
+            _key = NormalizeKey(Name);
+            return _key;
+        }
+        set => _key = value;
+    }
+
     public required string Name { get; set; }
 
     public required Func<T, TValue> Field { get; set; }
@@ -426,8 +449,10 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
 
     public Type ValueType => typeof(TValue);
 
+    public IDataGridColumnValueAccessor ValueAccessor => _valueAccessor ??= new LambdaColumnValueAccessor(GetFieldAccessor());
+
     public Func<object, IComparable?> SortKey =>
-        o => (IComparable?)(object?)Field((T)o);
+        o => (IComparable?)(object?)GetFieldAccessor()((T)o);
 
     public Func<object, string> DisplayValue =>
         o =>
@@ -435,9 +460,71 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
             var t = (T)o;
             if (Display != null)
                 return Display(t);
-            var v = Field(t);
+            var v = GetFieldAccessor()(t);
             return v?.ToString() ?? "";
         };
+
+    private Func<T, TValue> GetFieldAccessor()
+    {
+        _fieldAccessor ??= Field;
+        return _fieldAccessor;
+    }
+
+    private static string NormalizeKey(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        var builder = new StringBuilder(value.Length);
+        var pendingDash = false;
+
+        foreach (var ch in value)
+        {
+            if (char.IsLetterOrDigit(ch))
+            {
+                if (pendingDash && builder.Length > 0)
+                {
+                    builder.Append('-');
+                }
+
+                builder.Append(char.ToLowerInvariant(ch));
+                pendingDash = false;
+                continue;
+            }
+
+            pendingDash = true;
+        }
+
+        return builder.ToString().Trim('-');
+    }
+
+    private sealed class LambdaColumnValueAccessor : IDataGridColumnValueAccessor
+    {
+        private readonly Func<T, TValue> _getter;
+
+        public LambdaColumnValueAccessor(Func<T, TValue> getter)
+        {
+            _getter = getter;
+        }
+
+        public Type ItemType => typeof(T);
+
+        public Type ValueType => typeof(TValue);
+
+        public bool CanWrite => false;
+
+        public object GetValue(object item)
+        {
+            return _getter((T)item)!;
+        }
+
+        public void SetValue(object item, object value)
+        {
+            throw new NotSupportedException();
+        }
+    }
 }
 
 

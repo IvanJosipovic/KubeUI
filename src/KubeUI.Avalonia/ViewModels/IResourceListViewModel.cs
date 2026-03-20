@@ -1,6 +1,5 @@
 using Avalonia.Collections;
 using Avalonia.Controls.DataGridFiltering;
-using Avalonia.Controls.DataGridSelection;
 using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls.Selection;
 using System.Collections;
@@ -26,7 +25,7 @@ namespace KubeUI.Avalonia.ViewModels
         IDataGridFilteringAdapterFactory FilteringAdapterFactory { get; }
         IFilteringModel FilteringModel { get; set; }
         ISelectionModel SelectionModel { get; }
-        IDataGridSelectionModelFactory SelectionModelFactory { get; }
+        Func<IList, object, int> ReferenceIndexResolver { get; }
         IList View { get; }
         IEnumerable<MenuItemViewModel> ContextMenuItems { get; }
         ISearchModel SearchModel { get; set; }

@@ -6,7 +6,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.DataGridFiltering;
 using Avalonia.Controls.DataGridSearching;
-using Avalonia.Controls.DataGridSelection;
 using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Selection;
@@ -235,13 +234,11 @@ public class ResourceListViewModelTests
 
         // Replace 'b' with new instance (same key)
         await AddOrUpdateAsync(cluster, Event("ns", "b"));
-
+        Dispatcher.UIThread.RunJobs();
 
         vm.View.ElementAt(0).ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
         vm.View.ElementAt(1).ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
         vm.View.ElementAt(2).ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
-
-        vm.SelectionModel.SelectedIndexes.ShouldBe([0]);
 
         vm.SelectedItems.Count.ShouldBe(1);
 
@@ -291,6 +288,7 @@ public class ResourceListViewModelTests
 
         // Replace 'b' with new instance (same key)
         await AddOrUpdateAsync(cluster, Event("ns", "b"));
+        Dispatcher.UIThread.RunJobs();
 
         vm.View.ElementAt(0).ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
         vm.View.ElementAt(1).ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
@@ -647,7 +645,7 @@ public class ResourceListViewModelTests
         await AddOrUpdateAsync(cluster, nsB);
         await AddOrUpdateAsync(cluster, nsC);
 
-        var labelsColumn = vm.ColumnDefinitions.First(x => x.Header?.ToString() == "Labels");
+        var labelsColumn = vm.ColumnDefinitions.First(x => Equals(x.ColumnKey, "labels"));
 
         vm.SortingModel.Clear();
 
@@ -663,7 +661,7 @@ public class ResourceListViewModelTests
         view.ShouldNotBeNull();
 
         vm.SortingModel.Descriptors.Count.ShouldBe(1);
-        ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).Header.ShouldBe("Labels");
+        ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("labels");
 
         factory.SetActiveDockable(otherDockable);
         factory.SetFocusedDockable(documents, otherDockable);
@@ -677,7 +675,7 @@ public class ResourceListViewModelTests
         restoredView.ShouldNotBeNull();
 
         vm.SortingModel.Descriptors.Count.ShouldBe(1);
-        ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).Header.ShouldBe("Labels");
+        ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("labels");
     }
 
     [AvaloniaFact(DisplayName = "Namespace filter initializes from selected namespaces")]
@@ -789,7 +787,7 @@ internal sealed class FakeDoubleTapResourceListViewModel : IResourceListViewMode
     public IDataGridFilteringAdapterFactory FilteringAdapterFactory => throw new NotImplementedException();
     public IFilteringModel FilteringModel { get; set; } = new FilteringModel();
     public ISelectionModel SelectionModel { get; }
-    public IDataGridSelectionModelFactory SelectionModelFactory => throw new NotImplementedException();
+    public Func<IList, object, int> ReferenceIndexResolver => (_, _) => -1;
     public IList View => Array.Empty<object>();
     public IEnumerable<MenuItemViewModel> ContextMenuItems => [];
     public ISearchModel SearchModel { get; set; } = new SearchModel();

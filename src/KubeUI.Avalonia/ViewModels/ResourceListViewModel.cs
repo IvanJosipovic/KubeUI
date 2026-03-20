@@ -1,4 +1,5 @@
 using System.Collections.Specialized;
+using System.Collections;
 using System.Globalization;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -6,7 +7,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Avalonia.Controls.DataGridFiltering;
 using Avalonia.Controls.DataGridSearching;
-using Avalonia.Controls.DataGridSelection;
 using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls.Selection;
 using Avalonia.Controls.Templates;
@@ -62,10 +62,12 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private IDisposable? _subscription;
 
-    private readonly IdentitySelectionModel<T> _selectionModel = new()
+    private readonly SelectionModel<T> _selectionModel = new()
     {
         SingleSelect = false
     };
+
+    private readonly List<T> _selectionSnapshot = [];
 
     public IList View => _view;
 
@@ -75,7 +77,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     public IDataGridSortingAdapterFactory SortingAdapterFactory => _sortingAdapterFactory;
 
-    private DynamicDataSortingAdapterFactory<T> _sortingAdapterFactory { get; set; }
+    private DynamicDataSortingAdapterFactory<T> _sortingAdapterFactory = null!;
 
     [ObservableProperty]
     public partial ISortingModel SortingModel { get; set; } = new SortingModel
@@ -89,7 +91,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     public IDataGridFilteringAdapterFactory FilteringAdapterFactory => _filteringAdapterFactory;
 
-    private DynamicDataFilteringAdapterFactory<T> _filteringAdapterFactory { get; set; }
+    private DynamicDataFilteringAdapterFactory<T> _filteringAdapterFactory = null!;
 
     [ObservableProperty]
     public partial IFilteringModel FilteringModel { get; set; } = new FilteringModel
@@ -101,7 +103,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     public IDataGridSearchAdapterFactory SearchAdapterFactory => _searchAdapterFactory;
 
-    private DynamicDataSearchAdapterFactory<T> _searchAdapterFactory;
+    private DynamicDataSearchAdapterFactory<T> _searchAdapterFactory = null!;
 
     [ObservableProperty]
     public partial ISearchModel SearchModel { get; set; } = new SearchModel()
@@ -112,14 +114,16 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         UpdateSelectionOnNavigate = false
     };
 
-    public IDataGridSelectionModelFactory SelectionModelFactory => _selectionModelFactory;
-
-    private DynamicDataSelectionModelFactory<T> _selectionModelFactory { get; set; }
-
     public ISelectionModel SelectionModel => _selectionModel;
+
+    public Func<IList, object, int> ReferenceIndexResolver => ResolveReferenceIndex;
 
     [ObservableProperty]
     public partial ObservableCollection<DataGridColumnDefinition> ColumnDefinitions { get; private set; } = [];
+
+    private readonly Dictionary<string, IResourceListColumn> _resourceColumnsByKey = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, DataGridColumnDefinition> _columnDefinitionsByKey = new(StringComparer.OrdinalIgnoreCase);
+    private IList<IResourceListColumn> _resourceColumns = [];
 
     public ResourceListViewModel()
     {
@@ -138,18 +142,26 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         Title = Kind.Kind.Humanize(LetterCasing.Title).Pluralize();
         Id = Cluster.Name + "-" + Kind;
         ResourceConfig = (ResourceConfigBase<T>)Cluster.GetResourceConfig(Kind);
+        _resourceColumns = ResourceConfig.Columns();
+        _resourceColumnsByKey.Clear();
+        foreach (var column in _resourceColumns)
+        {
+            if (!string.IsNullOrWhiteSpace(column.Key))
+            {
+                _resourceColumnsByKey[column.Key] = column;
+            }
+        }
+
         OnPropertyChanged(nameof(ContextMenuItems));
 
-        _sortingAdapterFactory = new DynamicDataSortingAdapterFactory<T>(ResourceConfig);
+        _sortingAdapterFactory = new DynamicDataSortingAdapterFactory<T>(_resourceColumnsByKey);
         _sortSubject = new BehaviorSubject<IComparer<T>>(_sortingAdapterFactory.SortComparer);
 
-        _filteringAdapterFactory = new DynamicDataFilteringAdapterFactory<T>(ResourceConfig);
+        _filteringAdapterFactory = new DynamicDataFilteringAdapterFactory<T>(_resourceColumnsByKey);
         _filterSubject = new BehaviorSubject<Func<T, bool>>(_filteringAdapterFactory.FilterPredicate);
 
-        _searchAdapterFactory = new DynamicDataSearchAdapterFactory<T>(ResourceConfig);
+        _searchAdapterFactory = new DynamicDataSearchAdapterFactory<T>(_resourceColumnsByKey);
         _searchSubject = new BehaviorSubject<Func<T, bool>>(_searchAdapterFactory.SearchPredicate);
-
-        _selectionModelFactory = new DynamicDataSelectionModelFactory<T>(SelectionModel);
 
         GenerateColumnDefinitions();
         SetNamespaceFilter();
@@ -218,23 +230,25 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             return;
         }
 
-        var namespaceColumn = ColumnDefinitions.FirstOrDefault(col =>
-            col.Header is string header &&
-            string.Equals(header, "Namespace", StringComparison.Ordinal));
-
-        if (namespaceColumn == null)
+        if (!_columnDefinitionsByKey.TryGetValue("namespace", out var namespaceColumn))
         {
             return;
         }
 
         if (Cluster.SelectedNamespaces.Count > 0)
         {
+            var values = new List<object>(Cluster.SelectedNamespaces.Count);
+            foreach (var selectedNamespace in Cluster.SelectedNamespaces)
+            {
+                values.Add(selectedNamespace.Name()!);
+            }
+
             var descriptor = new FilteringDescriptor(
                 namespaceColumn,
                 FilteringOperator.In,
                 propertyPath: null,
                 value: null,
-                values: [.. Cluster.SelectedNamespaces.Select(x => x.Name() as object)]);
+                values: values);
 
             FilteringModel.SetOrUpdate(descriptor);
         }
@@ -322,7 +336,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
         _subscription = Objects.Connect()
             .ObserveOn(AvaloniaScheduler.Instance)
-            .Do(_ => _selectionModel.BeginDataUpdate())
+            .Do(_ => CaptureSelectionSnapshot())
             .Filter(_filterSubject)
             .Filter(_searchSubject)
             .SortAndBind(out _view, _sortSubject, new()
@@ -333,12 +347,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 InitialCapacity = Objects.Count
             })
             .Subscribe(
-                _ => _selectionModel.EndDataUpdate(_view),
-                ex =>
-                {
-                    _selectionModel.EndDataUpdate(_view);
-                    _logger.LogError(ex, "Error Setting Resource List Filter: {ns} ", typeof(T));
-                }
+                _ => SynchronizeSelectionWithView(),
+                ex => _logger.LogError(ex, "Error Setting Resource List Filter: {ns} ", typeof(T))
             );
     }
 
@@ -351,54 +361,21 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         }
 
         ColumnDefinitions.Clear();
+        _columnDefinitionsByKey.Clear();
 
         var converter = new DataGridLengthConverter();
 
-        foreach (var columnDefinition in ResourceConfig.Columns())
+        foreach (var columnDefinition in _resourceColumns)
         {
             try
             {
-                var column = new DataGridControlTemplateColumnDefinition()
-                {
-                    Header = columnDefinition.Name,
-                    CellTemplate = new FuncDataTemplate<T>((item, _) =>
-                    {
-                        try
-                        {
-                            var control = Application.Current.GetRequiredService(columnDefinition.CustomControl) as Control;
-
-                            if (control is IDisplayFunc init2)
-                            {
-                                init2.SetDisplayFunc(columnDefinition.DisplayValue);
-                            }
-
-                            if (control is IInitializeCluster init)
-                            {
-                                init.Initialize(Cluster);
-                            }
-
-                            control.DataContext = item;
-
-                            return control;
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "Error creating Control");
-                            return new TextBlock() { Text = ex.Message };
-                        }
-                    }, supportsRecycling: true),
-                    CanUserSort = true,
-                    CustomSortComparer = s_noopSortComparer,
-                    Width = columnDefinition.Width != null ? converter.ConvertFromString(columnDefinition.Width) as DataGridLength? : null,
-                    ValueType = columnDefinition.ValueType,
-                    Options = new()
-                    {
-                        // Causes lag on large lists
-                        //SearchTextProvider = columnDefinition.DisplayValue,
-                    }
-                };
+                var column = CreateColumnDefinition(columnDefinition, converter);
 
                 ColumnDefinitions.Add(column);
+                if (!string.IsNullOrWhiteSpace(columnDefinition.Key))
+                {
+                    _columnDefinitionsByKey[columnDefinition.Key] = column;
+                }
 
                 if (columnDefinition.Sort != SortDirection.None)
                 {
@@ -411,6 +388,83 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 _logger.LogWarning(ex, "Unable to generate column for: ");
             }
         }
+    }
+
+    private DataGridColumnDefinition CreateColumnDefinition(IResourceListColumn columnDefinition, DataGridLengthConverter converter)
+    {
+        return CreateTemplateColumnDefinition(columnDefinition, converter);
+    }
+
+    private DataGridColumnDefinition CreateTemplateColumnDefinition(IResourceListColumn columnDefinition, DataGridLengthConverter converter)
+    {
+        return new DataGridControlTemplateColumnDefinition
+        {
+            Header = columnDefinition.Name,
+            ColumnKey = columnDefinition.Key,
+            Tag = columnDefinition,
+            CellTemplate = CreateCellTemplate(columnDefinition),
+            CanUserSort = true,
+            CustomSortComparer = s_noopSortComparer,
+            Width = ParseWidth(columnDefinition.Width, converter),
+            ValueAccessor = columnDefinition.ValueAccessor,
+            ValueType = columnDefinition.ValueType,
+            Options = BuildColumnOptions(columnDefinition)
+        };
+    }
+
+    private FuncDataTemplate<T> CreateCellTemplate(IResourceListColumn columnDefinition)
+    {
+        return new FuncDataTemplate<T>((item, _) =>
+        {
+            try
+            {
+                var control = Application.Current.GetRequiredService(columnDefinition.CustomControl) as Control;
+
+                if (control == null)
+                {
+                    throw new InvalidOperationException($"Unable to resolve control type {columnDefinition.CustomControl.FullName}");
+                }
+
+                if (control is IDisplayFunc displayFunc)
+                {
+                    displayFunc.SetDisplayFunc(columnDefinition.DisplayValue);
+                }
+
+                if (control is IInitializeCluster initializeCluster)
+                {
+                    initializeCluster.Initialize(Cluster);
+                }
+
+                control.DataContext = item;
+
+                return control;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating Control");
+                return new TextBlock { Text = ex.Message };
+            }
+        }, supportsRecycling: true);
+    }
+
+    private static DataGridColumnDefinitionOptions BuildColumnOptions(IResourceListColumn columnDefinition)
+    {
+        return new()
+        {
+            IsSearchable = true,
+            FilterValueAccessor = columnDefinition.ValueAccessor,
+            SortValueAccessor = columnDefinition.ValueAccessor
+        };
+    }
+
+    private static DataGridLength? ParseWidth(string? width, DataGridLengthConverter converter)
+    {
+        if (width == null)
+        {
+            return null;
+        }
+
+        return converter.ConvertFromString(width) as DataGridLength?;
     }
 
     private void SortingModelOnSortingChanged(object? sender, SortingChangedEventArgs e)
@@ -438,139 +492,119 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _searchSubject.OnNext(_searchAdapterFactory.SearchPredicate);
     }
 
-}
-
-public sealed class IdentitySelectionModel<TResource> : SelectionModel<TResource> where TResource : class, IKubernetesObject<V1ObjectMeta>, new()
-{
-    private HashSet<ResourceIdentity> _selectedResourceKeys = [];
-
-    private int _dataUpdateDepth;
-
-    private bool _isRestoringSelection;
-
-    public IdentitySelectionModel()
+    private int ResolveReferenceIndex(IList list, object item)
     {
-        SelectionChanged += OnSelectionChanged;
-    }
-
-    public void BeginDataUpdate()
-    {
-        if (_dataUpdateDepth == 0)
+        if (list == null || item is not T resource)
         {
-            CaptureSelectedKeys();
+            return -1;
         }
 
-        _dataUpdateDepth++;
-    }
-
-    public void EndDataUpdate(ReadOnlyObservableCollection<TResource> view)
-    {
-        if (_dataUpdateDepth == 0)
+        for (var i = 0; i < list.Count; i++)
         {
-            return;
-        }
-
-        _dataUpdateDepth--;
-
-        if (_dataUpdateDepth > 0)
-        {
-            return;
-        }
-
-        RestoreSelection(view);
-    }
-
-    private void OnSelectionChanged(object? sender, SelectionModelSelectionChangedEventArgs<TResource> e)
-    {
-        if (_isRestoringSelection || _dataUpdateDepth > 0)
-        {
-            return;
-        }
-
-        CaptureSelectedKeys();
-    }
-
-    private void RestoreSelection(ReadOnlyObservableCollection<TResource> view)
-    {
-        if (_selectedResourceKeys.Count == 0 || view.Count == 0)
-        {
-            return;
-        }
-
-        var targetIndexes = new List<int>();
-        for (var i = 0; i < view.Count; i++)
-        {
-            if (_selectedResourceKeys.Contains(CreateResourceIdentity(view[i])))
+            if (ReferenceEquals(list[i], resource))
             {
-                targetIndexes.Add(i);
+                return i;
             }
         }
 
-        if (targetIndexes.Count == 0 || SelectedIndexes.SequenceEqual(targetIndexes))
+        return -1;
+    }
+
+    private void CaptureSelectionSnapshot()
+    {
+        _selectionSnapshot.Clear();
+
+        foreach (var item in _selectionModel.SelectedItems)
+        {
+            if (item is T resource)
+            {
+                _selectionSnapshot.Add(resource);
+            }
+        }
+    }
+
+    private void SynchronizeSelectionWithView()
+    {
+        if (_selectionSnapshot.Count == 0 || _view.Count == 0)
         {
             return;
         }
 
-        _isRestoringSelection = true;
+        var desiredIndexes = new List<int>(_selectionSnapshot.Count);
 
-        try
+        for (var i = 0; i < _view.Count; i++)
         {
-            Clear();
-            foreach (var index in targetIndexes)
+            if (_view[i] is not T resource)
             {
-                Select(index);
+                continue;
+            }
+
+            for (var j = 0; j < _selectionSnapshot.Count; j++)
+            {
+                if (ReferenceEquals(resource, _selectionSnapshot[j]))
+                {
+                    desiredIndexes.Add(i);
+                    break;
+                }
             }
         }
-        finally
-        {
-            _isRestoringSelection = false;
-        }
-    }
 
-    private void CaptureSelectedKeys()
-    {
-        if (SelectedItems.Count == 0)
+        _selectionSnapshot.Clear();
+
+        if (desiredIndexes.Count == 0 || SelectionMatches(desiredIndexes))
         {
-            _selectedResourceKeys = [];
             return;
         }
 
-        var keys = new HashSet<ResourceIdentity>();
-        for (var i = 0; i < SelectedItems.Count; i++)
+        using (SelectionModelExtensions.BatchUpdate(_selectionModel))
         {
-            var item = SelectedItems[i];
-            if (item != null)
+            _selectionModel.Clear();
+
+            if (_selectionModel.SingleSelect)
             {
-                keys.Add(CreateResourceIdentity(item));
+                _selectionModel.Select(desiredIndexes[0]);
+                return;
+            }
+
+            foreach (var index in desiredIndexes)
+            {
+                _selectionModel.Select(index);
+            }
+        }
+    }
+
+    private bool SelectionMatches(IReadOnlyList<int> desiredIndexes)
+    {
+        if (_selectionModel.SelectedIndexes.Count != desiredIndexes.Count)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < desiredIndexes.Count; i++)
+        {
+            if (_selectionModel.SelectedIndexes[i] != desiredIndexes[i])
+            {
+                return false;
             }
         }
 
-        _selectedResourceKeys = keys;
+        return true;
     }
 
-    private static ResourceIdentity CreateResourceIdentity(TResource resource)
-    {
-        return new(resource.Namespace() ?? string.Empty, resource.Name() ?? string.Empty);
-    }
-
-    private readonly record struct ResourceIdentity(string Namespace, string Name)
-    {
-        public override string ToString() => $"{Namespace}/{Name}";
-    }
 }
 
 public sealed class DynamicDataSortingAdapterFactory<T> : IDataGridSortingAdapterFactory where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
-    private readonly ResourceConfigBase<T> _resourceConfig;
+    private readonly IReadOnlyDictionary<string, IResourceListColumn> _resourceColumnsByKey;
 
     private static readonly IComparer<T> s_noopComparer = Comparer<T>.Create(static (_, _) => 0);
 
     public IComparer<T> SortComparer { get; private set; }
 
-    public DynamicDataSortingAdapterFactory(ResourceConfigBase<T> resourceConfig)
+    public DynamicDataSortingAdapterFactory(IReadOnlyDictionary<string, IResourceListColumn> resourceColumnsByKey)
     {
         SortComparer = s_noopComparer;
-        _resourceConfig = resourceConfig;
+        _resourceColumnsByKey = resourceColumnsByKey;
     }
 
     public DataGridSortingAdapter Create(DataGrid grid, ISortingModel model)
@@ -592,8 +626,14 @@ public sealed class DynamicDataSortingAdapterFactory<T> : IDataGridSortingAdapte
 
         SortExpressionComparer<T>? comparer = null;
 
-        foreach (var descriptor in descriptors.Where(static d => d != null))
+        for (var i = 0; i < descriptors.Count; i++)
         {
+            var descriptor = descriptors[i];
+            if (descriptor == null)
+            {
+                continue;
+            }
+
             var selector = CreateSelector(descriptor);
 
             if (selector == null)
@@ -627,23 +667,59 @@ public sealed class DynamicDataSortingAdapterFactory<T> : IDataGridSortingAdapte
 
     private Func<T, IComparable?>? CreateSelector(SortingDescriptor descriptor)
     {
-        if (descriptor.ColumnId is not DataGridColumnDefinition gridColumn)
-        {
-            return null;
-        }
-
-        if (gridColumn.Header is not string header || string.IsNullOrWhiteSpace(header))
-        {
-            return null;
-        }
-
-        var column = _resourceConfig.Columns().FirstOrDefault(x => x.Name == header);
-        if (column == null)
+        if (!TryResolveResourceColumn(descriptor.ColumnId, out var column))
         {
             return null;
         }
 
         return column.SortKey;
+    }
+
+    private bool TryResolveResourceColumn(object? columnId, out IResourceListColumn column)
+    {
+        if (columnId is DataGridColumnDefinition definition)
+        {
+            if (definition.Tag is IResourceListColumn taggedColumn)
+            {
+                column = taggedColumn;
+                return true;
+            }
+
+            if (TryResolveKey(definition.ColumnKey, out var key) && _resourceColumnsByKey.TryGetValue(key, out column))
+            {
+                return true;
+            }
+        }
+
+        if (TryResolveKey(columnId, out var directKey) && _resourceColumnsByKey.TryGetValue(directKey, out column))
+        {
+            return true;
+        }
+
+        column = null!;
+        return false;
+    }
+
+    private static bool TryResolveKey(object? columnId, out string key)
+    {
+        switch (columnId)
+        {
+            case null:
+                key = string.Empty;
+                return false;
+            case string stringKey when !string.IsNullOrWhiteSpace(stringKey):
+                key = stringKey;
+                return true;
+            case DataGridColumnDefinition definition when definition.ColumnKey is not null:
+                key = definition.ColumnKey.ToString() ?? string.Empty;
+                return !string.IsNullOrWhiteSpace(key);
+            case DataGridColumn column when column.ColumnKey is not null:
+                key = column.ColumnKey.ToString() ?? string.Empty;
+                return !string.IsNullOrWhiteSpace(key);
+            default:
+                key = string.Empty;
+                return false;
+        }
     }
 
     private sealed class DynamicDataSortingAdapter : DataGridSortingAdapter
@@ -675,12 +751,12 @@ public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAd
 {
     private static readonly Func<T, bool> s_alwaysTrue = static _ => true;
 
-    private readonly ResourceConfigBase<T> _resourceConfig;
+    private readonly IReadOnlyDictionary<string, IResourceListColumn> _resourceColumnsByKey;
 
-    public DynamicDataFilteringAdapterFactory(ResourceConfigBase<T> resourceConfig)
+    public DynamicDataFilteringAdapterFactory(IReadOnlyDictionary<string, IResourceListColumn> resourceColumnsByKey)
     {
         FilterPredicate = s_alwaysTrue;
-        _resourceConfig = resourceConfig;
+        _resourceColumnsByKey = resourceColumnsByKey;
     }
 
     public DataGridFilteringAdapter Create(DataGrid grid, IFilteringModel model)
@@ -703,8 +779,9 @@ public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAd
         }
 
         var compiled = new List<Func<T, bool>>(descriptors.Count);
-        foreach (var descriptor in descriptors)
+        for (var i = 0; i < descriptors.Count; i++)
         {
+            var descriptor = descriptors[i];
             var predicate = Compile(descriptor);
             if (predicate != null)
             {
@@ -801,23 +878,59 @@ public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAd
 
     private Func<T, object?>? CreateSelector(FilteringDescriptor descriptor)
     {
-        if (descriptor.ColumnId is not DataGridColumnDefinition gridColumn)
-        {
-            return null;
-        }
-
-        if (gridColumn.Header is not string header || string.IsNullOrWhiteSpace(header))
-        {
-            return null;
-        }
-
-        var column = _resourceConfig.Columns().FirstOrDefault(x => x.Name == header);
-        if (column == null)
+        if (!TryResolveResourceColumn(descriptor.ColumnId, out var column))
         {
             return null;
         }
 
         return column.DisplayValue;
+    }
+
+    private bool TryResolveResourceColumn(object? columnId, out IResourceListColumn column)
+    {
+        if (columnId is DataGridColumnDefinition definition)
+        {
+            if (definition.Tag is IResourceListColumn taggedColumn)
+            {
+                column = taggedColumn;
+                return true;
+            }
+
+            if (TryResolveKey(definition.ColumnKey, out var key) && _resourceColumnsByKey.TryGetValue(key, out column))
+            {
+                return true;
+            }
+        }
+
+        if (TryResolveKey(columnId, out var directKey) && _resourceColumnsByKey.TryGetValue(directKey, out column))
+        {
+            return true;
+        }
+
+        column = null!;
+        return false;
+    }
+
+    private static bool TryResolveKey(object? columnId, out string key)
+    {
+        switch (columnId)
+        {
+            case null:
+                key = string.Empty;
+                return false;
+            case string stringKey when !string.IsNullOrWhiteSpace(stringKey):
+                key = stringKey;
+                return true;
+            case DataGridColumnDefinition definition when definition.ColumnKey is not null:
+                key = definition.ColumnKey.ToString() ?? string.Empty;
+                return !string.IsNullOrWhiteSpace(key);
+            case DataGridColumn column when column.ColumnKey is not null:
+                key = column.ColumnKey.ToString() ?? string.Empty;
+                return !string.IsNullOrWhiteSpace(key);
+            default:
+                key = string.Empty;
+                return false;
+        }
     }
 
     private static bool Contains(object? source, object? target, StringComparison comparison)
@@ -956,32 +1069,28 @@ public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAd
     }
 }
 
-public sealed class DynamicDataSelectionModelFactory<T> : IDataGridSelectionModelFactory where T : class, IKubernetesObject<V1ObjectMeta>, new()
-{
-    private readonly ISelectionModel _selectionModel;
-
-    public DynamicDataSelectionModelFactory(ISelectionModel selectionModel)
-    {
-        _selectionModel = selectionModel;
-    }
-
-    public ISelectionModel Create()
-    {
-        return _selectionModel;
-    }
-}
-
 /// <summary>
 /// Adapter factory that translates SearchModel descriptors into a DynamicData search predicate.
 /// It can push search criteria upstream while letting the grid compute match highlighting.
 /// </summary>
 public sealed class DynamicDataSearchAdapterFactory<T> : IDataGridSearchAdapterFactory where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
-    private readonly ResourceConfigBase<T> _resourceConfig;
+    private readonly ColumnSelector[] _allColumns;
+    private readonly Dictionary<string, ColumnSelector> _columnsByKey;
 
-    public DynamicDataSearchAdapterFactory(ResourceConfigBase<T> resourceConfig)
+    public DynamicDataSearchAdapterFactory(IReadOnlyDictionary<string, IResourceListColumn> resourceColumnsByKey)
     {
-        _resourceConfig = resourceConfig;
+        _allColumns = new ColumnSelector[resourceColumnsByKey.Count];
+        _columnsByKey = new Dictionary<string, ColumnSelector>(resourceColumnsByKey.Count, StringComparer.OrdinalIgnoreCase);
+
+        var index = 0;
+        foreach (var pair in resourceColumnsByKey)
+        {
+            var selector = new ColumnSelector(pair.Key, pair.Value.DisplayValue);
+            _allColumns[index++] = selector;
+            _columnsByKey[pair.Key] = selector;
+        }
+
         SearchPredicate = static _ => true;
     }
 
@@ -1041,14 +1150,14 @@ public sealed class DynamicDataSearchAdapterFactory<T> : IDataGridSearchAdapterF
         }
 
         var columns = SelectColumns(descriptor);
-        if (columns.Count == 0)
+        if (columns.Length == 0)
         {
             return null;
         }
 
         return item =>
         {
-            for (int i = 0; i < columns.Count; i++)
+            for (var i = 0; i < columns.Length; i++)
             {
                 string? text;
                 try
@@ -1075,11 +1184,11 @@ public sealed class DynamicDataSearchAdapterFactory<T> : IDataGridSearchAdapterF
         };
     }
 
-    private List<ColumnSelector> SelectColumns(SearchDescriptor descriptor)
+    private ColumnSelector[] SelectColumns(SearchDescriptor descriptor)
     {
         if (descriptor.Scope != SearchScope.ExplicitColumns)
         {
-            return [.. _resourceConfig.Columns().Select(x => new ColumnSelector(x.Name, x.DisplayValue))];
+            return _allColumns;
         }
 
         if (descriptor.ColumnIds == null || descriptor.ColumnIds.Count == 0)
@@ -1087,22 +1196,44 @@ public sealed class DynamicDataSearchAdapterFactory<T> : IDataGridSearchAdapterF
             return [];
         }
 
-        var selected = new List<ColumnSelector>();
-        foreach (var id in descriptor.ColumnIds)
+        var selected = new List<ColumnSelector>(descriptor.ColumnIds.Count);
+        for (var i = 0; i < descriptor.ColumnIds.Count; i++)
         {
-            if (id is not string path)
+            var id = descriptor.ColumnIds[i];
+            if (!TryResolveColumnKey(id, out var key))
             {
                 continue;
             }
 
-            var column = _resourceConfig.Columns().FirstOrDefault(c => string.Equals(c.Name, path, StringComparison.Ordinal));
-            if (column != null)
+            if (_columnsByKey.TryGetValue(key, out var selector))
             {
-                selected.Add(new ColumnSelector(column.Name, column.DisplayValue));
+                selected.Add(selector);
             }
         }
 
-        return selected;
+        return selected.Count == 0 ? [] : selected.ToArray();
+    }
+
+    private static bool TryResolveColumnKey(object? columnId, out string key)
+    {
+        switch (columnId)
+        {
+            case null:
+                key = string.Empty;
+                return false;
+            case string stringKey when !string.IsNullOrWhiteSpace(stringKey):
+                key = stringKey;
+                return true;
+            case DataGridColumnDefinition definition when definition.ColumnKey is not null:
+                key = definition.ColumnKey.ToString() ?? string.Empty;
+                return !string.IsNullOrWhiteSpace(key);
+            case DataGridColumn column when column.ColumnKey is not null:
+                key = column.ColumnKey.ToString() ?? string.Empty;
+                return !string.IsNullOrWhiteSpace(key);
+            default:
+                key = string.Empty;
+                return false;
+        }
     }
 
     private sealed class DynamicDataSearchAdapter : DataGridSearchAdapter
