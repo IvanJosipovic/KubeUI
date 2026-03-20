@@ -93,11 +93,11 @@ jobs:
           - rid: win-x64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
-            packParam: --icon src/KubeUI/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
+            packParam: --icon src/KubeUI.Avalonia/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
           - rid: win-arm64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
-            packParam: --icon src/KubeUI/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
+            packParam: --icon src/KubeUI.Avalonia/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
           - rid: linux-x64
             fileName: KubeUI.Desktop
             runs-on: ubuntu-latest
@@ -109,11 +109,11 @@ jobs:
           - rid: osx-x64
             fileName: KubeUI.Desktop
             runs-on: macos-latest
-            packParam: --icon src/KubeUI/Assets/icon.icns --plist src/KubeUI.Desktop/info.plist
+            packParam: --icon src/KubeUI.Avalonia/Assets/icon.icns --plist src/KubeUI.Desktop/info.plist
           - rid: osx-arm64
             fileName: KubeUI.Desktop
             runs-on: macos-latest
-            packParam: --icon src/KubeUI/Assets/icon.icns --plist src/KubeUI.Desktop/info.plist
+            packParam: --icon src/KubeUI.Avalonia/Assets/icon.icns --plist src/KubeUI.Desktop/info.plist
     steps:
       - uses: actions/checkout@v6
         with:
