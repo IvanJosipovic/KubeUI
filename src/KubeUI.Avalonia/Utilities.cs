@@ -254,35 +254,6 @@ public static class Utilities
         logger.LogError(ex, message);
     }
 
-    public static IBinding FuncBinding<T>(Expression<Func<T, object>> func)
-    {
-        return new Binding(PathBuilder(func));
-    }
-
-    /// <summary>
-    /// Get the path of a property from a lambda expression
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="func"></param>
-    /// <returns></returns>
-    /// <exception cref="Exception"></exception>
-    public static string PathBuilder<T>(Expression<Func<T, object>> func)
-    {
-        if (func.Body is MemberExpression body)
-        {
-            var str = body.ToString();
-            return str.Substring(str.IndexOf(".") + 1);
-        }
-
-        if (func.Body is UnaryExpression unary)
-        {
-            var str = unary.Operand.ToString();
-            return str.Substring(str.IndexOf(".") + 1);
-        }
-
-        throw new Exception("Unknown Expression Type");
-    }
-
     public static GenericClient GetGenericClient<T>(this IKubernetes client) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var api = GroupApiVersionKind.From<T>();

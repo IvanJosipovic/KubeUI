@@ -21,6 +21,8 @@ namespace KubeUI.Avalonia.Resources
         IStyle ListStyle();
         Task UpdatePermissions();
         Type Type { get; }
+        IRelayCommand NewResourceCommand { get; }
+        IRelayCommand<IList> ViewCommand { get; }
     }
 }
 

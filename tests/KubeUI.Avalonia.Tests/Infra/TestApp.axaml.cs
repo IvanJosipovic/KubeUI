@@ -45,6 +45,13 @@ public class TestApp : Application
 
         Services = provider;
         Resources[typeof(IServiceProvider)] = Services;
+
+        Dispatcher.UIThread.Invoke(() =>
+        {
+            var factory = provider.GetRequiredService<IFactory>();
+            var layout = factory.CreateLayout();
+            factory.InitLayout(layout);
+        });
     }
 }
 

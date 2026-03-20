@@ -6,6 +6,7 @@
     xmlns:converters="using:KubeUI.Avalonia.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:ic="using:FluentIcons.Avalonia"
+    xmlns:ia="using:Avalonia.Xaml.Interactions.Core"
     xmlns:local="using:KubeUI.Avalonia.Views"
     xmlns:models="using:k8s.Models"
     xmlns:u="https://irihi.tech/ursa"
@@ -22,8 +23,8 @@
             ColumnDefinitions="Auto,Auto,*">
             <Button
                 Grid.Column="0"
-                Command="{ReflectionBinding ResourceConfig.NewResourceCommand}"
-                IsVisible="{ReflectionBinding ResourceConfig.ShowNewResource}"
+                Command="{Binding ResourceConfig.NewResourceCommand}"
+                IsVisible="{Binding ResourceConfig.ShowNewResource}"
                 ToolTip.Tip="{x:Static assets:Resources.ResourceListView_NewResource}">
                 <ic:FluentIcon Icon="AddSquare" />
             </Button>
@@ -32,7 +33,7 @@
                 Grid.Column="1"
                 Width="200"
                 VerticalContentAlignment="Center"
-                Content="{ReflectionBinding View.Count, StringFormat='Items: {0}'}" />
+                Content="{Binding View.Count, StringFormat='Items: {0}'}" />
 
             <Grid
                 Grid.Column="2"
@@ -53,7 +54,7 @@
                     MaxHeight="20"
                     HorizontalAlignment="Right"
                     Classes="ClearButton"
-                    IsVisible="{ReflectionBinding ResourceConfig.IsNamespaced}"
+                    IsVisible="{Binding ResourceConfig.IsNamespaced}"
                     ItemsSource="{Binding Cluster.Namespaces}"
                     SelectedItems="{Binding Cluster.SelectedNamespaces}"
                     Watermark="{x:Static assets:Resources.ResourceListView_SelectNamespace}">
@@ -88,6 +89,13 @@
             SelectionMode="Extended"
             SortingModel="{Binding SortingModel}"
             UseLogicalScrollable="True">
+            <Interaction.Behaviors>
+                <ia:EventTriggerBehavior EventName="DoubleTapped">
+                    <ia:InvokeCommandAction
+                        Command="{Binding ResourceConfig.ViewCommand}"
+                        CommandParameter="{Binding SelectionModel.SelectedItems}" />
+                </ia:EventTriggerBehavior>
+            </Interaction.Behaviors>
             <DataGrid.ContextMenu>
                 <ContextMenu ItemsSource="{Binding ContextMenuItems}">
                     <ContextMenu.Styles>
@@ -121,7 +129,7 @@
             </DataGrid.RowHeightEstimator>
             <DataGrid.KeyBindings>
                 <KeyBinding
-                    Command="{ReflectionBinding ResourceConfig.ViewCommand}"
+                    Command="{Binding ResourceConfig.ViewCommand}"
                     CommandParameter="{Binding SelectionModel.SelectedItems}"
                     Gesture="Enter" />
             </DataGrid.KeyBindings>

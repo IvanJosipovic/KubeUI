@@ -3,11 +3,13 @@ using System.ComponentModel;
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
+using Dock.Model.Core;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Shouldly;
 using FluentAvalonia.Core;
+using KubeUI.Avalonia;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Tests.Infra;
@@ -97,7 +99,7 @@ public class ResourceListViewModelTests
     [AvaloniaFact(DisplayName = "All select update middle")]
     public async Task all_select_update_middle_preserves_all_selected()
     {
-        var window = new MainWindow
+        var window = new Window
         {
             Width = 1200,
             Height = 800
@@ -143,7 +145,7 @@ public class ResourceListViewModelTests
     [AvaloniaFact(DisplayName = "Single select update middle")]
     public async Task single_select_update__preserves_only_selected()
     {
-        var window = new MainWindow
+        var window = new Window
         {
             Width = 1200,
             Height = 800
@@ -186,7 +188,7 @@ public class ResourceListViewModelTests
     [AvaloniaFact(DisplayName = "Single select with sort due to update")]
     public async Task single_select_with_sort_preserves_only_selected()
     {
-        var window = new MainWindow
+        var window = new Window
         {
             Width = 1200,
             Height = 800
@@ -240,7 +242,7 @@ public class ResourceListViewModelTests
     [AvaloniaFact(DisplayName = "All select with sort due to update")]
     public async Task all_select_with_sort_preserves_all_selected()
     {
-        var window = new MainWindow
+        var window = new Window
         {
             Width = 1200,
             Height = 800
@@ -295,7 +297,7 @@ public class ResourceListViewModelTests
     [AvaloniaFact(DisplayName = "Update check DataGrid Text update")]
     public async Task UpdateResourceTextBox()
     {
-        var window = new MainWindow
+        var window = new Window
         {
             Width = 1200,
             Height = 800
@@ -335,7 +337,7 @@ public class ResourceListViewModelTests
     [AvaloniaFact(DisplayName = "Update check DataGrid Text update2")]
     public async Task UpdateResourceTextBox2()
     {
-        var window = new MainWindow
+        var window = new Window
         {
             Width = 1200,
             Height = 800
@@ -384,7 +386,7 @@ public class ResourceListViewModelTests
     [AvaloniaFact(DisplayName = "Namespace filter preserves selection when included")]
     public async Task namespace_filter_preserves_selection_when_included()
     {
-        var window = new MainWindow
+        var window = new Window
         {
             Width = 1200,
             Height = 800
@@ -416,7 +418,7 @@ public class ResourceListViewModelTests
     [AvaloniaFact(DisplayName = "Namespace filter selects remaining item when selection filtered out")]
     public async Task namespace_filter_selects_remaining_item_when_selection_filtered_out()
     {
-        var window = new MainWindow
+        var window = new Window
         {
             Width = 1200,
             Height = 800
@@ -464,7 +466,7 @@ public class ResourceListViewModelTests
     [AvaloniaFact(DisplayName = "Namespace filter updates context menu selection")]
     public async Task namespace_filter_updates_context_menu_selection()
     {
-        var window = new MainWindow
+        var window = new Window
         {
             Width = 1200,
             Height = 800
@@ -560,7 +562,7 @@ public class ResourceListViewModelTests
     [AvaloniaFact(DisplayName = "Delete Resource")]
     public async Task delete_resource()
     {
-        var window = new MainWindow
+        var window = new Window
         {
             Width = 1200,
             Height = 800
@@ -590,7 +592,7 @@ public class ResourceListViewModelTests
     [AvaloniaFact(DisplayName = "Reattach keeps only saved sort descriptors")]
     public async Task reattach_keeps_only_saved_sort_descriptors()
     {
-        var window = new MainWindow
+        var window = new Window
         {
             Width = 1200,
             Height = 800
@@ -640,7 +642,7 @@ public class ResourceListViewModelTests
     [AvaloniaFact(DisplayName = "Namespace filter initializes from selected namespaces")]
     public async Task namespace_filter_initializes_from_selected_namespaces()
     {
-        var window = new MainWindow
+        var window = new Window
         {
             Width = 1200,
             Height = 800
@@ -664,6 +666,41 @@ public class ResourceListViewModelTests
         var descriptor = vm.FilteringModel.Descriptors[0];
         descriptor.Values.Count.ShouldBe(1);
         descriptor.Values[0].ShouldBe("default");
+    }
+
+    [AvaloniaFact(DisplayName = "Double tap opens property view")]
+    public async Task double_tap_opens_property_view()
+    {
+        var factory = Application.Current.GetRequiredService<IFactory>();
+        factory.InitLayout(factory.CreateLayout());
+
+        var window = new Window
+        {
+            Width = 1200,
+            Height = 800
+        };
+        var cluster = new TestCluster().CreateWorkspace();
+
+        var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = Application.Current.GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+
+        window.Content = view;
+        window.Show();
+
+        await AddOrUpdateAsync(cluster, Pod("ns", "a"));
+
+        vm.SelectionModel.Select(0);
+
+        factory.FindDockableById(nameof(ResourcePropertiesViewModel<>)).ShouldBeNull();
+
+        var parameters = new ArrayList(vm.SelectionModel.SelectedItems.Where(static item => item != null).Cast<object>().ToArray());
+        vm.ResourceConfig.ViewCommand.Execute(parameters);
+        Dispatcher.UIThread.RunJobs();
+
+        factory.FindDockableById(nameof(ResourcePropertiesViewModel<>)).ShouldNotBeNull();
     }
 }
 

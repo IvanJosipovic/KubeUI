@@ -52,6 +52,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     [ObservableProperty]
     public partial ResourceConfigBase<T> ResourceConfig { get; set; }
 
+    IResourceConfig IResourceListViewModel.ResourceConfig => ResourceConfig;
+
     [ObservableProperty]
     public partial bool IsLoading { get; set; }
 
@@ -65,7 +67,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         SingleSelect = false
     };
 
-    public IEnumerable View => _view;
+    public IList View => _view;
 
     private ReadOnlyObservableCollection<T> _view;
 

@@ -75,6 +75,7 @@
             </ae:TextEditor.Options>
             <Interaction.Behaviors>
                 <behaviors:YamlEditorBehavior />
+                <behaviors:YamlEditorScrollBehavior />
             </Interaction.Behaviors>
             <ae:TextEditor.KeyBindings>
                 <KeyBinding Command="{Binding UndoCommand}" Gesture="Ctrl+Z" />

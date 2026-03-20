@@ -14,6 +14,7 @@ using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using Shouldly;
+using CommunityToolkit.Mvvm.Input;
 
 namespace KubeUI.Avalonia.Tests;
 
@@ -409,6 +410,11 @@ internal class FakeCustomResourceConfig : IResourceConfig
     public IStyle ListStyle() => null;
     public Task UpdatePermissions() => Task.CompletedTask;
     public Type Type { get; }
+
+    public IRelayCommand NewResourceCommand => throw new NotImplementedException();
+
+    public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
+
     public void Initialize(ClusterWorkspaceViewModel cluster) { }
 }
 

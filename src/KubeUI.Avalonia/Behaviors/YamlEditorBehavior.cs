@@ -1,11 +1,8 @@
 using Avalonia.Styling;
 using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
-using AvaloniaEdit.Document;
 using AvaloniaEdit.Folding;
 using AvaloniaEdit.TextMate;
-using Avalonia.VisualTree;
-using Microsoft.Extensions.DependencyInjection;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
 using KubeUI.Avalonia.Views;
@@ -18,6 +15,8 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
     private RegistryOptions _registryOptions = null!;
     private FoldingManager? _foldingManager;
     private ResourceYamlViewModel? _currentViewModel;
+    private readonly Dictionary<string, Queue<bool>> _savedFoldStates = new(StringComparer.Ordinal);
+    private bool _isRefreshingFromViewModel;
 
     protected override void OnAttached()
     {
@@ -32,6 +31,8 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
             ? ThemeName.Light
             : ThemeName.DarkPlus);
 
+        // Keep behavior lifecycle tied to ViewModel attach/detach only.
+
         AssociatedObject.TextChanged += Editor_TextChanged;
         Application.Current!.ActualThemeVariantChanged += ThemeChanged;
 
@@ -41,10 +42,14 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
 
         if (AssociatedObject.DataContext is ResourceYamlViewModel vm)
         {
+            _currentViewModel = vm;
+            SubscribeViewModel(vm);
             InitializeEditor(vm);
         }
     }
 
+    // Factory event wiring removed. Behavior relies on DataContext attach/detach
+    // and visual tree attach/detach for fold-state persistence.
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
         if (AssociatedObject == null)
@@ -63,8 +68,18 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
             return;
         }
 
-        PersistEditorState(_currentViewModel);
+        var previousViewModel = _currentViewModel;
+        PersistFoldingState(previousViewModel, persistToViewModel: true);
+        UnsubscribeViewModel(_currentViewModel);
         _currentViewModel = nextViewModel;
+
+        if (nextViewModel != null && !ReferenceEquals(previousViewModel, nextViewModel))
+        {
+            _savedFoldStates.Clear();
+            LoadSavedFoldStates(nextViewModel);
+        }
+
+        SubscribeViewModel(_currentViewModel);
 
         if (nextViewModel != null)
         {
@@ -98,28 +113,20 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
 
     private void AttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
     {
-        if (AssociatedObject?.DataContext is ResourceYamlViewModel vm)
+        if (AssociatedObject?.DataContext is ResourceYamlViewModel)
         {
             UpdateFoldings();
-
-            Dispatcher.UIThread.Post(() =>
-            {
-                if (AssociatedObject.GetScrollViewer() is ScrollViewer sc)
-                {
-                    sc.Offset = vm.ScrollOffset;
-                }
-            }, DispatcherPriority.Normal);
         }
     }
 
     private void DetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
     {
-        PersistEditorState(_currentViewModel);
+        PersistFoldingState(_currentViewModel, persistToViewModel: true);
     }
 
     protected override void OnDetaching()
     {
-        PersistEditorState(_currentViewModel);
+        PersistFoldingState(_currentViewModel, persistToViewModel: true);
 
         if (AssociatedObject != null)
         {
@@ -140,6 +147,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
             _foldingManager = null;
         }
 
+        UnsubscribeViewModel(_currentViewModel);
         _currentViewModel = null;
 
         base.OnDetaching();
@@ -164,28 +172,71 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
 
     private void Editor_TextChanged(object? sender, EventArgs e)
     {
-        PersistEditorState(_currentViewModel);
+        if (!_isRefreshingFromViewModel)
+        {
+            PersistFoldingState(_currentViewModel);
+        }
+
         UpdateFoldings();
+        _isRefreshingFromViewModel = false;
     }
 
-    private void PersistEditorState(ResourceYamlViewModel? vm)
+    private void PersistFoldingState(ResourceYamlViewModel? vm, bool persistToViewModel = false)
     {
-        if (vm == null || AssociatedObject == null || _foldingManager == null)
+        if (vm == null || _foldingManager == null)
         {
             return;
         }
 
-        vm.AllFoldings = [.. _foldingManager.AllFoldings
-            .Select(f =>
-            {
-                var tag = (NewFolding)f.Tag;
-                tag.DefaultClosed = f.IsFolded;
-                return tag;
-            })];
+        _savedFoldStates.Clear();
+        List<NewFolding>? foldings = persistToViewModel ? [] : null;
 
-        if (AssociatedObject.GetScrollViewer() is ScrollViewer sc)
+        foreach (var folding in _foldingManager.AllFoldings)
         {
-            vm.ScrollOffset = sc.Offset;
+            var tag = (NewFolding)folding.Tag;
+            tag.DefaultClosed = folding.IsFolded;
+
+            var title = tag.Name.TrimEnd();
+            if (!_savedFoldStates.TryGetValue(title, out var states))
+            {
+                states = new Queue<bool>();
+                _savedFoldStates.Add(title, states);
+            }
+
+            states.Enqueue(folding.IsFolded);
+            foldings?.Add(tag);
+        }
+
+        if (foldings != null)
+        {
+            vm.AllFoldings = foldings;
+        }
+    }
+
+    private void SubscribeViewModel(ResourceYamlViewModel? vm)
+    {
+        if (vm != null)
+        {
+            vm.PropertyChanged += ViewModelOnPropertyChanged;
+        }
+    }
+
+    private void UnsubscribeViewModel(ResourceYamlViewModel? vm)
+    {
+        if (vm != null)
+        {
+            vm.PropertyChanged -= ViewModelOnPropertyChanged;
+        }
+    }
+
+    private void ViewModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(ResourceYamlViewModel.Object)
+            or nameof(ResourceYamlViewModel.EditMode)
+            or nameof(ResourceYamlViewModel.HideNoisyFields))
+        {
+            PersistFoldingState(_currentViewModel);
+            _isRefreshingFromViewModel = true;
         }
     }
 
@@ -198,20 +249,56 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
 
         if (AssociatedObject.DataContext is ResourceYamlViewModel vm)
         {
-            if (vm.AllFoldings != null)
+            try
             {
-                try
+                if (_savedFoldStates.Count == 0)
                 {
-                    _foldingManager.UpdateFoldings(vm.AllFoldings, -1);
+                    LoadSavedFoldStates(vm);
                 }
-                catch (Exception ex)
-                {
-                    var logger = Application.Current?.GetRequiredService<ILogger<YamlEditorBehavior>>();
-                    logger?.LogWarning(ex, "Error loading foldings");
-                }
+
+                var newFoldings = YamlFoldingStrategy.CreateNewFoldings(AssociatedObject.Document!, out var firstErrorOffset)
+                    .ToList();
+
+                _foldingManager.UpdateFoldings(newFoldings, firstErrorOffset);
+                RestoreFoldStates();
+            }
+            catch (Exception ex)
+            {
+                var logger = Application.Current?.GetRequiredService<ILogger<YamlEditorBehavior>>();
+                logger?.LogWarning(ex, "Error loading foldings");
+            }
+        }
+    }
+
+    private void LoadSavedFoldStates(ResourceYamlViewModel vm)
+    {
+        if (vm.AllFoldings == null)
+        {
+            return;
+        }
+
+        foreach (var folding in vm.AllFoldings)
+        {
+            var title = folding.Name.TrimEnd();
+            if (!_savedFoldStates.TryGetValue(title, out var states))
+            {
+                states = new Queue<bool>();
+                _savedFoldStates.Add(title, states);
             }
 
-            YamlFoldingStrategy.UpdateFoldings(_foldingManager, AssociatedObject.Document);
+            states.Enqueue(folding.DefaultClosed);
+        }
+    }
+
+    private void RestoreFoldStates()
+    {
+        foreach (var folding in _foldingManager!.AllFoldings)
+        {
+            var title = folding.Title.TrimEnd();
+            if (_savedFoldStates.TryGetValue(title, out var states) && states.Count > 0)
+            {
+                folding.IsFolded = states.Dequeue();
+            }
         }
     }
 }

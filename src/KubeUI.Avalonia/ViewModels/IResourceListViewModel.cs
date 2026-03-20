@@ -19,6 +19,7 @@ namespace KubeUI.Avalonia.ViewModels
         GroupApiVersionKind Kind { get; }
         string SearchQuery { get; set; }
         ISettingsService SettingsService { get; }
+        IResourceConfig ResourceConfig { get; }
         ObservableCollection<DataGridColumnDefinition> ColumnDefinitions { get; }
         IDataGridSortingAdapterFactory SortingAdapterFactory { get; }
         ISortingModel SortingModel { get; set; }
@@ -26,7 +27,7 @@ namespace KubeUI.Avalonia.ViewModels
         IFilteringModel FilteringModel { get; set; }
         ISelectionModel SelectionModel { get; }
         IDataGridSelectionModelFactory SelectionModelFactory { get; }
-        IEnumerable View { get; }
+        IList View { get; }
         IEnumerable<MenuItemViewModel> ContextMenuItems { get; }
         ISearchModel SearchModel { get; set; }
         IDataGridSearchAdapterFactory SearchAdapterFactory { get; }

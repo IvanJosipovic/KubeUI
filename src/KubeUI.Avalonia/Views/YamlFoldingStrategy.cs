@@ -5,14 +5,6 @@ namespace KubeUI.Avalonia.Views;
 
 internal static class YamlFoldingStrategy
 {
-    // Plan (pseudocode):
-    // 1) For each line, skip blank/comment-only lines as fold starts.
-    // 2) Find the next non-blank/comment line.
-    // 3) If the next meaningful line is not more indented, no fold.
-    // 4) If it is more indented, create a fold that spans until the last line
-    //    that is either blank/comment or has indent greater than the base indent.
-    // 5) Ensure end offsets are safe even when trailing blank/comment lines exist.
-
     public static void UpdateFoldings(FoldingManager? manager, TextDocument? document)
     {
         if (manager == null || document == null) return;
@@ -20,125 +12,158 @@ internal static class YamlFoldingStrategy
         manager.UpdateFoldings(newFoldings, firstErrorOffset);
     }
 
-    private static int CountLeadingSpaces(ReadOnlyMemory<char> memory, out bool isSequenceItem)
-    {
-        var span = memory.Span;
-        var count = 0;
-        while (count < span.Length && span[count] == ' ')
-            count++;
-
-        isSequenceItem = count < span.Length && span[count] == '-' &&
-            (count + 1 == span.Length || span[count + 1] == ' ');
-
-        return count;
-    }
-
-    private static bool IsMappingKey(ReadOnlyMemory<char> memory)
-    {
-        var span = memory.Span;
-        var hashIndex = span.IndexOf('#');
-        if (hashIndex >= 0)
-            span = span[..hashIndex];
-
-        span = span.TrimEnd();
-        return span.Length > 0 && span[^1] == ':';
-    }
-
-    private static bool IsBlankLine(ReadOnlyMemory<char> memory) =>
-        memory.Span.Trim().Length == 0;
-
-    private static bool IsCommentLine(ReadOnlyMemory<char> memory) =>
-        memory.Span.TrimStart().StartsWith("#");
-
     public static IEnumerable<NewFolding> CreateNewFoldings(TextDocument document, out int firstErrorOffset)
     {
-        try
+        var lineCount = document.LineCount;
+        var foldMarkers = new List<NewFolding>(lineCount / 4);
+        var lineInfos = new LineInfo[lineCount];
+        var lineOffsets = new int[lineCount];
+        var lineLengths = new int[lineCount];
+        var lineEndOffsets = new int[lineCount];
+
+        var index = 0;
+        foreach (var line in document.Lines)
         {
-            var foldMarkers = new List<NewFolding>();
+            lineOffsets[index] = line.Offset;
+            lineLengths[index] = line.Length;
+            lineEndOffsets[index] = line.EndOffset;
+            lineInfos[index] = AnalyzeLine(document.GetTextAsMemory(line.Offset, line.Length));
+            index++;
+        }
 
-            foreach (var line in document.Lines)
+        var openFolds = new Stack<OpenFold>(lineCount / 4);
+
+        for (var lineIndex = 0; lineIndex < index; lineIndex++)
+        {
+            var lineInfo = lineInfos[lineIndex];
+            if (lineInfo.IsBlankOrComment)
+                continue;
+
+            var nextLineIndex = lineIndex + 1;
+            LineInfo nextLineInfo = default;
+            while (nextLineIndex < index)
             {
-                var text = document.GetTextAsMemory(line.Offset, line.Length);
-                if (IsBlankLine(text) || IsCommentLine(text))
-                    continue;
-
-                var baseIndent = CountLeadingSpaces(text, out var baseIsSequenceItem);
-                var baseIsMappingKey = IsMappingKey(text);
-                var baseAllowsSameIndentSequence = baseIsMappingKey && !baseIsSequenceItem;
-                var nextLine = line.NextLine;
-
-                // Find the first meaningful next line.
-                while (nextLine != null)
+                nextLineInfo = lineInfos[nextLineIndex];
+                if (nextLineInfo.IsBlankOrComment)
                 {
-                    var nextText = document.GetTextAsMemory(nextLine.Offset, nextLine.Length);
-                    if (IsBlankLine(nextText) || IsCommentLine(nextText))
-                    {
-                        nextLine = nextLine.NextLine;
-                        continue;
-                    }
-                    break;
+                    nextLineIndex++;
+                    continue;
                 }
 
-                if (nextLine == null)
-                    continue;
-
-                var nextLineText = document.GetTextAsMemory(nextLine.Offset, nextLine.Length);
-                var nextIndent = CountLeadingSpaces(nextLineText, out var nextIsSequenceItem);
-
-                var isFoldStart = nextIndent > baseIndent;
-                if (!isFoldStart && baseAllowsSameIndentSequence &&
-                    nextIndent == baseIndent && nextIsSequenceItem)
-                {
-                    isFoldStart = true;
-                }
-
-                if (!isFoldStart)
-                    continue;
-
-                var fold = new NewFolding
-                {
-                    StartOffset = line.Offset,
-                    Name = text.ToString()
-                };
-
-                var endLine = nextLine;
-                var scan = nextLine.NextLine;
-
-                while (scan != null)
-                {
-                    var scanText = document.GetTextAsMemory(scan.Offset, scan.Length);
-                    if (IsBlankLine(scanText) || IsCommentLine(scanText))
-                    {
-                        endLine = scan;
-                        scan = scan.NextLine;
-                        continue;
-                    }
-
-                    var scanIndent = CountLeadingSpaces(scanText, out var scanIsSequenceItem);
-                    if (scanIndent < baseIndent)
-                        break;
-                    if (scanIndent == baseIndent)
-                    {
-                        if (!baseAllowsSameIndentSequence || !scanIsSequenceItem)
-                            break;
-                    }
-
-                    endLine = scan;
-                    scan = scan.NextLine;
-                }
-
-                fold.EndOffset = endLine.EndOffset;
-                foldMarkers.Add(fold);
+                break;
             }
 
-            firstErrorOffset = -1;
-            foldMarkers.Sort((a, b) => a.StartOffset.CompareTo(b.StartOffset));
-            return foldMarkers;
+            if (nextLineIndex >= index)
+                continue;
+
+            var baseAllowsSameIndentSequence = lineInfo.IsMappingKey && !lineInfo.IsSequenceItem;
+            var isFoldStart = nextLineInfo.Indent > lineInfo.Indent;
+            if (!isFoldStart && baseAllowsSameIndentSequence &&
+                nextLineInfo.Indent == lineInfo.Indent && nextLineInfo.IsSequenceItem)
+            {
+                isFoldStart = true;
+            }
+
+            if (!isFoldStart)
+                continue;
+
+            var fold = new NewFolding
+            {
+                StartOffset = lineOffsets[lineIndex],
+                Name = document.GetText(lineOffsets[lineIndex], lineLengths[lineIndex])
+            };
+
+            var endLineIndex = nextLineIndex;
+            var scanIndex = nextLineIndex + 1;
+
+            while (scanIndex < index)
+            {
+                var scanInfo = lineInfos[scanIndex];
+                if (scanInfo.IsBlankOrComment)
+                {
+                    endLineIndex = scanIndex;
+                    scanIndex++;
+                    continue;
+                }
+
+                if (scanInfo.Indent < lineInfo.Indent)
+                    break;
+                if (scanInfo.Indent == lineInfo.Indent)
+                {
+                    if (!baseAllowsSameIndentSequence || !scanInfo.IsSequenceItem)
+                        break;
+                }
+
+                endLineIndex = scanIndex;
+                scanIndex++;
+            }
+
+            fold.EndOffset = lineEndOffsets[endLineIndex];
+            foldMarkers.Add(fold);
         }
-        catch
-        {
-            firstErrorOffset = 0;
-            return [];
-        }
+
+        firstErrorOffset = -1;
+        return foldMarkers;
     }
+
+    private static LineInfo AnalyzeLine(ReadOnlyMemory<char> text)
+    {
+        var span = text.Span;
+        var indent = 0;
+
+        while (indent < span.Length && span[indent] == ' ')
+        {
+            indent++;
+        }
+
+        if (indent == span.Length)
+        {
+            return LineInfo.BlankOrComment;
+        }
+
+        if (span[indent] == '#')
+        {
+            return LineInfo.BlankOrComment;
+        }
+
+        var end = span.Length;
+        while (end > indent && char.IsWhiteSpace(span[end - 1]))
+        {
+            end--;
+        }
+
+        for (var i = indent; i < end; i++)
+        {
+            if (span[i] != '#')
+            {
+                continue;
+            }
+
+            end = i;
+            while (end > indent && char.IsWhiteSpace(span[end - 1]))
+            {
+                end--;
+            }
+            break;
+        }
+
+        if (end <= indent)
+        {
+            return LineInfo.BlankOrComment;
+        }
+
+        var isSequenceItem = span[indent] == '-' && (indent + 1 == end || span[indent + 1] == ' ');
+        var isMappingKey = span[end - 1] == ':';
+
+        return new LineInfo(indent, isSequenceItem, isMappingKey);
+    }
+
+    private readonly record struct LineInfo(int Indent, bool IsSequenceItem, bool IsMappingKey)
+    {
+        public bool IsBlankOrComment => Indent < 0;
+
+        public static LineInfo BlankOrComment => new(-1, false, false);
+    }
+
+    private readonly record struct OpenFold(NewFolding Fold, int Indent, bool AllowsSameIndentSequence);
 }
