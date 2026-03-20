@@ -436,7 +436,13 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private static NavigationItem? BuildCustomResourceDefinitionsNavigationItem(ClusterWorkspaceViewModel cluster, ResourceNavigationLink? definitionsLink = null, IEnumerable<IResourceConfig>? customResourceConfigs = null)
     {
-        var configs = customResourceConfigs as IList<IResourceConfig> ?? customResourceConfigs?.ToList() ?? [];
+        var configs = customResourceConfigs as IList<IResourceConfig>
+            ?? customResourceConfigs?.ToList()
+            ?? cluster.GetResourceConfigs()
+                .Where(config => config.IsCustomResource)
+                .OrderBy(config => config.Order)
+                .ThenBy(config => config.Name, StringComparer.Ordinal)
+                .ToList();
         if (definitionsLink == null)
         {
             var resourceConfig = cluster.GetResourceConfigs()

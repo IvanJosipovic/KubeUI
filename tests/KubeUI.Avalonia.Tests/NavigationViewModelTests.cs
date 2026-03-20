@@ -361,6 +361,87 @@ public class NavigationViewModelTests
 
         ReferenceEquals(namespaceLink, rebuiltNamespaceLink).ShouldBeTrue();
     }
+
+    [AvaloniaFact]
+    public async Task custom_resource_definition_added_after_navigation_build_adds_custom_resource_entry()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+
+        var workspace = runtime.CreateWorkspace();
+
+        var vm = Application.Current.GetRequiredService<NavigationViewModel>();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        await runtime.AddOrUpdateResource(new V1CustomResourceDefinition
+        {
+            Metadata = new()
+            {
+                Name = "tests.kubeui.com"
+            },
+            Spec = new()
+            {
+                Group = "kubeui.com",
+                Scope = "Namespaced",
+                Names = new()
+                {
+                    Plural = "tests",
+                    Singular = "test",
+                    Kind = "Test",
+                    ListKind = "TestList"
+                },
+                Versions =
+                [
+                    new()
+                    {
+                        Name = "v1beta1",
+                        Served = true,
+                        Storage = true,
+                        Schema = new()
+                        {
+                            OpenAPIV3Schema = new()
+                            {
+                                Type = "object",
+                                Properties = new Dictionary<string, V1JSONSchemaProps>
+                                {
+                                    ["apiVersion"] = new() { Type = "string" },
+                                    ["kind"] = new() { Type = "string" },
+                                    ["metadata"] = new() { Type = "object" },
+                                    ["spec"] = new()
+                                    {
+                                        Type = "object",
+                                        Properties = new Dictionary<string, V1JSONSchemaProps>
+                                        {
+                                            ["someString"] = new() { Type = "string" }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
+            }
+        });
+
+        await Task.Delay(500);
+        Dispatcher.UIThread.RunJobs();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        var crdRoot = clusterNode.NavigationItems.Single(x => x.Name == "Custom Resource Definitions");
+        var rootGroup = crdRoot.NavigationItems
+            .OfType<NavigationItem>()
+            .Single(x => x.Name == "kubeui.com");
+
+        rootGroup.NavigationItems
+            .OfType<ResourceNavigationLink>()
+            .Single(x => x.Name == "Tests")
+            .ControlType
+            .ShouldNotBe(typeof(V1CustomResourceDefinition));
+    }
 }
 
 [KubernetesEntity(Group = "alpha.kubeui.com", ApiVersion = "v1", Kind = "TestCustomResourceAlpha")]
