@@ -77,10 +77,9 @@ public static class Kind
     {
         var stdOutBuffer = new StringBuilder();
         var stdErrBuffer = new StringBuilder();
-        var kubeConfigPath = KubernetesClientConfiguration.KubeConfigDefaultLocation;
 
         await Cli.Wrap(Executable)
-            .WithArguments($"get kubeconfig --name {name} --kubeconfig \"{kubeConfigPath}\"")
+            .WithArguments($"get kubeconfig --name {name}")
             .WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdOutBuffer))
             .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
             .ExecuteAsync();

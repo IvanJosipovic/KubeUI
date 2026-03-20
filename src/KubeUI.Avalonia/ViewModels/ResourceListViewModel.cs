@@ -155,16 +155,13 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         OnPropertyChanged(nameof(ContextMenuItems));
 
         _sortingAdapterFactory = new DynamicDataSortingAdapterFactory<T>(_resourceColumnsByKey);
-        BehaviorSubject<IComparer<T>> sortSubject = new(_sortingAdapterFactory.SortComparer);
-        _sortSubject = sortSubject;
+        _sortSubject = new(_sortingAdapterFactory.SortComparer);
 
         _filteringAdapterFactory = new DynamicDataFilteringAdapterFactory<T>(_resourceColumnsByKey);
-        BehaviorSubject<Func<T, bool>> filterSubject = new(_filteringAdapterFactory.FilterPredicate);
-        _filterSubject = filterSubject;
+        _filterSubject = new(_filteringAdapterFactory.FilterPredicate);
 
         _searchAdapterFactory = new DynamicDataSearchAdapterFactory<T>(_resourceColumnsByKey);
-        BehaviorSubject<Func<T, bool>> searchSubject = new(_searchAdapterFactory.SearchPredicate);
-        _searchSubject = searchSubject;
+        _searchSubject = new(_searchAdapterFactory.SearchPredicate);
 
         GenerateColumnDefinitions();
         SetNamespaceFilter();
@@ -1530,8 +1527,7 @@ public sealed class DynamicDataSearchAdapterFactory<T> : IDataGridSearchAdapterF
                 var ch = text[i];
                 if (ignoreDiacritics)
                 {
-                    var decomposed = ch.ToString().Normalize(NormalizationForm.FormD);
-                    foreach (var d in decomposed)
+                    foreach (var d in ch.ToString().Normalize(NormalizationForm.FormD))
                     {
                         if (IsDiacritic(d))
                         {
