@@ -8,6 +8,8 @@ using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Folding;
 using Dock.Avalonia.Controls;
+using Dock.Model.Controls;
+using Dock.Model.Core;
 using KubeUI.Avalonia.Behaviors;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Avalonia.ViewModels;
@@ -196,31 +198,28 @@ public class ResourceYamlViewModelTests
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesScrollOffset_WhenActiveDockableChanges()
     {
-        // Use a simple TabControl simulation so the YAML view and its editor
-        // are realized deterministically in the headless test environment.
         var cluster = new TestCluster().CreateWorkspace();
+        var factory = Application.Current.GetRequiredService<IFactory>();
+        var documents = factory.GetDockable<IDocumentDock>("Documents");
+        documents.ShouldNotBeNull();
 
         var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Namespace { Metadata = new V1ObjectMeta { Name = "test" } });
+        factory.AddToDocuments(vm);
+
+        var otherDockable = Application.Current.GetRequiredService<AboutViewModel>();
+        otherDockable.Id = nameof(AboutViewModel);
+        factory.AddToDocuments(otherDockable);
 
         var yamlView = Application.Current.GetRequiredService<ResourceYamlView>();
         yamlView.DataContext = vm;
-
-        // create a dummy second tab
-        var dummy = new UserControl();
-
-        var tabControl = new TabControl
-        {
-            Width = 800,
-            Height = 600,
-        };
-
-        tabControl.Items.Add(new TabItem { Header = "Yaml", Content = yamlView });
-        tabControl.Items.Add(new TabItem { Header = "Other", Content = dummy });
-
-        var window = new Window { Content = tabControl, Width = 800, Height = 600 };
+        var window = new Window { Content = yamlView, Width = 800, Height = 600 };
         window.Show();
 
+        Dispatcher.UIThread.RunJobs();
+
+        factory.SetActiveDockable(vm);
+        factory.SetFocusedDockable(documents, vm);
         Dispatcher.UIThread.RunJobs();
 
         // populate the document with many lines so the editor becomes scrollable
@@ -232,6 +231,7 @@ public class ResourceYamlViewModelTests
 
         var editor = yamlView.FindControl<AvaloniaEdit.TextEditor>("Editor");
         editor.ShouldNotBeNull();
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorScrollBehavior>().Single();
 
         var scrollViewer = editor.GetScrollViewer();
         scrollViewer.ShouldNotBeNull();
@@ -245,17 +245,26 @@ public class ResourceYamlViewModelTests
 
         // scroll to a target offset near the bottom
         var targetOffset = new Vector(0, Math.Max(0, scrollViewer.Extent.Height - scrollViewer.Viewport.Height));
+        RaiseDockableChanged(behavior, vm);
         scrollViewer.Offset = targetOffset;
-
-        // switch away and back (visibility change will trigger persist/restore)
-        tabControl.SelectedIndex = 1;
         Dispatcher.UIThread.RunJobs();
-
-        tabControl.SelectedIndex = 0;
-        Dispatcher.UIThread.RunJobs();
-
-        // Expect scroll offset to be preserved; test will fail if it's not
         scrollViewer.Offset.ShouldBe(targetOffset);
+        vm.ScrollOffset = targetOffset;
+
+        // switch away using the behavior's dockable-change path
+        RaiseDockableChanged(behavior, otherDockable);
+        Dispatcher.UIThread.RunJobs();
+
+        // Simulate the hidden editor getting reset while inactive. The saved
+        // offset in the ViewModel should not be overwritten by that reset.
+        scrollViewer.Offset = default;
+        Dispatcher.UIThread.RunJobs();
+        vm.ScrollOffset.ShouldBe(targetOffset);
+
+        RaiseDockableChanged(behavior, vm);
+        Dispatcher.UIThread.RunJobs();
+
+        vm.ScrollOffset.ShouldBe(targetOffset);
 
         window.Close();
     }

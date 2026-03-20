@@ -1,4 +1,7 @@
 using Avalonia;
+using Dock.Model.Core;
+using Dock.Model.Controls;
+using Dock.Model.Core.Events;
 using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using KubeUI.Avalonia;
@@ -8,8 +11,11 @@ namespace KubeUI.Avalonia.Behaviors;
 
 public sealed class YamlEditorScrollBehavior : Behavior<TextEditor>
 {
+    private readonly IFactory _factory = Application.Current.GetRequiredService<IFactory>();
     private ScrollViewer? _scrollViewer;
     private IDisposable? _visibilitySubscription;
+    private ResourceYamlViewModel? _currentViewModel;
+    private bool _isCurrentViewModelActive;
 
     protected override void OnAttached()
     {
@@ -20,20 +26,25 @@ public sealed class YamlEditorScrollBehavior : Behavior<TextEditor>
             return;
         }
 
-        // Watch visibility changes instead of Dock.Factory events. When the
-        // editor becomes invisible (tab switched away) persist the offset; when
-        // it becomes visible again attach the ScrollViewer and restore the offset.
+        _currentViewModel = AssociatedObject.DataContext as ResourceYamlViewModel;
+        _isCurrentViewModelActive = IsCurrentViewModelActive();
+        _factory.ActiveDockableChanged += FactoryActiveDockableChanged;
+
         _visibilitySubscription = AssociatedObject.GetObservable(Visual.IsVisibleProperty)
             .Subscribe(visible =>
             {
                 if (!visible)
                 {
-                    PersistScrollOffset();
+                    PersistScrollOffset(force: true);
+                    _isCurrentViewModelActive = false;
                 }
                 else
                 {
                     AttachScrollViewer();
-                    Dispatcher.UIThread.Post(RestoreScrollOffset, DispatcherPriority.Loaded);
+                    if (_isCurrentViewModelActive)
+                    {
+                        Dispatcher.UIThread.Post(RestoreScrollOffset, DispatcherPriority.Loaded);
+                    }
                 }
             });
 
@@ -42,7 +53,11 @@ public sealed class YamlEditorScrollBehavior : Behavior<TextEditor>
 
     protected override void OnDetaching()
     {
-        PersistScrollOffset();
+        PersistScrollOffset(force: true);
+
+        _factory.ActiveDockableChanged -= FactoryActiveDockableChanged;
+        _currentViewModel = null;
+        _isCurrentViewModelActive = false;
 
         if (AssociatedObject != null)
         {
@@ -55,34 +70,86 @@ public sealed class YamlEditorScrollBehavior : Behavior<TextEditor>
         base.OnDetaching();
     }
 
-    // Visibility-based handling replaces factory event-driven handling.
-
-    private void PersistScrollOffset()
+    private void FactoryActiveDockableChanged(object? sender, ActiveDockableChangedEventArgs e)
     {
-        if (AssociatedObject?.DataContext is not ResourceYamlViewModel vm)
+        HandleFactoryDockableChanged(e.Dockable);
+    }
+
+    private void FactoryDockableChanged(object? sender, object args)
+    {
+        var dockable = args.GetType().GetProperty("Dockable")?.GetValue(args) as IDockable;
+        HandleFactoryDockableChanged(dockable);
+    }
+
+    private void HandleFactoryDockableChanged(IDockable? dockable)
+    {
+        if (_currentViewModel == null)
         {
             return;
         }
 
-        // Try to use the attached ScrollViewer if available. If not yet attached,
-        // attempt to locate it on demand so we don't lose the offset when the
-        // behavior wasn't able to attach earlier (headless/test timing).
-        var sv = _scrollViewer ?? AssociatedObject.GetScrollViewer();
+        if (ReferenceEquals(dockable, _currentViewModel))
+        {
+            _isCurrentViewModelActive = true;
+            AttachScrollViewer();
+            Dispatcher.UIThread.Post(RestoreScrollOffset, DispatcherPriority.Loaded);
+            return;
+        }
+
+        if (_isCurrentViewModelActive)
+        {
+            PersistScrollOffset(force: true);
+            _isCurrentViewModelActive = false;
+        }
+    }
+
+    private bool IsCurrentViewModelActive()
+    {
+        if (_currentViewModel == null)
+        {
+            return false;
+        }
+
+        foreach (var dock in _factory.Find(_ => true).OfType<IDock>())
+        {
+            if (ReferenceEquals(dock.ActiveDockable, _currentViewModel))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void PersistScrollOffset(bool force = false)
+    {
+        if ((_currentViewModel ?? AssociatedObject?.DataContext) is not ResourceYamlViewModel vm)
+        {
+            return;
+        }
+
+        if (!force && !_isCurrentViewModelActive)
+        {
+            return;
+        }
+
+        if (AssociatedObject != null)
+        {
+            vm.ScrollOffset = new Vector(AssociatedObject.HorizontalOffset, AssociatedObject.VerticalOffset);
+            return;
+        }
+
+        // Fallback: use the internal ScrollViewer when the editor is no longer available.
+        var sv = _scrollViewer;
         if (sv is not null)
         {
-            // Cache for future use
-            _scrollViewer = sv;
             vm.ScrollOffset = sv.Offset;
-            return;
         }
-
-        // Fallback: use TextEditor offsets
-        vm.ScrollOffset = new Vector(AssociatedObject.HorizontalOffset, AssociatedObject.VerticalOffset);
     }
 
     private void RestoreScrollOffset()
     {
-        if (AssociatedObject?.DataContext is not ResourceYamlViewModel vm || _scrollViewer == null)
+        if ((_currentViewModel ?? AssociatedObject?.DataContext) is not ResourceYamlViewModel vm || _scrollViewer == null)
         {
             return;
         }
