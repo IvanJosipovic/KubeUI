@@ -69,11 +69,11 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private readonly List<T> _selectionSnapshot = [];
 
-    public IList View => _view;
+    public IList View => _view ?? throw new InvalidOperationException("Resource list view has not been initialized.");
 
-    private ReadOnlyObservableCollection<T> _view;
+    private ReadOnlyObservableCollection<T>? _view;
 
-    private BehaviorSubject<IComparer<T>> _sortSubject;
+    private BehaviorSubject<IComparer<T>>? _sortSubject;
 
     public IDataGridSortingAdapterFactory SortingAdapterFactory => _sortingAdapterFactory;
 
@@ -87,7 +87,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         OwnsViewSorts = true
     };
 
-    private BehaviorSubject<Func<T, bool>> _filterSubject;
+    private BehaviorSubject<Func<T, bool>>? _filterSubject;
 
     public IDataGridFilteringAdapterFactory FilteringAdapterFactory => _filteringAdapterFactory;
 
@@ -99,7 +99,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         OwnsViewFilter = true
     };
 
-    private BehaviorSubject<Func<T, bool>> _searchSubject;
+    private BehaviorSubject<Func<T, bool>>? _searchSubject;
 
     public IDataGridSearchAdapterFactory SearchAdapterFactory => _searchAdapterFactory;
 
@@ -155,13 +155,16 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         OnPropertyChanged(nameof(ContextMenuItems));
 
         _sortingAdapterFactory = new DynamicDataSortingAdapterFactory<T>(_resourceColumnsByKey);
-        _sortSubject = new BehaviorSubject<IComparer<T>>(_sortingAdapterFactory.SortComparer);
+        BehaviorSubject<IComparer<T>> sortSubject = new(_sortingAdapterFactory.SortComparer);
+        _sortSubject = sortSubject;
 
         _filteringAdapterFactory = new DynamicDataFilteringAdapterFactory<T>(_resourceColumnsByKey);
-        _filterSubject = new BehaviorSubject<Func<T, bool>>(_filteringAdapterFactory.FilterPredicate);
+        BehaviorSubject<Func<T, bool>> filterSubject = new(_filteringAdapterFactory.FilterPredicate);
+        _filterSubject = filterSubject;
 
         _searchAdapterFactory = new DynamicDataSearchAdapterFactory<T>(_resourceColumnsByKey);
-        _searchSubject = new BehaviorSubject<Func<T, bool>>(_searchAdapterFactory.SearchPredicate);
+        BehaviorSubject<Func<T, bool>> searchSubject = new(_searchAdapterFactory.SearchPredicate);
+        _searchSubject = searchSubject;
 
         GenerateColumnDefinitions();
         SetNamespaceFilter();
@@ -334,12 +337,16 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
         SetNamespaceFilter();
 
+        BehaviorSubject<IComparer<T>> sortSubject = _sortSubject ?? throw new InvalidOperationException("Sort subject has not been initialized.");
+        BehaviorSubject<Func<T, bool>> filterSubject = _filterSubject ?? throw new InvalidOperationException("Filter subject has not been initialized.");
+        BehaviorSubject<Func<T, bool>> searchSubject = _searchSubject ?? throw new InvalidOperationException("Search subject has not been initialized.");
+
         _subscription = Objects.Connect()
             .ObserveOn(AvaloniaScheduler.Instance)
             .Do(_ => CaptureSelectionSnapshot())
-            .Filter(_filterSubject)
-            .Filter(_searchSubject)
-            .SortAndBind(out _view, _sortSubject, new()
+            .Filter(filterSubject)
+            .Filter(searchSubject)
+            .SortAndBind(out var view, sortSubject, new()
             {
                 ResetOnFirstTimeLoad = true,
                 UseReplaceForUpdates = true,
@@ -350,6 +357,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 _ => SynchronizeSelectionWithView(),
                 ex => _logger.LogError(ex, "Error Setting Resource List Filter: {ns} ", typeof(T))
             );
+
+        _view = view;
     }
 
     private void GenerateColumnDefinitions()
@@ -470,13 +479,15 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     private void SortingModelOnSortingChanged(object? sender, SortingChangedEventArgs e)
     {
         _sortingAdapterFactory.UpdateComparer(e.NewDescriptors);
-        _sortSubject.OnNext(_sortingAdapterFactory.SortComparer);
+        BehaviorSubject<IComparer<T>> sortSubject = _sortSubject ?? throw new InvalidOperationException("Sort subject has not been initialized.");
+        sortSubject.OnNext(_sortingAdapterFactory.SortComparer);
     }
 
     private void FilteringModelOnFilteringChanged(object? sender, FilteringChangedEventArgs e)
     {
         _filteringAdapterFactory.UpdateFilter(e.NewDescriptors);
-        _filterSubject.OnNext(_filteringAdapterFactory.FilterPredicate);
+        BehaviorSubject<Func<T, bool>> filterSubject = _filterSubject ?? throw new InvalidOperationException("Filter subject has not been initialized.");
+        filterSubject.OnNext(_filteringAdapterFactory.FilterPredicate);
     }
 
     private void SelectionModelOnSelectionChanged(object? sender, SelectionModelSelectionChangedEventArgs<T> e)
@@ -489,7 +500,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     private void SearchModelOnSearchChanged(object? sender, SearchChangedEventArgs e)
     {
         _searchAdapterFactory.UpdatePredicate(e.NewDescriptors);
-        _searchSubject.OnNext(_searchAdapterFactory.SearchPredicate);
+        BehaviorSubject<Func<T, bool>> searchSubject = _searchSubject ?? throw new InvalidOperationException("Search subject has not been initialized.");
+        searchSubject.OnNext(_searchAdapterFactory.SearchPredicate);
     }
 
     private int ResolveReferenceIndex(IList list, object item)
@@ -525,16 +537,22 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private void SynchronizeSelectionWithView()
     {
-        if (_selectionSnapshot.Count == 0 || _view.Count == 0)
+        ReadOnlyObservableCollection<T>? view = _view;
+        if (view is null)
+        {
+            return;
+        }
+
+        if (_selectionSnapshot.Count == 0 || view.Count == 0)
         {
             return;
         }
 
         var desiredIndexes = new List<int>(_selectionSnapshot.Count);
 
-        for (var i = 0; i < _view.Count; i++)
+        for (var i = 0; i < view.Count; i++)
         {
-            if (_view[i] is not T resource)
+            if (view[i] is not T resource)
             {
                 continue;
             }
@@ -598,6 +616,7 @@ public sealed class DynamicDataSortingAdapterFactory<T> : IDataGridSortingAdapte
     private readonly IReadOnlyDictionary<string, IResourceListColumn> _resourceColumnsByKey;
 
     private static readonly IComparer<T> s_noopComparer = Comparer<T>.Create(static (_, _) => 0);
+    private static readonly IComparable s_nullSortValue = new NullSortValue();
 
     public IComparer<T> SortComparer { get; private set; }
 
@@ -641,15 +660,15 @@ public sealed class DynamicDataSortingAdapterFactory<T> : IDataGridSortingAdapte
                 continue;
             }
 
-            IComparable? SafeSelect(T item)
+            IComparable SafeSelect(T item)
             {
                 try
                 {
-                    return selector(item);
+                    return selector(item) ?? s_nullSortValue;
                 }
                 catch
                 {
-                    return null;
+                    return s_nullSortValue;
                 }
             }
 
@@ -667,7 +686,7 @@ public sealed class DynamicDataSortingAdapterFactory<T> : IDataGridSortingAdapte
 
     private Func<T, IComparable?>? CreateSelector(SortingDescriptor descriptor)
     {
-        if (!TryResolveResourceColumn(descriptor.ColumnId, out var column))
+        if (ResolveResourceColumn(descriptor.ColumnId) is not IResourceListColumn column)
         {
             return null;
         }
@@ -675,29 +694,35 @@ public sealed class DynamicDataSortingAdapterFactory<T> : IDataGridSortingAdapte
         return column.SortKey;
     }
 
-    private bool TryResolveResourceColumn(object? columnId, out IResourceListColumn column)
+    private IResourceListColumn? ResolveResourceColumn(object? columnId)
     {
         if (columnId is DataGridColumnDefinition definition)
         {
             if (definition.Tag is IResourceListColumn taggedColumn)
             {
-                column = taggedColumn;
-                return true;
+                return taggedColumn;
             }
 
-            if (TryResolveKey(definition.ColumnKey, out var key) && _resourceColumnsByKey.TryGetValue(key, out column))
+            if (TryResolveKey(definition.ColumnKey, out var key))
             {
-                return true;
+                IResourceListColumn? resolvedColumn = null;
+                if (_resourceColumnsByKey.TryGetValue(key, out resolvedColumn))
+                {
+                    return resolvedColumn;
+                }
             }
         }
 
-        if (TryResolveKey(columnId, out var directKey) && _resourceColumnsByKey.TryGetValue(directKey, out column))
+        if (TryResolveKey(columnId, out var directKey))
         {
-            return true;
+            IResourceListColumn? directColumn = null;
+            if (_resourceColumnsByKey.TryGetValue(directKey, out directColumn))
+            {
+                return directColumn;
+            }
         }
 
-        column = null!;
-        return false;
+        return null;
     }
 
     private static bool TryResolveKey(object? columnId, out string key)
@@ -743,6 +768,14 @@ public sealed class DynamicDataSortingAdapterFactory<T> : IDataGridSortingAdapte
             _update(descriptors);
             changed = true;
             return true;
+        }
+    }
+
+    private sealed class NullSortValue : IComparable
+    {
+        public int CompareTo(object? obj)
+        {
+            return obj is NullSortValue ? 0 : -1;
         }
     }
 }
@@ -878,7 +911,7 @@ public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAd
 
     private Func<T, object?>? CreateSelector(FilteringDescriptor descriptor)
     {
-        if (!TryResolveResourceColumn(descriptor.ColumnId, out var column))
+        if (ResolveResourceColumn(descriptor.ColumnId) is not IResourceListColumn column)
         {
             return null;
         }
@@ -886,29 +919,35 @@ public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAd
         return column.DisplayValue;
     }
 
-    private bool TryResolveResourceColumn(object? columnId, out IResourceListColumn column)
+    private IResourceListColumn? ResolveResourceColumn(object? columnId)
     {
         if (columnId is DataGridColumnDefinition definition)
         {
             if (definition.Tag is IResourceListColumn taggedColumn)
             {
-                column = taggedColumn;
-                return true;
+                return taggedColumn;
             }
 
-            if (TryResolveKey(definition.ColumnKey, out var key) && _resourceColumnsByKey.TryGetValue(key, out column))
+            if (TryResolveKey(definition.ColumnKey, out var key))
             {
-                return true;
+                IResourceListColumn? resolvedColumn = null;
+                if (_resourceColumnsByKey.TryGetValue(key, out resolvedColumn))
+                {
+                    return resolvedColumn;
+                }
             }
         }
 
-        if (TryResolveKey(columnId, out var directKey) && _resourceColumnsByKey.TryGetValue(directKey, out column))
+        if (TryResolveKey(columnId, out var directKey))
         {
-            return true;
+            IResourceListColumn? directColumn = null;
+            if (_resourceColumnsByKey.TryGetValue(directKey, out directColumn))
+            {
+                return directColumn;
+            }
         }
 
-        column = null!;
-        return false;
+        return null;
     }
 
     private static bool TryResolveKey(object? columnId, out string key)
