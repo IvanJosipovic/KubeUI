@@ -47,6 +47,7 @@
     </Style>
     <Style Selector="DataGridColumnHeader">
         <Setter Property="FontSize" Value="{DynamicResource DataGridFontSize}" />
+        <Setter Property="MinHeight" Value="{DynamicResource DataGridColumnHeaderMinHeight}" />
     </Style>
     <Style Selector="DataGrid TextBlock">
         <Setter Property="MaxLines" Value="1" />
@@ -77,4 +78,3 @@
         </Setter>
     </Style>
 </Styles>
-

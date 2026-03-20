@@ -22,6 +22,7 @@ public partial class App : Application
 
         Resources["AppearanceSettings"] = Services.GetRequiredService<ISettingsService>().Appearance;
         Resources["DataGridRowHeight"] = Convert.ToDouble(Services.GetRequiredService<ISettingsService>().Appearance.ListRowHeight);
+        Resources["DataGridColumnHeaderMinHeight"] = Convert.ToDouble(Services.GetRequiredService<ISettingsService>().Appearance.ListRowHeight + 4m);
         Resources["DataGridFontSize"] = Convert.ToDouble(Services.GetRequiredService<ISettingsService>().Appearance.FontSize);
         Resources[typeof(IServiceProvider)] = Services;
         DataTemplates.Add(Services.GetRequiredService<ViewLocator>());
@@ -98,6 +99,3 @@ public partial class App : Application
         }
     }
 }
-
-
-
