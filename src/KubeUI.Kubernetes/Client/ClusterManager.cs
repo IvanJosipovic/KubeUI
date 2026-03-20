@@ -19,6 +19,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
     private readonly ILogger<ClusterManager> _logger;
     private readonly IServiceProvider _serviceProvider;
     private readonly IClusterSettingsStore _settings;
+    private readonly IThreadDispatcher _dispatcher;
     private readonly IDictionary<string, FileSystemWatcher> _fileWatchers = new Dictionary<string, FileSystemWatcher>(StringComparer.Ordinal);
     private readonly object _syncRoot = new();
 
@@ -26,11 +27,12 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
     IEnumerable<IClusterRuntime> IClusterRuntimeCatalog.Clusters => Clusters;
 
-    public ClusterManager(ILogger<ClusterManager> logger, IServiceProvider serviceProvider, IClusterSettingsStore settings)
+    public ClusterManager(ILogger<ClusterManager> logger, IServiceProvider serviceProvider, IClusterSettingsStore settings, IThreadDispatcher dispatcher)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
         _settings = settings;
+        _dispatcher = dispatcher;
 
         KubernetesClientConfiguration.ExecStdError += KubernetesClientConfiguration_ExecStdError;
 
@@ -105,11 +107,13 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
                     cluster.Name = item.Name;
                     cluster.KubeConfigPath = config.FileName;
-
-                    if (!ClusterExists(cluster.Name, cluster.KubeConfigPath))
+                    _dispatcher.Invoke(() =>
                     {
-                        Clusters.Add(cluster);
-                    }
+                        if (!ClusterExists(cluster.Name, cluster.KubeConfigPath))
+                        {
+                            Clusters.Add(cluster);
+                        }
+                    });
                 }
 
                 return;
@@ -134,11 +138,13 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
             cluster.Name = item.Name;
             cluster.KubeConfig = kubeConfig;
             cluster.KubeConfigPath = kubeConfig.FileName;
-
-            if (!ClusterExists(cluster.Name, cluster.KubeConfigPath))
+            _dispatcher.Invoke(() =>
             {
-                Clusters.Add(cluster);
-            }
+                if (!ClusterExists(cluster.Name, cluster.KubeConfigPath))
+                {
+                    Clusters.Add(cluster);
+                }
+            });
         }
     }
 

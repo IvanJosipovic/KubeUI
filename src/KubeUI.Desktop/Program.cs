@@ -59,6 +59,7 @@ internal static class Program
 
         services.AddKubeUIAvaloniaServices();
         services.AddKubeUIKubernetesServices();
+        services.AddSingleton<IThreadDispatcher, AvaloniaThreadDispatcher>();
         services.AddLogging(x => x.SetMinimumLevel(LogLevel.Debug));
 
         if (!Design.IsDesignMode)

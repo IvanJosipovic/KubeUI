@@ -14,6 +14,7 @@ public static class KubeUIKubernetesInfrastructureServiceCollectionExtensions
 
     public static IServiceCollection AddKubeUIKubernetesServices(this IServiceCollection services)
     {
+        services.AddSingleton<IThreadDispatcher, ImmediateThreadDispatcher>();
         services.AddTransient<ModelCache>();
         services.AddSingleton<IKubernetesYamlSerializer, KubernetesYamlSerializer>();
         services.AddTransient<Cluster>();
