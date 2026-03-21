@@ -25,7 +25,25 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     private readonly ObservableCollection<V1Namespace> _namespaces = [];
     private readonly ReadOnlyObservableCollection<V1Namespace> _readonlyNamespaces;
     private readonly ConcurrentDictionary<string, bool> _permissions = new(StringComparer.Ordinal);
-    private readonly IGenerator _generator;
+    private static readonly Lazy<IGenerator> s_sharedGenerator = new(() =>
+    {
+        var g = new Generator(NullLoggerFactory.Instance);
+        g.SetEnumSupport(false);
+        return (IGenerator)g;
+    });
+
+    private static readonly Lazy<ModelCache> s_sharedModelCache = new(() =>
+    {
+        var cache = new ModelCache();
+        var kubeAssemblyXmlDoc = new XmlDocument();
+        using var stream = typeof(Generator).Assembly.GetManifestResourceStream("runtime.KubernetesClient.xml")
+            ?? throw new InvalidOperationException("Unable to load Kubernetes client XML documentation.");
+        kubeAssemblyXmlDoc.Load(stream);
+        cache.AddToCache(typeof(V1Deployment).Assembly, kubeAssemblyXmlDoc);
+        return cache;
+    });
+
+    private readonly IGenerator _generator = s_sharedGenerator.Value;
     private bool _connected;
     private bool _defaultPermissionAllowed = true;
     private bool _listNamespaces;
@@ -39,17 +57,9 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     public TestClusterRuntime()
     {
         _readonlyNamespaces = new ReadOnlyObservableCollection<V1Namespace>(_namespaces);
-        _generator = new Generator(NullLoggerFactory.Instance);
-        _generator.SetEnumSupport(false);
-
-        var cache = new ModelCache();
-        var kubeAssemblyXmlDoc = new XmlDocument();
-        using var stream = typeof(Generator).Assembly.GetManifestResourceStream("runtime.KubernetesClient.xml")
-            ?? throw new InvalidOperationException("Unable to load Kubernetes client XML documentation.");
-        kubeAssemblyXmlDoc.Load(stream);
-        cache.AddToCache(typeof(V1Deployment).Assembly, kubeAssemblyXmlDoc);
-
-        ModelCache = cache;
+        // Use shared generator and model cache to avoid expensive repeated reflection
+        // and dynamic generation across many test instances.
+        ModelCache = s_sharedModelCache.Value;
         Status = ClusterStatus.Connected;
         Connected = true;
         ListNamespaces = true;
