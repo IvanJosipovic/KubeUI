@@ -2044,6 +2044,18 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
         }
         Cluster = null;
+        // Clear heavy collections to avoid retaining large object graphs between runs
+        try
+        {
+            Resources?.Clear();
+        }
+        catch { }
+
+        try
+        {
+            Graph = new Graph();
+        }
+        catch { }
     }
 
     public sealed partial class ResourceNodeViewModel: ViewModelBase
