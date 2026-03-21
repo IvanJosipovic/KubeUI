@@ -66,6 +66,9 @@ public sealed class ClusterWorkspaceCatalog : IDisposable
         {
             workspace.Dispose();
         }
+
+        _workspaces.Clear();
+        Clusters.Clear();
     }
 
     private void RuntimeClustersChanged(object? sender, NotifyCollectionChangedEventArgs e)

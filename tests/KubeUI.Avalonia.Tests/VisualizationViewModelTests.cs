@@ -9,16 +9,18 @@ using static KubeUI.Avalonia.ViewModels.VisualizationViewModel;
 
 namespace KubeUI.Avalonia.Tests;
 
-public class VisualizationViewModelTests : IDisposable
+public class VisualizationViewModelTests : AvaloniaTestBase
 {
     private readonly List<IDisposable> _disposables = [];
 
-    public void Dispose()
+    public override void Dispose()
     {
         foreach (var disposable in _disposables)
         {
             disposable.Dispose();
         }
+
+        base.Dispose();
     }
 
     private ClusterWorkspaceViewModel CreateCluster()

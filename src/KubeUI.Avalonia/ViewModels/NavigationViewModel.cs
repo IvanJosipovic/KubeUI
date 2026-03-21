@@ -78,6 +78,9 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         {
             UnsubscribeCluster(cluster);
         }
+
+        _clusterNodes.Clear();
+        Clusters.Clear();
     }
 
     public async void TreeView_SelectionChanged(object? item)

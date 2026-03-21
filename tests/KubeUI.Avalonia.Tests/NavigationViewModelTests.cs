@@ -18,7 +18,7 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace KubeUI.Avalonia.Tests;
 
-public class NavigationViewModelTests
+public class NavigationViewModelTests : AvaloniaTestBase
 {
     [AvaloniaFact]
     public async Task resource_navigation_items_populate_only_after_connect_starts()

@@ -20,7 +20,7 @@ using Shouldly;
 
 namespace KubeUI.Avalonia.Tests;
 
-public class ResourceYamlViewModelTests
+public class ResourceYamlViewModelTests : AvaloniaTestBase
 {
     [AvaloniaFact]
     public void YamlFoldingStrategy_CreatesFoldingsForNestedMappings()

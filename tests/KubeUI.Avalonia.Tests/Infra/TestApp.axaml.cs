@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Notifications;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
@@ -15,14 +16,52 @@ namespace KubeUI.Avalonia.Tests.Infra;
 
 public class TestApp : Application
 {
-    public IServiceProvider Services { get; set; }
+    public IServiceProvider? Services { get; private set; }
 
     public static TopLevel TopLevel { get; private set; }
 
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+        ResetServices();
+    }
 
+    public static void ResetForTest()
+    {
+        Dispatcher.UIThread.Invoke(() =>
+        {
+            if (Application.Current is TestApp app)
+            {
+                app.ResetServices();
+            }
+        });
+    }
+
+    public static void CleanupAfterTest()
+    {
+        Dispatcher.UIThread.Invoke(() =>
+        {
+            if (Application.Current is TestApp app)
+            {
+                app.CloseOpenWindows();
+                app.DisposeServices();
+            }
+        });
+    }
+
+    private void ResetServices()
+    {
+        CloseOpenWindows();
+        DisposeServices();
+
+        var provider = BuildServiceProvider();
+        Services = provider;
+        ApplyResources(provider);
+        InitializeDockFactory(provider);
+    }
+
+    private ServiceProvider BuildServiceProvider()
+    {
         var services = new ServiceCollection();
 
         services.AddKubeUIAvaloniaServices();
@@ -42,25 +81,54 @@ public class TestApp : Application
 
         var provider = services.BuildServiceProvider();
         provider.ConfigureKubeUIKubernetesJson();
+        return provider;
+    }
 
-        Services = provider;
-        Resources[typeof(IServiceProvider)] = Services;
+    private void ApplyResources(ServiceProvider provider)
+    {
+        Resources[typeof(IServiceProvider)] = provider;
         Resources["AppearanceSettings"] = provider.GetRequiredService<ISettingsService>().Appearance;
         Resources["DataGridRowHeight"] = Convert.ToDouble(provider.GetRequiredService<ISettingsService>().Appearance.ListRowHeight);
         Resources["DataGridColumnHeaderMinHeight"] = Convert.ToDouble(provider.GetRequiredService<ISettingsService>().Appearance.ListRowHeight + 4m);
         Resources["DataGridFontSize"] = Convert.ToDouble(provider.GetRequiredService<ISettingsService>().Appearance.FontSize);
 
-        if (!DataTemplates.OfType<ViewLocator>().Any())
+        foreach (var existingViewLocator in DataTemplates.OfType<ViewLocator>().ToList())
         {
-            DataTemplates.Add(provider.GetRequiredService<ViewLocator>());
+            DataTemplates.Remove(existingViewLocator);
         }
 
-        Dispatcher.UIThread.Invoke(() =>
+        DataTemplates.Add(provider.GetRequiredService<ViewLocator>());
+    }
+
+    private static void InitializeDockFactory(ServiceProvider provider)
+    {
+        var factory = provider.GetRequiredService<IFactory>();
+        var layout = factory.CreateLayout();
+        factory.InitLayout(layout);
+    }
+
+    private void DisposeServices()
+    {
+        if (Services is IDisposable disposable)
         {
-            var factory = provider.GetRequiredService<IFactory>();
-            var layout = factory.CreateLayout();
-            factory.InitLayout(layout);
-        });
+            disposable.Dispose();
+        }
+
+        Resources.Remove(typeof(IServiceProvider));
+        Services = null;
+    }
+
+    private void CloseOpenWindows()
+    {
+        if (ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            return;
+        }
+
+        foreach (var window in desktop.Windows.ToList())
+        {
+            window.Close();
+        }
     }
 }
 
