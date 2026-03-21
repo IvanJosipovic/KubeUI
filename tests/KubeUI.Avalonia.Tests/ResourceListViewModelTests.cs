@@ -33,6 +33,56 @@ namespace KubeUI.Avalonia.Tests;
 
 public class ResourceListViewModelTests : AvaloniaTestBase
 {
+    private readonly List<IDisposable> _disposables = [];
+    private readonly List<Window> _windows = [];
+
+    public override void Dispose()
+    {
+        foreach (var window in _windows)
+        {
+            window.Content = null;
+            window.Close();
+        }
+
+        foreach (var disposable in _disposables)
+        {
+            disposable.Dispose();
+        }
+
+        base.Dispose();
+    }
+
+    private Window CreateWindow(double width = 1200, double height = 800, object? content = null)
+    {
+        var window = new Window
+        {
+            Width = width,
+            Height = height,
+            Content = content,
+        };
+
+        _windows.Add(window);
+        return window;
+    }
+
+    private ClusterWorkspaceViewModel CreateCluster()
+    {
+        var cluster = new TestCluster().CreateWorkspace();
+        _disposables.Add(cluster);
+        return cluster;
+    }
+
+    private T GetRequiredService<T>()
+    {
+        var service = Application.Current.GetRequiredService<T>();
+        if (service is IDisposable disposable)
+        {
+            _disposables.Add(disposable);
+        }
+
+        return service;
+    }
+
     private static V1Pod Pod(string ns, string name)
         => new()
         {
@@ -112,17 +162,13 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     [AvaloniaFact(DisplayName = "All select update middle")]
     public async Task all_select_update_middle_preserves_all_selected()
     {
-        var window = new Window
-        {
-            Width = 1200,
-            Height = 800
-        };
-        var cluster = new TestCluster().CreateWorkspace();
+        var window = CreateWindow();
+        var cluster = CreateCluster();
 
-        var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = Application.Current.GetRequiredService<ResourceListView>();
+        var view = GetRequiredService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -158,17 +204,13 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     [AvaloniaFact(DisplayName = "Single select update middle")]
     public async Task single_select_update__preserves_only_selected()
     {
-        var window = new Window
-        {
-            Width = 1200,
-            Height = 800
-        };
-        var cluster = new TestCluster().CreateWorkspace();
+        var window = CreateWindow();
+        var cluster = CreateCluster();
 
-        var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = Application.Current.GetRequiredService<ResourceListView>();
+        var view = GetRequiredService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -201,17 +243,13 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     [AvaloniaFact(DisplayName = "Single select with sort due to update")]
     public async Task single_select_with_sort_preserves_only_selected()
     {
-        var window = new Window
-        {
-            Width = 1200,
-            Height = 800
-        };
-        var cluster = new TestCluster().CreateWorkspace();
+        var window = CreateWindow();
+        var cluster = CreateCluster();
 
-        var vm = Application.Current.GetRequiredService<ResourceListViewModel<Corev1Event>>();
+        var vm = GetRequiredService<ResourceListViewModel<Corev1Event>>();
         vm.Initialize(cluster);
 
-        var view = Application.Current.GetRequiredService<ResourceListView>();
+        var view = GetRequiredService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -253,17 +291,13 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     [AvaloniaFact(DisplayName = "All select with sort due to update")]
     public async Task all_select_with_sort_preserves_all_selected()
     {
-        var window = new Window
-        {
-            Width = 1200,
-            Height = 800
-        };
-        var cluster = new TestCluster().CreateWorkspace();
+        var window = CreateWindow();
+        var cluster = CreateCluster();
 
-        var vm = Application.Current.GetRequiredService<ResourceListViewModel<Corev1Event>>();
+        var vm = GetRequiredService<ResourceListViewModel<Corev1Event>>();
         vm.Initialize(cluster);
 
-        var view = Application.Current.GetRequiredService<ResourceListView>();
+        var view = GetRequiredService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -309,18 +343,14 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     [AvaloniaFact(DisplayName = "Update check DataGrid Text update")]
     public async Task UpdateResourceTextBox()
     {
-        var window = new Window
-        {
-            Width = 1200,
-            Height = 800
-        };
+        var window = CreateWindow();
 
-        var cluster = new TestCluster().CreateWorkspace();
+        var cluster = CreateCluster();
 
-        var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = Application.Current.GetRequiredService<ResourceListView>();
+        var view = GetRequiredService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -349,18 +379,14 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     [AvaloniaFact(DisplayName = "Update check DataGrid Text update2")]
     public async Task UpdateResourceTextBox2()
     {
-        var window = new Window
-        {
-            Width = 1200,
-            Height = 800
-        };
+        var window = CreateWindow();
 
-        var cluster = new TestCluster().CreateWorkspace();
+        var cluster = CreateCluster();
 
-        var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Namespace>>();
+        var vm = GetRequiredService<ResourceListViewModel<V1Namespace>>();
         vm.Initialize(cluster);
 
-        var view = Application.Current.GetRequiredService<ResourceListView>();
+        var view = GetRequiredService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -398,17 +424,13 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     [AvaloniaFact(DisplayName = "Namespace filter preserves selection when included")]
     public async Task namespace_filter_preserves_selection_when_included()
     {
-        var window = new Window
-        {
-            Width = 1200,
-            Height = 800
-        };
-        var cluster = new TestCluster().CreateWorkspace();
+        var window = CreateWindow();
+        var cluster = CreateCluster();
 
-        var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = Application.Current.GetRequiredService<ResourceListView>();
+        var view = GetRequiredService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -430,17 +452,13 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     [AvaloniaFact(DisplayName = "Namespace filter selects remaining item when selection filtered out")]
     public async Task namespace_filter_selects_remaining_item_when_selection_filtered_out()
     {
-        var window = new Window
-        {
-            Width = 1200,
-            Height = 800
-        };
-        var cluster = new TestCluster().CreateWorkspace();
+        var window = CreateWindow();
+        var cluster = CreateCluster();
 
-        var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = Application.Current.GetRequiredService<ResourceListView>();
+        var view = GetRequiredService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -478,17 +496,13 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     [AvaloniaFact(DisplayName = "Namespace filter updates context menu selection")]
     public async Task namespace_filter_updates_context_menu_selection()
     {
-        var window = new Window
-        {
-            Width = 1200,
-            Height = 800
-        };
-        var cluster = new TestCluster().CreateWorkspace();
+        var window = CreateWindow();
+        var cluster = CreateCluster();
 
-        var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = Application.Current.GetRequiredService<ResourceListView>();
+        var view = GetRequiredService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -542,9 +556,9 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     [AvaloniaFact(DisplayName = "Pod-specific actions are hidden for multi-select")]
     public async Task pod_specific_actions_are_hidden_for_multi_select()
     {
-        var cluster = new TestCluster().CreateWorkspace();
+        var cluster = CreateCluster();
 
-        var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
         var podA = Pod("ns1", "a");
@@ -574,18 +588,14 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     [AvaloniaFact(DisplayName = "Delete Resource")]
     public async Task delete_resource()
     {
-        var window = new Window
-        {
-            Width = 1200,
-            Height = 800
-        };
+        var window = CreateWindow();
 
-        var cluster = new TestCluster().CreateWorkspace();
+        var cluster = CreateCluster();
 
-        var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = Application.Current.GetRequiredService<ResourceListView>();
+        var view = GetRequiredService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;
@@ -604,7 +614,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     [AvaloniaFact(DisplayName = "Reattach keeps only saved sort descriptors")]
     public async Task reattach_keeps_only_saved_sort_descriptors()
     {
-        var factory = Application.Current.GetRequiredService<IFactory>();
+        var factory = GetRequiredService<IFactory>();
         var layout = factory.CreateLayout();
         factory.InitLayout(layout);
         var documents = factory.GetDockable<IDocumentDock>("Documents");
@@ -615,20 +625,15 @@ public class ResourceListViewModelTests : AvaloniaTestBase
             Layout = layout,
         };
 
-        var window = new Window
-        {
-            Content = dockControl,
-            Width = 1200,
-            Height = 800
-        };
-        var cluster = new TestCluster().CreateWorkspace();
+        var window = CreateWindow(content: dockControl);
+        var cluster = CreateCluster();
 
-        var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Namespace>>();
+        var vm = GetRequiredService<ResourceListViewModel<V1Namespace>>();
         vm.Initialize(cluster);
 
         window.Show();
 
-        var otherDockable = Application.Current.GetRequiredService<AboutViewModel>();
+        var otherDockable = GetRequiredService<AboutViewModel>();
         otherDockable.Id = nameof(AboutViewModel);
 
         factory.AddToDocuments(vm);
@@ -687,7 +692,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     [AvaloniaFact(DisplayName = "Reattach preserves DataGrid scroll offset")]
     public async Task reattach_preserves_datagrid_scroll_offset()
     {
-        var factory = Application.Current.GetRequiredService<IFactory>();
+        var factory = GetRequiredService<IFactory>();
         var layout = factory.CreateLayout();
         factory.InitLayout(layout);
         var documents = factory.GetDockable<IDocumentDock>("Documents");
@@ -698,20 +703,15 @@ public class ResourceListViewModelTests : AvaloniaTestBase
             Layout = layout,
         };
 
-        var window = new Window
-        {
-            Content = dockControl,
-            Width = 1200,
-            Height = 900
-        };
-        var cluster = new TestCluster().CreateWorkspace();
+        var window = CreateWindow(height: 900, content: dockControl);
+        var cluster = CreateCluster();
 
-        var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
         window.Show();
 
-        var otherDockable = Application.Current.GetRequiredService<AboutViewModel>();
+        var otherDockable = GetRequiredService<AboutViewModel>();
         otherDockable.Id = nameof(AboutViewModel);
 
         factory.AddToDocuments(vm);
@@ -788,13 +788,12 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         ReferenceEquals(grid, restoredGrid).ShouldBeFalse();
         vm.DataGridRuntimeState.ShouldNotBeNull();
 
-        window.Close();
     }
 
     [AvaloniaFact(DisplayName = "Reattach captures runtime state and restores on reattach")]
     public async Task reattach_captures_runtime_state_and_restores_on_reattach()
     {
-        var factory = Application.Current.GetRequiredService<IFactory>();
+        var factory = GetRequiredService<IFactory>();
         var layout = factory.CreateLayout();
         factory.InitLayout(layout);
         var documents = factory.GetDockable<IDocumentDock>("Documents");
@@ -805,20 +804,15 @@ public class ResourceListViewModelTests : AvaloniaTestBase
             Layout = layout,
         };
 
-        var window = new Window
-        {
-            Content = dockControl,
-            Width = 1200,
-            Height = 800
-        };
-        var cluster = new TestCluster().CreateWorkspace();
+        var window = CreateWindow(content: dockControl);
+        var cluster = CreateCluster();
 
-        var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Namespace>>();
+        var vm = GetRequiredService<ResourceListViewModel<V1Namespace>>();
         vm.Initialize(cluster);
 
         window.Show();
 
-        var otherDockable = Application.Current.GetRequiredService<AboutViewModel>();
+        var otherDockable = GetRequiredService<AboutViewModel>();
         otherDockable.Id = nameof(AboutViewModel);
 
         factory.AddToDocuments(vm);
@@ -873,19 +867,15 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     [AvaloniaFact(DisplayName = "Namespace filter initializes from selected namespaces")]
     public async Task namespace_filter_initializes_from_selected_namespaces()
     {
-        var window = new Window
-        {
-            Width = 1200,
-            Height = 800
-        };
-        var cluster = new TestCluster().CreateWorkspace();
+        var window = CreateWindow();
+        var cluster = CreateCluster();
 
         cluster.SelectedNamespaces.Add(NamespaceResource("default"));
 
-        var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
 
-        var view = Application.Current.GetRequiredService<ResourceListView>();
+        var view = GetRequiredService<ResourceListView>();
         view.DataContext = vm;
 
         window.Content = view;

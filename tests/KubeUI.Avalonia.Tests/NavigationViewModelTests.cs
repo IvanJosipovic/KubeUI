@@ -20,6 +20,32 @@ namespace KubeUI.Avalonia.Tests;
 
 public class NavigationViewModelTests : AvaloniaTestBase
 {
+    private readonly List<IDisposable> _disposables = [];
+
+    public override void Dispose()
+    {
+        foreach (var disposable in _disposables)
+        {
+            disposable.Dispose();
+        }
+
+        base.Dispose();
+    }
+
+    private ClusterWorkspaceViewModel CreateWorkspace(TestCluster runtime)
+    {
+        var workspace = runtime.CreateWorkspace();
+        _disposables.Add(workspace);
+        return workspace;
+    }
+
+    private NavigationViewModel CreateViewModel()
+    {
+        var vm = Application.Current.GetRequiredService<NavigationViewModel>();
+        _disposables.Add(vm);
+        return vm;
+    }
+
     [AvaloniaFact]
     public async Task resource_navigation_items_populate_only_after_connect_starts()
     {
@@ -29,9 +55,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
             Status = ClusterStatus.None,
         };
 
-        var workspace = runtime.CreateWorkspace();
+        var workspace = CreateWorkspace(runtime);
 
-        var vm = Application.Current.GetRequiredService<NavigationViewModel>();
+        var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         Dispatcher.UIThread.RunJobs();
 
@@ -56,9 +82,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
             ConnectBehavior = () => throw new InvalidOperationException("connect failed"),
         };
 
-        var workspace = runtime.CreateWorkspace();
+        var workspace = CreateWorkspace(runtime);
 
-        var vm = Application.Current.GetRequiredService<NavigationViewModel>();
+        var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         Dispatcher.UIThread.RunJobs();
 
@@ -80,9 +106,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
             Status = ClusterStatus.None,
         };
 
-        var workspace = runtime.CreateWorkspace();
+        var workspace = CreateWorkspace(runtime);
 
-        var vm = Application.Current.GetRequiredService<NavigationViewModel>();
+        var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         Dispatcher.UIThread.RunJobs();
 
@@ -106,9 +132,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
             Status = ClusterStatus.Connected,
         };
 
-        var workspace = runtime.CreateWorkspace();
+        var workspace = CreateWorkspace(runtime);
 
-        var vm = Application.Current.GetRequiredService<NavigationViewModel>();
+        var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         Dispatcher.UIThread.RunJobs();
 
@@ -127,9 +153,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
     public void port_forwarders_is_under_network_category_not_top_level()
     {
         var runtime = new TestCluster();
-        var workspace = runtime.CreateWorkspace();
+        var workspace = CreateWorkspace(runtime);
 
-        var vm = Application.Current.GetRequiredService<NavigationViewModel>();
+        var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         Dispatcher.UIThread.RunJobs();
 
@@ -157,9 +183,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
             CanCreatePodPortForward = false,
         };
 
-        var workspace = runtime.CreateWorkspace();
+        var workspace = CreateWorkspace(runtime);
 
-        var vm = Application.Current.GetRequiredService<NavigationViewModel>();
+        var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         Dispatcher.UIThread.RunJobs();
 
@@ -177,9 +203,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
     public void custom_resource_definitions_link_is_sorted_to_bottom()
     {
         var runtime = new TestCluster();
-        var workspace = runtime.CreateWorkspace();
+        var workspace = CreateWorkspace(runtime);
 
-        var vm = Application.Current.GetRequiredService<NavigationViewModel>();
+        var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         Dispatcher.UIThread.RunJobs();
 
@@ -191,9 +217,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
     public void category_nav_items_follow_alpha_ordering()
     {
         var runtime = new TestCluster();
-        var workspace = runtime.CreateWorkspace();
+        var workspace = CreateWorkspace(runtime);
 
-        var vm = Application.Current.GetRequiredService<NavigationViewModel>();
+        var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         Dispatcher.UIThread.RunJobs();
 
@@ -211,13 +237,13 @@ public class NavigationViewModelTests : AvaloniaTestBase
     public void custom_resource_items_grouped_under_crd_link()
     {
         var runtime = new TestCluster();
-        var workspace = runtime.CreateWorkspace();
+        var workspace = CreateWorkspace(runtime);
 
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha Resources"));
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceBeta), "Beta Resources"));
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceNested), "Nested Resources"));
 
-        var vm = Application.Current.GetRequiredService<NavigationViewModel>();
+        var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         Dispatcher.UIThread.RunJobs();
 
@@ -277,10 +303,10 @@ public class NavigationViewModelTests : AvaloniaTestBase
     public async Task custom_resource_definitions_root_preserves_expansion_on_rebuild()
     {
         var runtime = new TestCluster();
-        var workspace = runtime.CreateWorkspace();
+        var workspace = CreateWorkspace(runtime);
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha Resources"));
 
-        var vm = Application.Current.GetRequiredService<NavigationViewModel>();
+        var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         Dispatcher.UIThread.RunJobs();
 
@@ -305,9 +331,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
             Status = ClusterStatus.Connected,
         };
 
-        var workspace = runtime.CreateWorkspace();
+        var workspace = CreateWorkspace(runtime);
 
-        var vm = Application.Current.GetRequiredService<NavigationViewModel>();
+        var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         Dispatcher.UIThread.RunJobs();
 
@@ -340,9 +366,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
             Status = ClusterStatus.Connected,
         };
 
-        var workspace = runtime.CreateWorkspace();
+        var workspace = CreateWorkspace(runtime);
 
-        var vm = Application.Current.GetRequiredService<NavigationViewModel>();
+        var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         Dispatcher.UIThread.RunJobs();
 
@@ -371,9 +397,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
             Status = ClusterStatus.Connected,
         };
 
-        var workspace = runtime.CreateWorkspace();
+        var workspace = CreateWorkspace(runtime);
 
-        var vm = Application.Current.GetRequiredService<NavigationViewModel>();
+        var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         Dispatcher.UIThread.RunJobs();
 

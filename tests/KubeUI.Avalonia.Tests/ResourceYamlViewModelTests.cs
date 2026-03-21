@@ -22,6 +22,56 @@ namespace KubeUI.Avalonia.Tests;
 
 public class ResourceYamlViewModelTests : AvaloniaTestBase
 {
+    private readonly List<IDisposable> _disposables = [];
+    private readonly List<Window> _windows = [];
+
+    public override void Dispose()
+    {
+        foreach (var window in _windows)
+        {
+            window.Content = null;
+            window.Close();
+        }
+
+        foreach (var disposable in _disposables)
+        {
+            disposable.Dispose();
+        }
+
+        base.Dispose();
+    }
+
+    private Window CreateWindow(double width = 1200, double height = 900, object? content = null)
+    {
+        var window = new Window
+        {
+            Content = content,
+            Width = width,
+            Height = height,
+        };
+
+        _windows.Add(window);
+        return window;
+    }
+
+    private ClusterWorkspaceViewModel CreateTestWorkspace()
+    {
+        var cluster = new TestCluster().CreateWorkspace();
+        _disposables.Add(cluster);
+        return cluster;
+    }
+
+    private T ResolveService<T>()
+    {
+        var service = Application.Current.GetRequiredService<T>();
+        if (service is IDisposable disposable)
+        {
+            _disposables.Add(disposable);
+        }
+
+        return service;
+    }
+
     [AvaloniaFact]
     public void YamlFoldingStrategy_CreatesFoldingsForNestedMappings()
     {
@@ -147,8 +197,8 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesFoldState_WhenActiveDockableChanges()
     {
-        var cluster = new TestCluster().CreateWorkspace();
-        var factory = Application.Current.GetRequiredService<IFactory>();
+        var cluster = CreateTestWorkspace();
+        var factory = ResolveService<IFactory>();
         var layout = factory.CreateLayout();
         factory.InitLayout(layout);
         var documents = factory.GetDockable<IDocumentDock>("Documents");
@@ -159,15 +209,10 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             Layout = layout,
         };
 
-        var window = new Window
-        {
-            Content = dockControl,
-            Width = 1200,
-            Height = 900,
-        };
+        var window = CreateWindow(content: dockControl);
         window.Show();
 
-        var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
+        var vm = ResolveService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Namespace
         {
             Metadata = new V1ObjectMeta
@@ -176,7 +221,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             },
         });
 
-        var otherDockable = Application.Current.GetRequiredService<AboutViewModel>();
+        var otherDockable = ResolveService<AboutViewModel>();
         otherDockable.Id = nameof(AboutViewModel);
 
         factory.AddToDocuments(vm);
@@ -220,14 +265,13 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         foldingManager.ShouldNotBeNull();
         foldingManager.AllFoldings.First().IsFolded.ShouldBeTrue();
 
-        window.Close();
     }
 
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesScrollOffset_WhenActiveDockableChanges()
     {
-        var cluster = new TestCluster().CreateWorkspace();
-        var factory = Application.Current.GetRequiredService<IFactory>();
+        var cluster = CreateTestWorkspace();
+        var factory = ResolveService<IFactory>();
         var layout = factory.CreateLayout();
         factory.InitLayout(layout);
         var documents = factory.GetDockable<IDocumentDock>("Documents");
@@ -238,19 +282,14 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             Layout = layout,
         };
 
-        var window = new Window
-        {
-            Content = dockControl,
-            Width = 1200,
-            Height = 900,
-        };
+        var window = CreateWindow(content: dockControl);
         window.Show();
 
-        var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
+        var vm = ResolveService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Namespace { Metadata = new V1ObjectMeta { Name = "test" } });
         vm.YamlDocument.Text = string.Join('\n', Enumerable.Range(0, 400).Select(i => $"line{i}: value"));
 
-        var otherDockable = Application.Current.GetRequiredService<AboutViewModel>();
+        var otherDockable = ResolveService<AboutViewModel>();
         otherDockable.Id = nameof(AboutViewModel);
 
         factory.AddToDocuments(vm);
@@ -317,20 +356,15 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
 
         vm.ScrollOffset.ShouldBe(targetOffset);
 
-        window.Close();
     }
 
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesFoldState_WhenResourceIsUpdated()
     {
-        var window = new Window
-        {
-            Width = 800,
-            Height = 600,
-        };
+        var window = CreateWindow(width: 800, height: 600);
 
-        var cluster = new TestCluster().CreateWorkspace();
-        var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
 
         var resource = new V1Namespace
         {
@@ -342,7 +376,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
 
         vm.Initialize(cluster, resource);
 
-        var view = Application.Current.GetRequiredService<ResourceYamlView>();
+        var view = ResolveService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -384,24 +418,19 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         foldingManager.ShouldNotBeNull();
         foldingManager.AllFoldings.First().IsFolded.ShouldBeTrue();
 
-        window.Close();
     }
 
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesParentFoldState_WhenResourceGrowsAboveFold()
     {
-        var window = new Window
-        {
-            Width = 800,
-            Height = 600,
-        };
+        var window = CreateWindow(width: 800, height: 600);
 
-        var cluster = new TestCluster().CreateWorkspace();
-        var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
         var resource = CreatePod("test", includeLabels: false, extraEnv: false);
         vm.Initialize(cluster, resource);
 
-        var view = Application.Current.GetRequiredService<ResourceYamlView>();
+        var view = ResolveService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -425,24 +454,19 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         foldingManager.ShouldNotBeNull();
         foldingManager.AllFoldings.Single(x => x.Title.TrimEnd() == "spec:").IsFolded.ShouldBeTrue();
 
-        window.Close();
     }
 
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesParentFoldState_WhenResourceGrowsBelowFold()
     {
-        var window = new Window
-        {
-            Width = 800,
-            Height = 600,
-        };
+        var window = CreateWindow(width: 800, height: 600);
 
-        var cluster = new TestCluster().CreateWorkspace();
-        var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
         var resource = CreatePod("test", includeLabels: true, extraEnv: false);
         vm.Initialize(cluster, resource);
 
-        var view = Application.Current.GetRequiredService<ResourceYamlView>();
+        var view = ResolveService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -466,24 +490,19 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         foldingManager.ShouldNotBeNull();
         foldingManager.AllFoldings.Single(x => x.Title.TrimEnd() == "metadata:").IsFolded.ShouldBeTrue();
 
-        window.Close();
     }
 
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesNestedFoldState_WhenResourceUpdatesInsideParent()
     {
-        var window = new Window
-        {
-            Width = 800,
-            Height = 600,
-        };
+        var window = CreateWindow(width: 800, height: 600);
 
-        var cluster = new TestCluster().CreateWorkspace();
-        var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
         var resource = CreatePod("test", includeLabels: true, extraEnv: false);
         vm.Initialize(cluster, resource);
 
-        var view = Application.Current.GetRequiredService<ResourceYamlView>();
+        var view = ResolveService<ResourceYamlView>();
         view.DataContext = vm;
         window.Content = view;
         window.Show();
@@ -507,7 +526,6 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         foldingManager.ShouldNotBeNull();
         foldingManager.AllFoldings.Single(x => x.Title.Trim() == "containers:").IsFolded.ShouldBeTrue();
 
-        window.Close();
     }
 
     private static FoldingManager? GetFoldingManager(YamlEditorBehavior behavior)
