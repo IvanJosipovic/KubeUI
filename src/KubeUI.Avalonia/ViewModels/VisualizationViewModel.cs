@@ -43,9 +43,20 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     public void Initialize(ClusterWorkspaceViewModel cluster)
     {
+        // Detach from any previous cluster to avoid duplicate event subscriptions
+        if (Cluster != null && Cluster.SelectedNamespaces != null)
+        {
+            Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
+        }
+
         Cluster = cluster;
 
-        Cluster.SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
+        if (Cluster?.SelectedNamespaces != null)
+        {
+            // Ensure single subscription
+            Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
+            Cluster.SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
+        }
 
         Id = nameof(VisualizationViewModel) + "-" + cluster;
 
@@ -2028,7 +2039,11 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     public void Dispose()
     {
-        Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
+        if (Cluster?.SelectedNamespaces != null)
+        {
+            Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
+        }
+        Cluster = null;
     }
 
     public sealed partial class ResourceNodeViewModel: ViewModelBase
