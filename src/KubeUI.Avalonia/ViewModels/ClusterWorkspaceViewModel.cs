@@ -22,6 +22,9 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
     private readonly ConcurrentDictionary<GroupApiVersionKind, IResourceConfig> _resourceConfigs = new();
     private readonly ConcurrentDictionary<string, PendingCustomResourceDefinitionChange> _pendingCustomResourceDefinitions = new(StringComparer.Ordinal);
     private readonly SemaphoreSlim _pendingCustomResourceDefinitionSignal = new(0);
+    private readonly CancellationTokenSource _disposeCancellation = new();
+    private readonly Task _pendingCustomResourceDefinitionTask;
+    private bool _disposed;
 
     public ClusterWorkspaceViewModel(
         IClusterRuntime runtime,
@@ -38,7 +41,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
         SubscribeRuntime();
         UpdateClusterColor();
-        _ = Task.Run(ProcessPendingCustomResourceDefinitionsAsync);
+        _pendingCustomResourceDefinitionTask = Task.Run(ProcessPendingCustomResourceDefinitionsAsync);
         _ = RefreshWorkspaceStateAsync();
     }
 
@@ -301,6 +304,12 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     public void Dispose()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
         Runtime.OnChange -= OnRuntimeChange;
         Runtime.OnCustomResourceDefinitionReady -= HandleCustomResourceDefinitionReady;
 
@@ -308,6 +317,21 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         {
             propertyChanged.PropertyChanged -= OnRuntimePropertyChanged;
         }
+
+        _disposeCancellation.Cancel();
+        _pendingCustomResourceDefinitions.Clear();
+        _pendingCustomResourceDefinitionSignal.Release();
+
+        try
+        {
+            _pendingCustomResourceDefinitionTask.GetAwaiter().GetResult();
+        }
+        catch (OperationCanceledException)
+        {
+        }
+
+        _disposeCancellation.Dispose();
+        _pendingCustomResourceDefinitionSignal.Dispose();
     }
 
     private async Task RefreshWorkspaceStateAsync()
@@ -483,71 +507,87 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     private void QueueCustomResourceDefinitionChange(V1CustomResourceDefinition crd, CustomResourceDefinitionChangeKind kind)
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         _pendingCustomResourceDefinitions[crd.Name()] = new PendingCustomResourceDefinitionChange(kind, crd);
         _pendingCustomResourceDefinitionSignal.Release();
     }
 
     private async Task ProcessPendingCustomResourceDefinitionsAsync()
     {
-        while (true)
+        try
         {
-            await _pendingCustomResourceDefinitionSignal.WaitAsync().ConfigureAwait(false);
-
-            var changes = await DrainPendingCustomResourceDefinitionChangesAsync().ConfigureAwait(false);
-            if (changes.Count == 0)
+            while (!_disposeCancellation.IsCancellationRequested)
             {
-                continue;
-            }
+                await _pendingCustomResourceDefinitionSignal.WaitAsync(_disposeCancellation.Token).ConfigureAwait(false);
 
-            var builtConfigs = new List<PendingCustomResourceConfig>(changes.Count);
-            var removedKinds = new List<GroupApiVersionKind>();
-
-            foreach (var change in changes)
-            {
-                try
+                if (_disposeCancellation.IsCancellationRequested)
                 {
-                    if (change.Kind == CustomResourceDefinitionChangeKind.Delete)
+                    return;
+                }
+
+                var changes = await DrainPendingCustomResourceDefinitionChangesAsync().ConfigureAwait(false);
+                if (changes.Count == 0)
+                {
+                    continue;
+                }
+
+                var builtConfigs = new List<PendingCustomResourceConfig>(changes.Count);
+                var removedKinds = new List<GroupApiVersionKind>();
+
+                foreach (var change in changes)
+                {
+                    try
                     {
-                        var removedKind = TryResolveCustomResourceKind(change.Crd);
-                        if (removedKind != null)
+                        if (change.Kind == CustomResourceDefinitionChangeKind.Delete)
                         {
-                            removedKinds.Add(removedKind.Value);
+                            var removedKind = TryResolveCustomResourceKind(change.Crd);
+                            if (removedKind != null)
+                            {
+                                removedKinds.Add(removedKind.Value);
+                            }
+
+                            continue;
                         }
 
-                        continue;
+                        var builtConfig = await BuildCustomResourceConfigAsync(change.Crd).ConfigureAwait(false);
+                        if (builtConfig != null)
+                        {
+                            builtConfigs.Add(builtConfig);
+                        }
                     }
-
-                    var builtConfig = await BuildCustomResourceConfigAsync(change.Crd).ConfigureAwait(false);
-                    if (builtConfig != null)
+                    catch (Exception ex) when (ex is not OperationCanceledException)
                     {
-                        builtConfigs.Add(builtConfig);
+                        _logger.LogError(ex, "Error processing queued custom resource definition {Crd}", change.Crd.Name());
                     }
                 }
-                catch (Exception ex)
+
+                if (builtConfigs.Count == 0 && removedKinds.Count == 0)
                 {
-                    _logger.LogError(ex, "Error processing queued custom resource definition {Crd}", change.Crd.Name());
+                    continue;
                 }
+
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    foreach (var removedKind in removedKinds)
+                    {
+                        _resourceConfigs.TryRemove(removedKind, out _);
+                    }
+
+                    foreach (var builtConfig in builtConfigs)
+                    {
+                        _resourceConfigs[builtConfig.Kind] = builtConfig.ResourceConfig;
+                    }
+
+                    NotifyCustomResourceDefinitionsChanged(builtConfigs, removedKinds);
+                });
             }
-
-            if (builtConfigs.Count == 0 && removedKinds.Count == 0)
-            {
-                continue;
-            }
-
-            await Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                foreach (var removedKind in removedKinds)
-                {
-                    _resourceConfigs.TryRemove(removedKind, out _);
-                }
-
-                foreach (var builtConfig in builtConfigs)
-                {
-                    _resourceConfigs[builtConfig.Kind] = builtConfig.ResourceConfig;
-                }
-
-                NotifyCustomResourceDefinitionsChanged(builtConfigs, removedKinds);
-            });
+        }
+        catch (OperationCanceledException) when (_disposeCancellation.IsCancellationRequested)
+        {
         }
     }
 
@@ -565,7 +605,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
                 break;
             }
 
-            if (!await _pendingCustomResourceDefinitionSignal.WaitAsync(remaining).ConfigureAwait(false))
+            if (!await _pendingCustomResourceDefinitionSignal.WaitAsync(remaining, _disposeCancellation.Token).ConfigureAwait(false))
             {
                 break;
             }

@@ -9,12 +9,36 @@ using static KubeUI.Avalonia.ViewModels.VisualizationViewModel;
 
 namespace KubeUI.Avalonia.Tests;
 
-public class VisualizationViewModelTests
+public class VisualizationViewModelTests : IDisposable
 {
+    private readonly List<IDisposable> _disposables = [];
+
+    public void Dispose()
+    {
+        foreach (var disposable in _disposables)
+        {
+            disposable.Dispose();
+        }
+    }
+
+    private ClusterWorkspaceViewModel CreateCluster()
+    {
+        var cluster = TestCluster.Get();
+        _disposables.Add(cluster);
+        return cluster;
+    }
+
+    private VisualizationViewModel CreateViewModel()
+    {
+        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        _disposables.Add(vm);
+        return vm;
+    }
+
     [AvaloniaFact]
     public async Task LinkOwners()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1Deployment
         {
@@ -49,7 +73,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         // Simulate selection
         vm.Initialize(cluster);
 
@@ -61,7 +85,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkArgoCDTracking()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         var namespaceResource = new V1Namespace
         {
@@ -150,7 +174,7 @@ public class VisualizationViewModelTests
             Type = "Opaque"
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -163,7 +187,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkConfigMapInPodEnv()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap
         {
@@ -205,7 +229,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
 
         vm.Initialize(cluster);
 
@@ -217,7 +241,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkConfigMapInPodInitEnv()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap
         {
@@ -259,7 +283,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -270,7 +294,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkConfigMapInPodEnvFrom()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap
         {
@@ -309,7 +333,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -320,7 +344,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkConfigMapInPodInitEnvFrom()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap
         {
@@ -359,7 +383,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -370,7 +394,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkConfigMapInPodVolume()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap
         {
@@ -403,7 +427,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -414,7 +438,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkConfigMapInDeploymentEnv()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap
         {
@@ -454,7 +478,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -465,7 +489,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkConfigMapInDeploymentInitEnv()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -502,7 +526,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -513,7 +537,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkConfigMapInDeploymentEnvFrom()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -547,7 +571,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -558,7 +582,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkConfigMapInDeploymentInitEnvFrom()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -592,7 +616,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -603,7 +627,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkConfigMapInDeploymentVolume()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -631,7 +655,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -642,7 +666,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkConfigMapInDaemonSetEnv()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -679,7 +703,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -690,7 +714,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkConfigMapInDaemonSetInitEnv()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -727,7 +751,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -738,7 +762,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkConfigMapInDaemonSetEnvFrom()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -772,7 +796,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -783,7 +807,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkConfigMapInDaemonSetInitEnvFrom()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -817,7 +841,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -828,7 +852,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkConfigMapInDaemonSetVolume()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -856,7 +880,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -867,7 +891,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkConfigMapInStatefulSetEnv()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -904,7 +928,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -915,7 +939,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkConfigMapInStatefulSetInitEnv()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -952,7 +976,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -963,7 +987,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkConfigMapInStatefulSetEnvFrom()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -997,7 +1021,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -1008,7 +1032,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkConfigMapInStatefulSetInitEnvFrom()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -1042,7 +1066,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -1053,7 +1077,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkConfigMapInStatefulSetVolume()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -1081,7 +1105,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -1094,7 +1118,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkConfigMapInReplicaSetEnv()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -1132,7 +1156,7 @@ public class VisualizationViewModelTests
             Status = new() { Replicas = 1 }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -1143,7 +1167,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkConfigMapInReplicaSetInitEnv()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -1181,7 +1205,7 @@ public class VisualizationViewModelTests
             Status = new() { Replicas = 1 }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -1192,7 +1216,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkConfigMapInReplicaSetEnvFrom()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -1227,7 +1251,7 @@ public class VisualizationViewModelTests
             Status = new() { Replicas = 1 }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -1238,7 +1262,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkConfigMapInReplicaSetInitEnvFrom()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -1273,7 +1297,7 @@ public class VisualizationViewModelTests
             Status = new() { Replicas = 1 }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -1284,7 +1308,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkConfigMapInReplicaSetVolume()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ConfigMap { Metadata = new() { Name = "my-config", NamespaceProperty = "default" } });
 
@@ -1313,7 +1337,7 @@ public class VisualizationViewModelTests
             Status = new() { Replicas = 1 }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -1328,7 +1352,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkSecretInDeploymentEnv()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1365,7 +1389,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -1376,7 +1400,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkSecretInDeploymentInitEnv()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1413,7 +1437,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -1424,7 +1448,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkSecretInDeploymentEnvFrom()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1458,7 +1482,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -1469,7 +1493,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkSecretInDeploymentInitEnvFrom()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1503,7 +1527,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -1514,7 +1538,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkSecretInDeploymentVolume()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1542,7 +1566,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -1553,7 +1577,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkSecretInDaemonSetEnv()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1590,7 +1614,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -1601,7 +1625,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkSecretInDaemonSetInitEnv()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1638,7 +1662,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -1649,7 +1673,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkSecretInDaemonSetEnvFrom()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1683,7 +1707,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -1694,7 +1718,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkSecretInDaemonSetInitEnvFrom()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1728,7 +1752,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -1739,7 +1763,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkSecretInDaemonSetVolume()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1767,7 +1791,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -1778,7 +1802,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkSecretInStatefulSetEnv()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1815,7 +1839,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -1826,7 +1850,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkSecretInStatefulSetInitEnv()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1863,7 +1887,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -1874,7 +1898,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkSecretInStatefulSetEnvFrom()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1908,7 +1932,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -1919,7 +1943,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkSecretInStatefulSetInitEnvFrom()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1953,7 +1977,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -1964,7 +1988,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkSecretInStatefulSetVolume()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -1992,7 +2016,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -2003,7 +2027,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkSecretInReplicaSetEnv()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -2041,7 +2065,7 @@ public class VisualizationViewModelTests
             Status = new() { Replicas = 1 }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -2052,7 +2076,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkSecretInReplicaSetInitEnv()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -2090,7 +2114,7 @@ public class VisualizationViewModelTests
             Status = new() { Replicas = 1 }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -2101,7 +2125,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkSecretInReplicaSetEnvFrom()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -2136,7 +2160,7 @@ public class VisualizationViewModelTests
             Status = new() { Replicas = 1 }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -2147,7 +2171,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkSecretInReplicaSetInitEnvFrom()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -2182,7 +2206,7 @@ public class VisualizationViewModelTests
             Status = new() { Replicas = 1 }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -2193,7 +2217,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkSecretInReplicaSetVolume()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1Secret { Metadata = new() { Name = "my-secret", NamespaceProperty = "default" } });
 
@@ -2222,7 +2246,7 @@ public class VisualizationViewModelTests
             Status = new() { Replicas = 1 }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -2233,7 +2257,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkSecretInServiceAccount()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1Secret
         {
@@ -2261,7 +2285,7 @@ public class VisualizationViewModelTests
             ]
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -2274,7 +2298,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkEvent()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new Corev1Event
         {
@@ -2299,7 +2323,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
 
         vm.HideNoise = false;
         vm.Initialize(cluster);
@@ -2312,7 +2336,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkPodToEndpointSlice()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1Pod
         {
@@ -2344,7 +2368,7 @@ public class VisualizationViewModelTests
             ]
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -2355,7 +2379,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkPodToEndpointEndpoints()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1Pod
         {
@@ -2393,7 +2417,7 @@ public class VisualizationViewModelTests
             ]
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -2404,7 +2428,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkIngressToService()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1Service
         {
@@ -2450,7 +2474,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -2461,7 +2485,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkIngressDefaultBackend()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1Service
         {
@@ -2492,7 +2516,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -2503,7 +2527,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkPersistentVolumeClaimToPersistantVolume()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1PersistentVolumeClaim
         {
@@ -2533,7 +2557,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -2544,7 +2568,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkRoleBindingToServiceAccount()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1RoleBinding
         {
@@ -2574,7 +2598,7 @@ public class VisualizationViewModelTests
             },
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -2585,7 +2609,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkRoleBindingToRole()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1RoleBinding
         {
@@ -2611,7 +2635,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -2622,7 +2646,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkRoleBindingClusterRole()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1RoleBinding
         {
@@ -2647,7 +2671,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -2658,7 +2682,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkClusterRoleBindingToServiceAccount()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ClusterRoleBinding
         {
@@ -2688,7 +2712,7 @@ public class VisualizationViewModelTests
             },
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -2699,7 +2723,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkClusterRoleBindingClusterRole()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ClusterRoleBinding
         {
@@ -2724,7 +2748,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -2737,7 +2761,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkServiceAccountInPod()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ServiceAccount
         {
@@ -2762,7 +2786,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -2773,7 +2797,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkServiceAccountInDeployment()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ServiceAccount
         {
@@ -2804,7 +2828,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -2815,7 +2839,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkServiceAccountInStatefulSet()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ServiceAccount { Metadata = new() { Name = "my-sa", NamespaceProperty = "default" } });
 
@@ -2839,7 +2863,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -2850,7 +2874,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkServiceAccountInDaemonSet()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ServiceAccount { Metadata = new() { Name = "my-sa", NamespaceProperty = "default" } });
 
@@ -2874,7 +2898,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -2885,7 +2909,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkServiceAccountInReplicaSet()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1ServiceAccount { Metadata = new() { Name = "my-sa", NamespaceProperty = "default" } });
 
@@ -2910,7 +2934,7 @@ public class VisualizationViewModelTests
             Status = new() { Replicas = 1 }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -2925,7 +2949,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkPersistentVolumeClaimInPod()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1PersistentVolumeClaim
         {
@@ -2958,7 +2982,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -2969,7 +2993,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkPersistentVolumeClaimInDeployment()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1PersistentVolumeClaim
         {
@@ -3008,7 +3032,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -3019,7 +3043,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkPersistentVolumeClaimInStatefulSet()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1PersistentVolumeClaim
         {
@@ -3058,7 +3082,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -3069,7 +3093,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkPersistentVolumeClaimInDaemonSet()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1PersistentVolumeClaim
         {
@@ -3108,7 +3132,7 @@ public class VisualizationViewModelTests
             }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
@@ -3119,7 +3143,7 @@ public class VisualizationViewModelTests
     [AvaloniaFact]
     public async Task LinkPersistentVolumeClaimInReplicaSet()
     {
-        var cluster = TestCluster.Get();
+        var cluster = CreateCluster();
 
         await cluster.AddOrUpdateResource(new V1PersistentVolumeClaim
         {
@@ -3159,7 +3183,7 @@ public class VisualizationViewModelTests
             Status = new() { Replicas = 1 }
         });
 
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = CreateViewModel();
         vm.Initialize(cluster);
 
         vm.Graph.Edges.Count.ShouldBe(1);
