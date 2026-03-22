@@ -323,6 +323,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
                     if (item is V1CustomResourceDefinition crd2)
                     {
                         RemoveQueuedCustomResourceDefinition(crd2);
+                        RemoveCustomResourceDefinitionArtifacts(crd2);
                         _ = Task.Run(RefreshApiGroupDiscoveryListAsync);
                     }
                     break;
@@ -406,22 +407,72 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
 
     private async Task<bool> ProcessNewCRD(V1CustomResourceDefinition crd)
     {
-        if (!ModelCache.CheckIfCRDExists(crd))
+        var assembly = _generator.GenerateAssembly(crd, "KubeUI.Models");
+
+        if (assembly.Item1 == null || assembly.Item2 == null)
         {
-            var assembly = _generator.GenerateAssembly(crd, "KubeUI.Models");
-
-            if (assembly.Item1 == null || assembly.Item2 == null)
-            {
-                _logger.LogWarning("Unable to generate CRD for {name}", crd.Name());
-                return false;
-            }
-
-            ModelCache.AddToCache(assembly.Item1, assembly.Item2);
+            _logger.LogWarning("Unable to generate CRD for {name}", crd.Name());
+            return false;
         }
+
+        var (previousType, currentType) = ModelCache.ReplaceCustomResourceDefinition(crd, assembly.Item1, assembly.Item2);
+        if (currentType == null)
+        {
+            _logger.LogWarning("Unable to resolve generated type for CRD {name}", crd.Name());
+            return false;
+        }
+
+        await ReplaceCustomResourceDefinitionArtifactsAsync(previousType, currentType).ConfigureAwait(false);
 
         await RefreshApiGroupDiscoveryListAsync().ConfigureAwait(false);
 
         return true;
+    }
+
+    private void RemoveCustomResourceDefinitionArtifacts(V1CustomResourceDefinition crd)
+    {
+        var removedType = ModelCache.RemoveCustomResourceDefinition(crd);
+        if (removedType != null)
+        {
+            RemoveSeededResourceContainer(removedType);
+        }
+    }
+
+    private async Task ReplaceCustomResourceDefinitionArtifactsAsync(Type? previousType, Type currentType)
+    {
+        var hadExistingContainer = previousType != null && RemoveSeededResourceContainer(previousType);
+        if (!hadExistingContainer)
+        {
+            return;
+        }
+
+        await SeedResourceAsync(currentType).ConfigureAwait(false);
+    }
+
+    private bool RemoveSeededResourceContainer(Type resourceType)
+    {
+        var kind = GroupApiVersionKind.From(resourceType);
+        if (!Objects.TryRemove(kind, out var existingContainer))
+        {
+            return false;
+        }
+
+        if (existingContainer.GetType().GetProperty("Informers")?.GetValue(existingContainer) is IList<IResourceInformer> informers)
+        {
+            informers.Clear();
+        }
+
+        return true;
+    }
+
+    private Task SeedResourceAsync(Type resourceType, bool waitForReady = false)
+    {
+        var method = GetType()
+            .GetMethods(BindingFlags.Instance | BindingFlags.Public)
+            .First(x => x.Name == nameof(SeedResource) && x.IsGenericMethodDefinition && x.GetParameters().Length == 1)
+            .MakeGenericMethod(resourceType);
+
+        return (Task)method.Invoke(this, [waitForReady])!;
     }
 
     public async Task DeleteResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()

@@ -43,7 +43,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private readonly ILogger<NavigationViewModel> _logger;
     private readonly Dictionary<ClusterWorkspaceViewModel, ClusterNavigationNode> _clusterNodes = [];
-    private readonly Dictionary<ClusterWorkspaceViewModel, CancellationTokenSource> _clusterRebuildDelays = [];
+    private readonly Dictionary<ClusterWorkspaceViewModel, PendingClusterNavigationUpdate> _clusterRebuildDelays = [];
     private INotificationManager _notificationManager => Application.Current.GetRequiredService<INotificationManager>();
 
     [ObservableProperty]
@@ -181,10 +181,10 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             propertyChanged.PropertyChanged -= OnClusterPropertyChanged;
         }
 
-        if (_clusterRebuildDelays.Remove(cluster, out var cancellationTokenSource))
+        if (_clusterRebuildDelays.Remove(cluster, out var pendingUpdate))
         {
-            cancellationTokenSource.Cancel();
-            cancellationTokenSource.Dispose();
+            pendingUpdate.CancellationTokenSource.Cancel();
+            pendingUpdate.CancellationTokenSource.Dispose();
         }
 
     }
@@ -220,34 +220,35 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private void OnClusterCustomResourceDefinitionsChanged(ClusterWorkspaceViewModel cluster, IReadOnlyList<PendingCustomResourceConfig> addedConfigs, IReadOnlyList<GroupApiVersionKind> removedKinds)
     {
-        ScheduleClusterNavigationUpdate(cluster, rebuildCustomResourceDefinitionsOnly: true, ResourceNavigationRebuildDelay);
+        ScheduleClusterNavigationUpdate(cluster, rebuildCustomResourceDefinitionsOnly: true, ResourceNavigationRebuildDelay, addedConfigs, removedKinds);
     }
 
-    private void ScheduleClusterNavigationUpdate(ClusterWorkspaceViewModel cluster, bool rebuildCustomResourceDefinitionsOnly, TimeSpan delay)
+    private void ScheduleClusterNavigationUpdate(ClusterWorkspaceViewModel cluster, bool rebuildCustomResourceDefinitionsOnly, TimeSpan delay, IReadOnlyList<PendingCustomResourceConfig>? addedConfigs = null, IReadOnlyList<GroupApiVersionKind>? removedKinds = null)
     {
         if (_clusterRebuildDelays.Remove(cluster, out var existing))
         {
-            existing.Cancel();
-            existing.Dispose();
+            existing.CancellationTokenSource.Cancel();
+            existing.CancellationTokenSource.Dispose();
         }
 
-        var cancellationTokenSource = new CancellationTokenSource();
-        _clusterRebuildDelays[cluster] = cancellationTokenSource;
+        var pendingUpdate = new PendingClusterNavigationUpdate(new CancellationTokenSource());
+        pendingUpdate.Merge(rebuildCustomResourceDefinitionsOnly, addedConfigs, removedKinds);
+        _clusterRebuildDelays[cluster] = pendingUpdate;
 
         _ = Task.Run(async () =>
         {
             try
             {
-                await Task.Delay(delay, cancellationTokenSource.Token).ConfigureAwait(false);
+                await Task.Delay(delay, pendingUpdate.CancellationTokenSource.Token).ConfigureAwait(false);
                 await Dispatcher.UIThread.InvokeAsync(() =>
                 {
-                    if (rebuildCustomResourceDefinitionsOnly)
+                    if (pendingUpdate.RebuildWholeNavigation)
                     {
-                        RebuildCustomResourceDefinitionsNavigation(cluster);
+                        RebuildClusterNavigation(cluster);
                     }
                     else
                     {
-                        RebuildClusterNavigation(cluster);
+                        ApplyCustomResourceDefinitionChanges(cluster, pendingUpdate.AddedConfigs.Values, pendingUpdate.RemovedKinds);
                     }
                 });
             }
@@ -256,11 +257,11 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             }
             finally
             {
-                if (_clusterRebuildDelays.TryGetValue(cluster, out var current) && ReferenceEquals(current, cancellationTokenSource))
+                if (_clusterRebuildDelays.TryGetValue(cluster, out var current) && ReferenceEquals(current, pendingUpdate))
                 {
                     _clusterRebuildDelays.Remove(cluster);
                 }
-                cancellationTokenSource.Dispose();
+                pendingUpdate.CancellationTokenSource.Dispose();
             }
         });
     }
@@ -403,37 +404,27 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         return defaultOrder + CategoryOrderOffset;
     }
 
-    private void RebuildCustomResourceDefinitionsNavigation(ClusterWorkspaceViewModel cluster)
+    private void ApplyCustomResourceDefinitionChanges(ClusterWorkspaceViewModel cluster, IEnumerable<PendingCustomResourceConfig> addedConfigs, IEnumerable<GroupApiVersionKind> removedKinds)
     {
         if (!_clusterNodes.TryGetValue(cluster, out var node))
         {
             return;
         }
 
-        var rootId = $"{cluster.Name}-custom-resource-definitions";
-        var existingRoot = node.NavigationItems.FirstOrDefault(x => x.Id == rootId);
-        var expandedState = new Dictionary<string, bool>(StringComparer.Ordinal);
-
-        if (existingRoot != null)
+        var root = GetOrCreateCustomResourceDefinitionsRoot(node, cluster);
+        if (root == null)
         {
-            expandedState[existingRoot.Id] = existingRoot.IsExpanded;
-            CaptureExpandedState(existingRoot.NavigationItems, expandedState);
+            return;
         }
 
-        var rebuiltRoot = BuildCustomResourceDefinitionsNavigationItem(cluster);
-        if (rebuiltRoot != null)
+        foreach (var removedKind in removedKinds)
         {
-            ApplyExpandedState(rebuiltRoot, expandedState);
+            RemoveCustomResourceDefinition(root, cluster, removedKind);
         }
 
-        if (existingRoot != null)
+        foreach (var addedConfig in addedConfigs)
         {
-            node.NavigationItems.Remove(existingRoot);
-        }
-
-        if (rebuiltRoot != null)
-        {
-            node.NavigationItems.Add(rebuiltRoot);
+            AddOrUpdateCustomResourceDefinition(root, cluster, addedConfig.ResourceConfig);
         }
     }
 
@@ -474,13 +465,13 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
         for (var i = 0; i < configs.Count; i++)
         {
-            AddCustomResourceDefinition(root, cluster, configs[i]);
+            AddOrUpdateCustomResourceDefinition(root, cluster, configs[i]);
         }
 
         return root;
     }
 
-    private static void AddCustomResourceDefinition(NavigationItem root, ClusterWorkspaceViewModel cluster, IResourceConfig config)
+    private static void AddOrUpdateCustomResourceDefinition(NavigationItem root, ClusterWorkspaceViewModel cluster, IResourceConfig config)
     {
         var currentList = root.NavigationItems;
         var pathParts = ConstructCustomResourceGroupPath(config.Kind.Group);
@@ -516,10 +507,71 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             resourceLink.ControlType = config.Type;
             resourceLink.Order = config.Order;
             resourceLink.Count ??= TryGetResourceCount(cluster, config.Type);
+            currentList.Remove(resourceLink);
+            currentList.Add(resourceLink);
             return;
         }
 
         currentList.Add(CreateResourceNavigationLink(cluster, config));
+    }
+
+    private static void RemoveCustomResourceDefinition(NavigationItem root, ClusterWorkspaceViewModel cluster, GroupApiVersionKind kind)
+    {
+        var currentList = root.NavigationItems;
+        var pathParts = ConstructCustomResourceGroupPath(kind.Group);
+        var pathIds = new List<string>(pathParts.Count);
+        var groups = new List<NavigationItem>(pathParts.Count);
+
+        for (var i = 0; i < pathParts.Count; i++)
+        {
+            pathIds.Add(pathParts[i]);
+            var groupId = $"{cluster.Name}-crd-group-{string.Join("/", pathIds)}";
+            var groupNode = FindNavigationItem(currentList, groupId);
+            if (groupNode == null)
+            {
+                return;
+            }
+
+            groups.Add(groupNode);
+            currentList = groupNode.NavigationItems;
+        }
+
+        var resourceId = $"{cluster.Name}-{kind}";
+        var existing = FindNavigationItem(currentList, resourceId);
+        if (existing != null)
+        {
+            currentList.Remove(existing);
+        }
+
+        for (var i = groups.Count - 1; i >= 0; i--)
+        {
+            var group = groups[i];
+            if (group.NavigationItems.Count > 0)
+            {
+                break;
+            }
+
+            var parentItems = i == 0 ? root.NavigationItems : groups[i - 1].NavigationItems;
+            parentItems.Remove(group);
+        }
+    }
+
+    private static NavigationItem? GetOrCreateCustomResourceDefinitionsRoot(ClusterNavigationNode node, ClusterWorkspaceViewModel cluster)
+    {
+        var rootId = $"{cluster.Name}-custom-resource-definitions";
+        var existingRoot = node.NavigationItems.FirstOrDefault(x => x.Id == rootId);
+        if (existingRoot != null)
+        {
+            return existingRoot;
+        }
+
+        var root = BuildCustomResourceDefinitionsNavigationItem(cluster, customResourceConfigs: []);
+        if (root != null)
+        {
+            node.NavigationItems.Add(root);
+        }
+
+        return root;
     }
 
     private static NavigationItem? FindNavigationItem(IEnumerable<NavigationItem> items, string id)
@@ -785,6 +837,58 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         Factory.SetActiveDockable(existing);
         Factory.SetFocusedDockable(documents, existing);
         return true;
+    }
+}
+
+internal sealed class PendingClusterNavigationUpdate
+{
+    public PendingClusterNavigationUpdate(CancellationTokenSource cancellationTokenSource)
+    {
+        CancellationTokenSource = cancellationTokenSource;
+    }
+
+    public CancellationTokenSource CancellationTokenSource { get; }
+
+    public bool RebuildWholeNavigation { get; private set; }
+
+    public Dictionary<GroupApiVersionKind, PendingCustomResourceConfig> AddedConfigs { get; } = [];
+
+    public HashSet<GroupApiVersionKind> RemovedKinds { get; } = [];
+
+    public void Merge(bool rebuildCustomResourceDefinitionsOnly, IReadOnlyList<PendingCustomResourceConfig>? addedConfigs, IReadOnlyList<GroupApiVersionKind>? removedKinds)
+    {
+        if (!rebuildCustomResourceDefinitionsOnly)
+        {
+            RebuildWholeNavigation = true;
+            AddedConfigs.Clear();
+            RemovedKinds.Clear();
+            return;
+        }
+
+        if (RebuildWholeNavigation)
+        {
+            return;
+        }
+
+        if (removedKinds != null)
+        {
+            foreach (var removedKind in removedKinds)
+            {
+                AddedConfigs.Remove(removedKind);
+                RemovedKinds.Add(removedKind);
+            }
+        }
+
+        if (addedConfigs == null)
+        {
+            return;
+        }
+
+        foreach (var addedConfig in addedConfigs)
+        {
+            RemovedKinds.Remove(addedConfig.Kind);
+            AddedConfigs[addedConfig.Kind] = addedConfig;
+        }
     }
 }
 

@@ -335,6 +335,11 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
             OnChange?.Invoke(WatchEventType.Deleted, kind, item);
         }
 
+        if (item is V1CustomResourceDefinition crd)
+        {
+            RemoveCustomResourceDefinitionArtifacts(crd);
+        }
+
         if (item is V1Namespace ns)
         {
             var existing = _namespaces.FirstOrDefault(x => x.Name() == ns.Name());
@@ -393,12 +398,19 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     {
         var kind = GroupApiVersionKind.From<T>();
 
-        if (!Objects.ContainsKey(kind))
+        if (!Objects.TryGetValue(kind, out var existing) || existing is not ContainerClass<T> container)
         {
-            if (!Objects.TryAdd(kind, new ContainerClass<T>()))
+            container = new ContainerClass<T>();
+            if (!Objects.TryAdd(kind, container))
             {
                 throw new InvalidOperationException($"Duplicate Object Set detected for: {kind}");
             }
+        }
+
+        if (!container.Initialized)
+        {
+            container.Initialized = true;
+            container.Informers.Add(new TestResourceInformer());
         }
 
         return Task.CompletedTask;
@@ -469,20 +481,67 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
 
     private async Task ProcessCustomResourceDefinitionAsync(V1CustomResourceDefinition crd)
     {
-        if (!ModelCache.CheckIfCRDExists(crd))
+        var assembly = _generator.GenerateAssembly(crd, "KubeUI.Models");
+        if (assembly.Item1 == null || assembly.Item2 == null)
         {
-            var assembly = _generator.GenerateAssembly(crd, "KubeUI.Models");
-
-            if (assembly.Item1 == null || assembly.Item2 == null)
-            {
-                throw new InvalidOperationException($"Unable to generate CRD for {crd.Name()}");
-            }
-
-            ModelCache.AddToCache(assembly.Item1, assembly.Item2);
+            throw new InvalidOperationException($"Unable to generate CRD for {crd.Name()}");
         }
 
+        var (previousType, currentType) = ModelCache.ReplaceCustomResourceDefinition(crd, assembly.Item1, assembly.Item2);
+        if (currentType == null)
+        {
+            throw new InvalidOperationException($"Unable to resolve generated type for {crd.Name()}");
+        }
+
+        await ReplaceCustomResourceDefinitionArtifactsAsync(previousType, currentType);
         await Task.Yield();
         OnCustomResourceDefinitionReady?.Invoke(crd);
+    }
+
+    private void RemoveCustomResourceDefinitionArtifacts(V1CustomResourceDefinition crd)
+    {
+        var removedType = ModelCache.RemoveCustomResourceDefinition(crd);
+        if (removedType != null)
+        {
+            RemoveSeededResourceContainer(removedType);
+        }
+    }
+
+    private async Task ReplaceCustomResourceDefinitionArtifactsAsync(Type? previousType, Type currentType)
+    {
+        var hadExistingContainer = previousType != null && RemoveSeededResourceContainer(previousType);
+        if (!hadExistingContainer)
+        {
+            return;
+        }
+
+        await SeedResourceAsync(currentType);
+    }
+
+    private bool RemoveSeededResourceContainer(Type resourceType)
+    {
+        var kind = GroupApiVersionKind.From(resourceType);
+        if (!Objects.TryRemove(kind, out var existingContainer))
+        {
+            return false;
+        }
+
+        if (existingContainer.GetType().GetProperty("Informers")?.GetValue(existingContainer) is IList<IResourceInformer> informers)
+        {
+            informers.Clear();
+        }
+
+        return true;
+    }
+
+    private Task SeedResourceAsync(Type resourceType, bool waitForReady = false)
+    {
+        var method = GetType()
+            .GetMethods(BindingFlags.Instance | BindingFlags.Public)
+            .First(x => x.Name == nameof(SeedResource) && x.IsGenericMethodDefinition && x.GetParameters().Length == 1)
+            .MakeGenericMethod(resourceType);
+
+        return (Task)method.Invoke(this, [waitForReady])!;
     }
 
     private void SyncNamespaceCollection(V1Namespace item)
@@ -517,4 +576,31 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     }
 }
 
+internal sealed class TestResourceInformer : IResourceInformer
+{
+    public void StartWatching()
+    {
+    }
 
+    public Task ReadyAsync(CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
+    }
+
+    public IResourceInformerRegistration Register(ResourceInformerCallback<IKubernetesObject<V1ObjectMeta>> callback)
+    {
+        return new TestResourceInformerRegistration();
+    }
+}
+
+internal sealed class TestResourceInformerRegistration : IResourceInformerRegistration
+{
+    public Task ReadyAsync(CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+    }
+}

@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using Humanizer;
 using k8s;
 using k8s.Models;
 
@@ -10,15 +11,20 @@ namespace KubeUI.Avalonia.Resources;
 public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     private bool _showNamespaces = true;
+    private string? _generatedName;
 
     public override bool IsNamespaced => _showNamespaces;
 
     public override bool IsCustomResource => true;
 
+    public override string Name => _generatedName ?? base.Name;
+
     private readonly List<IResourceListColumn> _columns = [];
 
     public void Generate(V1CustomResourceDefinition crd)
     {
+        _generatedName = crd.Spec?.Names?.Plural?.Humanize(LetterCasing.Title) ?? base.Name;
+
         // Add Name Column
         _columns.Add(NameColumn(SortDirection.Ascending));
 

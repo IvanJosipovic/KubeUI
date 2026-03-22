@@ -557,6 +557,13 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
                         if (builtConfig != null)
                         {
                             builtConfigs.Add(builtConfig);
+                            continue;
+                        }
+
+                        var unresolvedKind = TryResolveCustomResourceKind(change.Crd);
+                        if (unresolvedKind != null)
+                        {
+                            removedKinds.Add(unresolvedKind.Value);
                         }
                     }
                     catch (Exception ex) when (ex is not OperationCanceledException)
@@ -641,7 +648,22 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         }
 
         var resourceType = Runtime.ModelCache.GetResourceType(crd.Spec.Group, version.Name, crd.Spec.Names.Kind);
-        return resourceType == null ? null : GroupApiVersionKind.From(resourceType);
+        if (resourceType != null)
+        {
+            return GroupApiVersionKind.From(resourceType);
+        }
+
+        foreach (var resourceKind in _resourceConfigs.Keys)
+        {
+            if (string.Equals(resourceKind.Group, crd.Spec.Group, StringComparison.Ordinal)
+                && string.Equals(resourceKind.ApiVersion, version.Name, StringComparison.Ordinal)
+                && string.Equals(resourceKind.Kind, crd.Spec.Names.Kind, StringComparison.Ordinal))
+            {
+                return resourceKind;
+            }
+        }
+
+        return null;
     }
 
     private void NotifyResourcePermissionsChanged()

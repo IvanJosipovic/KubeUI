@@ -46,6 +46,46 @@ public class NavigationViewModelTests : AvaloniaTestBase
         return vm;
     }
 
+    private static async Task<T?> WaitForValueAsync<T>(Func<T?> getValue, int timeoutMs = 3000) where T : class
+    {
+        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+
+        while (DateTime.UtcNow < deadline)
+        {
+            Dispatcher.UIThread.RunJobs();
+
+            var value = getValue();
+            if (value != null)
+            {
+                return value;
+            }
+
+            await Task.Delay(25);
+        }
+
+        Dispatcher.UIThread.RunJobs();
+        return getValue();
+    }
+
+    private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs = 3000)
+    {
+        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+
+        while (DateTime.UtcNow < deadline)
+        {
+            Dispatcher.UIThread.RunJobs();
+            if (predicate())
+            {
+                return;
+            }
+
+            await Task.Delay(25);
+        }
+
+        Dispatcher.UIThread.RunJobs();
+        predicate().ShouldBeTrue();
+    }
+
     [AvaloniaFact]
     public async Task resource_navigation_items_populate_only_after_connect_starts()
     {
@@ -139,14 +179,17 @@ public class NavigationViewModelTests : AvaloniaTestBase
         Dispatcher.UIThread.RunJobs();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-        var rebuilds = 0;
-        clusterNode.NavigationItems.CollectionChanged += (_, _) => rebuilds++;
+        var originalRoot = clusterNode.NavigationItems.Single(x => x.Name == "Custom Resource Definitions");
+        var subtreeChanges = 0;
+        originalRoot.NavigationItems.CollectionChanged += (_, _) => subtreeChanges++;
 
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha Resources"));
         await Task.Delay(250);
         Dispatcher.UIThread.RunJobs();
 
-        rebuilds.ShouldBeGreaterThan(0);
+        var updatedRoot = clusterNode.NavigationItems.Single(x => x.Name == "Custom Resource Definitions");
+        ReferenceEquals(originalRoot, updatedRoot).ShouldBeTrue();
+        subtreeChanges.ShouldBeGreaterThan(0);
     }
 
     [AvaloniaFact]
@@ -453,20 +496,226 @@ public class NavigationViewModelTests : AvaloniaTestBase
             }
         });
 
-        await Task.Delay(500);
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        var testsLink = await WaitForValueAsync(
+            () => clusterNode.NavigationItems
+                .OfType<NavigationItem>()
+                .Where(x => x.Name == "Custom Resource Definitions")
+                .SelectMany(x => x.NavigationItems.OfType<NavigationItem>())
+                .Where(x => x.Name == "kubeui.com")
+                .SelectMany(x => x.NavigationItems.OfType<ResourceNavigationLink>())
+                .SingleOrDefault(x => x.Name == "Tests"),
+            timeoutMs: 10000);
+
+        testsLink.ShouldNotBeNull();
+        testsLink.ControlType
+            .ShouldNotBe(typeof(V1CustomResourceDefinition));
+    }
+
+    [AvaloniaFact]
+    public async Task custom_resource_definition_update_updates_existing_navigation_entry_without_replacing_group()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+
+        var workspace = CreateWorkspace(runtime);
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
         Dispatcher.UIThread.RunJobs();
 
+        await runtime.AddOrUpdateResource(NavigationTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "Tests", "someString"));
+
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-        var crdRoot = clusterNode.NavigationItems.Single(x => x.Name == "Custom Resource Definitions");
-        var rootGroup = crdRoot.NavigationItems
+        var crdRoot = await WaitForValueAsync(
+            () => clusterNode.NavigationItems.SingleOrDefault(x => x.Name == "Custom Resource Definitions"),
+            timeoutMs: 10000);
+        crdRoot.ShouldNotBeNull();
+
+        var rootGroup = await WaitForValueAsync(
+            () => crdRoot.NavigationItems.OfType<NavigationItem>().SingleOrDefault(x => x.Name == "kubeui.com"),
+            timeoutMs: 10000);
+        rootGroup.ShouldNotBeNull();
+        var originalRootGroup = rootGroup;
+
+        var originalLink = await WaitForValueAsync(
+            () => rootGroup.NavigationItems.OfType<ResourceNavigationLink>().SingleOrDefault(x => x.Name == "Tests"),
+            timeoutMs: 10000);
+        originalLink.ShouldNotBeNull();
+
+        await runtime.AddOrUpdateResource(NavigationTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "Renamed Tests", "otherString"));
+
+        var updatedRootGroup = await WaitForValueAsync(
+            () => crdRoot.NavigationItems.OfType<NavigationItem>().SingleOrDefault(x => x.Name == "kubeui.com"),
+            timeoutMs: 10000);
+        updatedRootGroup.ShouldNotBeNull();
+        ReferenceEquals(originalRootGroup, updatedRootGroup).ShouldBeTrue();
+
+        var updatedLink = await WaitForValueAsync(
+            () => updatedRootGroup.NavigationItems.OfType<ResourceNavigationLink>().SingleOrDefault(x => x.Name == "Renamed Tests"),
+            timeoutMs: 10000);
+        updatedLink.ShouldNotBeNull();
+        ReferenceEquals(originalLink, updatedLink).ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task custom_resource_definition_delete_removes_navigation_entry_without_rebuilding_remaining_groups()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+
+        var workspace = CreateWorkspace(runtime);
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var crdA = NavigationTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "Tests", "someString");
+        var crdB = NavigationTestCustomResourceDefinitionFactory.Create("others.kubeui.com", "Others", "otherString");
+
+        await runtime.AddOrUpdateResource(crdA);
+        await runtime.AddOrUpdateResource(crdB);
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        var crdRoot = await WaitForValueAsync(
+            () => clusterNode.NavigationItems.SingleOrDefault(x => x.Name == "Custom Resource Definitions"),
+            timeoutMs: 10000);
+        crdRoot.ShouldNotBeNull();
+
+        var survivingGroup = await WaitForValueAsync(
+            () => crdRoot.NavigationItems.OfType<NavigationItem>().SingleOrDefault(x => x.Name == "kubeui.com"),
+            timeoutMs: 10000);
+        survivingGroup.ShouldNotBeNull();
+        var originalSurvivingGroup = survivingGroup;
+
+        await runtime.DeleteResource(crdA);
+        await WaitForValueAsync(
+            () => survivingGroup.NavigationItems.OfType<ResourceNavigationLink>().SingleOrDefault(x => x.Name == "Others"),
+            timeoutMs: 10000);
+
+        crdRoot.NavigationItems
+            .OfType<NavigationItem>()
+            .SelectMany(x => x.NavigationItems.OfType<ResourceNavigationLink>())
+            .Any(x => x.Name == "Tests")
+            .ShouldBeFalse();
+
+        var updatedSurvivingGroup = crdRoot.NavigationItems
             .OfType<NavigationItem>()
             .Single(x => x.Name == "kubeui.com");
+        ReferenceEquals(originalSurvivingGroup, updatedSurvivingGroup).ShouldBeTrue();
+    }
 
-        rootGroup.NavigationItems
+    [AvaloniaFact]
+    public async Task custom_resource_definition_delete_prunes_empty_group_branch_without_replacing_root()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+
+        var workspace = CreateWorkspace(runtime);
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var crd = NavigationTestCustomResourceDefinitionFactory.Create(
+            name: "widgets.alpha.kubeui.com",
+            plural: "Widgets",
+            schemaProperty: "someString",
+            group: "alpha.kubeui.com");
+
+        await runtime.AddOrUpdateResource(crd);
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        var crdRoot = await WaitForValueAsync(
+            () => clusterNode.NavigationItems.SingleOrDefault(x => x.Name == "Custom Resource Definitions"),
+            timeoutMs: 10000);
+        crdRoot.ShouldNotBeNull();
+        var originalRoot = crdRoot;
+
+        var groupBranch = await WaitForValueAsync(
+            () => crdRoot.NavigationItems.OfType<NavigationItem>().SingleOrDefault(x => x.Name == "kubeui.com"),
+            timeoutMs: 10000);
+        groupBranch.ShouldNotBeNull();
+
+        await runtime.DeleteResource(crd);
+
+        await WaitForAsync(
+            () => !crdRoot.NavigationItems
+                .OfType<NavigationItem>()
+                .Any(x => x.Name == "kubeui.com"),
+            timeoutMs: 10000);
+
+        var updatedRoot = clusterNode.NavigationItems.Single(x => x.Name == "Custom Resource Definitions");
+        ReferenceEquals(originalRoot, updatedRoot).ShouldBeTrue();
+        updatedRoot.NavigationItems
             .OfType<ResourceNavigationLink>()
-            .Single(x => x.Name == "Tests")
-            .ControlType
-            .ShouldNotBe(typeof(V1CustomResourceDefinition));
+            .Single(x => x.ControlType == typeof(V1CustomResourceDefinition));
+        updatedRoot.NavigationItems
+            .Where(x => x is not ResourceNavigationLink)
+            .Any()
+            .ShouldBeFalse();
+    }
+}
+
+internal static class NavigationTestCustomResourceDefinitionFactory
+{
+    public static V1CustomResourceDefinition Create(string name, string plural, string schemaProperty, string group = "kubeui.com")
+    {
+        return new V1CustomResourceDefinition
+        {
+            Metadata = new()
+            {
+                Name = name
+            },
+            Spec = new()
+            {
+                Group = group,
+                Scope = "Namespaced",
+                Names = new()
+                {
+                    Plural = plural.ToLowerInvariant().Replace(' ', '-'),
+                    Singular = "test",
+                    Kind = "Test",
+                    ListKind = "TestList"
+                },
+                Versions =
+                [
+                    new()
+                    {
+                        Name = "v1beta1",
+                        Served = true,
+                        Storage = true,
+                        Schema = new()
+                        {
+                            OpenAPIV3Schema = new()
+                            {
+                                Type = "object",
+                                Properties = new Dictionary<string, V1JSONSchemaProps>
+                                {
+                                    ["apiVersion"] = new() { Type = "string" },
+                                    ["kind"] = new() { Type = "string" },
+                                    ["metadata"] = new() { Type = "object" },
+                                    ["spec"] = new()
+                                    {
+                                        Type = "object",
+                                        Properties = new Dictionary<string, V1JSONSchemaProps>
+                                        {
+                                            [schemaProperty] = new() { Type = "string" }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
+            }
+        };
     }
 }
 

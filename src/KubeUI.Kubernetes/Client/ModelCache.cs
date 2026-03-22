@@ -8,22 +8,57 @@ namespace KubeUI.Kubernetes;
 
 public sealed class ModelCache
 {
+    private readonly Lock _gate = new();
+
     public ConcurrentDictionary<Assembly, XmlDocument> Cache { get; } = new();
 
     public ConcurrentDictionary<string, Type> TypeCache { get; } = new();
 
     public void AddToCache(Assembly assembly, XmlDocument xmlDocument)
     {
-        if (Cache.Keys.Any(x => x.FullName == assembly.FullName))
+        lock (_gate)
         {
-            return;
+            if (Cache.Keys.Any(x => x.FullName == assembly.FullName))
+            {
+                return;
+            }
+
+            AddAssemblyUnsafe(assembly, xmlDocument);
         }
+    }
 
-        Cache[assembly] = xmlDocument;
+    public (Type? previousType, Type? currentType) ReplaceCustomResourceDefinition(V1CustomResourceDefinition crd, Assembly assembly, XmlDocument xmlDocument)
+    {
+        var key = GetCustomResourceDefinitionTypeKey(crd);
 
-        foreach (var entry in GetTypes(assembly))
+        lock (_gate)
         {
-            TypeCache[entry.Key] = entry.Value;
+            TypeCache.TryGetValue(key, out var previousType);
+            if (previousType != null)
+            {
+                RemoveAssemblyUnsafe(previousType.Assembly);
+            }
+
+            RemoveAssembliesWithSameIdentityUnsafe(assembly);
+            AddAssemblyUnsafe(assembly, xmlDocument);
+            TypeCache.TryGetValue(key, out var currentType);
+            return (previousType, currentType);
+        }
+    }
+
+    public Type? RemoveCustomResourceDefinition(V1CustomResourceDefinition crd)
+    {
+        var key = GetCustomResourceDefinitionTypeKey(crd);
+
+        lock (_gate)
+        {
+            if (!TypeCache.TryGetValue(key, out var existingType))
+            {
+                return null;
+            }
+
+            RemoveAssemblyUnsafe(existingType.Assembly);
+            return existingType;
         }
     }
 
@@ -63,8 +98,50 @@ public sealed class ModelCache
 
     public bool CheckIfCRDExists(V1CustomResourceDefinition crd)
     {
+        return TypeCache.ContainsKey(GetCustomResourceDefinitionTypeKey(crd));
+    }
+
+    private void AddAssemblyUnsafe(Assembly assembly, XmlDocument xmlDocument)
+    {
+        Cache[assembly] = xmlDocument;
+
+        foreach (var entry in GetTypes(assembly))
+        {
+            TypeCache[entry.Key] = entry.Value;
+        }
+    }
+
+    private void RemoveAssembliesWithSameIdentityUnsafe(Assembly assembly)
+    {
+        var matches = Cache.Keys
+            .Where(x => string.Equals(x.FullName, assembly.FullName, StringComparison.Ordinal))
+            .ToList();
+
+        for (var i = 0; i < matches.Count; i++)
+        {
+            RemoveAssemblyUnsafe(matches[i]);
+        }
+    }
+
+    private void RemoveAssemblyUnsafe(Assembly assembly)
+    {
+        Cache.TryRemove(assembly, out _);
+
+        var keysToRemove = TypeCache
+            .Where(x => x.Value.Assembly == assembly)
+            .Select(x => x.Key)
+            .ToList();
+
+        for (var i = 0; i < keysToRemove.Count; i++)
+        {
+            TypeCache.TryRemove(keysToRemove[i], out _);
+        }
+    }
+
+    private static string GetCustomResourceDefinitionTypeKey(V1CustomResourceDefinition crd)
+    {
         var version = crd.Spec.Versions.First(x => x.Served && x.Storage).Name;
-        return TypeCache.ContainsKey($"{crd.Spec.Group}/{version}/{crd.Spec.Names.Kind}");
+        return $"{crd.Spec.Group}/{version}/{crd.Spec.Names.Kind}";
     }
 }
 
