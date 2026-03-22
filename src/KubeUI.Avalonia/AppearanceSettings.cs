@@ -19,5 +19,5 @@ public sealed partial class AppearanceSettings : ObservableObject
     public partial decimal ConsoleFontSize { get; set; } = 12;
 
     [ObservableProperty]
-    public partial decimal ListRowHeight { get; set; } = 30;
+    public partial decimal ListRowHeight { get; set; } = 22;
 }

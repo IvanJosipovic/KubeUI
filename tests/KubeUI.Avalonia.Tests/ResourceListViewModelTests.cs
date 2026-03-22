@@ -650,7 +650,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         await AddOrUpdateAsync(cluster, nsB);
         await AddOrUpdateAsync(cluster, nsC);
 
-        var labelsColumn = vm.ColumnDefinitions.First(x => Equals(x.ColumnKey, "labels"));
+        var labelsColumn = vm.ColumnDefinitions.First(x => Equals(x.ColumnKey, "name"));
 
         vm.SortingModel.Clear();
 
@@ -669,7 +669,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         vm.View.ElementAt(1).ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
         vm.View.ElementAt(2).ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
         vm.SortingModel.Descriptors.Count.ShouldBe(1);
-        ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("labels");
+        ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("name");
 
         factory.SetActiveDockable(otherDockable);
         factory.SetFocusedDockable(documents, otherDockable);

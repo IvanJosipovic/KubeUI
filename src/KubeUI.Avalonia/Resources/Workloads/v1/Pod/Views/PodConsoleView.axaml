@@ -4,8 +4,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:assets="using:KubeUI.Avalonia.Assets"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:edit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
     xmlns:ic="using:FluentIcons.Avalonia"
+    xmlns:term="clr-namespace:AvaloniaTerminal;assembly=AvaloniaTerminal"
     xmlns:vm="using:KubeUI.Avalonia.ViewModels"
     d:DesignHeight="400"
     d:DesignWidth="800"
@@ -28,43 +28,12 @@
             </Label>
         </StackPanel>
 
-        <edit:TextEditor x:Name="TextEditorControl" Grid.Row="1"
-            Background="Black"
-            Document="{Binding Console, Mode=OneWay}"
-            FontFamily="{Binding FontFamily}"
-            FontSize="{Binding SettingsService.Appearance.FontSize}"
-            HorizontalScrollBarVisibility="Disabled"
-            IsReadOnly="True"
-            ShowLineNumbers="False"
-            VerticalScrollBarVisibility="Disabled">
-            <edit:TextEditor.Options>
-                <edit:TextEditorOptions
-                    AllowScrollBelowDocument="false"
-                    EnableEmailHyperlinks="False"
-                    EnableHyperlinks="false"
-                    ShowBoxForControlCharacters="False" />
-            </edit:TextEditor.Options>
-            <edit:TextEditor.ContextMenu>
-                <ContextMenu>
-                    <MenuItem Click="CopyMenuItem_Click" Header="{x:Static assets:Resources.Action_Copy}">
-                        <MenuItem.Icon>
-                            <ic:FluentIcon Icon="Copy" />
-                        </MenuItem.Icon>
-                    </MenuItem>
-                    <MenuItem
-                        Command="{Binding PasteCommand}"
-                        Header="{x:Static assets:Resources.Action_Paste}"
-                        HotKey="Ctrl+V">
-                        <MenuItem.Icon>
-                            <ic:FluentIcon Icon="ClipboardPaste" />
-                        </MenuItem.Icon>
-                    </MenuItem>
-                </ContextMenu>
-            </edit:TextEditor.ContextMenu>
-        </edit:TextEditor>
+        <!--  Terminal  -->
+        <term:TerminalControl x:Name="Terminal" Grid.Row="1"
+            Model="{Binding Model}"
+            RightClickAction="CopyOrPaste" />
     </Grid>
 </UserControl>
-
 
 
 
