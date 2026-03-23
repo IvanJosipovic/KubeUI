@@ -88,13 +88,47 @@ public class NavigationViewModelTests : AvaloniaTestBase
         predicate().ShouldBeTrue();
     }
 
+    private static ResourceNavigationLink? FindResourceLink(ClusterNavigationNode root, string name)
+    {
+        return FindResourceLink(root.NavigationItems, name);
+    }
+
+    private static ResourceNavigationLink? FindResourceLink(IEnumerable<NavigationItem> items, string name)
+    {
+        foreach (var child in items)
+        {
+            if (child is ResourceNavigationLink resourceLink && string.Equals(resourceLink.Name, name, StringComparison.Ordinal))
+            {
+                return resourceLink;
+            }
+
+            var nested = FindResourceLink(child.NavigationItems, name);
+            if (nested != null)
+            {
+                return nested;
+            }
+        }
+
+        return null;
+    }
+
     [AvaloniaFact]
-    public async Task resource_navigation_items_populate_only_after_connect_starts()
+    public async Task resource_navigation_items_populate_only_after_connect_completes()
     {
         var runtime = new TestCluster
         {
             Connected = false,
             Status = ClusterStatus.None,
+        };
+
+        var releaseConnect = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        runtime.ConnectBehavior = async () =>
+        {
+            runtime.Status = ClusterStatus.Connecting;
+            await releaseConnect.Task;
+            runtime.Connected = true;
+            runtime.Status = ClusterStatus.Connected;
         };
 
         var workspace = CreateWorkspace(runtime);
@@ -111,7 +145,13 @@ public class NavigationViewModelTests : AvaloniaTestBase
         await Task.Delay(10);
         Dispatcher.UIThread.RunJobs();
 
-        clusterNode.NavigationItems.Count.ShouldBeGreaterThan(0);
+        clusterNode.NavigationItems.Count.ShouldBe(0);
+        clusterNode.IsExpanded.ShouldBeFalse();
+
+        releaseConnect.TrySetResult(null);
+
+        await WaitForAsync(() => clusterNode.NavigationItems.Count > 0);
+        clusterNode.IsExpanded.ShouldBeTrue();
     }
 
     [AvaloniaFact]
@@ -163,6 +203,40 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         clusterNode.Cluster.Connected.ShouldBeTrue();
         clusterNode.IsExpanded.ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task cluster_node_expands_when_status_becomes_connected_before_permission_refresh_finishes()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = false,
+            Status = ClusterStatus.None,
+        };
+
+        var permissionRefreshRelease = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var workspace = CreateWorkspace(runtime);
+        workspace.AddResourceConfigForTest(new SlowPermissionResourceConfig(typeof(TestPermissionResourceGamma), "Gamma Permission Resource", permissionRefreshRelease.Task));
+
+        runtime.ConnectBehavior = () =>
+        {
+            runtime.Status = ClusterStatus.Connected;
+            runtime.Connected = true;
+            return Task.CompletedTask;
+        };
+
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+
+        vm.TreeView_SelectionChanged(clusterNode);
+
+        await WaitForAsync(() => clusterNode.IsExpanded);
+        clusterNode.NavigationItems.Count.ShouldBeGreaterThan(0);
+
+        permissionRefreshRelease.TrySetResult(null);
     }
 
     [AvaloniaFact]
@@ -233,6 +307,47 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var updatedRoot = clusterNode.NavigationItems.Single(x => x.Name == "Custom Resource Definitions");
         ReferenceEquals(originalRoot, updatedRoot).ShouldBeTrue();
         subtreeChanges.ShouldBeGreaterThan(0);
+    }
+
+    [AvaloniaFact]
+    public async Task resource_navigation_items_appear_incrementally_as_permissions_complete()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+
+        var workspace = CreateWorkspace(runtime);
+
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        var alphaConfig = new FakeResourceConfig(typeof(TestPermissionResourceAlpha), "Alpha Permission Resource");
+        var betaConfig = new FakeResourceConfig(typeof(TestPermissionResourceBeta), "Beta Permission Resource");
+
+        workspace.AddResourceConfigForTest(alphaConfig);
+
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(50);
+            workspace.AddResourceConfigForTest(betaConfig);
+        });
+
+        var alphaLink = await WaitForValueAsync(
+            () => FindResourceLink(clusterNode, alphaConfig.Name),
+            timeoutMs: 150);
+
+        alphaLink.ShouldNotBeNull();
+        FindResourceLink(clusterNode, betaConfig.Name).ShouldBeNull();
+
+        var betaLink = await WaitForValueAsync(
+            () => FindResourceLink(clusterNode, betaConfig.Name),
+            timeoutMs: 1000);
+
+        betaLink.ShouldNotBeNull();
     }
 
     [AvaloniaFact]
@@ -809,6 +924,99 @@ internal class FakeCustomResourceConfig : IResourceConfig
     public IStyle ListStyle() => null;
     public Task UpdatePermissions() => Task.CompletedTask;
     public Type Type { get; }
+
+    public IRelayCommand NewResourceCommand => throw new NotImplementedException();
+
+    public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
+
+    public void Initialize(ClusterWorkspaceViewModel cluster) { }
+}
+
+internal class FakeResourceConfig : IResourceConfig
+{
+    public FakeResourceConfig(Type resourceType, string name, bool canListAndWatch = true)
+    {
+        Type = resourceType;
+        Name = name;
+        CanListAndWatch = canListAndWatch;
+    }
+
+    public bool IsNamespaced => true;
+    public bool CanListAndWatch { get; set; }
+    public bool ShowNewResource => true;
+    public bool IsCustomResource => false;
+    public GroupApiVersionKind Kind => GroupApiVersionKind.From(Type);
+    public IList<IResourceListColumn> Columns() => Array.Empty<IResourceListColumn>();
+    public IEnumerable<MenuItemViewModel> GetDefaultMenuItems(IEnumerable? selectedItems) => Array.Empty<MenuItemViewModel>();
+    public IEnumerable<MenuItemViewModel> GetCustomMenuItems(IEnumerable? selectedItems) => Array.Empty<MenuItemViewModel>();
+    public int Order { get; set; }
+    public string Name { get; }
+    public string? Category => null;
+    public IStyle ListStyle() => null;
+    public Task UpdatePermissions() => Task.CompletedTask;
+    public Type Type { get; }
+
+    public IRelayCommand NewResourceCommand => throw new NotImplementedException();
+
+    public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
+
+    public void Initialize(ClusterWorkspaceViewModel cluster) { }
+}
+
+[KubernetesEntity(Group = "permissions.alpha.kubeui.com", ApiVersion = "v1", Kind = "TestPermissionResourceAlpha")]
+internal class TestPermissionResourceAlpha : IKubernetesObject<V1ObjectMeta>
+{
+    public string ApiVersion { get; set; } = "permissions.alpha.kubeui.com/v1";
+    public string Kind { get; set; } = "TestPermissionResourceAlpha";
+    public V1ObjectMeta Metadata { get; set; } = new();
+}
+
+[KubernetesEntity(Group = "permissions.beta.kubeui.com", ApiVersion = "v1", Kind = "TestPermissionResourceBeta")]
+internal class TestPermissionResourceBeta : IKubernetesObject<V1ObjectMeta>
+{
+    public string ApiVersion { get; set; } = "permissions.beta.kubeui.com/v1";
+    public string Kind { get; set; } = "TestPermissionResourceBeta";
+    public V1ObjectMeta Metadata { get; set; } = new();
+}
+
+[KubernetesEntity(Group = "permissions.gamma.kubeui.com", ApiVersion = "v1", Kind = "TestPermissionResourceGamma")]
+internal class TestPermissionResourceGamma : IKubernetesObject<V1ObjectMeta>
+{
+    public string ApiVersion { get; set; } = "permissions.gamma.kubeui.com/v1";
+    public string Kind { get; set; } = "TestPermissionResourceGamma";
+    public V1ObjectMeta Metadata { get; set; } = new();
+}
+
+internal sealed class SlowPermissionResourceConfig : IResourceConfig
+{
+    private readonly Task _permissionRefreshTask;
+
+    public SlowPermissionResourceConfig(Type resourceType, string name, Task permissionRefreshTask)
+    {
+        Type = resourceType;
+        Name = name;
+        _permissionRefreshTask = permissionRefreshTask;
+    }
+
+    public bool IsNamespaced => true;
+    public bool CanListAndWatch { get; set; }
+    public bool ShowNewResource => true;
+    public bool IsCustomResource => false;
+    public GroupApiVersionKind Kind => GroupApiVersionKind.From(Type);
+    public IList<IResourceListColumn> Columns() => Array.Empty<IResourceListColumn>();
+    public IEnumerable<MenuItemViewModel> GetDefaultMenuItems(IEnumerable? selectedItems) => Array.Empty<MenuItemViewModel>();
+    public IEnumerable<MenuItemViewModel> GetCustomMenuItems(IEnumerable? selectedItems) => Array.Empty<MenuItemViewModel>();
+    public int Order { get; set; }
+    public string Name { get; }
+    public string? Category => null;
+    public IStyle ListStyle() => null;
+    public Type Type { get; }
+
+    public async Task UpdatePermissions()
+    {
+        await _permissionRefreshTask;
+        CanListAndWatch = true;
+    }
 
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
 

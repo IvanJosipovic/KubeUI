@@ -430,19 +430,36 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     private async Task RefreshResourceConfigPermissionsAsync()
     {
-        foreach (var resourceConfig in _resourceConfigs.Values)
+        var updateTasks = _resourceConfigs.Values
+            .Select(RefreshResourceConfigPermissionAsync)
+            .ToArray();
+
+        if (updateTasks.Length == 0)
         {
-            try
-            {
-                await resourceConfig.UpdatePermissions();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug(ex, "Unable to refresh permissions for {Kind}", resourceConfig.Kind);
-            }
+            NotifyResourcePermissionsChanged();
+            return;
         }
 
-        NotifyResourcePermissionsChanged();
+        await Task.WhenAll(updateTasks).ConfigureAwait(false);
+    }
+
+    private async Task RefreshResourceConfigPermissionAsync(IResourceConfig resourceConfig)
+    {
+        var previousCanListAndWatch = resourceConfig.CanListAndWatch;
+
+        try
+        {
+            await resourceConfig.UpdatePermissions().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Unable to refresh permissions for {Kind}", resourceConfig.Kind);
+        }
+
+        if (previousCanListAndWatch != resourceConfig.CanListAndWatch)
+        {
+            NotifyResourcePermissionsChanged();
+        }
     }
 
     private void SubscribeRuntime()

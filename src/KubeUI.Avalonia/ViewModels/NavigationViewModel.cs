@@ -220,13 +220,21 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
         if (e.PropertyName == nameof(ClusterWorkspaceViewModel.Status))
         {
-            Dispatcher.UIThread.Post(() => RebuildClusterNavigation(cluster));
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (cluster.Status == ClusterStatus.Connected)
+                {
+                    cluster.IsExpanded = true;
+                }
+
+                RebuildClusterNavigation(cluster);
+            });
         }
     }
 
     private void OnClusterResourcePermissionsChanged(ClusterWorkspaceViewModel cluster)
     {
-        ScheduleClusterNavigationUpdate(cluster, rebuildCustomResourceDefinitionsOnly: false, ResourceNavigationRebuildDelay);
+        Dispatcher.UIThread.Post(() => RebuildClusterNavigation(cluster));
     }
 
     private void OnClusterCustomResourceDefinitionsChanged(ClusterWorkspaceViewModel cluster, IReadOnlyList<PendingCustomResourceConfig> addedConfigs, IReadOnlyList<GroupApiVersionKind> removedKinds)
@@ -648,7 +656,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private static bool ShouldPopulateClusterNavigation(ClusterWorkspaceViewModel cluster)
     {
-        return cluster.Status is ClusterStatus.Connecting or ClusterStatus.Connected;
+        return cluster.Status == ClusterStatus.Connected;
     }
 
     private static IObservable<int> TryGetResourceCount(ClusterWorkspaceViewModel cluster, Type resourceType)
