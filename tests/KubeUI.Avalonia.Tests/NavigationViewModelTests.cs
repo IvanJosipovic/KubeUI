@@ -2,9 +2,11 @@ using Avalonia;
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Kubernetes;
@@ -161,6 +163,47 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         clusterNode.Cluster.Connected.ShouldBeTrue();
         clusterNode.IsExpanded.ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task selecting_cluster_node_does_not_block_on_slow_synchronous_connect_startup()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = false,
+            Status = ClusterStatus.None,
+        };
+
+        var releaseConnect = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        runtime.ConnectBehavior = async () =>
+        {
+            Thread.Sleep(300);
+            runtime.Status = ClusterStatus.Connecting;
+            await releaseConnect.Task;
+            runtime.Connected = true;
+            runtime.Status = ClusterStatus.Connected;
+        };
+
+        var workspace = CreateWorkspace(runtime);
+
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+
+        var stopwatch = Stopwatch.StartNew();
+        vm.TreeView_SelectionChanged(clusterNode);
+        stopwatch.Stop();
+
+        stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromMilliseconds(150));
+        clusterNode.IsExpanded.ShouldBeFalse();
+
+        releaseConnect.TrySetResult(null);
+
+        await WaitForAsync(() => clusterNode.IsExpanded);
+        clusterNode.Cluster.Connected.ShouldBeTrue();
     }
 
     [AvaloniaFact]

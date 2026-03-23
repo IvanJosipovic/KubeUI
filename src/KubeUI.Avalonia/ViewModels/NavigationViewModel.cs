@@ -87,7 +87,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     {
         if (item is ClusterNavigationNode clusterNode)
         {
-            await HandleClusterSelectionAsync(clusterNode);
+            HandleClusterSelection(clusterNode);
         }
         else if (item is ResourceNavigationLink resourceNavLink)
         {
@@ -104,7 +104,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private async Task HandleClusterSelectionAsync(ClusterNavigationNode clusterNode)
+    private void HandleClusterSelection(ClusterNavigationNode clusterNode)
     {
         var cluster = clusterNode.Cluster;
 
@@ -115,19 +115,30 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        try
+        if (cluster.Status == ClusterStatus.Connecting)
         {
-            await cluster.Connect();
-        }
-        catch (Exception ex)
-        {
-            Utilities.HandleException(_logger, _notificationManager, ex, "Error connecting to cluster", sendNotification: true);
-            RebuildClusterNavigation(clusterNode);
             return;
         }
 
-        clusterNode.IsExpanded = true;
-        RebuildClusterNavigation(clusterNode);
+        _ = ConnectClusterAsync(clusterNode);
+    }
+
+    private async Task ConnectClusterAsync(ClusterNavigationNode clusterNode)
+    {
+        var cluster = clusterNode.Cluster;
+
+        try
+        {
+            await Task.Run(cluster.Connect).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                Utilities.HandleException(_logger, _notificationManager, ex, "Error connecting to cluster", sendNotification: true);
+                RebuildClusterNavigation(clusterNode);
+            });
+        }
     }
 
     private void OnClusterCatalogCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
