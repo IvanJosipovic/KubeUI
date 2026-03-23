@@ -351,6 +351,38 @@ public class NavigationViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task permission_driven_resource_add_keeps_existing_navigation_nodes()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+
+        var workspace = CreateWorkspace(runtime);
+
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        var originalNamespaceLink = clusterNode.NavigationItems
+            .OfType<ResourceNavigationLink>()
+            .Single(x => x.ControlType == typeof(V1Namespace));
+
+        workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(TestPermissionResourceAlpha), "Alpha Permission Resource"));
+        await WaitForAsync(
+            () => FindResourceLink(clusterNode, "Alpha Permission Resource") != null,
+            timeoutMs: 1000);
+
+        var updatedNamespaceLink = clusterNode.NavigationItems
+            .OfType<ResourceNavigationLink>()
+            .Single(x => x.ControlType == typeof(V1Namespace));
+
+        ReferenceEquals(originalNamespaceLink, updatedNamespaceLink).ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
     public void port_forwarders_is_under_network_category_not_top_level()
     {
         var runtime = new TestCluster();
@@ -1024,4 +1056,3 @@ internal sealed class SlowPermissionResourceConfig : IResourceConfig
 
     public void Initialize(ClusterWorkspaceViewModel cluster) { }
 }
-

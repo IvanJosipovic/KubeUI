@@ -295,16 +295,8 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private void RebuildClusterNavigation(ClusterNavigationNode node)
     {
-        var expandedState = new Dictionary<string, bool>(StringComparer.Ordinal);
-        CaptureExpandedState(node.NavigationItems, expandedState);
-
-        node.NavigationItems.Clear();
-
-        foreach (var item in BuildNavigationItems(node.Cluster))
-        {
-            ApplyExpandedState(item, expandedState);
-            node.NavigationItems.Add(item);
-        }
+        var desiredItems = BuildNavigationItems(node.Cluster).ToList();
+        ReconcileNavigationItems(node.NavigationItems, desiredItems);
     }
 
     private IEnumerable<NavigationItem> BuildNavigationItems(ClusterWorkspaceViewModel cluster)
@@ -639,6 +631,77 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             expandedState[item.Id] = item.IsExpanded;
             CaptureExpandedState(item.NavigationItems, expandedState);
         }
+    }
+
+    private static void ReconcileNavigationItems(ObservableCollection<NavigationItem> currentItems, IReadOnlyList<NavigationItem> desiredItems)
+    {
+        var desiredById = desiredItems.ToDictionary(item => item.Id, StringComparer.Ordinal);
+
+        for (var i = currentItems.Count - 1; i >= 0; i--)
+        {
+            var current = currentItems[i];
+            if (!desiredById.ContainsKey(current.Id))
+            {
+                currentItems.RemoveAt(i);
+            }
+        }
+
+        foreach (var desired in desiredItems)
+        {
+            var current = FindNavigationItem(currentItems, desired.Id);
+            if (current == null)
+            {
+                currentItems.Add(desired);
+                continue;
+            }
+
+            if (!CanReuseNavigationItem(current, desired))
+            {
+                currentItems.Remove(current);
+                ApplyExpandedState(desired, CaptureExpandedState(current));
+                currentItems.Add(desired);
+                continue;
+            }
+
+            UpdateNavigationItem(current, desired);
+        }
+    }
+
+    private static Dictionary<string, bool> CaptureExpandedState(NavigationItem item)
+    {
+        var expandedState = new Dictionary<string, bool>(StringComparer.Ordinal);
+        expandedState[item.Id] = item.IsExpanded;
+        CaptureExpandedState(item.NavigationItems, expandedState);
+        return expandedState;
+    }
+
+    private static bool CanReuseNavigationItem(NavigationItem current, NavigationItem desired)
+    {
+        return current.GetType() == desired.GetType();
+    }
+
+    private static void UpdateNavigationItem(NavigationItem current, NavigationItem desired)
+    {
+        current.Id = desired.Id;
+        current.Name = desired.Name;
+        current.Order = desired.Order;
+        current.SvgIcon = desired.SvgIcon;
+        current.StyleIcon = desired.StyleIcon;
+        current.FluentIcon = desired.FluentIcon;
+
+        if (current is NavigationLink currentLink && desired is NavigationLink desiredLink)
+        {
+            currentLink.Cluster = desiredLink.Cluster;
+            currentLink.ControlType = desiredLink.ControlType;
+            currentLink.ViewModelKey = desiredLink.ViewModelKey;
+        }
+
+        if (current is ResourceNavigationLink currentResourceLink && desired is ResourceNavigationLink desiredResourceLink)
+        {
+            currentResourceLink.Count ??= desiredResourceLink.Count;
+        }
+
+        ReconcileNavigationItems(current.NavigationItems, desired.NavigationItems.ToList());
     }
 
     private static void ApplyExpandedState(NavigationItem item, IReadOnlyDictionary<string, bool> expandedState)
