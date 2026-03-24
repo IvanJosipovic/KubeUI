@@ -555,6 +555,73 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         containers[0].Header.ShouldBe("d-container");
     }
 
+    [AvaloniaFact(DisplayName = "Namespace filter is linked to cluster by default")]
+    public async Task namespace_filter_is_linked_to_cluster_by_default()
+    {
+        var cluster = await CreateClusterAsync();
+        cluster.SelectedNamespaces.Add(NamespaceResource("team-a"));
+
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        vm.IsNamespaceSelectionLinked.ShouldBeTrue();
+        ReferenceEquals(vm.SelectedNamespaces, cluster.SelectedNamespaces).ShouldBeTrue();
+
+        cluster.SelectedNamespaces.Add(NamespaceResource("team-b"));
+        Dispatcher.UIThread.RunJobs();
+
+        vm.SelectedNamespaces.Select(x => x.Name()).ShouldBe(["team-a", "team-b"]);
+        GetNamespaceFilterValues(vm).ShouldBe(["team-a", "team-b"]);
+    }
+
+    [AvaloniaFact(DisplayName = "Namespace filter can be decoupled from cluster selection")]
+    public async Task namespace_filter_can_be_decoupled_from_cluster_selection()
+    {
+        var cluster = await CreateClusterAsync();
+        cluster.SelectedNamespaces.Add(NamespaceResource("team-a"));
+
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        vm.IsNamespaceSelectionLinked = false;
+        Dispatcher.UIThread.RunJobs();
+
+        ReferenceEquals(vm.SelectedNamespaces, cluster.SelectedNamespaces).ShouldBeFalse();
+        vm.SelectedNamespaces.Select(x => x.Name()).ShouldBe(["team-a"]);
+
+        cluster.SelectedNamespaces.Add(NamespaceResource("team-b"));
+        Dispatcher.UIThread.RunJobs();
+
+        vm.SelectedNamespaces.Select(x => x.Name()).ShouldBe(["team-a"]);
+
+        vm.SelectedNamespaces.Add(NamespaceResource("team-c"));
+        Dispatcher.UIThread.RunJobs();
+
+        cluster.SelectedNamespaces.Select(x => x.Name()).ShouldBe(["team-a", "team-b"]);
+        GetNamespaceFilterValues(vm).ShouldBe(["team-a", "team-c"]);
+    }
+
+    [AvaloniaFact(DisplayName = "Namespace filter relinks back to cluster selection")]
+    public async Task namespace_filter_relinks_back_to_cluster_selection()
+    {
+        var cluster = await CreateClusterAsync();
+        cluster.SelectedNamespaces.Add(NamespaceResource("team-a"));
+
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+        vm.IsNamespaceSelectionLinked = false;
+        vm.SelectedNamespaces.Clear();
+        vm.SelectedNamespaces.Add(NamespaceResource("team-local"));
+        Dispatcher.UIThread.RunJobs();
+
+        vm.IsNamespaceSelectionLinked = true;
+        Dispatcher.UIThread.RunJobs();
+
+        ReferenceEquals(vm.SelectedNamespaces, cluster.SelectedNamespaces).ShouldBeTrue();
+        vm.SelectedNamespaces.Select(x => x.Name()).ShouldBe(["team-a"]);
+        GetNamespaceFilterValues(vm).ShouldBe(["team-a"]);
+    }
+
     [AvaloniaFact(DisplayName = "Pod-specific actions are hidden for multi-select")]
     public async Task pod_specific_actions_are_hidden_for_multi_select()
     {
@@ -945,6 +1012,13 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         value.ShouldNotBeNull();
         return value;
     }
+
+    private static IList<string> GetNamespaceFilterValues<T>(ResourceListViewModel<T> vm)
+        where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        vm.FilteringModel.Descriptors.Count.ShouldBe(1);
+        return vm.FilteringModel.Descriptors[0].Values.Cast<string>().ToList();
+    }
 }
 
 internal sealed class FakeDoubleTapResourceListViewModel : IResourceListViewModel
@@ -961,6 +1035,8 @@ internal sealed class FakeDoubleTapResourceListViewModel : IResourceListViewMode
     public int ViewInvocations { get; private set; }
 
     public ClusterWorkspaceViewModel Cluster { get; set; } = null!;
+    public ObservableCollection<V1Namespace> SelectedNamespaces { get; } = [];
+    public bool IsNamespaceSelectionLinked { get; set; } = true;
     public GroupApiVersionKind Kind => GroupApiVersionKind.From<V1Pod>();
     public int ItemCount => View.Count;
     public string SearchQuery { get; set; } = string.Empty;

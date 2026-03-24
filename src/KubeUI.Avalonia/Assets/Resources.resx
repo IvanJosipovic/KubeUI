@@ -256,6 +256,9 @@ Are you sure?</value>
   <data name="ResourceListView_NewResource" xml:space="preserve">
     <value>Create a new Resource</value>
   </data>
+  <data name="ResourceListView_NamespaceLink" xml:space="preserve">
+    <value>Linked namespace selection</value>
+  </data>
   <data name="PortForwarderListViewModel_Remove_Content" xml:space="preserve">
     <value>Remove the Port Forward for {0}/{1}:{2}?
 Are you sure?</value>

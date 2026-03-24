@@ -593,6 +593,15 @@ namespace KubeUI.Avalonia.Assets {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Linked namespace selection.
+        /// </summary>
+        public static string ResourceListView_NamespaceLink {
+            get {
+                return ResourceManager.GetString("ResourceListView_NamespaceLink", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Filter Namespace(s).
         /// </summary>
         public static string ResourceListView_SelectNamespace {

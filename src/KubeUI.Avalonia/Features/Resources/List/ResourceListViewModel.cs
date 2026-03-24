@@ -118,6 +118,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     [ObservableProperty]
     public partial int ItemCount { get; set; }
 
+    [ObservableProperty]
+    public partial bool IsNamespaceSelectionLinked { get; set; } = true;
+
     public ISelectionModel SelectionModel => _selectionModel;
 
     public Func<IList, object, int> ReferenceIndexResolver => ResolveReferenceIndex;
@@ -128,6 +131,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     private readonly Dictionary<string, IResourceListColumn> _resourceColumnsByKey = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, DataGridColumnDefinition> _columnDefinitionsByKey = new(StringComparer.OrdinalIgnoreCase);
     private IList<IResourceListColumn> _resourceColumns = [];
+    private readonly ObservableCollection<V1Namespace> _localSelectedNamespaces = [];
+
+    public ObservableCollection<V1Namespace> SelectedNamespaces
+        => IsNamespaceSelectionLinked && Cluster != null ? Cluster.SelectedNamespaces : _localSelectedNamespaces;
 
     public ResourceListViewModel()
     {
@@ -221,6 +228,24 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         SetNamespaceFilter();
     }
 
+    partial void OnIsNamespaceSelectionLinkedChanged(bool value)
+    {
+        if (Cluster == null || ResourceConfig == null || !ResourceConfig.IsNamespaced)
+        {
+            OnPropertyChanged(nameof(SelectedNamespaces));
+            return;
+        }
+
+        if (!value)
+        {
+            CopyNamespaces(Cluster.SelectedNamespaces, _localSelectedNamespaces);
+        }
+
+        SubscribeToSelectedNamespaces();
+        OnPropertyChanged(nameof(SelectedNamespaces));
+        SetNamespaceFilter();
+    }
+
     private void SetNamespaceFilter()
     {
         if (!Dispatcher.UIThread.CheckAccess())
@@ -239,10 +264,12 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             return;
         }
 
-        if (Cluster.SelectedNamespaces.Count > 0)
+        var selectedNamespaces = SelectedNamespaces;
+
+        if (selectedNamespaces.Count > 0)
         {
-            var values = new List<object>(Cluster.SelectedNamespaces.Count);
-            foreach (var selectedNamespace in Cluster.SelectedNamespaces)
+            var values = new List<object>(selectedNamespaces.Count);
+            foreach (var selectedNamespace in selectedNamespaces)
             {
                 values.Add(selectedNamespace.Name()!);
             }
@@ -285,11 +312,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     {
         _subscription?.Dispose();
         _countSubscription?.Dispose();
-
-        if (Cluster != null)
-        {
-            Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
-        }
+        UnsubscribeFromSelectedNamespaces();
 
         SortingModel.SortingChanged -= SortingModelOnSortingChanged;
         FilteringModel.FilteringChanged -= FilteringModelOnFilteringChanged;
@@ -332,8 +355,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     private void BindObjects()
     {
         Objects = Cluster.GetResourceSourceCache<T>();
-        Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
-        Cluster.SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
+        SubscribeToSelectedNamespaces();
 
         _subscription?.Dispose();
 
@@ -375,6 +397,32 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _countSubscription = ((IObservable<int>)countObs).Subscribe(System.Reactive.Observer.Create<int>(c => ItemCount = c));
 
         _view = view;
+    }
+
+    private void SubscribeToSelectedNamespaces()
+    {
+        UnsubscribeFromSelectedNamespaces();
+        SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
+    }
+
+    private void UnsubscribeFromSelectedNamespaces()
+    {
+        if (Cluster != null)
+        {
+            Cluster.SelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
+        }
+
+        _localSelectedNamespaces.CollectionChanged -= SelectedNamespaces_CollectionChanged;
+    }
+
+    private static void CopyNamespaces(IEnumerable<V1Namespace> source, ObservableCollection<V1Namespace> target)
+    {
+        target.Clear();
+
+        foreach (var item in source)
+        {
+            target.Add(item);
+        }
     }
 
     private void GenerateColumnDefinitions()

@@ -15,6 +15,8 @@ namespace KubeUI.Avalonia.ViewModels
     public interface IResourceListViewModel
     {
         ClusterWorkspaceViewModel Cluster { get; set; }
+        ObservableCollection<V1Namespace> SelectedNamespaces { get; }
+        bool IsNamespaceSelectionLinked { get; set; }
         GroupApiVersionKind Kind { get; }
         int ItemCount { get; }
         string SearchQuery { get; set; }
