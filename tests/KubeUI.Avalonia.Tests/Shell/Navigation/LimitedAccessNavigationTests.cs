@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Avalonia.ViewModels;
@@ -10,12 +11,9 @@ namespace KubeUI.Avalonia.Tests;
 
 public sealed class LimitedAccessNavigationTests : AvaloniaTestBase
 {
-    [Fact]
+    [AvaloniaFact]
     public async Task limited_access_with_namespace_fallback_shows_namespaced_resources_in_navigation()
     {
-        EnsureAppInitialized();
-        TestApp.ResetForTest();
-
         await using var harness = new MockClusterScenarioHarness();
         await harness.InitializeAsync();
 
@@ -44,14 +42,6 @@ public sealed class LimitedAccessNavigationTests : AvaloniaTestBase
         workspace.GetResourceConfig<k8s.Models.V1Deployment>().CanListAndWatch.ShouldBeTrue();
         FindResourceLink(clusterNode, "Pods").ShouldNotBeNull();
         FindResourceLink(clusterNode, "Deployments").ShouldNotBeNull();
-    }
-
-    private static void EnsureAppInitialized()
-    {
-        if (Application.Current == null)
-        {
-            TestAppBuilder.BuildAvaloniaApp().SetupWithoutStarting();
-        }
     }
 
     private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs)
