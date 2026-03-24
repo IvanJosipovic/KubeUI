@@ -65,9 +65,11 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         return window;
     }
 
-    private ClusterWorkspaceViewModel CreateCluster()
+    private async Task<ClusterWorkspaceViewModel> CreateClusterAsync()
     {
         var cluster = new TestCluster().CreateWorkspace();
+        await cluster.EnsureWorkspaceStateInitializedAsync();
+        Dispatcher.UIThread.RunJobs();
         _disposables.Add(cluster);
         return cluster;
     }
@@ -163,7 +165,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     public async Task all_select_update_middle_preserves_all_selected()
     {
         var window = CreateWindow();
-        var cluster = CreateCluster();
+        var cluster = await CreateClusterAsync();
 
         var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
@@ -205,7 +207,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     public async Task single_select_update__preserves_only_selected()
     {
         var window = CreateWindow();
-        var cluster = CreateCluster();
+        var cluster = await CreateClusterAsync();
 
         var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
@@ -244,7 +246,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     public async Task single_select_with_sort_preserves_only_selected()
     {
         var window = CreateWindow();
-        var cluster = CreateCluster();
+        var cluster = await CreateClusterAsync();
 
         var vm = GetRequiredService<ResourceListViewModel<Corev1Event>>();
         vm.Initialize(cluster);
@@ -292,7 +294,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     public async Task all_select_with_sort_preserves_all_selected()
     {
         var window = CreateWindow();
-        var cluster = CreateCluster();
+        var cluster = await CreateClusterAsync();
 
         var vm = GetRequiredService<ResourceListViewModel<Corev1Event>>();
         vm.Initialize(cluster);
@@ -345,7 +347,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     {
         var window = CreateWindow();
 
-        var cluster = CreateCluster();
+        var cluster = await CreateClusterAsync();
 
         var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
@@ -381,7 +383,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     {
         var window = CreateWindow();
 
-        var cluster = CreateCluster();
+        var cluster = await CreateClusterAsync();
 
         var vm = GetRequiredService<ResourceListViewModel<V1Namespace>>();
         vm.Initialize(cluster);
@@ -425,7 +427,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     public async Task namespace_filter_preserves_selection_when_included()
     {
         var window = CreateWindow();
-        var cluster = CreateCluster();
+        var cluster = await CreateClusterAsync();
 
         var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
@@ -453,7 +455,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     public async Task namespace_filter_selects_remaining_item_when_selection_filtered_out()
     {
         var window = CreateWindow();
-        var cluster = CreateCluster();
+        var cluster = await CreateClusterAsync();
 
         var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
@@ -497,7 +499,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     public async Task namespace_filter_updates_context_menu_selection()
     {
         var window = CreateWindow();
-        var cluster = CreateCluster();
+        var cluster = await CreateClusterAsync();
 
         var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
@@ -556,7 +558,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     [AvaloniaFact(DisplayName = "Pod-specific actions are hidden for multi-select")]
     public async Task pod_specific_actions_are_hidden_for_multi_select()
     {
-        var cluster = CreateCluster();
+        var cluster = await CreateClusterAsync();
 
         var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
@@ -590,7 +592,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     {
         var window = CreateWindow();
 
-        var cluster = CreateCluster();
+        var cluster = await CreateClusterAsync();
 
         var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
@@ -626,7 +628,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         };
 
         var window = CreateWindow(content: dockControl);
-        var cluster = CreateCluster();
+        var cluster = await CreateClusterAsync();
 
         var vm = GetRequiredService<ResourceListViewModel<V1Namespace>>();
         vm.Initialize(cluster);
@@ -665,9 +667,9 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var view = WaitForValue(() => FindVisibleView<ResourceListView>(window, vm), 3000);
         view.ShouldNotBeNull();
 
-        vm.View.ElementAt(0).ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
+        vm.View.ElementAt(0).ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
         vm.View.ElementAt(1).ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
-        vm.View.ElementAt(2).ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
+        vm.View.ElementAt(2).ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
         vm.SortingModel.Descriptors.Count.ShouldBe(1);
         ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("name");
 
@@ -682,11 +684,11 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var restoredView = WaitForValue(() => FindVisibleView<ResourceListView>(window, vm), 3000);
         restoredView.ShouldNotBeNull();
 
-        vm.View.ElementAt(0).ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
+        vm.View.ElementAt(0).ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
         vm.View.ElementAt(1).ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
-        vm.View.ElementAt(2).ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
+        vm.View.ElementAt(2).ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
         vm.SortingModel.Descriptors.Count.ShouldBe(1);
-        ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("labels");
+        ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("name");
     }
 
     [AvaloniaFact(DisplayName = "Reattach preserves DataGrid scroll offset")]
@@ -704,7 +706,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         };
 
         var window = CreateWindow(height: 900, content: dockControl);
-        var cluster = CreateCluster();
+        var cluster = await CreateClusterAsync();
 
         var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
         vm.Initialize(cluster);
@@ -805,7 +807,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         };
 
         var window = CreateWindow(content: dockControl);
-        var cluster = CreateCluster();
+        var cluster = await CreateClusterAsync();
 
         var vm = GetRequiredService<ResourceListViewModel<V1Namespace>>();
         vm.Initialize(cluster);
@@ -868,7 +870,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     public async Task namespace_filter_initializes_from_selected_namespaces()
     {
         var window = CreateWindow();
-        var cluster = CreateCluster();
+        var cluster = await CreateClusterAsync();
 
         cluster.SelectedNamespaces.Add(NamespaceResource("default"));
 

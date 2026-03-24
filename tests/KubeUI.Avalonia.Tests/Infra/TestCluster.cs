@@ -9,13 +9,13 @@ public sealed class TestCluster : TestClusterRuntime
 {
     private ClusterWorkspaceViewModel? _workspace;
 
-    public static ClusterWorkspaceViewModel Get()
+    public static async Task<ClusterWorkspaceViewModel> GetAsync()
     {
         var runtime = new TestCluster();
-        runtime.AddOrUpdateResource(new k8s.Models.V1Namespace
+        await runtime.AddOrUpdateResource(new k8s.Models.V1Namespace
         {
             Metadata = new() { Name = "default" }
-        }).GetAwaiter().GetResult();
+        });
 
         var workspace = runtime.CreateWorkspace();
         workspace.SelectedNamespaces.Add(runtime.Namespaces.Single());
