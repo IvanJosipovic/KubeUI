@@ -296,6 +296,18 @@ public abstract class ClusterScenarioAssertions
         (await cluster.UpdateCanI<V1Pod>(Verb.Get, "my-app", "log")).ShouldBeTrue();
         (await cluster.UpdateCanI<V1Pod>(Verb.Create, "my-app", "exec")).ShouldBeTrue();
         (await cluster.UpdateCanI<V1Pod>(Verb.Create, "my-app", "portforward")).ShouldBeTrue();
+
+        (await cluster.UpdateCanI<V1Deployment>(Verb.Create)).ShouldBeFalse();
+        (await cluster.UpdateCanI<V1Deployment>(Verb.Delete)).ShouldBeFalse();
+        (await cluster.UpdateCanI<V1Deployment>(Verb.Get)).ShouldBeFalse();
+        (await cluster.UpdateCanI<V1Deployment>(Verb.List)).ShouldBeFalse();
+        (await cluster.UpdateCanI<V1Deployment>(Verb.Patch)).ShouldBeFalse();
+        (await cluster.UpdateCanI<V1Deployment>(Verb.Update)).ShouldBeFalse();
+        (await cluster.UpdateCanI<V1Deployment>(Verb.Watch)).ShouldBeFalse();
+
+        (await cluster.UpdateCanI<V1Deployment>(Verb.Get, "my-app")).ShouldBeTrue();
+        (await cluster.UpdateCanI<V1Deployment>(Verb.List, "my-app")).ShouldBeTrue();
+        (await cluster.UpdateCanI<V1Deployment>(Verb.Watch, "my-app")).ShouldBeTrue();
     }
 
     public static async Task<T?> WaitForResourceAsync<T>(IClusterRuntime cluster, string? @namespace, string name, TimeSpan? timeout = null, int pollIntervalMs = 100)

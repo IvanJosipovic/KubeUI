@@ -27,6 +27,20 @@ public class ClusterWorkspaceViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public void creating_workspace_does_not_initialize_resource_configs_until_requested()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = false,
+            Status = ClusterStatus.None,
+        };
+
+        var workspace = CreateWorkspace(runtime);
+
+        workspace.GetResourceConfigs().ShouldBeEmpty();
+    }
+
+    [AvaloniaFact]
     public async Task added_crd_adds_resource_config_and_model_cache_entry()
     {
         var runtime = new TestCluster();

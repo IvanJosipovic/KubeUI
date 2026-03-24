@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Reflection;
 using Avalonia.Media.Immutable;
@@ -18,21 +19,28 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
     private static readonly TimeSpan CustomResourceConfigBatchWindow = TimeSpan.FromMilliseconds(200);
 
     private readonly IServiceProvider _serviceProvider;
+    private readonly IClusterSettingsStore _clusterSettingsStore;
     private readonly ILogger<ClusterWorkspaceViewModel> _logger;
     private readonly ConcurrentDictionary<GroupApiVersionKind, IResourceConfig> _resourceConfigs = new();
     private readonly ConcurrentDictionary<string, PendingCustomResourceDefinitionChange> _pendingCustomResourceDefinitions = new(StringComparer.Ordinal);
     private readonly SemaphoreSlim _pendingCustomResourceDefinitionSignal = new(0);
+    private readonly SemaphoreSlim _workspaceStateRefreshGate = new(1, 1);
+    private readonly SemaphoreSlim _resourcePermissionRefreshGate = new(1, 1);
     private readonly CancellationTokenSource _disposeCancellation = new();
     private readonly Task _pendingCustomResourceDefinitionTask;
+    private INotifyCollectionChanged? _runtimeNamespacesCollection;
     private bool _disposed;
+    private bool _workspaceStateInitialized;
 
     public ClusterWorkspaceViewModel(
         IClusterRuntime runtime,
         IServiceProvider serviceProvider,
+        IClusterSettingsStore clusterSettingsStore,
         ILogger<ClusterWorkspaceViewModel> logger)
     {
         Runtime = runtime;
         _serviceProvider = serviceProvider;
+        _clusterSettingsStore = clusterSettingsStore;
         _logger = logger;
 
         Title = runtime.Name;
@@ -40,9 +48,9 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         BindRuntimeCollections();
 
         SubscribeRuntime();
+        SubscribeNamespaceCollection(Runtime.Namespaces);
         UpdateClusterColor();
         _pendingCustomResourceDefinitionTask = Task.Run(ProcessPendingCustomResourceDefinitionsAsync);
-        _ = RefreshWorkspaceStateAsync();
     }
 
     [ObservableProperty]
@@ -89,6 +97,18 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
     {
         get => Runtime.Status;
         set => Runtime.Status = value;
+    }
+
+    public string? LastError
+    {
+        get => Runtime.LastError;
+        set => Runtime.LastError = value;
+    }
+
+    public bool RequiresNamespaceSelectionPrompt
+    {
+        get => Runtime.RequiresNamespaceSelectionPrompt;
+        set => Runtime.RequiresNamespaceSelectionPrompt = value;
     }
 
     public bool IsMetricsAvailable => Runtime.IsMetricsAvailable;
@@ -143,6 +163,11 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
     public async Task Connect()
     {
         await Runtime.Connect();
+    }
+
+    public Task EnsureWorkspaceStateInitializedAsync()
+    {
+        return RefreshWorkspaceStateAsync();
     }
 
     public Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -312,6 +337,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         _disposed = true;
         Runtime.OnChange -= OnRuntimeChange;
         Runtime.OnCustomResourceDefinitionReady -= HandleCustomResourceDefinitionReady;
+        UnsubscribeNamespaceCollection();
 
         if (Runtime is INotifyPropertyChanged propertyChanged)
         {
@@ -336,10 +362,27 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     private async Task RefreshWorkspaceStateAsync()
     {
-        await EnsureBuiltInResourceConfigsAsync();
-        await EnsureDynamicResourceConfigsAsync().ConfigureAwait(false);
-        UpdateClusterColor();
-        NotifyRuntimeStateChanged();
+        await _workspaceStateRefreshGate.WaitAsync().ConfigureAwait(false);
+
+        try
+        {
+            if (_workspaceStateInitialized)
+            {
+                return;
+            }
+
+            await EnsureBuiltInResourceConfigsAsync();
+            await EnsureConfiguredNamespacesAvailableAsync().ConfigureAwait(false);
+            await EnsureDynamicResourceConfigsAsync().ConfigureAwait(false);
+            await RefreshResourceConfigPermissionsAsync().ConfigureAwait(false);
+            _workspaceStateInitialized = true;
+            UpdateClusterColor();
+            NotifyRuntimeStateChanged();
+        }
+        finally
+        {
+            _workspaceStateRefreshGate.Release();
+        }
     }
 
     private void NotifyRuntimeStateChanged()
@@ -379,9 +422,61 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
                 _resourceConfigs[resourceConfig.Kind] = resourceConfig;
             }
         }
+    }
 
-        // Permissions can change across reconnects; always refresh cached resource config permissions.
-        await RefreshResourceConfigPermissionsAsync();
+    private async Task EnsureConfiguredNamespacesAvailableAsync()
+    {
+        if (Runtime.ListNamespaces)
+        {
+            return;
+        }
+
+        var configuredNamespaces = _clusterSettingsStore.GetClusterNamespaces(Runtime);
+        if (configuredNamespaces.Count == 0)
+        {
+            return;
+        }
+
+        var existingNamespaces = new HashSet<string>(
+            Runtime.Namespaces
+                .Select(x => x.Name())
+                .Where(x => !string.IsNullOrWhiteSpace(x))!,
+            StringComparer.Ordinal);
+
+        foreach (var configuredNamespace in configuredNamespaces)
+        {
+            if (string.IsNullOrWhiteSpace(configuredNamespace) || !existingNamespaces.Add(configuredNamespace))
+            {
+                continue;
+            }
+
+            await Runtime.AddOrUpdateResource(new V1Namespace
+            {
+                Metadata = new V1ObjectMeta
+                {
+                    Name = configuredNamespace
+                }
+            }).ConfigureAwait(false);
+        }
+    }
+
+    private void QueueResourceConfigPermissionsRefresh()
+    {
+        _ = Task.Run(RefreshResourceConfigPermissionsQueuedAsync);
+    }
+
+    private async Task RefreshResourceConfigPermissionsQueuedAsync()
+    {
+        await _resourcePermissionRefreshGate.WaitAsync().ConfigureAwait(false);
+
+        try
+        {
+            await RefreshResourceConfigPermissionsAsync().ConfigureAwait(false);
+        }
+        finally
+        {
+            _resourcePermissionRefreshGate.Release();
+        }
     }
 
     private async Task EnsureDynamicResourceConfigsAsync()
@@ -443,9 +538,37 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         await Task.WhenAll(updateTasks).ConfigureAwait(false);
     }
 
+    private void SubscribeNamespaceCollection(ReadOnlyObservableCollection<V1Namespace>? namespaces)
+    {
+        if (namespaces is not INotifyCollectionChanged collection || ReferenceEquals(_runtimeNamespacesCollection, collection))
+        {
+            return;
+        }
+
+        UnsubscribeNamespaceCollection();
+        _runtimeNamespacesCollection = collection;
+        _runtimeNamespacesCollection.CollectionChanged += OnRuntimeNamespacesCollectionChanged;
+    }
+
+    private void UnsubscribeNamespaceCollection()
+    {
+        if (_runtimeNamespacesCollection == null)
+        {
+            return;
+        }
+
+        _runtimeNamespacesCollection.CollectionChanged -= OnRuntimeNamespacesCollectionChanged;
+        _runtimeNamespacesCollection = null;
+    }
+
+    private void OnRuntimeNamespacesCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        QueueResourceConfigPermissionsRefresh();
+    }
+
     private async Task RefreshResourceConfigPermissionAsync(IResourceConfig resourceConfig)
     {
-        var previousCanListAndWatch = resourceConfig.CanListAndWatch;
+        var previousIsVisible = resourceConfig.PermissionsLoaded && resourceConfig.CanListAndWatch;
 
         try
         {
@@ -456,7 +579,9 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
             _logger.LogDebug(ex, "Unable to refresh permissions for {Kind}", resourceConfig.Kind);
         }
 
-        if (previousCanListAndWatch != resourceConfig.CanListAndWatch)
+        var currentIsVisible = resourceConfig.PermissionsLoaded && resourceConfig.CanListAndWatch;
+
+        if (previousIsVisible != currentIsVisible)
         {
             NotifyResourcePermissionsChanged();
         }
@@ -480,12 +605,26 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
             switch (e.PropertyName)
             {
                 case nameof(IClusterRuntime.Connected):
+                    _workspaceStateInitialized = false;
                     await RefreshWorkspaceStateAsync();
                     break;
                 case nameof(IClusterRuntime.Status):
+                    if (Runtime.Status == ClusterStatus.Connecting)
+                    {
+                        _workspaceStateInitialized = false;
+                    }
+
                     UpdateClusterColor();
                     OnPropertyChanged(nameof(Status));
+                    OnPropertyChanged(nameof(LastError));
+                    OnPropertyChanged(nameof(RequiresNamespaceSelectionPrompt));
                     OnPropertyChanged(nameof(IsMetricsAvailable));
+                    break;
+                case nameof(IClusterRuntime.LastError):
+                    OnPropertyChanged(nameof(LastError));
+                    break;
+                case nameof(IClusterRuntime.RequiresNamespaceSelectionPrompt):
+                    OnPropertyChanged(nameof(RequiresNamespaceSelectionPrompt));
                     break;
                 case nameof(IClusterRuntime.Name):
                     Title = Runtime.Name;
@@ -495,6 +634,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
                     OnPropertyChanged(nameof(ListNamespaces));
                     break;
                 case nameof(IClusterRuntime.Namespaces):
+                    SubscribeNamespaceCollection(Runtime.Namespaces);
                     OnPropertyChanged(nameof(Namespaces));
                     break;
             }

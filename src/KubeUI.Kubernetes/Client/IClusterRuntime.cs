@@ -11,6 +11,8 @@ public interface IClusterRuntime
     IReadOnlyDictionary<GroupApiVersionKind, object> Objects { get; }
     bool Connected { get; set; }
     ClusterStatus Status { get; set; }
+    string? LastError { get; set; }
+    bool RequiresNamespaceSelectionPrompt { get; set; }
     bool IsMetricsAvailable { get; }
     bool ListNamespaces { get; set; }
     event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;

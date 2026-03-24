@@ -5,7 +5,9 @@ using Avalonia.Controls.Notifications;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using Dock.Model.Core;
+using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,6 +19,8 @@ namespace KubeUI.Avalonia.Tests.Infra;
 public class TestApp : Application
 {
     public IServiceProvider? Services { get; private set; }
+    public static Mock<IDialogManager>? DialogManagerMock { get; private set; }
+    public static ContentDialogSettings? LastContentDialogSettings { get; private set; }
 
     public static TopLevel TopLevel { get; private set; }
 
@@ -71,7 +75,19 @@ public class TestApp : Application
         services.AddSingleton<ISettingsService, TestSettingsService>();
         services.AddSingleton<IClusterSettingsStore>(sp => sp.GetRequiredService<ISettingsService>().Clusters);
 
+        LastContentDialogSettings = null;
+
+        var dialogManager = new Mock<IDialogManager>();
+        dialogManager.SetupGet(x => x.Logger).Returns((ILogger<IDialogManager>?)null);
+        dialogManager.SetupProperty(x => x.AllowConcurrentDialogs);
+        dialogManager
+            .Setup(x => x.ShowFrameworkDialogAsync(It.IsAny<System.ComponentModel.INotifyPropertyChanged?>(), It.IsAny<ContentDialogSettings>(), It.IsAny<Func<object?, string>?>()))
+            .Callback<System.ComponentModel.INotifyPropertyChanged?, ContentDialogSettings, Func<object?, string>?>((_, settings, _) => LastContentDialogSettings = settings)
+            .ReturnsAsync(ContentDialogResult.Primary);
+        DialogManagerMock = dialogManager;
+
         var dialog = new Mock<IDialogService>();
+        dialog.SetupGet(x => x.DialogManager).Returns(dialogManager.Object);
         services.AddSingleton<IDialogService>(dialog.Object);
 
         var notifications = new Mock<INotificationManager>();

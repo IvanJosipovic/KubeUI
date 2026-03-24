@@ -42,6 +42,9 @@
 
   <ItemGroup>
     <Compile Include="..\Shared\Infra\TestClusterRuntime.cs" Link="Infra\TestClusterRuntime.cs" />
+    <Compile Include="..\KubeUI.Kubernetes.Tests\Infra\IClusterScenarioHarness.cs" Link="Infra\IClusterScenarioHarness.cs" />
+    <Compile Include="..\KubeUI.Kubernetes.Tests\Infra\MockClusterScenarioHarness.cs" Link="Infra\MockClusterScenarioHarness.cs" />
+    <Compile Include="..\KubeUI.Kubernetes.Tests\Infra\SharedScenarioData.cs" Link="Infra\SharedScenarioData.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -95,6 +95,7 @@ public sealed class MockClusterScenarioHarness : IClusterScenarioHarness
     {
         SetAll(cluster, typeof(V1Namespace), false);
         SetAll(cluster, typeof(V1Pod), false);
+        SetAll(cluster, typeof(V1Deployment), false);
 
         cluster.SetPermission<V1Node>(Verb.Get, true);
         cluster.SetPermission<V1Node>(Verb.List, true);
@@ -111,6 +112,10 @@ public sealed class MockClusterScenarioHarness : IClusterScenarioHarness
         cluster.SetPermission<V1Pod>(Verb.Get, true, LimitedNamespace, "log");
         cluster.SetPermission<V1Pod>(Verb.Create, true, LimitedNamespace, "exec");
         cluster.SetPermission<V1Pod>(Verb.Create, true, LimitedNamespace, "portforward");
+
+        cluster.SetPermission<V1Deployment>(Verb.Get, true, LimitedNamespace);
+        cluster.SetPermission<V1Deployment>(Verb.List, true, LimitedNamespace);
+        cluster.SetPermission<V1Deployment>(Verb.Watch, true, LimitedNamespace);
     }
 
     private static void SetAll(TestClusterRuntime cluster, Type type, bool allowed)

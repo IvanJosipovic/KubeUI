@@ -8,6 +8,9 @@ using Avalonia.Threading;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using FluentIcons.Common;
+using FluentAvalonia.UI.Controls;
+using HanumanInstitute.MvvmDialogs;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -110,8 +113,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
         if (cluster.Connected)
         {
-            clusterNode.IsExpanded = !clusterNode.IsExpanded;
-            RebuildClusterNavigation(clusterNode);
+            _ = EnsureClusterWorkspaceReadyAsync(clusterNode);
             return;
         }
 
@@ -123,6 +125,17 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         _ = ConnectClusterAsync(clusterNode);
     }
 
+    private async Task EnsureClusterWorkspaceReadyAsync(ClusterNavigationNode clusterNode)
+    {
+        await clusterNode.Cluster.EnsureWorkspaceStateInitializedAsync().ConfigureAwait(false);
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            clusterNode.IsExpanded = !clusterNode.IsExpanded;
+            RebuildClusterNavigation(clusterNode);
+        });
+    }
+
     private async Task ConnectClusterAsync(ClusterNavigationNode clusterNode)
     {
         var cluster = clusterNode.Cluster;
@@ -130,15 +143,76 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         try
         {
             await Task.Run(cluster.Connect).ConfigureAwait(false);
+
+            if (cluster.Status == ClusterStatus.Connected)
+            {
+                await cluster.EnsureWorkspaceStateInitializedAsync().ConfigureAwait(false);
+            }
+
+            await Dispatcher.UIThread.InvokeAsync(async () =>
+            {
+                if (cluster.RequiresNamespaceSelectionPrompt)
+                {
+                    await ShowMissingNamespacePermissionPromptAsync(cluster);
+                }
+                else if (cluster.Status == ClusterStatus.Errored)
+                {
+                    ShowClusterError(cluster.LastError);
+                }
+
+                RebuildClusterNavigation(clusterNode);
+            });
         }
         catch (Exception ex)
         {
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
-                Utilities.HandleException(_logger, _notificationManager, ex, "Error connecting to cluster", sendNotification: true);
+                cluster.LastError = ex.Message;
+                cluster.Status = ClusterStatus.Errored;
+                ShowClusterError(ex.Message);
                 RebuildClusterNavigation(clusterNode);
             });
         }
+    }
+
+    private async Task ShowMissingNamespacePermissionPromptAsync(ClusterWorkspaceViewModel cluster)
+    {
+        var settingsVm = Application.Current.GetRequiredService<ClusterSettingsViewModel>();
+        settingsVm.Initialize(cluster);
+        Factory.AddToDocuments(settingsVm);
+
+        var dialogService = Application.Current.GetRequiredService<IDialogService>();
+        var settings = new ContentDialogSettings
+        {
+            Title = Assets.Resources.Cluster_Missing_Namespace_Permission_Title,
+            Content = Assets.Resources.Cluster_Missing_Namespace_Permission_Content,
+            PrimaryButtonText = Assets.Resources.Cluster_Missing_Namespace_Permission_Primary,
+            DefaultButton = ContentDialogButton.Primary
+        };
+
+        await dialogService.ShowContentDialogAsync(this, settings);
+    }
+
+    private void ShowClusterError(string? error)
+    {
+        const string id = "cluster-error";
+
+        if (Factory.FindDockableById(id) is ClusterErrorViewModel existing)
+        {
+            existing.Error = error;
+            Factory.SetActiveDockable(existing);
+            if (Factory.GetDockable<IDocumentDock>("Documents") is { } documents)
+            {
+                Factory.SetFocusedDockable(documents, existing);
+            }
+
+            return;
+        }
+
+        var vm = Application.Current.GetRequiredService<ClusterErrorViewModel>();
+        vm.Id = id;
+        vm.Error = error;
+        Factory.AddToDocuments(vm);
     }
 
     private void OnClusterCatalogCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -737,7 +811,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private bool CanListAndWatchResource(ClusterWorkspaceViewModel cluster, IResourceConfig resourceConfig)
     {
-        return resourceConfig.CanListAndWatch;
+        return resourceConfig.PermissionsLoaded && resourceConfig.CanListAndWatch;
     }
 
     private static NavigationLink CreateNavigationLink(ClusterWorkspaceViewModel cluster, string id, string name, int order)

@@ -992,6 +992,7 @@ internal sealed class FakeDoubleTapResourceConfig : IResourceConfig
 
     public bool IsNamespaced => true;
     public bool CanListAndWatch => true;
+    public bool PermissionsLoaded => true;
     public bool ShowNewResource => true;
     public bool IsCustomResource => false;
     public GroupApiVersionKind Kind => GroupApiVersionKind.From<V1Pod>();

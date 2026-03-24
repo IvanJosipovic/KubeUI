@@ -65,6 +65,12 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
     public partial ClusterStatus Status { get; set; }
 
     [ObservableProperty]
+    public partial string? LastError { get; set; }
+
+    [ObservableProperty]
+    public partial bool RequiresNamespaceSelectionPrompt { get; set; }
+
+    [ObservableProperty]
     public partial bool Connected { get; set; }
 
     [ObservableProperty]
@@ -105,6 +111,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
                 try
                 {
                     Status = ClusterStatus.Connecting;
+                    LastError = null;
+                    RequiresNamespaceSelectionPrompt = false;
                     KubernetesClientConfiguration config;
 
                     if (string.IsNullOrEmpty(KubeConfigPath))
@@ -153,6 +161,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
                         {
                             Connected = false;
                             Status = ClusterStatus.Errored;
+                            LastError = "Unable to connect because the cluster cannot list namespaces and no fallback namespaces are configured.";
+                            RequiresNamespaceSelectionPrompt = true;
                             _logger.LogWarning(
                                 "Cluster {Name} cannot list namespaces and has no configured namespace fallback.",
                                 Name);
@@ -174,6 +184,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
 
                     Connected = true;
                     Status = ClusterStatus.Connected;
+                    LastError = null;
+                    RequiresNamespaceSelectionPrompt = false;
 
                     await InitMetrics();
                 }
@@ -184,6 +196,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
                     Connected = false;
 
                     Status = ClusterStatus.Errored;
+                    LastError = ex.Message;
+                    RequiresNamespaceSelectionPrompt = false;
                 }
             }
         }

@@ -47,6 +47,8 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     private bool _connected;
     private bool _defaultPermissionAllowed = true;
     private bool _listNamespaces;
+    private string? _lastError;
+    private bool _requiresNamespaceSelectionPrompt;
     private ClusterStatus _status;
     private IKubernetes? _client;
     private K8SConfiguration _kubeConfig = new();
@@ -99,6 +101,18 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     {
         get => _status;
         set => SetProperty(ref _status, value);
+    }
+
+    public string? LastError
+    {
+        get => _lastError;
+        set => SetProperty(ref _lastError, value);
+    }
+
+    public bool RequiresNamespaceSelectionPrompt
+    {
+        get => _requiresNamespaceSelectionPrompt;
+        set => SetProperty(ref _requiresNamespaceSelectionPrompt, value);
     }
 
     public bool IsMetricsAvailable => true;

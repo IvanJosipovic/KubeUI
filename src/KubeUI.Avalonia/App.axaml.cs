@@ -1,6 +1,11 @@
+using System.Diagnostics;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
+using Dock.Model.Controls;
+using Dock.Model.Core;
+using k8s;
 using KubeUI.Kubernetes;
+using KubeUI.Avalonia.ViewModels;
 using KubeUI.Avalonia.Views;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
@@ -30,6 +35,7 @@ public partial class App : Application
         AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
         Dispatcher.UIThread.UnhandledException += OnUnhandledException;
         TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
+        KubernetesClientConfiguration.ExecStdError += KubernetesClientConfiguration_ExecStdError;
     }
 
     public override void Initialize()
@@ -77,6 +83,44 @@ public partial class App : Application
         e.SetObserved();
     }
 
+    private void KubernetesClientConfiguration_ExecStdError(object? sender, DataReceivedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(e.Data))
+        {
+            _logger.LogError("Cluster ExecStdError: no data");
+            return;
+        }
+
+        _logger.LogError("Cluster ExecStdError: {Data}", e.Data);
+
+        Dispatcher.UIThread.Post(() => ShowClusterError(e.Data));
+    }
+
+    private void ShowClusterError(string error)
+    {
+        var factory = Services.GetRequiredService<IFactory>();
+        var documents = factory.GetDockable<IDocumentDock>("Documents");
+        if (documents == null)
+        {
+            return;
+        }
+
+        if (factory.FindDockableById("cluster-error") is ClusterErrorViewModel existing)
+        {
+            existing.Error = error;
+            factory.SetActiveDockable(existing);
+            factory.SetFocusedDockable(documents, existing);
+            return;
+        }
+
+        var vm = Services.GetRequiredService<ClusterErrorViewModel>();
+        vm.Id = "cluster-error";
+        vm.Error = error;
+        factory.AddDockable(documents, vm);
+        factory.SetActiveDockable(vm);
+        factory.SetFocusedDockable(documents, vm);
+    }
+
     private void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         _logger.LogCritical(e.Exception, "UI Thread Unhandled Exception");
@@ -85,6 +129,7 @@ public partial class App : Application
 
     private void GracefulShutdown()
     {
+        KubernetesClientConfiguration.ExecStdError -= KubernetesClientConfiguration_ExecStdError;
         Services.GetService<LoggerProvider>()?.ForceFlush();
         Services.GetService<MeterProvider>()?.ForceFlush();
     }

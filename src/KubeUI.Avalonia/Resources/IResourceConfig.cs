@@ -9,6 +9,7 @@ namespace KubeUI.Avalonia.Resources
     {
         bool IsNamespaced { get; }
         bool CanListAndWatch { get; }
+        bool PermissionsLoaded { get; }
         bool ShowNewResource { get; }
         bool IsCustomResource { get; }
         GroupApiVersionKind Kind { get; }

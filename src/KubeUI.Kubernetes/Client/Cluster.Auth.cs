@@ -112,7 +112,6 @@ public partial class Cluster
         if (review == null)
         {
             var error = string.Format("Missing V1SelfSubjectAccessReview {0} {1}/{2}/{3}", verb, kind.Group, kind.PluralName, subresource);
-
             _logger.LogCritical(error);
             throw new Exception(error);
         }
@@ -145,9 +144,9 @@ public partial class Cluster
 
         if (IsResourceNamespaced(type))
         {
-            foreach (var item in GetResourceList<V1Namespace>())
+            foreach (var @namespace in GetEffectivePermissionNamespaces(type))
             {
-                if (CanI(type, verb, item.Name(), subresource))
+                if (CanI(type, verb, @namespace, subresource))
                 {
                     return true;
                 }
@@ -171,9 +170,9 @@ public partial class Cluster
 
         if (IsResourceNamespaced(type))
         {
-            foreach (var item in GetResourceList<V1Namespace>())
+            foreach (var @namespace in GetEffectivePermissionNamespaces(type))
             {
-                if (await UpdateCanI(type, verb, item.Name(), subresource))
+                if (await UpdateCanI(type, verb, @namespace, subresource))
                 {
                     return true;
                 }
@@ -196,9 +195,9 @@ public partial class Cluster
         {
             var tasks = new List<Task>();
 
-            foreach (var item in GetResourceList<V1Namespace>())
+            foreach (var @namespace in GetEffectivePermissionNamespaces(type))
             {
-                tasks.Add(GetSelfSubjectAccessReview(type, verb, item.Name(), subresource));
+                tasks.Add(GetSelfSubjectAccessReview(type, verb, @namespace, subresource));
             }
 
             await Task.WhenAll(tasks);
@@ -208,6 +207,41 @@ public partial class Cluster
     public async Task UpdatePermissionsAllNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         await UpdatePermissionsAllNamespaceAsync(typeof(T), verb, subresource);
+    }
+
+    private IReadOnlyCollection<string> GetEffectivePermissionNamespaces(Type type)
+    {
+        if (!IsResourceNamespaced(type))
+        {
+            return [];
+        }
+
+        var namespaces = new HashSet<string>(StringComparer.Ordinal);
+
+        if (Objects.ContainsKey(GroupApiVersionKind.From<V1Namespace>()))
+        {
+            foreach (var item in GetResourceList<V1Namespace>())
+            {
+                var name = item.Name();
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    namespaces.Add(name);
+                }
+            }
+        }
+
+        if (!ListNamespaces)
+        {
+            foreach (var configuredNamespace in _settings.GetClusterNamespaces(this))
+            {
+                if (!string.IsNullOrWhiteSpace(configuredNamespace))
+                {
+                    namespaces.Add(configuredNamespace);
+                }
+            }
+        }
+
+        return namespaces.ToArray();
     }
 }
 
