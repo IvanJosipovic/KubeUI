@@ -172,6 +172,24 @@ public class ClusterWorkspaceViewModelTests : AvaloniaTestBase
         GetInformers(container).Count.ShouldBe(2);
     }
 
+    [AvaloniaFact]
+    public async Task connect_skips_workspace_initialization_when_runtime_remains_disconnected()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = false,
+            Status = ClusterStatus.Errored,
+            ConnectBehavior = () => Task.CompletedTask,
+        };
+
+        var workspace = CreateWorkspace(runtime);
+
+        await workspace.Connect();
+
+        runtime.Connected.ShouldBeFalse();
+        workspace.GetResourceConfigs().ShouldBeEmpty();
+    }
+
     private ClusterWorkspaceViewModel CreateWorkspace(TestCluster runtime)
     {
         var workspace = runtime.CreateWorkspace();

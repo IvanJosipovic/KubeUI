@@ -9,6 +9,7 @@
 - If the cluster cannot list/watch a namespaced resource globally, the runtime should create informers for every known namespace where that resource has both list and watch access.
 - Informer creation for namespaced resources remains in the runtime and uses the namespaces currently known to the workspace/runtime.
 - Workspace connect/init should refresh resource permissions before any UI command or navigation logic depends on cached `CanI(...)` results.
+- `ClusterWorkspaceViewModel.Connect()` should only initialize workspace state after the runtime reports `Connected == true`, because runtime connect may swallow its own failures and return without throwing.
 
 ## Constraints
 - Keep cluster-wide state and runtime subscriptions here instead of in individual views.
