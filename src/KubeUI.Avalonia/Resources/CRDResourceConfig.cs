@@ -23,7 +23,7 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : clas
 
     public void Generate(V1CustomResourceDefinition crd)
     {
-        _generatedName = crd.Spec?.Names?.Plural?.Humanize(LetterCasing.Title) ?? base.Name;
+        _generatedName = crd.Spec?.Names?.Kind.Humanize(LetterCasing.Title).Pluralize() ?? base.Name;
 
         // Add Name Column
         _columns.Add(NameColumn(SortDirection.Ascending));
