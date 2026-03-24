@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Reactive.Linq;
 using FluentAvalonia.UI.Controls;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Kubernetes;
@@ -90,6 +91,37 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         Dispatcher.UIThread.RunJobs();
         predicate().ShouldBeTrue();
+    }
+
+    private static async Task<int?> WaitForCountAsync(IObservable<int>? count, int timeoutMs = 3000)
+    {
+        if (count == null)
+        {
+            return null;
+        }
+
+        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+
+        while (DateTime.UtcNow < deadline)
+        {
+            Dispatcher.UIThread.RunJobs();
+
+            var nextValue = await count
+                .Take(1)
+                .Timeout(TimeSpan.FromMilliseconds(150))
+                .Catch<int, TimeoutException>(_ => Observable.Empty<int>())
+                .DefaultIfEmpty(int.MinValue);
+
+            if (nextValue != int.MinValue)
+            {
+                return nextValue;
+            }
+
+            await Task.Delay(25);
+        }
+
+        Dispatcher.UIThread.RunJobs();
+        return null;
     }
 
     private static ResourceNavigationLink? FindResourceLink(ClusterNavigationNode root, string name)
@@ -1163,6 +1195,34 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         rebuiltResourceLink.ShouldNotBeNull();
         rebuiltResourceLink.Count.ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task selecting_empty_resource_navigation_link_updates_count_to_zero()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+
+        var workspace = CreateWorkspace(runtime);
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+        Dispatcher.UIThread.RunJobs();
+
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        var podsLink = FindResourceLink(clusterNode, "Pods");
+
+        podsLink.ShouldNotBeNull();
+
+        await vm.TreeViewSelectionChangedAsync(podsLink);
+
+        var count = await WaitForCountAsync(podsLink.Count);
+        count.ShouldBe(0);
     }
 
     [AvaloniaFact]

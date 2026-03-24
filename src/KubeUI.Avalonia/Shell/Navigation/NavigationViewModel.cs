@@ -1,6 +1,7 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
+using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using Avalonia.Controls.Notifications;
 using Avalonia.Platform.Storage;
@@ -904,9 +905,14 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
         var expectedId = $"{nav.Cluster.Name}-{GroupApiVersionKind.From(nav.ControlType)}";
 
-        if (TryActivateExistingDocument(expectedId))
+        if (Factory.FindDockableById(expectedId) is IDockable existingDocument)
         {
-            nav.Count = TryGetResourceCount(nav.Cluster, nav.ControlType);
+            ActivateDocument(existingDocument);
+            if (existingDocument is IResourceListViewModel existingResourceList)
+            {
+                nav.Count = ObserveResourceListItemCount(existingResourceList);
+            }
+
             return;
         }
 
@@ -924,7 +930,10 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             init.Initialize(nav.Cluster);
         }
 
-        nav.Count = TryGetResourceCount(nav.Cluster, nav.ControlType);
+        if (vm is IResourceListViewModel resourceList)
+        {
+            nav.Count = ObserveResourceListItemCount(resourceList);
+        }
 
         Factory.AddToDocuments(vm);
     }
@@ -1027,10 +1036,40 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             return false;
         }
 
-        var documents = Factory.GetDockable<IDocumentDock>("Documents")!;
-        Factory.SetActiveDockable(existing);
-        Factory.SetFocusedDockable(documents, existing);
+        ActivateDocument(existing);
         return true;
+    }
+
+    private void ActivateDocument(IDockable dockable)
+    {
+        var documents = Factory.GetDockable<IDocumentDock>("Documents")!;
+        Factory.SetActiveDockable(dockable);
+        Factory.SetFocusedDockable(documents, dockable);
+    }
+
+    private static IObservable<int> ObserveResourceListItemCount(IResourceListViewModel resourceList)
+    {
+        return Observable.Create<int>(observer =>
+        {
+            observer.OnNext(resourceList.ItemCount);
+
+            if (resourceList is not INotifyPropertyChanged propertyChanged)
+            {
+                observer.OnCompleted();
+                return Disposable.Empty;
+            }
+
+            PropertyChangedEventHandler handler = (_, args) =>
+            {
+                if (string.IsNullOrEmpty(args.PropertyName) || args.PropertyName == nameof(IResourceListViewModel.ItemCount))
+                {
+                    observer.OnNext(resourceList.ItemCount);
+                }
+            };
+
+            propertyChanged.PropertyChanged += handler;
+            return Disposable.Create(() => propertyChanged.PropertyChanged -= handler);
+        }).DistinctUntilChanged();
     }
 }
 
