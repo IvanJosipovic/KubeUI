@@ -958,6 +958,28 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         descriptor.Values[0].ShouldBe("default");
     }
 
+    [AvaloniaFact(DisplayName = "Search query is debounced before filtering view")]
+    public async Task search_query_is_debounced_before_filtering_view()
+    {
+        var cluster = await CreateClusterAsync();
+
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        await AddOrUpdateAsync(cluster, Pod("ns", "alpha"));
+        await AddOrUpdateAsync(cluster, Pod("ns", "beta"));
+
+        vm.View.Count.ShouldBe(2);
+
+        vm.SearchQuery = "alpha";
+        Dispatcher.UIThread.RunJobs();
+
+        vm.View.Count.ShouldBe(2);
+
+        await WaitForAsync(() => vm.View.Count == 1);
+        vm.View[0].ShouldBeOfType<V1Pod>().Name().ShouldBe("alpha");
+    }
+
     [AvaloniaFact(DisplayName = "Double tap opens property view")]
     public void double_tap_opens_property_view()
     {
@@ -991,6 +1013,25 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         return root.GetVisualDescendants()
             .OfType<TView>()
             .FirstOrDefault(view => view.IsVisible && ReferenceEquals((view as StyledElement)?.DataContext, viewModel));
+    }
+
+    private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs = 1000)
+    {
+        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+
+        while (DateTime.UtcNow < deadline)
+        {
+            Dispatcher.UIThread.RunJobs();
+            if (predicate())
+            {
+                return;
+            }
+
+            await Task.Delay(25);
+        }
+
+        Dispatcher.UIThread.RunJobs();
+        predicate().ShouldBeTrue();
     }
 
     private static T WaitForValue<T>(Func<T?> getter, int timeoutMs = 1000) where T : class

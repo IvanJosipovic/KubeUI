@@ -26,6 +26,8 @@ namespace KubeUI.Avalonia.ViewModels;
 
 public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluster, IDisposable, IResourceListViewModel where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
+    private static readonly TimeSpan SearchDebounceDelay = TimeSpan.FromMilliseconds(250);
+
     private readonly ILogger<ResourceListViewModel<T>> _logger;
 
     private static readonly IComparer s_noopSortComparer = Comparer<object>.Create(static (_, _) => 0);
@@ -62,6 +64,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     private IDisposable? _subscription;
     private IDisposable? _countSubscription;
+    private readonly Subject<string> _searchQueryChanges = new();
+    private readonly IDisposable _searchQuerySubscription;
 
     private readonly SelectionModel<T> _selectionModel = new()
     {
@@ -141,6 +145,11 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         _logger = Application.Current.GetRequiredService<ILogger<ResourceListViewModel<T>>>();
         SettingsService = Application.Current.GetRequiredService<ISettingsService>();
 
+        _searchQuerySubscription = _searchQueryChanges
+            .Throttle(SearchDebounceDelay)
+            .ObserveOn(AvaloniaScheduler.Instance)
+            .Subscribe(System.Reactive.Observer.Create<string>(_ => ApplySearch()));
+
         SortingModel.SortingChanged += SortingModelOnSortingChanged;
         FilteringModel.FilteringChanged += FilteringModelOnFilteringChanged;
         SearchModel.SearchChanged += SearchModelOnSearchChanged;
@@ -196,7 +205,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
         if (e.PropertyName == nameof(SearchQuery))
         {
-            ApplySearch();
+            _searchQueryChanges.OnNext(SearchQuery);
         }
     }
 
@@ -312,6 +321,8 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     {
         _subscription?.Dispose();
         _countSubscription?.Dispose();
+        _searchQuerySubscription.Dispose();
+        _searchQueryChanges.Dispose();
         UnsubscribeFromSelectedNamespaces();
 
         SortingModel.SortingChanged -= SortingModelOnSortingChanged;
