@@ -410,6 +410,7 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
 
     public Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
+        var type = typeof(T);
         var kind = GroupApiVersionKind.From<T>();
 
         if (!Objects.TryGetValue(kind, out var existing) || existing is not ContainerClass<T> container)
@@ -424,7 +425,31 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
         if (!container.Initialized)
         {
             container.Initialized = true;
-            container.Informers.Add(new TestResourceInformer());
+
+            if (CanI(type, Verb.List) && CanI(type, Verb.Watch))
+            {
+                container.Informers.Add(new TestResourceInformer());
+                return Task.CompletedTask;
+            }
+
+            if (!IsResourceNamespaced<T>())
+            {
+                return Task.CompletedTask;
+            }
+
+            foreach (var item in Namespaces)
+            {
+                var namespaceName = item.Name();
+                if (string.IsNullOrWhiteSpace(namespaceName))
+                {
+                    continue;
+                }
+
+                if (CanI(type, Verb.List, namespaceName) && CanI(type, Verb.Watch, namespaceName))
+                {
+                    container.Informers.Add(new TestResourceInformer(namespaceName));
+                }
+            }
         }
 
         return Task.CompletedTask;
@@ -592,6 +617,13 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
 
 internal sealed class TestResourceInformer : IResourceInformer
 {
+    public TestResourceInformer(string? @namespace = null)
+    {
+        Namespace = @namespace;
+    }
+
+    public string? Namespace { get; }
+
     public void StartWatching()
     {
     }

@@ -86,7 +86,14 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         Clusters.Clear();
     }
 
-    public async void TreeView_SelectionChanged(object? item)
+    [RelayCommand]
+    private Task HandleSelectionChangedAsync(SelectionChangedEventArgs? e)
+    {
+        var selectedItem = e?.AddedItems.Count > 0 ? e.AddedItems[0] : null;
+        return TreeViewSelectionChangedAsync(selectedItem);
+    }
+
+    public async Task TreeViewSelectionChangedAsync(object? item)
     {
         if (item is ClusterNavigationNode clusterNode)
         {
@@ -811,7 +818,38 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private bool CanListAndWatchResource(ClusterWorkspaceViewModel cluster, IResourceConfig resourceConfig)
     {
-        return resourceConfig.PermissionsLoaded && resourceConfig.CanListAndWatch;
+        if (!resourceConfig.PermissionsLoaded)
+        {
+            return false;
+        }
+
+        if (cluster.CanI(resourceConfig.Type, Verb.List)
+            && cluster.CanI(resourceConfig.Type, Verb.Watch))
+        {
+            return true;
+        }
+
+        if (!resourceConfig.IsNamespaced)
+        {
+            return false;
+        }
+
+        foreach (var @namespace in cluster.Namespaces)
+        {
+            var namespaceName = @namespace.Name();
+            if (string.IsNullOrWhiteSpace(namespaceName))
+            {
+                continue;
+            }
+
+            if (cluster.CanI(resourceConfig.Type, Verb.List, namespaceName)
+                && cluster.CanI(resourceConfig.Type, Verb.Watch, namespaceName))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static NavigationLink CreateNavigationLink(ClusterWorkspaceViewModel cluster, string id, string name, int order)

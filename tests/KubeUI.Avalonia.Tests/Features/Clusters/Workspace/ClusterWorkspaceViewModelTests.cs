@@ -1,4 +1,5 @@
 using System.Reflection;
+using Avalonia;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using k8s;
@@ -116,6 +117,59 @@ public class ClusterWorkspaceViewModelTests : AvaloniaTestBase
         GetCustomResourceType(runtime, crd).ShouldBeNull();
         runtime.Objects.ContainsKey(GroupApiVersionKind.From(resourceType)).ShouldBeFalse();
         GetInformers(seededContainer).Count.ShouldBe(0);
+    }
+
+    [AvaloniaFact]
+    public async Task seeding_namespaced_resource_adds_configured_fallback_namespaces_without_eager_resource_config_initialization()
+    {
+        var runtime = new TestCluster
+        {
+            ListNamespaces = false,
+        };
+        var workspace = CreateWorkspace(runtime);
+
+        Application.Current.GetRequiredService<ISettingsService>()
+            .Settings
+            .GetClusterSettings(workspace)
+            .Namespaces!
+            .Add("team-a");
+
+        workspace.GetResourceConfigs().ShouldBeEmpty();
+
+        await workspace.SeedResource<V1Pod>();
+
+        runtime.GetResource<V1Namespace>(null, "team-a").ShouldNotBeNull();
+        workspace.GetResourceConfigs().ShouldBeEmpty();
+    }
+
+    [AvaloniaFact]
+    public async Task seeding_namespaced_resource_creates_informers_for_each_known_namespace_with_list_and_watch_access()
+    {
+        var runtime = new TestCluster
+        {
+            ListNamespaces = false,
+            DefaultPermissionAllowed = false,
+        };
+        runtime.SetPermission<V1Pod>(Verb.List, true, "team-a");
+        runtime.SetPermission<V1Pod>(Verb.Watch, true, "team-a");
+        runtime.SetPermission<V1Pod>(Verb.List, true, "team-b");
+        runtime.SetPermission<V1Pod>(Verb.Watch, true, "team-b");
+
+        var workspace = CreateWorkspace(runtime);
+        var clusterSettings = Application.Current.GetRequiredService<ISettingsService>()
+            .Settings
+            .GetClusterSettings(workspace);
+        clusterSettings.Namespaces!.Add("team-a");
+        clusterSettings.Namespaces!.Add("team-b");
+
+        await workspace.SeedResource<V1Pod>();
+
+        runtime.GetResource<V1Namespace>(null, "team-a").ShouldNotBeNull();
+        runtime.GetResource<V1Namespace>(null, "team-b").ShouldNotBeNull();
+
+        var container = GetSeededContainer(runtime, typeof(V1Pod));
+        container.ShouldNotBeNull();
+        GetInformers(container).Count.ShouldBe(2);
     }
 
     private ClusterWorkspaceViewModel CreateWorkspace(TestCluster runtime)

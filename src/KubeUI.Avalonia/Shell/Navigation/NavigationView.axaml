@@ -6,6 +6,7 @@
     xmlns:converters="using:KubeUI.Avalonia.Converters"
     xmlns:custom="using:Avalonia.Xaml.Interactions.Custom"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:ia="using:Avalonia.Xaml.Interactions.Core"
     xmlns:ic="using:FluentIcons.Avalonia"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="clr-namespace:KubeUI.Avalonia.ViewModels"
@@ -31,8 +32,12 @@
     <TreeView
         Margin="-5,0,0,0"
         AutoScrollToSelectedItem="False"
-        ItemsSource="{Binding Clusters}"
-        SelectionChanged="TreeView_SelectionChanged">
+        ItemsSource="{Binding Clusters}">
+        <Interaction.Behaviors>
+            <ia:EventTriggerBehavior EventName="SelectionChanged">
+                <ia:InvokeCommandAction Command="{Binding HandleSelectionChangedCommand}" PassEventArgsToCommand="True" />
+            </ia:EventTriggerBehavior>
+        </Interaction.Behaviors>
         <TreeView.DataTemplates>
             <TreeDataTemplate x:DataType="vm:ClusterNavigationNode" ItemsSource="{Binding NavigationItems}">
                 <StackPanel

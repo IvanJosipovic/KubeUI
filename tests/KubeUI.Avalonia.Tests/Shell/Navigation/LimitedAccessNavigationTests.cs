@@ -29,7 +29,7 @@ public sealed class LimitedAccessNavigationTests : AvaloniaTestBase
         Dispatcher.UIThread.RunJobs();
 
         var clusterNode = navigation.Clusters.Single(x => x.Cluster == workspace);
-        navigation.TreeView_SelectionChanged(clusterNode);
+        await navigation.TreeViewSelectionChangedAsync(clusterNode);
 
         await WaitForAsync(() =>
         {

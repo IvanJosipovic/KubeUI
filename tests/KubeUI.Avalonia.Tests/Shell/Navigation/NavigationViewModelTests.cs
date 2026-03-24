@@ -148,7 +148,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         clusterNode.NavigationItems.Count.ShouldBe(0);
 
-        vm.TreeView_SelectionChanged(clusterNode);
+        await vm.TreeViewSelectionChangedAsync(clusterNode);
         await Task.Delay(10);
         Dispatcher.UIThread.RunJobs();
 
@@ -181,7 +181,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
 
-        vm.TreeView_SelectionChanged(clusterNode);
+        await vm.TreeViewSelectionChangedAsync(clusterNode);
         await Task.Delay(10);
         Dispatcher.UIThread.RunJobs();
 
@@ -211,7 +211,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
 
-        vm.TreeView_SelectionChanged(clusterNode);
+        await vm.TreeViewSelectionChangedAsync(clusterNode);
         await Task.Delay(10);
         Dispatcher.UIThread.RunJobs();
 
@@ -251,7 +251,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         documents.ShouldNotBeNull();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-        vm.TreeView_SelectionChanged(clusterNode);
+        await vm.TreeViewSelectionChangedAsync(clusterNode);
 
         await WaitForAsync(() =>
             documents.VisibleDockables?.OfType<ClusterSettingsViewModel>().Any(x => x.Id == nameof(ClusterSettingsViewModel) + workspace.Name) == true);
@@ -302,7 +302,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         documents.ShouldNotBeNull();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-        vm.TreeView_SelectionChanged(clusterNode);
+        await vm.TreeViewSelectionChangedAsync(clusterNode);
 
         await WaitForAsync(() =>
             documents.VisibleDockables?.OfType<ClusterSettingsViewModel>().Count(x => x.Id == existingSettings.Id) == 1);
@@ -341,7 +341,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         documents.ShouldNotBeNull();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-        vm.TreeView_SelectionChanged(clusterNode);
+        await vm.TreeViewSelectionChangedAsync(clusterNode);
         await Task.Delay(10);
         Dispatcher.UIThread.RunJobs();
 
@@ -386,7 +386,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         Dispatcher.UIThread.RunJobs();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-        vm.TreeView_SelectionChanged(clusterNode);
+        await vm.TreeViewSelectionChangedAsync(clusterNode);
 
         await WaitForAsync(() =>
             FindResourceLink(clusterNode, "Pods") != null
@@ -430,7 +430,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         Dispatcher.UIThread.RunJobs();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-        vm.TreeView_SelectionChanged(clusterNode);
+        await vm.TreeViewSelectionChangedAsync(clusterNode);
 
         await WaitForAsync(() =>
             FindResourceLink(clusterNode, "Pods") != null
@@ -439,6 +439,73 @@ public class NavigationViewModelTests : AvaloniaTestBase
         runtime.Namespaces.Select(x => x.Name()).ShouldContain("my-app");
         FindResourceLink(clusterNode, "Pods").ShouldNotBeNull();
         FindResourceLink(clusterNode, "Deployments").ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task namespaced_resource_link_uses_namespace_permissions_even_when_cached_config_flag_is_false()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+            ListNamespaces = false,
+            DefaultPermissionAllowed = false,
+        };
+
+        runtime.SetPermission<TestPermissionResourceAlpha>(Verb.List, true, "my-app");
+        runtime.SetPermission<TestPermissionResourceAlpha>(Verb.Watch, true, "my-app");
+
+        var workspace = CreateWorkspace(runtime);
+        Application.Current.GetRequiredService<ISettingsService>().Settings.GetClusterSettings(workspace).Namespaces!.Add("my-app");
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+        Dispatcher.UIThread.RunJobs();
+
+        workspace.AddResourceConfigForTest(new FakeResourceConfig(
+            typeof(TestPermissionResourceAlpha),
+            "Alpha Permission Resource",
+            canListAndWatch: false));
+
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        var link = await WaitForValueAsync(() => FindResourceLink(clusterNode, "Alpha Permission Resource"));
+
+        link.ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task namespaced_resource_link_stays_hidden_until_settings_namespace_is_materialized_into_runtime_namespaces()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+            ListNamespaces = false,
+            DefaultPermissionAllowed = false,
+        };
+
+        runtime.SetPermission<TestPermissionResourceAlpha>(Verb.List, true, "my-app");
+        runtime.SetPermission<TestPermissionResourceAlpha>(Verb.Watch, true, "my-app");
+
+        var workspace = CreateWorkspace(runtime);
+        Application.Current.GetRequiredService<ISettingsService>().Settings.GetClusterSettings(workspace).Namespaces!.Add("my-app");
+        workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(TestPermissionResourceAlpha), "Alpha Permission Resource"));
+
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+
+        FindResourceLink(clusterNode, "Alpha Permission Resource").ShouldBeNull();
+
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+        Dispatcher.UIThread.RunJobs();
+
+        var link = await WaitForValueAsync(() => FindResourceLink(clusterNode, "Alpha Permission Resource"));
+        link.ShouldNotBeNull();
     }
 
     [AvaloniaFact]
@@ -507,7 +574,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         documents.ShouldNotBeNull();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-        vm.TreeView_SelectionChanged(clusterNode);
+        await vm.TreeViewSelectionChangedAsync(clusterNode);
 
         await WaitForAsync(() => workspace.Namespaces.Any(x => x.Name() == "my-app"));
         await WaitForAsync(() => workspace.GetResourceConfig<V1Pod>().PermissionsLoaded);
@@ -518,7 +585,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var podsLink = FindResourceLink(clusterNode, "Pods");
         podsLink.ShouldNotBeNull();
 
-        vm.TreeView_SelectionChanged(podsLink);
+        await vm.TreeViewSelectionChangedAsync(podsLink);
 
         await WaitForAsync(() =>
             documents.VisibleDockables?.OfType<ResourceListViewModel<V1Pod>>().Any(x => x.Id == $"{workspace.Name}-{GroupApiVersionKind.From<V1Pod>()}") == true);
@@ -569,7 +636,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         Dispatcher.UIThread.RunJobs();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-        vm.TreeView_SelectionChanged(clusterNode);
+        await vm.TreeViewSelectionChangedAsync(clusterNode);
 
         await WaitForAsync(() =>
             FindResourceLink(clusterNode, "Pods") != null
@@ -597,7 +664,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         clusterNode.IsExpanded.ShouldBeFalse();
 
-        vm.TreeView_SelectionChanged(clusterNode);
+        await vm.TreeViewSelectionChangedAsync(clusterNode);
         await Task.Delay(10);
         Dispatcher.UIThread.RunJobs();
 
@@ -623,7 +690,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
 
-        vm.TreeView_SelectionChanged(clusterNode);
+        await vm.TreeViewSelectionChangedAsync(clusterNode);
 
         await WaitForAsync(() => workspace.GetResourceConfigs().Any());
         workspace.GetResourceConfigs().ShouldNotBeEmpty();
@@ -655,7 +722,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
 
-        vm.TreeView_SelectionChanged(clusterNode);
+        await vm.TreeViewSelectionChangedAsync(clusterNode);
 
         await Task.Delay(100);
         Dispatcher.UIThread.RunJobs();
@@ -693,7 +760,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         Dispatcher.UIThread.RunJobs();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-        vm.TreeView_SelectionChanged(clusterNode);
+        await vm.TreeViewSelectionChangedAsync(clusterNode);
 
         await WaitForAsync(() => FindResourceLink(clusterNode, "Alpha Permission Resource") != null, timeoutMs: 250);
         FindResourceLink(clusterNode, "Gamma Permission Resource").ShouldBeNull();
@@ -734,7 +801,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
 
         var stopwatch = Stopwatch.StartNew();
-        vm.TreeView_SelectionChanged(clusterNode);
+        await vm.TreeViewSelectionChangedAsync(clusterNode);
         stopwatch.Stop();
 
         stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromMilliseconds(150));

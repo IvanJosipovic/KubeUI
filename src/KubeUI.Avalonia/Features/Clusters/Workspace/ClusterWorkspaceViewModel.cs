@@ -192,7 +192,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     public Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        return Runtime.SeedResource<T>(waitForReady);
+        return SeedResourceCoreAsync<T>(waitForReady);
     }
 
     public Task<bool> IsResourceReady<T>(CancellationToken? token = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -458,6 +458,16 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
                 }
             }).ConfigureAwait(false);
         }
+    }
+
+    private async Task SeedResourceCoreAsync<T>(bool waitForReady) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        if (Runtime.IsResourceNamespaced<T>())
+        {
+            await EnsureConfiguredNamespacesAvailableAsync().ConfigureAwait(false);
+        }
+
+        await Runtime.SeedResource<T>(waitForReady).ConfigureAwait(false);
     }
 
     private void QueueResourceConfigPermissionsRefresh()
