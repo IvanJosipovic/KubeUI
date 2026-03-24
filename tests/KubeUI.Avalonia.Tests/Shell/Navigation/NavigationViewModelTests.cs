@@ -1014,6 +1014,49 @@ public class NavigationViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task connect_preloads_pod_default_and_custom_permissions()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = false,
+            Status = ClusterStatus.None,
+            ListNamespaces = false,
+        };
+
+        runtime.SetPermission<V1Namespace>(Verb.List, true);
+        runtime.SetPermission<V1Namespace>(Verb.Watch, true);
+        runtime.SetPermission<V1Pod>(Verb.List, true, "my-app");
+        runtime.SetPermission<V1Pod>(Verb.Watch, true, "my-app");
+        runtime.SetPermission<V1Pod>(Verb.List, false);
+        runtime.SetPermission<V1Pod>(Verb.Watch, false);
+        runtime.SetPermission<V1Pod>(Verb.Get, false);
+        runtime.SetPermission<V1Pod>(Verb.Delete, false);
+        runtime.SetPermission<V1Pod>(Verb.Patch, false);
+        runtime.SetPermission<V1Pod>(Verb.Update, false);
+        runtime.SetPermission<V1Pod>(Verb.Create, false, subresource: "exec");
+        runtime.SetPermission<V1Pod>(Verb.Get, false, subresource: "log");
+        runtime.SetPermission<V1Pod>(Verb.Create, false, subresource: "portforward");
+        runtime.SetPermission<V1Pod>(Verb.Get, false, "my-app", "log");
+        runtime.SetPermission<V1Pod>(Verb.Create, false, "my-app", "exec");
+        runtime.SetPermission<V1Pod>(Verb.Create, true, "my-app", "portforward");
+
+        await runtime.AddOrUpdateResource(new V1Namespace
+        {
+            Metadata = new V1ObjectMeta { Name = "my-app" }
+        });
+
+        var workspace = CreateWorkspace(runtime);
+
+        await workspace.Connect();
+        Dispatcher.UIThread.RunJobs();
+
+        runtime.CanI<V1Pod>(Verb.Create, "my-app", "portforward").ShouldBeTrue();
+        runtime.CanI<V1Pod>(Verb.Create, subresource: "portforward").ShouldBeFalse();
+        runtime.CanI<V1Pod>(Verb.Get, "my-app", "log").ShouldBeFalse();
+        runtime.CanI<V1Pod>(Verb.Create, "my-app", "exec").ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
     public async Task custom_resource_definitions_link_is_sorted_to_bottom()
     {
         var runtime = new TestCluster

@@ -193,21 +193,11 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
         foreach (var (verb, subResource) in DefaultPermissions())
         {
-            if (verb is Verb.List or Verb.Watch)
-            {
-                continue;
-            }
-
             tasks.Add(Cluster.UpdatePermissionsAllNamespaceAsync<T>(verb, subResource));
         }
 
         foreach (var (verb, subResource) in CustomPermissions())
         {
-            if (verb is Verb.List or Verb.Watch)
-            {
-                continue;
-            }
-
             tasks.Add(Cluster.UpdatePermissionsAllNamespaceAsync<T>(verb, subResource));
         }
 

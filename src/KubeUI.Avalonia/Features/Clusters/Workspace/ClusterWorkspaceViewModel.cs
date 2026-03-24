@@ -163,6 +163,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
     public async Task Connect()
     {
         await Runtime.Connect();
+        await EnsureWorkspaceStateInitializedAsync().ConfigureAwait(false);
     }
 
     public Task EnsureWorkspaceStateInitializedAsync()

@@ -73,7 +73,6 @@
 
                 <ToggleButton
                     Grid.Column="2"
-                    Margin="6,0,0,0"
                     IsChecked="{Binding IsNamespaceSelectionLinked}"
                     IsVisible="{Binding ResourceConfig.IsNamespaced}"
                     ToolTip.Tip="{x:Static assets:Resources.ResourceListView_NamespaceLink}">

@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using k8s.Models;
 using KubeUI.Kubernetes;
+using KubeUI.Testing;
 using KubernetesCRDModelGen;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
@@ -23,6 +24,22 @@ public sealed class ClusterAuthTests
 
         var exception = Should.Throw<Exception>(() => cluster.CanI(typeof(V1Pod), Verb.Create, subresource: "portforward"));
         exception.Message.ShouldContain("Missing V1SelfSubjectAccessReview");
+    }
+
+    [Fact]
+    public void cani_any_namespace_uses_namespace_scoped_permission_when_cluster_scope_is_denied()
+    {
+        var cluster = new TestClusterRuntime();
+
+        cluster.SetPermission<V1Pod>(Verb.Create, false, subresource: "portforward");
+        cluster.SetPermission<V1Pod>(Verb.Create, true, "my-app", "portforward");
+
+        cluster.AddOrUpdateResource(new V1Namespace
+        {
+            Metadata = new V1ObjectMeta { Name = "my-app" }
+        }).GetAwaiter().GetResult();
+
+        cluster.CanIAnyNamespace<V1Pod>(Verb.Create, "portforward").ShouldBeTrue();
     }
 
     private sealed class TestClusterSettingsStore : IClusterSettingsStore
