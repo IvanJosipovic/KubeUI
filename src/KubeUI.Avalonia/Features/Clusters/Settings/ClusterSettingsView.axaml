@@ -16,13 +16,13 @@
         <vm:ClusterSettingsViewModel />
     </Design.DataContext>
     <StackPanel Margin="10,0,0,0">
-        <TextBlock FontSize="25" Text="{Binding Cluster.Name, StringFormat='{}{0} Settings'}" />
+        <TextBlock FontSize="25" Text="{Binding Cluster.Name, StringFormat={x:Static assets:Resources.ClusterSettingsView_TitleFormat}}" />
 
         <Grid
             ColumnDefinitions="*,2*"
             IsEnabled="{Binding !Cluster.ListNamespaces}"
-            ToolTip.Tip="Manually specified namespaces">
-            <Label Grid.Column="0" Content="Namespaces (Restart Required)" />
+            ToolTip.Tip="{x:Static assets:Resources.ClusterSettingsView_ManualNamespacesTooltip}">
+            <Label Grid.Column="0" Content="{x:Static assets:Resources.ClusterSettingsView_NamespacesLabel}" />
 
             <StackPanel Grid.Column="1">
                 <Grid ColumnDefinitions="*,Auto">
@@ -30,7 +30,7 @@
                     <Button
                         Grid.Column="1"
                         Command="{Binding AddNamespaceCommand}"
-                        Content="Add" />
+                        Content="{x:Static assets:Resources.ClusterSettingsView_Add}" />
                 </Grid>
 
                 <ListBox ItemsSource="{Binding ClusterSettings.Namespaces}">
@@ -45,7 +45,7 @@
                                     Grid.Column="1"
                                     Command="{Binding $parent[UserControl].((vm:ClusterSettingsViewModel)DataContext).RemoveNamespaceCommand}"
                                     CommandParameter="{Binding}"
-                                    Content="Remove" />
+                                    Content="{x:Static assets:Resources.ClusterSettingsView_Remove}" />
                             </Grid>
                         </DataTemplate>
                     </ListBox.ItemTemplate>

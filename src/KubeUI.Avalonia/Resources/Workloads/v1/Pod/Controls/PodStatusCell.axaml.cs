@@ -2,6 +2,7 @@ using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Kubernetes;
+using AppResources = KubeUI.Avalonia.Assets.Resources;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Controls;
 
@@ -44,19 +45,21 @@ public sealed partial class PodStatusCell : UserControl, IInitializeCluster
 
             if (pod.Metadata?.DeletionTimestamp.HasValue == true)
             {
-                PrettyString = "Terminating";
+                PrettyString = AppResources.PodStatusCell_Terminating;
             }
             else
             {
                 var ready = pod.Status?.Conditions?.FirstOrDefault(c => c.Type == "Ready");
                 PrettyString = ready?.Status == "True"
-                    ? "Running"
-                    : ready?.Reason ?? "Unknown";
+                    ? AppResources.PodStatusCell_Running
+                    : ready?.Reason == "PodCompleted"
+                        ? AppResources.PodStatusCell_PodCompleted
+                        : ready?.Reason ?? AppResources.PodStatusCell_Unknown;
             }
 
             Color = PrettyString switch
             {
-                "PodCompleted" or "Running" => new SolidColorBrush(Colors.LimeGreen),
+                var status when status == AppResources.PodStatusCell_PodCompleted || status == AppResources.PodStatusCell_Running => new SolidColorBrush(Colors.LimeGreen),
                 _ => new SolidColorBrush(Colors.Orange),
             };
         }

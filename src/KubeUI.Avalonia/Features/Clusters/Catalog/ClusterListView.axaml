@@ -33,7 +33,7 @@
                     <MenuItem
                         Command="{Binding DeleteCommand}"
                         CommandParameter="{Binding SelectedItem}"
-                        Header="Delete">
+                        Header="{x:Static assets:Resources.ClusterListView_Delete}">
                         <MenuItem.Icon>
                             <ic:FluentIcon Icon="Delete" />
                         </MenuItem.Icon>
@@ -44,11 +44,11 @@
                 <controls:MyDataGridTextColumn
                     Width="*"
                     Binding="{Binding Name}"
-                    Header="Name"
+                    Header="{x:Static assets:Resources.ClusterListView_Name}"
                     SortDirection="Ascending" />
                 <controls:MyDataGridTextColumn
                     Binding="{Binding KubeConfigPath}"
-                    Header="KubeConfig" />
+                    Header="{x:Static assets:Resources.ClusterListView_KubeConfig}" />
             </DataGrid.Columns>
         </DataGrid>
     </Grid>

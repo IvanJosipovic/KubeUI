@@ -25,7 +25,7 @@
         <TextBlock
             HorizontalAlignment="Center"
             FontSize="24"
-            Text="KubeUI" />
+            Text="{x:Static assets:Resources.MainWindow_Title}" />
         <TextBlock HorizontalAlignment="Center" Text="{Binding Version, StringFormat={x:Static assets:Resources.AboutView_Version_StringFormat}}" />
 
         <TextBlock
@@ -40,8 +40,8 @@
             <TextBlock Text="{x:Static assets:Resources.AboutView_Contact}" />
             <HyperlinkButton
                 Padding="2,-2,0,0"
-                Content="admin@KubeUI.com"
-                NavigateUri="mailto:admin@KubeUI.com" />
+                Content="{x:Static assets:Resources.AboutView_ContactEmailContent}"
+                NavigateUri="{x:Static assets:Resources.AboutView_ContactEmailUri}" />
         </StackPanel>
         <StackPanel
             Margin="0,5,0,0"
@@ -50,8 +50,8 @@
             <TextBlock Padding="0,0,0,0" Text="{x:Static assets:Resources.AboutView_Website}" />
             <HyperlinkButton
                 Padding="2,-2,0,0"
-                Content="KubeUI.com"
-                NavigateUri="https://KubeUI.com" />
+                Content="{x:Static assets:Resources.AboutView_WebsiteContent}"
+                NavigateUri="{x:Static assets:Resources.AboutView_WebsiteUri}" />
         </StackPanel>
     </StackPanel>
 </UserControl>

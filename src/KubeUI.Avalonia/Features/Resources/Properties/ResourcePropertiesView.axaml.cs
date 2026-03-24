@@ -1,6 +1,7 @@
 using System.Reflection;
 using k8s;
 using k8s.Models;
+using AppResources = KubeUI.Avalonia.Assets.Resources;
 
 namespace KubeUI.Avalonia.Views;
 
@@ -68,11 +69,11 @@ public partial class ResourcePropertiesView : UserControl
 
         var obj = _vm.Object;
 
-        PART_Items.Children.Add(new PropertyItem { Key = "Name", Value = obj.Metadata.Name });
-        PART_Items.Children.Add(new PropertyItem { Key = "Namespace", Value = obj.Metadata.NamespaceProperty });
+        PART_Items.Children.Add(new PropertyItem { Key = AppResources.ResourcePropertiesView_Name, Value = obj.Metadata.Name });
+        PART_Items.Children.Add(new PropertyItem { Key = AppResources.ResourcePropertiesView_Namespace, Value = obj.Metadata.NamespaceProperty });
 
         var created = obj.Metadata.CreationTimestamp;
-        PART_Items.Children.Add(new PropertyItem { Key = "Created", Value = created.HasValue ? created.Value.ToLocalTime().ToString() : "" });
+        PART_Items.Children.Add(new PropertyItem { Key = AppResources.ResourcePropertiesView_Created, Value = created.HasValue ? created.Value.ToLocalTime().ToString() : "" });
 
         var extras = _vm.ResourceConfig.Properties(obj);
         if (extras != null)

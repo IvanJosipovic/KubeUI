@@ -9,6 +9,7 @@
     xmlns:livechartscore="using:LiveChartsCore"
     xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
     xmlns:painting="using:LiveChartsCore.SkiaSharpView.Painting"
+    xmlns:assets="clr-namespace:KubeUI.Avalonia.Assets;assembly=KubeUI.Avalonia"
     xmlns:views="using:KubeUI.Avalonia.Views"
     xmlns:visualelements="using:LiveChartsCore.SkiaSharpView.VisualElements"
     xmlns:vm="using:KubeUI.Avalonia.ViewModels"
@@ -45,7 +46,7 @@
             <lvc:PieChart.Title>
                 <lvc:XamlDrawnLabelVisual
                     Paint="{x:Static vm:ClusterViewModel.TextColor}"
-                    Text="CPU"
+                    Text="{x:Static assets:Resources.ClusterView_Cpu}"
                     TextSize="25" />
             </lvc:PieChart.Title>
             <lvc:PieChart.Series>
@@ -56,7 +57,7 @@
                         DataLabelsSize="10"
                         GaugeValue="{Binding CPUGaugeData.CpuCapacity.Value}"
                         InnerRadius="20"
-                        SeriesName="CPU Capacity"
+                        SeriesName="{x:Static assets:Resources.ClusterView_CpuCapacity}"
                         ToolTipLabelFormatter="{x:Static vm:CPUGaugeData.DataLabelsFormatter}" />
                     <lvc:XamlGaugeSeries
                         DataLabelsFormatter="{x:Static vm:CPUGaugeData.DataLabelsFormatter}"
@@ -64,7 +65,7 @@
                         DataLabelsSize="10"
                         GaugeValue="{Binding CPUGaugeData.CpuAllocatable.Value}"
                         InnerRadius="20"
-                        SeriesName="CPU Allocatable"
+                        SeriesName="{x:Static assets:Resources.ClusterView_CpuAllocatable}"
                         ToolTipLabelFormatter="{x:Static vm:CPUGaugeData.DataLabelsFormatter}" />
                     <lvc:XamlGaugeSeries
                         DataLabelsFormatter="{x:Static vm:CPUGaugeData.DataLabelsFormatter}"
@@ -72,7 +73,7 @@
                         DataLabelsSize="10"
                         GaugeValue="{Binding CPUGaugeData.CpuLimits.Value}"
                         InnerRadius="20"
-                        SeriesName="CPU Limits"
+                        SeriesName="{x:Static assets:Resources.ClusterView_CpuLimits}"
                         ToolTipLabelFormatter="{x:Static vm:CPUGaugeData.DataLabelsFormatter}" />
                     <lvc:XamlGaugeSeries
                         DataLabelsFormatter="{x:Static vm:CPUGaugeData.DataLabelsFormatter}"
@@ -80,7 +81,7 @@
                         DataLabelsSize="10"
                         GaugeValue="{Binding CPUGaugeData.CpuRequests.Value}"
                         InnerRadius="20"
-                        SeriesName="CPU Requests"
+                        SeriesName="{x:Static assets:Resources.ClusterView_CpuRequests}"
                         ToolTipLabelFormatter="{x:Static vm:CPUGaugeData.DataLabelsFormatter}" />
                     <lvc:XamlGaugeSeries
                         DataLabelsFormatter="{x:Static vm:CPUGaugeData.DataLabelsFormatter}"
@@ -88,7 +89,7 @@
                         DataLabelsSize="10"
                         GaugeValue="{Binding CPUGaugeData.CpuUsage.Value}"
                         InnerRadius="20"
-                        SeriesName="CPU Usage"
+                        SeriesName="{x:Static assets:Resources.ClusterView_CpuUsage}"
                         ToolTipLabelFormatter="{x:Static vm:CPUGaugeData.DataLabelsFormatter}" />
 
                     <!--  The background series is used to style the gauge background.  -->
@@ -106,7 +107,7 @@
             <lvc:PieChart.Title>
                 <lvc:XamlDrawnLabelVisual
                     Paint="{x:Static vm:ClusterViewModel.TextColor}"
-                    Text="Memory"
+                    Text="{x:Static assets:Resources.ClusterView_Memory}"
                     TextSize="25" />
             </lvc:PieChart.Title>
             <lvc:PieChart.Series>
@@ -117,7 +118,7 @@
                         DataLabelsSize="10"
                         GaugeValue="{Binding MemoryGaugeData.MemoryCapacity.Value}"
                         InnerRadius="20"
-                        SeriesName="Memory Capacity"
+                        SeriesName="{x:Static assets:Resources.ClusterView_MemoryCapacity}"
                         ToolTipLabelFormatter="{x:Static vm:MemoryGaugeData.DataLabelsFormatter}" />
                     <lvc:XamlGaugeSeries
                         DataLabelsFormatter="{x:Static vm:MemoryGaugeData.DataLabelsFormatter}"
@@ -125,7 +126,7 @@
                         DataLabelsSize="10"
                         GaugeValue="{Binding MemoryGaugeData.MemoryAllocatable.Value}"
                         InnerRadius="20"
-                        SeriesName="Memory Allocatable"
+                        SeriesName="{x:Static assets:Resources.ClusterView_MemoryAllocatable}"
                         ToolTipLabelFormatter="{x:Static vm:MemoryGaugeData.DataLabelsFormatter}" />
                     <lvc:XamlGaugeSeries
                         DataLabelsFormatter="{x:Static vm:MemoryGaugeData.DataLabelsFormatter}"
@@ -133,7 +134,7 @@
                         DataLabelsSize="10"
                         GaugeValue="{Binding MemoryGaugeData.MemoryLimits.Value}"
                         InnerRadius="20"
-                        SeriesName="Memory Limits"
+                        SeriesName="{x:Static assets:Resources.ClusterView_MemoryLimits}"
                         ToolTipLabelFormatter="{x:Static vm:MemoryGaugeData.DataLabelsFormatter}" />
                     <lvc:XamlGaugeSeries
                         DataLabelsFormatter="{x:Static vm:MemoryGaugeData.DataLabelsFormatter}"
@@ -141,7 +142,7 @@
                         DataLabelsSize="10"
                         GaugeValue="{Binding MemoryGaugeData.MemoryRequests.Value}"
                         InnerRadius="20"
-                        SeriesName="Memory Requests"
+                        SeriesName="{x:Static assets:Resources.ClusterView_MemoryRequests}"
                         ToolTipLabelFormatter="{x:Static vm:MemoryGaugeData.DataLabelsFormatter}" />
                     <lvc:XamlGaugeSeries
                         DataLabelsFormatter="{x:Static vm:MemoryGaugeData.DataLabelsFormatter}"
@@ -149,7 +150,7 @@
                         DataLabelsSize="10"
                         GaugeValue="{Binding MemoryGaugeData.MemoryUsage.Value}"
                         InnerRadius="20"
-                        SeriesName="Memory Usage"
+                        SeriesName="{x:Static assets:Resources.ClusterView_MemoryUsage}"
                         ToolTipLabelFormatter="{x:Static vm:MemoryGaugeData.DataLabelsFormatter}" />
 
                     <!--  The background series is used to style the gauge background.  -->
@@ -168,7 +169,7 @@
             <lvc:PieChart.Title>
                 <lvc:XamlDrawnLabelVisual
                     Paint="{x:Static vm:ClusterViewModel.TextColor}"
-                    Text="Pods"
+                    Text="{x:Static assets:Resources.ClusterView_Pods}"
                     TextSize="25" />
             </lvc:PieChart.Title>
             <lvc:PieChart.Series>
@@ -178,14 +179,14 @@
                         DataLabelsPosition="Start"
                         GaugeValue="{Binding PodGaugeData.MaxPods.Value}"
                         InnerRadius="20"
-                        SeriesName="Capacity"
+                        SeriesName="{x:Static assets:Resources.ClusterView_PodsCapacity}"
                         ToolTipLabelFormatter="{x:Static vm:PodGaugeData.DataLabelsFormatter}" />
                     <lvc:XamlGaugeSeries
                         DataLabelsFormatter="{x:Static vm:PodGaugeData.DataLabelsFormatter}"
                         DataLabelsPosition="Start"
                         GaugeValue="{Binding PodGaugeData.TotalPods.Value}"
                         InnerRadius="20"
-                        SeriesName="Count"
+                        SeriesName="{x:Static assets:Resources.ClusterView_PodsCount}"
                         ToolTipLabelFormatter="{x:Static vm:PodGaugeData.DataLabelsFormatter}" />
 
                     <!--  The background series is used to style the gauge background.  -->
@@ -201,7 +202,7 @@
             RowDefinitions="Auto,*">
             <TextBlock Grid.Row="0"
                 FontSize="25"
-                Text="Events" />
+                Text="{x:Static assets:Resources.ClusterView_Events}" />
             <views:ResourceListView Grid.Row="1" DataContext="{Binding EventsVM}" />
         </Grid>
     </Grid>

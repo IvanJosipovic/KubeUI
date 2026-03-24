@@ -5,6 +5,7 @@
     xmlns:coreClient="clr-namespace:KubeUI.Kubernetes;assembly=KubeUI.Kubernetes"
     xmlns:converters="using:KubeUI.Avalonia.Converters"
     xmlns:custom="using:Avalonia.Xaml.Interactions.Custom"
+    xmlns:assets="clr-namespace:KubeUI.Avalonia.Assets;assembly=KubeUI.Avalonia"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:ia="using:Avalonia.Xaml.Interactions.Core"
     xmlns:ic="using:FluentIcons.Avalonia"
@@ -46,16 +47,16 @@
                     Orientation="Horizontal">
                     <Interaction.Behaviors>
                         <DataTriggerBehavior Binding="{Binding Cluster.Status}" Value="{x:Static coreClient:ClusterStatus.None}">
-                            <SetToolTipTipAction Tip="Click to Connect" />
+                            <SetToolTipTipAction Tip="{x:Static assets:Resources.NavigationView_ToolTip_ClickToConnect}" />
                         </DataTriggerBehavior>
                         <DataTriggerBehavior Binding="{Binding Cluster.Status}" Value="{x:Static coreClient:ClusterStatus.Connecting}">
-                            <SetToolTipTipAction Tip="Connecting..." />
+                            <SetToolTipTipAction Tip="{x:Static assets:Resources.NavigationView_ToolTip_Connecting}" />
                         </DataTriggerBehavior>
                         <DataTriggerBehavior Binding="{Binding Cluster.Status}" Value="{x:Static coreClient:ClusterStatus.Errored}">
-                            <SetToolTipTipAction Tip="Errored" />
+                            <SetToolTipTipAction Tip="{x:Static assets:Resources.NavigationView_ToolTip_Errored}" />
                         </DataTriggerBehavior>
                         <DataTriggerBehavior Binding="{Binding Cluster.Status}" Value="{x:Static coreClient:ClusterStatus.Connected}">
-                            <SetToolTipTipAction Tip="Connected" />
+                            <SetToolTipTipAction Tip="{x:Static assets:Resources.NavigationView_ToolTip_Connected}" />
                         </DataTriggerBehavior>
                     </Interaction.Behaviors>
                     <Rectangle Name="Target"

@@ -16,7 +16,7 @@
         RowDefinitions="Auto,*">
         <!--  Top bar  -->
         <StackPanel Grid.Row="0" Orientation="Horizontal">
-            <Label VerticalAlignment="Center" Content="Pod:" />
+            <Label VerticalAlignment="Center" Content="{x:Static assets:Resources.PodLogsView_PodLabel}" />
             <Label VerticalAlignment="Center">
                 <Label.Content>
                     <MultiBinding StringFormat="{}{0}/{1}/{2}">

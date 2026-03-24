@@ -7,7 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:views="clr-namespace:KubeUI.Avalonia.Views"
     xmlns:vm="using:KubeUI.Avalonia.ViewModels"
-    Title="KubeUI"
+    Title="{x:Static assets:Resources.MainWindow_Title}"
     d:DesignHeight="450"
     d:DesignWidth="800"
     x:DataType="vm:MainViewModel"

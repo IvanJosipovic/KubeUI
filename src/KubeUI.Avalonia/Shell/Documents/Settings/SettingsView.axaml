@@ -2,6 +2,7 @@
     x:Class="KubeUI.Avalonia.Views.SettingsView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="clr-namespace:KubeUI.Avalonia.Assets;assembly=KubeUI.Avalonia"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:KubeUI.Avalonia;assembly=KubeUI.Avalonia"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -24,18 +25,18 @@
         <Grid ColumnDefinitions="*,2*">
             <Label
                 Grid.Column="0"
-                Content="Theme" />
+                Content="{x:Static assets:Resources.SettingsView_Theme}" />
             <StackPanel Grid.Column="1">
                 <RadioButton
-                    Content="Default"
+                    Content="{x:Static assets:Resources.SettingsView_Theme_Default}"
                     GroupName="Theme"
                     IsChecked="{Binding SettingsService.Appearance.Theme, Converter={StaticResource ThemeEqualityConverter}, ConverterParameter={x:Static local:LocalThemeVariant.Default}}" />
                 <RadioButton
-                    Content="Light"
+                    Content="{x:Static assets:Resources.SettingsView_Theme_Light}"
                     GroupName="Theme"
                     IsChecked="{Binding SettingsService.Appearance.Theme, Converter={StaticResource ThemeEqualityConverter}, ConverterParameter={x:Static local:LocalThemeVariant.Light}}" />
                 <RadioButton
-                    Content="Dark"
+                    Content="{x:Static assets:Resources.SettingsView_Theme_Dark}"
                     GroupName="Theme"
                     IsChecked="{Binding SettingsService.Appearance.Theme, Converter={StaticResource ThemeEqualityConverter}, ConverterParameter={x:Static local:LocalThemeVariant.Dark}}" />
             </StackPanel>
@@ -43,10 +44,10 @@
 
         <Grid
             ColumnDefinitions="*,2*"
-            ToolTip.Tip="KubeUI logs to the local file system in the &lt;User Profile&gt;/.kubeui/app.log">
+            ToolTip.Tip="{x:Static assets:Resources.SettingsView_Logging_ToolTip}">
             <Label
                 Grid.Column="0"
-                Content="Enable Local File Logging (Restart Required)" />
+                Content="{x:Static assets:Resources.SettingsView_Logging_Label}" />
             <CheckBox
                 Grid.Column="1"
                 IsChecked="{Binding SettingsService.Settings.LoggingEnabled}" />
@@ -54,10 +55,10 @@
 
         <Grid
             ColumnDefinitions="*,2*"
-            ToolTip.Tip="KubeUI gathers telemetry data to help the team improve the product.">
+            ToolTip.Tip="{x:Static assets:Resources.SettingsView_Telemetry_ToolTip}">
             <Label
                 Grid.Column="0"
-                Content="Enable Telemetry (Restart Required)" />
+                Content="{x:Static assets:Resources.SettingsView_Telemetry_Label}" />
             <CheckBox
                 Grid.Column="1"
                 IsChecked="{Binding SettingsService.Settings.TelemetryEnabled}" />
@@ -65,10 +66,10 @@
 
         <Grid
             ColumnDefinitions="*,2*"
-            ToolTip.Tip="Allows updates to pre-release versions of KubeUI">
+            ToolTip.Tip="{x:Static assets:Resources.SettingsView_PreRelease_ToolTip}">
             <Label
                 Grid.Column="0"
-                Content="Pre Release Channel" />
+                Content="{x:Static assets:Resources.SettingsView_PreRelease_Label}" />
             <CheckBox
                 Grid.Column="1"
                 IsChecked="{Binding SettingsService.Settings.PreReleaseChannel}"
@@ -77,10 +78,10 @@
 
         <Grid
             ColumnDefinitions="*,2*"
-            ToolTip.Tip="Font Size">
+            ToolTip.Tip="{x:Static assets:Resources.SettingsView_FontSize_ToolTip}">
             <Label
                 Grid.Column="0"
-                Content="Font Size" />
+                Content="{x:Static assets:Resources.SettingsView_FontSize_Label}" />
             <NumericUpDown
                 Grid.Column="1"
                 Value="{Binding SettingsService.Appearance.FontSize}" />
@@ -88,10 +89,10 @@
 
         <Grid
             ColumnDefinitions="*,2*"
-            ToolTip.Tip="Console/Logs/Yaml Font Size">
+            ToolTip.Tip="{x:Static assets:Resources.SettingsView_ConsoleFontSize_ToolTip}">
             <Label
                 Grid.Column="0"
-                Content="Console/Logs/Yaml Font Size" />
+                Content="{x:Static assets:Resources.SettingsView_ConsoleFontSize_Label}" />
             <NumericUpDown
                 Grid.Column="1"
                 Value="{Binding SettingsService.Appearance.ConsoleFontSize}" />
@@ -99,10 +100,10 @@
 
         <Grid
             ColumnDefinitions="*,2*"
-            ToolTip.Tip="List Row Height">
+            ToolTip.Tip="{x:Static assets:Resources.SettingsView_ListRowHeight_ToolTip}">
             <Label
                 Grid.Column="0"
-                Content="List Row Height" />
+                Content="{x:Static assets:Resources.SettingsView_ListRowHeight_Label}" />
             <NumericUpDown
                 Grid.Column="1"
                 Value="{Binding SettingsService.Appearance.ListRowHeight}" />

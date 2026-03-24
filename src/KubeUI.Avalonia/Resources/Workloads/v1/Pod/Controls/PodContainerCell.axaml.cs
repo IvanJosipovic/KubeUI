@@ -5,6 +5,7 @@ using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Kubernetes;
 using KubeUI.Avalonia.Converters;
+using AppResources = KubeUI.Avalonia.Assets.Resources;
 
 namespace KubeUI.Avalonia.Controls;
 
@@ -34,19 +35,19 @@ public partial class PodContainerCell : UserControl, IInitializeCluster
                     {
                         new()
                         {
-                            Name = "Stopped",
+                            Name = AppResources.PodContainerCell_Stopped,
                             Started = false,
                             Ready = false,
                         },
                         new ()
                         {
-                            Name = "Starting",
+                            Name = AppResources.PodContainerCell_Starting,
                             Started = true,
                             Ready = false,
                         },
                         new ()
                         {
-                            Name = "Ready",
+                            Name = AppResources.PodContainerCell_Ready,
                             Started = true,
                             Ready = true,
                         },
@@ -55,19 +56,19 @@ public partial class PodContainerCell : UserControl, IInitializeCluster
                     {
                         new()
                         {
-                            Name = "Init-Stopped",
+                            Name = AppResources.PodContainerCell_InitStopped,
                             Started = false,
                             Ready = false,
                         },
                         new ()
                         {
-                            Name = "Init-Starting",
+                            Name = AppResources.PodContainerCell_InitStarting,
                             Started = true,
                             Ready = false,
                         },
                         new ()
                         {
-                            Name = "Init-Ready",
+                            Name = AppResources.PodContainerCell_InitReady,
                             Started = true,
                             Ready = true,
                         },

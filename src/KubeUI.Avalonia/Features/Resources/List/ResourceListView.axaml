@@ -33,7 +33,7 @@
                 Grid.Column="1"
                 Width="200"
                 VerticalContentAlignment="Center"
-                Content="{Binding ItemCount, StringFormat='Items: {0}'}" />
+                Content="{Binding ItemCount, StringFormat={x:Static assets:Resources.ResourceListView_ItemsFormat}}" />
 
             <Grid
                 Grid.Column="2"
@@ -46,7 +46,7 @@
                     VerticalContentAlignment="Center"
                     Background="Transparent"
                     Text="{Binding SearchQuery}"
-                    Watermark="Search" />
+                    Watermark="{x:Static assets:Resources.ResourceListView_SearchWatermark}" />
 
                 <u:MultiComboBox
                     Grid.Column="1"

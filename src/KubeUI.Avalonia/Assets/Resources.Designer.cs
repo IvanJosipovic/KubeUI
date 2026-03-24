@@ -113,6 +113,42 @@ namespace KubeUI.Avalonia.Assets {
                 return ResourceManager.GetString("AboutView_Website", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to admin@KubeUI.com.
+        /// </summary>
+        public static string AboutView_ContactEmailContent {
+            get {
+                return ResourceManager.GetString("AboutView_ContactEmailContent", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to mailto:admin@KubeUI.com.
+        /// </summary>
+        public static string AboutView_ContactEmailUri {
+            get {
+                return ResourceManager.GetString("AboutView_ContactEmailUri", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to KubeUI.com.
+        /// </summary>
+        public static string AboutView_WebsiteContent {
+            get {
+                return ResourceManager.GetString("AboutView_WebsiteContent", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to https://KubeUI.com.
+        /// </summary>
+        public static string AboutView_WebsiteUri {
+            get {
+                return ResourceManager.GetString("AboutView_WebsiteUri", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to Copy.
@@ -257,6 +293,33 @@ namespace KubeUI.Avalonia.Assets {
                 return ResourceManager.GetString("ClusterListViewModel_Title", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Delete.
+        /// </summary>
+        public static string ClusterListView_Delete {
+            get {
+                return ResourceManager.GetString("ClusterListView_Delete", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to KubeConfig.
+        /// </summary>
+        public static string ClusterListView_KubeConfig {
+            get {
+                return ResourceManager.GetString("ClusterListView_KubeConfig", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Name.
+        /// </summary>
+        public static string ClusterListView_Name {
+            get {
+                return ResourceManager.GetString("ClusterListView_Name", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to Cluster Settings.
@@ -266,6 +329,51 @@ namespace KubeUI.Avalonia.Assets {
                 return ResourceManager.GetString("ClusterSettingsViewModel_Title", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Add.
+        /// </summary>
+        public static string ClusterSettingsView_Add {
+            get {
+                return ResourceManager.GetString("ClusterSettingsView_Add", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to {0} Settings.
+        /// </summary>
+        public static string ClusterSettingsView_TitleFormat {
+            get {
+                return ResourceManager.GetString("ClusterSettingsView_TitleFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Manually specified namespaces.
+        /// </summary>
+        public static string ClusterSettingsView_ManualNamespacesTooltip {
+            get {
+                return ResourceManager.GetString("ClusterSettingsView_ManualNamespacesTooltip", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Namespaces (Restart Required).
+        /// </summary>
+        public static string ClusterSettingsView_NamespacesLabel {
+            get {
+                return ResourceManager.GetString("ClusterSettingsView_NamespacesLabel", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Remove.
+        /// </summary>
+        public static string ClusterSettingsView_Remove {
+            get {
+                return ResourceManager.GetString("ClusterSettingsView_Remove", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to Cluster.
@@ -273,6 +381,150 @@ namespace KubeUI.Avalonia.Assets {
         public static string ClusterViewModel_Title {
             get {
                 return ResourceManager.GetString("ClusterViewModel_Title", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to CPU.
+        /// </summary>
+        public static string ClusterView_Cpu {
+            get {
+                return ResourceManager.GetString("ClusterView_Cpu", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to CPU Allocatable.
+        /// </summary>
+        public static string ClusterView_CpuAllocatable {
+            get {
+                return ResourceManager.GetString("ClusterView_CpuAllocatable", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to CPU Capacity.
+        /// </summary>
+        public static string ClusterView_CpuCapacity {
+            get {
+                return ResourceManager.GetString("ClusterView_CpuCapacity", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to CPU Limits.
+        /// </summary>
+        public static string ClusterView_CpuLimits {
+            get {
+                return ResourceManager.GetString("ClusterView_CpuLimits", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to CPU Requests.
+        /// </summary>
+        public static string ClusterView_CpuRequests {
+            get {
+                return ResourceManager.GetString("ClusterView_CpuRequests", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to CPU Usage.
+        /// </summary>
+        public static string ClusterView_CpuUsage {
+            get {
+                return ResourceManager.GetString("ClusterView_CpuUsage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Events.
+        /// </summary>
+        public static string ClusterView_Events {
+            get {
+                return ResourceManager.GetString("ClusterView_Events", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Memory.
+        /// </summary>
+        public static string ClusterView_Memory {
+            get {
+                return ResourceManager.GetString("ClusterView_Memory", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Memory Allocatable.
+        /// </summary>
+        public static string ClusterView_MemoryAllocatable {
+            get {
+                return ResourceManager.GetString("ClusterView_MemoryAllocatable", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Memory Capacity.
+        /// </summary>
+        public static string ClusterView_MemoryCapacity {
+            get {
+                return ResourceManager.GetString("ClusterView_MemoryCapacity", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Memory Limits.
+        /// </summary>
+        public static string ClusterView_MemoryLimits {
+            get {
+                return ResourceManager.GetString("ClusterView_MemoryLimits", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Memory Requests.
+        /// </summary>
+        public static string ClusterView_MemoryRequests {
+            get {
+                return ResourceManager.GetString("ClusterView_MemoryRequests", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Memory Usage.
+        /// </summary>
+        public static string ClusterView_MemoryUsage {
+            get {
+                return ResourceManager.GetString("ClusterView_MemoryUsage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Pods.
+        /// </summary>
+        public static string ClusterView_Pods {
+            get {
+                return ResourceManager.GetString("ClusterView_Pods", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Capacity.
+        /// </summary>
+        public static string ClusterView_PodsCapacity {
+            get {
+                return ResourceManager.GetString("ClusterView_PodsCapacity", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Count.
+        /// </summary>
+        public static string ClusterView_PodsCount {
+            get {
+                return ResourceManager.GetString("ClusterView_PodsCount", resourceCulture);
             }
         }
         
@@ -473,6 +725,42 @@ namespace KubeUI.Avalonia.Assets {
                 return ResourceManager.GetString("NavigationViewModel_Title", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Click to Connect.
+        /// </summary>
+        public static string NavigationView_ToolTip_ClickToConnect {
+            get {
+                return ResourceManager.GetString("NavigationView_ToolTip_ClickToConnect", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Connected.
+        /// </summary>
+        public static string NavigationView_ToolTip_Connected {
+            get {
+                return ResourceManager.GetString("NavigationView_ToolTip_Connected", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Connecting....
+        /// </summary>
+        public static string NavigationView_ToolTip_Connecting {
+            get {
+                return ResourceManager.GetString("NavigationView_ToolTip_Connecting", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Errored.
+        /// </summary>
+        public static string NavigationView_ToolTip_Errored {
+            get {
+                return ResourceManager.GetString("NavigationView_ToolTip_Errored", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to Pod Console.
@@ -480,6 +768,195 @@ namespace KubeUI.Avalonia.Assets {
         public static string PodConsoleViewModel_Title {
             get {
                 return ResourceManager.GetString("PodConsoleViewModel_Title", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Name: {0}.
+        /// </summary>
+        public static string PodContainerCell_NameFormat {
+            get {
+                return ResourceManager.GetString("PodContainerCell_NameFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Init-Ready.
+        /// </summary>
+        public static string PodContainerCell_InitReady {
+            get {
+                return ResourceManager.GetString("PodContainerCell_InitReady", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Init-Starting.
+        /// </summary>
+        public static string PodContainerCell_InitStarting {
+            get {
+                return ResourceManager.GetString("PodContainerCell_InitStarting", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Init-Stopped.
+        /// </summary>
+        public static string PodContainerCell_InitStopped {
+            get {
+                return ResourceManager.GetString("PodContainerCell_InitStopped", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Ready.
+        /// </summary>
+        public static string PodContainerCell_Ready {
+            get {
+                return ResourceManager.GetString("PodContainerCell_Ready", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Starting.
+        /// </summary>
+        public static string PodContainerCell_Starting {
+            get {
+                return ResourceManager.GetString("PodContainerCell_Starting", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Stopped.
+        /// </summary>
+        public static string PodContainerCell_Stopped {
+            get {
+                return ResourceManager.GetString("PodContainerCell_Stopped", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Pod:.
+        /// </summary>
+        public static string PodLogsView_PodLabel {
+            get {
+                return ResourceManager.GetString("PodLogsView_PodLabel", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Running.
+        /// </summary>
+        public static string PodStatusCell_Running {
+            get {
+                return ResourceManager.GetString("PodStatusCell_Running", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to PodCompleted.
+        /// </summary>
+        public static string PodStatusCell_PodCompleted {
+            get {
+                return ResourceManager.GetString("PodStatusCell_PodCompleted", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Terminating.
+        /// </summary>
+        public static string PodStatusCell_Terminating {
+            get {
+                return ResourceManager.GetString("PodStatusCell_Terminating", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Unknown.
+        /// </summary>
+        public static string PodStatusCell_Unknown {
+            get {
+                return ResourceManager.GetString("PodStatusCell_Unknown", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to ControlledBy.
+        /// </summary>
+        public static string PodPropertiesView_ControlledBy {
+            get {
+                return ResourceManager.GetString("PodPropertiesView_ControlledBy", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Image.
+        /// </summary>
+        public static string PodPropertiesView_Image {
+            get {
+                return ResourceManager.GetString("PodPropertiesView_Image", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Containers.
+        /// </summary>
+        public static string PodPropertiesView_Containers {
+            get {
+                return ResourceManager.GetString("PodPropertiesView_Containers", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Init Containers.
+        /// </summary>
+        public static string PodPropertiesView_InitContainers {
+            get {
+                return ResourceManager.GetString("PodPropertiesView_InitContainers", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Node.
+        /// </summary>
+        public static string PodPropertiesView_Node {
+            get {
+                return ResourceManager.GetString("PodPropertiesView_Node", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Name.
+        /// </summary>
+        public static string PodPropertiesView_Name {
+            get {
+                return ResourceManager.GetString("PodPropertiesView_Name", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Pod IP.
+        /// </summary>
+        public static string PodPropertiesView_PodIp {
+            get {
+                return ResourceManager.GetString("PodPropertiesView_PodIp", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Pull Policy.
+        /// </summary>
+        public static string PodPropertiesView_PullPolicy {
+            get {
+                return ResourceManager.GetString("PodPropertiesView_PullPolicy", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Status.
+        /// </summary>
+        public static string PodPropertiesView_Status {
+            get {
+                return ResourceManager.GetString("PodPropertiesView_Status", resourceCulture);
             }
         }
         
@@ -598,6 +1075,60 @@ namespace KubeUI.Avalonia.Assets {
         public static string ResourceListView_NamespaceLink {
             get {
                 return ResourceManager.GetString("ResourceListView_NamespaceLink", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Items: {0}.
+        /// </summary>
+        public static string ResourceListView_ItemsFormat {
+            get {
+                return ResourceManager.GetString("ResourceListView_ItemsFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Search.
+        /// </summary>
+        public static string ResourceListView_SearchWatermark {
+            get {
+                return ResourceManager.GetString("ResourceListView_SearchWatermark", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Items: {0}.
+        /// </summary>
+        public static string VisualizationView_ItemsFormat {
+            get {
+                return ResourceManager.GetString("VisualizationView_ItemsFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Hide noisy resources like inactive Replica Sets.
+        /// </summary>
+        public static string VisualizationView_HideNoiseTooltip {
+            get {
+                return ResourceManager.GetString("VisualizationView_HideNoiseTooltip", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Properties.
+        /// </summary>
+        public static string VisualizationView_Properties {
+            get {
+                return ResourceManager.GetString("VisualizationView_Properties", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to View Yaml.
+        /// </summary>
+        public static string VisualizationView_ViewYaml {
+            get {
+                return ResourceManager.GetString("VisualizationView_ViewYaml", resourceCulture);
             }
         }
         
@@ -836,6 +1367,51 @@ namespace KubeUI.Avalonia.Assets {
                 return ResourceManager.GetString("ResourcePropertiesViewModel_Title", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Created.
+        /// </summary>
+        public static string ResourcePropertiesView_Created {
+            get {
+                return ResourceManager.GetString("ResourcePropertiesView_Created", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Name.
+        /// </summary>
+        public static string ResourcePropertiesView_Name {
+            get {
+                return ResourceManager.GetString("ResourcePropertiesView_Name", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Namespace.
+        /// </summary>
+        public static string ResourcePropertiesView_Namespace {
+            get {
+                return ResourceManager.GetString("ResourcePropertiesView_Namespace", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Data.
+        /// </summary>
+        public static string SecretPropertiesView_Data {
+            get {
+                return ResourceManager.GetString("SecretPropertiesView_Data", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Certificates.
+        /// </summary>
+        public static string SecretPropertiesView_Certificates {
+            get {
+                return ResourceManager.GetString("SecretPropertiesView_Certificates", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to Word Wrap.
@@ -899,7 +1475,7 @@ namespace KubeUI.Avalonia.Assets {
                 return ResourceManager.GetString("ResourceYamlViewModel_Title", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to Settings.
         /// </summary>
@@ -908,7 +1484,241 @@ namespace KubeUI.Avalonia.Assets {
                 return ResourceManager.GetString("SettingsView_Title", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Looks up a localized string similar to Theme.
+        /// </summary>
+        public static string SettingsView_Theme {
+            get {
+                return ResourceManager.GetString("SettingsView_Theme", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Default.
+        /// </summary>
+        public static string SettingsView_Theme_Default {
+            get {
+                return ResourceManager.GetString("SettingsView_Theme_Default", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Dark.
+        /// </summary>
+        public static string SettingsView_Theme_Dark {
+            get {
+                return ResourceManager.GetString("SettingsView_Theme_Dark", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Enable Local File Logging (Restart Required).
+        /// </summary>
+        public static string SettingsView_Logging_Label {
+            get {
+                return ResourceManager.GetString("SettingsView_Logging_Label", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to KubeUI logs to the local file system in the &lt;User Profile&gt;/.kubeui/app.log.
+        /// </summary>
+        public static string SettingsView_Logging_ToolTip {
+            get {
+                return ResourceManager.GetString("SettingsView_Logging_ToolTip", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Enable Telemetry (Restart Required).
+        /// </summary>
+        public static string SettingsView_Telemetry_Label {
+            get {
+                return ResourceManager.GetString("SettingsView_Telemetry_Label", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to KubeUI gathers telemetry data to help the team improve the product..
+        /// </summary>
+        public static string SettingsView_Telemetry_ToolTip {
+            get {
+                return ResourceManager.GetString("SettingsView_Telemetry_ToolTip", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Pre Release Channel.
+        /// </summary>
+        public static string SettingsView_PreRelease_Label {
+            get {
+                return ResourceManager.GetString("SettingsView_PreRelease_Label", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Allows updates to pre-release versions of KubeUI.
+        /// </summary>
+        public static string SettingsView_PreRelease_ToolTip {
+            get {
+                return ResourceManager.GetString("SettingsView_PreRelease_ToolTip", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Font Size.
+        /// </summary>
+        public static string SettingsView_FontSize_Label {
+            get {
+                return ResourceManager.GetString("SettingsView_FontSize_Label", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Font Size.
+        /// </summary>
+        public static string SettingsView_FontSize_ToolTip {
+            get {
+                return ResourceManager.GetString("SettingsView_FontSize_ToolTip", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Console/Logs/Yaml Font Size.
+        /// </summary>
+        public static string SettingsView_ConsoleFontSize_Label {
+            get {
+                return ResourceManager.GetString("SettingsView_ConsoleFontSize_Label", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Console/Logs/Yaml Font Size.
+        /// </summary>
+        public static string SettingsView_ConsoleFontSize_ToolTip {
+            get {
+                return ResourceManager.GetString("SettingsView_ConsoleFontSize_ToolTip", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to List Row Height.
+        /// </summary>
+        public static string SettingsView_ListRowHeight_Label {
+            get {
+                return ResourceManager.GetString("SettingsView_ListRowHeight_Label", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to List Row Height.
+        /// </summary>
+        public static string SettingsView_ListRowHeight_ToolTip {
+            get {
+                return ResourceManager.GetString("SettingsView_ListRowHeight_ToolTip", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Light.
+        /// </summary>
+        public static string SettingsView_Theme_Light {
+            get {
+                return ResourceManager.GetString("SettingsView_Theme_Light", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to KubeUI.
+        /// </summary>
+        public static string MainWindow_Title {
+            get {
+                return ResourceManager.GetString("MainWindow_Title", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Type.
+        /// </summary>
+        public static string PortForwarderListView_Type {
+            get {
+                return ResourceManager.GetString("PortForwarderListView_Type", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Name.
+        /// </summary>
+        public static string PortForwarderListView_Name {
+            get {
+                return ResourceManager.GetString("PortForwarderListView_Name", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Namespace.
+        /// </summary>
+        public static string PortForwarderListView_Namespace {
+            get {
+                return ResourceManager.GetString("PortForwarderListView_Namespace", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Port.
+        /// </summary>
+        public static string PortForwarderListView_Port {
+            get {
+                return ResourceManager.GetString("PortForwarderListView_Port", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Local Port.
+        /// </summary>
+        public static string PortForwarderListView_LocalPort {
+            get {
+                return ResourceManager.GetString("PortForwarderListView_LocalPort", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Connections.
+        /// </summary>
+        public static string PortForwarderListView_Connections {
+            get {
+                return ResourceManager.GetString("PortForwarderListView_Connections", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Status.
+        /// </summary>
+        public static string PortForwarderListView_Status {
+            get {
+                return ResourceManager.GetString("PortForwarderListView_Status", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Open in Browser.
+        /// </summary>
+        public static string PortForwarderListView_OpenInBrowser {
+            get {
+                return ResourceManager.GetString("PortForwarderListView_OpenInBrowser", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Remove.
+        /// </summary>
+        public static string PortForwarderListView_Remove {
+            get {
+                return ResourceManager.GetString("PortForwarderListView_Remove", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Looks up a localized string similar to An update is available!.
         /// </summary>
