@@ -669,6 +669,66 @@ Are you sure?</value>
   <data name="PodLogsView_Clear" xml:space="preserve">
     <value>Clear Logs</value>
   </data>
+  <data name="ResourceListViewModel_Filter_Apply" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="ResourceListViewModel_Filter_Any" xml:space="preserve">
+    <value>Any</value>
+  </data>
+  <data name="ResourceListViewModel_Filter_And" xml:space="preserve">
+    <value>And</value>
+  </data>
+  <data name="ResourceListViewModel_Filter_Between" xml:space="preserve">
+    <value>Between</value>
+  </data>
+  <data name="ResourceListViewModel_Filter_Clear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="ResourceListViewModel_Filter_Contains" xml:space="preserve">
+    <value>Contains</value>
+  </data>
+  <data name="ResourceListViewModel_Filter_EndsWith" xml:space="preserve">
+    <value>Ends with</value>
+  </data>
+  <data name="ResourceListViewModel_Filter_Equals" xml:space="preserve">
+    <value>Equals</value>
+  </data>
+  <data name="ResourceListViewModel_Filter_GreaterThan" xml:space="preserve">
+    <value>Greater than</value>
+  </data>
+  <data name="ResourceListViewModel_Filter_GreaterThanOrEqual" xml:space="preserve">
+    <value>Greater than or equal</value>
+  </data>
+  <data name="ResourceListViewModel_Filter_LessThan" xml:space="preserve">
+    <value>Less than</value>
+  </data>
+  <data name="ResourceListViewModel_Filter_LessThanOrEqual" xml:space="preserve">
+    <value>Less than or equal</value>
+  </data>
+  <data name="ResourceListViewModel_Filter_NewerThan" xml:space="preserve">
+    <value>Newer than</value>
+  </data>
+  <data name="ResourceListViewModel_Filter_OlderThan" xml:space="preserve">
+    <value>Older than</value>
+  </data>
+  <data name="ResourceListViewModel_Filter_StartsWith" xml:space="preserve">
+    <value>Starts with</value>
+  </data>
+  <data name="ResourceListViewModel_Filter_Value" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="ResourceListViewModel_Filter_Minutes" xml:space="preserve">
+    <value>Minutes</value>
+  </data>
+  <data name="ResourceListViewModel_Filter_Hours" xml:space="preserve">
+    <value>Hours</value>
+  </data>
+  <data name="ResourceListViewModel_Filter_Days" xml:space="preserve">
+    <value>Days</value>
+  </data>
+  <data name="ResourceListViewModel_Filter_Months" xml:space="preserve">
+    <value>Months</value>
+  </data>
   <data name="UpdateView_Title" xml:space="preserve">
     <value>Update</value>
   </data>

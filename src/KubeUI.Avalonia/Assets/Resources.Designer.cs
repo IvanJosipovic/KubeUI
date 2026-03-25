@@ -1140,6 +1140,187 @@ namespace KubeUI.Avalonia.Assets {
                 return ResourceManager.GetString("ResourceListView_SelectNamespace", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Apply.
+        /// </summary>
+        public static string ResourceListViewModel_Filter_Apply {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_Filter_Apply", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Any.
+        /// </summary>
+        public static string ResourceListViewModel_Filter_Any {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_Filter_Any", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        /// <summary>
+        ///   Looks up a localized string similar to And.
+        /// </summary>
+        public static string ResourceListViewModel_Filter_And {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_Filter_And", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Between.
+        /// </summary>
+        public static string ResourceListViewModel_Filter_Between {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_Filter_Between", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Clear.
+        /// </summary>
+        public static string ResourceListViewModel_Filter_Clear {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_Filter_Clear", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Contains.
+        /// </summary>
+        public static string ResourceListViewModel_Filter_Contains {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_Filter_Contains", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Ends with.
+        /// </summary>
+        public static string ResourceListViewModel_Filter_EndsWith {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_Filter_EndsWith", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Equals.
+        /// </summary>
+        public static string ResourceListViewModel_Filter_Equals {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_Filter_Equals", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Greater than.
+        /// </summary>
+        public static string ResourceListViewModel_Filter_GreaterThan {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_Filter_GreaterThan", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Greater than or equal.
+        /// </summary>
+        public static string ResourceListViewModel_Filter_GreaterThanOrEqual {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_Filter_GreaterThanOrEqual", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Less than.
+        /// </summary>
+        public static string ResourceListViewModel_Filter_LessThan {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_Filter_LessThan", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Less than or equal.
+        /// </summary>
+        public static string ResourceListViewModel_Filter_LessThanOrEqual {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_Filter_LessThanOrEqual", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Newer than.
+        /// </summary>
+        public static string ResourceListViewModel_Filter_NewerThan {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_Filter_NewerThan", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Older than.
+        /// </summary>
+        public static string ResourceListViewModel_Filter_OlderThan {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_Filter_OlderThan", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Starts with.
+        /// </summary>
+        public static string ResourceListViewModel_Filter_StartsWith {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_Filter_StartsWith", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Value.
+        /// </summary>
+        public static string ResourceListViewModel_Filter_Value {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_Filter_Value", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Minutes.
+        /// </summary>
+        public static string ResourceListViewModel_Filter_Minutes {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_Filter_Minutes", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Hours.
+        /// </summary>
+        public static string ResourceListViewModel_Filter_Hours {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_Filter_Hours", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Days.
+        /// </summary>
+        public static string ResourceListViewModel_Filter_Days {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_Filter_Days", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Months.
+        /// </summary>
+        public static string ResourceListViewModel_Filter_Months {
+            get {
+                return ResourceManager.GetString("ResourceListViewModel_Filter_Months", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to Cordon Nodes {0}.

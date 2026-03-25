@@ -423,6 +423,236 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         after.ShouldContain("test=value");
     }
 
+    [AvaloniaFact(DisplayName = "Resource list columns expose filter buttons")]
+    public async Task resource_list_columns_expose_filter_buttons()
+    {
+        var window = CreateWindow();
+        var cluster = await CreateClusterAsync();
+
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+
+        window.Content = view;
+        window.Show();
+
+        var grid = view.FindControl<DataGrid>("PART_Grid");
+        grid.ShouldNotBeNull();
+
+        grid.Columns.ShouldNotBeEmpty();
+        grid.Columns.All(column => column.ShowFilterButton == true).ShouldBeTrue();
+        grid.Columns.All(column => column.FilterFlyout != null).ShouldBeTrue();
+    }
+
+    [AvaloniaFact(DisplayName = "Resource list filter flyout rows align editors")]
+    public async Task resource_list_filter_flyout_rows_align_editors()
+    {
+        var textCluster = await CreateClusterAsync();
+        var textVm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        textVm.Initialize(textCluster);
+
+        var textColumn = textVm.ColumnDefinitions.First(column => column.ValueType == typeof(string));
+        var textFlyout = textColumn.FilterFlyout.ShouldBeOfType<Flyout>();
+        var textContent = textFlyout.Content.ShouldBeOfType<StackPanel>();
+        textContent.Children.OfType<ComboBox>().Single().Margin.Left.ShouldBe(textContent.Children.OfType<TextBox>().Single().Margin.Left);
+
+        var numericCluster = await CreateClusterAsync();
+        var numericVm = GetRequiredService<ResourceListViewModel<Corev1Event>>();
+        numericVm.Initialize(numericCluster);
+
+        var numericColumn = numericVm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Count", StringComparison.Ordinal));
+        var numericFlyout = numericColumn.FilterFlyout.ShouldBeOfType<Flyout>();
+        var numericContent = numericFlyout.Content.ShouldBeOfType<StackPanel>();
+        var numericRows = numericContent.Children.OfType<Grid>().ToList();
+
+        numericRows.Count.ShouldBeGreaterThanOrEqualTo(3);
+
+        var numericValueRow = numericRows[1];
+        var numericRangeRow = numericRows[2];
+        var numericValueInput = numericValueRow.Children.OfType<NumericUpDown>().Single();
+        var numericRangeInput = numericRangeRow.Children.OfType<NumericUpDown>().Single();
+
+        Grid.GetColumn(numericValueInput).ShouldBe(1);
+        Grid.GetColumn(numericRangeInput).ShouldBe(1);
+        numericValueRow.Children.OfType<TextBlock>().Single().MinWidth.ShouldBe(numericRangeRow.Children.OfType<TextBlock>().Single().MinWidth);
+
+        var dateCluster = await CreateClusterAsync();
+        var dateVm = GetRequiredService<ResourceListViewModel<Corev1Event>>();
+        dateVm.Initialize(dateCluster);
+
+        var dateColumn = dateVm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Last Seen", StringComparison.Ordinal));
+        var dateFlyout = dateColumn.FilterFlyout.ShouldBeOfType<Flyout>();
+        var dateContent = dateFlyout.Content.ShouldBeOfType<StackPanel>();
+        dateContent.GetVisualDescendants().OfType<NumericUpDown>().Count().ShouldBe(1);
+        dateContent.GetVisualDescendants().OfType<ComboBox>().Count().ShouldBeGreaterThanOrEqualTo(2);
+    }
+
+    [AvaloniaFact(DisplayName = "Resource list numeric and date filters support comparison operators")]
+    public async Task resource_list_numeric_and_date_filters_support_comparison_operators()
+    {
+        var window = CreateWindow();
+        var cluster = await CreateClusterAsync();
+
+        var vm = GetRequiredService<ResourceListViewModel<Corev1Event>>();
+        vm.Initialize(cluster);
+
+        var view = GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+
+        window.Content = view;
+        window.Show();
+
+        var countColumn = vm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Count", StringComparison.Ordinal));
+        var lastSeenColumn = vm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Last Seen", StringComparison.Ordinal));
+
+        var applyNumericFilter = vm.GetType().GetMethod("ApplyNumericFilter", BindingFlags.Instance | BindingFlags.NonPublic);
+        applyNumericFilter.ShouldNotBeNull();
+
+        var applyDateFilter = vm.GetType().GetMethod("ApplyDateFilter", BindingFlags.Instance | BindingFlags.NonPublic);
+        applyDateFilter.ShouldNotBeNull();
+
+        FilteringDescriptor GetDescriptorForColumn(DataGridColumnDefinition column)
+            => vm.FilteringModel.Descriptors.First(descriptor =>
+                ReferenceEquals(descriptor.ColumnId, column) || Equals(descriptor.ColumnId, column));
+
+        applyNumericFilter!.Invoke(vm, [countColumn, FilteringOperator.GreaterThan, 5d, null]);
+        vm.FilteringModel.Descriptors.Count(descriptor => ReferenceEquals(descriptor.ColumnId, countColumn) || Equals(descriptor.ColumnId, countColumn)).ShouldBe(1);
+        var numericDescriptor = GetDescriptorForColumn(countColumn);
+        numericDescriptor.Operator.ShouldBe(FilteringOperator.GreaterThan);
+        numericDescriptor.Value.ShouldBe(5d);
+
+        applyNumericFilter.Invoke(vm, [countColumn, FilteringOperator.Between, 2d, 8d]);
+        vm.FilteringModel.Descriptors.Count(descriptor => ReferenceEquals(descriptor.ColumnId, countColumn) || Equals(descriptor.ColumnId, countColumn)).ShouldBe(1);
+        numericDescriptor = GetDescriptorForColumn(countColumn);
+        numericDescriptor.Operator.ShouldBe(FilteringOperator.Between);
+        numericDescriptor.Values.ShouldNotBeNull();
+        numericDescriptor.Values.Count.ShouldBe(2);
+        numericDescriptor.Values[0].ShouldBe(2d);
+        numericDescriptor.Values[1].ShouldBe(8d);
+
+        var beforeDateFilter = DateTimeOffset.UtcNow;
+        var days = GetDateRelativeUnit(vm, 2);
+        applyDateFilter!.Invoke(vm, [lastSeenColumn, lastSeenColumn.ValueType, FilteringOperator.GreaterThan, 5d, days]);
+        vm.FilteringModel.Descriptors.Count(descriptor => ReferenceEquals(descriptor.ColumnId, lastSeenColumn) || Equals(descriptor.ColumnId, lastSeenColumn)).ShouldBe(1);
+        var dateDescriptor = GetDescriptorForColumn(lastSeenColumn);
+        dateDescriptor.Operator.ShouldBe(FilteringOperator.GreaterThan);
+        dateDescriptor.Value.ShouldNotBeNull();
+        var expectedThreshold = beforeDateFilter.AddDays(-5);
+        var actualThreshold = ToDateTimeOffset(dateDescriptor.Value!);
+        Math.Abs((actualThreshold - expectedThreshold).TotalSeconds).ShouldBeLessThan(10);
+
+        var hours = GetDateRelativeUnit(vm, 1);
+        applyDateFilter.Invoke(vm, [lastSeenColumn, lastSeenColumn.ValueType, FilteringOperator.LessThan, 12d, hours]);
+        vm.FilteringModel.Descriptors.Count(descriptor => ReferenceEquals(descriptor.ColumnId, lastSeenColumn) || Equals(descriptor.ColumnId, lastSeenColumn)).ShouldBe(1);
+        dateDescriptor = GetDescriptorForColumn(lastSeenColumn);
+        dateDescriptor.Operator.ShouldBe(FilteringOperator.LessThan);
+        dateDescriptor.Value.ShouldNotBeNull();
+        expectedThreshold = beforeDateFilter.AddHours(-12);
+        actualThreshold = ToDateTimeOffset(dateDescriptor.Value!);
+        Math.Abs((actualThreshold - expectedThreshold).TotalSeconds).ShouldBeLessThan(10);
+    }
+
+    [AvaloniaFact(DisplayName = "Resource list filters update the live view")]
+    public async Task resource_list_filters_update_the_live_view()
+    {
+        var window = CreateWindow();
+        var cluster = await CreateClusterAsync();
+
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+
+        window.Content = view;
+        window.Show();
+
+        var pods = new[]
+        {
+            Pod("ns", "alpha"),
+            Pod("ns", "beta"),
+            Pod("ns", "gamma"),
+        };
+
+        foreach (var pod in pods)
+        {
+            await AddOrUpdateAsync(cluster, pod);
+        }
+
+        Dispatcher.UIThread.RunJobs();
+        vm.View.Count.ShouldBe(3);
+
+        var nameColumn = vm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Name", StringComparison.Ordinal));
+        var applyTextFilter = vm.GetType().GetMethod("ApplyTextFilter", BindingFlags.Instance | BindingFlags.NonPublic);
+        applyTextFilter.ShouldNotBeNull();
+
+        applyTextFilter!.Invoke(vm, [nameColumn, FilteringOperator.Contains, "alp"]);
+        Dispatcher.UIThread.RunJobs();
+
+        vm.View.Count.ShouldBe(1);
+        ((V1Pod)vm.View[0]).Name().ShouldBe("alpha");
+
+        var countCluster = await CreateClusterAsync();
+        var countVm = GetRequiredService<ResourceListViewModel<Corev1Event>>();
+        countVm.Initialize(countCluster);
+
+        var countView = GetRequiredService<ResourceListView>();
+        countView.DataContext = countVm;
+
+        var countWindow = CreateWindow(content: countView);
+        countWindow.Show();
+
+        var older = new Corev1Event
+        {
+            Metadata = new V1ObjectMeta
+            {
+                NamespaceProperty = "ns",
+                Name = "older",
+                CreationTimestamp = DateTime.UtcNow.AddHours(-5)
+            },
+            Count = 1,
+            LastTimestamp = DateTime.UtcNow.AddHours(-5)
+        };
+
+        var newer = new Corev1Event
+        {
+            Metadata = new V1ObjectMeta
+            {
+                NamespaceProperty = "ns",
+                Name = "newer",
+                CreationTimestamp = DateTime.UtcNow.AddMinutes(-10)
+            },
+            Count = 2,
+            LastTimestamp = DateTime.UtcNow.AddMinutes(-10)
+        };
+
+        await AddOrUpdateAsync(countCluster, older);
+        await AddOrUpdateAsync(countCluster, newer);
+        Dispatcher.UIThread.RunJobs();
+        countVm.View.Count.ShouldBe(2);
+
+        var countColumn = countVm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Count", StringComparison.Ordinal));
+        var applyNumericFilter = countVm.GetType().GetMethod("ApplyNumericFilter", BindingFlags.Instance | BindingFlags.NonPublic);
+        applyNumericFilter.ShouldNotBeNull();
+
+        applyNumericFilter!.Invoke(countVm, [countColumn, FilteringOperator.GreaterThan, 0d, null]);
+        Dispatcher.UIThread.RunJobs();
+        countVm.View.Count.ShouldBe(2);
+
+        var lastSeenColumn = countVm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Last Seen", StringComparison.Ordinal));
+        var applyDateFilter = countVm.GetType().GetMethod("ApplyDateFilter", BindingFlags.Instance | BindingFlags.NonPublic);
+        applyDateFilter.ShouldNotBeNull();
+
+        var hours = GetDateRelativeUnit(countVm, 1);
+        applyDateFilter!.Invoke(countVm, [lastSeenColumn, lastSeenColumn.ValueType, FilteringOperator.GreaterThan, 1d, hours]);
+        Dispatcher.UIThread.RunJobs();
+
+        countVm.View.Count.ShouldBe(1);
+        ((Corev1Event)countVm.View[0]).Name().ShouldBe("newer");
+    }
+
     [AvaloniaFact(DisplayName = "Namespace filter preserves selection when included")]
     public async Task namespace_filter_preserves_selection_when_included()
     {
@@ -553,6 +783,38 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var containers = portForwardMenu!.Items?.ToList();
         containers.Count.ShouldBe(1);
         containers[0].Header.ShouldBe("d-container");
+    }
+
+    [AvaloniaFact(DisplayName = "Resource list enum filters render a selector")]
+    public async Task resource_list_enum_filters_render_a_selector()
+    {
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        var cluster = await CreateClusterAsync();
+        vm.Initialize(cluster);
+
+        var createFilterFlyout = vm.GetType().GetMethod("CreateFilterFlyout", BindingFlags.Instance | BindingFlags.NonPublic);
+        createFilterFlyout.ShouldNotBeNull();
+
+        var column = new TestEnumColumnDefinition();
+        var dataGridColumn = new DataGridControlTemplateColumnDefinition();
+
+        var flyout = createFilterFlyout!.Invoke(vm, [column, dataGridColumn]).ShouldBeOfType<Flyout>();
+        var content = flyout.Content.ShouldBeOfType<StackPanel>();
+
+        var enumComboBox = content.GetVisualDescendants().OfType<ComboBox>().Single();
+        enumComboBox.ItemsSource.ShouldNotBeNull();
+        enumComboBox.ItemsSource.OfType<object>().Count().ShouldBe(4);
+
+        var applyEnumFilter = vm.GetType().GetMethod("ApplyEnumFilter", BindingFlags.Instance | BindingFlags.NonPublic);
+        applyEnumFilter.ShouldNotBeNull();
+
+        applyEnumFilter!.Invoke(vm, [dataGridColumn, TestFilterStatus.Running]);
+
+        vm.FilteringModel.Descriptors.Count.ShouldBe(1);
+        var descriptor = vm.FilteringModel.Descriptors[0];
+        descriptor.Operator.ShouldBe(FilteringOperator.Equals);
+        descriptor.Value.ShouldBe(TestFilterStatus.Running);
+        ReferenceEquals(descriptor.ColumnId, dataGridColumn).ShouldBeTrue();
     }
 
     [AvaloniaFact(DisplayName = "Namespace filter is linked to cluster by default")]
@@ -1059,6 +1321,59 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     {
         vm.FilteringModel.Descriptors.Count.ShouldBe(1);
         return vm.FilteringModel.Descriptors[0].Values.Cast<string>().ToList();
+    }
+
+    private static object GetDateRelativeUnit<T>(T viewModel, int index)
+    {
+        var field = viewModel!.GetType().GetField("s_dateRelativeUnitChoices", BindingFlags.NonPublic | BindingFlags.Static);
+        field.ShouldNotBeNull();
+
+        var choices = (Array)field!.GetValue(null)!;
+        var choice = choices.GetValue(index).ShouldNotBeNull();
+        var unitProperty = choice.GetType().GetProperty("Unit", BindingFlags.Instance | BindingFlags.Public);
+        unitProperty.ShouldNotBeNull();
+
+        return unitProperty!.GetValue(choice)!;
+    }
+
+    private static DateTimeOffset ToDateTimeOffset(object value)
+    {
+        return value switch
+        {
+            DateTimeOffset dto => dto,
+            DateTime dt => new DateTimeOffset(dt),
+            _ => throw new InvalidOperationException($"Unsupported date value type: {value.GetType().FullName}")
+        };
+    }
+}
+
+internal enum TestFilterStatus
+{
+    Pending,
+    Running,
+    Failed,
+}
+
+internal sealed class TestEnumColumnDefinition : IResourceListColumn
+{
+    public string Key => "status";
+    public string Name => "Status";
+    public string? Width => null;
+    public KubeUI.Avalonia.Resources.SortDirection Sort { get; set; } = KubeUI.Avalonia.Resources.SortDirection.None;
+    public Type CustomControl => typeof(object);
+    public Type ItemType => typeof(V1Pod);
+    public Type ValueType => typeof(TestFilterStatus);
+    public IDataGridColumnValueAccessor ValueAccessor { get; } = new TestEnumValueAccessor();
+    public Func<object, IComparable?> SortKey => _ => null;
+    public Func<object, string> DisplayValue => _ => string.Empty;
+
+    private sealed class TestEnumValueAccessor : IDataGridColumnValueAccessor
+    {
+        public Type ItemType => typeof(V1Pod);
+        public Type ValueType => typeof(TestFilterStatus);
+        public bool CanWrite => false;
+        public object GetValue(object item) => TestFilterStatus.Pending;
+        public void SetValue(object item, object value) => throw new NotSupportedException();
     }
 }
 
