@@ -74,6 +74,9 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     public Func<Task>? ConnectBehavior { get; set; }
 
     public bool CanCreatePodPortForward { get; set; } = true;
+    public bool ThrowOnMissingPortForwardReview { get; set; }
+
+    public int PortForwardPermissionChecks { get; private set; }
 
     public ConcurrentDictionary<GroupApiVersionKind, object> Objects { get; } = [];
 
@@ -192,6 +195,13 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
 
         if (type == typeof(V1Pod) && verb == Verb.Create && string.Equals(subresource, "portforward", StringComparison.Ordinal))
         {
+            PortForwardPermissionChecks++;
+
+            if (ThrowOnMissingPortForwardReview)
+            {
+                throw new InvalidOperationException("Missing V1SelfSubjectAccessReview Create /pods/portforward");
+            }
+
             return CanCreatePodPortForward;
         }
 
@@ -260,6 +270,11 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     public Task<bool> UpdateCanI<T>(Verb verb, string? @namespace = null, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         return Task.FromResult(CanI<T>(verb, @namespace, subresource));
+    }
+
+    public void ResetPortForwardPermissionChecks()
+    {
+        PortForwardPermissionChecks = 0;
     }
 
     public Task<bool> UpdateCanIAnyNamespaceAsync(Type type, Verb verb, string? subresource = null)

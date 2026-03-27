@@ -140,7 +140,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
             clusterNode.IsExpanded = !clusterNode.IsExpanded;
-            RebuildClusterNavigation(clusterNode);
+            InitializeClusterNavigation(clusterNode, updatePortForwarders: true);
         });
     }
 
@@ -168,7 +168,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                     ShowClusterError(cluster.LastError);
                 }
 
-                RebuildClusterNavigation(clusterNode);
+                InitializeClusterNavigation(clusterNode, updatePortForwarders: true);
             });
         }
         catch (Exception ex)
@@ -178,7 +178,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                 cluster.LastError = ex.Message;
                 cluster.Status = ClusterStatus.Errored;
                 ShowClusterError(ex.Message);
-                RebuildClusterNavigation(clusterNode);
+                SyncClusterNavigation(cluster);
             });
         }
     }
@@ -249,13 +249,13 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
             _clusterNodes.Add(cluster, node);
             Clusters.Add(node);
-            RebuildClusterNavigation(node);
+            InitializeClusterNavigation(node, updatePortForwarders: cluster.Connected);
         }
     }
 
     private void SubscribeCluster(ClusterWorkspaceViewModel cluster)
     {
-        cluster.ResourcePermissionsChanged += OnClusterResourcePermissionsChanged;
+        cluster.ResourceConfigPermissionsUpdated += OnClusterResourceConfigPermissionsUpdated;
         cluster.CustomResourceDefinitionsChanged += OnClusterCustomResourceDefinitionsChanged;
 
         if (cluster is INotifyPropertyChanged propertyChanged)
@@ -266,7 +266,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private void UnsubscribeCluster(ClusterWorkspaceViewModel cluster)
     {
-        cluster.ResourcePermissionsChanged -= OnClusterResourcePermissionsChanged;
+        cluster.ResourceConfigPermissionsUpdated -= OnClusterResourceConfigPermissionsUpdated;
         cluster.CustomResourceDefinitionsChanged -= OnClusterCustomResourceDefinitionsChanged;
 
         if (cluster is INotifyPropertyChanged propertyChanged)
@@ -296,7 +296,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                 cluster.IsExpanded = true;
             }
 
-            Dispatcher.UIThread.Post(() => RebuildClusterNavigation(cluster));
+            Dispatcher.UIThread.Post(() => SyncClusterNavigation(cluster, updatePortForwarders: cluster.Connected));
             return;
         }
 
@@ -309,14 +309,14 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                     cluster.IsExpanded = true;
                 }
 
-                RebuildClusterNavigation(cluster);
+                SyncClusterNavigation(cluster, updatePortForwarders: cluster.Status == ClusterStatus.Connected);
             });
         }
     }
 
-    private void OnClusterResourcePermissionsChanged(ClusterWorkspaceViewModel cluster)
+    private void OnClusterResourceConfigPermissionsUpdated(ClusterWorkspaceViewModel cluster, IResourceConfig resourceConfig)
     {
-        Dispatcher.UIThread.Post(() => RebuildClusterNavigation(cluster));
+        Dispatcher.UIThread.Post(() => ApplyResourceNavigationUpdate(cluster, resourceConfig));
     }
 
     private void OnClusterCustomResourceDefinitionsChanged(ClusterWorkspaceViewModel cluster, IReadOnlyList<PendingCustomResourceConfig> addedConfigs, IReadOnlyList<GroupApiVersionKind> removedKinds)
@@ -345,7 +345,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                 {
                     if (pendingUpdate.RebuildWholeNavigation)
                     {
-                        RebuildClusterNavigation(cluster);
+                        InitializeClusterNavigation(cluster, updatePortForwarders: cluster.Connected);
                     }
                     else
                     {
@@ -367,18 +367,81 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         });
     }
 
-    private void RebuildClusterNavigation(ClusterWorkspaceViewModel cluster)
+    private void InitializeClusterNavigation(ClusterWorkspaceViewModel cluster, bool updatePortForwarders = false)
     {
         if (_clusterNodes.TryGetValue(cluster, out var node))
         {
-            RebuildClusterNavigation(node);
+            InitializeClusterNavigation(node, updatePortForwarders);
         }
     }
 
-    private void RebuildClusterNavigation(ClusterNavigationNode node)
+    private void InitializeClusterNavigation(ClusterNavigationNode node, bool updatePortForwarders = false)
     {
-        var desiredItems = BuildNavigationItems(node.Cluster).ToList();
-        ReconcileNavigationItems(node.NavigationItems, desiredItems);
+        node.NavigationItems.Clear();
+
+        if (!ShouldPopulateClusterNavigation(node.Cluster))
+        {
+            return;
+        }
+
+        AddBaseNavigationItems(node);
+
+        foreach (var resourceConfig in node.Cluster.GetResourceConfigs()
+                     .OrderBy(config => config.Order)
+                     .ThenBy(config => config.Name, StringComparer.Ordinal))
+        {
+            ApplyResourceNavigationUpdate(node.Cluster, resourceConfig);
+        }
+
+        if (updatePortForwarders)
+        {
+            UpdatePortForwardersNavigation(node);
+        }
+    }
+
+    private void SyncClusterNavigation(ClusterWorkspaceViewModel cluster, bool updatePortForwarders = false)
+    {
+        if (!_clusterNodes.TryGetValue(cluster, out var node))
+        {
+            return;
+        }
+
+        if (!ShouldPopulateClusterNavigation(cluster))
+        {
+            node.NavigationItems.Clear();
+            return;
+        }
+
+        if (node.NavigationItems.Count == 0)
+        {
+            InitializeClusterNavigation(node, updatePortForwarders);
+            return;
+        }
+
+        EnsureBaseNavigationItems(node);
+
+        if (updatePortForwarders)
+        {
+            UpdatePortForwardersNavigation(node);
+        }
+    }
+
+    private static void AddBaseNavigationItems(ClusterNavigationNode node)
+    {
+        node.NavigationItems.Add(CreateNavigationLink(node.Cluster, NavigationTargets.ClusterWorkspace, Assets.Resources.ClusterViewModel_Title, ClusterWorkspaceOrder));
+        node.NavigationItems.Add(CreateNavigationLink(node.Cluster, NavigationTargets.Visualization, Assets.Resources.VisualizationViewModel_Title, VisualizationOrder));
+        node.NavigationItems.Add(CreateNavigationLink(node.Cluster, NavigationTargets.ClusterSettings, Assets.Resources.ClusterSettingsViewModel_Title, ClusterSettingsOrder));
+        node.NavigationItems.Add(CreateNavigationLink(node.Cluster, "load-yaml", Assets.Resources.NavigationViewModel_LoadYaml, LoadYamlOrder));
+        node.NavigationItems.Add(CreateNavigationLink(node.Cluster, "load-folder", Assets.Resources.NavigationViewModel_LoadFolder, LoadFolderOrder));
+    }
+
+    private static void EnsureBaseNavigationItems(ClusterNavigationNode node)
+    {
+        UpsertNavigationItem(node.NavigationItems, CreateNavigationLink(node.Cluster, NavigationTargets.ClusterWorkspace, Assets.Resources.ClusterViewModel_Title, ClusterWorkspaceOrder));
+        UpsertNavigationItem(node.NavigationItems, CreateNavigationLink(node.Cluster, NavigationTargets.Visualization, Assets.Resources.VisualizationViewModel_Title, VisualizationOrder));
+        UpsertNavigationItem(node.NavigationItems, CreateNavigationLink(node.Cluster, NavigationTargets.ClusterSettings, Assets.Resources.ClusterSettingsViewModel_Title, ClusterSettingsOrder));
+        UpsertNavigationItem(node.NavigationItems, CreateNavigationLink(node.Cluster, "load-yaml", Assets.Resources.NavigationViewModel_LoadYaml, LoadYamlOrder));
+        UpsertNavigationItem(node.NavigationItems, CreateNavigationLink(node.Cluster, "load-folder", Assets.Resources.NavigationViewModel_LoadFolder, LoadFolderOrder));
     }
 
     private IEnumerable<NavigationItem> BuildNavigationItems(ClusterWorkspaceViewModel cluster)
@@ -394,7 +457,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             CreateNavigationLink(cluster, NavigationTargets.Visualization, Assets.Resources.VisualizationViewModel_Title, VisualizationOrder),
             CreateNavigationLink(cluster, NavigationTargets.ClusterSettings, Assets.Resources.ClusterSettingsViewModel_Title, ClusterSettingsOrder),
             CreateNavigationLink(cluster, "load-yaml", Assets.Resources.NavigationViewModel_LoadYaml, LoadYamlOrder),
-            CreateNavigationLink(cluster, "load-folder", Assets.Resources.NavigationViewModel_LoadFolder, LoadFolderOrder)
+            CreateNavigationLink(cluster, "load-folder", Assets.Resources.NavigationViewModel_LoadFolder, LoadFolderOrder),
         };
 
         var categories = new Dictionary<string, NavigationItem>(StringComparer.Ordinal);
@@ -438,12 +501,6 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             category.NavigationItems.Add(link);
         }
 
-        if (CanShowPortForwarders(cluster))
-        {
-            var networkCategory = EnsureCategory(items, categories, cluster, NetworkCategoryName, NetworkCategoryOrder);
-            networkCategory.NavigationItems.Add(CreateNavigationLink(cluster, NavigationTargets.PortForwarders, Assets.Resources.PortForwarderListViewModel_Title, PortForwardersOrder));
-        }
-
         var customResourceDefinitions = BuildCustomResourceDefinitionsNavigationItem(cluster, definitionsLink, customResourceConfigs);
         if (customResourceDefinitions != null)
         {
@@ -464,6 +521,61 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             _logger.LogDebug(ex, "Unable to evaluate port forward permissions for cluster {Cluster}", cluster.Name);
             return false;
         }
+    }
+
+    private void ApplyResourceNavigationUpdate(ClusterWorkspaceViewModel cluster, IResourceConfig resourceConfig)
+    {
+        if (!_clusterNodes.TryGetValue(cluster, out var node) || !ShouldPopulateClusterNavigation(cluster))
+        {
+            return;
+        }
+
+        if (resourceConfig.Type == typeof(V1CustomResourceDefinition))
+        {
+            ApplyDefinitionsNavigationUpdate(node, cluster, resourceConfig, isVisible: CanListAndWatchResource(cluster, resourceConfig));
+            return;
+        }
+
+        var isVisible = CanListAndWatchResource(cluster, resourceConfig);
+
+        if (resourceConfig.IsCustomResource)
+        {
+            ApplyCustomResourceNavigationUpdate(node, cluster, resourceConfig, isVisible);
+        }
+        else
+        {
+            ApplyStandardResourceNavigationUpdate(node, cluster, resourceConfig, isVisible);
+        }
+
+        if (resourceConfig.Type == typeof(V1Pod))
+        {
+            UpdatePortForwardersNavigation(node);
+        }
+    }
+
+    private void UpdatePortForwardersNavigation(ClusterNavigationNode node)
+    {
+        var cluster = node.Cluster;
+        var existingPortForwardersLink = FindNavigationItem(node.NavigationItems, $"{cluster.Name}-{NavigationTargets.PortForwarders}");
+        if (existingPortForwardersLink != null)
+        {
+            RemoveNavigationItem(node.NavigationItems, existingPortForwardersLink.Id);
+        }
+
+        var networkCategoryId = $"{cluster.Name}-category-{NetworkCategoryName}";
+        if (FindNavigationItem(node.NavigationItems, networkCategoryId) is NavigationItem existingNetworkCategory
+            && existingNetworkCategory.NavigationItems.Count == 0)
+        {
+            node.NavigationItems.Remove(existingNetworkCategory);
+        }
+
+        if (!CanShowPortForwarders(cluster))
+        {
+            return;
+        }
+
+        var networkCategory = EnsureCategoryNode(node.NavigationItems, cluster, NetworkCategoryName, NetworkCategoryOrder);
+        UpsertNavigationItem(networkCategory.NavigationItems, CreateNavigationLink(cluster, NavigationTargets.PortForwarders, Assets.Resources.PortForwarderListViewModel_Title, PortForwardersOrder));
     }
 
     private static NavigationItem EnsureCategory(List<NavigationItem> items, Dictionary<string, NavigationItem> categories, ClusterWorkspaceViewModel cluster, string categoryName, int order)
@@ -497,6 +609,44 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         return defaultOrder + CategoryOrderOffset;
     }
 
+    private static NavigationItem EnsureCategoryNode(ObservableCollection<NavigationItem> items, ClusterWorkspaceViewModel cluster, string categoryName, int order)
+    {
+        var categoryId = $"{cluster.Name}-category-{categoryName}";
+        var matchingCategories = items
+            .Where(item => string.Equals(item.Id, categoryId, StringComparison.Ordinal))
+            .ToList();
+
+        if (matchingCategories.Count > 0)
+        {
+            var existingCategory = matchingCategories[0];
+            existingCategory.Name = categoryName;
+            existingCategory.Order = ResolveCategoryOrder(categoryName, order);
+
+            for (var i = 1; i < matchingCategories.Count; i++)
+            {
+                var duplicateCategory = matchingCategories[i];
+                foreach (var child in duplicateCategory.NavigationItems.ToList())
+                {
+                    UpsertNavigationItem(existingCategory.NavigationItems, child);
+                }
+
+                items.Remove(duplicateCategory);
+            }
+
+            return existingCategory;
+        }
+
+        var category = new NavigationItem
+        {
+            Id = categoryId,
+            Name = categoryName,
+            Order = ResolveCategoryOrder(categoryName, order),
+        };
+
+        items.Add(category);
+        return category;
+    }
+
     private void ApplyCustomResourceDefinitionChanges(ClusterWorkspaceViewModel cluster, IEnumerable<PendingCustomResourceConfig> addedConfigs, IEnumerable<GroupApiVersionKind> removedKinds)
     {
         if (!_clusterNodes.TryGetValue(cluster, out var node))
@@ -517,7 +667,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
         foreach (var addedConfig in addedConfigs)
         {
-            AddOrUpdateCustomResourceDefinition(root, cluster, addedConfig.ResourceConfig);
+            ApplyCustomResourceNavigationUpdate(node, cluster, addedConfig.ResourceConfig, isVisible: true);
         }
     }
 
@@ -593,19 +743,19 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         }
 
         var resourceId = $"{cluster.Name}-{config.Kind}";
-        var existing = FindNavigationItem(currentList, resourceId);
-        if (existing is ResourceNavigationLink resourceLink)
+        if (FindNavigationItem(currentList, resourceId) is ResourceNavigationLink existingLink)
         {
-            resourceLink.Name = config.Name;
-            resourceLink.ControlType = config.Type;
-            resourceLink.Order = config.Order;
-            resourceLink.Count ??= TryGetResourceCount(cluster, config.Type);
-            currentList.Remove(resourceLink);
-            currentList.Add(resourceLink);
+            existingLink.Name = config.Name;
+            existingLink.ControlType = config.Type;
+            existingLink.Order = config.Order;
+            existingLink.Count ??= TryGetResourceCount(cluster, config.Type);
+            currentList.Remove(existingLink);
+            currentList.Add(existingLink);
             return;
         }
 
-        currentList.Add(CreateResourceNavigationLink(cluster, config));
+        RemoveNavigationItem(root.NavigationItems, resourceId);
+        UpsertNavigationItem(currentList, CreateResourceNavigationLink(cluster, config));
     }
 
     private static void RemoveCustomResourceDefinition(NavigationItem root, ClusterWorkspaceViewModel cluster, GroupApiVersionKind kind)
@@ -678,6 +828,150 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         }
 
         return null;
+    }
+
+    private void ApplyDefinitionsNavigationUpdate(ClusterNavigationNode node, ClusterWorkspaceViewModel cluster, IResourceConfig resourceConfig, bool isVisible)
+    {
+        var rootId = $"{cluster.Name}-custom-resource-definitions";
+        var existingRoot = FindNavigationItem(node.NavigationItems, rootId);
+
+        if (!isVisible)
+        {
+            if (existingRoot != null)
+            {
+                node.NavigationItems.Remove(existingRoot);
+            }
+
+            return;
+        }
+
+        if (existingRoot == null)
+        {
+            var root = BuildCustomResourceDefinitionsNavigationItem(
+                cluster,
+                definitionsLink: CreateDefinitionsNavigationLink(cluster, resourceConfig),
+                customResourceConfigs: cluster.GetResourceConfigs()
+                    .Where(config => config.IsCustomResource && CanListAndWatchResource(cluster, config))
+                    .OrderBy(config => config.Order)
+                    .ThenBy(config => config.Name, StringComparer.Ordinal)
+                    .ToList());
+
+            if (root != null)
+            {
+                node.NavigationItems.Add(root);
+            }
+
+            return;
+        }
+
+        UpsertNavigationItem(existingRoot.NavigationItems, CreateDefinitionsNavigationLink(cluster, resourceConfig));
+    }
+
+    private void ApplyStandardResourceNavigationUpdate(ClusterNavigationNode node, ClusterWorkspaceViewModel cluster, IResourceConfig resourceConfig, bool isVisible)
+    {
+        RemoveNavigationItem(node.NavigationItems, $"{cluster.Name}-{resourceConfig.Kind}");
+        RemoveEmptyCategories(node.NavigationItems, cluster);
+
+        if (!isVisible)
+        {
+            return;
+        }
+
+        var targetCollection = node.NavigationItems;
+        if (!string.IsNullOrWhiteSpace(resourceConfig.Category))
+        {
+            var category = EnsureCategoryNode(node.NavigationItems, cluster, resourceConfig.Category, resourceConfig.Order);
+            targetCollection = category.NavigationItems;
+        }
+
+        UpsertNavigationItem(targetCollection, CreateResourceNavigationLink(cluster, resourceConfig));
+    }
+
+    private void ApplyCustomResourceNavigationUpdate(ClusterNavigationNode node, ClusterWorkspaceViewModel cluster, IResourceConfig resourceConfig, bool isVisible)
+    {
+        var rootId = $"{cluster.Name}-custom-resource-definitions";
+        var root = FindNavigationItem(node.NavigationItems, rootId);
+
+        if (!isVisible)
+        {
+            if (root != null)
+            {
+                RemoveCustomResourceDefinition(root, cluster, resourceConfig.Kind);
+            }
+
+            return;
+        }
+
+        root ??= GetOrCreateCustomResourceDefinitionsRoot(node, cluster);
+        if (root == null)
+        {
+            return;
+        }
+
+        AddOrUpdateCustomResourceDefinition(root, cluster, resourceConfig);
+    }
+
+    private static bool RemoveNavigationItem(ObservableCollection<NavigationItem> items, string id)
+    {
+        var existing = items.FirstOrDefault(item => item.Id == id);
+        if (existing != null)
+        {
+            items.Remove(existing);
+            return true;
+        }
+
+        foreach (var item in items)
+        {
+            if (RemoveNavigationItem(item.NavigationItems, id))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static void RemoveEmptyCategories(ObservableCollection<NavigationItem> items, ClusterWorkspaceViewModel cluster)
+    {
+        for (var i = items.Count - 1; i >= 0; i--)
+        {
+            var item = items[i];
+            if (item.NavigationItems.Count > 0)
+            {
+                RemoveEmptyCategories(item.NavigationItems, cluster);
+            }
+
+            if (item.NavigationItems.Count > 0)
+            {
+                continue;
+            }
+
+            if (item.Id.StartsWith($"{cluster.Name}-category-", StringComparison.Ordinal))
+            {
+                items.RemoveAt(i);
+            }
+        }
+    }
+
+    private static void UpsertNavigationItem(ObservableCollection<NavigationItem> items, NavigationItem desired)
+    {
+        var existing = FindNavigationItem(items, desired.Id);
+        if (existing == null)
+        {
+            items.Add(desired);
+            return;
+        }
+
+        if (!CanReuseNavigationItem(existing, desired))
+        {
+            items.Remove(existing);
+            items.Add(desired);
+            return;
+        }
+
+        UpdateNavigationItem(existing, desired);
+        items.Remove(existing);
+        items.Add(existing);
     }
 
     private static IReadOnlyList<string> ConstructCustomResourceGroupPath(string? group)
@@ -824,10 +1118,23 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             return false;
         }
 
-        if (cluster.CanI(resourceConfig.Type, Verb.List)
-            && cluster.CanI(resourceConfig.Type, Verb.Watch))
+        if (resourceConfig.CanListAndWatch)
         {
-            return true;
+            if (!resourceConfig.IsNamespaced)
+            {
+                return true;
+            }
+
+            if (cluster.CanI(resourceConfig.Type, Verb.List)
+                && cluster.CanI(resourceConfig.Type, Verb.Watch))
+            {
+                return true;
+            }
+
+            if (cluster.Namespaces.Count > 0)
+            {
+                return true;
+            }
         }
 
         if (!resourceConfig.IsNamespaced)
@@ -893,6 +1200,14 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                 .Sample(TimeSpan.FromMilliseconds(100), AvaloniaScheduler.Instance)
                 .DistinctUntilChanged(),
         };
+    }
+
+    private static ResourceNavigationLink CreateDefinitionsNavigationLink(ClusterWorkspaceViewModel cluster, IResourceConfig resourceConfig)
+    {
+        var link = CreateResourceNavigationLink(cluster, resourceConfig);
+        link.Name = "Definitions";
+        link.Order = -1;
+        return link;
     }
 
     private void SelectResourceNavigationLink(ResourceNavigationLink nav)

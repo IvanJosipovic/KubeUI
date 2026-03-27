@@ -82,6 +82,7 @@ public class V1CustomResourceDefinitionConfigTests : AvaloniaTestBase
     }
 }
 
+[KubernetesEntity(Group = "example.com", ApiVersion = "v1", Kind = "IngressClass")]
 internal sealed class TestCustomResource : k8s.IKubernetesObject<V1ObjectMeta>
 {
     public string ApiVersion { get; set; } = "example.com/v1";

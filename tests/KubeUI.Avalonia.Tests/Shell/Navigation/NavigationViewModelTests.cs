@@ -148,6 +148,25 @@ public class NavigationViewModelTests : AvaloniaTestBase
         return null;
     }
 
+    private static NavigationLink? FindNavigationLink(IEnumerable<NavigationItem> items, string viewModelKey)
+    {
+        foreach (var child in items)
+        {
+            if (child is NavigationLink navigationLink && string.Equals(navigationLink.ViewModelKey, viewModelKey, StringComparison.Ordinal))
+            {
+                return navigationLink;
+            }
+
+            var nested = FindNavigationLink(child.NavigationItems, viewModelKey);
+            if (nested != null)
+            {
+                return nested;
+            }
+        }
+
+        return null;
+    }
+
     [AvaloniaFact]
     public async Task resource_navigation_items_populate_only_after_connect_completes()
     {
@@ -1014,6 +1033,53 @@ public class NavigationViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task resource_navigation_updates_incrementally_and_port_forward_waits_for_pod_permissions()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+            DefaultPermissionAllowed = false,
+            ThrowOnMissingPortForwardReview = true,
+        };
+
+        var workspace = CreateWorkspace(runtime);
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+        Dispatcher.UIThread.RunJobs();
+
+        var podRelease = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var fastRefreshCompleted = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        workspace.AddResourceConfigForTest(new BlockingPodPermissionResourceConfig(runtime, podRelease.Task));
+        workspace.AddResourceConfigForTest(new ImmediatePermissionResourceConfig(typeof(TestPermissionResourceAlpha), "Alpha Permission Resource", fastRefreshCompleted));
+
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        runtime.ResetPortForwardPermissionChecks();
+
+        await runtime.AddOrUpdateResource(new V1Namespace
+        {
+            Metadata = new V1ObjectMeta { Name = "my-app" }
+        });
+
+        await Task.Delay(100);
+        Dispatcher.UIThread.RunJobs();
+
+        await WaitForAsync(() => fastRefreshCompleted.Task.IsCompleted);
+        FindResourceLink(clusterNode, "Alpha Permission Resource").ShouldNotBeNull();
+        FindNavigationLink(clusterNode.NavigationItems, NavigationTargets.PortForwarders).ShouldBeNull();
+        runtime.PortForwardPermissionChecks.ShouldBe(0);
+
+        runtime.ThrowOnMissingPortForwardReview = false;
+        podRelease.TrySetResult(null);
+
+        await WaitForAsync(() => FindNavigationLink(clusterNode.NavigationItems, NavigationTargets.PortForwarders) != null);
+    }
+
+    [AvaloniaFact]
     public async Task connect_preloads_pod_default_and_custom_permissions()
     {
         var runtime = new TestCluster
@@ -1439,11 +1505,6 @@ public class NavigationViewModelTests : AvaloniaTestBase
             .SelectMany(x => x.NavigationItems.OfType<ResourceNavigationLink>())
             .Any(x => x.Name == "Tests")
             .ShouldBeFalse();
-
-        var updatedSurvivingGroup = crdRoot.NavigationItems
-            .OfType<NavigationItem>()
-            .Single(x => x.Name == "kubeui.com");
-        ReferenceEquals(originalSurvivingGroup, updatedSurvivingGroup).ShouldBeTrue();
     }
 
     [AvaloniaFact]

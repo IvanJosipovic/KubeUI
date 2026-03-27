@@ -1,7 +1,11 @@
+using System.Collections;
 using System.Reflection;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using Avalonia.Styling;
+using CommunityToolkit.Mvvm.Input;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -190,6 +194,44 @@ public class ClusterWorkspaceViewModelTests : AvaloniaTestBase
         workspace.GetResourceConfigs().ShouldBeEmpty();
     }
 
+    [AvaloniaFact]
+    public async Task permission_refresh_completes_other_resource_configs_before_pod_permissions_finish()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+            DefaultPermissionAllowed = false,
+        };
+
+        var workspace = CreateWorkspace(runtime);
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+        Dispatcher.UIThread.RunJobs();
+
+        var podRelease = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var fastRefreshCompleted = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        workspace.AddResourceConfigForTest(new BlockingPodPermissionResourceConfig(runtime, podRelease.Task));
+        workspace.AddResourceConfigForTest(new ImmediatePermissionResourceConfig(typeof(TestPermissionResourceAlpha), "Alpha Permission Resource", fastRefreshCompleted));
+
+        await runtime.AddOrUpdateResource(new V1Namespace
+        {
+            Metadata = new V1ObjectMeta { Name = "my-app" }
+        });
+
+        await Task.Delay(100);
+        Dispatcher.UIThread.RunJobs();
+
+        await WaitForAsync(() => fastRefreshCompleted.Task.IsCompleted);
+        workspace.GetResourceConfig<TestPermissionResourceAlpha>().PermissionsLoaded.ShouldBeTrue();
+        workspace.GetResourceConfig<V1Pod>().PermissionsLoaded.ShouldBeFalse();
+
+        podRelease.TrySetResult(null);
+
+        await WaitForAsync(() => workspace.GetResourceConfig<V1Pod>().PermissionsLoaded);
+        workspace.GetResourceConfig<V1Pod>().PermissionsLoaded.ShouldBeTrue();
+    }
+
     private ClusterWorkspaceViewModel CreateWorkspace(TestCluster runtime)
     {
         var workspace = runtime.CreateWorkspace();
@@ -278,6 +320,88 @@ public class ClusterWorkspaceViewModelTests : AvaloniaTestBase
     {
         return (IList<IResourceInformer>)(container.GetType().GetProperty("Informers")?.GetValue(container)
             ?? throw new InvalidOperationException("Container does not expose Informers."));
+    }
+}
+
+internal sealed class BlockingPodPermissionResourceConfig : IResourceConfig
+{
+    private readonly TestCluster _runtime;
+    private readonly Task _releaseTask;
+
+    public BlockingPodPermissionResourceConfig(TestCluster runtime, Task releaseTask)
+    {
+        _runtime = runtime;
+        _releaseTask = releaseTask;
+    }
+
+    public bool IsNamespaced => true;
+    public bool CanListAndWatch { get; private set; }
+    public bool PermissionsLoaded { get; private set; }
+    public bool ShowNewResource => true;
+    public bool IsCustomResource => false;
+    public GroupApiVersionKind Kind => GroupApiVersionKind.From(Type);
+    public IList<IResourceListColumn> Columns() => [];
+    public IEnumerable<MenuItemViewModel> GetDefaultMenuItems(IEnumerable? selectedItems) => [];
+    public IEnumerable<MenuItemViewModel> GetCustomMenuItems(IEnumerable? selectedItems) => [];
+    public int Order => 0;
+    public string Name => "Pods";
+    public string? Category => "Workloads";
+    public IStyle ListStyle() => null;
+    public Type Type { get; } = typeof(V1Pod);
+    public IRelayCommand NewResourceCommand => throw new NotImplementedException();
+    public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
+
+    public async Task UpdatePermissions()
+    {
+        await _releaseTask.ConfigureAwait(false);
+        _runtime.SetPermission<V1Pod>(Verb.Create, true, subresource: "portforward");
+        CanListAndWatch = true;
+        PermissionsLoaded = true;
+    }
+
+    public void Initialize(ClusterWorkspaceViewModel cluster)
+    {
+    }
+}
+
+internal sealed class ImmediatePermissionResourceConfig : IResourceConfig
+{
+    private readonly TaskCompletionSource<object?> _completion;
+
+    public ImmediatePermissionResourceConfig(Type type, string name, TaskCompletionSource<object?> completion)
+    {
+        Type = type;
+        Name = name;
+        _completion = completion;
+    }
+
+    public bool IsNamespaced => true;
+    public bool CanListAndWatch { get; private set; }
+    public bool PermissionsLoaded { get; private set; }
+    public bool ShowNewResource => true;
+    public bool IsCustomResource => false;
+    public GroupApiVersionKind Kind => GroupApiVersionKind.From(Type);
+    public IList<IResourceListColumn> Columns() => [];
+    public IEnumerable<MenuItemViewModel> GetDefaultMenuItems(IEnumerable? selectedItems) => [];
+    public IEnumerable<MenuItemViewModel> GetCustomMenuItems(IEnumerable? selectedItems) => [];
+    public int Order => 0;
+    public string Name { get; }
+    public string? Category => null;
+    public IStyle ListStyle() => null;
+    public Type Type { get; }
+    public IRelayCommand NewResourceCommand => throw new NotImplementedException();
+    public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
+
+    public Task UpdatePermissions()
+    {
+        CanListAndWatch = true;
+        PermissionsLoaded = true;
+        _completion.TrySetResult(null);
+        return Task.CompletedTask;
+    }
+
+    public void Initialize(ClusterWorkspaceViewModel cluster)
+    {
     }
 }
 

@@ -85,6 +85,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         remove => Runtime.OnCustomResourceDefinitionReady -= value;
     }
     public event Action<ClusterWorkspaceViewModel>? ResourcePermissionsChanged;
+    public event Action<ClusterWorkspaceViewModel, IResourceConfig>? ResourceConfigPermissionsUpdated;
     public event Action<ClusterWorkspaceViewModel, IReadOnlyList<PendingCustomResourceConfig>, IReadOnlyList<GroupApiVersionKind>>? CustomResourceDefinitionsChanged;
 
     public bool Connected
@@ -330,6 +331,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
             return;
         }
 
+        NotifyResourceConfigPermissionsUpdated(resourceConfig);
         NotifyResourcePermissionsChanged();
     }
 
@@ -596,6 +598,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         }
 
         var currentIsVisible = resourceConfig.PermissionsLoaded && resourceConfig.CanListAndWatch;
+        NotifyResourceConfigPermissionsUpdated(resourceConfig);
 
         if (previousIsVisible != currentIsVisible)
         {
@@ -849,6 +852,17 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
         ResourceConfigVersion++;
         ResourcePermissionsChanged?.Invoke(this);
+    }
+
+    private void NotifyResourceConfigPermissionsUpdated(IResourceConfig resourceConfig)
+    {
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            _ = Dispatcher.UIThread.InvokeAsync(() => NotifyResourceConfigPermissionsUpdated(resourceConfig));
+            return;
+        }
+
+        ResourceConfigPermissionsUpdated?.Invoke(this, resourceConfig);
     }
 
     private void NotifyCustomResourceDefinitionsChanged(IReadOnlyList<PendingCustomResourceConfig> addedConfigs, IReadOnlyList<GroupApiVersionKind> removedKinds)
