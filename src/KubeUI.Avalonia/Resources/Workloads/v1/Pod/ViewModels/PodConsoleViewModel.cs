@@ -6,7 +6,6 @@ using AvaloniaTerminal;
 using k8s;
 using k8s.Models;
 using KubeUI.Kubernetes;
-using XtermSharp;
 
 namespace KubeUI.Avalonia.ViewModels;
 
