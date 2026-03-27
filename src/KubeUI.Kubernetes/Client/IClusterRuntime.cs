@@ -38,6 +38,7 @@ public interface IClusterRuntime
     Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task Connect();
     Task DeleteResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    Task DryRunYaml(Stream stream);
     Task ImportFolder(string path);
     Task ImportYaml(Stream stream);
     Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new();

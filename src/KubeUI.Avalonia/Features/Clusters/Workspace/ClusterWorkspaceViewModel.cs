@@ -197,6 +197,11 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         return Runtime.ImportYaml(stream);
     }
 
+    public Task DryRunYaml(Stream stream)
+    {
+        return Runtime.DryRunYaml(stream);
+    }
+
     public Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         return SeedResourceCoreAsync<T>(waitForReady);

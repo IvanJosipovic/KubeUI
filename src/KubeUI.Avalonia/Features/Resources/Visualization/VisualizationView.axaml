@@ -8,9 +8,9 @@
     xmlns:converters="clr-namespace:NodifyM.Avalonia.Converters;assembly=NodifyM.Avalonia"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:ic="using:FluentIcons.Avalonia"
-    xmlns:panzoom="using:Avalonia.Controls.PanAndZoom"
     xmlns:k8s="using:k8s.Models"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:panzoom="using:Avalonia.Controls.PanAndZoom"
     xmlns:u="https://irihi.tech/ursa"
     xmlns:viewModelBase="clr-namespace:NodifyM.Avalonia.ViewModelBase;assembly=NodifyM.Avalonia"
     xmlns:viewmodels="using:KubeUI.Avalonia.ViewModels"
@@ -68,8 +68,7 @@
         <ScrollViewer Grid.Row="1"
             HorizontalScrollBarVisibility="Auto"
             VerticalScrollBarVisibility="Auto">
-            <panzoom:ZoomBorder
-                x:Name="ZoomBorder"
+            <panzoom:ZoomBorder x:Name="ZoomBorder"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
                 ClipToBounds="True"

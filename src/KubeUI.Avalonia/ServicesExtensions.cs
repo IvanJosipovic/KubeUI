@@ -19,6 +19,7 @@ public static partial class KubeUIShellServiceCollectionExtensions
     {
         services.AddKubeUIShellGeneratedServices();
         services.AddSingleton<Instrumentation>();
+        services.AddSingleton<IYamlValidationService, YamlSyntaxValidationService>();
         services.AddSingleton<ILogSink, LogSink>();
         services.AddSingleton<ViewLocator>();
         services.AddSingleton<IDataTemplate>(sp => sp.GetRequiredService<ViewLocator>());

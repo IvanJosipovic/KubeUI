@@ -1,15 +1,19 @@
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using AvaloniaEdit.CodeCompletion;
 using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Folding;
+using AvaloniaEdit.Editing;
 using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
+using FluentAvalonia.UI.Controls;
 using KubeUI.Avalonia.Behaviors;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Avalonia.ViewModels;
@@ -70,6 +74,12 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         }
 
         return service;
+    }
+
+    private static async Task WaitForValidationDebounceAsync()
+    {
+        await Task.Delay(700);
+        Dispatcher.UIThread.RunJobs();
     }
 
     [AvaloniaFact]
@@ -421,6 +431,1269 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task ResourceYamlView_ShowsCompletion_WhenCompletionIsRequested()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.EditMode = true;
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+
+        var keyBinding = editor.KeyBindings.OfType<KeyBinding>()
+            .Single(binding => binding.Command == vm.RequestCompletionCommand);
+        keyBinding.Command.ShouldBe(vm.RequestCompletionCommand);
+        keyBinding.Gesture.ShouldBeOfType<KeyGesture>()
+            .ShouldSatisfyAllConditions(gesture =>
+            {
+                gesture.Key.ShouldBe(Key.Space);
+                gesture.KeyModifiers.ShouldBe(KeyModifiers.Control);
+            });
+
+        vm.RequestCompletionCommand.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
+        var completionWindow = GetCompletionWindow(behavior);
+        completionWindow.ShouldNotBeNull();
+        completionWindow!.IsOpen.ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_DoesNotShowCompletion_WhenEnterCreatesNewLine()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.EditMode = true;
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        editor.TextArea.PerformTextInput("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
+        var completionWindow = GetCompletionWindow(behavior);
+        completionWindow.ShouldBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_InsertsSequenceMarker_WhenEnterIsPressedOnSequenceProperty()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.EditMode = true;
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: temp
+              namespace: default
+            spec:
+              containers:
+            """.ReplaceLineEndings("\n");
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        editor.CaretOffset = editor.Text.LastIndexOf("containers:", StringComparison.Ordinal) + "containers:".Length;
+
+        editor.TextArea.PerformTextInput("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        editor.Text.ShouldBe(
+            "apiVersion: v1\n"
+            + "kind: Pod\n"
+            + "metadata:\n"
+            + "  name: temp\n"
+            + "  namespace: default\n"
+            + "spec:\n"
+            + "  containers:\n"
+            + "    - ");
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_AlignsNestedSequenceMarker_WhenEnterIsPressedOnSequenceItemProperty()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.EditMode = true;
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: temp
+              namespace: default
+            spec:
+              containers:
+                - command:
+            """.ReplaceLineEndings("\n");
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        editor.CaretOffset = editor.Text.LastIndexOf("command:", StringComparison.Ordinal) + "command:".Length;
+
+        editor.TextArea.PerformTextInput("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        editor.Text.ShouldBe(
+            "apiVersion: v1\n"
+            + "kind: Pod\n"
+            + "metadata:\n"
+            + "  name: temp\n"
+            + "  namespace: default\n"
+            + "spec:\n"
+            + "  containers:\n"
+            + "    - command:\n"
+            + "        - ");
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_ContinuesListItem_WhenEnterIsPressedAtEndOfSequenceEntry()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.EditMode = true;
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            spec:
+              containers:
+                - test
+            """.ReplaceLineEndings("\n");
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        editor.CaretOffset = editor.Text.Length;
+
+        editor.TextArea.PerformTextInput("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        editor.Text.ShouldBe(
+            "apiVersion: v1\n"
+            + "kind: Pod\n"
+            + "spec:\n"
+            + "  containers:\n"
+            + "    - test\n"
+            + "    - ");
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_ExitsList_WhenEnterIsPressedOnBlankSequenceEntry()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.EditMode = true;
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            spec:
+              containers:
+                - 
+            """.ReplaceLineEndings("\n");
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        editor.CaretOffset = editor.Text.Length;
+
+        editor.TextArea.PerformTextInput("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        editor.Text.ShouldBe(
+            "apiVersion: v1\n"
+            + "kind: Pod\n"
+            + "spec:\n"
+            + "  containers:\n"
+            + "  ");
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_DoesNotShowCompletion_WhenTypingScalarSequenceItem()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.EditMode = true;
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: temp
+              namespace: default
+            spec:
+              containers:
+                - command:
+                  - 
+            """.ReplaceLineEndings("\n");
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        editor.CaretOffset = editor.Text.Length;
+
+        editor.TextArea.PerformTextInput("s");
+        Dispatcher.UIThread.RunJobs();
+
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
+        var completionWindow = GetCompletionWindow(behavior);
+        completionWindow.ShouldBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_InsertsStarterSequence_WhenSelectingListCompletion()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.EditMode = true;
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: temp
+              namespace: default
+            spec:
+              containers:
+                - name: test
+                  ar
+            """.ReplaceLineEndings("\n");
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        editor.CaretOffset = editor.Text.Length;
+
+        vm.RequestCompletionCommand.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
+        var completionWindow = GetCompletionWindow(behavior);
+        completionWindow.ShouldNotBeNull();
+
+        var completionData = completionWindow!.CompletionList.CompletionData
+            .OfType<YamlCompletionData>()
+            .Single(data => data.Text == "args");
+
+        completionData.Complete(
+            editor.TextArea,
+            new TextSegment
+            {
+                StartOffset = completionWindow.StartOffset,
+                Length = completionWindow.EndOffset - completionWindow.StartOffset,
+            },
+            EventArgs.Empty);
+        Dispatcher.UIThread.RunJobs();
+
+        editor.Text.ShouldBe(
+            "apiVersion: v1\n"
+            + "kind: Pod\n"
+            + "metadata:\n"
+            + "  name: temp\n"
+            + "  namespace: default\n"
+            + "spec:\n"
+            + "  containers:\n"
+            + "    - name: test\n"
+            + "      args:\n"
+            + "        - ");
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_InsertsStarterObjectBlock_WhenSelectingObjectCompletion()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.EditMode = true;
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: temp
+              namespace: default
+            sp
+            """.ReplaceLineEndings("\n");
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        editor.CaretOffset = editor.Text.Length;
+
+        vm.RequestCompletionCommand.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
+        var completionWindow = GetCompletionWindow(behavior);
+        completionWindow.ShouldNotBeNull();
+
+        var completionData = completionWindow!.CompletionList.CompletionData
+            .OfType<YamlCompletionData>()
+            .Single(data => data.Text == "spec");
+
+        completionData.Complete(
+            editor.TextArea,
+            new TextSegment
+            {
+                StartOffset = completionWindow.StartOffset,
+                Length = completionWindow.EndOffset - completionWindow.StartOffset,
+            },
+            EventArgs.Empty);
+        Dispatcher.UIThread.RunJobs();
+
+        editor.Text.ShouldBe(
+            "apiVersion: v1\n"
+            + "kind: Pod\n"
+            + "metadata:\n"
+            + "  name: temp\n"
+            + "  namespace: default\n"
+            + "spec:\n"
+            + "  ");
+    }
+
+    [AvaloniaFact]
+    public void YamlSyntaxValidationService_ReturnsDiagnostic_ForMalformedYaml()
+    {
+        var service = ResolveService<IYamlValidationService>();
+
+        var diagnostics = service.Validate("""
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: [test
+            """.ReplaceLineEndings("\n"));
+
+        diagnostics.Count.ShouldBe(1);
+        diagnostics[0].Severity.ShouldBe(YamlDiagnosticSeverity.Error);
+        diagnostics[0].Message.ShouldContain("expected");
+        diagnostics[0].StartLine.ShouldBeGreaterThan(0);
+        diagnostics[0].StartColumn.ShouldBeGreaterThan(0);
+    }
+
+    [AvaloniaFact]
+    public void YamlSyntaxValidationService_ReturnsDiagnostic_ForUnknownKubernetesField()
+    {
+        var service = ResolveService<IYamlValidationService>();
+        var cluster = CreateTestWorkspace();
+
+        var diagnostics = service.Validate("""
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+              namespace: default
+            spec:
+              unknownField: value
+            """.ReplaceLineEndings("\n"), cluster.ModelCache);
+
+        diagnostics.Count.ShouldBe(1);
+        diagnostics[0].Severity.ShouldBe(YamlDiagnosticSeverity.Error);
+        diagnostics[0].Message.ShouldContain("unknownField");
+    }
+
+    [AvaloniaFact]
+    public void YamlSyntaxValidationService_AnchorsTypedScalarConversionError_ToValue()
+    {
+        var service = ResolveService<IYamlValidationService>();
+        var cluster = CreateTestWorkspace();
+
+        var diagnostics = service.Validate("""
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: temp
+              namespace: default
+            spec:
+              activeDeadlineSeconds: a
+            """.ReplaceLineEndings("\n"), cluster.ModelCache);
+
+        diagnostics.Count.ShouldBe(1);
+        diagnostics[0].Severity.ShouldBe(YamlDiagnosticSeverity.Error);
+        diagnostics[0].Message.ShouldContain("correct format");
+        diagnostics[0].StartLine.ShouldBe(7);
+        diagnostics[0].StartColumn.ShouldBeGreaterThan(25);
+        diagnostics[0].EndLine.ShouldBe(7);
+        diagnostics[0].EndColumn.ShouldBeGreaterThanOrEqualTo(diagnostics[0].StartColumn);
+    }
+
+    [AvaloniaFact]
+    public void Utilities_FormatKubernetesStatusMessage_PrefersStatusMessage()
+    {
+        var status = new V1Status
+        {
+            Message = "Namespace \"temp\" is invalid: [spec.finalizers: Invalid value: \"\": name part must be non-empty]",
+            Reason = "Invalid",
+            Details = new V1StatusDetails
+            {
+                Causes =
+                [
+                    new V1StatusCause
+                    {
+                        Message = "Invalid value: \"\": name part must be non-empty",
+                        Field = "spec.finalizers",
+                    },
+                ],
+            },
+        };
+
+        var message = Utilities.FormatKubernetesStatusMessage(status, "fallback");
+
+        message.ShouldBe("Namespace \"temp\" is invalid:\nspec.finalizers: Invalid value: \"\": name part must be non-empty");
+    }
+
+    [AvaloniaFact]
+    public void Utilities_FormatKubernetesStatusMessage_FormatsCausesWithFieldPath_WhenStatusMessageMissing()
+    {
+        var status = new V1Status
+        {
+            Reason = "Invalid",
+            Details = new V1StatusDetails
+            {
+                Causes =
+                [
+                    new V1StatusCause
+                    {
+                        Message = "Invalid value: \"\": name part must be non-empty",
+                        Field = "spec.finalizers",
+                    },
+                    new V1StatusCause
+                    {
+                        Message = "must be a number",
+                        Field = "spec.activeDeadlineSeconds",
+                    },
+                ],
+            },
+        };
+
+        var message = Utilities.FormatKubernetesStatusMessage(status, "fallback");
+
+        message.ShouldBe("spec.finalizers: Invalid value: \"\": name part must be non-empty\nspec.activeDeadlineSeconds: must be a number");
+    }
+
+    [AvaloniaFact]
+    public void Utilities_FormatKubernetesStatusMessage_FormatsStructuredInvalidStatusMessage_AsHeaderAndLines()
+    {
+        var status = new V1Status
+        {
+            Message = "Deployment.apps \"temp\" is invalid: [spec.selector: Required value, spec.template.metadata.labels: Invalid value: null: `selector` does not match template `labels`, spec.template.spec.containers: Required value]",
+            Reason = "Invalid",
+            Details = new V1StatusDetails
+            {
+                Causes =
+                [
+                    new V1StatusCause
+                    {
+                        Message = "Required value",
+                        Field = "spec.selector",
+                    },
+                    new V1StatusCause
+                    {
+                        Message = "Invalid value: null: `selector` does not match template `labels`",
+                        Field = "spec.template.metadata.labels",
+                    },
+                    new V1StatusCause
+                    {
+                        Message = "Required value",
+                        Field = "spec.template.spec.containers",
+                    },
+                ],
+            },
+        };
+
+        var message = Utilities.FormatKubernetesStatusMessage(status, "fallback");
+
+        message.ShouldBe(
+            "Deployment.apps \"temp\" is invalid:\n" +
+            "spec.selector: Required value\n" +
+            "spec.template.metadata.labels: Invalid value: null: `selector` does not match template `labels`\n" +
+            "spec.template.spec.containers: Required value");
+    }
+
+    [AvaloniaFact]
+    public void YamlSyntaxValidationService_AnchorsUnknownTypeDiagnostic_ToKindHeader()
+    {
+        var service = ResolveService<IYamlValidationService>();
+
+        var diagnostics = service.Validate("""
+            apiVersion: example.io/v1
+            kind: MadeUpKind
+            metadata:
+              name: test
+            """.ReplaceLineEndings("\n"));
+
+        diagnostics.Count.ShouldBe(1);
+        diagnostics[0].Message.ShouldContain("example.io/v1/MadeUpKind");
+        diagnostics[0].StartLine.ShouldBe(2);
+        diagnostics[0].StartColumn.ShouldBe(1);
+        diagnostics[0].EndLine.ShouldBe(2);
+        diagnostics[0].EndColumn.ShouldBe(5);
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_TracksYamlSyntaxDiagnostics()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.EditMode = true;
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: [test
+            """.ReplaceLineEndings("\n");
+        await WaitForValidationDebounceAsync();
+
+        vm.ValidationDiagnostics.Count.ShouldBe(1);
+        vm.ValidationDiagnostics[0].Message.ShouldNotContain("Exception during serialization");
+        vm.ValidationDiagnostics[0].Message.ShouldNotContain("Exception during deserialization");
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
+        GetDiagnosticMessages(behavior).ShouldContain(message => message.Contains("expected", StringComparison.OrdinalIgnoreCase));
+        vm.HasActionFailureResult.ShouldBeTrue();
+        vm.ActionResultTitle.ShouldBe("Validation failed");
+        vm.ActionResultMessage.ShouldContain("expected");
+        var actionBar = view.FindControl<InfoBar>("ActionResultBar");
+        actionBar.ShouldNotBeNull();
+        actionBar.IsOpen.ShouldBeTrue();
+        actionBar.Severity.ShouldBe(InfoBarSeverity.Error);
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_TracksStrictKubernetesDiagnostics()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.EditMode = true;
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+              namespace: default
+            spec:
+              unknownField: value
+            """.ReplaceLineEndings("\n");
+        await WaitForValidationDebounceAsync();
+
+        vm.ValidationDiagnostics.Count.ShouldBe(1);
+        vm.ValidationDiagnostics[0].Message.ShouldContain("unknownField");
+        vm.HasActionFailureResult.ShouldBeTrue();
+        vm.ActionResultTitle.ShouldBe("Validation failed");
+        vm.ActionResultMessage.ShouldContain("unknownField");
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
+        GetDiagnosticMessages(behavior).ShouldContain(message => message.Contains("unknownField", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_TracksUnknownTypeDiagnostics()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.EditMode = true;
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: example.io/v1
+            kind: MadeUpKind
+            metadata:
+              name: test
+            """.ReplaceLineEndings("\n");
+        await WaitForValidationDebounceAsync();
+
+        vm.ValidationDiagnostics.Count.ShouldBe(1);
+        vm.ValidationDiagnostics[0].StartLine.ShouldBe(2);
+        vm.ValidationDiagnostics[0].Message.ShouldContain("MadeUpKind");
+        vm.HasActionFailureResult.ShouldBeTrue();
+        vm.ActionResultTitle.ShouldBe("Validation failed");
+        vm.ActionResultMessage.ShouldContain("MadeUpKind");
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
+        GetDiagnosticMessages(behavior).ShouldContain(message => message.Contains("MadeUpKind", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_SaveShowsInlineFailure_WhenYamlIsInvalid()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.EditMode = true;
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: [test
+            """.ReplaceLineEndings("\n");
+        await WaitForValidationDebounceAsync();
+
+        await vm.SaveCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+
+        vm.HasActionFailureResult.ShouldBeTrue();
+        vm.ActionResultTitle.ShouldBe("Save failed");
+        vm.ActionResultMessage.ShouldContain("line");
+        vm.ActionResultMessage.ShouldContain("column");
+        var actionBar = view.FindControl<InfoBar>("ActionResultBar");
+        actionBar.ShouldNotBeNull();
+        actionBar.IsOpen.ShouldBeTrue();
+        actionBar.Severity.ShouldBe(InfoBarSeverity.Error);
+        TestApp.LastNotification.ShouldBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_DisablesSaveAndDryRun_WhenValidationErrorsExist()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.EditMode = true;
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: [test
+            """.ReplaceLineEndings("\n");
+        await WaitForValidationDebounceAsync();
+
+        vm.SaveCommand.CanExecute(null).ShouldBeFalse();
+        vm.DryRunCommand.CanExecute(null).ShouldBeFalse();
+
+        var buttons = view.GetVisualDescendants().OfType<Button>().ToList();
+        buttons.Single(x => x.Command == vm.SaveCommand).IsEnabled.ShouldBeFalse();
+        buttons.Single(x => x.Command == vm.DryRunCommand).IsEnabled.ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_DebouncesValidationWhileTypingPartialPropertyName()
+    {
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.EditMode = true;
+        vm.ValidationDebounceDelay = TimeSpan.FromMilliseconds(200);
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+              namespace: default
+            spec:
+              con
+            """.ReplaceLineEndings("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        vm.ValidationDiagnostics.ShouldBeEmpty();
+        vm.HasActionResult.ShouldBeFalse();
+
+        await WaitForValidationDebounceAsync();
+
+        vm.ValidationDiagnostics.Count.ShouldBe(1);
+        vm.HasActionFailureResult.ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_DryRunShowsInlineSuccess_WhenYamlIsValid()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.EditMode = true;
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+              namespace: default
+            spec:
+              containers:
+                - name: app
+                  image: nginx
+            """.ReplaceLineEndings("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        vm.DryRunCommand.CanExecute(null).ShouldBeTrue();
+
+        await vm.DryRunCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+
+        TestApp.LastNotification.ShouldBeNull();
+        vm.HasActionSuccessResult.ShouldBeTrue();
+        vm.ActionResultTitle.ShouldBe("Dry run succeeded");
+        vm.ActionResultMessage.ShouldBe("The server accepted the manifest using dry-run.");
+        var actionBar = view.FindControl<InfoBar>("ActionResultBar");
+        actionBar.ShouldNotBeNull();
+        actionBar.IsOpen.ShouldBeTrue();
+        actionBar.Severity.ShouldBe(InfoBarSeverity.Success);
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_DryRunShowsInlineFailure_WhenServerValidationFails()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var runtime = new TestCluster
+        {
+            DryRunYamlBehavior = _ => Task.FromException(new InvalidOperationException("Server-side validation failed.")),
+        };
+        var cluster = runtime.CreateWorkspace();
+        _disposables.Add(cluster);
+
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.EditMode = true;
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+              namespace: default
+            spec:
+              containers:
+                - name: app
+                  image: nginx
+            """.ReplaceLineEndings("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        await vm.DryRunCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+
+        TestApp.LastNotification.ShouldBeNull();
+        vm.HasActionFailureResult.ShouldBeTrue();
+        vm.ActionResultTitle.ShouldBe("Dry run failed");
+        vm.ActionResultMessage.ShouldBe("Server-side validation failed.");
+        var actionBar = view.FindControl<InfoBar>("ActionResultBar");
+        actionBar.ShouldNotBeNull();
+        actionBar.IsOpen.ShouldBeTrue();
+        actionBar.Severity.ShouldBe(InfoBarSeverity.Error);
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_KeepsActionResultVisible_WhenYamlChanges()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.EditMode = true;
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+              namespace: default
+            spec:
+              containers:
+                - name: app
+                  image: nginx
+            """.ReplaceLineEndings("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        await vm.DryRunCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+
+        vm.HasActionResult.ShouldBeTrue();
+
+        vm.YamlDocument.Insert(vm.YamlDocument.TextLength, "\n# note");
+        Dispatcher.UIThread.RunJobs();
+
+        vm.HasActionResult.ShouldBeTrue();
+        vm.ActionResultTitle.ShouldBe("Dry run succeeded");
+        var actionBar = view.FindControl<InfoBar>("ActionResultBar");
+        actionBar.ShouldNotBeNull();
+        actionBar.IsOpen.ShouldBeTrue();
+        actionBar.IsVisible.ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_ClearsActionResult_WhenDismissed()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.EditMode = true;
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+              namespace: default
+            spec:
+              containers:
+                - name: app
+                  image: nginx
+            """.ReplaceLineEndings("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        await vm.DryRunCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+
+        vm.HasActionSuccessResult.ShouldBeTrue();
+        vm.DismissActionResultCommand.CanExecute(null).ShouldBeTrue();
+        var actionBar = view.FindControl<InfoBar>("ActionResultBar");
+        actionBar.ShouldNotBeNull();
+        actionBar.IsOpen.ShouldBeTrue();
+        actionBar.IsClosable.ShouldBeTrue();
+
+        vm.DismissActionResultCommand.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+
+        vm.HasActionResult.ShouldBeFalse();
+        vm.DismissActionResultCommand.CanExecute(null).ShouldBeFalse();
+        actionBar.IsOpen.ShouldBeFalse();
+        actionBar.IsVisible.ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public void ResourceYamlView_HidesActionResultBar_WhenThereIsNoMessage()
+    {
+        var vm = ResolveService<ResourceYamlViewModel>();
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+
+        var actionBar = view.FindControl<InfoBar>("ActionResultBar");
+        actionBar.ShouldNotBeNull();
+        actionBar.IsOpen.ShouldBeFalse();
+        actionBar.IsVisible.ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public void YamlEditorBehavior_UnindentsEmptyLineByTwoSpaces()
+    {
+        var editor = new AvaloniaEdit.TextEditor
+        {
+            Document = new TextDocument("        "),
+        };
+        editor.TextArea.Caret.Offset = editor.Document.TextLength;
+
+        var handled = YamlEditorBehavior.TryUnindentEmptyLine(editor.TextArea);
+
+        handled.ShouldBeTrue();
+        editor.Text.ShouldBe("      ");
+        editor.TextArea.Caret.Offset.ShouldBe(6);
+    }
+
+    [AvaloniaFact]
+    public void YamlEditorBehavior_DoesNotUnindentNonEmptyLine()
+    {
+        var editor = new AvaloniaEdit.TextEditor
+        {
+            Document = new TextDocument("      a"),
+        };
+        editor.TextArea.Caret.Offset = editor.Document.TextLength;
+
+        var handled = YamlEditorBehavior.TryUnindentEmptyLine(editor.TextArea);
+
+        handled.ShouldBeFalse();
+        editor.Text.ShouldBe("      a");
+        editor.TextArea.Caret.Offset.ShouldBe(editor.Document.TextLength);
+    }
+
+    [AvaloniaFact]
+    public void YamlEditorBehavior_UnindentsEmptyLineForShiftTabPath()
+    {
+        var editor = new AvaloniaEdit.TextEditor
+        {
+            Document = new TextDocument("    "),
+        };
+        editor.TextArea.Caret.Offset = editor.Document.TextLength;
+
+        var handled = YamlEditorBehavior.TryUnindentEmptyLine(editor.TextArea);
+
+        handled.ShouldBeTrue();
+        editor.Text.ShouldBe("  ");
+        editor.TextArea.Caret.Offset.ShouldBe(2);
+    }
+
+    [AvaloniaFact]
+    public void YamlEditorBehavior_UnindentsCurrentLineForShiftTabPath()
+    {
+        var editor = new AvaloniaEdit.TextEditor
+        {
+            Document = new TextDocument("    value"),
+        };
+        editor.TextArea.Caret.Offset = editor.Document.TextLength;
+
+        var handled = YamlEditorBehavior.TryUnindentSelectedLines(editor.TextArea);
+
+        handled.ShouldBeTrue();
+        editor.Text.ShouldBe("  value");
+        editor.TextArea.Caret.Offset.ShouldBe(7);
+    }
+
+    [AvaloniaFact]
+    public void YamlEditorBehavior_IndentsSelectedLinesByTwoSpaces()
+    {
+        var editor = new AvaloniaEdit.TextEditor
+        {
+            Document = new TextDocument("a\nb\n"),
+        };
+        editor.Select(0, editor.Text.Length);
+
+        var handled = YamlEditorBehavior.TryIndentSelectedLines(editor.TextArea);
+
+        handled.ShouldBeTrue();
+        editor.Text.ShouldBe("  a\n  b\n");
+    }
+
+    [AvaloniaFact]
+    public void YamlEditorBehavior_UnindentsSelectedLinesByTwoSpaces()
+    {
+        var editor = new AvaloniaEdit.TextEditor
+        {
+            Document = new TextDocument("  a\n  b\n"),
+        };
+        editor.Select(0, editor.Text.Length);
+
+        var handled = YamlEditorBehavior.TryUnindentSelectedLines(editor.TextArea);
+
+        handled.ShouldBeTrue();
+        editor.Text.ShouldBe("a\nb\n");
+    }
+
+    [AvaloniaFact]
+    public async Task ResourceYamlView_UsesTwoSpaceIndentationOptions()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+        vm.EditMode = true;
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        editor.Options.IndentationSize.ShouldBe(2);
+        editor.Options.ConvertTabsToSpaces.ShouldBeTrue();
+        editor.Options.GetIndentationString(1).ShouldBe("  ");
+    }
+
+    [AvaloniaFact]
     public async Task ResourceYamlView_PreservesParentFoldState_WhenResourceGrowsAboveFold()
     {
         var window = CreateWindow(width: 800, height: 600);
@@ -532,6 +1805,20 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     {
         var field = typeof(YamlEditorBehavior).GetField("_foldingManager", BindingFlags.Instance | BindingFlags.NonPublic);
         return field?.GetValue(behavior) as FoldingManager;
+    }
+
+    private static CompletionWindow? GetCompletionWindow(YamlEditorBehavior behavior)
+    {
+        var field = typeof(YamlEditorBehavior).GetField("_completionWindow", BindingFlags.Instance | BindingFlags.NonPublic);
+        return field?.GetValue(behavior) as CompletionWindow;
+    }
+
+    private static IReadOnlyList<string> GetDiagnosticMessages(YamlEditorBehavior behavior)
+    {
+        var field = typeof(YamlEditorBehavior).GetField("_diagnosticRenderer", BindingFlags.Instance | BindingFlags.NonPublic);
+        var renderer = field?.GetValue(behavior);
+        var property = renderer?.GetType().GetProperty("Messages", BindingFlags.Instance | BindingFlags.Public);
+        return property?.GetValue(renderer) as IReadOnlyList<string> ?? [];
     }
 
     private static V1Pod CreatePod(string name, bool includeLabels, bool extraEnv)

@@ -12,21 +12,36 @@ public sealed partial class ResourceYamlView : UserControl
 #if DEBUG
         if (Design.IsDesignMode)
         {
-            var cluster = Application.Current.GetRequiredService<ClusterWorkspaceCatalog>().GetDefault();
-            cluster.Connect().GetAwaiter().GetResult();
-            var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
-
-            var obj = new V1Namespace()
+            Dispatcher.UIThread.Post(async () =>
             {
-                Metadata = new()
+                var cluster = Application.Current.GetRequiredService<ClusterWorkspaceCatalog>().GetDefault();
+                await cluster.Connect();
+                var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
+
+                var obj = new V1Pod()
                 {
-                    Name = "test"
-                }
-            };
+                    ApiVersion = V1Pod.KubeApiVersion,
+                    Kind = V1Pod.KubeKind,
+                    Metadata = new()
+                    {
+                        Name = "test",
+                        NamespaceProperty = "default",
+                    },
+                    Spec = new()
+                    {
+                        Containers = [
+                            new(){
+                                Image = "nginx",
+                                ImagePullPolicy = "Always"
+                            }
+                        ]
+                    }
+                };
 
-            vm.Initialize(cluster, obj);
+                vm.Initialize(cluster, obj);
 
-            DataContext = vm;
+                DataContext = vm;
+            });
         }
 #endif
     }

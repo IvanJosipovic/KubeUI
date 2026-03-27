@@ -4,12 +4,13 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
     xmlns:assets="clr-namespace:KubeUI.Avalonia.Assets;assembly=KubeUI.Avalonia"
+    xmlns:behaviors="using:KubeUI.Avalonia.Behaviors"
     xmlns:converters="using:KubeUI.Avalonia.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:fa="using:FluentAvalonia.UI.Controls"
     xmlns:ia="using:Avalonia.Xaml.Interactions.Core"
     xmlns:ic="using:FluentIcons.Avalonia"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:behaviors="using:KubeUI.Avalonia.Behaviors"
     xmlns:vm="clr-namespace:KubeUI.Avalonia.ViewModels"
     d:DesignHeight="450"
     d:DesignWidth="800"
@@ -19,7 +20,7 @@
     <Grid
         HorizontalAlignment="Stretch"
         VerticalAlignment="Stretch"
-        RowDefinitions="Auto,*">
+        RowDefinitions="Auto,Auto,*">
 
         <!--  Read-only toolbar  -->
         <StackPanel Grid.Row="0"
@@ -43,8 +44,17 @@
         <StackPanel Grid.Row="0"
             IsVisible="{Binding EditMode}"
             Orientation="Horizontal">
-            <Button Command="{Binding SaveCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Save}">
+            <Button
+                Command="{Binding SaveCommand}"
+                IsEnabled="{Binding CanSaveAction}"
+                ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Save}">
                 <ic:FluentIcon Icon="Save" />
+            </Button>
+            <Button
+                Command="{Binding DryRunCommand}"
+                IsEnabled="{Binding CanDryRunAction}"
+                ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_DryRun}">
+                <ic:FluentIcon Icon="CheckmarkCircle" />
             </Button>
             <Button Command="{Binding SetEditModeCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Cancel}">
                 <ic:FluentIcon Icon="Dismiss" />
@@ -54,8 +64,20 @@
             </ToggleButton>
         </StackPanel>
 
+        <fa:InfoBar
+            Name="ActionResultBar"
+            Grid.Row="1"
+            Margin="4"
+            CloseButtonCommand="{Binding DismissActionResultCommand}"
+            IsClosable="True"
+            IsVisible="{Binding HasActionResult}"
+            IsOpen="{Binding HasActionResult}"
+            Message="{Binding ActionResultMessage}"
+            Severity="{Binding ActionResultSeverity}"
+            Title="{Binding ActionResultTitle}" />
+
         <!--  YAML editor  -->
-        <ae:TextEditor Name="Editor" Grid.Row="1"
+        <ae:TextEditor Name="Editor" Grid.Row="2"
             Background="{DynamicResource SystemAltHighColor}"
             FontFamily="Cascadia Mono"
             FontSize="{Binding Settings.Appearance.ConsoleFontSize}"
@@ -68,9 +90,11 @@
             <ae:TextEditor.Options>
                 <ae:TextEditorOptions
                     AllowScrollBelowDocument="False"
+                    ConvertTabsToSpaces="True"
                     EnableEmailHyperlinks="False"
                     EnableHyperlinks="False"
                     HighlightCurrentLine="True"
+                    IndentationSize="2"
                     ShowBoxForControlCharacters="False" />
             </ae:TextEditor.Options>
             <Interaction.Behaviors>
@@ -78,6 +102,7 @@
                 <behaviors:YamlEditorScrollBehavior />
             </Interaction.Behaviors>
             <ae:TextEditor.KeyBindings>
+                <KeyBinding Command="{Binding RequestCompletionCommand}" Gesture="Ctrl+Space" />
                 <KeyBinding Command="{Binding UndoCommand}" Gesture="Ctrl+Z" />
             </ae:TextEditor.KeyBindings>
             <ae:TextEditor.ContextMenu>
@@ -88,19 +113,17 @@
                         IsVisible="{Binding EditMode}">
                         <Interaction.Behaviors>
                             <ia:EventTriggerBehavior EventName="Click">
-                                <ia:CallMethodAction TargetObject="{Binding #Editor}" MethodName="Cut" />
+                                <ia:CallMethodAction MethodName="Cut" TargetObject="{Binding #Editor}" />
                             </ia:EventTriggerBehavior>
                         </Interaction.Behaviors>
                         <MenuItem.Icon>
                             <ic:FluentIcon Icon="Cut" />
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem
-                        Header="{x:Static assets:Resources.Action_Copy}"
-                        HotKey="Ctrl+C">
+                    <MenuItem Header="{x:Static assets:Resources.Action_Copy}" HotKey="Ctrl+C">
                         <Interaction.Behaviors>
                             <ia:EventTriggerBehavior EventName="Click">
-                                <ia:CallMethodAction TargetObject="{Binding #Editor}" MethodName="Copy" />
+                                <ia:CallMethodAction MethodName="Copy" TargetObject="{Binding #Editor}" />
                             </ia:EventTriggerBehavior>
                         </Interaction.Behaviors>
                         <MenuItem.Icon>
@@ -113,7 +136,7 @@
                         IsVisible="{Binding EditMode}">
                         <Interaction.Behaviors>
                             <ia:EventTriggerBehavior EventName="Click">
-                                <ia:CallMethodAction TargetObject="{Binding #Editor}" MethodName="Paste" />
+                                <ia:CallMethodAction MethodName="Paste" TargetObject="{Binding #Editor}" />
                             </ia:EventTriggerBehavior>
                         </Interaction.Behaviors>
                         <MenuItem.Icon>
@@ -126,7 +149,7 @@
                         IsVisible="{Binding EditMode}">
                         <Interaction.Behaviors>
                             <ia:EventTriggerBehavior EventName="Click">
-                                <ia:CallMethodAction TargetObject="{Binding #Editor}" MethodName="Delete" />
+                                <ia:CallMethodAction MethodName="Delete" TargetObject="{Binding #Editor}" />
                             </ia:EventTriggerBehavior>
                         </Interaction.Behaviors>
                         <MenuItem.Icon>
@@ -142,7 +165,7 @@
                         IsVisible="{Binding EditMode}">
                         <Interaction.Behaviors>
                             <ia:EventTriggerBehavior EventName="Click">
-                                <ia:CallMethodAction TargetObject="{Binding #Editor}" MethodName="Undo" />
+                                <ia:CallMethodAction MethodName="Undo" TargetObject="{Binding #Editor}" />
                             </ia:EventTriggerBehavior>
                         </Interaction.Behaviors>
                         <MenuItem.Icon>
@@ -155,7 +178,7 @@
                         IsVisible="{Binding EditMode}">
                         <Interaction.Behaviors>
                             <ia:EventTriggerBehavior EventName="Click">
-                                <ia:CallMethodAction TargetObject="{Binding #Editor}" MethodName="Redo" />
+                                <ia:CallMethodAction MethodName="Redo" TargetObject="{Binding #Editor}" />
                             </ia:EventTriggerBehavior>
                         </Interaction.Behaviors>
                         <MenuItem.Icon>
@@ -167,9 +190,3 @@
         </ae:TextEditor>
     </Grid>
 </UserControl>
-
-
-
-
-
-

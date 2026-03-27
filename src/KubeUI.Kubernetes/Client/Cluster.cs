@@ -593,6 +593,53 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         }
     }
 
+    public async Task DryRunYaml(Stream stream)
+    {
+        var dryRunMethod = GetType().GetMethods(BindingFlags.Instance | BindingFlags.NonPublic)
+            .First(x => x.Name == nameof(DryRunResourceAsync) && x.IsGenericMethod && x.GetParameters().Length == 1);
+
+        var reader = new StreamReader(stream);
+        var parser = new Parser(new StringReader(reader.ReadToEnd()));
+        parser.Consume<StreamStart>();
+
+        var exceptions = new List<Exception>();
+
+        while (parser.Accept<DocumentStart>(out _))
+        {
+            var doc = Serialization.KubernetesYaml.Deserialize(parser);
+            var yaml = Serialization.KubernetesYaml.Serialize(doc);
+
+            var obj = Serialization.KubernetesYaml.Deserialize<KubernetesObject>(yaml);
+            try
+            {
+                var type = ModelCache.GetResourceType(obj.ApiGroup(), obj.ApiGroupVersion(), obj.Kind);
+
+                if (type == null)
+                {
+                    exceptions.Add(new Exception($"Unable to find Type for {obj.ApiVersion + "/" + obj.Kind}"));
+                    continue;
+                }
+
+                var model = Serialization.KubernetesYaml.Deserialize(yaml, type);
+
+                if (model != null)
+                {
+                    var fooRef = dryRunMethod.MakeGenericMethod(type);
+                    await (Task)fooRef.Invoke(this, [model])!;
+                }
+            }
+            catch (Exception ex)
+            {
+                exceptions.Add(ex);
+            }
+        }
+
+        if (exceptions.Count > 0)
+        {
+            throw new AggregateException("Error dry running Yaml", exceptions);
+        }
+    }
+
     public async Task ImportYaml(Stream stream)
     {
         var mi = GetType().GetMethods().First(x => x.Name == nameof(AddOrUpdateResource) && x.IsGenericMethod && x.GetParameters().Length == 1);
@@ -605,7 +652,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
 
         while (parser.Accept<DocumentStart>(out _))
         {
-            var doc = Serialization.KubernetesYaml.Deserializer.Deserialize(parser);
+            var doc = Serialization.KubernetesYaml.Deserialize(parser);
             var yaml = Serialization.KubernetesYaml.Serialize(doc);
 
             var obj = Serialization.KubernetesYaml.Deserialize<KubernetesObject>(yaml);
@@ -620,7 +667,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
                     continue;
                 }
 
-                var model = Serialization.KubernetesYaml.Deserializer.Deserialize(yaml, type);
+                var model = Serialization.KubernetesYaml.Deserialize(yaml, type);
 
                 if (model != null)
                 {
@@ -666,6 +713,69 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
             if (exceptions.Count > 0)
             {
                 throw new AggregateException("Error importing Folder", exceptions);
+            }
+        }
+    }
+
+    private async Task DryRunResourceAsync<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        if (Client == null)
+        {
+            throw new InvalidOperationException("Cluster client is not connected.");
+        }
+
+        if (IsResourceNamespaced<T>() && string.IsNullOrEmpty(item.Namespace()))
+        {
+            item.Metadata.NamespaceProperty = "default";
+        }
+
+        var api = GroupApiVersionKind.From<T>();
+        const string dryRun = "All";
+
+        if (string.IsNullOrEmpty(item.Namespace()))
+        {
+            if (item.Metadata.Uid != null)
+            {
+                await Client.CustomObjects.ReplaceClusterCustomObjectWithHttpMessagesAsync<T>(
+                    item,
+                    api.Group,
+                    api.ApiVersion,
+                    api.PluralName,
+                    item.Name(),
+                    dryRun: dryRun);
+            }
+            else
+            {
+                await Client.CustomObjects.CreateClusterCustomObjectWithHttpMessagesAsync<T>(
+                    item,
+                    api.Group,
+                    api.ApiVersion,
+                    api.PluralName,
+                    dryRun: dryRun);
+            }
+        }
+        else
+        {
+            if (item.Metadata.Uid != null)
+            {
+                await Client.CustomObjects.ReplaceNamespacedCustomObjectWithHttpMessagesAsync<T>(
+                    item,
+                    api.Group,
+                    api.ApiVersion,
+                    item.Namespace(),
+                    api.PluralName,
+                    item.Name(),
+                    dryRun: dryRun);
+            }
+            else
+            {
+                await Client.CustomObjects.CreateNamespacedCustomObjectWithHttpMessagesAsync<T>(
+                    item,
+                    api.Group,
+                    api.ApiVersion,
+                    item.Namespace(),
+                    api.PluralName,
+                    dryRun: dryRun);
             }
         }
     }

@@ -213,6 +213,27 @@
   <data name="ResourceYamlViewer_Cancel" xml:space="preserve">
     <value>Cancel</value>
   </data>
+  <data name="ResourceYamlViewer_DryRun" xml:space="preserve">
+    <value>Dry Run</value>
+  </data>
+  <data name="ResourceYamlViewer_DryRunFailed" xml:space="preserve">
+    <value>Dry run failed</value>
+  </data>
+  <data name="ResourceYamlViewer_DryRunSucceeded" xml:space="preserve">
+    <value>Dry run succeeded</value>
+  </data>
+  <data name="ResourceYamlViewer_DryRunSucceededMessage" xml:space="preserve">
+    <value>The server accepted the manifest using dry-run.</value>
+  </data>
+  <data name="ResourceYamlViewer_SaveFailed" xml:space="preserve">
+    <value>Save failed</value>
+  </data>
+  <data name="ResourceYamlViewer_SaveSucceeded" xml:space="preserve">
+    <value>Save succeeded</value>
+  </data>
+  <data name="ResourceYamlViewer_SaveSucceededMessage" xml:space="preserve">
+    <value>The manifest was saved successfully.</value>
+  </data>
   <data name="ResourceYamlViewer_Edit" xml:space="preserve">
     <value>Edit</value>
   </data>
@@ -221,6 +242,9 @@
   </data>
   <data name="ResourceYamlViewer_Save" xml:space="preserve">
     <value>Save</value>
+  </data>
+  <data name="ResourceYamlViewer_ValidationFailed" xml:space="preserve">
+    <value>Validation failed</value>
   </data>
   <data name="ResourceYamlViewer_Undo" xml:space="preserve">
     <value>Undo</value>

@@ -134,10 +134,10 @@ internal static class Program
 
     private static IServiceCollection AddTelemetry(this IServiceCollection services)
     {
-        const string key = "ff9c67da-5f13-46e9-9450-7e1dda139c08";
         var version = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
 #if !DEBUG
+        const string key = "ff9c67da-5f13-46e9-9450-7e1dda139c08";
         services.AddLogging(x => x.AddFilter<OpenTelemetryLoggerProvider>("*", LogLevel.Warning));
 #endif
 

@@ -72,6 +72,7 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
 
     public Func<Task>? ConnectBehavior { get; set; }
+    public Func<Stream, Task>? DryRunYamlBehavior { get; set; }
 
     public bool CanCreatePodPortForward { get; set; } = true;
     public bool ThrowOnMissingPortForwardReview { get; set; }
@@ -499,7 +500,7 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
 
         while (parser.Accept<DocumentStart>(out _))
         {
-            var doc = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserializer.Deserialize(parser);
+            var doc = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize(parser);
             var yaml = KubeUI.Kubernetes.Serialization.KubernetesYaml.Serialize(doc);
             var obj = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<KubernetesObject>(yaml);
 
@@ -513,7 +514,7 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
                     continue;
                 }
 
-                var model = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserializer.Deserialize(yaml, type);
+                var model = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize(yaml, type);
 
                 if (model != null)
                 {
@@ -531,6 +532,17 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
         {
             throw new AggregateException("Error importing Yaml", exceptions);
         }
+    }
+
+    public async Task DryRunYaml(Stream stream)
+    {
+        if (DryRunYamlBehavior != null)
+        {
+            await DryRunYamlBehavior(stream);
+            return;
+        }
+
+        await ImportYaml(stream);
     }
 
     private async Task ProcessCustomResourceDefinitionAsync(V1CustomResourceDefinition crd)

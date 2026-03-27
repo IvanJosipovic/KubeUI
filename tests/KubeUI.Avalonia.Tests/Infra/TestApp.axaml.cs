@@ -20,6 +20,7 @@ public class TestApp : Application
 {
     public IServiceProvider? Services { get; private set; }
     public static Mock<IDialogManager>? DialogManagerMock { get; private set; }
+    public static INotification? LastNotification { get; private set; }
     public static ContentDialogSettings? LastContentDialogSettings { get; private set; }
 
     public static TopLevel TopLevel { get; private set; }
@@ -76,6 +77,7 @@ public class TestApp : Application
         services.AddSingleton<IClusterSettingsStore>(sp => sp.GetRequiredService<ISettingsService>().Clusters);
 
         LastContentDialogSettings = null;
+        LastNotification = null;
 
         var dialogManager = new Mock<IDialogManager>();
         dialogManager.SetupGet(x => x.Logger).Returns((ILogger<IDialogManager>?)null);
@@ -91,6 +93,9 @@ public class TestApp : Application
         services.AddSingleton<IDialogService>(dialog.Object);
 
         var notifications = new Mock<INotificationManager>();
+        notifications
+            .Setup(x => x.Show(It.IsAny<INotification>()))
+            .Callback<INotification>(notification => LastNotification = notification);
         services.AddSingleton<INotificationManager>(notifications.Object);
         services.AddSingleton<IFactory>(sp => Dispatcher.UIThread.Invoke(() => (IFactory)new DockFactory(sp.GetRequiredService<ILogger<DockFactory>>())));
         services.AddSingleton<ServiceDescriptor[]>([.. services]);

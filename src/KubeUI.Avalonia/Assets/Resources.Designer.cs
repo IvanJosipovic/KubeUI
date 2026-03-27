@@ -1613,6 +1613,69 @@ namespace KubeUI.Avalonia.Assets {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Dry Run.
+        /// </summary>
+        public static string ResourceYamlViewer_DryRun {
+            get {
+                return ResourceManager.GetString("ResourceYamlViewer_DryRun", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Dry run failed.
+        /// </summary>
+        public static string ResourceYamlViewer_DryRunFailed {
+            get {
+                return ResourceManager.GetString("ResourceYamlViewer_DryRunFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Dry run succeeded.
+        /// </summary>
+        public static string ResourceYamlViewer_DryRunSucceeded {
+            get {
+                return ResourceManager.GetString("ResourceYamlViewer_DryRunSucceeded", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The server accepted the manifest using dry-run..
+        /// </summary>
+        public static string ResourceYamlViewer_DryRunSucceededMessage {
+            get {
+                return ResourceManager.GetString("ResourceYamlViewer_DryRunSucceededMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Save failed.
+        /// </summary>
+        public static string ResourceYamlViewer_SaveFailed {
+            get {
+                return ResourceManager.GetString("ResourceYamlViewer_SaveFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Save succeeded.
+        /// </summary>
+        public static string ResourceYamlViewer_SaveSucceeded {
+            get {
+                return ResourceManager.GetString("ResourceYamlViewer_SaveSucceeded", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The manifest was saved successfully..
+        /// </summary>
+        public static string ResourceYamlViewer_SaveSucceededMessage {
+            get {
+                return ResourceManager.GetString("ResourceYamlViewer_SaveSucceededMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Edit.
         /// </summary>
         public static string ResourceYamlViewer_Edit {
@@ -1636,6 +1699,15 @@ namespace KubeUI.Avalonia.Assets {
         public static string ResourceYamlViewer_Save {
             get {
                 return ResourceManager.GetString("ResourceYamlViewer_Save", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Validation failed.
+        /// </summary>
+        public static string ResourceYamlViewer_ValidationFailed {
+            get {
+                return ResourceManager.GetString("ResourceYamlViewer_ValidationFailed", resourceCulture);
             }
         }
         

@@ -15,28 +15,41 @@ namespace KubeUI.Kubernetes.Serialization;
 /// </summary>
 public static class KubernetesYaml
 {
-    public static readonly IDeserializer Deserializer =
+    private static readonly object s_deserializerLockObject = new();
+    private static readonly object s_serializerLockObject = new();
+
+    private static DeserializerBuilder CommonDeserializerBuilder =>
         new DeserializerBuilder()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
-            
             .WithTypeConverter(new IntOrStringYamlConverter())
             .WithTypeConverter(new ByteArrayStringYamlConverter())
             .WithTypeConverter(new ResourceQuantityYamlConverter())
             .WithTypeConverter(new SystemTextJsonYamlTypeConverter())
             .WithTypeConverter(new KubernetesDateTimeYamlConverter())
             .WithTypeConverter(new KubernetesDateTimeOffsetYamlConverter())
-
             .WithTypeInspector(x => new SystemTextJsonTypeInspector(x))
-            
-            .WithAttemptingUnquotedStringTypeDeserialization()
+            .WithAttemptingUnquotedStringTypeDeserialization();
+
+    public static readonly IDeserializer StrictDeserializer =
+        CommonDeserializerBuilder
+            .WithDuplicateKeyChecking()
+            .Build();
+
+    public static readonly IDeserializer Deserializer =
+        CommonDeserializerBuilder
             .IgnoreUnmatchedProperties()
             .Build();
+
+    public static IDeserializer GetDeserializer(bool strict = false)
+    {
+        return strict ? StrictDeserializer : Deserializer;
+    }
 
     public static readonly IValueSerializer Serializer =
         new SerializerBuilder()
             .DisableAliases()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
-            
+
             .WithTypeConverter(new IntOrStringYamlConverter())
             .WithTypeConverter(new ByteArrayStringYamlConverter())
             .WithTypeConverter(new ResourceQuantityYamlConverter())
@@ -47,7 +60,7 @@ public static class KubernetesYaml
 
             .WithTypeInspector(x => new SystemTextJsonTypeInspector(x))
             .WithTypeInspector(x => new SortedTypeInspector(x))
-        
+
             .WithEventEmitter(e => new StringQuotingEmitter(e))
             .WithEventEmitter(e => new FloatEmitter(e))
             .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull)
@@ -135,6 +148,13 @@ public static class KubernetesYaml
         return LoadAllFromString(content, typeMap);
     }
 
+    public static async Task<List<object>> LoadAllFromStreamAsync(Stream stream, IDictionary<string, Type> typeMap, bool strict)
+    {
+        var reader = new StreamReader(stream);
+        var content = await reader.ReadToEndAsync().ConfigureAwait(false);
+        return LoadAllFromString(content, typeMap, strict);
+    }
+
     /// <summary>
     /// Load a collection of objects from a file asynchronously
     /// </summary>
@@ -150,6 +170,12 @@ public static class KubernetesYaml
         return await LoadAllFromStreamAsync(fileStream, typeMap).ConfigureAwait(false);
     }
 
+    public static async Task<List<object>> LoadAllFromFileAsync(string fileName, IDictionary<string, Type> typeMap, bool strict)
+    {
+        await using var fileStream = File.OpenRead(fileName);
+        return await LoadAllFromStreamAsync(fileStream, typeMap, strict).ConfigureAwait(false);
+    }
+
     /// <summary>
     /// Load a collection of objects from a string
     /// </summary>
@@ -161,7 +187,7 @@ public static class KubernetesYaml
     /// be used.
     /// </param>
     /// <returns>collection of objects</returns>
-    public static List<object> LoadAllFromString(string content, IDictionary<string, Type> typeMap = null)
+    public static List<object> LoadAllFromString(string content, IDictionary<string, Type> typeMap = null, bool strict = false)
     {
         var mergedTypeMap = new Dictionary<string, Type>(ModelTypeMap);
         // merge in KVPs from typeMap, overriding any in ModelTypeMap
@@ -172,7 +198,11 @@ public static class KubernetesYaml
         parser.Consume<StreamStart>();
         while (parser.Accept<DocumentStart>(out _))
         {
-            var dict = Deserializer.Deserialize<Dictionary<object, object>>(parser);
+            Dictionary<object, object> dict;
+            lock (s_deserializerLockObject)
+            {
+                dict = GetDeserializer(strict).Deserialize<Dictionary<object, object>>(parser);
+            }
             types.Add(mergedTypeMap[dict["apiVersion"] + "/" + dict["kind"]]);
         }
 
@@ -183,36 +213,72 @@ public static class KubernetesYaml
         while (parser.Accept<DocumentStart>(out _))
         {
             var objType = types[ix++];
-                var obj = Deserializer.Deserialize(parser, objType);
-                results.Add(obj);
+            object obj;
+            lock (s_deserializerLockObject)
+            {
+                obj = GetDeserializer(strict).Deserialize(parser, objType);
+            }
+
+            results.Add(obj);
         }
 
         return results;
     }
 
-    public static async Task<T> LoadFromStreamAsync<T>(Stream stream)
+    public static async Task<T> LoadFromStreamAsync<T>(Stream stream, bool strict = false)
     {
         using var reader = new StreamReader(stream);
         var content = await reader.ReadToEndAsync().ConfigureAwait(false);
-        return Deserialize<T>(content);
+        return Deserialize<T>(content, strict);
     }
 
-    public static async Task<T> LoadFromFileAsync<T>(string file)
+    public static async Task<T> LoadFromFileAsync<T>(string file, bool strict = false)
     {
         await using var fs = File.OpenRead(file);
-        return await LoadFromStreamAsync<T>(fs).ConfigureAwait(false);
+        return await LoadFromStreamAsync<T>(fs, strict).ConfigureAwait(false);
     }
 
-    public static TValue Deserialize<TValue>(string yaml)
+    public static TValue Deserialize<TValue>(string yaml, bool strict = false)
     {
         using var reader = new StringReader(yaml);
-        return Deserializer.Deserialize<TValue>(new MergingParser(new Parser(reader)));
+        lock (s_deserializerLockObject)
+        {
+            return GetDeserializer(strict).Deserialize<TValue>(new MergingParser(new Parser(reader)));
+        }
     }
 
-    public static TValue Deserialize<TValue>(Stream yaml)
+    public static TValue Deserialize<TValue>(Stream yaml, bool strict = false)
     {
         using var reader = new StreamReader(yaml);
-        return Deserializer.Deserialize<TValue>(new MergingParser(new Parser(reader)));
+        lock (s_deserializerLockObject)
+        {
+            return GetDeserializer(strict).Deserialize<TValue>(new MergingParser(new Parser(reader)));
+        }
+    }
+
+    public static object Deserialize(string yaml, Type type, bool strict = false)
+    {
+        using var reader = new StringReader(yaml);
+        lock (s_deserializerLockObject)
+        {
+            return GetDeserializer(strict).Deserialize(new MergingParser(new Parser(reader)), type);
+        }
+    }
+
+    public static object Deserialize(IParser parser, Type type, bool strict = false)
+    {
+        lock (s_deserializerLockObject)
+        {
+            return GetDeserializer(strict).Deserialize(parser, type);
+        }
+    }
+
+    public static object Deserialize(IParser parser, bool strict = false)
+    {
+        lock (s_deserializerLockObject)
+        {
+            return GetDeserializer(strict).Deserialize(parser);
+        }
     }
 
     public static string SerializeAll(IEnumerable<object> values)
@@ -233,7 +299,10 @@ public static class KubernetesYaml
             if (value != null)
             {
                 emitter.Emit(new DocumentStart());
-                Serializer.SerializeValue(emitter, value, value.GetType());
+                lock (s_serializerLockObject)
+                {
+                    Serializer.SerializeValue(emitter, value, value.GetType());
+                }
                 emitter.Emit(new DocumentEnd(true));
             }
         }
@@ -254,7 +323,10 @@ public static class KubernetesYaml
 
         emitter.Emit(new StreamStart());
         emitter.Emit(new DocumentStart());
-        Serializer.SerializeValue(emitter, value, value.GetType());
+        lock (s_serializerLockObject)
+        {
+            Serializer.SerializeValue(emitter, value, value.GetType());
+        }
 
         return stringBuilder.ToString();
     }

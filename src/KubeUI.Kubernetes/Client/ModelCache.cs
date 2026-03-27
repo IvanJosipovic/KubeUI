@@ -101,6 +101,30 @@ public sealed class ModelCache
         return TypeCache.ContainsKey(GetCustomResourceDefinitionTypeKey(crd));
     }
 
+    public XmlElement? GetDocumentation(MemberInfo memberInfo)
+    {
+        return GetDocumentation(memberInfo.DeclaringType, memberInfo.MemberType.ToString()[0], memberInfo.Name);
+    }
+
+    public XmlElement? GetDocumentation(MethodInfo methodInfo)
+    {
+        var parameterTypeNames = methodInfo.GetParameters()
+            .Select(parameter => parameter.ParameterType.FullName)
+            .Where(fullName => !string.IsNullOrWhiteSpace(fullName));
+
+        var suffix = string.Join(",", parameterTypeNames);
+        var memberName = string.IsNullOrEmpty(suffix)
+            ? methodInfo.Name
+            : $"{methodInfo.Name}({suffix})";
+
+        return GetDocumentation(methodInfo.DeclaringType, 'M', memberName);
+    }
+
+    public XmlElement? GetDocumentation(Type type)
+    {
+        return GetDocumentation(type, 'T', string.Empty);
+    }
+
     private void AddAssemblyUnsafe(Assembly assembly, XmlDocument xmlDocument)
     {
         Cache[assembly] = xmlDocument;
@@ -142,6 +166,26 @@ public sealed class ModelCache
     {
         var version = crd.Spec.Versions.First(x => x.Served && x.Storage).Name;
         return $"{crd.Spec.Group}/{version}/{crd.Spec.Names.Kind}";
+    }
+
+    private XmlElement? GetDocumentation(Type? type, char prefix, string name)
+    {
+        if (type == null || !Cache.TryGetValue(type.Assembly, out var xmlDocument))
+        {
+            return null;
+        }
+
+        var typeDocumentationName = GetXmlDocumentationTypeName(type);
+        var fullName = string.IsNullOrEmpty(name)
+            ? $"{prefix}:{typeDocumentationName}"
+            : $"{prefix}:{typeDocumentationName}.{name}";
+
+        return xmlDocument["doc"]?["members"]?.SelectSingleNode($"member[@name='{fullName}']") as XmlElement;
+    }
+
+    private static string GetXmlDocumentationTypeName(Type type)
+    {
+        return (type.FullName ?? type.Name).Replace('+', '.');
     }
 }
 
