@@ -512,6 +512,14 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private bool CanShowPortForwarders(ClusterWorkspaceViewModel cluster)
     {
+        var podResourceConfig = cluster.GetResourceConfigs()
+            .FirstOrDefault(config => config.Type == typeof(V1Pod));
+
+        if (podResourceConfig == null || !CanListAndWatchResource(cluster, podResourceConfig))
+        {
+            return false;
+        }
+
         try
         {
             return cluster.CanIAnyNamespace(typeof(V1Pod), Verb.Create, "portforward");

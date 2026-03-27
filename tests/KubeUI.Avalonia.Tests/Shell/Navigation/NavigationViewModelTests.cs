@@ -1033,6 +1033,32 @@ public class NavigationViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task initial_navigation_build_does_not_check_port_forward_until_pod_permissions_are_loaded()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+            ThrowOnMissingPortForwardReview = true,
+        };
+
+        var workspace = CreateWorkspace(runtime);
+        workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1Pod), "Pods")
+        {
+            PermissionsLoaded = false,
+            CanListAndWatch = false,
+        });
+
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        FindNavigationLink(clusterNode.NavigationItems, NavigationTargets.PortForwarders).ShouldBeNull();
+        runtime.PortForwardPermissionChecks.ShouldBe(0);
+    }
+
+    [AvaloniaFact]
     public async Task resource_navigation_updates_incrementally_and_port_forward_waits_for_pod_permissions()
     {
         var runtime = new TestCluster
