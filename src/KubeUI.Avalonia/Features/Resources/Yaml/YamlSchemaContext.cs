@@ -220,7 +220,7 @@ internal static class YamlSchemaContext
         }
 
         var rawKey = lineText[start..keyEnd].TrimEnd();
-        if (string.IsNullOrWhiteSpace(rawKey) || rawKey.StartsWith('#'))
+        if (string.IsNullOrWhiteSpace(rawKey) || rawKey.StartsWith('#') || rawKey == "-")
         {
             return false;
         }
@@ -377,7 +377,7 @@ internal static class YamlSchemaContext
     private static bool IsSequenceEntry(string lineText)
     {
         var trimmed = lineText.TrimStart();
-        return trimmed.StartsWith("- ", StringComparison.Ordinal);
+        return trimmed == "-" || trimmed.StartsWith("- ", StringComparison.Ordinal);
     }
 
     private static bool TryExtractKey(string trimmedLine, out string key, out string valuePart)

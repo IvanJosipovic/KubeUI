@@ -76,10 +76,22 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         return service;
     }
 
-    private static async Task WaitForValidationDebounceAsync()
+    private static async Task WaitForValidationDebounceAsync(Func<bool>? predicate = null, int timeoutMs = 2500)
     {
-        await Task.Delay(700);
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        do
+        {
+            await Task.Delay(25);
+            Dispatcher.UIThread.RunJobs();
+            if (predicate == null || predicate())
+            {
+                return;
+            }
+        }
+        while (sw.ElapsedMilliseconds < timeoutMs);
+
         Dispatcher.UIThread.RunJobs();
+        (predicate?.Invoke() ?? true).ShouldBeTrue();
     }
 
     [AvaloniaFact]
@@ -445,6 +457,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
                 NamespaceProperty = "default",
             },
         });
+        vm.ValidationDebounceDelay = TimeSpan.Zero;
         vm.EditMode = true;
 
         var view = ResolveService<ResourceYamlView>();
@@ -491,6 +504,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
                 NamespaceProperty = "default",
             },
         });
+        vm.ValidationDebounceDelay = TimeSpan.Zero;
         vm.EditMode = true;
 
         var view = ResolveService<ResourceYamlView>();
@@ -525,6 +539,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
                 NamespaceProperty = "default",
             },
         });
+        vm.ValidationDebounceDelay = TimeSpan.Zero;
         vm.EditMode = true;
         vm.YamlDocument.Text = """
             apiVersion: v1
@@ -576,6 +591,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
                 NamespaceProperty = "default",
             },
         });
+        vm.ValidationDebounceDelay = TimeSpan.Zero;
         vm.EditMode = true;
         vm.YamlDocument.Text = """
             apiVersion: v1
@@ -629,6 +645,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
                 NamespaceProperty = "default",
             },
         });
+        vm.ValidationDebounceDelay = TimeSpan.Zero;
         vm.EditMode = true;
         vm.YamlDocument.Text = """
             apiVersion: v1
@@ -1102,7 +1119,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             metadata:
               name: [test
             """.ReplaceLineEndings("\n");
-        await WaitForValidationDebounceAsync();
+        await WaitForValidationDebounceAsync(() => vm.ValidationDiagnostics.Count == 1);
 
         vm.ValidationDiagnostics.Count.ShouldBe(1);
         vm.ValidationDiagnostics[0].Message.ShouldNotContain("Exception during serialization");
@@ -1155,7 +1172,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             spec:
               unknownField: value
             """.ReplaceLineEndings("\n");
-        await WaitForValidationDebounceAsync();
+        await WaitForValidationDebounceAsync(() => vm.ValidationDiagnostics.Count == 1);
 
         vm.ValidationDiagnostics.Count.ShouldBe(1);
         vm.ValidationDiagnostics[0].Message.ShouldContain("unknownField");
@@ -1200,7 +1217,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             metadata:
               name: test
             """.ReplaceLineEndings("\n");
-        await WaitForValidationDebounceAsync();
+        await WaitForValidationDebounceAsync(() => vm.ValidationDiagnostics.Count == 1);
 
         vm.ValidationDiagnostics.Count.ShouldBe(1);
         vm.ValidationDiagnostics[0].StartLine.ShouldBe(2);
@@ -1246,7 +1263,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             metadata:
               name: [test
             """.ReplaceLineEndings("\n");
-        await WaitForValidationDebounceAsync();
+        await WaitForValidationDebounceAsync(() => vm.ValidationDiagnostics.Count == 1);
 
         await vm.SaveCommand.ExecuteAsync(null);
         Dispatcher.UIThread.RunJobs();
@@ -1292,7 +1309,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
             metadata:
               name: [test
             """.ReplaceLineEndings("\n");
-        await WaitForValidationDebounceAsync();
+        await WaitForValidationDebounceAsync(() => vm.ValidationDiagnostics.Count == 1);
 
         vm.SaveCommand.CanExecute(null).ShouldBeFalse();
         vm.DryRunCommand.CanExecute(null).ShouldBeFalse();
@@ -1332,7 +1349,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         vm.ValidationDiagnostics.ShouldBeEmpty();
         vm.HasActionResult.ShouldBeFalse();
 
-        await WaitForValidationDebounceAsync();
+        await WaitForValidationDebounceAsync(() => vm.ValidationDiagnostics.Count == 1);
 
         vm.ValidationDiagnostics.Count.ShouldBe(1);
         vm.HasActionFailureResult.ShouldBeTrue();

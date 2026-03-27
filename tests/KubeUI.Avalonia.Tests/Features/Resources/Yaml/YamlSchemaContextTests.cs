@@ -375,7 +375,7 @@ public class YamlSchemaContextTests
               
             """);
 
-        var context = YamlSchemaContext.Resolve(document, document.TextLength - 1, typeof(V1Pod), s_modelCache);
+        var context = YamlSchemaContext.Resolve(document, document.TextLength, typeof(V1Pod), s_modelCache);
 
         context.ContainerType.ShouldBe(typeof(V1PodSpec));
         context.CompletionItems.Select(item => item.Text).ShouldContain("containers");
@@ -454,10 +454,10 @@ public class YamlSchemaContextTests
             """
             apiVersion: v1
             kind: Pod
-            
+              
             """);
 
-        var context = YamlSchemaContext.Resolve(document, document.TextLength - 1, typeof(V1Pod), s_modelCache);
+        var context = YamlSchemaContext.Resolve(document, document.TextLength, typeof(V1Pod), s_modelCache);
 
         context.ContainerType.ShouldBe(typeof(V1Pod));
         context.CompletionItems.Select(item => item.Text).ShouldNotContain("apiVersion");
