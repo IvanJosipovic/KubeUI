@@ -146,7 +146,7 @@ jobs:
 
       - name: Replace single file
         if: matrix.runs-on == 'macos-latest'
-        uses: richardrigutins/replace-in-files@v2
+        uses: richardrigutins/replace-in-files@v3
         with:
           files: 'src/KubeUI.Desktop/info.plist'
           search-text: '{{version}}'
