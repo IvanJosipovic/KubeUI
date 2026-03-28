@@ -624,45 +624,89 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     private void OnRuntimePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        Dispatcher.UIThread.Post(async () =>
+        switch (e.PropertyName)
         {
-            switch (e.PropertyName)
-            {
-                case nameof(IClusterRuntime.Connected):
-                    _workspaceStateInitialized = false;
-                    await RefreshWorkspaceStateAsync();
-                    break;
-                case nameof(IClusterRuntime.Status):
-                    if (Runtime.Status == ClusterStatus.Connecting)
-                    {
-                        _workspaceStateInitialized = false;
-                    }
+            case nameof(IClusterRuntime.Connected):
+                _workspaceStateInitialized = false;
 
+                if (Runtime.Connected)
+                {
+                    QueueWorkspaceStateRefresh();
+                }
+
+                PostToUiThread(() => OnPropertyChanged(nameof(Connected)));
+                break;
+            case nameof(IClusterRuntime.Status):
+                if (Runtime.Status == ClusterStatus.Connecting)
+                {
+                    _workspaceStateInitialized = false;
+                }
+
+                PostToUiThread(() =>
+                {
                     UpdateClusterColor();
                     OnPropertyChanged(nameof(Status));
                     OnPropertyChanged(nameof(LastError));
                     OnPropertyChanged(nameof(RequiresNamespaceSelectionPrompt));
                     OnPropertyChanged(nameof(IsMetricsAvailable));
-                    break;
-                case nameof(IClusterRuntime.LastError):
-                    OnPropertyChanged(nameof(LastError));
-                    break;
-                case nameof(IClusterRuntime.RequiresNamespaceSelectionPrompt):
-                    OnPropertyChanged(nameof(RequiresNamespaceSelectionPrompt));
-                    break;
-                case nameof(IClusterRuntime.Name):
+                });
+                break;
+            case nameof(IClusterRuntime.LastError):
+                PostToUiThread(() => OnPropertyChanged(nameof(LastError)));
+                break;
+            case nameof(IClusterRuntime.RequiresNamespaceSelectionPrompt):
+                PostToUiThread(() => OnPropertyChanged(nameof(RequiresNamespaceSelectionPrompt)));
+                break;
+            case nameof(IClusterRuntime.Name):
+                PostToUiThread(() =>
+                {
                     Title = Runtime.Name;
                     OnPropertyChanged(nameof(Name));
-                    break;
-                case nameof(IClusterRuntime.ListNamespaces):
-                    OnPropertyChanged(nameof(ListNamespaces));
-                    break;
-                case nameof(IClusterRuntime.Namespaces):
+                });
+                break;
+            case nameof(IClusterRuntime.ListNamespaces):
+                PostToUiThread(() => OnPropertyChanged(nameof(ListNamespaces)));
+                break;
+            case nameof(IClusterRuntime.Namespaces):
+                PostToUiThread(() =>
+                {
                     SubscribeNamespaceCollection(Runtime.Namespaces);
                     OnPropertyChanged(nameof(Namespaces));
-                    break;
+                });
+                break;
+        }
+    }
+
+    private void QueueWorkspaceStateRefresh()
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await RefreshWorkspaceStateAsync().ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (_disposeCancellation.IsCancellationRequested)
+            {
+            }
+            catch (ObjectDisposedException) when (_disposed)
+            {
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error refreshing workspace state for cluster {Cluster}", Runtime.Name);
             }
         });
+    }
+
+    private static void PostToUiThread(Action action)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            action();
+            return;
+        }
+
+        Dispatcher.UIThread.Post(action);
     }
 
     private void OnRuntimeChange(WatchEventType eventType, GroupApiVersionKind kind, IKubernetesObject<V1ObjectMeta> item)

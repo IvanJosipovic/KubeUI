@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Diagnostics;
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
@@ -227,6 +228,36 @@ public class ClusterWorkspaceViewModelTests : AvaloniaTestBase
         workspace.GetResourceConfig<V1Pod>().PermissionsLoaded.ShouldBeFalse();
 
         podRelease.TrySetResult(null);
+
+        await WaitForAsync(() => workspace.GetResourceConfig<V1Pod>().PermissionsLoaded);
+        workspace.GetResourceConfig<V1Pod>().PermissionsLoaded.ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task connected_property_change_does_not_block_ui_thread_while_workspace_refresh_runs()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = false,
+            Status = ClusterStatus.None,
+        };
+
+        var workspace = CreateWorkspace(runtime);
+        var releaseRefresh = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        workspace.AddResourceConfigForTest(new BlockingPodPermissionResourceConfig(runtime, releaseRefresh.Task));
+
+        var sw = Stopwatch.StartNew();
+        await Dispatcher.UIThread.InvokeAsync(() => runtime.Connected = true);
+        sw.Stop();
+
+        sw.Elapsed.ShouldBeLessThan(TimeSpan.FromMilliseconds(250));
+
+        var uiCallbackCompleted = false;
+        await Dispatcher.UIThread.InvokeAsync(() => uiCallbackCompleted = true);
+        uiCallbackCompleted.ShouldBeTrue();
+        workspace.GetResourceConfig<V1Pod>().PermissionsLoaded.ShouldBeFalse();
+
+        releaseRefresh.TrySetResult(null);
 
         await WaitForAsync(() => workspace.GetResourceConfig<V1Pod>().PermissionsLoaded);
         workspace.GetResourceConfig<V1Pod>().PermissionsLoaded.ShouldBeTrue();
