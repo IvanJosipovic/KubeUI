@@ -204,7 +204,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
             clusterNode.IsExpanded = !clusterNode.IsExpanded;
-            InitializeClusterNavigation(clusterNode, updatePortForwarders: true);
+            SyncClusterNavigation(clusterNode.Cluster, updatePortForwarders: true);
         });
     }
 
@@ -232,7 +232,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                     ShowClusterError(cluster.LastError);
                 }
 
-                InitializeClusterNavigation(clusterNode, updatePortForwarders: true);
+                SyncClusterNavigation(clusterNode.Cluster, updatePortForwarders: true);
             });
         }
         catch (Exception ex)
@@ -390,10 +390,10 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private void OnClusterCustomResourceDefinitionsChanged(ClusterWorkspaceViewModel cluster, IReadOnlyList<PendingCustomResourceConfig> addedConfigs, IReadOnlyList<GroupApiVersionKind> removedKinds)
     {
-        ScheduleClusterNavigationUpdate(cluster, rebuildCustomResourceDefinitionsOnly: true, ResourceNavigationRebuildDelay, addedConfigs, removedKinds);
+        ScheduleCustomResourceDefinitionNavigationUpdate(cluster, ResourceNavigationRebuildDelay, addedConfigs, removedKinds);
     }
 
-    private void ScheduleClusterNavigationUpdate(ClusterWorkspaceViewModel cluster, bool rebuildCustomResourceDefinitionsOnly, TimeSpan delay, IReadOnlyList<PendingCustomResourceConfig>? addedConfigs = null, IReadOnlyList<GroupApiVersionKind>? removedKinds = null)
+    private void ScheduleCustomResourceDefinitionNavigationUpdate(ClusterWorkspaceViewModel cluster, TimeSpan delay, IReadOnlyList<PendingCustomResourceConfig>? addedConfigs = null, IReadOnlyList<GroupApiVersionKind>? removedKinds = null)
     {
         if (_clusterRebuildDelays.Remove(cluster, out var existing))
         {
@@ -402,7 +402,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         }
 
         var pendingUpdate = new PendingClusterNavigationUpdate(new CancellationTokenSource());
-        pendingUpdate.Merge(rebuildCustomResourceDefinitionsOnly, addedConfigs, removedKinds);
+        pendingUpdate.Merge(addedConfigs, removedKinds);
         _clusterRebuildDelays[cluster] = pendingUpdate;
 
         _ = Task.Run(async () =>
@@ -412,14 +412,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                 await Task.Delay(delay, pendingUpdate.CancellationTokenSource.Token).ConfigureAwait(false);
                 await Dispatcher.UIThread.InvokeAsync(() =>
                 {
-                    if (pendingUpdate.RebuildWholeNavigation)
-                    {
-                        InitializeClusterNavigation(cluster, updatePortForwarders: cluster.Connected);
-                    }
-                    else
-                    {
-                        ApplyCustomResourceDefinitionChanges(cluster, pendingUpdate.AddedConfigs.Values, pendingUpdate.RemovedKinds);
-                    }
+                    ApplyCustomResourceDefinitionChanges(cluster, pendingUpdate.AddedConfigs.Values, pendingUpdate.RemovedKinds);
                 });
             }
             catch (OperationCanceledException)
@@ -1527,27 +1520,12 @@ internal sealed class PendingClusterNavigationUpdate
 
     public CancellationTokenSource CancellationTokenSource { get; }
 
-    public bool RebuildWholeNavigation { get; private set; }
-
     public Dictionary<GroupApiVersionKind, PendingCustomResourceConfig> AddedConfigs { get; } = [];
 
     public HashSet<GroupApiVersionKind> RemovedKinds { get; } = [];
 
-    public void Merge(bool rebuildCustomResourceDefinitionsOnly, IReadOnlyList<PendingCustomResourceConfig>? addedConfigs, IReadOnlyList<GroupApiVersionKind>? removedKinds)
+    public void Merge(IReadOnlyList<PendingCustomResourceConfig>? addedConfigs, IReadOnlyList<GroupApiVersionKind>? removedKinds)
     {
-        if (!rebuildCustomResourceDefinitionsOnly)
-        {
-            RebuildWholeNavigation = true;
-            AddedConfigs.Clear();
-            RemovedKinds.Clear();
-            return;
-        }
-
-        if (RebuildWholeNavigation)
-        {
-            return;
-        }
-
         if (removedKinds != null)
         {
             foreach (var removedKind in removedKinds)

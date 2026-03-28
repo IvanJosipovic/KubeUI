@@ -57,9 +57,9 @@ jobs:
           files: coverage.cobertura.xml
           fail_ci_if_error: false
 
-      - name: Run Benchmark
-        working-directory: benchmarks/KubeUI.Benchmarks
-        run: dotnet run -c Release
+    #   - name: Run Benchmark
+    #     working-directory: benchmarks/KubeUI.Benchmarks
+    #     run: dotnet run -c Release
 
   semantic-release:
     name: Bump Version
