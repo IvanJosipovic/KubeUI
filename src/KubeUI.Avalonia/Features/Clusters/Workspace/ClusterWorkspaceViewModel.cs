@@ -172,6 +172,12 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         await EnsureWorkspaceStateInitializedAsync().ConfigureAwait(false);
     }
 
+    public async Task Disconnect()
+    {
+        await Runtime.Disconnect().ConfigureAwait(false);
+        ResetWorkspaceState();
+    }
+
     public Task EnsureWorkspaceStateInitializedAsync()
     {
         return RefreshWorkspaceStateAsync();
@@ -629,6 +635,11 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
             case nameof(IClusterRuntime.Connected):
                 _workspaceStateInitialized = false;
 
+                if (!Runtime.Connected)
+                {
+                    ResetWorkspaceState();
+                }
+
                 if (Runtime.Connected)
                 {
                     QueueWorkspaceStateRefresh();
@@ -675,6 +686,26 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
                 });
                 break;
         }
+    }
+
+    private void ResetWorkspaceState()
+    {
+        var removedCustomResourceKinds = _resourceConfigs
+            .Where(static pair => pair.Value.IsCustomResource)
+            .Select(static pair => pair.Key)
+            .ToList();
+
+        if (removedCustomResourceKinds.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var removedKind in removedCustomResourceKinds)
+        {
+            _resourceConfigs.TryRemove(removedKind, out _);
+        }
+
+        NotifyCustomResourceDefinitionsChanged([], removedCustomResourceKinds);
     }
 
     private void QueueWorkspaceStateRefresh()

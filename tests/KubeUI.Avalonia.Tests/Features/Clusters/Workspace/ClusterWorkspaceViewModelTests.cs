@@ -178,6 +178,49 @@ public class ClusterWorkspaceViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task disconnect_disposes_seeded_informers_and_registrations()
+    {
+        var runtime = new TestCluster();
+        var workspace = CreateWorkspace(runtime);
+
+        await workspace.SeedResource<V1Pod>();
+
+        var container = GetSeededContainer(runtime, typeof(V1Pod));
+        container.ShouldNotBeNull();
+
+        var informers = GetInformers(container);
+        informers.Count.ShouldBe(1);
+        var informer = informers[0].ShouldBeOfType<TestResourceInformer>();
+
+        var registrations = GetInformerRegistrations(container);
+        registrations.Count.ShouldBe(1);
+        var registration = registrations[0].ShouldBeOfType<TestResourceInformerRegistration>();
+
+        await workspace.Disconnect();
+
+        informer.Disposed.ShouldBeTrue();
+        registration.Disposed.ShouldBeTrue();
+        runtime.Objects.ShouldBeEmpty();
+    }
+
+    [AvaloniaFact]
+    public async Task disconnect_removes_dynamic_crd_model_cache_entries()
+    {
+        var runtime = new TestCluster();
+        var workspace = CreateWorkspace(runtime);
+        var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
+
+        await runtime.AddOrUpdateResource(crd);
+
+        var resourceType = await WaitForValueAsync(() => GetCustomResourceType(runtime, crd));
+        resourceType.ShouldNotBeNull();
+
+        await workspace.Disconnect();
+
+        GetCustomResourceType(runtime, crd).ShouldBeNull();
+    }
+
+    [AvaloniaFact]
     public async Task connect_skips_workspace_initialization_when_runtime_remains_disconnected()
     {
         var runtime = new TestCluster
@@ -351,6 +394,12 @@ public class ClusterWorkspaceViewModelTests : AvaloniaTestBase
     {
         return (IList<IResourceInformer>)(container.GetType().GetProperty("Informers")?.GetValue(container)
             ?? throw new InvalidOperationException("Container does not expose Informers."));
+    }
+
+    private static IList<IResourceInformerRegistration> GetInformerRegistrations(object container)
+    {
+        return (IList<IResourceInformerRegistration>)(container.GetType().GetProperty("InformerRegistrations")?.GetValue(container)
+            ?? throw new InvalidOperationException("Container does not expose InformerRegistrations."));
     }
 }
 

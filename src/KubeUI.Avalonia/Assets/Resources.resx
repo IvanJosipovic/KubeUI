@@ -304,6 +304,21 @@ Are you sure?</value>
   <data name="NavigationView_ToolTip_Connected" xml:space="preserve">
     <value>Connected</value>
   </data>
+  <data name="NavigationView_ContextMenu_Connect" xml:space="preserve">
+    <value>Connect</value>
+  </data>
+  <data name="NavigationView_ContextMenu_Disconnect" xml:space="preserve">
+    <value>Disconnect</value>
+  </data>
+  <data name="NavigationView_ContextMenu_Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="NavigationView_ContextMenu_Open" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="NavigationView_ContextMenu_OpenNewTab" xml:space="preserve">
+    <value>Open New Tab</value>
+  </data>
   <data name="ResourceListView_NewResource" xml:space="preserve">
     <value>Create a new Resource</value>
   </data>

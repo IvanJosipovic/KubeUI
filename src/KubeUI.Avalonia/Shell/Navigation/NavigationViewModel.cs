@@ -3,6 +3,8 @@ using System.ComponentModel;
 using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
+using Avalonia.Collections;
+using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -102,7 +104,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         }
         else if (item is ResourceNavigationLink resourceNavLink)
         {
-            SelectResourceNavigationLink(resourceNavLink);
+            OpenResourceNavigation(resourceNavLink);
         }
         else if (item is NavigationLink navLink)
         {
@@ -131,6 +133,68 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         }
 
         _ = ConnectClusterAsync(clusterNode);
+    }
+
+    [RelayCommand]
+    private async Task ToggleClusterConnectionAsync(ClusterNavigationNode? clusterNode)
+    {
+        if (clusterNode == null)
+        {
+            return;
+        }
+
+        var cluster = clusterNode.Cluster;
+        if (cluster.Connected)
+        {
+            await cluster.Disconnect().ConfigureAwait(false);
+            return;
+        }
+
+        if (cluster.Status == ClusterStatus.Connecting)
+        {
+            return;
+        }
+
+        await ConnectClusterAsync(clusterNode).ConfigureAwait(false);
+    }
+
+    [RelayCommand]
+    private Task OpenClusterSettingsAsync(ClusterNavigationNode? clusterNode)
+    {
+        if (clusterNode == null)
+        {
+            return Task.CompletedTask;
+        }
+
+        return SelectNavigationLink(CreateNavigationLink(
+            clusterNode.Cluster,
+            NavigationTargets.ClusterSettings,
+            Assets.Resources.ClusterSettingsViewModel_Title,
+            ClusterSettingsOrder));
+    }
+
+    [RelayCommand]
+    private Task OpenResourceNavigationAsync(ResourceNavigationLink? resourceNavLink)
+    {
+        if (resourceNavLink == null)
+        {
+            return Task.CompletedTask;
+        }
+
+        OpenResourceNavigation(resourceNavLink);
+        return Task.CompletedTask;
+    }
+
+    [RelayCommand]
+    private Task OpenResourceNavigationInNewTabAsync(ResourceNavigationLink? resourceNavLink)
+    {
+        if (resourceNavLink == null)
+        {
+            return Task.CompletedTask;
+        }
+
+        OpenResourceNavigation(resourceNavLink, forceNewTab: true);
+        return Task.CompletedTask;
     }
 
     private async Task EnsureClusterWorkspaceReadyAsync(ClusterNavigationNode clusterNode)
@@ -245,6 +309,8 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             var node = new ClusterNavigationNode
             {
                 Cluster = cluster,
+                ToggleConnectionCommand = ToggleClusterConnectionCommand,
+                OpenSettingsCommand = OpenClusterSettingsCommand,
             };
 
             _clusterNodes.Add(cluster, node);
@@ -296,7 +362,10 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                 cluster.IsExpanded = true;
             }
 
-            Dispatcher.UIThread.Post(() => SyncClusterNavigation(cluster, updatePortForwarders: cluster.Connected));
+            Dispatcher.UIThread.Post(() =>
+            {
+                SyncClusterNavigation(cluster, updatePortForwarders: cluster.Connected);
+            });
             return;
         }
 
@@ -679,7 +748,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private static NavigationItem? BuildCustomResourceDefinitionsNavigationItem(ClusterWorkspaceViewModel cluster, ResourceNavigationLink? definitionsLink = null, IEnumerable<IResourceConfig>? customResourceConfigs = null)
+    private NavigationItem? BuildCustomResourceDefinitionsNavigationItem(ClusterWorkspaceViewModel cluster, ResourceNavigationLink? definitionsLink = null, IEnumerable<IResourceConfig>? customResourceConfigs = null)
     {
         var configs = customResourceConfigs as IList<IResourceConfig>
             ?? customResourceConfigs?.ToList()
@@ -722,7 +791,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         return root;
     }
 
-    private static void AddOrUpdateCustomResourceDefinition(NavigationItem root, ClusterWorkspaceViewModel cluster, IResourceConfig config)
+    private void AddOrUpdateCustomResourceDefinition(NavigationItem root, ClusterWorkspaceViewModel cluster, IResourceConfig config)
     {
         var currentList = root.NavigationItems;
         var pathParts = ConstructCustomResourceGroupPath(config.Kind.Group);
@@ -807,7 +876,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private static NavigationItem? GetOrCreateCustomResourceDefinitionsRoot(ClusterNavigationNode node, ClusterWorkspaceViewModel cluster)
+    private NavigationItem? GetOrCreateCustomResourceDefinitionsRoot(ClusterNavigationNode node, ClusterWorkspaceViewModel cluster)
     {
         var rootId = $"{cluster.Name}-custom-resource-definitions";
         var existingRoot = node.NavigationItems.FirstOrDefault(x => x.Id == rootId);
@@ -1083,6 +1152,8 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         if (current is ResourceNavigationLink currentResourceLink && desired is ResourceNavigationLink desiredResourceLink)
         {
             currentResourceLink.Count ??= desiredResourceLink.Count;
+            currentResourceLink.OpenCommand = desiredResourceLink.OpenCommand;
+            currentResourceLink.OpenInNewTabCommand = desiredResourceLink.OpenInNewTabCommand;
         }
 
         ReconcileNavigationItems(current.NavigationItems, desired.NavigationItems.ToList());
@@ -1191,15 +1262,17 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         };
     }
 
-    private static ResourceNavigationLink CreateResourceNavigationLink(ClusterWorkspaceViewModel cluster, IResourceConfig resourceConfig)
+    private ResourceNavigationLink CreateResourceNavigationLink(ClusterWorkspaceViewModel cluster, IResourceConfig resourceConfig)
     {
-        return new ResourceNavigationLink
+        var link = new ResourceNavigationLink
         {
             Cluster = cluster,
             Id = $"{cluster.Name}-{resourceConfig.Kind}",
             Name = resourceConfig.Name,
             ControlType = resourceConfig.Type,
             Order = resourceConfig.Order,
+            OpenCommand = OpenResourceNavigationCommand,
+            OpenInNewTabCommand = OpenResourceNavigationInNewTabCommand,
             // Throttle rapid updates to the resource count to reduce UI churn.
             // Sample emits the latest value at most once per 100ms and ensures
             // updates are observed on the Avalonia UI scheduler. Also avoid
@@ -1208,9 +1281,10 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                 .Sample(TimeSpan.FromMilliseconds(100), AvaloniaScheduler.Instance)
                 .DistinctUntilChanged(),
         };
+        return link;
     }
 
-    private static ResourceNavigationLink CreateDefinitionsNavigationLink(ClusterWorkspaceViewModel cluster, IResourceConfig resourceConfig)
+    private ResourceNavigationLink CreateDefinitionsNavigationLink(ClusterWorkspaceViewModel cluster, IResourceConfig resourceConfig)
     {
         var link = CreateResourceNavigationLink(cluster, resourceConfig);
         link.Name = "Definitions";
@@ -1218,7 +1292,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         return link;
     }
 
-    private void SelectResourceNavigationLink(ResourceNavigationLink nav)
+    private void OpenResourceNavigation(ResourceNavigationLink nav, bool forceNewTab = false)
     {
         if (nav.ControlType == null)
         {
@@ -1228,7 +1302,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
         var expectedId = $"{nav.Cluster.Name}-{GroupApiVersionKind.From(nav.ControlType)}";
 
-        if (Factory.FindDockableById(expectedId) is IDockable existingDocument)
+        if (!forceNewTab && FindExistingResourceDocument(nav) is IDockable existingDocument)
         {
             ActivateDocument(existingDocument);
             if (existingDocument is IResourceListViewModel existingResourceList)
@@ -1251,6 +1325,11 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         if (vm is IInitializeCluster init)
         {
             init.Initialize(nav.Cluster);
+        }
+
+        if (forceNewTab)
+        {
+            vm.Id = CreateUniqueDockableId(expectedId);
         }
 
         if (vm is IResourceListViewModel resourceList)
@@ -1393,6 +1472,49 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             propertyChanged.PropertyChanged += handler;
             return Disposable.Create(() => propertyChanged.PropertyChanged -= handler);
         }).DistinctUntilChanged();
+    }
+
+    private IDockable? FindExistingResourceDocument(ResourceNavigationLink nav)
+    {
+        if (nav.ControlType == null)
+        {
+            return null;
+        }
+
+        var documents = Factory.GetDockable<IDocumentDock>("Documents");
+        if (documents?.VisibleDockables == null)
+        {
+            return null;
+        }
+
+        return documents.VisibleDockables
+            .OfType<IResourceListViewModel>()
+            .FirstOrDefault(resourceList =>
+                ReferenceEquals(resourceList.Cluster, nav.Cluster)
+                && resourceList.ResourceConfig.Type == nav.ControlType) as IDockable;
+    }
+
+    private string CreateUniqueDockableId(string baseId)
+    {
+        var documents = Factory.GetDockable<IDocumentDock>("Documents");
+        var existingIds = documents?.VisibleDockables?
+            .Select(static dockable => dockable.Id)
+            .Where(static id => !string.IsNullOrWhiteSpace(id))
+            .ToHashSet(StringComparer.Ordinal)
+            ?? [];
+
+        if (!existingIds.Contains(baseId))
+        {
+            return baseId;
+        }
+
+        var suffix = 2;
+        while (existingIds.Contains($"{baseId}#{suffix}"))
+        {
+            suffix++;
+        }
+
+        return $"{baseId}#{suffix}";
     }
 }
 

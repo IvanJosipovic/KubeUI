@@ -365,6 +365,35 @@ public class NavigationViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task cluster_context_menu_disconnect_clears_navigation_and_updates_menu()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+
+        var workspace = CreateWorkspace(runtime);
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+        Dispatcher.UIThread.RunJobs();
+
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        clusterNode.NavigationItems.Count.ShouldBeGreaterThan(0);
+        clusterNode.ConnectionMenuHeader.ShouldBe(Assets.Resources.NavigationView_ContextMenu_Disconnect);
+
+        await vm.ToggleClusterConnectionCommand.ExecuteAsync(clusterNode);
+        Dispatcher.UIThread.RunJobs();
+
+        await WaitForAsync(() => !workspace.Connected && workspace.Status == ClusterStatus.None);
+        clusterNode.NavigationItems.Count.ShouldBe(0);
+        clusterNode.ConnectionMenuHeader.ShouldBe(Assets.Resources.NavigationView_ContextMenu_Connect);
+    }
+
+    [AvaloniaFact]
     public async Task selecting_cluster_node_with_namespace_fallback_does_not_open_settings_or_prompt()
     {
         var runtime = new TestCluster
@@ -447,6 +476,57 @@ public class NavigationViewModelTests : AvaloniaTestBase
         podsLink.ShouldNotBeNull();
         var deploymentsLink = FindResourceLink(clusterNode, "Deployments");
         deploymentsLink.ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task resource_context_menu_open_new_tab_creates_distinct_document_id()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+
+        var workspace = CreateWorkspace(runtime);
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+        Dispatcher.UIThread.RunJobs();
+
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var documents = vm.Factory.GetDockable<IDocumentDock>("Documents");
+        documents.ShouldNotBeNull();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        var podsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, "Pods"));
+        podsLink.ShouldNotBeNull();
+        podsLink.OpenCommand.ShouldNotBeNull();
+        podsLink.OpenInNewTabCommand.ShouldNotBeNull();
+
+        await vm.OpenResourceNavigationCommand.ExecuteAsync(podsLink);
+        await vm.OpenResourceNavigationCommand.ExecuteAsync(podsLink);
+        Dispatcher.UIThread.RunJobs();
+
+        documents.VisibleDockables!
+            .OfType<ResourceListViewModel<V1Pod>>()
+            .Count()
+            .ShouldBe(1);
+
+        await vm.OpenResourceNavigationInNewTabCommand.ExecuteAsync(podsLink);
+        Dispatcher.UIThread.RunJobs();
+
+        await WaitForAsync(() =>
+            documents.VisibleDockables?.OfType<ResourceListViewModel<V1Pod>>().Count() == 2);
+
+        var podDocuments = documents.VisibleDockables!
+            .OfType<ResourceListViewModel<V1Pod>>()
+            .OrderBy(x => x.Id, StringComparer.Ordinal)
+            .ToList();
+
+        podDocuments.Count.ShouldBe(2);
+        podDocuments[0].Id.ShouldBe($"{workspace.Name}-{GroupApiVersionKind.From<V1Pod>()}");
+        podDocuments[1].Id.ShouldBe($"{workspace.Name}-{GroupApiVersionKind.From<V1Pod>()}#2");
     }
 
     [AvaloniaFact]

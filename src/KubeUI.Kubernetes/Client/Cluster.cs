@@ -47,6 +47,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
     private readonly SemaphoreSlim _seedLimiter = new(1,1);
     private readonly SemaphoreSlim _customResourceDefinitionSignal = new(0);
     private readonly ConcurrentDictionary<string, V1CustomResourceDefinition> _pendingCustomResourceDefinitions = new(StringComparer.Ordinal);
+    private CancellationTokenSource? _resourceInformerCancellationTokenSource = new();
 
     public ConcurrentDictionary<GroupApiVersionKind, object> Objects { get; } = [];
 
@@ -142,6 +143,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
                     };
 
                     Client = new k8s.Kubernetes(config);
+                    EnsureResourceInformerCancellationTokenSource();
 
                     NativeAPIGroupDiscoveryList = await GetAPIGroupDiscoveryList();
 
@@ -208,6 +210,31 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         }
     }
 
+    public Task Disconnect()
+    {
+        _logger.LogInformation("Disconnecting from {name}", Name);
+
+        StopMetrics();
+        StopPortForwarders();
+        StopResourceInformers();
+        ClearDynamicCustomResourceDefinitions();
+        ClearSeededResources();
+
+        if (Client is IDisposable disposableClient)
+        {
+            disposableClient.Dispose();
+        }
+
+        Client = null;
+        Connected = false;
+        Status = ClusterStatus.None;
+        LastError = null;
+        RequiresNamespaceSelectionPrompt = false;
+
+        _logger.LogInformation("Disconnected from {name}", Name);
+        return Task.CompletedTask;
+    }
+
     public async Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         _logger.LogDebug("Starting Seed: {type}", typeof(T));
@@ -242,11 +269,12 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
             {
                 var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>());
                 container.Informers.Add(informer);
+                container.InformerRegistrations.Add(informer.Register(GetResourceInformerCallback<T>()));
+                var informerCancellationToken = GetResourceInformerCancellationToken();
                 _ = Task.Run(() =>
                 {
-                    informer.Register(GetResourceInformerCallback<T>());
                     informer.StartWatching();
-                    _ = informer.RunInfinite(CancellationToken.None);
+                    _ = informer.RunInfinite(informerCancellationToken);
                 });
             }
             else
@@ -264,12 +292,13 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
                     {
                         var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), @namespace: ns);
                         container.Informers.Add(informer);
+                        container.InformerRegistrations.Add(informer.Register(GetResourceInformerCallback<T>()));
+                        var informerCancellationToken = GetResourceInformerCancellationToken();
 
                         _ = Task.Run(() =>
                         {
-                            informer.Register(GetResourceInformerCallback<T>());
                             informer.StartWatching();
-                            _ = informer.RunInfinite(CancellationToken.None);
+                            _ = informer.RunInfinite(informerCancellationToken);
                         });
                     }
                 }
@@ -471,11 +500,12 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
             return false;
         }
 
-        if (existingContainer.GetType().GetProperty("Informers")?.GetValue(existingContainer) is IList<IResourceInformer> informers)
+        if (existingContainer is not IClearableResourceContainer resourceContainer)
         {
-            informers.Clear();
+            return false;
         }
 
+        ClearResourceContainer(resourceContainer);
         return true;
     }
 
@@ -863,9 +893,127 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
 
         return false;
     }
+
+    private void StopMetrics()
+    {
+        _metricsRefreshCancellationTokenSource?.Cancel();
+        _metricsRefreshCancellationTokenSource?.Dispose();
+        _metricsRefreshCancellationTokenSource = null;
+
+        _metricsRefreshTimer?.Dispose();
+        _metricsRefreshTimer = null;
+
+        NodeMetrics.Clear();
+        PodMetrics.Clear();
+        IsMetricsAvailable = false;
+    }
+
+    private void StopPortForwarders()
+    {
+        foreach (var portForwarder in PortForwarders.ToList())
+        {
+            RemovePortForward(portForwarder);
+        }
+    }
+
+    private void StopResourceInformers()
+    {
+        _resourceInformerCancellationTokenSource?.Cancel();
+        _resourceInformerCancellationTokenSource?.Dispose();
+        _resourceInformerCancellationTokenSource = null;
+    }
+
+    private void ClearDynamicCustomResourceDefinitions()
+    {
+        var processedCustomResourceDefinitions = new HashSet<string>(StringComparer.Ordinal);
+
+        if (Objects.TryGetValue(GroupApiVersionKind.From<V1CustomResourceDefinition>(), out var existing)
+            && existing is ContainerClass<V1CustomResourceDefinition> container)
+        {
+            foreach (var crd in container.Items.Items.ToList())
+            {
+                processedCustomResourceDefinitions.Add(GetCustomResourceDefinitionKey(crd));
+                RemoveCustomResourceDefinitionArtifacts(crd);
+            }
+        }
+
+        foreach (var pending in _pendingCustomResourceDefinitions.Values.ToList())
+        {
+            if (!processedCustomResourceDefinitions.Add(GetCustomResourceDefinitionKey(pending)))
+            {
+                continue;
+            }
+
+            RemoveCustomResourceDefinitionArtifacts(pending);
+        }
+
+        _pendingCustomResourceDefinitions.Clear();
+
+        while (_customResourceDefinitionSignal.Wait(0))
+        {
+        }
+    }
+
+    private void ClearSeededResources()
+    {
+        foreach (var container in Objects.Values)
+        {
+            if (container is IClearableResourceContainer resourceContainer)
+            {
+                ClearResourceContainer(resourceContainer);
+            }
+        }
+
+        Objects.Clear();
+    }
+
+    private static void ClearResourceContainer(IClearableResourceContainer container)
+    {
+        container.Clear();
+    }
+
+    private CancellationToken GetResourceInformerCancellationToken()
+    {
+        EnsureResourceInformerCancellationTokenSource();
+        return _resourceInformerCancellationTokenSource!.Token;
+    }
+
+    private void EnsureResourceInformerCancellationTokenSource()
+    {
+        if (_resourceInformerCancellationTokenSource == null || _resourceInformerCancellationTokenSource.IsCancellationRequested)
+        {
+            _resourceInformerCancellationTokenSource?.Dispose();
+            _resourceInformerCancellationTokenSource = new CancellationTokenSource();
+        }
+    }
+
+    private static void DisposeInformerRegistrations(IList<IResourceInformerRegistration> registrations)
+    {
+        foreach (var registration in registrations)
+        {
+            registration.Dispose();
+        }
+
+        registrations.Clear();
+    }
+
+    private static void DisposeInformers(IList<IResourceInformer> informers)
+    {
+        foreach (var informer in informers.OfType<IDisposable>())
+        {
+            informer.Dispose();
+        }
+
+        informers.Clear();
+    }
 }
 
-public partial class ContainerClass<T> : ObservableObject where T : class, IKubernetesObject<V1ObjectMeta>, new()
+public interface IClearableResourceContainer
+{
+    void Clear();
+}
+
+public partial class ContainerClass<T> : ObservableObject, IClearableResourceContainer where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     public Type Type { get; } = typeof(T);
 
@@ -875,7 +1023,29 @@ public partial class ContainerClass<T> : ObservableObject where T : class, IKube
     public partial List<IResourceInformer> Informers { get; set; } = [];
 
     [ObservableProperty]
+    public partial List<IResourceInformerRegistration> InformerRegistrations { get; set; } = [];
+
+    [ObservableProperty]
     public partial bool Initialized { get; set; }
+
+    public void Clear()
+    {
+        foreach (var registration in InformerRegistrations)
+        {
+            registration.Dispose();
+        }
+
+        InformerRegistrations.Clear();
+
+        foreach (var informer in Informers.OfType<IDisposable>())
+        {
+            informer.Dispose();
+        }
+
+        Informers.Clear();
+        Items.Clear();
+        Initialized = false;
+    }
 }
 
 public sealed class OperationKeyHandler : DelegatingHandler

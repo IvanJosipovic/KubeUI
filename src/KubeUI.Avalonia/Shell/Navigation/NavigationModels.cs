@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Windows.Input;
 using FluentIcons.Common;
 using Swordfish.NET.Collections;
 
@@ -12,7 +13,12 @@ public static class NavigationTargets
     public const string Visualization = "visualization";
 }
 
-public partial class ClusterNavigationNode : ObservableObject
+public interface IExpandableNavigationNode
+{
+    bool IsExpanded { get; set; }
+}
+
+public partial class ClusterNavigationNode : ObservableObject, IExpandableNavigationNode
 {
     [ObservableProperty]
     public partial ClusterWorkspaceViewModel Cluster { get; set; }
@@ -21,6 +27,20 @@ public partial class ClusterNavigationNode : ObservableObject
     public partial ObservableCollection<NavigationItem> NavigationItems { get; set; } = new ObservableSortedCollection<NavigationItem>(new NavigationItemOrderComparer());
 
     private INotifyPropertyChanged? _clusterPropertyChanged;
+
+    public string ConnectionMenuHeader => Cluster.Connected
+        ? KubeUI.Avalonia.Assets.Resources.NavigationView_ContextMenu_Disconnect
+        : KubeUI.Avalonia.Assets.Resources.NavigationView_ContextMenu_Connect;
+
+    public Icon ConnectionMenuIcon => Cluster.Connected
+        ? Icon.Dismiss
+        : Icon.Link;
+
+    [ObservableProperty]
+    public partial ICommand? ToggleConnectionCommand { get; set; }
+
+    [ObservableProperty]
+    public partial ICommand? OpenSettingsCommand { get; set; }
 
     public bool IsExpanded
     {
@@ -72,11 +92,18 @@ public partial class ClusterNavigationNode : ObservableObject
         if (e.PropertyName == nameof(ClusterWorkspaceViewModel.IsExpanded))
         {
             OnPropertyChanged(nameof(IsExpanded));
+            return;
+        }
+
+        if (e.PropertyName == nameof(ClusterWorkspaceViewModel.Connected))
+        {
+            OnPropertyChanged(nameof(ConnectionMenuHeader));
+            OnPropertyChanged(nameof(ConnectionMenuIcon));
         }
     }
 }
 
-public partial class NavigationItem : ObservableObject
+public partial class NavigationItem : ObservableObject, IExpandableNavigationNode
 {
     [ObservableProperty]
     public partial string Id { get; set; }
@@ -119,6 +146,12 @@ public partial class ResourceNavigationLink : NavigationLink
 {
     [ObservableProperty]
     public partial IObservable<int>? Count { get; set; }
+
+    [ObservableProperty]
+    public partial ICommand? OpenCommand { get; set; }
+
+    [ObservableProperty]
+    public partial ICommand? OpenInNewTabCommand { get; set; }
 
     public string IconPath => Utilities.GetKubeAssetPath(ControlType!);
 }

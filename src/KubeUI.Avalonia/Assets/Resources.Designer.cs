@@ -761,6 +761,51 @@ namespace KubeUI.Avalonia.Assets {
                 return ResourceManager.GetString("NavigationView_ToolTip_Errored", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Connect.
+        /// </summary>
+        public static string NavigationView_ContextMenu_Connect {
+            get {
+                return ResourceManager.GetString("NavigationView_ContextMenu_Connect", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Disconnect.
+        /// </summary>
+        public static string NavigationView_ContextMenu_Disconnect {
+            get {
+                return ResourceManager.GetString("NavigationView_ContextMenu_Disconnect", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Settings.
+        /// </summary>
+        public static string NavigationView_ContextMenu_Settings {
+            get {
+                return ResourceManager.GetString("NavigationView_ContextMenu_Settings", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Open.
+        /// </summary>
+        public static string NavigationView_ContextMenu_Open {
+            get {
+                return ResourceManager.GetString("NavigationView_ContextMenu_Open", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Open New Tab.
+        /// </summary>
+        public static string NavigationView_ContextMenu_OpenNewTab {
+            get {
+                return ResourceManager.GetString("NavigationView_ContextMenu_OpenNewTab", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to Pod Console.

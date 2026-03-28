@@ -171,6 +171,50 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
         return Task.CompletedTask;
     }
 
+    public Task Disconnect()
+    {
+        foreach (var portForwarder in PortForwarders.ToList())
+        {
+            RemovePortForward(portForwarder);
+        }
+
+        ClearDynamicCustomResourceDefinitions();
+
+        foreach (var container in Objects.Values)
+        {
+            if (container is IClearableResourceContainer resourceContainer)
+            {
+                ClearResourceContainer(resourceContainer);
+            }
+        }
+
+        Objects.Clear();
+        _namespaces.Clear();
+        NodeMetrics.Clear();
+        PodMetrics.Clear();
+        Client = null;
+        Connected = false;
+        Status = ClusterStatus.None;
+        LastError = null;
+        RequiresNamespaceSelectionPrompt = false;
+
+        return Task.CompletedTask;
+    }
+
+    private void ClearDynamicCustomResourceDefinitions()
+    {
+        if (!Objects.TryGetValue(GroupApiVersionKind.From<V1CustomResourceDefinition>(), out var existing)
+            || existing is not ContainerClass<V1CustomResourceDefinition> container)
+        {
+            return;
+        }
+
+        foreach (var crd in container.Items.Items.ToList())
+        {
+            RemoveCustomResourceDefinitionArtifacts(crd);
+        }
+    }
+
     public void SetPermission(Type type, Verb verb, bool allowed, string? @namespace = null, string? subresource = null)
     {
         _permissions[BuildPermissionKey(type, verb, @namespace, subresource)] = allowed;
@@ -444,7 +488,9 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
 
             if (CanI(type, Verb.List) && CanI(type, Verb.Watch))
             {
-                container.Informers.Add(new TestResourceInformer());
+                var informer = new TestResourceInformer();
+                container.Informers.Add(informer);
+                container.InformerRegistrations.Add(informer.Register(static (_, _) => { }));
                 return Task.CompletedTask;
             }
 
@@ -463,7 +509,9 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
 
                 if (CanI(type, Verb.List, namespaceName) && CanI(type, Verb.Watch, namespaceName))
                 {
-                    container.Informers.Add(new TestResourceInformer(namespaceName));
+                    var informer = new TestResourceInformer(namespaceName);
+                    container.Informers.Add(informer);
+                    container.InformerRegistrations.Add(informer.Register(static (_, _) => { }));
                 }
             }
         }
@@ -592,11 +640,12 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
             return false;
         }
 
-        if (existingContainer.GetType().GetProperty("Informers")?.GetValue(existingContainer) is IList<IResourceInformer> informers)
+        if (existingContainer is not IClearableResourceContainer resourceContainer)
         {
-            informers.Clear();
+            return false;
         }
 
+        ClearResourceContainer(resourceContainer);
         return true;
     }
 
@@ -630,6 +679,11 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
         return $"{verb}:{kind.Group}:{kind.PluralName}:{@namespace}:{subresource}:{kind.ApiVersion}";
     }
 
+    private static void ClearResourceContainer(IClearableResourceContainer container)
+    {
+        container.Clear();
+    }
+
     private void SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
     {
         if (EqualityComparer<T>.Default.Equals(field, value))
@@ -642,7 +696,7 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     }
 }
 
-internal sealed class TestResourceInformer : IResourceInformer
+internal sealed class TestResourceInformer : IResourceInformer, IDisposable
 {
     public TestResourceInformer(string? @namespace = null)
     {
@@ -650,6 +704,7 @@ internal sealed class TestResourceInformer : IResourceInformer
     }
 
     public string? Namespace { get; }
+    public bool Disposed { get; private set; }
 
     public void StartWatching()
     {
@@ -664,10 +719,17 @@ internal sealed class TestResourceInformer : IResourceInformer
     {
         return new TestResourceInformerRegistration();
     }
+
+    public void Dispose()
+    {
+        Disposed = true;
+    }
 }
 
 internal sealed class TestResourceInformerRegistration : IResourceInformerRegistration
 {
+    public bool Disposed { get; private set; }
+
     public Task ReadyAsync(CancellationToken cancellationToken)
     {
         return Task.CompletedTask;
@@ -675,5 +737,6 @@ internal sealed class TestResourceInformerRegistration : IResourceInformerRegist
 
     public void Dispose()
     {
+        Disposed = true;
     }
 }
