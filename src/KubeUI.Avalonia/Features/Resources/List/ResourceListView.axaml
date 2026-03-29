@@ -18,11 +18,12 @@
     <Grid RowDefinitions="Auto,*">
         <!--  Top Bar  -->
         <Grid Grid.Row="0"
-            Height="32"
+            MinHeight="32"
             Margin="0,0,0,4"
-            ColumnDefinitions="Auto,Auto,*">
+            ColumnDefinitions="Auto,Auto,*,Auto">
             <Button
                 Grid.Column="0"
+                Margin="4,0,0,0"
                 Command="{Binding ResourceConfig.NewResourceCommand}"
                 IsVisible="{Binding ResourceConfig.ShowNewResource}"
                 ToolTip.Tip="{x:Static assets:Resources.ResourceListView_NewResource}">
@@ -31,17 +32,21 @@
 
             <Label
                 Grid.Column="1"
-                Width="200"
+                Margin="4,0,12,0"
                 VerticalContentAlignment="Center"
                 Content="{Binding ItemCount, StringFormat={x:Static assets:Resources.ResourceListView_ItemsFormat}}" />
 
             <Grid
-                Grid.Column="2"
+                Grid.Column="3"
+                MaxWidth="456"
                 HorizontalAlignment="Right"
-                ColumnDefinitions="*,Auto,Auto">
+                ColumnDefinitions="200,200,Auto">
                 <TextBox
                     Grid.Column="0"
                     Width="200"
+                    Margin="0,0,4,0"
+                    MinWidth="120"
+                    HorizontalAlignment="Stretch"
                     VerticalAlignment="Stretch"
                     VerticalContentAlignment="Center"
                     Background="Transparent"
@@ -52,7 +57,9 @@
                     Grid.Column="1"
                     Width="200"
                     MaxHeight="20"
-                    HorizontalAlignment="Right"
+                    Margin="0,0,4,0"
+                    MinWidth="140"
+                    HorizontalAlignment="Stretch"
                     Classes="ClearButton"
                     IsVisible="{Binding ResourceConfig.IsNamespaced}"
                     ItemsSource="{Binding Cluster.Namespaces}"
@@ -73,6 +80,7 @@
 
                 <ToggleButton
                     Grid.Column="2"
+                    Margin="0,0,4,0"
                     IsChecked="{Binding IsNamespaceSelectionLinked}"
                     IsVisible="{Binding ResourceConfig.IsNamespaced}"
                     ToolTip.Tip="{x:Static assets:Resources.ResourceListView_NamespaceLink}">
