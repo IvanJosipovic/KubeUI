@@ -13,7 +13,7 @@ using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
 using k8s.Models;
 using KubeUI.Avalonia.Resources;
-using KubeUI.Avalonia.ViewModels;
+using KubeUI.Avalonia.Features.Resources.List.ViewModels;
 
 namespace KubeUI.Benchmarks;
 
