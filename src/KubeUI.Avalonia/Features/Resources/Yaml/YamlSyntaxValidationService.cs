@@ -1,3 +1,5 @@
+using KubeUI.Avalonia.Features.Resources.Yaml;
+using KubeUI.Avalonia.Infrastructure;
 using YamlDotNet.Core;
 using k8s;
 using KubeUI.Kubernetes;

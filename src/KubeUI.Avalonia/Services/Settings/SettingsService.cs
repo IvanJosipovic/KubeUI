@@ -1,3 +1,5 @@
+using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Kubernetes;
 using System.ComponentModel;
 using System.Text.Json;
 using Avalonia.Styling;

@@ -1,3 +1,5 @@
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Features.Resources.List.ViewModels;
 using Avalonia;
 using Avalonia.Threading;
 using Avalonia.Xaml.Interactivity;

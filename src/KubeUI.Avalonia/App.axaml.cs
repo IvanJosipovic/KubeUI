@@ -1,3 +1,6 @@
+using KubeUI.Avalonia.Features.Clusters.Error.ViewModels;
+using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Avalonia.Services.Settings;
 using System.Diagnostics;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;

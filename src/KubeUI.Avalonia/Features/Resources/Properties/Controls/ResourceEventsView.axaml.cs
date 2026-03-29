@@ -1,3 +1,6 @@
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Infrastructure.Threading;
 using k8s;
 using k8s.Models;
 using DynamicData;

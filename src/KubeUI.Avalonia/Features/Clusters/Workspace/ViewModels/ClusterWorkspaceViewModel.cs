@@ -1,3 +1,7 @@
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Kubernetes;
 using System.Collections.Concurrent;
 using System.Collections.Specialized;
 using System.ComponentModel;

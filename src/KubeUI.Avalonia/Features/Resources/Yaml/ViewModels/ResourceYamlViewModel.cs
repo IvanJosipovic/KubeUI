@@ -1,3 +1,9 @@
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Yaml;
+using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Services.Settings;
 using System.Text;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Folding;

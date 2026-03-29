@@ -1,3 +1,9 @@
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Visualization.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using System.Collections.Specialized;
 using System.Reactive.Subjects;
 using AvaloniaGraphControl;

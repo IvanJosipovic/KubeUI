@@ -1,3 +1,5 @@
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using System.Globalization;
 using DynamicData;
 using k8s;

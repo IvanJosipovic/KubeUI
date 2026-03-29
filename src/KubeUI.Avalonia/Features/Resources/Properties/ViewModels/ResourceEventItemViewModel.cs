@@ -1,3 +1,4 @@
+using KubeUI.Avalonia.Infrastructure.Presentation;
 
 namespace KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
 

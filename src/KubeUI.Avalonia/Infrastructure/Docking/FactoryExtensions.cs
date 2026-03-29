@@ -1,3 +1,4 @@
+using KubeUI.Avalonia.Infrastructure.Docking;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 

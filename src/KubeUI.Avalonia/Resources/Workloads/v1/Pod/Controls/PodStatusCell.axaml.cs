@@ -1,3 +1,5 @@
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;

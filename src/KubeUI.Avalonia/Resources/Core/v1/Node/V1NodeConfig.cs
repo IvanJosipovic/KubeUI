@@ -1,3 +1,6 @@
+using KubeUI.Avalonia.Features.Resources.Common;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Kubernetes;
 using Avalonia.Controls;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;

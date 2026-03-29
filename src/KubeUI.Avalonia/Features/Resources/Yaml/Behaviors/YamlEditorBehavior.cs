@@ -1,3 +1,6 @@
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
+using KubeUI.Kubernetes;
 using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;

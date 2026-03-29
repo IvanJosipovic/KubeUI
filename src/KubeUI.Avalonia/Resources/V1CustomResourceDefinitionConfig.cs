@@ -1,3 +1,9 @@
+using KubeUI.Avalonia.Features.Resources.Common;
+using KubeUI.Avalonia.Features.Resources.List.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Kubernetes;
 using Dock.Model.Core;
 using k8s.Models;
 using KubeUI.Avalonia.Resources.CustomResourceDefinition.Views;

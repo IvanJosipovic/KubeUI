@@ -1,3 +1,5 @@
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Features.Clusters.Settings.ViewModels;
 using KubeUI.Kubernetes;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Options;

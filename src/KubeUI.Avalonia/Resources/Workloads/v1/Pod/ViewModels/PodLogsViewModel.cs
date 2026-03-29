@@ -1,3 +1,6 @@
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Services.Settings;
 using AvaloniaEdit.Document;
 using k8s;
 using k8s.Models;

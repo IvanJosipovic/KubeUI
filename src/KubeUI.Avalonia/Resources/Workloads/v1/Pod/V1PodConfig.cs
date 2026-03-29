@@ -1,3 +1,7 @@
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Features.Resources.Common;
+using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Kubernetes;
 using Avalonia.Collections;
 using Avalonia.Controls;
 using FluentAvalonia.UI.Controls;

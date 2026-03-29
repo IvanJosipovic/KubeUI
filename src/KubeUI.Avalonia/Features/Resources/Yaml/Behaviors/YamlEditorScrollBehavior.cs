@@ -1,3 +1,5 @@
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
 using Avalonia;
 using Dock.Model.Core;
 using Dock.Model.Controls;

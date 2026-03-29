@@ -1,3 +1,4 @@
+using KubeUI.Avalonia.Infrastructure;
 using System.Diagnostics;
 using System.Reflection;
 using Avalonia.Controls.Templates;

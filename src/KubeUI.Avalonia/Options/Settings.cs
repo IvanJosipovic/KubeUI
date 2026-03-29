@@ -1,3 +1,4 @@
+using KubeUI.Kubernetes;
 namespace KubeUI.Avalonia.Options;
 
 public sealed partial class Settings : ObservableObject

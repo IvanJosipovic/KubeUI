@@ -1,3 +1,7 @@
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Avalonia.Shell.Documents.Settings.ViewModels;
 
 using KubeUI.Kubernetes;
 

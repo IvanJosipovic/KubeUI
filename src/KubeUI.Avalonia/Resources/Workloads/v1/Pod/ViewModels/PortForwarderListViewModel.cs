@@ -1,3 +1,7 @@
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Services.Settings;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;

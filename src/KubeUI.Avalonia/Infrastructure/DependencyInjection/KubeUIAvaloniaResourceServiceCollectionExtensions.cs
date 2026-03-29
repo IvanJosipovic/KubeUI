@@ -1,3 +1,4 @@
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Resources;
 using ServiceScan.SourceGenerator;
 

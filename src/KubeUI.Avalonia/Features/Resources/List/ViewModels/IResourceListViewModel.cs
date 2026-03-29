@@ -1,3 +1,7 @@
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Common;
+using KubeUI.Avalonia.Features.Resources.List.ViewModels;
+using KubeUI.Avalonia.Services.Settings;
 using Avalonia.Collections;
 using Avalonia.Controls.DataGridFiltering;
 using Avalonia.Controls.DataGridSorting;

@@ -1,3 +1,5 @@
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using Humanizer;
 using k8s.Models;
 using KubeUI.Kubernetes;

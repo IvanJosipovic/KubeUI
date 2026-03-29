@@ -1,3 +1,7 @@
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Infrastructure.Platform;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Services.Settings;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;

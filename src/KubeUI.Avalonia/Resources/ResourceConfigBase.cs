@@ -1,3 +1,8 @@
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Common;
+using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Docking;
 using System.Text.Json;
 using System.Text;
 using System.Globalization;

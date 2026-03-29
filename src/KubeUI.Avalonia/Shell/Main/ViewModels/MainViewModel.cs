@@ -1,3 +1,10 @@
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
+using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Avalonia.Shell.Documents.About.ViewModels;
+using KubeUI.Avalonia.Shell.Documents.Settings.ViewModels;
 using System.Runtime.InteropServices;
 using Dock.Model.Controls;
 using Dock.Model.Core;

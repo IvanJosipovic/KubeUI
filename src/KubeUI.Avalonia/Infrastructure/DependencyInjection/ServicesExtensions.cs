@@ -1,3 +1,5 @@
+using KubeUI.Avalonia.Features.Resources.Yaml;
+using KubeUI.Avalonia.Services.Settings;
 using Avalonia.Controls.Templates;
 using Avalonia.Logging;
 using KubeUI.Avalonia.Controls.DataGridFilters;
