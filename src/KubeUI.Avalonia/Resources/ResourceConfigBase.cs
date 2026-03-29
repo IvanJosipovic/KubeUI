@@ -14,6 +14,8 @@ using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Kubernetes;
 using KubeUI.Avalonia.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
+using KubeUI.Avalonia.Features.Resources.List.Controls;
 
 namespace KubeUI.Avalonia.Resources;
 
@@ -533,6 +535,7 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
         }
     }
 }
+
 
 
 

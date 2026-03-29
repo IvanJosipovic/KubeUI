@@ -14,7 +14,7 @@ using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
-using KubeUI.Avalonia.Behaviors;
+using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Avalonia.ViewModels;
 using KubeUI.Avalonia.Views;

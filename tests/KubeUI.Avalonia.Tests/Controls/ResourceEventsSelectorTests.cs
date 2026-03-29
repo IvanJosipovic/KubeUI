@@ -1,5 +1,5 @@
 using Avalonia.Headless.XUnit;
-using KubeUI.Avalonia.Controls;
+using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Tests.Infra;
 using k8s.Models;
 using Shouldly;

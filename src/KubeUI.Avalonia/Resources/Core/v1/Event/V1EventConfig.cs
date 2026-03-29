@@ -85,3 +85,4 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
     }
 }
 
+

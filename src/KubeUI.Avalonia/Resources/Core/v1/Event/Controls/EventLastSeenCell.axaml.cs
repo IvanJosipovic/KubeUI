@@ -1,6 +1,7 @@
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Controls;

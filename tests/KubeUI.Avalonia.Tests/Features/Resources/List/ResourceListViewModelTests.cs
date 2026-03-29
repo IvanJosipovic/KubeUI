@@ -21,7 +21,7 @@ using Shouldly;
 using CommunityToolkit.Mvvm.Input;
 using FluentAvalonia.Core;
 using KubeUI.Avalonia;
-using KubeUI.Avalonia.Behaviors;
+using KubeUI.Avalonia.Features.Resources.List.Behaviors;
 using KubeUI.Avalonia.Controls.DataGridFilters;
 using KubeUI.Avalonia.Resources;
 using k8s;
