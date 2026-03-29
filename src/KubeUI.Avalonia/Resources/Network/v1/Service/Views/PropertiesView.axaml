@@ -13,18 +13,26 @@
     <StackPanel>
         <c:PropertyItem Key="Type" Value="{Binding Spec.Type}" />
         <c:PropertyItem Key="Cluster IP" Value="{Binding Spec.ClusterIP}" />
-        <c:PropertyItem Key="Cluster IPs" Value="{Binding Spec.ClusterIPs.Count}" />
-        <c:PropertyItem Key="External IPs" Value="{Binding Spec.ExternalIPs.Count}" />
-        <c:PropertyItem Key="External Name" Value="{Binding Spec.ExternalName}" />
-        <c:PropertyItem Key="Session Affinity" Value="{Binding Spec.SessionAffinity}" />
-        <c:PropertyItem Key="Internal Traffic Policy" Value="{Binding Spec.InternalTrafficPolicy}" />
-        <c:PropertyItem Key="External Traffic Policy" Value="{Binding Spec.ExternalTrafficPolicy}" />
-        <c:PropertyItem Key="Publish Not Ready Addresses" Value="{Binding Spec.PublishNotReadyAddresses}" />
         <c:PropertyItem Key="Ports" Value="{Binding Spec.Ports.Count}" />
-        <c:PropertyItem Key="Selector" Value="{Binding Spec.Selector.Count}" />
-        <c:PropertyItem Key="Load Balancer IP" Value="{Binding Spec.LoadBalancerIP}" />
-        <c:PropertyItem Key="Load Balancer Class" Value="{Binding Spec.LoadBalancerClass}" />
-        <c:PropertyItem Key="Health Check Node Port" Value="{Binding Spec.HealthCheckNodePort}" />
         <c:PropertyItem Key="Load Balancer Ingress" Value="{Binding Status.LoadBalancer.Ingress.Count}" />
+        <c:ExpandableSection Header="Routing">
+            <StackPanel>
+                <c:PropertyItem Key="Selector" Value="{Binding Spec.Selector.Count}" />
+                <c:PropertyItem Key="Session Affinity" Value="{Binding Spec.SessionAffinity}" />
+                <c:PropertyItem Key="Internal Traffic Policy" Value="{Binding Spec.InternalTrafficPolicy}" />
+                <c:PropertyItem Key="External Traffic Policy" Value="{Binding Spec.ExternalTrafficPolicy}" />
+                <c:PropertyItem Key="Publish Not Ready Addresses" Value="{Binding Spec.PublishNotReadyAddresses}" />
+            </StackPanel>
+        </c:ExpandableSection>
+        <c:ExpandableSection Header="Networking">
+            <StackPanel>
+                <c:PropertyItem Key="Cluster IPs" Value="{Binding Spec.ClusterIPs.Count}" />
+                <c:PropertyItem Key="External IPs" Value="{Binding Spec.ExternalIPs.Count}" />
+                <c:PropertyItem Key="External Name" Value="{Binding Spec.ExternalName}" />
+                <c:PropertyItem Key="Load Balancer IP" Value="{Binding Spec.LoadBalancerIP}" />
+                <c:PropertyItem Key="Load Balancer Class" Value="{Binding Spec.LoadBalancerClass}" />
+                <c:PropertyItem Key="Health Check Node Port" Value="{Binding Spec.HealthCheckNodePort}" />
+            </StackPanel>
+        </c:ExpandableSection>
     </StackPanel>
 </UserControl>

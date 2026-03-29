@@ -1,4 +1,4 @@
-﻿<UserControl
+<UserControl
     x:Class="KubeUI.Avalonia.Features.Resources.Properties.Controls.HeaderItem"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -10,17 +10,14 @@
     <UserControl.Resources>
         <converters:ResourceLabelConverter x:Key="ResourceLabelConverter" />
     </UserControl.Resources>
-    <StackPanel>
-        <local:PropertyItem Key="{Binding Text, RelativeSource={RelativeSource AncestorType=local:HeaderItem}}" Value="">
-            <local:PropertyItem.Styles>
-                <Style Selector="SelectableTextBlock">
-                    <Setter Property="Border.Background" Value="{DynamicResource SystemAltHighColor}" />
-                    <Setter Property="Border.Padding" Value="8" />
-                </Style>
-            </local:PropertyItem.Styles>
-        </local:PropertyItem>
-    </StackPanel>
+    <Border
+        MinHeight="28"
+        Padding="10,0,10,0"
+        Background="{DynamicResource SystemAltHighColor}"
+        BorderBrush="{DynamicResource SystemAltHighColor}"
+        BorderThickness="0,0,0,1">
+        <SelectableTextBlock
+            VerticalAlignment="Center"
+            Text="{Binding Text, RelativeSource={RelativeSource AncestorType=local:HeaderItem}, Converter={StaticResource ResourceLabelConverter}}" />
+    </Border>
 </UserControl>
-
-
-

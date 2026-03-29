@@ -15,10 +15,18 @@
         <c:PropertyItem Key="Current Replicas" Value="{Binding Status.Replicas}" />
         <c:PropertyItem Key="Ready Replicas" Value="{Binding Status.ReadyReplicas}" />
         <c:PropertyItem Key="Available Replicas" Value="{Binding Status.AvailableReplicas}" />
-        <c:PropertyItem Key="Fully Labeled Replicas" Value="{Binding Status.FullyLabeledReplicas}" />
-        <c:PropertyItem Key="Min Ready Seconds" Value="{Binding Spec.MinReadySeconds}" />
-        <c:PropertyItem Key="Selector Labels" Value="{Binding Spec.Selector.MatchLabels.Count}" />
-        <c:PropertyItem Key="Observed Generation" Value="{Binding Status.ObservedGeneration}" />
-        <c:PropertyItem Key="Conditions" Value="{Binding Status.Conditions.Count}" />
+        <c:ExpandableSection Header="Status">
+            <StackPanel>
+                <c:PropertyItem Key="Fully Labeled Replicas" Value="{Binding Status.FullyLabeledReplicas}" />
+                <c:PropertyItem Key="Observed Generation" Value="{Binding Status.ObservedGeneration}" />
+                <c:PropertyItem Key="Conditions" Value="{Binding Status.Conditions.Count}" />
+            </StackPanel>
+        </c:ExpandableSection>
+        <c:ExpandableSection Header="Configuration">
+            <StackPanel>
+                <c:PropertyItem Key="Min Ready Seconds" Value="{Binding Spec.MinReadySeconds}" />
+                <c:PropertyItem Key="Selector Labels" Value="{Binding Spec.Selector.MatchLabels.Count}" />
+            </StackPanel>
+        </c:ExpandableSection>
     </StackPanel>
 </UserControl>

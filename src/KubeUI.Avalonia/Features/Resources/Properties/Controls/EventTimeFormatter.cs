@@ -50,7 +50,12 @@ internal static class EventTimeFormatter
         }
 
         var normalized = NormalizeUtc(timestamp.Value);
-        return $"{FormatPrettyAge(normalized, utcNow)} ago ({normalized.ToLocalTime():O})";
+        var local = normalized.ToLocalTime();
+        var localText = local.Date == utcNow.ToLocalTime().Date
+            ? local.ToString("t")
+            : local.ToString("g");
+
+        return $"{FormatPrettyAge(normalized, utcNow)} ago ({localText})";
     }
 
     public static DateTime? ResolveTimestamp(Corev1Event ev)

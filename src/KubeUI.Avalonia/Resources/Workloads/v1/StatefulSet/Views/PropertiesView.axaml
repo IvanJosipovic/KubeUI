@@ -17,12 +17,20 @@
         <c:PropertyItem Key="Updated Replicas" Value="{Binding Status.UpdatedReplicas}" />
         <c:PropertyItem Key="Available Replicas" Value="{Binding Status.AvailableReplicas}" />
         <c:PropertyItem Key="Service Name" Value="{Binding Spec.ServiceName}" />
-        <c:PropertyItem Key="Pod Management Policy" Value="{Binding Spec.PodManagementPolicy}" />
-        <c:PropertyItem Key="Update Strategy" Value="{Binding Spec.UpdateStrategy.Type}" />
-        <c:PropertyItem Key="Current Revision" Value="{Binding Status.CurrentRevision}" />
-        <c:PropertyItem Key="Update Revision" Value="{Binding Status.UpdateRevision}" />
-        <c:PropertyItem Key="Revision History Limit" Value="{Binding Spec.RevisionHistoryLimit}" />
-        <c:PropertyItem Key="Min Ready Seconds" Value="{Binding Spec.MinReadySeconds}" />
-        <c:PropertyItem Key="Conditions" Value="{Binding Status.Conditions.Count}" />
+        <c:ExpandableSection Header="Status">
+            <StackPanel>
+                <c:PropertyItem Key="Current Revision" Value="{Binding Status.CurrentRevision}" />
+                <c:PropertyItem Key="Update Revision" Value="{Binding Status.UpdateRevision}" />
+                <c:PropertyItem Key="Conditions" Value="{Binding Status.Conditions.Count}" />
+            </StackPanel>
+        </c:ExpandableSection>
+        <c:ExpandableSection Header="Configuration">
+            <StackPanel>
+                <c:PropertyItem Key="Pod Management Policy" Value="{Binding Spec.PodManagementPolicy}" />
+                <c:PropertyItem Key="Update Strategy" Value="{Binding Spec.UpdateStrategy.Type}" />
+                <c:PropertyItem Key="Revision History Limit" Value="{Binding Spec.RevisionHistoryLimit}" />
+                <c:PropertyItem Key="Min Ready Seconds" Value="{Binding Spec.MinReadySeconds}" />
+            </StackPanel>
+        </c:ExpandableSection>
     </StackPanel>
 </UserControl>

@@ -15,12 +15,20 @@
         <c:PropertyItem Key="Current Scheduled" Value="{Binding Status.CurrentNumberScheduled}" />
         <c:PropertyItem Key="Ready" Value="{Binding Status.NumberReady}" />
         <c:PropertyItem Key="Updated" Value="{Binding Status.UpdatedNumberScheduled}" />
-        <c:PropertyItem Key="Available" Value="{Binding Status.NumberAvailable}" />
-        <c:PropertyItem Key="Unavailable" Value="{Binding Status.NumberUnavailable}" />
-        <c:PropertyItem Key="Misscheduled" Value="{Binding Status.NumberMisscheduled}" />
-        <c:PropertyItem Key="Min Ready Seconds" Value="{Binding Spec.MinReadySeconds}" />
-        <c:PropertyItem Key="Revision History Limit" Value="{Binding Spec.RevisionHistoryLimit}" />
-        <c:PropertyItem Key="Selector Labels" Value="{Binding Spec.Selector.MatchLabels.Count}" />
-        <c:PropertyItem Key="Conditions" Value="{Binding Status.Conditions.Count}" />
+        <c:ExpandableSection Header="Status">
+            <StackPanel>
+                <c:PropertyItem Key="Available" Value="{Binding Status.NumberAvailable}" />
+                <c:PropertyItem Key="Unavailable" Value="{Binding Status.NumberUnavailable}" />
+                <c:PropertyItem Key="Misscheduled" Value="{Binding Status.NumberMisscheduled}" />
+                <c:PropertyItem Key="Conditions" Value="{Binding Status.Conditions.Count}" />
+            </StackPanel>
+        </c:ExpandableSection>
+        <c:ExpandableSection Header="Configuration">
+            <StackPanel>
+                <c:PropertyItem Key="Min Ready Seconds" Value="{Binding Spec.MinReadySeconds}" />
+                <c:PropertyItem Key="Revision History Limit" Value="{Binding Spec.RevisionHistoryLimit}" />
+                <c:PropertyItem Key="Selector Labels" Value="{Binding Spec.Selector.MatchLabels.Count}" />
+            </StackPanel>
+        </c:ExpandableSection>
     </StackPanel>
 </UserControl>

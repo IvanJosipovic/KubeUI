@@ -3,6 +3,8 @@ using System.Diagnostics;
 using System.Reflection;
 using Avalonia.Controls.Templates;
 using Dock.Model.Core;
+using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Properties.Views;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Infrastructure.Presentation;
@@ -44,6 +46,11 @@ public sealed class ViewLocator : IDataTemplate
 
     private Type? ResolveViewType(Type modelType)
     {
+        if (modelType.IsGenericType && modelType.GetGenericTypeDefinition() == typeof(ResourcePropertiesViewModel<>))
+        {
+            return typeof(ResourcePropertiesView);
+        }
+
         var expectedName = GetUnboundFullName(modelType).Replace("ViewModel", "View", StringComparison.Ordinal);
         var viewType = GetViewTypes().FirstOrDefault(type => string.Equals(GetUnboundFullName(type), expectedName, StringComparison.Ordinal));
 

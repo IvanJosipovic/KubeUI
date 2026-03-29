@@ -13,15 +13,23 @@
     <StackPanel>
         <c:PropertyItem Key="Completions" Value="{Binding Spec.Completions}" />
         <c:PropertyItem Key="Parallelism" Value="{Binding Spec.Parallelism}" />
-        <c:PropertyItem Key="Backoff Limit" Value="{Binding Spec.BackoffLimit}" />
-        <c:PropertyItem Key="Active Deadline Seconds" Value="{Binding Spec.ActiveDeadlineSeconds}" />
-        <c:PropertyItem Key="Completion Mode" Value="{Binding Spec.CompletionMode}" />
-        <c:PropertyItem Key="Suspend" Value="{Binding Spec.Suspend}" />
         <c:PropertyItem Key="Succeeded" Value="{Binding Status.Succeeded}" />
         <c:PropertyItem Key="Failed" Value="{Binding Status.Failed}" />
-        <c:PropertyItem Key="Active Pods" Value="{Binding Status.Active}" />
-        <c:PropertyItem Key="Start Time" Value="{Binding Status.StartTime}" />
-        <c:PropertyItem Key="Completion Time" Value="{Binding Status.CompletionTime}" />
-        <c:PropertyItem Key="Conditions" Value="{Binding Status.Conditions.Count}" />
+        <c:ExpandableSection Header="Configuration">
+            <StackPanel>
+                <c:PropertyItem Key="Backoff Limit" Value="{Binding Spec.BackoffLimit}" />
+                <c:PropertyItem Key="Active Deadline Seconds" Value="{Binding Spec.ActiveDeadlineSeconds}" />
+                <c:PropertyItem Key="Completion Mode" Value="{Binding Spec.CompletionMode}" />
+                <c:PropertyItem Key="Suspend" Value="{Binding Spec.Suspend}" />
+            </StackPanel>
+        </c:ExpandableSection>
+        <c:ExpandableSection Header="Status">
+            <StackPanel>
+                <c:PropertyItem Key="Active Pods" Value="{Binding Status.Active}" />
+                <c:PropertyItem Key="Start Time" Value="{Binding Status.StartTime}" />
+                <c:PropertyItem Key="Completion Time" Value="{Binding Status.CompletionTime}" />
+                <c:PropertyItem Key="Conditions" Value="{Binding Status.Conditions.Count}" />
+            </StackPanel>
+        </c:ExpandableSection>
     </StackPanel>
 </UserControl>

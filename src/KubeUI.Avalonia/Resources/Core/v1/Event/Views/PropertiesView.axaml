@@ -26,17 +26,20 @@
         <c:PropertyItem Key="Last Seen" Value="{Binding LastTimestamp}" />
         <c:PropertyItem Key="Count" Value="{Binding Count}" />
         <c:PropertyItem Key="Type" Value="{Binding Type}" />
-        <c:HeaderItem Text="{x:Static assets:Resources.InvolvedObject}" />
-        <c:PropertyItem Key="Kind">
-            <c:PropertyItem.Value>
-                <MultiBinding StringFormat="{}{0}/{1}">
-                    <Binding Path="InvolvedObject.ApiVersion" />
-                    <Binding Path="InvolvedObject.Kind" />
-                </MultiBinding>
-            </c:PropertyItem.Value>
-        </c:PropertyItem>
-        <c:PropertyItem Key="Name" Value="{Binding InvolvedObject.Name}" />
-        <c:PropertyItem Key="Namespace" Value="{Binding InvolvedObject.NamespaceProperty}" />
-        <c:PropertyItem Key="Field Path" Value="{Binding InvolvedObject.FieldPath}" />
+        <c:ExpandableSection Header="{x:Static assets:Resources.InvolvedObject}">
+            <StackPanel>
+                <c:PropertyItem Key="Kind">
+                    <c:PropertyItem.Value>
+                        <MultiBinding StringFormat="{}{0}/{1}">
+                            <Binding Path="InvolvedObject.ApiVersion" />
+                            <Binding Path="InvolvedObject.Kind" />
+                        </MultiBinding>
+                    </c:PropertyItem.Value>
+                </c:PropertyItem>
+                <c:PropertyItem Key="Name" Value="{Binding InvolvedObject.Name}" />
+                <c:PropertyItem Key="Namespace" Value="{Binding InvolvedObject.NamespaceProperty}" />
+                <c:PropertyItem Key="Field Path" Value="{Binding InvolvedObject.FieldPath}" />
+            </StackPanel>
+        </c:ExpandableSection>
     </StackPanel>
 </UserControl>

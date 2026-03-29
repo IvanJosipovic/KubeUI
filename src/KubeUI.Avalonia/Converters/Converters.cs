@@ -64,7 +64,7 @@ public sealed class EventWarningForegroundConverter : IValueConverter
             ? flag
             : string.Equals(value?.ToString(), "Warning", StringComparison.Ordinal);
 
-        return isWarning ? Brushes.Red : null;
+        return isWarning ? Brushes.Red : AvaloniaProperty.UnsetValue;
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

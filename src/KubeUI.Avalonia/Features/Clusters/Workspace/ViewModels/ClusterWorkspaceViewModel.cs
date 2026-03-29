@@ -33,6 +33,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
     private readonly CancellationTokenSource _disposeCancellation = new();
     private readonly Task _pendingCustomResourceDefinitionTask;
     private INotifyCollectionChanged? _runtimeNamespacesCollection;
+    private bool _suppressPermissionRefresh;
     private bool _disposed;
     private bool _workspaceStateInitialized;
 
@@ -178,8 +179,17 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     public async Task Disconnect()
     {
-        await Runtime.Disconnect().ConfigureAwait(false);
-        ResetWorkspaceState();
+        _suppressPermissionRefresh = true;
+
+        try
+        {
+            await Runtime.Disconnect().ConfigureAwait(false);
+            ResetWorkspaceState();
+        }
+        finally
+        {
+            _suppressPermissionRefresh = false;
+        }
     }
 
     public Task EnsureWorkspaceStateInitializedAsync()
@@ -275,6 +285,24 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
     public bool IsResourceNamespaced<T>()
     {
         return Runtime.IsResourceNamespaced<T>();
+    }
+
+    public bool CanReadEvents(IKubernetesObject<V1ObjectMeta> resource)
+    {
+        ArgumentNullException.ThrowIfNull(resource);
+
+        if (!Runtime.Connected)
+        {
+            return false;
+        }
+
+        if (CanReadEventsInNamespace(null))
+        {
+            return true;
+        }
+
+        var @namespace = resource.Metadata?.NamespaceProperty;
+        return !string.IsNullOrWhiteSpace(@namespace) && CanReadEventsInNamespace(@namespace);
     }
 
     public PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort)
@@ -495,6 +523,11 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     private void QueueResourceConfigPermissionsRefresh()
     {
+        if (_suppressPermissionRefresh || _disposed)
+        {
+            return;
+        }
+
         _ = Task.Run(RefreshResourceConfigPermissionsQueuedAsync);
     }
 
@@ -564,11 +597,58 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
         if (updateTasks.Length == 0)
         {
+            await EnsureEventResourceSeededAsync().ConfigureAwait(false);
             NotifyResourcePermissionsChanged();
             return;
         }
 
         await Task.WhenAll(updateTasks).ConfigureAwait(false);
+        await EnsureEventResourceSeededAsync().ConfigureAwait(false);
+    }
+
+    private bool CanReadEventsInNamespace(string? @namespace)
+    {
+        return Runtime.CanI<Corev1Event>(Verb.List, @namespace)
+            && Runtime.CanI<Corev1Event>(Verb.Watch, @namespace);
+    }
+
+    private async Task EnsureEventResourceSeededAsync()
+    {
+        if (await CanSeedEventsAsync().ConfigureAwait(false))
+        {
+            await SeedResource<Corev1Event>().ConfigureAwait(false);
+        }
+    }
+
+    private async Task<bool> CanSeedEventsAsync()
+    {
+        if (!Runtime.Connected)
+        {
+            return false;
+        }
+
+        if (await Runtime.UpdateCanI<Corev1Event>(Verb.List).ConfigureAwait(false)
+            && await Runtime.UpdateCanI<Corev1Event>(Verb.Watch).ConfigureAwait(false))
+        {
+            return true;
+        }
+
+        foreach (var item in Runtime.Namespaces)
+        {
+            var @namespace = item.Name();
+            if (string.IsNullOrWhiteSpace(@namespace))
+            {
+                continue;
+            }
+
+            if (await Runtime.UpdateCanI<Corev1Event>(Verb.List, @namespace).ConfigureAwait(false)
+                && await Runtime.UpdateCanI<Corev1Event>(Verb.Watch, @namespace).ConfigureAwait(false))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void SubscribeNamespaceCollection(ReadOnlyObservableCollection<V1Namespace>? namespaces)

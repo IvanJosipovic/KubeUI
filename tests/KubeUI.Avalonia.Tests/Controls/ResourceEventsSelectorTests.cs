@@ -79,7 +79,10 @@ public sealed class ResourceEventsSelectorTests : AvaloniaTestBase
             }
         });
 
-        var results = ResourceEventsSelector.SelectRecentEvents(cluster, resource, now);
+        var results = ResourceEventsSelector.SelectRecentEvents(
+            cluster.GetResourceSourceCache<Corev1Event>().Items,
+            resource,
+            now);
 
         results.Length.ShouldBe(5);
         results[0].Message.ShouldBe("message-0");

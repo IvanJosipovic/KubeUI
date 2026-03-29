@@ -15,10 +15,14 @@
         <c:PropertyItem Key="Available Replicas" Value="{Binding Status.AvailableReplicas}" />
         <c:PropertyItem Key="Ready Replicas" Value="{Binding Status.ReadyReplicas}" />
         <c:PropertyItem Key="Updated Replicas" Value="{Binding Status.UpdatedReplicas}" />
-        <c:PropertyItem Key="Unavailable Replicas" Value="{Binding Status.UnavailableReplicas}" />
-        <c:PropertyItem Key="Strategy Type" Value="{Binding Spec.Strategy.Type}" />
-        <c:PropertyItem Key="Progress Deadline Seconds" Value="{Binding Spec.ProgressDeadlineSeconds}" />
-        <c:PropertyItem Key="Revision History Limit" Value="{Binding Spec.RevisionHistoryLimit}" />
-        <c:PropertyItem Key="Conditions" Value="{Binding Status.Conditions.Count}" />
+        <c:ExpandableSection Header="Rollout">
+            <StackPanel>
+                <c:PropertyItem Key="Unavailable Replicas" Value="{Binding Status.UnavailableReplicas}" />
+                <c:PropertyItem Key="Conditions" Value="{Binding Status.Conditions.Count}" />
+                <c:PropertyItem Key="Strategy Type" Value="{Binding Spec.Strategy.Type}" />
+                <c:PropertyItem Key="Progress Deadline Seconds" Value="{Binding Spec.ProgressDeadlineSeconds}" />
+                <c:PropertyItem Key="Revision History Limit" Value="{Binding Spec.RevisionHistoryLimit}" />
+            </StackPanel>
+        </c:ExpandableSection>
     </StackPanel>
 </UserControl>

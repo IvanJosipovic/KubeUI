@@ -103,41 +103,50 @@ public partial class ResourcePropertiesView : UserControl
     {
         ClearItems();
 
-        var _vm = (ResourcePropertiesViewModel<T>)DataContext;
+        if (DataContext is not ResourcePropertiesViewModel<T> viewModel)
+        {
+            return;
+        }
 
-        if (_vm?.Object?.Metadata == null)
+        if (viewModel.Object?.Metadata == null)
             return;
 
-        var obj = _vm.Object;
+        var obj = viewModel.Object;
 
         PART_Items.Children.Add(new PropertyItem { Key = AppResources.ResourcePropertiesView_Name, Value = obj.Metadata.Name });
         PART_Items.Children.Add(new PropertyItem { Key = AppResources.ResourcePropertiesView_Namespace, Value = obj.Metadata.NamespaceProperty });
-
         PART_Items.Children.Add(new PropertyItem { Key = AppResources.ResourcePropertiesView_Created, Value = obj.Metadata.CreationTimestamp });
 
-        var extras = _vm.ResourceConfig.Properties(obj);
+        if (viewModel.ResourceConfig == null)
+        {
+            return;
+        }
+
+        var extras = viewModel.ResourceConfig.Properties(obj);
         if (extras != null)
         {
             foreach (var c in extras.Where(c => c != null))
             {
                 c.DataContext = obj;
-                if (_vm.Cluster != null && c is IInitializeCluster init)
+                if (viewModel.Cluster != null && c is IInitializeCluster init)
                 {
-                    init.Initialize(_vm.Cluster);
+                    init.Initialize(viewModel.Cluster);
                 }
 
                 PART_Items.Children.Add(c);
             }
         }
 
-        if (typeof(T) != typeof(Corev1Event) && _vm.Cluster != null)
+        if (typeof(T) != typeof(Corev1Event)
+            && viewModel.Cluster != null
+            && viewModel.Cluster.CanReadEvents(obj))
         {
             var eventsView = new ResourceEventsView
             {
                 DataContext = obj,
             };
 
-            eventsView.Initialize(_vm.Cluster);
+            eventsView.Initialize(viewModel.Cluster);
             PART_Items.Children.Add(eventsView);
         }
     }

@@ -4,20 +4,16 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
-    MinHeight="30"
-    Padding="5"
+    IsExpanded="True"
     HorizontalAlignment="Stretch"
     VerticalAlignment="Top"
     d:DesignHeight="400"
     d:DesignWidth="400">
-    <Expander.Styles>
-        <Style Selector="ToggleButton">
-            <Setter Property="Padding" Value="8" />
-        </Style>
-    </Expander.Styles>
+    <Expander.Resources>
+        <x:Double x:Key="ExpanderMinHeight">28</x:Double>
+        <Thickness x:Key="ExpanderHeaderPadding">10,0,0,0</Thickness>
+        <Thickness x:Key="ExpanderChevronMargin">8,0,4,0</Thickness>
+        <x:Double x:Key="ExpanderChevronButtonSize">24</x:Double>
+        <Thickness x:Key="ExpanderContentPadding">0</Thickness>
+    </Expander.Resources>
 </Expander>
-
-
-
-
-

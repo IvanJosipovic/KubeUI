@@ -4,10 +4,9 @@ using KubeUI.Avalonia.Infrastructure.Threading;
 using k8s;
 using k8s.Models;
 using DynamicData;
-using KubernetesClient.Informer.Client;
+using DynamicData.Binding;
 using KubeUI.Kubernetes;
-using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
-using KubeUI.Avalonia;
+using System.Collections.ObjectModel;
 using System.Reactive.Linq;
 
 namespace KubeUI.Avalonia.Features.Resources.Properties.Controls;
@@ -15,15 +14,17 @@ namespace KubeUI.Avalonia.Features.Resources.Properties.Controls;
 public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
 {
     private readonly DispatcherTimer _timer = new(DispatcherPriority.Background);
+    private readonly ReadOnlyObservableCollection<Corev1Event> _emptyEvents = new([]);
 
     private ClusterWorkspaceViewModel? _cluster;
     private ISourceCache<Corev1Event, string>? _eventCache;
     private IDisposable? _eventCacheSubscription;
+    private ReadOnlyObservableCollection<Corev1Event> _matchedEvents;
 
     private IKubernetesObject<V1ObjectMeta>? _resource;
 
     [GeneratedDirectProperty]
-    public partial IReadOnlyList<ResourceEventItemViewModel> Items { get; set; } = [];
+    public partial IReadOnlyList<ResourceEventItem> Items { get; set; } = [];
 
     [GeneratedDirectProperty]
     public partial bool HasItems { get; set; }
@@ -31,6 +32,7 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
     public ResourceEventsView()
     {
         InitializeComponent();
+        _matchedEvents = _emptyEvents;
         _timer.Interval = TimeSpan.FromSeconds(1);
         _timer.Tick += Timer_Tick;
     }
@@ -39,6 +41,7 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
     {
         base.OnDataContextChanged(e);
         _resource = DataContext as IKubernetesObject<V1ObjectMeta>;
+        RebuildEventSubscription();
         Refresh();
     }
 
@@ -68,13 +71,9 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
 
     public void Initialize(ClusterWorkspaceViewModel cluster)
     {
-        DisposeEventSubscription();
-
         _cluster = cluster;
-        _eventCache = _cluster.GetResourceSourceCache<Corev1Event>();
-        _eventCacheSubscription = _eventCache.Connect()
-            .ObserveOn(AvaloniaScheduler.Instance)
-            .Subscribe(_ => Refresh());
+        _eventCache = cluster.GetResourceSourceCache<Corev1Event>();
+        RebuildEventSubscription();
         Refresh();
     }
 
@@ -85,22 +84,57 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
 
     private void Refresh()
     {
-        if (_cluster == null || _resource == null || _eventCache == null)
+        if (_resource == null)
         {
-            Items = [];
-            HasItems = false;
+            Clear();
             return;
         }
 
-        var items = ResourceEventsSelector.SelectRecentEvents(_eventCache.Items, _resource, DateTime.UtcNow);
-        Items = items;
-        HasItems = items.Length > 0;
+        var items = _matchedEvents
+            .Take(5)
+            .Select(@event => ResourceEventsSelector.ToItem(@event, DateTime.UtcNow))
+            .ToArray();
+
+        UpdateItems(items);
+    }
+
+    private void RebuildEventSubscription()
+    {
+        DisposeEventSubscription();
+
+        if (_resource == null || _eventCache == null)
+        {
+            _matchedEvents = _emptyEvents;
+            return;
+        }
+
+        var resource = _resource;
+
+        _eventCacheSubscription = _eventCache.Connect()
+            .Filter(@event => ResourceEventsSelector.MatchesResource(@event, resource))
+            .ObserveOn(AvaloniaScheduler.Instance)
+            .SortAndBind(
+                out _matchedEvents,
+                SortExpressionComparer<Corev1Event>.Descending(@event => ResourceEventsSelector.GetSortTimestamp(@event)))
+            .Subscribe(_ => Refresh());
     }
 
     private void DisposeEventSubscription()
     {
         _eventCacheSubscription?.Dispose();
         _eventCacheSubscription = null;
-        _eventCache = null;
+        _matchedEvents = _emptyEvents;
+    }
+
+    private void Clear()
+    {
+        Items = [];
+        HasItems = false;
+    }
+
+    private void UpdateItems(ResourceEventItem[] items)
+    {
+        Items = items;
+        HasItems = items.Length > 0;
     }
 }

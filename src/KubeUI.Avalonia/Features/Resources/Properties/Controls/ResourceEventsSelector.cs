@@ -1,27 +1,34 @@
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using k8s;
 using k8s.Models;
-using KubernetesClient.Informer.Client;
-using KubeUI.Kubernetes;
-using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
 
 namespace KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 internal static class ResourceEventsSelector
 {
-    public static ResourceEventItemViewModel[] SelectRecentEvents(
-        ClusterWorkspaceViewModel cluster,
-        IKubernetesObject<V1ObjectMeta> resource,
-        DateTime utcNow,
-        int limit = 5)
+    public static ResourceEventItem ToItem(Corev1Event @event, DateTime utcNow)
     {
-        ArgumentNullException.ThrowIfNull(cluster);
-        ArgumentNullException.ThrowIfNull(resource);
+        ArgumentNullException.ThrowIfNull(@event);
 
-        return SelectRecentEvents(cluster.GetResourceSourceCache<Corev1Event>().Items, resource, utcNow, limit);
+        var timestamp = EventTimeFormatter.ResolveTimestamp(@event);
+
+        return new ResourceEventItem(
+            string.IsNullOrWhiteSpace(@event.Message) ? (@event.Reason ?? string.Empty) : @event.Message.Trim(),
+            FormatSource(@event),
+            @event.Count ?? 0,
+            @event.InvolvedObject?.FieldPath ?? string.Empty,
+            EventTimeFormatter.FormatPrettyLastSeen(timestamp, utcNow),
+            string.Equals(@event.Type, "Warning", StringComparison.Ordinal));
     }
 
-    public static ResourceEventItemViewModel[] SelectRecentEvents(
+    public static DateTime GetSortTimestamp(Corev1Event @event)
+    {
+        ArgumentNullException.ThrowIfNull(@event);
+
+        var timestamp = EventTimeFormatter.ResolveTimestamp(@event);
+        return timestamp.HasValue ? NormalizeUtc(timestamp.Value) : DateTime.MinValue;
+    }
+
+    public static ResourceEventItem[] SelectRecentEvents(
         IEnumerable<Corev1Event> events,
         IKubernetesObject<V1ObjectMeta> resource,
         DateTime utcNow,
@@ -30,22 +37,16 @@ internal static class ResourceEventsSelector
         ArgumentNullException.ThrowIfNull(events);
         ArgumentNullException.ThrowIfNull(resource);
 
-        if (resource.Metadata?.Uid is not string resourceUid || string.IsNullOrWhiteSpace(resourceUid))
-        {
-            return [];
-        }
-
         List<(Corev1Event Event, DateTime Timestamp)> matches = [];
 
         foreach (Corev1Event @event in events)
         {
-            if (!string.Equals(@event.InvolvedObject?.Uid, resourceUid, StringComparison.Ordinal))
+            if (!MatchesResource(@event, resource))
             {
                 continue;
             }
 
-            var timestamp = EventTimeFormatter.ResolveTimestamp(@event);
-            matches.Add((@event, timestamp.HasValue ? NormalizeUtc(timestamp.Value) : DateTime.MinValue));
+            matches.Add((@event, GetSortTimestamp(@event)));
         }
 
         if (matches.Count == 0)
@@ -60,23 +61,52 @@ internal static class ResourceEventsSelector
         });
 
         var take = Math.Min(limit, matches.Count);
-        var results = new ResourceEventItemViewModel[take];
+        var results = new ResourceEventItem[take];
 
         for (var i = 0; i < take; i++)
         {
-            var @event = matches[i].Event;
-            var timestamp = EventTimeFormatter.ResolveTimestamp(@event);
-
-            results[i] = new ResourceEventItemViewModel(
-                string.IsNullOrWhiteSpace(@event.Message) ? (@event.Reason ?? string.Empty) : @event.Message.Trim(),
-                FormatSource(@event),
-                @event.Count ?? 0,
-                @event.InvolvedObject?.FieldPath ?? string.Empty,
-                EventTimeFormatter.FormatPrettyLastSeen(timestamp, utcNow),
-                string.Equals(@event.Type, "Warning", StringComparison.Ordinal));
+            results[i] = ToItem(matches[i].Event, utcNow);
         }
 
         return results;
+    }
+
+    public static bool MatchesResource(Corev1Event @event, IKubernetesObject<V1ObjectMeta> resource)
+    {
+        if (@event.InvolvedObject == null || resource.Metadata == null)
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(resource.Metadata.Uid) &&
+            string.Equals(@event.InvolvedObject.Uid, resource.Metadata.Uid, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if (!string.Equals(@event.InvolvedObject.Name, resource.Metadata.Name, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (!string.Equals(@event.InvolvedObject.NamespaceProperty, resource.Metadata.NamespaceProperty, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(@event.InvolvedObject.Kind) &&
+            !string.Equals(@event.InvolvedObject.Kind, resource.Kind, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(@event.InvolvedObject.ApiVersion) &&
+            !string.Equals(@event.InvolvedObject.ApiVersion, resource.ApiVersion, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        return true;
     }
 
     private static string FormatSource(Corev1Event @event)

@@ -16,10 +16,18 @@
         <c:PropertyItem Key="Kernel Version" Value="{Binding Status.NodeInfo.KernelVersion}" />
         <c:PropertyItem Key="Container Runtime" Value="{Binding Status.NodeInfo.ContainerRuntimeVersion}" />
         <c:PropertyItem Key="Kubelet Version" Value="{Binding Status.NodeInfo.KubeletVersion}" />
-        <c:PropertyItem Key="Addresses" Value="{Binding Status.Addresses.Count}" />
-        <c:PropertyItem Key="Taints" Value="{Binding Spec.Taints.Count}" />
-        <c:PropertyItem Key="Conditions" Value="{Binding Status.Conditions.Count}" />
-        <c:PropertyItem Key="Capacity Entries" Value="{Binding Status.Capacity.Count}" />
-        <c:PropertyItem Key="Allocatable Entries" Value="{Binding Status.Allocatable.Count}" />
+        <c:ExpandableSection Header="Status">
+            <StackPanel>
+                <c:PropertyItem Key="Addresses" Value="{Binding Status.Addresses.Count}" />
+                <c:PropertyItem Key="Taints" Value="{Binding Spec.Taints.Count}" />
+                <c:PropertyItem Key="Conditions" Value="{Binding Status.Conditions.Count}" />
+            </StackPanel>
+        </c:ExpandableSection>
+        <c:ExpandableSection Header="Resources">
+            <StackPanel>
+                <c:PropertyItem Key="Capacity Entries" Value="{Binding Status.Capacity.Count}" />
+                <c:PropertyItem Key="Allocatable Entries" Value="{Binding Status.Allocatable.Count}" />
+            </StackPanel>
+        </c:ExpandableSection>
     </StackPanel>
 </UserControl>

@@ -14,12 +14,20 @@
         <c:PropertyItem Key="Schedule" Value="{Binding Spec.Schedule}" />
         <c:PropertyItem Key="Suspend" Value="{Binding Spec.Suspend}" />
         <c:PropertyItem Key="Concurrency Policy" Value="{Binding Spec.ConcurrencyPolicy}" />
-        <c:PropertyItem Key="Successful History Limit" Value="{Binding Spec.SuccessfulJobsHistoryLimit}" />
-        <c:PropertyItem Key="Failed History Limit" Value="{Binding Spec.FailedJobsHistoryLimit}" />
-        <c:PropertyItem Key="Starting Deadline Seconds" Value="{Binding Spec.StartingDeadlineSeconds}" />
-        <c:PropertyItem Key="Time Zone" Value="{Binding Spec.TimeZone}" />
-        <c:PropertyItem Key="Active Jobs" Value="{Binding Status.Active.Count}" />
-        <c:PropertyItem Key="Last Schedule Time" Value="{Binding Status.LastScheduleTime}" />
-        <c:PropertyItem Key="Last Successful Time" Value="{Binding Status.LastSuccessfulTime}" />
+        <c:ExpandableSection Header="Configuration">
+            <StackPanel>
+                <c:PropertyItem Key="Successful History Limit" Value="{Binding Spec.SuccessfulJobsHistoryLimit}" />
+                <c:PropertyItem Key="Failed History Limit" Value="{Binding Spec.FailedJobsHistoryLimit}" />
+                <c:PropertyItem Key="Starting Deadline Seconds" Value="{Binding Spec.StartingDeadlineSeconds}" />
+                <c:PropertyItem Key="Time Zone" Value="{Binding Spec.TimeZone}" />
+            </StackPanel>
+        </c:ExpandableSection>
+        <c:ExpandableSection Header="Status">
+            <StackPanel>
+                <c:PropertyItem Key="Active Jobs" Value="{Binding Status.Active.Count}" />
+                <c:PropertyItem Key="Last Schedule Time" Value="{Binding Status.LastScheduleTime}" />
+                <c:PropertyItem Key="Last Successful Time" Value="{Binding Status.LastSuccessfulTime}" />
+            </StackPanel>
+        </c:ExpandableSection>
     </StackPanel>
 </UserControl>

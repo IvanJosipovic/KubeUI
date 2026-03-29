@@ -14,10 +14,18 @@
         <c:PropertyItem Key="Phase" Value="{Binding Status.Phase}" />
         <c:PropertyItem Key="Storage Class" Value="{Binding Spec.StorageClassName}" />
         <c:PropertyItem Key="Volume Name" Value="{Binding Spec.VolumeName}" />
-        <c:PropertyItem Key="Volume Mode" Value="{Binding Spec.VolumeMode}" />
         <c:PropertyItem Key="Access Modes" Value="{Binding Spec.AccessModes.Count}" />
-        <c:PropertyItem Key="Requested Storage" Value="{Binding Spec.Resources.Requests.Count}" />
-        <c:PropertyItem Key="Capacity Entries" Value="{Binding Status.Capacity.Count}" />
-        <c:PropertyItem Key="Conditions" Value="{Binding Status.Conditions.Count}" />
+        <c:ExpandableSection Header="Configuration">
+            <StackPanel>
+                <c:PropertyItem Key="Volume Mode" Value="{Binding Spec.VolumeMode}" />
+                <c:PropertyItem Key="Requested Storage" Value="{Binding Spec.Resources.Requests.Count}" />
+            </StackPanel>
+        </c:ExpandableSection>
+        <c:ExpandableSection Header="Status">
+            <StackPanel>
+                <c:PropertyItem Key="Capacity Entries" Value="{Binding Status.Capacity.Count}" />
+                <c:PropertyItem Key="Conditions" Value="{Binding Status.Conditions.Count}" />
+            </StackPanel>
+        </c:ExpandableSection>
     </StackPanel>
 </UserControl>

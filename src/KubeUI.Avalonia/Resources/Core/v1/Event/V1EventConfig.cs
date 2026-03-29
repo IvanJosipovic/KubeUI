@@ -1,6 +1,7 @@
 using Avalonia.Data.Converters;
 using Avalonia.Styling;
 using k8s.Models;
+using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Resources.Core.v1.Event.Controls;
 using KubeUI.Avalonia.Resources.Core.v1.Event.Views;
 
@@ -50,7 +51,7 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
             {
                 Name = "Last Seen",
                 CustomControl = typeof(EventLastSeenCell),
-                Field = x => x.LastTimestamp ?? (x.EventTime ?? x.Metadata.CreationTimestamp),
+                Field = x => EventTimeFormatter.ResolveTimestamp(x),
                 Sort = SortDirection.Descending,
                 Width = "80"
             },
