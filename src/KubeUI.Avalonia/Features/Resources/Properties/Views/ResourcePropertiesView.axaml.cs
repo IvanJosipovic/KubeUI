@@ -1,9 +1,11 @@
 using System.Reflection;
 using k8s;
 using k8s.Models;
+using KubeUI.Avalonia.Features.Resources.Properties.Controls;
+using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
 using AppResources = KubeUI.Avalonia.Assets.Resources;
 
-namespace KubeUI.Avalonia.Views;
+namespace KubeUI.Avalonia.Features.Resources.Properties.Views;
 
 public partial class ResourcePropertiesView : UserControl
 {
@@ -80,8 +82,24 @@ public partial class ResourcePropertiesView : UserControl
             foreach (var c in extras.Where(c => c != null))
             {
                 c.DataContext = obj;
+                if (_vm.Cluster != null && c is IInitializeCluster init)
+                {
+                    init.Initialize(_vm.Cluster);
+                }
+
                 PART_Items.Children.Add(c);
             }
+        }
+
+        if (typeof(T) != typeof(Corev1Event) && _vm.Cluster != null)
+        {
+            var eventsView = new ResourceEventsView
+            {
+                DataContext = obj,
+            };
+
+            eventsView.Initialize(_vm.Cluster);
+            PART_Items.Children.Add(eventsView);
         }
     }
 }

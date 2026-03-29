@@ -644,6 +644,471 @@ Are you sure?</value>
   <data name="ResourcePropertiesView_Created" xml:space="preserve">
     <value>Created</value>
   </data>
+  <data name="Address Type" xml:space="preserve">
+    <value>Address Type</value>
+  </data>
+  <data name="Addresses" xml:space="preserve">
+    <value>Addresses</value>
+  </data>
+  <data name="Active Deadline Seconds" xml:space="preserve">
+    <value>Active Deadline Seconds</value>
+  </data>
+  <data name="Active Jobs" xml:space="preserve">
+    <value>Active Jobs</value>
+  </data>
+  <data name="Active Pods" xml:space="preserve">
+    <value>Active Pods</value>
+  </data>
+  <data name="Acquire Time" xml:space="preserve">
+    <value>Acquire Time</value>
+  </data>
+  <data name="Accepted Kind" xml:space="preserve">
+    <value>Accepted Kind</value>
+  </data>
+  <data name="Aggregation Selectors" xml:space="preserve">
+    <value>Aggregation Selectors</value>
+  </data>
+  <data name="Allow Volume Expansion" xml:space="preserve">
+    <value>Allow Volume Expansion</value>
+  </data>
+  <data name="Allocatable Entries" xml:space="preserve">
+    <value>Allocatable Entries</value>
+  </data>
+  <data name="Architecture" xml:space="preserve">
+    <value>Architecture</value>
+  </data>
+  <data name="Arguments" xml:space="preserve">
+    <value>Arguments</value>
+  </data>
+  <data name="Available" xml:space="preserve">
+    <value>Available</value>
+  </data>
+  <data name="Available Replicas" xml:space="preserve">
+    <value>Available Replicas</value>
+  </data>
+  <data name="Automount Token" xml:space="preserve">
+    <value>Automount Token</value>
+  </data>
+  <data name="Backoff Limit" xml:space="preserve">
+    <value>Backoff Limit</value>
+  </data>
+  <data name="Binary Data" xml:space="preserve">
+    <value>Binary Data</value>
+  </data>
+  <data name="Capacity Entries" xml:space="preserve">
+    <value>Capacity Entries</value>
+  </data>
+  <data name="Claim Name" xml:space="preserve">
+    <value>Claim Name</value>
+  </data>
+  <data name="Cluster IP" xml:space="preserve">
+    <value>Cluster IP</value>
+  </data>
+  <data name="Cluster IPs" xml:space="preserve">
+    <value>Cluster IPs</value>
+  </data>
+  <data name="Completions" xml:space="preserve">
+    <value>Completions</value>
+  </data>
+  <data name="Concurrency Policy" xml:space="preserve">
+    <value>Concurrency Policy</value>
+  </data>
+  <data name="Conditions" xml:space="preserve">
+    <value>Conditions</value>
+  </data>
+  <data name="Container Runtime" xml:space="preserve">
+    <value>Container Runtime</value>
+  </data>
+  <data name="Controller" xml:space="preserve">
+    <value>Controller</value>
+  </data>
+  <data name="Count" xml:space="preserve">
+    <value>Count</value>
+  </data>
+  <data name="Current Healthy" xml:space="preserve">
+    <value>Current Healthy</value>
+  </data>
+  <data name="Current Replicas" xml:space="preserve">
+    <value>Current Replicas</value>
+  </data>
+  <data name="Current Revision" xml:space="preserve">
+    <value>Current Revision</value>
+  </data>
+  <data name="Current Scheduled" xml:space="preserve">
+    <value>Current Scheduled</value>
+  </data>
+  <data name="Current NumberScheduled" xml:space="preserve">
+    <value>Current Scheduled</value>
+  </data>
+  <data name="Current" xml:space="preserve">
+    <value>Current</value>
+  </data>
+  <data name="Data" xml:space="preserve">
+    <value>Data</value>
+  </data>
+  <data name="Desired Healthy" xml:space="preserve">
+    <value>Desired Healthy</value>
+  </data>
+  <data name="Desired Replicas" xml:space="preserve">
+    <value>Desired Replicas</value>
+  </data>
+  <data name="Desired Scheduled" xml:space="preserve">
+    <value>Desired Scheduled</value>
+  </data>
+  <data name="Description" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="Disruptions Allowed" xml:space="preserve">
+    <value>Disruptions Allowed</value>
+  </data>
+  <data name="Egress Rules" xml:space="preserve">
+    <value>Egress Rules</value>
+  </data>
+  <data name="Endpoints" xml:space="preserve">
+    <value>Endpoints</value>
+  </data>
+  <data name="Expected Pods" xml:space="preserve">
+    <value>Expected Pods</value>
+  </data>
+  <data name="External IPs" xml:space="preserve">
+    <value>External IPs</value>
+  </data>
+  <data name="External Name" xml:space="preserve">
+    <value>External Name</value>
+  </data>
+  <data name="External Traffic Policy" xml:space="preserve">
+    <value>External Traffic Policy</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="Failed History Limit" xml:space="preserve">
+    <value>Failed History Limit</value>
+  </data>
+  <data name="Field Path" xml:space="preserve">
+    <value>Field Path</value>
+  </data>
+  <data name="First Seen" xml:space="preserve">
+    <value>First Seen</value>
+  </data>
+  <data name="Fully Labeled Replicas" xml:space="preserve">
+    <value>Fully Labeled Replicas</value>
+  </data>
+  <data name="Global Default" xml:space="preserve">
+    <value>Global Default</value>
+  </data>
+  <data name="Group" xml:space="preserve">
+    <value>Group</value>
+  </data>
+  <data name="Handler" xml:space="preserve">
+    <value>Handler</value>
+  </data>
+  <data name="Health Check Node Port" xml:space="preserve">
+    <value>Health Check Node Port</value>
+  </data>
+  <data name="Holder Identity" xml:space="preserve">
+    <value>Holder Identity</value>
+  </data>
+  <data name="Image Pull Secrets" xml:space="preserve">
+    <value>Image Pull Secrets</value>
+  </data>
+  <data name="Immutable" xml:space="preserve">
+    <value>Immutable</value>
+  </data>
+  <data name="Ingress Class" xml:space="preserve">
+    <value>Ingress Class</value>
+  </data>
+  <data name="Ingress Rules" xml:space="preserve">
+    <value>Ingress Rules</value>
+  </data>
+  <data name="InvolvedObject" xml:space="preserve">
+    <value>Involved Object</value>
+  </data>
+  <data name="Internal Traffic Policy" xml:space="preserve">
+    <value>Internal Traffic Policy</value>
+  </data>
+  <data name="Kernel Version" xml:space="preserve">
+    <value>Kernel Version</value>
+  </data>
+  <data name="Kind" xml:space="preserve">
+    <value>Kind</value>
+  </data>
+  <data name="Kubelet Version" xml:space="preserve">
+    <value>Kubelet Version</value>
+  </data>
+  <data name="Last Phase Transition" xml:space="preserve">
+    <value>Last Phase Transition</value>
+  </data>
+  <data name="Last Schedule Time" xml:space="preserve">
+    <value>Last Schedule Time</value>
+  </data>
+  <data name="Last Seen" xml:space="preserve">
+    <value>Last Seen</value>
+  </data>
+  <data name="Last Successful Time" xml:space="preserve">
+    <value>Last Successful Time</value>
+  </data>
+  <data name="Lease Duration Seconds" xml:space="preserve">
+    <value>Lease Duration Seconds</value>
+  </data>
+  <data name="Lease Transitions" xml:space="preserve">
+    <value>Lease Transitions</value>
+  </data>
+  <data name="Load Balancer Class" xml:space="preserve">
+    <value>Load Balancer Class</value>
+  </data>
+  <data name="Load Balancer Ingress" xml:space="preserve">
+    <value>Load Balancer Ingress</value>
+  </data>
+  <data name="Load Balancer IP" xml:space="preserve">
+    <value>Load Balancer IP</value>
+  </data>
+  <data name="Message" xml:space="preserve">
+    <value>Message</value>
+  </data>
+  <data name="Max Replicas" xml:space="preserve">
+    <value>Max Replicas</value>
+  </data>
+  <data name="Max Unavailable" xml:space="preserve">
+    <value>Max Unavailable</value>
+  </data>
+  <data name="Min Available" xml:space="preserve">
+    <value>Min Available</value>
+  </data>
+  <data name="Min Ready Seconds" xml:space="preserve">
+    <value>Min Ready Seconds</value>
+  </data>
+  <data name="Metrics" xml:space="preserve">
+    <value>Metrics</value>
+  </data>
+  <data name="Misscheduled" xml:space="preserve">
+    <value>Misscheduled</value>
+  </data>
+  <data name="Mount Options" xml:space="preserve">
+    <value>Mount Options</value>
+  </data>
+  <data name="Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Namespace" xml:space="preserve">
+    <value>Namespace</value>
+  </data>
+  <data name="Node Selector Entries" xml:space="preserve">
+    <value>Node Selector Entries</value>
+  </data>
+  <data name="NoEventsFound" xml:space="preserve">
+    <value>No events found</value>
+  </data>
+  <data name="Observed Generation" xml:space="preserve">
+    <value>Observed Generation</value>
+  </data>
+  <data name="Operating System" xml:space="preserve">
+    <value>Operating System</value>
+  </data>
+  <data name="Parallelism" xml:space="preserve">
+    <value>Parallelism</value>
+  </data>
+  <data name="Parameters" xml:space="preserve">
+    <value>Parameters</value>
+  </data>
+  <data name="Parameters Kind" xml:space="preserve">
+    <value>Parameters Kind</value>
+  </data>
+  <data name="Parameters Name" xml:space="preserve">
+    <value>Parameters Name</value>
+  </data>
+  <data name="Parameters Namespace" xml:space="preserve">
+    <value>Parameters Namespace</value>
+  </data>
+  <data name="Parameters Scope" xml:space="preserve">
+    <value>Parameters Scope</value>
+  </data>
+  <data name="Phase" xml:space="preserve">
+    <value>Phase</value>
+  </data>
+  <data name="Policy Types" xml:space="preserve">
+    <value>Policy Types</value>
+  </data>
+  <data name="Pod IPs" xml:space="preserve">
+    <value>Pod IPs</value>
+  </data>
+  <data name="Pod Management Policy" xml:space="preserve">
+    <value>Pod Management Policy</value>
+  </data>
+  <data name="Pod Selector Labels" xml:space="preserve">
+    <value>Pod Selector Labels</value>
+  </data>
+  <data name="Ports" xml:space="preserve">
+    <value>Ports</value>
+  </data>
+  <data name="Preemption Policy" xml:space="preserve">
+    <value>Preemption Policy</value>
+  </data>
+  <data name="Progress Deadline Seconds" xml:space="preserve">
+    <value>Progress Deadline Seconds</value>
+  </data>
+  <data name="Provisioner" xml:space="preserve">
+    <value>Provisioner</value>
+  </data>
+  <data name="Publish Not Ready Addresses" xml:space="preserve">
+    <value>Publish Not Ready Addresses</value>
+  </data>
+  <data name="QoS Class" xml:space="preserve">
+    <value>QoS Class</value>
+  </data>
+  <data name="Ready" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="Ready Replicas" xml:space="preserve">
+    <value>Ready Replicas</value>
+  </data>
+  <data name="Reclaim Policy" xml:space="preserve">
+    <value>Reclaim Policy</value>
+  </data>
+  <data name="Reason" xml:space="preserve">
+    <value>Reason</value>
+  </data>
+  <data name="Requested Storage" xml:space="preserve">
+    <value>Requested Storage</value>
+  </data>
+  <data name="Replicas" xml:space="preserve">
+    <value>Replicas</value>
+  </data>
+  <data name="Revision History Limit" xml:space="preserve">
+    <value>Revision History Limit</value>
+  </data>
+  <data name="Role Kind" xml:space="preserve">
+    <value>Role Kind</value>
+  </data>
+  <data name="Role Name" xml:space="preserve">
+    <value>Role Name</value>
+  </data>
+  <data name="Rules" xml:space="preserve">
+    <value>Rules</value>
+  </data>
+  <data name="Schedule" xml:space="preserve">
+    <value>Schedule</value>
+  </data>
+  <data name="Secrets" xml:space="preserve">
+    <value>Secrets</value>
+  </data>
+  <data name="Selector" xml:space="preserve">
+    <value>Selector</value>
+  </data>
+  <data name="Selector Labels" xml:space="preserve">
+    <value>Selector Labels</value>
+  </data>
+  <data name="Session Affinity" xml:space="preserve">
+    <value>Session Affinity</value>
+  </data>
+  <data name="Service Account" xml:space="preserve">
+    <value>Service Account</value>
+  </data>
+  <data name="Service Name" xml:space="preserve">
+    <value>Service Name</value>
+  </data>
+  <data name="Start Time" xml:space="preserve">
+    <value>Start Time</value>
+  </data>
+  <data name="Starting Deadline Seconds" xml:space="preserve">
+    <value>Starting Deadline Seconds</value>
+  </data>
+  <data name="Storage Class" xml:space="preserve">
+    <value>Storage Class</value>
+  </data>
+  <data name="Strategy Type" xml:space="preserve">
+    <value>Strategy Type</value>
+  </data>
+  <data name="Sub-object" xml:space="preserve">
+    <value>Sub-object</value>
+  </data>
+  <data name="Succeeded" xml:space="preserve">
+    <value>Succeeded</value>
+  </data>
+  <data name="Successful History Limit" xml:space="preserve">
+    <value>Successful History Limit</value>
+  </data>
+  <data name="Suspend" xml:space="preserve">
+    <value>Suspend</value>
+  </data>
+  <data name="Taints" xml:space="preserve">
+    <value>Taints</value>
+  </data>
+  <data name="Time Zone" xml:space="preserve">
+    <value>Time Zone</value>
+  </data>
+  <data name="Tolerations" xml:space="preserve">
+    <value>Tolerations</value>
+  </data>
+  <data name="Type" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="Unavailable" xml:space="preserve">
+    <value>Unavailable</value>
+  </data>
+  <data name="Unavailable Replicas" xml:space="preserve">
+    <value>Unavailable Replicas</value>
+  </data>
+  <data name="Update Revision" xml:space="preserve">
+    <value>Update Revision</value>
+  </data>
+  <data name="Update Strategy" xml:space="preserve">
+    <value>Update Strategy</value>
+  </data>
+  <data name="Updated" xml:space="preserve">
+    <value>Updated</value>
+  </data>
+  <data name="Updated Replicas" xml:space="preserve">
+    <value>Updated Replicas</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="Volumes" xml:space="preserve">
+    <value>Volumes</value>
+  </data>
+  <data name="Volume Binding Mode" xml:space="preserve">
+    <value>Volume Binding Mode</value>
+  </data>
+  <data name="Volume Name" xml:space="preserve">
+    <value>Volume Name</value>
+  </data>
+  <data name="Webhooks" xml:space="preserve">
+    <value>Webhooks</value>
+  </data>
+  <data name="Windows" xml:space="preserve">
+    <value>Windows</value>
+  </data>
+  <data name="Load Balancer Entries" xml:space="preserve">
+    <value>Load Balancer Entries</value>
+  </data>
+  <data name="NamespaceProperty" xml:space="preserve">
+    <value>Namespace</value>
+  </data>
+  <data name="Overhead Entries" xml:space="preserve">
+    <value>Overhead Entries</value>
+  </data>
+  <data name="Pod Volumes" xml:space="preserve">
+    <value>Pod Volumes</value>
+  </data>
+  <data name="ResourceEventsView_Title" xml:space="preserve">
+    <value>Events</value>
+  </data>
+  <data name="ResourceEventsView_Source" xml:space="preserve">
+    <value>Source</value>
+  </data>
+  <data name="ResourceEventsView_Count" xml:space="preserve">
+    <value>Count</value>
+  </data>
+  <data name="ResourceEventsView_SubObject" xml:space="preserve">
+    <value>Sub-object</value>
+  </data>
+  <data name="ResourceEventsView_LastSeen" xml:space="preserve">
+    <value>Last seen</value>
+  </data>
   <data name="ResourceListView_SelectNamespace" xml:space="preserve">
     <value>Filter Namespace(s)</value>
   </data>
@@ -797,5 +1262,80 @@ Are you sure?</value>
   </data>
   <data name="UpdateView_Header" xml:space="preserve">
     <value>An update is available!</value>
+  </data>
+  <data name="Access Modes" xml:space="preserve">
+    <value>Access Modes</value>
+  </data>
+  <data name="Allowed Topologies" xml:space="preserve">
+    <value>Allowed Topologies</value>
+  </data>
+  <data name="Annotations" xml:space="preserve">
+    <value>Annotations</value>
+  </data>
+  <data name="Command" xml:space="preserve">
+    <value>Command</value>
+  </data>
+  <data name="Completion Mode" xml:space="preserve">
+    <value>Completion Mode</value>
+  </data>
+  <data name="Completion Time" xml:space="preserve">
+    <value>Completion Time</value>
+  </data>
+  <data name="Environment" xml:space="preserve">
+    <value>Environment</value>
+  </data>
+  <data name="Finalizers" xml:space="preserve">
+    <value>Finalizers</value>
+  </data>
+  <data name="Labels" xml:space="preserve">
+    <value>Labels</value>
+  </data>
+  <data name="Limits" xml:space="preserve">
+    <value>Limits</value>
+  </data>
+  <data name="Min Replicas" xml:space="preserve">
+    <value>Min Replicas</value>
+  </data>
+  <data name="Mounts" xml:space="preserve">
+    <value>Mounts</value>
+  </data>
+  <data name="Renew Time" xml:space="preserve">
+    <value>Renew Time</value>
+  </data>
+  <data name="Requests" xml:space="preserve">
+    <value>Requests</value>
+  </data>
+  <data name="Scope" xml:space="preserve">
+    <value>Scope</value>
+  </data>
+  <data name="Source" xml:space="preserve">
+    <value>Source</value>
+  </data>
+  <data name="Spec Hard" xml:space="preserve">
+    <value>Spec Hard</value>
+  </data>
+  <data name="Spec Scopes" xml:space="preserve">
+    <value>Spec Scopes</value>
+  </data>
+  <data name="Status Hard" xml:space="preserve">
+    <value>Status Hard</value>
+  </data>
+  <data name="Status Used" xml:space="preserve">
+    <value>Status Used</value>
+  </data>
+  <data name="Stored Versions" xml:space="preserve">
+    <value>Stored Versions</value>
+  </data>
+  <data name="Subjects" xml:space="preserve">
+    <value>Subjects</value>
+  </data>
+  <data name="TLS Entries" xml:space="preserve">
+    <value>TLS Entries</value>
+  </data>
+  <data name="Versions" xml:space="preserve">
+    <value>Versions</value>
+  </data>
+  <data name="Volume Mode" xml:space="preserve">
+    <value>Volume Mode</value>
   </data>
 </root>

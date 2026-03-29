@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:c="using:KubeUI.Avalonia.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:assets="clr-namespace:KubeUI.Avalonia.Assets;assembly=KubeUI.Avalonia"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="using:k8s.Models"
     d:DesignHeight="3000"
@@ -25,7 +26,7 @@
         <c:PropertyItem Key="Last Seen" Value="{Binding LastTimestamp}" />
         <c:PropertyItem Key="Count" Value="{Binding Count}" />
         <c:PropertyItem Key="Type" Value="{Binding Type}" />
-        <c:HeaderItem Text="Involved Object" />
+        <c:HeaderItem Text="{x:Static assets:Resources.InvolvedObject}" />
         <c:PropertyItem Key="Kind">
             <c:PropertyItem.Value>
                 <MultiBinding StringFormat="{}{0}/{1}">

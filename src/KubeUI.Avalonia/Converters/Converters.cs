@@ -1,3 +1,4 @@
+using Avalonia.Media;
 using Avalonia.Data.Converters;
 using k8s;
 using k8s.Models;
@@ -49,6 +50,43 @@ public sealed class PropertyItemValueConverter : IValueConverter
         }
 
         return value.ToString() ?? string.Empty;
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public sealed class EventWarningForegroundConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        var isWarning = value is bool flag
+            ? flag
+            : string.Equals(value?.ToString(), "Warning", StringComparison.Ordinal);
+
+        return isWarning ? Brushes.Red : null;
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public sealed class ResourceLabelConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is null || value == AvaloniaProperty.UnsetValue)
+        {
+            return string.Empty;
+        }
+
+        string key = value.ToString() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return string.Empty;
+        }
+
+        return Assets.Resources.ResourceManager.GetString(key, CultureInfo.CurrentUICulture) ?? key;
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

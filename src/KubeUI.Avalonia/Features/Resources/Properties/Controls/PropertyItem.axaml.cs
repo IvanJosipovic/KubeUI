@@ -1,4 +1,4 @@
-namespace KubeUI.Avalonia.Controls;
+namespace KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 public partial class PropertyItem : UserControl
 {

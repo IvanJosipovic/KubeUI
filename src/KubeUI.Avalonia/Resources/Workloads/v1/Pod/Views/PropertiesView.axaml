@@ -107,9 +107,6 @@
             <ItemsControl ItemTemplate="{StaticResource V1ContainerTemplate}" ItemsSource="{Binding Spec.Containers}" />
         </c:ExpandableSection>
 
-        <c:ExpandableSection Header="Events" IsExpanded="True">
-            <TextBlock Text="No events found" />
-        </c:ExpandableSection>
     </StackPanel>
 </UserControl>
 

@@ -1,0 +1,45 @@
+<UserControl
+    x:Class="KubeUI.Avalonia.Controls.ResourceEventsView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="using:KubeUI.Avalonia.Assets"
+    xmlns:c="using:KubeUI.Avalonia.Controls"
+    xmlns:converters="using:KubeUI.Avalonia.Converters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:KubeUI.Avalonia.Controls"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:KubeUI.Avalonia.Controls"
+    d:DesignHeight="600"
+    d:DesignWidth="400"
+    x:DataType="local:ResourceEventsView"
+    mc:Ignorable="d">
+    <UserControl.Resources>
+        <converters:EventWarningForegroundConverter x:Key="EventWarningForegroundConverter" />
+    </UserControl.Resources>
+    <StackPanel
+        IsVisible="{Binding HasItems, RelativeSource={RelativeSource AncestorType=local:ResourceEventsView}}"
+        Spacing="8">
+        <c:HeaderItem Text="{x:Static assets:Resources.ResourceEventsView_Title}" />
+        <ItemsControl ItemsSource="{Binding Items, RelativeSource={RelativeSource AncestorType=local:ResourceEventsView}}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="models:ResourceEventItemViewModel">
+                    <Border Classes="card" Margin="0,0,0,12" Padding="12">
+                        <StackPanel Spacing="8">
+                            <TextBlock
+                                FontWeight="SemiBold"
+                                Foreground="{Binding IsWarning, Converter={StaticResource EventWarningForegroundConverter}}"
+                                Text="{Binding Message}"
+                                TextWrapping="Wrap" />
+                            <StackPanel Spacing="0">
+                                <c:PropertyItem Key="{x:Static assets:Resources.ResourceEventsView_Source}" Value="{Binding Source}" />
+                                <c:PropertyItem Key="{x:Static assets:Resources.ResourceEventsView_Count}" Value="{Binding Count}" />
+                                <c:PropertyItem Key="{x:Static assets:Resources.ResourceEventsView_SubObject}" Value="{Binding SubObject}" />
+                                <c:PropertyItem Key="{x:Static assets:Resources.ResourceEventsView_LastSeen}" Value="{Binding LastSeen}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </StackPanel>
+</UserControl>

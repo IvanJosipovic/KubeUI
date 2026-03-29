@@ -4,7 +4,7 @@ using KubeUI.Kubernetes;
 using KubeUI.Avalonia.Resources;
 using KubernetesClient.Informer.Client;
 
-namespace KubeUI.Avalonia.ViewModels;
+namespace KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
 
 public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
