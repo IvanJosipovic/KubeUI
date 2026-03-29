@@ -1,5 +1,5 @@
 <UserControl
-    x:Class="KubeUI.Avalonia.Views.PodPropertiesView"
+    x:Class="KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views.PropertiesView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:c="using:KubeUI.Avalonia.Controls"

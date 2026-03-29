@@ -4,6 +4,7 @@ using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
 using k8s.Models;
+using KubeUI.Avalonia.Resources.Workloads.v1.Deployment.Views;
 
 namespace KubeUI.Avalonia.Resources.Workloads;
 
@@ -54,6 +55,8 @@ public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment
             },
         ];
     }
+
+    public override Control[] Properties(V1Deployment resource) => [new PropertiesView()];
 }
 
 

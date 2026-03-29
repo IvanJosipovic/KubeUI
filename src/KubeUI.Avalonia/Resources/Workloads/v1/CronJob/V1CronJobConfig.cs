@@ -1,4 +1,6 @@
+using Avalonia.Controls;
 using k8s.Models;
+using KubeUI.Avalonia.Resources.Workloads.v1.CronJob.Views;
 
 namespace KubeUI.Avalonia.Resources.Workloads;
 
@@ -41,5 +43,7 @@ public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
             AgeColumn(),
         ];
     }
+
+    public override Control[] Properties(V1CronJob resource) => [new PropertiesView()];
 }
 

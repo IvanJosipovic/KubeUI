@@ -1,11 +1,11 @@
 using Avalonia.Controls;
 using k8s.Models;
 
-namespace KubeUI.Avalonia.Views;
+namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
 
-public partial class PodPropertiesView : UserControl
+public partial class PropertiesView : UserControl
 {
-    public PodPropertiesView()
+    public PropertiesView()
     {
         InitializeComponent();
 #if DEBUG

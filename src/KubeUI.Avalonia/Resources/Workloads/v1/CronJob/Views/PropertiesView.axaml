@@ -1,0 +1,25 @@
+<UserControl
+    x:Class="KubeUI.Avalonia.Resources.Workloads.v1.CronJob.Views.PropertiesView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="using:KubeUI.Avalonia.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:k8s.Models"
+    d:DesignHeight="400"
+    d:DesignWidth="500"
+    x:DataType="models:V1CronJob"
+    mc:Ignorable="d">
+    <StackPanel>
+        <c:PropertyItem Key="Schedule" Value="{Binding Spec.Schedule}" />
+        <c:PropertyItem Key="Suspend" Value="{Binding Spec.Suspend}" />
+        <c:PropertyItem Key="Concurrency Policy" Value="{Binding Spec.ConcurrencyPolicy}" />
+        <c:PropertyItem Key="Successful History Limit" Value="{Binding Spec.SuccessfulJobsHistoryLimit}" />
+        <c:PropertyItem Key="Failed History Limit" Value="{Binding Spec.FailedJobsHistoryLimit}" />
+        <c:PropertyItem Key="Starting Deadline Seconds" Value="{Binding Spec.StartingDeadlineSeconds}" />
+        <c:PropertyItem Key="Time Zone" Value="{Binding Spec.TimeZone}" />
+        <c:PropertyItem Key="Active Jobs" Value="{Binding Status.Active.Count}" />
+        <c:PropertyItem Key="Last Schedule Time" Value="{Binding Status.LastScheduleTime}" />
+        <c:PropertyItem Key="Last Successful Time" Value="{Binding Status.LastSuccessfulTime}" />
+    </StackPanel>
+</UserControl>

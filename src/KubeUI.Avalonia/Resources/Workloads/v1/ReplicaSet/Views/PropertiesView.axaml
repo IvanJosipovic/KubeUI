@@ -1,0 +1,24 @@
+<UserControl
+    x:Class="KubeUI.Avalonia.Resources.Workloads.v1.ReplicaSet.Views.PropertiesView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="using:KubeUI.Avalonia.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:k8s.Models"
+    d:DesignHeight="400"
+    d:DesignWidth="500"
+    x:DataType="models:V1ReplicaSet"
+    mc:Ignorable="d">
+    <StackPanel>
+        <c:PropertyItem Key="Desired Replicas" Value="{Binding Spec.Replicas}" />
+        <c:PropertyItem Key="Current Replicas" Value="{Binding Status.Replicas}" />
+        <c:PropertyItem Key="Ready Replicas" Value="{Binding Status.ReadyReplicas}" />
+        <c:PropertyItem Key="Available Replicas" Value="{Binding Status.AvailableReplicas}" />
+        <c:PropertyItem Key="Fully Labeled Replicas" Value="{Binding Status.FullyLabeledReplicas}" />
+        <c:PropertyItem Key="Min Ready Seconds" Value="{Binding Spec.MinReadySeconds}" />
+        <c:PropertyItem Key="Selector Labels" Value="{Binding Spec.Selector.MatchLabels.Count}" />
+        <c:PropertyItem Key="Observed Generation" Value="{Binding Status.ObservedGeneration}" />
+        <c:PropertyItem Key="Conditions" Value="{Binding Status.Conditions.Count}" />
+    </StackPanel>
+</UserControl>

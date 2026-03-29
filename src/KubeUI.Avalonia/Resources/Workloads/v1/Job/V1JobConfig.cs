@@ -1,4 +1,6 @@
+using Avalonia.Controls;
 using k8s.Models;
+using KubeUI.Avalonia.Resources.Workloads.v1.Job.Views;
 
 namespace KubeUI.Avalonia.Resources.Workloads;
 
@@ -29,5 +31,7 @@ public sealed partial class V1JobConfig : ResourceConfigBase<V1Job>
             },
         ];
     }
+
+    public override Control[] Properties(V1Job resource) => [new PropertiesView()];
 }
 
