@@ -1,0 +1,152 @@
+<UserControl
+    x:Class="KubeUI.Avalonia.Views.ResourceListView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="using:KubeUI.Avalonia.Assets"
+    xmlns:behaviors="using:KubeUI.Avalonia.Behaviors"
+    xmlns:converters="using:KubeUI.Avalonia.Converters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:ic="using:FluentIcons.Avalonia"
+    xmlns:local="using:KubeUI.Avalonia.Views"
+    xmlns:models="using:k8s.Models"
+    xmlns:u="https://irihi.tech/ursa"
+    xmlns:ursa="clr-namespace:Ursa.Controls"
+    xmlns:viewmodels="using:KubeUI.Avalonia.ViewModels"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    x:DataType="viewmodels:IResourceListViewModel">
+    <Grid RowDefinitions="Auto,*">
+        <!--  Top Bar  -->
+        <Grid Grid.Row="0"
+            MinHeight="32"
+            Margin="0,2,0,2"
+            ColumnDefinitions="Auto,Auto,*,Auto">
+            <Button
+                Grid.Column="0"
+                Margin="2,0,0,0"
+                Command="{Binding ResourceConfig.NewResourceCommand}"
+                IsVisible="{Binding ResourceConfig.ShowNewResource}"
+                ToolTip.Tip="{x:Static assets:Resources.ResourceListView_NewResource}">
+                <ic:FluentIcon Icon="AddSquare" />
+            </Button>
+
+            <Label
+                Grid.Column="1"
+                Margin="2,0,0,0"
+                VerticalContentAlignment="Center"
+                Content="{Binding ItemCount, StringFormat={x:Static assets:Resources.ResourceListView_ItemsFormat}}" />
+
+            <StackPanel
+                Grid.Column="3"
+                MaxWidth="456"
+                HorizontalAlignment="Right"
+                Orientation="Horizontal">
+                <TextBox
+                    Width="200"
+                    Margin="0,0,2,0"
+                    MinWidth="120"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    VerticalContentAlignment="Center"
+                    Background="Transparent"
+                    Text="{Binding SearchQuery}"
+                    Watermark="{x:Static assets:Resources.ResourceListView_SearchWatermark}" />
+
+                <u:MultiComboBox
+                    Width="200"
+                    MaxHeight="20"
+                    Margin="0,0,2,0"
+                    MinWidth="140"
+                    HorizontalAlignment="Stretch"
+                    Classes="ClearButton"
+                    IsVisible="{Binding ResourceConfig.IsNamespaced}"
+                    ItemsSource="{Binding Cluster.Namespaces}"
+                    SelectedItems="{Binding SelectedNamespaces}"
+                    Watermark="{x:Static assets:Resources.ResourceListView_SelectNamespace}">
+                    <u:MultiComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="models:V1Namespace">
+                            <TextBlock Text="{Binding Metadata.Name}" />
+                        </DataTemplate>
+                    </u:MultiComboBox.ItemTemplate>
+                    <u:MultiComboBox.SelectedItemTemplate>
+                        <DataTemplate x:DataType="models:V1Namespace">
+                            <TextBlock Text="{Binding Metadata.Name}" />
+                        </DataTemplate>
+                    </u:MultiComboBox.SelectedItemTemplate>
+                    <u:MultiComboBox.Styles />
+                </u:MultiComboBox>
+
+                <ToggleButton
+                    Margin="0,0,2,0"
+                    IsChecked="{Binding IsNamespaceSelectionLinked}"
+                    IsVisible="{Binding ResourceConfig.IsNamespaced}"
+                    ToolTip.Tip="{x:Static assets:Resources.ResourceListView_NamespaceLink}">
+                    <ic:FluentIcon Icon="Link" />
+                </ToggleButton>
+            </StackPanel>
+        </Grid>
+
+        <!--  Data Grid  -->
+        <DataGrid x:Name="PART_Grid" Grid.Row="1"
+            CanUserReorderColumns="True"
+            CanUserResizeColumns="True"
+            CanUserSortColumns="True"
+            ColumnDefinitionsSource="{Binding ColumnDefinitions}"
+            FilteringModel="{Binding FilteringModel, Mode=OneWay}"
+            GridLinesVisibility="All"
+            IsReadOnly="True"
+            ItemsSource="{Binding View}"
+            MinColumnWidth="90"
+            SearchModel="{Binding SearchModel, Mode=OneWay}"
+            Selection="{Binding SelectionModel, Mode=OneWay}"
+            SelectionMode="Extended"
+            SortingModel="{Binding SortingModel, Mode=OneWay}"
+            UseLogicalScrollable="True">
+            <Interaction.Behaviors>
+                <behaviors:ResourceListDoubleTapBehavior />
+                <behaviors:ResourceListPersistenceBehavior />
+            </Interaction.Behaviors>
+            <DataGrid.ContextMenu>
+                <ContextMenu ItemsSource="{Binding ContextMenuItems}">
+                    <ContextMenu.Styles>
+                        <Style Selector="MenuItem" x:DataType="viewmodels:MenuItemViewModel">
+                            <Setter Property="Header" Value="{Binding Header}" />
+                            <Setter Property="Command" Value="{Binding Command}" />
+                            <Setter Property="CommandParameter" Value="{Binding CommandParameter}" />
+                            <Setter Property="ItemsSource" Value="{Binding Items}" />
+                            <Setter Property="Classes.separator" Value="{Binding IsSeparator}" />
+                            <Setter Property="Icon">
+                                <Template>
+                                    <Panel>
+                                        <ic:FluentIcon Icon="{Binding FluentIcon}" IsVisible="{Binding FluentIcon, Converter={x:Static converters:Converters.NotNull}}" />
+                                        <PathIcon Data="{Binding IconResource, Converter={x:Static converters:StaticResourceConverter.Instance}}" IsVisible="{Binding IconResource, Converter={x:Static converters:Converters.NotNull}}" />
+                                    </Panel>
+                                </Template>
+                            </Setter>
+                        </Style>
+                        <Style Selector="MenuItem.separator">
+                            <Setter Property="Template">
+                                <ControlTemplate>
+                                    <Separator />
+                                </ControlTemplate>
+                            </Setter>
+                        </Style>
+                    </ContextMenu.Styles>
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+            <DataGrid.RowHeightEstimator>
+                <DefaultRowHeightEstimator />
+            </DataGrid.RowHeightEstimator>
+            <DataGrid.KeyBindings>
+                <KeyBinding
+                    Command="{Binding ResourceConfig.ViewCommand}"
+                    CommandParameter="{Binding SelectionModel.SelectedItems}"
+                    Gesture="Enter" />
+            </DataGrid.KeyBindings>
+        </DataGrid>
+    </Grid>
+</UserControl>
+
+
+
+

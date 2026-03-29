@@ -1,8 +1,6 @@
 <Solution>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
-    <File Path=".github/renovate.json" />
-    <File Path=".github/workflows/cicd.yml" />
     <File Path=".releaserc.json" />
     <File Path=".vsconfig" />
     <File Path="docker-compose.yaml" />
@@ -10,9 +8,12 @@
     <File Path="README.md" />
     <File Path="Settings.XamlStyler" />
   </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="tests/KubeUI.Avalonia.Tests/KubeUI.Avalonia.Tests.csproj" />
+    <Project Path="tests/KubeUI.Kubernetes.Tests/KubeUI.Kubernetes.Tests.csproj" />
+  </Folder>
   <Project Path="benchmarks/KubeUI.Benchmarks/KubeUI.Benchmarks.csproj" />
   <Project Path="src/KubeUI.Desktop/KubeUI.Desktop.csproj" />
-  <Project Path="src/KubeUI/KubeUI.csproj" />
-  <Project Path="tests/KubeUI.Tests/KubeUI.Tests.csproj" />
+  <Project Path="src/KubeUI.Kubernetes/KubeUI.Kubernetes.csproj" />
+  <Project Path="src/KubeUI.Avalonia/KubeUI.Avalonia.csproj" />
 </Solution>
-

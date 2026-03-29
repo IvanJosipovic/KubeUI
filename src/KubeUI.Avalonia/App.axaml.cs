@@ -1,0 +1,146 @@
+using System.Diagnostics;
+using Avalonia.Data.Core.Plugins;
+using Avalonia.Markup.Xaml;
+using Dock.Model.Controls;
+using Dock.Model.Core;
+using k8s;
+using KubeUI.Kubernetes;
+using KubeUI.Avalonia.ViewModels;
+using KubeUI.Avalonia.Views;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
+
+namespace KubeUI.Avalonia;
+
+public partial class App : Application
+{
+    public IServiceProvider Services { get; set; }
+
+    public static TopLevel TopLevel { get; private set; }
+
+    private readonly ILogger<App> _logger;
+
+    public App(IServiceProvider serviceProvider)
+    {
+        Services = serviceProvider;
+        _logger = Services.GetRequiredService<ILogger<App>>();
+
+        Resources["AppearanceSettings"] = Services.GetRequiredService<ISettingsService>().Appearance;
+        Resources["DataGridRowHeight"] = Convert.ToDouble(Services.GetRequiredService<ISettingsService>().Appearance.ListRowHeight);
+        Resources["DataGridColumnHeaderMinHeight"] = Convert.ToDouble(Services.GetRequiredService<ISettingsService>().Appearance.ListRowHeight + 4m);
+        Resources["DataGridFontSize"] = Convert.ToDouble(Services.GetRequiredService<ISettingsService>().Appearance.FontSize);
+        Resources[typeof(IServiceProvider)] = Services;
+        DataTemplates.Add(Services.GetRequiredService<ViewLocator>());
+
+        AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+        Dispatcher.UIThread.UnhandledException += OnUnhandledException;
+        TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
+        KubernetesClientConfiguration.ExecStdError += KubernetesClientConfiguration_ExecStdError;
+    }
+
+    public override void Initialize()
+    {
+        AvaloniaXamlLoader.Load(this);
+
+#if DEBUG
+        this.AttachDeveloperTools();
+#endif
+
+        _logger.LogInformation("Application Started");
+        Services.GetRequiredService<Instrumentation>().AppOpened.Add(1);
+    }
+
+    public override void OnFrameworkInitializationCompleted()
+    {
+        DisableAvaloniaDataAnnotationValidation();
+
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            desktop.MainWindow = Services.GetRequiredService<MainWindow>();
+            TopLevel = TopLevel.GetTopLevel(desktop.MainWindow)!;
+            desktop.ShutdownRequested += (_, _) => GracefulShutdown();
+        }
+        else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
+        {
+            singleViewPlatform.MainView = Services.GetRequiredService<MainView>();
+            TopLevel = TopLevel.GetTopLevel(singleViewPlatform.MainView)!;
+        }
+
+        Services.GetRequiredService<ISettingsService>().ApplySettings();
+
+        base.OnFrameworkInitializationCompleted();
+    }
+
+    private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+        _logger.LogCritical(e.ExceptionObject as Exception, "Unhandled domain exception (terminating: {IsTerminating})", e.IsTerminating);
+        GracefulShutdown();
+    }
+
+    private void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+    {
+        _logger.LogError(e.Exception, "Unobserved task exception");
+        e.SetObserved();
+    }
+
+    private void KubernetesClientConfiguration_ExecStdError(object? sender, DataReceivedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(e.Data))
+        {
+            _logger.LogError("Cluster ExecStdError: no data");
+            return;
+        }
+
+        _logger.LogError("Cluster ExecStdError: {Data}", e.Data);
+
+        Dispatcher.UIThread.Post(() => ShowClusterError(e.Data));
+    }
+
+    private void ShowClusterError(string error)
+    {
+        var factory = Services.GetRequiredService<IFactory>();
+        var documents = factory.GetDockable<IDocumentDock>("Documents");
+        if (documents == null)
+        {
+            return;
+        }
+
+        if (factory.FindDockableById("cluster-error") is ClusterErrorViewModel existing)
+        {
+            existing.Error = error;
+            factory.SetActiveDockable(existing);
+            factory.SetFocusedDockable(documents, existing);
+            return;
+        }
+
+        var vm = Services.GetRequiredService<ClusterErrorViewModel>();
+        vm.Id = "cluster-error";
+        vm.Error = error;
+        factory.AddDockable(documents, vm);
+        factory.SetActiveDockable(vm);
+        factory.SetFocusedDockable(documents, vm);
+    }
+
+    private void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+    {
+        _logger.LogCritical(e.Exception, "UI Thread Unhandled Exception");
+        e.Handled = true;
+    }
+
+    private void GracefulShutdown()
+    {
+        KubernetesClientConfiguration.ExecStdError -= KubernetesClientConfiguration_ExecStdError;
+        Services.GetService<LoggerProvider>()?.ForceFlush();
+        Services.GetService<MeterProvider>()?.ForceFlush();
+    }
+
+    private static void DisableAvaloniaDataAnnotationValidation()
+    {
+        var dataValidationPluginsToRemove = BindingPlugins.DataValidators.OfType<DataAnnotationsValidationPlugin>().ToArray();
+
+        foreach (var plugin in dataValidationPluginsToRemove)
+        {
+            BindingPlugins.DataValidators.Remove(plugin);
+        }
+    }
+}

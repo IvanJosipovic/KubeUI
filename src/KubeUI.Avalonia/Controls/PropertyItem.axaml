@@ -1,0 +1,34 @@
+<UserControl
+    x:Class="KubeUI.Avalonia.Controls.PropertyItem"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:KubeUI.Avalonia.Controls"
+    HorizontalAlignment="Stretch"
+    VerticalAlignment="Stretch"
+    d:DesignHeight="40"
+    d:DesignWidth="400"
+    x:DataType="local:PropertyItem">
+    <UserControl.Styles>
+        <Style Selector="SelectableTextBlock">
+            <Setter Property="Padding" Value="5" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid VerticalAlignment="Top" ColumnDefinitions="*,2*">
+        <SelectableTextBlock Grid.Row="0"
+            Grid.Column="0"
+            Text="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}}"
+            TextWrapping="NoWrap"
+            ToolTip.Tip="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}}" />
+        <ScrollViewer Grid.Row="0"
+            Grid.Column="1"
+            MaxHeight="200"
+            VerticalScrollBarVisibility="Auto">
+            <SelectableTextBlock Text="{Binding Value, RelativeSource={RelativeSource AncestorType=local:PropertyItem}}" TextWrapping="Wrap" />
+        </ScrollViewer>
+    </Grid>
+</UserControl>
+
+
+
