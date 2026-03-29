@@ -1,0 +1,61 @@
+<UserControl
+    x:Class="KubeUI.Avalonia.Views.ClusterListView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="clr-namespace:KubeUI.Avalonia.Assets"
+    xmlns:client="using:KubeUI.Kubernetes"
+    xmlns:controls="clr-namespace:KubeUI.Avalonia.Controls"
+    xmlns:converters="using:KubeUI.Avalonia.Converters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:ic="using:FluentIcons.Avalonia"
+    xmlns:local="using:KubeUI.Avalonia.Views"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="clr-namespace:KubeUI.Avalonia.ViewModels"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    x:DataType="vm:ClusterListViewModel"
+    mc:Ignorable="d">
+
+    <Design.DataContext>
+        <vm:ClusterListViewModel />
+    </Design.DataContext>
+
+    <Grid>
+        <DataGrid x:Name="ClustersGrid"
+            CanUserReorderColumns="True"
+            CanUserResizeColumns="True"
+            GridLinesVisibility="All"
+            IsReadOnly="True"
+            ItemsSource="{Binding ClusterCatalog.Clusters}"
+            SelectedItem="{Binding SelectedItem}">
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem
+                        Command="{Binding DeleteCommand}"
+                        CommandParameter="{Binding SelectedItem}"
+                        Header="{x:Static assets:Resources.ClusterListView_Delete}">
+                        <MenuItem.Icon>
+                            <ic:FluentIcon Icon="Delete" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+            <DataGrid.Columns>
+                <controls:MyDataGridTextColumn
+                    Width="*"
+                    Binding="{Binding Name}"
+                    Header="{x:Static assets:Resources.ClusterListView_Name}"
+                    SortDirection="Ascending" />
+                <controls:MyDataGridTextColumn
+                    Binding="{Binding KubeConfigPath}"
+                    Header="{x:Static assets:Resources.ClusterListView_KubeConfig}" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>
+
+
+
+
+
+

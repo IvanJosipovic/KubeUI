@@ -22,11 +22,9 @@ jobs:
   build-test:
     name: Build & Test
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v6
-        with:
-          submodules: 'true'
 
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v5
@@ -39,24 +37,29 @@ jobs:
       - name: Test
         run: dotnet test -c Release --collect:"XPlat Code Coverage" --no-build --logger "trx;LogFileName=test-results.trx"
 
+      - name: Test Kubernetes E2E
+        run: dotnet test tests/KubeUI.Kubernetes.Tests/KubeUI.Kubernetes.Tests.csproj -c Release --no-build --logger "trx;LogFileName=kind-test-results.trx"
+        env:
+          KUBEUI_RUN_KIND_TESTS: 1
+
       - name: Test Report
-        uses: dorny/test-reporter@v2
+        uses: dorny/test-reporter@v3
         if: success() || failure()
         with:
           name: KubeUI Tests
-          path: tests/**/TestResults/test-results.trx
+          path: tests/**/TestResults/*.trx
           reporter: dotnet-trx
 
       - name: Coverage
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.cobertura.xml
           fail_ci_if_error: false
 
-      - name: Run Benchmark
-        working-directory: benchmarks/KubeUI.Benchmarks
-        run: dotnet run -c Release
+    #   - name: Run Benchmark
+    #     working-directory: benchmarks/KubeUI.Benchmarks
+    #     run: dotnet run -c Release
 
   semantic-release:
     name: Bump Version
@@ -70,7 +73,7 @@ jobs:
     - uses: actions/checkout@v6
 
     - name: Semantic Release
-      uses: cycjimmy/semantic-release-action@v4
+      uses: cycjimmy/semantic-release-action@v6.0.0
       id: semantic
       with:
         dry_run: true
@@ -88,11 +91,11 @@ jobs:
           - rid: win-x64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
-            packParam: --icon src/KubeUI/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
+            packParam: --icon src/KubeUI.Avalonia/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
           - rid: win-arm64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
-            packParam: --icon src/KubeUI/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
+            packParam: --icon src/KubeUI.Avalonia/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
           - rid: linux-x64
             fileName: KubeUI.Desktop
             runs-on: ubuntu-latest
@@ -104,11 +107,11 @@ jobs:
           - rid: osx-x64
             fileName: KubeUI.Desktop
             runs-on: macos-latest
-            packParam: --icon src/KubeUI/Assets/icon.icns --plist src/KubeUI.Desktop/info.plist
+            packParam: --icon src/KubeUI.Avalonia/Assets/icon.icns --plist src/KubeUI.Desktop/info.plist
           - rid: osx-arm64
             fileName: KubeUI.Desktop
             runs-on: macos-latest
-            packParam: --icon src/KubeUI/Assets/icon.icns --plist src/KubeUI.Desktop/info.plist
+            packParam: --icon src/KubeUI.Avalonia/Assets/icon.icns --plist src/KubeUI.Desktop/info.plist
     steps:
       - uses: actions/checkout@v6
         with:
@@ -126,7 +129,7 @@ jobs:
       - name: Install Velopack
         shell: pwsh
         run: |
-         $csprojPath = "src/KubeUI/KubeUI.csproj"
+         $csprojPath = "src/KubeUI.Avalonia/KubeUI.Avalonia.csproj"
 
          [xml]$csprojXml = Get-Content -Path $csprojPath
 
@@ -146,7 +149,7 @@ jobs:
 
       - name: Replace single file
         if: matrix.runs-on == 'macos-latest'
-        uses: richardrigutins/replace-in-files@v2
+        uses: richardrigutins/replace-in-files@v3
         with:
           files: 'src/KubeUI.Desktop/info.plist'
           search-text: '{{version}}'
@@ -154,7 +157,7 @@ jobs:
 
       - name: Azure Login
         if: matrix.runs-on == 'windows-latest'
-        uses: azure/login@v2
+        uses: azure/login@v3
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -216,6 +219,7 @@ jobs:
         path: dist/
 
     - name: Semantic Release
-      uses: cycjimmy/semantic-release-action@v4
+      uses: cycjimmy/semantic-release-action@v6.0.0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

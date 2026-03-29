@@ -1,0 +1,786 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ClusterErrorView_Header" xml:space="preserve">
+    <value>Error connecting to the cluster</value>
+  </data>
+  <data name="HomeView_Header" xml:space="preserve">
+    <value>Welcome to KubeUI!</value>
+  </data>
+  <data name="AboutView_CreatedBy" xml:space="preserve">
+    <value>Created by Ivan Josipovic</value>
+  </data>
+  <data name="AboutView_Version_StringFormat" xml:space="preserve">
+    <value>Version: {0}</value>
+  </data>
+  <data name="AboutView_Version_FallbackValue" xml:space="preserve">
+    <value>Unknown Version</value>
+  </data>
+  <data name="AboutView_Title" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="MainWindow_Title" xml:space="preserve">
+    <value>KubeUI</value>
+  </data>
+  <data name="AboutView_ContactEmailContent" xml:space="preserve">
+    <value>admin@KubeUI.com</value>
+  </data>
+  <data name="AboutView_ContactEmailUri" xml:space="preserve">
+    <value>mailto:admin@KubeUI.com</value>
+  </data>
+  <data name="AboutView_WebsiteContent" xml:space="preserve">
+    <value>KubeUI.com</value>
+  </data>
+  <data name="AboutView_WebsiteUri" xml:space="preserve">
+    <value>https://KubeUI.com</value>
+  </data>
+  <data name="MainViewModel_CheckForUpdates_Content" xml:space="preserve">
+    <value>Update and restart now?</value>
+  </data>
+  <data name="MainViewModel_CheckForUpdates_Secondary" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="MainViewModel_CheckForUpdates_Title" xml:space="preserve">
+    <value>New Update Available</value>
+  </data>
+  <data name="MainViewModel_CheckForUpdates_Updating_Content" xml:space="preserve">
+    <value>Please wait...</value>
+  </data>
+  <data name="MainViewModel_CheckForUpdates_Updating_Title" xml:space="preserve">
+    <value>Updating</value>
+  </data>
+  <data name="MainViewModel_CheckForUpdates_Primary" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="MainView_Menu_File" xml:space="preserve">
+    <value>_File</value>
+  </data>
+  <data name="MainView_Menu_File_Exit" xml:space="preserve">
+    <value>_Exit</value>
+  </data>
+  <data name="MainView_Menu_Help" xml:space="preserve">
+    <value>_Help</value>
+  </data>
+  <data name="MainView_Menu_Help_About" xml:space="preserve">
+    <value>_About</value>
+  </data>
+  <data name="MainView_Menu_Window" xml:space="preserve">
+    <value>_Window</value>
+  </data>
+  <data name="MainView_Menu_Window_ResetLayout" xml:space="preserve">
+    <value>_Reset Layout</value>
+  </data>
+  <data name="NavigationViewModel_LoadFolder" xml:space="preserve">
+    <value>Load Yamls in Folder</value>
+  </data>
+  <data name="NavigationViewModel_LoadYaml" xml:space="preserve">
+    <value>Load Yaml</value>
+  </data>
+  <data name="PodConsoleViewModel_Title" xml:space="preserve">
+    <value>Pod Console</value>
+  </data>
+  <data name="PodLogsViewModel_Title" xml:space="preserve">
+    <value>Pod Logs</value>
+  </data>
+  <data name="PodLogsView_AutoScrollToBottom" xml:space="preserve">
+    <value>Auto-scroll to bottom</value>
+  </data>
+  <data name="PodLogsView_Previous" xml:space="preserve">
+    <value>Show last container</value>
+  </data>
+  <data name="PodLogsView_Timestamps" xml:space="preserve">
+    <value>Show timestamps</value>
+  </data>
+  <data name="ResourcePropertiesViewModel_Title" xml:space="preserve">
+    <value>Properties</value>
+  </data>
+  <data name="ResourceYamlViewer_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="ResourceYamlViewer_DryRun" xml:space="preserve">
+    <value>Dry Run</value>
+  </data>
+  <data name="ResourceYamlViewer_DryRunFailed" xml:space="preserve">
+    <value>Dry run failed</value>
+  </data>
+  <data name="ResourceYamlViewer_DryRunSucceeded" xml:space="preserve">
+    <value>Dry run succeeded</value>
+  </data>
+  <data name="ResourceYamlViewer_DryRunSucceededMessage" xml:space="preserve">
+    <value>The server accepted the manifest using dry-run.</value>
+  </data>
+  <data name="ResourceYamlViewer_SaveFailed" xml:space="preserve">
+    <value>Save failed</value>
+  </data>
+  <data name="ResourceYamlViewer_SaveSucceeded" xml:space="preserve">
+    <value>Save succeeded</value>
+  </data>
+  <data name="ResourceYamlViewer_SaveSucceededMessage" xml:space="preserve">
+    <value>The manifest was saved successfully.</value>
+  </data>
+  <data name="ResourceYamlViewer_Edit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="ResourceYamlViewer_HideNoisyFields" xml:space="preserve">
+    <value>Hide noisy fields</value>
+  </data>
+  <data name="ResourceYamlViewer_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="ResourceYamlViewer_ValidationFailed" xml:space="preserve">
+    <value>Validation failed</value>
+  </data>
+  <data name="ResourceYamlViewer_Undo" xml:space="preserve">
+    <value>Undo</value>
+  </data>
+  <data name="ResourceYamlViewModel_Title" xml:space="preserve">
+    <value>Yaml</value>
+  </data>
+  <data name="ResourceListViewModel_Delete_Content" xml:space="preserve">
+    <value>This will delete {0} items.
+Are you sure?</value>
+  </data>
+  <data name="ResourceListViewModel_Delete_Primary" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="ResourceListViewModel_Delete_Secondary" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="ResourceListViewModel_Delete_Title" xml:space="preserve">
+    <value>Warning</value>
+  </data>
+  <data name="ResourceListViewModel_PortForward_Content" xml:space="preserve">
+    <value>Port {0} was forwarded to {1}.</value>
+  </data>
+  <data name="ResourceListViewModel_PortForward_Primary" xml:space="preserve">
+    <value>Open in Browser</value>
+  </data>
+  <data name="ResourceListViewModel_PortForward_Secondary" xml:space="preserve">
+    <value>Ok</value>
+  </data>
+  <data name="ResourceListViewModel_PortForward_Title" xml:space="preserve">
+    <value>Port Forward</value>
+  </data>
+  <data name="ClusterErrorViewModel_Title" xml:space="preserve">
+    <value>Cluster Error</value>
+  </data>
+  <data name="ClusterListViewModel_Title" xml:space="preserve">
+    <value>Clusters</value>
+  </data>
+  <data name="ClusterViewModel_Title" xml:space="preserve">
+    <value>Cluster</value>
+  </data>
+  <data name="HomeViewModel_Title" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="NavigationViewModel_Title" xml:space="preserve">
+    <value>Navigation</value>
+  </data>
+  <data name="NavigationView_ToolTip_ClickToConnect" xml:space="preserve">
+    <value>Click to Connect</value>
+  </data>
+  <data name="NavigationView_ToolTip_Connecting" xml:space="preserve">
+    <value>Connecting...</value>
+  </data>
+  <data name="NavigationView_ToolTip_Errored" xml:space="preserve">
+    <value>Errored</value>
+  </data>
+  <data name="NavigationView_ToolTip_Connected" xml:space="preserve">
+    <value>Connected</value>
+  </data>
+  <data name="NavigationView_ContextMenu_Connect" xml:space="preserve">
+    <value>Connect</value>
+  </data>
+  <data name="NavigationView_ContextMenu_Disconnect" xml:space="preserve">
+    <value>Disconnect</value>
+  </data>
+  <data name="NavigationView_ContextMenu_Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="NavigationView_ContextMenu_Open" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="NavigationView_ContextMenu_OpenNewTab" xml:space="preserve">
+    <value>Open New Tab</value>
+  </data>
+  <data name="ResourceListView_NewResource" xml:space="preserve">
+    <value>Create a new Resource</value>
+  </data>
+  <data name="ResourceListView_NamespaceLink" xml:space="preserve">
+    <value>Linked namespace selection</value>
+  </data>
+  <data name="ResourceListView_ItemsFormat" xml:space="preserve">
+    <value>Items: {0}</value>
+  </data>
+  <data name="ResourceListView_SearchWatermark" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="VisualizationView_ItemsFormat" xml:space="preserve">
+    <value>Items: {0}</value>
+  </data>
+  <data name="VisualizationView_HideNoiseTooltip" xml:space="preserve">
+    <value>Hide noisy resources like inactive Replica Sets</value>
+  </data>
+  <data name="VisualizationView_Properties" xml:space="preserve">
+    <value>Properties</value>
+  </data>
+  <data name="VisualizationView_ViewYaml" xml:space="preserve">
+    <value>View Yaml</value>
+  </data>
+  <data name="ClusterListView_Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="ClusterListView_Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="ClusterListView_KubeConfig" xml:space="preserve">
+    <value>KubeConfig</value>
+  </data>
+  <data name="ClusterSettingsView_TitleFormat" xml:space="preserve">
+    <value>{0} Settings</value>
+  </data>
+  <data name="ClusterSettingsView_ManualNamespacesTooltip" xml:space="preserve">
+    <value>Manually specified namespaces</value>
+  </data>
+  <data name="ClusterSettingsView_NamespacesLabel" xml:space="preserve">
+    <value>Namespaces (Restart Required)</value>
+  </data>
+  <data name="ClusterSettingsView_Add" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="ClusterSettingsView_Remove" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="ClusterView_Cpu" xml:space="preserve">
+    <value>CPU</value>
+  </data>
+  <data name="ClusterView_Memory" xml:space="preserve">
+    <value>Memory</value>
+  </data>
+  <data name="ClusterView_Pods" xml:space="preserve">
+    <value>Pods</value>
+  </data>
+  <data name="ClusterView_Events" xml:space="preserve">
+    <value>Events</value>
+  </data>
+  <data name="ClusterView_CpuCapacity" xml:space="preserve">
+    <value>CPU Capacity</value>
+  </data>
+  <data name="ClusterView_CpuAllocatable" xml:space="preserve">
+    <value>CPU Allocatable</value>
+  </data>
+  <data name="ClusterView_CpuLimits" xml:space="preserve">
+    <value>CPU Limits</value>
+  </data>
+  <data name="ClusterView_CpuRequests" xml:space="preserve">
+    <value>CPU Requests</value>
+  </data>
+  <data name="ClusterView_CpuUsage" xml:space="preserve">
+    <value>CPU Usage</value>
+  </data>
+  <data name="ClusterView_MemoryCapacity" xml:space="preserve">
+    <value>Memory Capacity</value>
+  </data>
+  <data name="ClusterView_MemoryAllocatable" xml:space="preserve">
+    <value>Memory Allocatable</value>
+  </data>
+  <data name="ClusterView_MemoryLimits" xml:space="preserve">
+    <value>Memory Limits</value>
+  </data>
+  <data name="ClusterView_MemoryRequests" xml:space="preserve">
+    <value>Memory Requests</value>
+  </data>
+  <data name="ClusterView_MemoryUsage" xml:space="preserve">
+    <value>Memory Usage</value>
+  </data>
+  <data name="ClusterView_PodsCapacity" xml:space="preserve">
+    <value>Capacity</value>
+  </data>
+  <data name="ClusterView_PodsCount" xml:space="preserve">
+    <value>Count</value>
+  </data>
+  <data name="PodLogsView_PodLabel" xml:space="preserve">
+    <value>Pod:</value>
+  </data>
+  <data name="PodPropertiesView_ControlledBy" xml:space="preserve">
+    <value>Controlled By</value>
+  </data>
+  <data name="PodPropertiesView_Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="PodPropertiesView_Image" xml:space="preserve">
+    <value>Image</value>
+  </data>
+  <data name="PodPropertiesView_Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="PodPropertiesView_Node" xml:space="preserve">
+    <value>Node</value>
+  </data>
+  <data name="PodPropertiesView_PodIp" xml:space="preserve">
+    <value>Pod IP</value>
+  </data>
+  <data name="PodPropertiesView_PullPolicy" xml:space="preserve">
+    <value>Pull Policy</value>
+  </data>
+  <data name="PodPropertiesView_InitContainers" xml:space="preserve">
+    <value>Init Containers</value>
+  </data>
+  <data name="PodPropertiesView_Containers" xml:space="preserve">
+    <value>Containers</value>
+  </data>
+  <data name="PodContainerCell_NameFormat" xml:space="preserve">
+    <value>Name: {0}</value>
+  </data>
+  <data name="PodContainerCell_Stopped" xml:space="preserve">
+    <value>Stopped</value>
+  </data>
+  <data name="PodContainerCell_Starting" xml:space="preserve">
+    <value>Starting</value>
+  </data>
+  <data name="PodContainerCell_Ready" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="PodContainerCell_InitStopped" xml:space="preserve">
+    <value>Init-Stopped</value>
+  </data>
+  <data name="PodContainerCell_InitStarting" xml:space="preserve">
+    <value>Init-Starting</value>
+  </data>
+  <data name="PodContainerCell_InitReady" xml:space="preserve">
+    <value>Init-Ready</value>
+  </data>
+  <data name="PodStatusCell_Terminating" xml:space="preserve">
+    <value>Terminating</value>
+  </data>
+  <data name="PodStatusCell_Running" xml:space="preserve">
+    <value>Running</value>
+  </data>
+  <data name="PodStatusCell_PodCompleted" xml:space="preserve">
+    <value>PodCompleted</value>
+  </data>
+  <data name="PodStatusCell_Unknown" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+  <data name="SecretPropertiesView_Data" xml:space="preserve">
+    <value>Data</value>
+  </data>
+  <data name="SecretPropertiesView_Certificates" xml:space="preserve">
+    <value>Certificates</value>
+  </data>
+  <data name="PortForwarderListView_Type" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="PortForwarderListView_Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="PortForwarderListView_Namespace" xml:space="preserve">
+    <value>Namespace</value>
+  </data>
+  <data name="PortForwarderListView_Port" xml:space="preserve">
+    <value>Port</value>
+  </data>
+  <data name="PortForwarderListView_LocalPort" xml:space="preserve">
+    <value>Local Port</value>
+  </data>
+  <data name="PortForwarderListView_Connections" xml:space="preserve">
+    <value>Connections</value>
+  </data>
+  <data name="PortForwarderListView_Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="PortForwarderListView_OpenInBrowser" xml:space="preserve">
+    <value>Open in Browser</value>
+  </data>
+  <data name="PortForwarderListView_Remove" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="PortForwarderListViewModel_Remove_Content" xml:space="preserve">
+    <value>Remove the Port Forward for {0}/{1}:{2}?
+Are you sure?</value>
+  </data>
+  <data name="PortForwarderListViewModel_Remove_Primary" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="PortForwarderListViewModel_Remove_Secondary" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="PortForwarderListViewModel_Remove_Title" xml:space="preserve">
+    <value>Warning</value>
+  </data>
+  <data name="Action_Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="Action_Cut" xml:space="preserve">
+    <value>Cut</value>
+  </data>
+  <data name="Action_Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Action_Paste" xml:space="preserve">
+    <value>Paste</value>
+  </data>
+  <data name="Action_Redo" xml:space="preserve">
+    <value>Redo</value>
+  </data>
+  <data name="Action_Undo" xml:space="preserve">
+    <value>Undo</value>
+  </data>
+  <data name="PortForwarderListViewModel_Title" xml:space="preserve">
+    <value>Port Forwarding</value>
+  </data>
+  <data name="MainView_Menu_File_Clusters" xml:space="preserve">
+    <value>Clusters</value>
+  </data>
+  <data name="ClusterListViewModel_Delete_Content" xml:space="preserve">
+    <value>Remove Cluster from Kube Config: {0}</value>
+  </data>
+  <data name="ClusterListViewModel_Delete_Primary" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="ClusterListViewModel_Delete_Secondary" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="ClusterListViewModel_Delete_Title" xml:space="preserve">
+    <value>Warning</value>
+  </data>
+  <data name="MainView_Menu_Window_SwitchTheme" xml:space="preserve">
+    <value>Switch Theme</value>
+  </data>
+  <data name="MainView_Menu_File_Settings" xml:space="preserve">
+    <value>_Settings</value>
+  </data>
+  <data name="SettingsView_Title" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="SettingsView_Theme" xml:space="preserve">
+    <value>Theme</value>
+  </data>
+  <data name="SettingsView_Theme_Default" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="SettingsView_Theme_Light" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="SettingsView_Theme_Dark" xml:space="preserve">
+    <value>Dark</value>
+  </data>
+  <data name="SettingsView_Logging_Label" xml:space="preserve">
+    <value>Enable Local File Logging (Restart Required)</value>
+  </data>
+  <data name="SettingsView_Logging_ToolTip" xml:space="preserve">
+    <value>KubeUI logs to the local file system in the &lt;User Profile&gt;/.kubeui/app.log</value>
+  </data>
+  <data name="SettingsView_Telemetry_Label" xml:space="preserve">
+    <value>Enable Telemetry (Restart Required)</value>
+  </data>
+  <data name="SettingsView_Telemetry_ToolTip" xml:space="preserve">
+    <value>KubeUI gathers telemetry data to help the team improve the product.</value>
+  </data>
+  <data name="SettingsView_PreRelease_Label" xml:space="preserve">
+    <value>Pre Release Channel</value>
+  </data>
+  <data name="SettingsView_PreRelease_ToolTip" xml:space="preserve">
+    <value>Allows updates to pre-release versions of KubeUI</value>
+  </data>
+  <data name="SettingsView_FontSize_Label" xml:space="preserve">
+    <value>Font Size</value>
+  </data>
+  <data name="SettingsView_FontSize_ToolTip" xml:space="preserve">
+    <value>Font Size</value>
+  </data>
+  <data name="SettingsView_ConsoleFontSize_Label" xml:space="preserve">
+    <value>Console/Logs/Yaml Font Size</value>
+  </data>
+  <data name="SettingsView_ConsoleFontSize_ToolTip" xml:space="preserve">
+    <value>Console/Logs/Yaml Font Size</value>
+  </data>
+  <data name="SettingsView_ListRowHeight_Label" xml:space="preserve">
+    <value>List Row Height</value>
+  </data>
+  <data name="SettingsView_ListRowHeight_ToolTip" xml:space="preserve">
+    <value>List Row Height</value>
+  </data>
+  <data name="VisualizationViewModel_Title" xml:space="preserve">
+    <value>Visualization</value>
+  </data>
+  <data name="ResourcePropertiesView_Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="ResourcePropertiesView_Namespace" xml:space="preserve">
+    <value>Namespace</value>
+  </data>
+  <data name="ResourcePropertiesView_Created" xml:space="preserve">
+    <value>Created</value>
+  </data>
+  <data name="ResourceListView_SelectNamespace" xml:space="preserve">
+    <value>Filter Namespace(s)</value>
+  </data>
+  <data name="ClusterSettingsViewModel_Title" xml:space="preserve">
+    <value>Cluster Settings</value>
+  </data>
+  <data name="Cluster_Missing_Namespace_Permission_Title" xml:space="preserve">
+    <value>Warning</value>
+  </data>
+  <data name="Cluster_Missing_Namespace_Permission_Content" xml:space="preserve">
+    <value>Your account does not have the necessary permissions to list or watch namespaces. Please enter the names of the namespaces this account should have access to in the Settings window, and then reconnect</value>
+  </data>
+  <data name="Cluster_Missing_Namespace_Permission_Primary" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="ResourceYamlView_WordWrap" xml:space="preserve">
+    <value>Word Wrap</value>
+  </data>
+  <data name="PodLogsView_WordWrap" xml:space="preserve">
+    <value>Word Wrap</value>
+  </data>
+  <data name="ResourceListViewModel_Restart_Title" xml:space="preserve">
+    <value>Restart Workload?</value>
+  </data>
+  <data name="ResourceListViewModel_Restart_Content" xml:space="preserve">
+    <value>This will restart {0} Resources.
+Are you sure?</value>
+  </data>
+  <data name="ResourceListViewModel_Restart_Primary" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="ResourceListViewModel_Restart_Secondary" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="ResourceListViewModel_CordonNode_Title" xml:space="preserve">
+    <value>Warning</value>
+  </data>
+  <data name="ResourceListViewModel_CordonNode_Content" xml:space="preserve">
+    <value>Cordon Nodes {0}</value>
+  </data>
+  <data name="ResourceListViewModel_CordonNode_Primary" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="ResourceListViewModel_CordonNode_Secondary" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="ResourceListViewModel_UnCordonNode_Content" xml:space="preserve">
+    <value>UnCordon Nodes {0}</value>
+  </data>
+  <data name="ResourceListViewModel_UnCordonNode_Primary" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="ResourceListViewModel_UnCordonNode_Secondary" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="ResourceListViewModel_UnCordonNode_Title" xml:space="preserve">
+    <value>Warning</value>
+  </data>
+  <data name="ResourceListViewModel_DrainNode_Content" xml:space="preserve">
+    <value>Drain Nodes {0}</value>
+  </data>
+  <data name="ResourceListViewModel_DrainNode_Title" xml:space="preserve">
+    <value>Warning</value>
+  </data>
+  <data name="ResourceListViewModel_DrainNode_Secondary" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="ResourceListViewModel_DrainNode_Primary" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="MainView_Menu_File_LoadKubeConfig" xml:space="preserve">
+    <value>_Load Kube Config</value>
+  </data>
+  <data name="MainView_Menu_File_LoadKubeConfig_Open" xml:space="preserve">
+    <value>Select Kube Config</value>
+  </data>
+  <data name="PodLogsView_Clear" xml:space="preserve">
+    <value>Clear Logs</value>
+  </data>
+  <data name="DataGridFilterFlyout_Apply" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="DataGridFilterFlyout_Any" xml:space="preserve">
+    <value>Any</value>
+  </data>
+  <data name="DataGridFilterFlyout_And" xml:space="preserve">
+    <value>And</value>
+  </data>
+  <data name="DataGridFilterFlyout_Between" xml:space="preserve">
+    <value>Between</value>
+  </data>
+  <data name="DataGridFilterFlyout_Clear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="DataGridFilterFlyout_Condition" xml:space="preserve">
+    <value>Condition</value>
+  </data>
+  <data name="DataGridFilterFlyout_Contains" xml:space="preserve">
+    <value>Contains</value>
+  </data>
+  <data name="DataGridFilterFlyout_EndsWith" xml:space="preserve">
+    <value>Ends with</value>
+  </data>
+  <data name="DataGridFilterFlyout_Equals" xml:space="preserve">
+    <value>Equals</value>
+  </data>
+  <data name="DataGridFilterFlyout_GreaterThan" xml:space="preserve">
+    <value>Greater than</value>
+  </data>
+  <data name="DataGridFilterFlyout_GreaterThanOrEqual" xml:space="preserve">
+    <value>Greater than or equal</value>
+  </data>
+  <data name="DataGridFilterFlyout_LessThan" xml:space="preserve">
+    <value>Less than</value>
+  </data>
+  <data name="DataGridFilterFlyout_LessThanOrEqual" xml:space="preserve">
+    <value>Less than or equal</value>
+  </data>
+  <data name="DataGridFilterFlyout_NewerThan" xml:space="preserve">
+    <value>Newer than</value>
+  </data>
+  <data name="DataGridFilterFlyout_OlderThan" xml:space="preserve">
+    <value>Older than</value>
+  </data>
+  <data name="DataGridFilterFlyout_StartsWith" xml:space="preserve">
+    <value>Starts with</value>
+  </data>
+  <data name="DataGridFilterFlyout_Value" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="DataGridFilterFlyout_Minutes" xml:space="preserve">
+    <value>Minutes</value>
+  </data>
+  <data name="DataGridFilterFlyout_Hours" xml:space="preserve">
+    <value>Hours</value>
+  </data>
+  <data name="DataGridFilterFlyout_Days" xml:space="preserve">
+    <value>Days</value>
+  </data>
+  <data name="DataGridFilterFlyout_Months" xml:space="preserve">
+    <value>Months</value>
+  </data>
+  <data name="UpdateView_Title" xml:space="preserve">
+    <value>Update</value>
+  </data>
+  <data name="AboutView_Contact" xml:space="preserve">
+    <value>Contact:</value>
+  </data>
+  <data name="AboutView_Website" xml:space="preserve">
+    <value>Website:</value>
+  </data>
+  <data name="UpdateView_Header" xml:space="preserve">
+    <value>An update is available!</value>
+  </data>
+</root>

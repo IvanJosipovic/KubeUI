@@ -101,6 +101,14 @@
         "AvaloniaEdit.TextMate",
         "Avalonia.AvaloniaEdit"
       ]
+    },
+    {
+      "groupName": "HanumanInstitute.MvvmDialogs.Avalonia",
+      "separateMajorMinor": true,
+      "groupSlug": "hanumaninstitute-mvvmdialogs",
+      "matchPackageNames": [
+        "hanumaninstitute.mvvmdialogs.*"
+      ]
     }
   ],
   "customManagers": [

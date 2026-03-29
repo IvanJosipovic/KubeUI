@@ -1,0 +1,32 @@
+<UserControl
+    x:Class="KubeUI.Avalonia.Controls.DataGridFilters.EnumFilterFlyoutView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="using:KubeUI.Avalonia.Assets"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:filters="using:KubeUI.Avalonia.Controls.DataGridFilters"
+    x:DataType="filters:EnumFilterFlyoutContext">
+    <StackPanel Classes="filter-flyout-root">
+        <TextBlock Classes="filter-flyout-title" Text="{Binding Title}" />
+        <Grid Classes="filter-flyout-row" ColumnDefinitions="72,*">
+            <TextBlock
+                Classes="filter-flyout-label"
+                Text="{x:Static assets:Resources.DataGridFilterFlyout_Value}" />
+            <ComboBox
+                Classes="filter-flyout-editor"
+                Grid.Column="1"
+                ItemsSource="{Binding Options}"
+                SelectedItem="{Binding SelectedValue, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="filters:EnumFilterChoice">
+                        <TextBlock Text="{Binding Label}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </Grid>
+        <StackPanel Classes="filter-flyout-actions">
+            <Button Classes="filter-flyout-action" Command="{Binding ClearCommand}" Content="{x:Static assets:Resources.DataGridFilterFlyout_Clear}" />
+            <Button Classes="filter-flyout-action" Command="{Binding ApplyCommand}" Content="{x:Static assets:Resources.DataGridFilterFlyout_Apply}" />
+        </StackPanel>
+    </StackPanel>
+</UserControl>

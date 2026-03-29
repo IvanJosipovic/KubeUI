@@ -2,6 +2,7 @@
     "recommendations": [
         "ms-dotnettools.csdevkit",
         "avaloniateam.vscode-avalonia",
-        "ms-vscode.PowerShell"
+        "ms-vscode.PowerShell",
+        "openai.chatgpt"
     ]
 }
