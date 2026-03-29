@@ -2,7 +2,7 @@ using Avalonia.Controls;
 using k8s.Models;
 using KubeUI.Avalonia.Resources.Storage.v1.PersistentVolume.Views;
 
-namespace KubeUI.Avalonia.Resources.Storage;
+namespace KubeUI.Avalonia.Resources.Storage.v1.PersistentVolume;
 
 public sealed partial class V1PersistentVolumeConfig : ResourceConfigBase<V1PersistentVolume>
 {

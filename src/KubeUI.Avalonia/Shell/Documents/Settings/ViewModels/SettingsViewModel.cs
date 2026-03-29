@@ -1,7 +1,7 @@
 
 using KubeUI.Kubernetes;
 
-namespace KubeUI.Avalonia.ViewModels;
+namespace KubeUI.Avalonia.Shell.Documents.Settings.ViewModels;
 
 public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 {

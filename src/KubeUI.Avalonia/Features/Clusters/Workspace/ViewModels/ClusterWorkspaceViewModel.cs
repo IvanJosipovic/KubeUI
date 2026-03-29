@@ -11,7 +11,7 @@ using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Resources;
 
-namespace KubeUI.Avalonia.ViewModels;
+namespace KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 
 public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterRuntime, IDisposable
 {

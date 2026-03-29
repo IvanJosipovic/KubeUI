@@ -1,7 +1,7 @@
 using System.Collections.Specialized;
 using Swordfish.NET.Collections;
 
-namespace KubeUI.Avalonia.ViewModels;
+namespace KubeUI.Avalonia.Features.Clusters.Workspace;
 
 public sealed class ClusterWorkspaceComparer : IComparer<ClusterWorkspaceViewModel>
 {

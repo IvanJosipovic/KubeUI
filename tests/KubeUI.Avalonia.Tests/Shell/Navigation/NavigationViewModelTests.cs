@@ -15,7 +15,6 @@ using FluentAvalonia.UI.Controls;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Kubernetes;
 using KubeUI.Avalonia.Resources;
-using KubeUI.Avalonia.ViewModels;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;

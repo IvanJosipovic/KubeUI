@@ -7,7 +7,7 @@ using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Resources.Workloads.v1.ReplicaSet.Views;
 
-namespace KubeUI.Avalonia.Resources.Workloads;
+namespace KubeUI.Avalonia.Resources.Workloads.v1.ReplicaSet;
 
 public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet>
 {

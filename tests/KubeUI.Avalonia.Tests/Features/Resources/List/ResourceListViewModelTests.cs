@@ -28,8 +28,6 @@ using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Avalonia.ViewModels;
-using KubeUI.Avalonia.Views;
 
 namespace KubeUI.Avalonia.Tests;
 

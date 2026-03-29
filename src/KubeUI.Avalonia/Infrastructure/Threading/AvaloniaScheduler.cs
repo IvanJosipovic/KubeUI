@@ -1,7 +1,7 @@
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 
-namespace KubeUI.Avalonia;
+namespace KubeUI.Avalonia.Infrastructure.Threading;
 
 /// <summary>
 /// Provides a scheduler that executes actions on the Avalonia UI thread, enabling scheduling of work to run on the

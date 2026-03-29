@@ -2,7 +2,7 @@ using Avalonia.Controls;
 using k8s.Models;
 using KubeUI.Avalonia.Resources.Configuration.v1.ConfigMap.Views;
 
-namespace KubeUI.Avalonia.Resources.Configuration;
+namespace KubeUI.Avalonia.Resources.Configuration.v1.ConfigMap;
 
 public sealed partial class V1ConfigMapConfig : ResourceConfigBase<V1ConfigMap>
 {

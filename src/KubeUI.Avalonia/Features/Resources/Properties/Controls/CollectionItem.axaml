@@ -1,9 +1,9 @@
-<UserControl
+﻿<UserControl
     x:Class="KubeUI.Avalonia.Features.Resources.Properties.Controls.CollectionItem"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:converters="using:KubeUI.Avalonia.Converters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
     HorizontalAlignment="Stretch"
     VerticalAlignment="Stretch"
@@ -14,7 +14,7 @@
         <Style Selector="SelectableTextBlock">
             <Setter Property="Padding" Value="5" />
         </Style>
-        <Style Selector="ContentPresenter > SelectableTextBlock">
+        <Style Selector="ContentPresenter &gt; SelectableTextBlock">
             <Setter Property="Padding" Value="0" />
         </Style>
     </UserControl.Styles>

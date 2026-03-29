@@ -2,7 +2,7 @@ using Avalonia.Controls;
 using k8s.Models;
 using KubeUI.Avalonia.Resources.Workloads.v1.CronJob.Views;
 
-namespace KubeUI.Avalonia.Resources.Workloads;
+namespace KubeUI.Avalonia.Resources.Workloads.v1.CronJob;
 
 public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
 {

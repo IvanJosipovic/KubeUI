@@ -1,10 +1,10 @@
 using Avalonia.Data.Converters;
 using Avalonia.Styling;
 using k8s.Models;
-using KubeUI.Avalonia.Controls;
+using KubeUI.Avalonia.Resources.Core.v1.Event.Controls;
 using KubeUI.Avalonia.Resources.Core.v1.Event.Views;
 
-namespace KubeUI.Avalonia.Resources.Core.v1;
+namespace KubeUI.Avalonia.Resources.Core.v1.Event;
 
 public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
 {

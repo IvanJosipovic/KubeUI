@@ -2,16 +2,19 @@ using System.ComponentModel;
 using System.Text.Json;
 using Avalonia.Styling;
 using Microsoft.Extensions.Configuration;
+using KubeUI.Avalonia.Options;
+using AppAppearanceSettings = KubeUI.Avalonia.Options.AppearanceSettings;
+using AppSettings = KubeUI.Avalonia.Options.Settings;
 
-namespace KubeUI.Avalonia;
+namespace KubeUI.Avalonia.Services.Settings;
 
 public class SettingsService : ObservableObject, ISettingsService, IClusterSettingsStore
 {
     private readonly ILogger<SettingsService> _logger;
-    private Settings? _settings;
-    private AppearanceSettings? _appearance;
+    private AppSettings? _settings;
+    private AppAppearanceSettings? _appearance;
 
-    public Settings Settings
+    public AppSettings Settings
     {
         get
         {
@@ -38,7 +41,7 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
         }
     }
 
-    public AppearanceSettings Appearance
+    public AppAppearanceSettings Appearance
     {
         get
         {
@@ -80,7 +83,7 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
         return Path.Combine(GetSettingsPath(), "settings.json");
     }
 
-    public static Settings LoadSettingsFromFile()
+    public static AppSettings LoadSettingsFromFile()
     {
         return LoadPersistedSettings().Settings;
     }
@@ -185,13 +188,13 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
                     return persisted ?? new PersistedSettings();
                 }
 
-                var legacy = JsonSerializer.Deserialize<Settings>(json);
+                var legacy = JsonSerializer.Deserialize<AppSettings>(json);
                 if (legacy is not null)
                 {
                     return new PersistedSettings
                     {
                         Settings = legacy,
-                        Appearance = new AppearanceSettings(),
+                        Appearance = new AppAppearanceSettings(),
                     };
                 }
             }
@@ -203,13 +206,13 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
         return new PersistedSettings();
     }
 
-    private void HookSettings(Settings settings)
+    private void HookSettings(AppSettings settings)
     {
         settings.PropertyChanged -= Settings_PropertyChanged;
         settings.PropertyChanged += Settings_PropertyChanged;
     }
 
-    private void HookAppearance(AppearanceSettings appearance)
+    private void HookAppearance(AppAppearanceSettings appearance)
     {
         appearance.PropertyChanged -= Appearance_PropertyChanged;
         appearance.PropertyChanged += Appearance_PropertyChanged;
@@ -227,8 +230,8 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
 
     private sealed class PersistedSettings
     {
-        public Settings Settings { get; set; } = new();
+        public AppSettings Settings { get; set; } = new();
 
-        public AppearanceSettings Appearance { get; set; } = new();
+        public AppAppearanceSettings Appearance { get; set; } = new();
     }
 }

@@ -7,7 +7,7 @@ using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Resources.Workloads.v1.DaemonSet.Views;
 
-namespace KubeUI.Avalonia.Resources.Workloads;
+namespace KubeUI.Avalonia.Resources.Workloads.v1.DaemonSet;
 
 public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>
 {

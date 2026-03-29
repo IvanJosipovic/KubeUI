@@ -1,4 +1,4 @@
-namespace KubeUI.Avalonia.ViewModels;
+namespace KubeUI.Avalonia.Features.Clusters.Error.ViewModels;
 
 public sealed partial class ClusterErrorViewModel : ViewModelBase
 {

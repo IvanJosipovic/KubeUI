@@ -6,7 +6,7 @@ using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using AvaloniaEdit.Document;
 using KubeUI.Avalonia;
-using KubeUI.Avalonia.Views;
+using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 

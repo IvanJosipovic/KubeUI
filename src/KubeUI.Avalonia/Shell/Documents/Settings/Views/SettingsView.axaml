@@ -1,13 +1,13 @@
-<UserControl
-    x:Class="KubeUI.Avalonia.Views.SettingsView"
+﻿<UserControl
+    x:Class="KubeUI.Avalonia.Shell.Documents.Settings.Views.SettingsView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:assets="clr-namespace:KubeUI.Avalonia.Assets;assembly=KubeUI.Avalonia"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:local="clr-namespace:KubeUI.Avalonia;assembly=KubeUI.Avalonia"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:views="clr-namespace:KubeUI.Avalonia.Views"
-    xmlns:vm="clr-namespace:KubeUI.Avalonia.ViewModels"
+    xmlns:options="clr-namespace:KubeUI.Avalonia.Options;assembly=KubeUI.Avalonia"
+    xmlns:views="clr-namespace:KubeUI.Avalonia.Shell.Documents.Settings.Views"
+    xmlns:vm="clr-namespace:KubeUI.Avalonia.Shell.Documents.Settings.ViewModels"
     d:DesignHeight="450"
     d:DesignWidth="800"
     x:DataType="vm:SettingsViewModel"
@@ -23,90 +23,54 @@
 
     <StackPanel>
         <Grid ColumnDefinitions="*,2*">
-            <Label
-                Grid.Column="0"
-                Content="{x:Static assets:Resources.SettingsView_Theme}" />
+            <Label Grid.Column="0" Content="{x:Static assets:Resources.SettingsView_Theme}" />
             <StackPanel Grid.Column="1">
                 <RadioButton
                     Content="{x:Static assets:Resources.SettingsView_Theme_Default}"
                     GroupName="Theme"
-                    IsChecked="{Binding SettingsService.Appearance.Theme, Converter={StaticResource ThemeEqualityConverter}, ConverterParameter={x:Static local:LocalThemeVariant.Default}}" />
+                    IsChecked="{Binding SettingsService.Appearance.Theme, Converter={StaticResource ThemeEqualityConverter}, ConverterParameter={x:Static options:LocalThemeVariant.Default}}" />
                 <RadioButton
                     Content="{x:Static assets:Resources.SettingsView_Theme_Light}"
                     GroupName="Theme"
-                    IsChecked="{Binding SettingsService.Appearance.Theme, Converter={StaticResource ThemeEqualityConverter}, ConverterParameter={x:Static local:LocalThemeVariant.Light}}" />
+                    IsChecked="{Binding SettingsService.Appearance.Theme, Converter={StaticResource ThemeEqualityConverter}, ConverterParameter={x:Static options:LocalThemeVariant.Light}}" />
                 <RadioButton
                     Content="{x:Static assets:Resources.SettingsView_Theme_Dark}"
                     GroupName="Theme"
-                    IsChecked="{Binding SettingsService.Appearance.Theme, Converter={StaticResource ThemeEqualityConverter}, ConverterParameter={x:Static local:LocalThemeVariant.Dark}}" />
+                    IsChecked="{Binding SettingsService.Appearance.Theme, Converter={StaticResource ThemeEqualityConverter}, ConverterParameter={x:Static options:LocalThemeVariant.Dark}}" />
             </StackPanel>
         </Grid>
 
-        <Grid
-            ColumnDefinitions="*,2*"
-            ToolTip.Tip="{x:Static assets:Resources.SettingsView_Logging_ToolTip}">
-            <Label
-                Grid.Column="0"
-                Content="{x:Static assets:Resources.SettingsView_Logging_Label}" />
-            <CheckBox
-                Grid.Column="1"
-                IsChecked="{Binding SettingsService.Settings.LoggingEnabled}" />
+        <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{x:Static assets:Resources.SettingsView_Logging_ToolTip}">
+            <Label Grid.Column="0" Content="{x:Static assets:Resources.SettingsView_Logging_Label}" />
+            <CheckBox Grid.Column="1" IsChecked="{Binding SettingsService.Settings.LoggingEnabled}" />
         </Grid>
 
-        <Grid
-            ColumnDefinitions="*,2*"
-            ToolTip.Tip="{x:Static assets:Resources.SettingsView_Telemetry_ToolTip}">
-            <Label
-                Grid.Column="0"
-                Content="{x:Static assets:Resources.SettingsView_Telemetry_Label}" />
-            <CheckBox
-                Grid.Column="1"
-                IsChecked="{Binding SettingsService.Settings.TelemetryEnabled}" />
+        <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{x:Static assets:Resources.SettingsView_Telemetry_ToolTip}">
+            <Label Grid.Column="0" Content="{x:Static assets:Resources.SettingsView_Telemetry_Label}" />
+            <CheckBox Grid.Column="1" IsChecked="{Binding SettingsService.Settings.TelemetryEnabled}" />
         </Grid>
 
-        <Grid
-            ColumnDefinitions="*,2*"
-            ToolTip.Tip="{x:Static assets:Resources.SettingsView_PreRelease_ToolTip}">
-            <Label
-                Grid.Column="0"
-                Content="{x:Static assets:Resources.SettingsView_PreRelease_Label}" />
+        <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{x:Static assets:Resources.SettingsView_PreRelease_ToolTip}">
+            <Label Grid.Column="0" Content="{x:Static assets:Resources.SettingsView_PreRelease_Label}" />
             <CheckBox
                 Grid.Column="1"
                 IsChecked="{Binding SettingsService.Settings.PreReleaseChannel}"
                 IsEnabled="False" />
         </Grid>
 
-        <Grid
-            ColumnDefinitions="*,2*"
-            ToolTip.Tip="{x:Static assets:Resources.SettingsView_FontSize_ToolTip}">
-            <Label
-                Grid.Column="0"
-                Content="{x:Static assets:Resources.SettingsView_FontSize_Label}" />
-            <NumericUpDown
-                Grid.Column="1"
-                Value="{Binding SettingsService.Appearance.FontSize}" />
+        <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{x:Static assets:Resources.SettingsView_FontSize_ToolTip}">
+            <Label Grid.Column="0" Content="{x:Static assets:Resources.SettingsView_FontSize_Label}" />
+            <NumericUpDown Grid.Column="1" Value="{Binding SettingsService.Appearance.FontSize}" />
         </Grid>
 
-        <Grid
-            ColumnDefinitions="*,2*"
-            ToolTip.Tip="{x:Static assets:Resources.SettingsView_ConsoleFontSize_ToolTip}">
-            <Label
-                Grid.Column="0"
-                Content="{x:Static assets:Resources.SettingsView_ConsoleFontSize_Label}" />
-            <NumericUpDown
-                Grid.Column="1"
-                Value="{Binding SettingsService.Appearance.ConsoleFontSize}" />
+        <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{x:Static assets:Resources.SettingsView_ConsoleFontSize_ToolTip}">
+            <Label Grid.Column="0" Content="{x:Static assets:Resources.SettingsView_ConsoleFontSize_Label}" />
+            <NumericUpDown Grid.Column="1" Value="{Binding SettingsService.Appearance.ConsoleFontSize}" />
         </Grid>
 
-        <Grid
-            ColumnDefinitions="*,2*"
-            ToolTip.Tip="{x:Static assets:Resources.SettingsView_ListRowHeight_ToolTip}">
-            <Label
-                Grid.Column="0"
-                Content="{x:Static assets:Resources.SettingsView_ListRowHeight_Label}" />
-            <NumericUpDown
-                Grid.Column="1"
-                Value="{Binding SettingsService.Appearance.ListRowHeight}" />
+        <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{x:Static assets:Resources.SettingsView_ListRowHeight_ToolTip}">
+            <Label Grid.Column="0" Content="{x:Static assets:Resources.SettingsView_ListRowHeight_Label}" />
+            <NumericUpDown Grid.Column="1" Value="{Binding SettingsService.Appearance.ListRowHeight}" />
         </Grid>
     </StackPanel>
 </UserControl>

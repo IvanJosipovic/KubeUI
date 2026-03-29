@@ -1,6 +1,8 @@
 using KubeUI.Kubernetes;
+using KubeUI.Avalonia.Features.Clusters.Overview.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
 
-namespace KubeUI.Avalonia.Views;
+namespace KubeUI.Avalonia.Features.Clusters.Overview.Views;
 
 public sealed partial class ClusterView : UserControl
 {

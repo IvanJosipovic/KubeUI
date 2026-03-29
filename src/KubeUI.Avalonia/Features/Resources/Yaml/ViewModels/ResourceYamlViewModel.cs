@@ -8,7 +8,7 @@ using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Serialization;
 using KubernetesClient.Informer.Client;
 
-namespace KubeUI.Avalonia.ViewModels;
+namespace KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
 
 public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 {

@@ -1,6 +1,5 @@
 using Avalonia;
 using KubeUI.Testing;
-using KubeUI.Avalonia.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Avalonia.Tests.Infra;

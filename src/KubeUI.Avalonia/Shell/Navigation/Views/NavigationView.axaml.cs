@@ -1,4 +1,4 @@
-namespace KubeUI.Avalonia.Views;
+namespace KubeUI.Avalonia.Shell.Navigation.Views;
 
 public partial class NavigationView : UserControl
 {

@@ -1,0 +1,24 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "XAML Styler: Format KubeUI.Avalonia",
+            "type": "shell",
+            "command": "dotnet",
+            "args": [
+                "dnx",
+                "XamlStyler.Console",
+                "-r",
+                "-d",
+                "src\\KubeUI.Avalonia",
+                "-c",
+                "Settings.XamlStyler"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "problemMatcher": []
+        }
+    ]
+}

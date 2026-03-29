@@ -2,7 +2,7 @@ using k8s.Models;
 using Avalonia.Controls;
 using KubeUI.Avalonia.Resources.Configuration.v1.ValidatingWebhookConfiguration.Views;
 
-namespace KubeUI.Avalonia.Resources.Configuration;
+namespace KubeUI.Avalonia.Resources.Configuration.v1.ValidatingWebhookConfiguration;
 
 public sealed partial class V1ValidatingWebhookConfigurationConfig : ResourceConfigBase<V1ValidatingWebhookConfiguration>
 {

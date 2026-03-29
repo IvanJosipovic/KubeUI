@@ -1,7 +1,6 @@
 using System.Text;
 using Avalonia.Controls.Templates;
 using k8s.Models;
-using KubeUI.Avalonia.Controls;
 using KubeUI.Avalonia.Resources.Configuration.v1.Secret.Views;
 
 namespace KubeUI.Avalonia.Resources.Configuration.v1.Secret;

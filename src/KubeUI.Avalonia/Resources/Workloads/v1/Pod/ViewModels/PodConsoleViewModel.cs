@@ -7,7 +7,7 @@ using k8s;
 using k8s.Models;
 using KubeUI.Kubernetes;
 
-namespace KubeUI.Avalonia.ViewModels;
+namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 
 public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
 {

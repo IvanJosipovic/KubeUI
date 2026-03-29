@@ -2,7 +2,7 @@ using k8s.Models;
 using Avalonia.Controls;
 using KubeUI.Avalonia.Resources.Configuration.v1.MutatingWebhookConfiguration.Views;
 
-namespace KubeUI.Avalonia.Resources.Configuration;
+namespace KubeUI.Avalonia.Resources.Configuration.v1.MutatingWebhookConfiguration;
 
 public sealed partial class V1MutatingWebhookConfig : ResourceConfigBase<V1MutatingWebhookConfiguration>
 {

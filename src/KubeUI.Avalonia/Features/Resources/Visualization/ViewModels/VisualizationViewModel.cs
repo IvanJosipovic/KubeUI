@@ -8,7 +8,7 @@ using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
 using KubeUI.Kubernetes;
 using static AvaloniaGraphControl.GraphPanel;
 
-namespace KubeUI.Avalonia.ViewModels;
+namespace KubeUI.Avalonia.Features.Resources.Visualization.ViewModels;
 
 public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeCluster, IDisposable
 {

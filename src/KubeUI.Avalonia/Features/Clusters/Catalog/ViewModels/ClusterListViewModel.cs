@@ -3,7 +3,7 @@ using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Kubernetes;
 
-namespace KubeUI.Avalonia.ViewModels;
+namespace KubeUI.Avalonia.Features.Clusters.Catalog.ViewModels;
 
 public sealed partial class ClusterListViewModel : ViewModelBase
 {

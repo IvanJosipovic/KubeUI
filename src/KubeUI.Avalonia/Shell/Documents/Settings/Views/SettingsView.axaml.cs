@@ -1,7 +1,7 @@
 using System.Globalization;
 using Avalonia.Data.Converters;
 
-namespace KubeUI.Avalonia.Views;
+namespace KubeUI.Avalonia.Shell.Documents.Settings.Views;
 
 public sealed partial class SettingsView : UserControl
 {

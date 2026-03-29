@@ -16,8 +16,6 @@ using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Avalonia.ViewModels;
-using KubeUI.Avalonia.Views;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using Shouldly;

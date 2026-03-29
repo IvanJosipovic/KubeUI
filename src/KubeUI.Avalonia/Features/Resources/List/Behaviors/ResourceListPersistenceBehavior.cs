@@ -5,7 +5,6 @@ using Dock.Model.Core;
 using Dock.Model.Core.Events;
 using Dock.Model.Controls;
 using Avalonia.Controls;
-using KubeUI.Avalonia.Views;
 using ProDataGrid;
 using k8s;
 using k8s.Models;

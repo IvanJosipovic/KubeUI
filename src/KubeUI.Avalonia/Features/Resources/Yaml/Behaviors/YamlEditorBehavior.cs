@@ -14,12 +14,10 @@ using AvaloniaEdit.Indentation;
 using AvaloniaEdit.Rendering;
 using AvaloniaEdit.TextMate;
 using KubeUI.Avalonia;
-using KubeUI.Avalonia.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
-using KubeUI.Avalonia.Views;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 

@@ -6,7 +6,7 @@ using Dock.Model.Mvvm;
 using Dock.Model.Mvvm.Controls;
 using Orientation = Dock.Model.Core.Orientation;
 
-namespace KubeUI.Avalonia;
+namespace KubeUI.Avalonia.Infrastructure.Docking;
 
 public class DockFactory : Factory
 {

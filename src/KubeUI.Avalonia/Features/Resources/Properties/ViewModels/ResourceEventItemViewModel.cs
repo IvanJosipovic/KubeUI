@@ -1,4 +1,3 @@
-using KubeUI.Avalonia.ViewModels;
 
 namespace KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
 

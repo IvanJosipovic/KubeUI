@@ -3,9 +3,8 @@ using Avalonia.Headless.XUnit;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Avalonia.ViewModels;
 using Shouldly;
-using static KubeUI.Avalonia.ViewModels.VisualizationViewModel;
+using static KubeUI.Avalonia.Features.Resources.Visualization.ViewModels.VisualizationViewModel;
 
 namespace KubeUI.Avalonia.Tests;
 

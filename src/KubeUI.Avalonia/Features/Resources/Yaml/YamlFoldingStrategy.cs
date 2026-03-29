@@ -1,7 +1,7 @@
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Folding;
 
-namespace KubeUI.Avalonia.Views;
+namespace KubeUI.Avalonia.Features.Resources.Yaml;
 
 internal static class YamlFoldingStrategy
 {

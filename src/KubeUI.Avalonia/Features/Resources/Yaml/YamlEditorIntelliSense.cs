@@ -8,7 +8,7 @@ using AvaloniaEdit.CodeCompletion;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Editing;
 
-namespace KubeUI.Avalonia.ViewModels;
+namespace KubeUI.Avalonia.Features.Resources.Yaml;
 
 internal sealed class YamlCompletionData(YamlCompletionItemInfo item) : ICompletionData
 {

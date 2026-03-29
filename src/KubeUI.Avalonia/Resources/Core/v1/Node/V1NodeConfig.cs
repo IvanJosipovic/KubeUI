@@ -8,7 +8,7 @@ using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Resources.Core.v1.Node.Views;
 
-namespace KubeUI.Avalonia.Resources;
+namespace KubeUI.Avalonia.Resources.Core.v1.Node;
 
 public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 {

@@ -1,8 +1,7 @@
 using KubeUI.Avalonia.Resources;
-using KubeUI.Avalonia.ViewModels;
 using ServiceScan.SourceGenerator;
 
-namespace KubeUI.Avalonia;
+namespace KubeUI.Avalonia.Infrastructure.DependencyInjection;
 
 public static partial class KubeUIAvaloniaResourceServiceCollectionExtensions
 {

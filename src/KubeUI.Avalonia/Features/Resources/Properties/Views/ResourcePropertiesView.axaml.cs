@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.ComponentModel;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
@@ -9,6 +10,8 @@ namespace KubeUI.Avalonia.Features.Resources.Properties.Views;
 
 public partial class ResourcePropertiesView : UserControl
 {
+    private INotifyPropertyChanged? _viewModel;
+
     public ResourcePropertiesView()
     {
         InitializeComponent();
@@ -17,7 +20,14 @@ public partial class ResourcePropertiesView : UserControl
     protected override void OnDataContextChanged(EventArgs e)
     {
         base.OnDataContextChanged(e);
+        SubscribeToViewModel();
         AttachAndReload();
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        UnsubscribeFromViewModel();
     }
 
     private void AttachAndReload()
@@ -56,6 +66,34 @@ public partial class ResourcePropertiesView : UserControl
 
         // Fallback if not matching expected generic pattern
         ClearItems();
+    }
+
+    private void SubscribeToViewModel()
+    {
+        UnsubscribeFromViewModel();
+
+        if (DataContext is INotifyPropertyChanged notifyPropertyChanged)
+        {
+            _viewModel = notifyPropertyChanged;
+            _viewModel.PropertyChanged += ViewModelOnPropertyChanged;
+        }
+    }
+
+    private void UnsubscribeFromViewModel()
+    {
+        if (_viewModel != null)
+        {
+            _viewModel.PropertyChanged -= ViewModelOnPropertyChanged;
+            _viewModel = null;
+        }
+    }
+
+    private void ViewModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is "Object" or "ResourceConfig" or "Cluster")
+        {
+            AttachAndReload();
+        }
     }
 
     private void ClearItems() => PART_Items.Children.Clear();

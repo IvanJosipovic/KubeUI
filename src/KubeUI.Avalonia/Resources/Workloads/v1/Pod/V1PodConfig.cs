@@ -6,6 +6,7 @@ using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Controls;
+using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;

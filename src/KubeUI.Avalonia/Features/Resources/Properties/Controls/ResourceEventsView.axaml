@@ -1,4 +1,4 @@
-<UserControl
+﻿<UserControl
     x:Class="KubeUI.Avalonia.Features.Resources.Properties.Controls.ResourceEventsView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -16,14 +16,15 @@
     <UserControl.Resources>
         <converters:EventWarningForegroundConverter x:Key="EventWarningForegroundConverter" />
     </UserControl.Resources>
-    <StackPanel
-        IsVisible="{Binding HasItems, RelativeSource={RelativeSource AncestorType=local:ResourceEventsView}}"
-        Spacing="8">
+    <StackPanel IsVisible="{Binding HasItems, RelativeSource={RelativeSource AncestorType=local:ResourceEventsView}}" Spacing="8">
         <c:HeaderItem Text="{x:Static assets:Resources.ResourceEventsView_Title}" />
         <ItemsControl ItemsSource="{Binding Items, RelativeSource={RelativeSource AncestorType=local:ResourceEventsView}}">
             <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="models:ResourceEventItemViewModel">
-                    <Border Classes="card" Margin="0,0,0,12" Padding="12">
+                    <Border
+                        Margin="0,0,0,12"
+                        Padding="12"
+                        Classes="card">
                         <StackPanel Spacing="8">
                             <TextBlock
                                 FontWeight="SemiBold"

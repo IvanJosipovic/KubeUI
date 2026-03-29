@@ -1,17 +1,18 @@
-<UserControl
-    x:Class="KubeUI.Avalonia.Views.ResourceListView"
+﻿<UserControl
+    x:Class="KubeUI.Avalonia.Features.Resources.List.Views.ResourceListView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:assets="using:KubeUI.Avalonia.Assets"
     xmlns:behaviors="using:KubeUI.Avalonia.Features.Resources.List.Behaviors"
+    xmlns:common="using:KubeUI.Avalonia.Features.Resources.Common"
     xmlns:converters="using:KubeUI.Avalonia.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:ic="using:FluentIcons.Avalonia"
-    xmlns:local="using:KubeUI.Avalonia.Views"
+    xmlns:local="using:KubeUI.Avalonia.Features.Resources.List.Views"
     xmlns:models="using:k8s.Models"
     xmlns:u="https://irihi.tech/ursa"
     xmlns:ursa="clr-namespace:Ursa.Controls"
-    xmlns:viewmodels="using:KubeUI.Avalonia.ViewModels"
+    xmlns:viewmodels="using:KubeUI.Avalonia.Features.Resources.List.ViewModels"
     d:DesignHeight="450"
     d:DesignWidth="800"
     x:DataType="viewmodels:IResourceListViewModel">
@@ -43,8 +44,8 @@
                 Orientation="Horizontal">
                 <TextBox
                     Width="200"
-                    Margin="0,0,2,0"
                     MinWidth="120"
+                    Margin="0,0,2,0"
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Stretch"
                     VerticalContentAlignment="Center"
@@ -54,9 +55,9 @@
 
                 <u:MultiComboBox
                     Width="200"
+                    MinWidth="140"
                     MaxHeight="20"
                     Margin="0,0,2,0"
-                    MinWidth="140"
                     HorizontalAlignment="Stretch"
                     Classes="ClearButton"
                     IsVisible="{Binding ResourceConfig.IsNamespaced}"
@@ -109,7 +110,7 @@
             <DataGrid.ContextMenu>
                 <ContextMenu ItemsSource="{Binding ContextMenuItems}">
                     <ContextMenu.Styles>
-                        <Style Selector="MenuItem" x:DataType="viewmodels:MenuItemViewModel">
+                        <Style x:DataType="common:MenuItemViewModel" Selector="MenuItem">
                             <Setter Property="Header" Value="{Binding Header}" />
                             <Setter Property="Command" Value="{Binding Command}" />
                             <Setter Property="CommandParameter" Value="{Binding CommandParameter}" />

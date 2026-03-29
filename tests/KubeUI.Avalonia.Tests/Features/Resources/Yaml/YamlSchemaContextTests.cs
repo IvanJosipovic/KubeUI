@@ -2,7 +2,6 @@ using System.Xml;
 using System.Reflection;
 using AvaloniaEdit.Document;
 using k8s.Models;
-using KubeUI.Avalonia.ViewModels;
 using KubeUI.Kubernetes;
 using Shouldly;
 using System.Text.Json.Serialization;

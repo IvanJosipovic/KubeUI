@@ -2,7 +2,7 @@ using Avalonia.Controls;
 using k8s.Models;
 using KubeUI.Avalonia.Resources.Storage.v1.StorageClass.Views;
 
-namespace KubeUI.Avalonia.Resources.Storage;
+namespace KubeUI.Avalonia.Resources.Storage.v1.StorageClass;
 
 public sealed partial class V1StorageClassConfig : ResourceConfigBase<V1StorageClass>
 {

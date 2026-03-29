@@ -7,7 +7,7 @@ using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
 using KubeUI.Avalonia.Resources.Network.v1.Service.Views;
 
-namespace KubeUI.Avalonia.Resources.Network;
+namespace KubeUI.Avalonia.Resources.Network.v1.Service;
 
 public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
 {

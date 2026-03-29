@@ -2,7 +2,7 @@ using k8s.Models;
 using Avalonia.Controls;
 using KubeUI.Avalonia.Resources.Configuration.v1.Lease.Views;
 
-namespace KubeUI.Avalonia.Resources.Configuration;
+namespace KubeUI.Avalonia.Resources.Configuration.v1.Lease;
 
 public sealed partial class V1LeaseConfig : ResourceConfigBase<V1Lease>
 {

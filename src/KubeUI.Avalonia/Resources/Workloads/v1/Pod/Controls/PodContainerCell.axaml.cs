@@ -7,7 +7,7 @@ using KubeUI.Kubernetes;
 using KubeUI.Avalonia.Converters;
 using AppResources = KubeUI.Avalonia.Assets.Resources;
 
-namespace KubeUI.Avalonia.Controls;
+namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Controls;
 
 public partial class PodContainerCell : UserControl, IInitializeCluster
 {

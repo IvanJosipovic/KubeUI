@@ -2,7 +2,7 @@ using Avalonia.Controls;
 using k8s.Models;
 using KubeUI.Avalonia.Resources.Network.v1.Ingress.Views;
 
-namespace KubeUI.Avalonia.Resources.Network;
+namespace KubeUI.Avalonia.Resources.Network.v1.Ingress;
 
 public sealed partial class V1IngressConfig : ResourceConfigBase<V1Ingress>
 {

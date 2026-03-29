@@ -4,7 +4,7 @@ using KubeUI.Kubernetes;
 using LiveChartsCore.Defaults;
 using LiveChartsCore.Kernel;
 
-namespace KubeUI.Avalonia.ViewModels;
+namespace KubeUI.Avalonia.Features.Clusters.Overview.ViewModels;
 
 public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster, INotifyPropertyChanged
 {

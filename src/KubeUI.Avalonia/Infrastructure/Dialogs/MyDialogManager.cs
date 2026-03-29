@@ -1,7 +1,7 @@
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia;
 
-namespace KubeUI.Avalonia;
+namespace KubeUI.Avalonia.Infrastructure.Dialogs;
 
 public class MyDialogManager : DialogManager
 {

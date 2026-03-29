@@ -1,12 +1,12 @@
-<UserControl
-    x:Class="KubeUI.Avalonia.Views.PodLogsView"
+﻿<UserControl
+    x:Class="KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views.PodLogsView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:assets="using:KubeUI.Avalonia.Assets"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:edit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
     xmlns:ic="using:FluentIcons.Avalonia"
-    xmlns:vm="using:KubeUI.Avalonia.ViewModels"
+    xmlns:vm="using:KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels"
     d:DesignHeight="400"
     d:DesignWidth="500"
     x:DataType="vm:PodLogsViewModel">

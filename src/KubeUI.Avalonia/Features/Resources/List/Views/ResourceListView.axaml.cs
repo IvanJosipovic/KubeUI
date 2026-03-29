@@ -6,7 +6,7 @@ using KubeUI.Avalonia.Controls.DataGridFilters;
 using KubeUI.Kubernetes;
 using KubeUI.Avalonia.Resources;
 
-namespace KubeUI.Avalonia.Views;
+namespace KubeUI.Avalonia.Features.Resources.List.Views;
 
 public partial class ResourceListView : UserControl
 {

@@ -2,7 +2,7 @@ using Avalonia.Controls;
 using k8s.Models;
 using KubeUI.Avalonia.Resources.Configuration.v1.PriorityClass.Views;
 
-namespace KubeUI.Avalonia.Resources.Configuration;
+namespace KubeUI.Avalonia.Resources.Configuration.v1.PriorityClass;
 
 public sealed partial class V1PriorityClassConfig : ResourceConfigBase<V1PriorityClass>
 {

@@ -3,7 +3,7 @@ using k8s;
 using KubeUI.Kubernetes;
 using KubernetesYamlSerializer = KubeUI.Kubernetes.Serialization.KubernetesYaml;
 
-namespace KubeUI.Avalonia.ViewModels;
+namespace KubeUI.Avalonia.Features.Resources.Yaml;
 
 internal sealed class YamlSyntaxValidationService : IYamlValidationService
 {

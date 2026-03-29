@@ -1,5 +1,4 @@
 using AvaloniaEdit.Document;
-using KubeUI.Avalonia.ViewModels;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Yaml;

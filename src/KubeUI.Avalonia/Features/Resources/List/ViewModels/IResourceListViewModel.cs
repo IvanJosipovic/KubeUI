@@ -10,7 +10,7 @@ using KubeUI.Avalonia.Resources;
 using KubernetesClient.Informer.Client;
 using Avalonia.Controls.DataGridSearching;
 
-namespace KubeUI.Avalonia.ViewModels
+namespace KubeUI.Avalonia.Features.Resources.List.ViewModels
 {
     public interface IResourceListViewModel
     {

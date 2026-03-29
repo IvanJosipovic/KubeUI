@@ -3,6 +3,8 @@ using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
 using KubeUI.Avalonia;
+using KubeUI.Avalonia.Options;
+using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

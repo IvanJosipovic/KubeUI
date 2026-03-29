@@ -2,7 +2,7 @@ using Avalonia.Controls;
 using k8s.Models;
 using KubeUI.Avalonia.Resources.AccessControl.v1.RoleBinding.Views;
 
-namespace KubeUI.Avalonia.Resources.AccessControl;
+namespace KubeUI.Avalonia.Resources.AccessControl.v1.RoleBinding;
 
 public sealed partial class V1RoleBindingConfig : ResourceConfigBase<V1RoleBinding>
 {

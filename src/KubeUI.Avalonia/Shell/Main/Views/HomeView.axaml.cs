@@ -1,4 +1,4 @@
-namespace KubeUI.Avalonia.Views;
+namespace KubeUI.Avalonia.Shell.Main.Views;
 
 public partial class HomeView : UserControl
 {

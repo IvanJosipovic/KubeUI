@@ -7,7 +7,7 @@ using k8s.Autorest;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 
-namespace KubeUI.Avalonia;
+namespace KubeUI.Avalonia.Infrastructure;
 
 public static class Utilities
 {
@@ -381,20 +381,5 @@ public static class Utilities
             || ex.Message.Contains("Exception during serialization", StringComparison.Ordinal);
     }
 
-    public static GenericClient GetGenericClient<T>(this IKubernetes client) where T : class, IKubernetesObject<V1ObjectMeta>, new()
-    {
-        var api = GroupApiVersionKind.From<T>();
-        var gen = new GenericClient(client, api.Group, api.ApiVersion, api.PluralName, false);
-
-        return gen;
-    }
-
-    public static GenericClient GetGenericClient(this IKubernetes client, IKubernetesObject<V1ObjectMeta> item)
-    {
-        var api = GroupApiVersionKind.From(item.GetType());
-        var gen = new GenericClient(client, api.Group, api.ApiVersion, api.PluralName, false);
-
-        return gen;
-    }
 }
 

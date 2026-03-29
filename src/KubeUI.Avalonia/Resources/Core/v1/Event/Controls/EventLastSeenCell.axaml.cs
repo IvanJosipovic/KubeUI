@@ -4,7 +4,7 @@ using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Kubernetes;
 
-namespace KubeUI.Avalonia.Controls;
+namespace KubeUI.Avalonia.Resources.Core.v1.Event.Controls;
 
 public sealed partial class EventLastSeenCell : UserControl, IInitializeCluster
 {

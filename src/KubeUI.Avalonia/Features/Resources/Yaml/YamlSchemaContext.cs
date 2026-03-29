@@ -6,7 +6,7 @@ using System.Xml;
 using AvaloniaEdit.Document;
 using KubeUI.Kubernetes;
 
-namespace KubeUI.Avalonia.ViewModels;
+namespace KubeUI.Avalonia.Features.Resources.Yaml;
 
 internal static class YamlSchemaContext
 {

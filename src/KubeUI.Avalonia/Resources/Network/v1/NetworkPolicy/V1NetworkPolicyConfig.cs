@@ -2,7 +2,7 @@ using Avalonia.Controls;
 using k8s.Models;
 using KubeUI.Avalonia.Resources.Network.v1.NetworkPolicy.Views;
 
-namespace KubeUI.Avalonia.Resources.Network;
+namespace KubeUI.Avalonia.Resources.Network.v1.NetworkPolicy;
 
 public sealed partial class V1NetworkPolicyConfig : ResourceConfigBase<V1NetworkPolicy>
 {

@@ -4,9 +4,9 @@ using Avalonia.Markup.Xaml;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using k8s;
+using KubeUI.Avalonia.Shell.Main.Views;
 using KubeUI.Kubernetes;
-using KubeUI.Avalonia.ViewModels;
-using KubeUI.Avalonia.Views;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 

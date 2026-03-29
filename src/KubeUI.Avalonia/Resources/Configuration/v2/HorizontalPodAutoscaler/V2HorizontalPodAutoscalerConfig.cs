@@ -2,7 +2,7 @@ using Avalonia.Controls;
 using k8s.Models;
 using KubeUI.Avalonia.Resources.Configuration.v2.HorizontalPodAutoscaler.Views;
 
-namespace KubeUI.Avalonia.Resources.Configuration.v2;
+namespace KubeUI.Avalonia.Resources.Configuration.v2.HorizontalPodAutoscaler;
 
 public sealed partial class V2HorizontalPodAutoscalerConfig : ResourceConfigBase<V2HorizontalPodAutoscaler>
 {

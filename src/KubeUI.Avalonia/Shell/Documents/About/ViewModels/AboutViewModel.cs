@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace KubeUI.Avalonia.ViewModels;
+namespace KubeUI.Avalonia.Shell.Documents.About.ViewModels;
 
 public sealed partial class AboutViewModel : ViewModelBase
 {

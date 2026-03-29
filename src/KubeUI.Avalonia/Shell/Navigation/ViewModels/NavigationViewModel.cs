@@ -17,10 +17,12 @@ using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.Features.Clusters.Overview.ViewModels;
+using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Kubernetes;
 using KubeUI.Avalonia.Resources;
 
-namespace KubeUI.Avalonia.ViewModels;
+namespace KubeUI.Avalonia.Shell.Navigation.ViewModels;
 
 public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 {

@@ -1,6 +1,10 @@
 using KubeUI.Kubernetes;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Options;
+using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 
-namespace KubeUI.Avalonia.ViewModels;
+namespace KubeUI.Avalonia.Features.Clusters.Settings.ViewModels;
 
 public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializeCluster
 {

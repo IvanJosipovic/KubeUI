@@ -1,4 +1,4 @@
-<UserControl
+﻿<UserControl
     x:Class="KubeUI.Avalonia.Resources.Network.v1.Service.Views.PropertiesView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"

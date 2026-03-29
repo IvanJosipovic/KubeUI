@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace KubeUI.Avalonia.Views;
+namespace KubeUI.Avalonia.Shell.Main.Views;
 
 public partial class MainView : UserControl
 {

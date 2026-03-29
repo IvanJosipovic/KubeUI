@@ -7,7 +7,7 @@ using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Resources.Workloads.v1.StatefulSet.Views;
 
-namespace KubeUI.Avalonia.Resources.Workloads;
+namespace KubeUI.Avalonia.Resources.Workloads.v1.StatefulSet;
 
 public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulSet>
 {

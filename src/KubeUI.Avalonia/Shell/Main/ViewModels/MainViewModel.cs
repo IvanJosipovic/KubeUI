@@ -4,11 +4,13 @@ using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using KubeUI.Avalonia.Features.Clusters.Catalog.ViewModels;
+using KubeUI.Avalonia.Options;
 using KubeUI.Kubernetes;
 using Velopack;
 using Velopack.Sources;
 
-namespace KubeUI.Avalonia.ViewModels;
+namespace KubeUI.Avalonia.Shell.Main.ViewModels;
 
 public sealed partial class MainViewModel : ViewModelBase
 {

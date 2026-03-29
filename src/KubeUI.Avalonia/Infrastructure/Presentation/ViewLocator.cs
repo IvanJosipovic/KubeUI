@@ -4,7 +4,7 @@ using Avalonia.Controls.Templates;
 using Dock.Model.Core;
 using KubeUI.Kubernetes;
 
-namespace KubeUI.Avalonia;
+namespace KubeUI.Avalonia.Infrastructure.Presentation;
 
 public sealed class ViewLocator : IDataTemplate
 {

@@ -1,7 +1,7 @@
 using k8s.Models;
 using KubeUI.Kubernetes;
 
-namespace KubeUI.Avalonia.Views;
+namespace KubeUI.Avalonia.Features.Resources.Yaml.Views;
 
 public sealed partial class ResourceYamlView : UserControl
 {

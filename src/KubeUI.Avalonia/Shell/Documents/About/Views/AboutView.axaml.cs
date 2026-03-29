@@ -1,4 +1,4 @@
-namespace KubeUI.Avalonia.Views;
+namespace KubeUI.Avalonia.Shell.Documents.About.Views;
 
 public sealed partial class AboutView : UserControl
 {

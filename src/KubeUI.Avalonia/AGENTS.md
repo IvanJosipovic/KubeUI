@@ -10,7 +10,6 @@ This guide supplements the repository root `AGENTS.md` and defines the Avalonia-
   - `Controls/` for reusable controls scoped to that feature or shell area
   - `Behaviors/` for behaviors scoped to that feature or shell area
 - Keep shared, cross-feature UI helpers out of feature folders only when they are truly shared across multiple areas.
-- Shell areas are app chrome and orchestration, but they still use the same `Views / ViewModels / Controls / Behaviors` organization as feature folders.
 
 ## 2) Avalonia UI best practices
 

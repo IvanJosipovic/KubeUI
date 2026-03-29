@@ -1,7 +1,7 @@
 using Dock.Model.Controls;
 using Dock.Model.Core;
 
-namespace KubeUI.Avalonia;
+namespace KubeUI.Avalonia.Infrastructure.Docking;
 
 public static class FactoryExtensions
 {

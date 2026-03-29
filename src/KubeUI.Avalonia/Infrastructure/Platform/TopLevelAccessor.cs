@@ -1,6 +1,6 @@
 using Avalonia.Controls.ApplicationLifetimes;
 
-namespace KubeUI.Avalonia;
+namespace KubeUI.Avalonia.Infrastructure.Platform;
 
 public static class TopLevelAccessor
 {

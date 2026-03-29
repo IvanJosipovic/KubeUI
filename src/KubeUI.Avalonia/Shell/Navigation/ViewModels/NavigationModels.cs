@@ -3,7 +3,7 @@ using System.Windows.Input;
 using FluentIcons.Common;
 using Swordfish.NET.Collections;
 
-namespace KubeUI.Avalonia.ViewModels;
+namespace KubeUI.Avalonia.Shell.Navigation.ViewModels;
 
 public static class NavigationTargets
 {

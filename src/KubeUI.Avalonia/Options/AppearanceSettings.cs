@@ -1,4 +1,4 @@
-namespace KubeUI.Avalonia;
+namespace KubeUI.Avalonia.Options;
 
 public enum LocalThemeVariant
 {
