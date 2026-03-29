@@ -1,5 +1,6 @@
 using Avalonia.Controls.Templates;
 using Avalonia.Logging;
+using KubeUI.Avalonia.Controls.DataGridFilters;
 using KubeUI.Kubernetes;
 using KubeUI.Avalonia.ViewModels;
 using Microsoft.Extensions.Hosting;
@@ -22,6 +23,8 @@ public static partial class KubeUIShellServiceCollectionExtensions
         services.AddSingleton<IYamlValidationService, YamlSyntaxValidationService>();
         services.AddSingleton<ILogSink, LogSink>();
         services.AddSingleton<ViewLocator>();
+        services.AddSingleton<DataGridColumnFilterService>();
+        services.AddSingleton<DataGridColumnFilterFlyoutFactory>();
         services.AddSingleton<IDataTemplate>(sp => sp.GetRequiredService<ViewLocator>());
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<IClusterSettingsStore>(sp => sp.GetRequiredService<ISettingsService>());

@@ -1,9 +1,8 @@
 using System.Reflection;
-using Avalonia.Controls.Primitives;
-using Avalonia.Styling;
 using Dock.Model.Core;
 using k8s;
 using k8s.Models;
+using KubeUI.Avalonia.Controls.DataGridFilters;
 using KubeUI.Kubernetes;
 using KubeUI.Avalonia.Resources;
 
@@ -11,12 +10,14 @@ namespace KubeUI.Avalonia.Views;
 
 public partial class ResourceListView : UserControl
 {
+    private readonly DataGridColumnFilterFlyoutFactory _filterFlyoutFactory;
     private readonly ILogger<ResourceListView> _logger;
 
     public ResourceListView()
     {
         InitializeComponent();
 
+        _filterFlyoutFactory = Application.Current.GetRequiredService<DataGridColumnFilterFlyoutFactory>();
         _logger = Application.Current.GetRequiredService<ILogger<ResourceListView>>();
 
 #if DEBUG
@@ -57,6 +58,26 @@ public partial class ResourceListView : UserControl
             PART_Grid.FilteringModel = vm.FilteringModel;
             PART_Grid.SearchModel = vm.SearchModel;
             PART_Grid.Selection = vm.SelectionModel;
+
+            AttachFilterFlyouts(vm);
+        }
+    }
+
+    private static IResourceListColumn? GetResourceListColumn(DataGridColumnDefinition columnDefinition)
+    {
+        return columnDefinition.Tag as IResourceListColumn;
+    }
+
+    private void AttachFilterFlyouts(IResourceListViewModel vm)
+    {
+        foreach (var column in vm.ColumnDefinitions)
+        {
+            if (GetResourceListColumn(column) is not IResourceListColumn resourceColumn)
+            {
+                continue;
+            }
+
+            column.FilterFlyout = _filterFlyoutFactory.Create(resourceColumn, column, vm.FilteringModel);
         }
     }
 

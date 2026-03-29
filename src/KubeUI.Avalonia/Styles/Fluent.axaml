@@ -8,6 +8,13 @@
     xmlns:u="https://irihi.tech/ursa">
     <Styles.Resources>
         <ResourceDictionary>
+            <ControlTheme x:Key="DataGridFilterFlyoutPresenterTheme" TargetType="FlyoutPresenter" BasedOn="{StaticResource {x:Type FlyoutPresenter}}">
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="MinWidth" Value="0" />
+                <Setter Property="MinHeight" Value="0" />
+                <Setter Property="HorizontalContentAlignment" Value="Left" />
+                <Setter Property="VerticalContentAlignment" Value="Top" />
+            </ControlTheme>
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
                     <Color x:Key="RegionColor">#EEEEF2</Color>
