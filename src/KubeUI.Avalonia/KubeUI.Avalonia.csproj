@@ -82,7 +82,7 @@
       <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="Dock.Avalonia" Version="11.3.11.16" />
     <PackageReference Include="Dock.Avalonia.Themes.Fluent" Version="11.3.11.16" />
     <PackageReference Include="Dock.Model.Mvvm" Version="11.3.11.16" />
