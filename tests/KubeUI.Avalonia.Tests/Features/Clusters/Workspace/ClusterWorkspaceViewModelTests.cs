@@ -425,7 +425,7 @@ internal sealed class BlockingPodPermissionResourceConfig : IResourceConfig
     public int Order => 0;
     public string Name => "Pods";
     public string? Category => "Workloads";
-    public IStyle ListStyle() => null;
+    public IStyle ListStyle() => new global::Avalonia.Styling.Style();
     public Type Type { get; } = typeof(V1Pod);
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
     public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
@@ -466,7 +466,7 @@ internal sealed class ImmediatePermissionResourceConfig : IResourceConfig
     public int Order => 0;
     public string Name { get; }
     public string? Category => null;
-    public IStyle ListStyle() => null;
+    public IStyle ListStyle() => new global::Avalonia.Styling.Style();
     public Type Type { get; }
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
     public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();

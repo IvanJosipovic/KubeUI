@@ -997,7 +997,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         workspace.AddResourceConfigForTest(alphaConfig);
 
-        _ = Task.Run(async () =>
+        await Task.Run(async () =>
         {
             await Task.Delay(50);
             workspace.AddResourceConfigForTest(betaConfig);
@@ -1397,7 +1397,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
             .FirstOrDefault(x => x.ControlType == typeof(V1Namespace));
 
         resourceLink.ShouldNotBeNull();
-        resourceLink.Count.ShouldNotBeNull();
+        await resourceLink.Count.ShouldNotBeNull();
 
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha Resources"));
         await Task.Delay(250);
@@ -1408,7 +1408,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
             .FirstOrDefault(x => x.ControlType == typeof(V1Namespace));
 
         rebuiltResourceLink.ShouldNotBeNull();
-        rebuiltResourceLink.Count.ShouldNotBeNull();
+        await rebuiltResourceLink.Count.ShouldNotBeNull();
     }
 
     [AvaloniaFact]
@@ -1510,7 +1510,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
             .Single(x => x.ControlType == typeof(V1Namespace));
 
         ReferenceEquals(namespaceLink, updatedNamespaceLink).ShouldBeTrue();
-        updatedNamespaceLink.Count.ShouldNotBeNull();
+        await updatedNamespaceLink.Count.ShouldNotBeNull();
     }
 
     [AvaloniaFact]
@@ -1819,7 +1819,7 @@ internal class FakeCustomResourceConfig : IResourceConfig
     public int Order { get; set; }
     public string Name { get; }
     public string? Category => null;
-    public IStyle ListStyle() => null;
+    public IStyle ListStyle() => new global::Avalonia.Styling.Style();
     public Task UpdatePermissions() => Task.CompletedTask;
     public Type Type { get; }
 
@@ -1851,7 +1851,7 @@ internal class FakeResourceConfig : IResourceConfig
     public int Order { get; set; }
     public string Name { get; }
     public string? Category => null;
-    public IStyle ListStyle() => null;
+    public IStyle ListStyle() => new global::Avalonia.Styling.Style();
     public Task UpdatePermissions() => Task.CompletedTask;
     public Type Type { get; }
 
@@ -1882,7 +1882,7 @@ internal sealed class DeferredPermissionResourceConfig : IResourceConfig
     public int Order { get; set; }
     public string Name { get; }
     public string? Category => null;
-    public IStyle ListStyle() => null;
+    public IStyle ListStyle() => new global::Avalonia.Styling.Style();
     public Type Type { get; }
 
     public Task UpdatePermissions()
@@ -1946,7 +1946,7 @@ internal sealed class SlowPermissionResourceConfig : IResourceConfig
     public int Order { get; set; }
     public string Name { get; }
     public string? Category => null;
-    public IStyle ListStyle() => null;
+    public IStyle ListStyle() => new global::Avalonia.Styling.Style();
     public Type Type { get; }
 
     public async Task UpdatePermissions()

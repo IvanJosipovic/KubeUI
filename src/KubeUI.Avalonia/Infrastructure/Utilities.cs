@@ -204,7 +204,7 @@ public static class Utilities
     {
         var fooRef = s_deserializeJson.MakeGenericMethod(type);
 
-        return fooRef.Invoke(null, [json, null]);
+        return fooRef.Invoke(null, [json, null]) ?? throw new InvalidOperationException("Deserialization returned null.");
     }
 
     public static void HandleException(ILogger logger, INotificationManager notificationManage, Exception ex, string message, NotificationType type = NotificationType.Error, bool sendNotification = false)

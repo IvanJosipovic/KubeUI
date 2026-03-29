@@ -890,7 +890,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         //SendRequest(string relativeUri, HttpMethod method, IReadOnlyDictionary<string, IReadOnlyList<string>> customHeaders, T body, CancellationToken cancellationToken)
         var resp = await (Task<HttpResponseMessage>)gen.Invoke(Client, [$"/{(native ? "api" : "apis")}?timeout=32s", HttpMethod.Get, headers, null, CancellationToken.None]);
 
-        return await resp.Content.ReadFromJsonAsync<V2beta1APIGroupDiscoveryList>();
+        return await resp.Content.ReadFromJsonAsync<V2beta1APIGroupDiscoveryList>().ConfigureAwait(false)
+            ?? throw new InvalidOperationException("API group discovery response was empty.");
     }
 
     public async Task<bool> IsResourceReady<T>(CancellationToken? token = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()

@@ -1482,7 +1482,7 @@ internal sealed class FakeDoubleTapResourceConfig : IResourceConfig
     public int Order => 0;
     public string Name => "Pods";
     public string? Category => null;
-    public IStyle ListStyle() => null;
+    public IStyle ListStyle() => new global::Avalonia.Styling.Style();
     public Task UpdatePermissions() => Task.CompletedTask;
     public Type Type => typeof(V1Pod);
     public IRelayCommand NewResourceCommand => new RelayCommand(() => { });
