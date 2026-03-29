@@ -1,0 +1,19 @@
+<UserControl
+    x:Class="KubeUI.Avalonia.Resources.Network.v1.NetworkPolicy.Views.PropertiesView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="using:KubeUI.Avalonia.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:k8s.Models"
+    d:DesignHeight="250"
+    d:DesignWidth="450"
+    x:DataType="models:V1NetworkPolicy"
+    mc:Ignorable="d">
+    <StackPanel>
+        <c:PropertyItem Key="Pod Selector Labels" Value="{Binding Spec.PodSelector.MatchLabels.Count}" />
+        <c:PropertyItem Key="Policy Types" Value="{Binding Spec.PolicyTypes.Count}" />
+        <c:PropertyItem Key="Ingress Rules" Value="{Binding Spec.Ingress.Count}" />
+        <c:PropertyItem Key="Egress Rules" Value="{Binding Spec.Egress.Count}" />
+    </StackPanel>
+</UserControl>

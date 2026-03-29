@@ -114,7 +114,6 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         LinkEvent(Resources, graph);
 
         LinkIngress(Resources, graph);
-        LinkEndpoints(Resources, graph);
         LinkEndpointSlice(Resources, graph);
 
         LinkConfigMap(Resources, graph);
@@ -400,47 +399,6 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 }
 
                 //todo Backend.Resource
-            }
-        }
-    }
-
-    private static void LinkEndpoints(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
-    {
-        foreach (var start in resources)
-        {
-            if (start.Resource is V1Endpoints endpoint)
-            {
-                if (endpoint.Subsets == null)
-                {
-                    continue;
-                }
-
-                foreach (var subset in endpoint.Subsets)
-                {
-                    if (subset.Addresses == null)
-                    {
-                        continue;
-                    }
-
-                    foreach (var address in subset.Addresses)
-                    {
-                        if (address.TargetRef == null)
-                        {
-                            continue;
-                        }
-
-                        foreach (var end in resources)
-                        {
-                            if (end.Resource is V1Pod pod)
-                            {
-                                if (pod.Uid() == address.TargetRef.Uid)
-                                {
-                                    graph.Edges.Add(new Edge(start, end));
-                                }
-                            }
-                        }
-                    }
-                }
             }
         }
     }

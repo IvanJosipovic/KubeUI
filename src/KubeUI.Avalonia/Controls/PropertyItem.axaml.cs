@@ -6,7 +6,7 @@ public partial class PropertyItem : UserControl
     public partial string Key { get; set; }
 
     [GeneratedDirectProperty]
-    public partial string Value { get; set; }
+    public partial object? Value { get; set; }
 
     public PropertyItem()
     {

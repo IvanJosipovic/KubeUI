@@ -1,10 +1,12 @@
+using Avalonia.Controls;
 using k8s.Models;
+using KubeUI.Avalonia.Resources.Configuration.v1.PriorityClass.Views;
 
 namespace KubeUI.Avalonia.Resources.Configuration;
 
 public sealed partial class V1PriorityClassConfig : ResourceConfigBase<V1PriorityClass>
 {
-    public override string Category => "Configuration";
+    public override string Category => CategoryString("ResourceConfig_Category_Configuration", "Configuration");
     public override int Order => 6;
 
     public override IList<IResourceListColumn> Columns()
@@ -26,5 +28,7 @@ public sealed partial class V1PriorityClassConfig : ResourceConfigBase<V1Priorit
             AgeColumn(),
         ];
     }
+
+    public override Control[] Properties(V1PriorityClass resource) => [new PropertiesView()];
 }
 

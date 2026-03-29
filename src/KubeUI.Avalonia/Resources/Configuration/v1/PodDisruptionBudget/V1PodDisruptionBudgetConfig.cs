@@ -1,11 +1,13 @@
+using Avalonia.Controls;
 using k8s.Models;
+using KubeUI.Avalonia.Resources.Configuration.v1.PodDisruptionBudget.Views;
 
 namespace KubeUI.Avalonia.Resources.Configuration;
 
 public sealed partial class V1PodDisruptionBudgetConfig : ResourceConfigBase<V1PodDisruptionBudget>
 {
     public override bool IsNamespaced => true;
-    public override string Category => "Configuration";
+    public override string Category => CategoryString("ResourceConfig_Category_Configuration", "Configuration");
     public override int Order => 5;
 
     public override IList<IResourceListColumn> Columns()
@@ -42,5 +44,7 @@ public sealed partial class V1PodDisruptionBudgetConfig : ResourceConfigBase<V1P
             AgeColumn(),
         ];
     }
+
+    public override Control[] Properties(V1PodDisruptionBudget resource) => [new PropertiesView()];
 }
 

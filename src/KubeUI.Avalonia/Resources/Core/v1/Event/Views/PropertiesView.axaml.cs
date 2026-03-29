@@ -3,9 +3,9 @@ using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Core.v1.Event.Views;
 
-public partial class EventPropertiesView : UserControl
+public partial class PropertiesView : UserControl
 {
-    public EventPropertiesView()
+    public PropertiesView()
     {
         InitializeComponent();
 #if DEBUG

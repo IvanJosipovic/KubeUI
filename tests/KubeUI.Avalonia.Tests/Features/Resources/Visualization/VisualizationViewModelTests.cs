@@ -2379,55 +2379,6 @@ public class VisualizationViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public async Task LinkPodToEndpointEndpoints()
-    {
-        var cluster = await CreateClusterAsync();
-
-        await cluster.AddOrUpdateResource(new V1Pod
-        {
-            Metadata = new()
-            {
-                Name = "my-pod",
-                NamespaceProperty = "default",
-                Uid = "pod-uid"
-            },
-            Spec = new()
-        });
-
-        await cluster.AddOrUpdateResource(new V1Endpoints
-        {
-            Metadata = new()
-            {
-                Name = "my-endpoints",
-                NamespaceProperty = "default"
-            },
-            Subsets =
-            [
-                new()
-                {
-                    Addresses =
-                    [
-                        new()
-                        {
-                            TargetRef = new()
-                            {
-                                Uid = "pod-uid"
-                            }
-                        }
-                    ]
-                }
-            ]
-        });
-
-        var vm = CreateViewModel();
-        vm.Initialize(cluster);
-
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Endpoints>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Pod>();
-    }
-
-    [AvaloniaFact]
     public async Task LinkIngressToService()
     {
         var cluster = await CreateClusterAsync();

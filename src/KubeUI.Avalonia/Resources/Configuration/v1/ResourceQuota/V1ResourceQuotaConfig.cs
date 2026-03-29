@@ -1,11 +1,13 @@
+using Avalonia.Controls;
 using k8s.Models;
+using KubeUI.Avalonia.Resources.Configuration.v1.ResourceQuota.Views;
 
 namespace KubeUI.Avalonia.Resources.Configuration;
 
 public sealed partial class V1ResourceQuotaConfig : ResourceConfigBase<V1ResourceQuota>
 {
     public override bool IsNamespaced => true;
-    public override string Category => "Configuration";
+    public override string Category => CategoryString("ResourceConfig_Category_Configuration", "Configuration");
     public override int Order => 2;
 
     public override IList<IResourceListColumn> Columns()
@@ -15,5 +17,7 @@ public sealed partial class V1ResourceQuotaConfig : ResourceConfigBase<V1Resourc
             NamespaceColumn(),
         ];
     }
+
+    public override Control[] Properties(V1ResourceQuota resource) => [new PropertiesView()];
 }
 

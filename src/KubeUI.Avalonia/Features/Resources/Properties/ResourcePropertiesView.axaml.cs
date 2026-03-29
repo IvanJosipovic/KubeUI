@@ -72,8 +72,7 @@ public partial class ResourcePropertiesView : UserControl
         PART_Items.Children.Add(new PropertyItem { Key = AppResources.ResourcePropertiesView_Name, Value = obj.Metadata.Name });
         PART_Items.Children.Add(new PropertyItem { Key = AppResources.ResourcePropertiesView_Namespace, Value = obj.Metadata.NamespaceProperty });
 
-        var created = obj.Metadata.CreationTimestamp;
-        PART_Items.Children.Add(new PropertyItem { Key = AppResources.ResourcePropertiesView_Created, Value = created.HasValue ? created.Value.ToLocalTime().ToString() : "" });
+        PART_Items.Children.Add(new PropertyItem { Key = AppResources.ResourcePropertiesView_Created, Value = obj.Metadata.CreationTimestamp });
 
         var extras = _vm.ResourceConfig.Properties(obj);
         if (extras != null)

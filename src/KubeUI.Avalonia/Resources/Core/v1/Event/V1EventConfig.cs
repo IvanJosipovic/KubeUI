@@ -58,7 +58,7 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
         ];
     }
 
-    public override Control[] Properties(Corev1Event resource) => [new EventPropertiesView()];
+    public override Control[] Properties(Corev1Event resource) => [new PropertiesView()];
 
     public override IStyle ListStyle()
     {

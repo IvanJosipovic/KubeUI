@@ -1,11 +1,13 @@
+using Avalonia.Controls;
 using k8s.Models;
+using KubeUI.Avalonia.Resources.Configuration.v2.HorizontalPodAutoscaler.Views;
 
-namespace KubeUI.Avalonia.Resources.Network;
+namespace KubeUI.Avalonia.Resources.Configuration.v2;
 
 public sealed partial class V2HorizontalPodAutoscalerConfig : ResourceConfigBase<V2HorizontalPodAutoscaler>
 {
     public override bool IsNamespaced => true;
-    public override string Category => "Network";
+    public override string Category => CategoryString("ResourceConfig_Category_Configuration", "Configuration");
     public override int Order => 4;
 
     public override IList<IResourceListColumn> Columns()
@@ -40,5 +42,7 @@ public sealed partial class V2HorizontalPodAutoscalerConfig : ResourceConfigBase
             },
         ];
     }
+
+    public override Control[] Properties(V2HorizontalPodAutoscaler resource) => [new PropertiesView()];
 }
 

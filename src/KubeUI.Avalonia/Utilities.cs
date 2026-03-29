@@ -82,7 +82,7 @@ public static class Utilities
             return resourceBasePath + "ds.svg";
         }
 
-        if (type == typeof(V1Endpoints) || type == typeof(V1EndpointSlice))
+        if (type == typeof(V1EndpointSlice))
         {
             return resourceBasePath + "ep.svg";
         }

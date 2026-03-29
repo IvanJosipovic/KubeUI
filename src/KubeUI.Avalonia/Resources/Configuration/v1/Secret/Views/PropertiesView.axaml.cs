@@ -6,9 +6,9 @@ using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Configuration.v1.Secret.Views;
 
-public partial class SecretPropertiesView : UserControl
+public partial class PropertiesView : UserControl
 {
-    public SecretPropertiesView()
+    public PropertiesView()
     {
         InitializeComponent();
 #if DEBUG

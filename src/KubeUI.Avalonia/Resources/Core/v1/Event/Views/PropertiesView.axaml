@@ -1,5 +1,5 @@
 <UserControl
-    x:Class="KubeUI.Avalonia.Resources.Core.v1.Event.Views.EventPropertiesView"
+    x:Class="KubeUI.Avalonia.Resources.Core.v1.Event.Views.PropertiesView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:c="using:KubeUI.Avalonia.Controls"

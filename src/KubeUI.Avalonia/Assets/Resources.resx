@@ -304,6 +304,21 @@ Are you sure?</value>
   <data name="NavigationView_ToolTip_Connected" xml:space="preserve">
     <value>Connected</value>
   </data>
+  <data name="ResourceConfig_Category_AccessControl" xml:space="preserve">
+    <value>Access Control</value>
+  </data>
+  <data name="ResourceConfig_Category_Configuration" xml:space="preserve">
+    <value>Configuration</value>
+  </data>
+  <data name="ResourceConfig_Category_Network" xml:space="preserve">
+    <value>Network</value>
+  </data>
+  <data name="ResourceConfig_Category_Storage" xml:space="preserve">
+    <value>Storage</value>
+  </data>
+  <data name="ResourceConfig_Category_Workloads" xml:space="preserve">
+    <value>Workloads</value>
+  </data>
   <data name="NavigationView_ContextMenu_Connect" xml:space="preserve">
     <value>Connect</value>
   </data>

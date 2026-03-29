@@ -1,4 +1,6 @@
+using Avalonia.Controls;
 using k8s.Models;
+using KubeUI.Avalonia.Resources.Core.v1.Namespace.Views;
 
 namespace KubeUI.Avalonia.Resources.Core.v1;
 
@@ -25,5 +27,7 @@ public sealed partial class V1NamespaceConfig : ResourceConfigBase<V1Namespace>
             AgeColumn(),
         ];
     }
+
+    public override Control[] Properties(V1Namespace resource) => [new PropertiesView()];
 }
 

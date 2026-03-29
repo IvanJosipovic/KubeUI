@@ -10,7 +10,7 @@ namespace KubeUI.Avalonia.Resources.Configuration.v1.Secret;
 public sealed partial class V1SecretConfig : ResourceConfigBase<k8s.Models.V1Secret>
 {
     public override bool IsNamespaced => true;
-    public override string Category => "Configuration";
+    public override string Category => CategoryString("ResourceConfig_Category_Configuration", "Configuration");
     public override int Order => 1;
 
     public override IList<IResourceListColumn> Columns()
@@ -42,7 +42,7 @@ public sealed partial class V1SecretConfig : ResourceConfigBase<k8s.Models.V1Sec
         ];
     }
 
-    public override Control[] Properties(k8s.Models.V1Secret resource) => [new SecretPropertiesView()];
+    public override Control[] Properties(k8s.Models.V1Secret resource) => [new PropertiesView()];
 }
 
 

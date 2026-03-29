@@ -12,7 +12,7 @@ namespace KubeUI.Avalonia.Resources.Workloads;
 public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulSet>
 {
     public override bool IsNamespaced => true;
-    public override string Category => "Workloads";
+    public override string Category => CategoryString("ResourceConfig_Category_Workloads", "Workloads");
 
     public override int Order => 3;
 

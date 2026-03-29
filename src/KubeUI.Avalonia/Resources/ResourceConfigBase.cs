@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text;
+using System.Globalization;
 using Avalonia.Controls.Notifications;
 using Avalonia.Styling;
 using Dock.Model.Core;
@@ -40,6 +41,11 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     public virtual string Name => Kind.Kind.Humanize(LetterCasing.Title).Pluralize();
 
     public virtual string? Category { get; } = null;
+
+    protected static string CategoryString(string resourceKey, string fallback)
+    {
+        return Assets.Resources.ResourceManager.GetString(resourceKey, CultureInfo.CurrentUICulture) ?? fallback;
+    }
 
     public virtual bool ShowNewResource { get; } = true;
 

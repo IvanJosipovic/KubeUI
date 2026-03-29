@@ -1,0 +1,16 @@
+<UserControl
+    x:Class="KubeUI.Avalonia.Resources.Configuration.v1.LimitRange.Views.PropertiesView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="using:KubeUI.Avalonia.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2006"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:k8s.Models"
+    d:DesignHeight="220"
+    d:DesignWidth="450"
+    x:DataType="models:V1LimitRange"
+    mc:Ignorable="d">
+    <StackPanel>
+        <c:PropertyItem Key="Limits" Value="{Binding Spec.Limits.Count}" />
+    </StackPanel>
+</UserControl>

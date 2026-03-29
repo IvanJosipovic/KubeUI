@@ -1,11 +1,13 @@
+using Avalonia.Controls;
 using k8s.Models;
+using KubeUI.Avalonia.Resources.Storage.v1.PersistentVolumeClaim.Views;
 
 namespace KubeUI.Avalonia.Resources.Storage;
 
 public sealed partial class V1PersistentVolumeClaimConfig : ResourceConfigBase<V1PersistentVolumeClaim>
 {
     public override bool IsNamespaced => true;
-    public override string Category => "Storage";
+    public override string Category => CategoryString("ResourceConfig_Category_Storage", "Storage");
     public override int Order => 0;
 
     public override IList<IResourceListColumn> Columns()
@@ -35,5 +37,7 @@ public sealed partial class V1PersistentVolumeClaimConfig : ResourceConfigBase<V
             },
         ];
     }
+
+    public override Control[] Properties(V1PersistentVolumeClaim resource) => [new PropertiesView()];
 }
 
