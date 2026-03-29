@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Xml;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubernetesCRDModelGen;
 
 namespace KubeUI.Kubernetes;
 
@@ -12,22 +13,29 @@ public sealed class ModelCache
 
     public ConcurrentDictionary<Assembly, XmlDocument> Cache { get; } = new();
 
+    private readonly ConcurrentDictionary<Assembly, GeneratedAssemblyUnloadHandle> _unloadHandles = new();
+
     public ConcurrentDictionary<string, Type> TypeCache { get; } = new();
 
-    public void AddToCache(Assembly assembly, XmlDocument xmlDocument)
+    public void AddToCache(Assembly assembly, XmlDocument xmlDocument, GeneratedAssemblyUnloadHandle? unloadHandle = null)
     {
         lock (_gate)
         {
             if (Cache.Keys.Any(x => x.FullName == assembly.FullName))
             {
+                unloadHandle?.Dispose();
                 return;
             }
 
-            AddAssemblyUnsafe(assembly, xmlDocument);
+            AddAssemblyUnsafe(assembly, xmlDocument, unloadHandle);
         }
     }
 
-    public (Type? previousType, Type? currentType) ReplaceCustomResourceDefinition(V1CustomResourceDefinition crd, Assembly assembly, XmlDocument xmlDocument)
+    public (Type? previousType, Type? currentType) ReplaceCustomResourceDefinition(
+        V1CustomResourceDefinition crd,
+        Assembly assembly,
+        XmlDocument xmlDocument,
+        GeneratedAssemblyUnloadHandle? unloadHandle = null)
     {
         var key = GetCustomResourceDefinitionTypeKey(crd);
 
@@ -40,7 +48,7 @@ public sealed class ModelCache
             }
 
             RemoveAssembliesWithSameIdentityUnsafe(assembly);
-            AddAssemblyUnsafe(assembly, xmlDocument);
+            AddAssemblyUnsafe(assembly, xmlDocument, unloadHandle);
             TypeCache.TryGetValue(key, out var currentType);
             return (previousType, currentType);
         }
@@ -127,7 +135,16 @@ public sealed class ModelCache
 
     private void AddAssemblyUnsafe(Assembly assembly, XmlDocument xmlDocument)
     {
+        AddAssemblyUnsafe(assembly, xmlDocument, null);
+    }
+
+    private void AddAssemblyUnsafe(Assembly assembly, XmlDocument xmlDocument, GeneratedAssemblyUnloadHandle? unloadHandle)
+    {
         Cache[assembly] = xmlDocument;
+        if (unloadHandle != null)
+        {
+            _unloadHandles[assembly] = unloadHandle;
+        }
 
         foreach (var entry in GetTypes(assembly))
         {
@@ -150,6 +167,10 @@ public sealed class ModelCache
     private void RemoveAssemblyUnsafe(Assembly assembly)
     {
         Cache.TryRemove(assembly, out _);
+        if (_unloadHandles.TryRemove(assembly, out var unloadHandle))
+        {
+            unloadHandle.Dispose();
+        }
 
         var keysToRemove = TypeCache
             .Where(x => x.Value.Assembly == assembly)

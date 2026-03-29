@@ -149,9 +149,10 @@ spec:
 """;
 
         var crd = (V1CustomResourceDefinition)KubernetesYaml.LoadAllFromString(yaml)[0];
-        var generator = new Generator(new LoggerFactory());
-
-        var (_, xml) = generator.GenerateAssembly(crd, modelNamespace);
+        var generator = new Generator();
+        var result = generator.GenerateAssembly(crd, modelNamespace);
+        using var unloadHandle = result.UnloadHandle;
+        var xml = result.XmlDocumentation;
 
         xml.ShouldNotBeNull();
         xml!.SelectSingleNode("/doc/members/member[@name='P:KubernetesCRDModelGen.Tests.Models.example.com.V1WidgetSpec.Size']/summary")
@@ -160,6 +161,64 @@ spec:
             ?.InnerText.ShouldBe("Whether the widget is enabled.");
         xml.SelectSingleNode("/doc/members/member[@name='P:KubernetesCRDModelGen.Tests.Models.example.com.V1Widget.Spec']/summary")
             ?.InnerText.ShouldBe("Widget desired state.");
+    }
+
+    [Fact]
+    public void RemoveCustomResourceDefinition_UnloadsGeneratedAssembly()
+    {
+        const string modelNamespace = "KubernetesCRDModelGen.Tests.Models";
+        var yaml = """
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: widgets.example.com
+spec:
+  group: example.com
+  names:
+    plural: widgets
+    singular: widget
+    kind: Widget
+    listKind: WidgetList
+  scope: Namespaced
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            metadata:
+              type: object
+            spec:
+              type: object
+              properties:
+                size:
+                  type: string
+""";
+
+        var crd = (V1CustomResourceDefinition)KubernetesYaml.LoadAllFromString(yaml)[0];
+        var generator = new Generator();
+        var result = generator.GenerateAssembly(crd, modelNamespace);
+
+        result.Success.ShouldBeTrue();
+        result.Assembly.ShouldNotBeNull();
+        result.XmlDocumentation.ShouldNotBeNull();
+        result.UnloadHandle.ShouldNotBeNull();
+
+        var cache = new ModelCache();
+        cache.ReplaceCustomResourceDefinition(crd, result.Assembly!, result.XmlDocumentation!, result.UnloadHandle);
+
+        result.UnloadHandle!.IsUnloaded.ShouldBeFalse();
+
+        cache.RemoveCustomResourceDefinition(crd);
+
+        result.UnloadHandle.IsUnloaded.ShouldBeTrue();
+        cache.CheckIfCRDExists(crd).ShouldBeFalse();
     }
 
 }

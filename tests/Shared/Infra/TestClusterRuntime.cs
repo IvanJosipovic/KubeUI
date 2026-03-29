@@ -27,7 +27,7 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     private readonly ConcurrentDictionary<string, bool> _permissions = new(StringComparer.Ordinal);
     private static readonly Lazy<IGenerator> s_sharedGenerator = new(() =>
     {
-        var g = new Generator(NullLoggerFactory.Instance);
+        var g = new Generator();
         g.SetEnumSupport(false);
         return (IGenerator)g;
     });
@@ -595,13 +595,15 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
 
     private async Task ProcessCustomResourceDefinitionAsync(V1CustomResourceDefinition crd)
     {
-        var assembly = _generator.GenerateAssembly(crd, "KubeUI.Models");
-        if (assembly.Item1 == null || assembly.Item2 == null)
+        var result = _generator.GenerateAssembly(crd, "KubeUI.Models");
+
+        if (!result.Success || result.Assembly == null || result.XmlDocumentation == null)
         {
+            result.UnloadHandle?.Dispose();
             throw new InvalidOperationException($"Unable to generate CRD for {crd.Name()}");
         }
 
-        var (previousType, currentType) = ModelCache.ReplaceCustomResourceDefinition(crd, assembly.Item1, assembly.Item2);
+        var (previousType, currentType) = ModelCache.ReplaceCustomResourceDefinition(crd, result.Assembly, result.XmlDocumentation, result.UnloadHandle);
         if (currentType == null)
         {
             throw new InvalidOperationException($"Unable to resolve generated type for {crd.Name()}");

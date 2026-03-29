@@ -18,7 +18,7 @@ public sealed class ClusterAuthTests
             NullLogger<Cluster>.Instance,
             loggerFactory,
             new ModelCache(),
-            new Generator(loggerFactory),
+            new Generator(),
             new TestClusterSettingsStore(),
             new ServiceCollection().BuildServiceProvider());
 

@@ -450,15 +450,29 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
 
     private async Task<bool> ProcessNewCRD(V1CustomResourceDefinition crd)
     {
-        var assembly = _generator.GenerateAssembly(crd, "KubeUI.Models");
+        var result = _generator.GenerateAssembly(crd, "KubeUI.Models");
 
-        if (assembly.Item1 == null || assembly.Item2 == null)
+        if (!result.Success || result.Assembly == null || result.XmlDocumentation == null)
         {
-            _logger.LogWarning("Unable to generate CRD for {name}", crd.Name());
+            result.UnloadHandle?.Dispose();
+            foreach (var diagnostic in result.Diagnostics)
+            {
+                _logger.LogWarning("CRD generation diagnostic for {name}: {id} {message}", crd.Name(), diagnostic.Id, diagnostic.Message);
+            }
+
+            if (result.Exception != null)
+            {
+                _logger.LogWarning(result.Exception, "Unable to generate CRD for {name}", crd.Name());
+            }
+            else
+            {
+                _logger.LogWarning("Unable to generate CRD for {name}", crd.Name());
+            }
+
             return false;
         }
 
-        var (previousType, currentType) = ModelCache.ReplaceCustomResourceDefinition(crd, assembly.Item1, assembly.Item2);
+        var (previousType, currentType) = ModelCache.ReplaceCustomResourceDefinition(crd, result.Assembly, result.XmlDocumentation, result.UnloadHandle);
         if (currentType == null)
         {
             _logger.LogWarning("Unable to resolve generated type for CRD {name}", crd.Name());
