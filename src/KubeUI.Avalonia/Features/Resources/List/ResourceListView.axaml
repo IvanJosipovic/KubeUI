@@ -36,13 +36,12 @@
                 VerticalContentAlignment="Center"
                 Content="{Binding ItemCount, StringFormat={x:Static assets:Resources.ResourceListView_ItemsFormat}}" />
 
-            <Grid
+            <StackPanel
                 Grid.Column="3"
                 MaxWidth="456"
                 HorizontalAlignment="Right"
-                ColumnDefinitions="200,200,Auto">
+                Orientation="Horizontal">
                 <TextBox
-                    Grid.Column="0"
                     Width="200"
                     Margin="0,0,2,0"
                     MinWidth="120"
@@ -54,7 +53,6 @@
                     Watermark="{x:Static assets:Resources.ResourceListView_SearchWatermark}" />
 
                 <u:MultiComboBox
-                    Grid.Column="1"
                     Width="200"
                     MaxHeight="20"
                     Margin="0,0,2,0"
@@ -79,14 +77,13 @@
                 </u:MultiComboBox>
 
                 <ToggleButton
-                    Grid.Column="2"
                     Margin="0,0,2,0"
                     IsChecked="{Binding IsNamespaceSelectionLinked}"
                     IsVisible="{Binding ResourceConfig.IsNamespaced}"
                     ToolTip.Tip="{x:Static assets:Resources.ResourceListView_NamespaceLink}">
                     <ic:FluentIcon Icon="Link" />
                 </ToggleButton>
-            </Grid>
+            </StackPanel>
         </Grid>
 
         <!--  Data Grid  -->

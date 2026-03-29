@@ -56,7 +56,7 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : clas
 
                     if (item.Type == "string")
                     {
-                        var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<T, string>(item.JsonPath, true);
+                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, string>(item.JsonPath, true);
 
                         var colDef = new ResourceListColumn<T, string>()
                         {
@@ -69,7 +69,7 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : clas
                     }
                     else if (item.Type == "number")
                     {
-                        var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<T, double>(item.JsonPath, true);
+                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, double>(item.JsonPath, true);
 
                         var colDef = new ResourceListColumn<T, double>()
                         {
@@ -83,7 +83,7 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : clas
                     }
                     else if (item.Type == "integer" && item.Format == "int64")
                     {
-                        var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<T, long>(item.JsonPath, true);
+                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, long>(item.JsonPath, true);
 
                         var colDef = new ResourceListColumn<T, long>()
                         {
@@ -97,7 +97,7 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : clas
                     }
                     else if (item.Type == "integer")
                     {
-                        var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<T, int>(item.JsonPath, true);
+                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, int>(item.JsonPath, true);
 
                         var colDef = new ResourceListColumn<T, int>()
                         {
@@ -111,7 +111,7 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : clas
                     }
                     else if (item.Type == "date")
                     {
-                        var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<T, DateTime>(item.JsonPath, true);
+                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, DateTime>(item.JsonPath, true);
 
                         var colDef = new ResourceListColumn<T, DateTime>()
                         {
@@ -124,7 +124,7 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : clas
                     }
                     else if (item.Type == "boolean")
                     {
-                        var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<T, bool>(item.JsonPath, true);
+                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, bool>(item.JsonPath, true);
 
                         var colDef = new ResourceListColumn<T, bool>()
                         {
@@ -138,7 +138,7 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : clas
                     }
                     else if (item.Type == "enum")
                     {
-                        var exp = JsonPathLINQ.JsonPathLINQ.GetExpression<T, Enum>(item.JsonPath, true);
+                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, Enum>(item.JsonPath, true);
 
                         var colDef = new ResourceListColumn<T, string>()
                         {
