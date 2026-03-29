@@ -1,9 +1,9 @@
 <Styles
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:controls="using:KubeUI.Avalonia.Controls"
     xmlns:converters="using:KubeUI.Avalonia.Converters"
     xmlns:core="using:Dock.Model.Core"
+    xmlns:dock="using:Dock.Avalonia.Controls"
     xmlns:k="using:KubeUI"
     xmlns:u="https://irihi.tech/ursa">
     <Styles.Resources>
@@ -37,6 +37,13 @@
                 </StackPanel>
             </DataTemplate>
         </Setter>
+    </Style>
+
+    <Style Selector="dock|HostWindow:toolwindow">
+        <Setter Property="Background" Value="{DynamicResource SystemRegionBrush}" />
+        <Setter Property="Opacity" Value="1" />
+        <Setter Property="RequestedThemeVariant" Value="{Binding RequestedThemeVariant, Source={x:Static Application.Current}}" />
+        <Setter Property="TransparencyLevelHint" Value="None" />
     </Style>
 
     <Style Selector="DataGrid">
