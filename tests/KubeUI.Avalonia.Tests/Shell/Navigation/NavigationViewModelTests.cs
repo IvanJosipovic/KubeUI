@@ -997,7 +997,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         workspace.AddResourceConfigForTest(alphaConfig);
 
-        await Task.Run(async () =>
+        var betaConfigAdded = Task.Run(async () =>
         {
             await Task.Delay(50);
             workspace.AddResourceConfigForTest(betaConfig);
@@ -1009,6 +1009,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         alphaLink.ShouldNotBeNull();
         FindResourceLink(clusterNode, betaConfig.Name).ShouldBeNull();
+        await betaConfigAdded;
 
         var betaLink = await WaitForValueAsync(
             () => FindResourceLink(clusterNode, betaConfig.Name),
@@ -1397,7 +1398,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
             .FirstOrDefault(x => x.ControlType == typeof(V1Namespace));
 
         resourceLink.ShouldNotBeNull();
-        await resourceLink.Count.ShouldNotBeNull();
+        (resourceLink.Count is not null).ShouldBeTrue();
 
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha Resources"));
         await Task.Delay(250);
@@ -1408,7 +1409,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
             .FirstOrDefault(x => x.ControlType == typeof(V1Namespace));
 
         rebuiltResourceLink.ShouldNotBeNull();
-        await rebuiltResourceLink.Count.ShouldNotBeNull();
+        (rebuiltResourceLink.Count is not null).ShouldBeTrue();
     }
 
     [AvaloniaFact]
@@ -1510,7 +1511,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
             .Single(x => x.ControlType == typeof(V1Namespace));
 
         ReferenceEquals(namespaceLink, updatedNamespaceLink).ShouldBeTrue();
-        await updatedNamespaceLink.Count.ShouldNotBeNull();
+        (updatedNamespaceLink.Count is not null).ShouldBeTrue();
     }
 
     [AvaloniaFact]
