@@ -4,7 +4,6 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm;
 using Dock.Model.Mvvm.Controls;
-using KubeUI.Avalonia.Controls;
 using Orientation = Dock.Model.Core.Orientation;
 
 namespace KubeUI.Avalonia;
@@ -145,7 +144,7 @@ public class DockFactory : Factory
 
         HostWindowLocator = new Dictionary<string, Func<IHostWindow?>>
         {
-            [nameof(IDockWindow)] = () => new ThemedHostWindow()
+            [nameof(IDockWindow)] = () => new HostWindow()
         };
 
         base.InitLayout(layout);
