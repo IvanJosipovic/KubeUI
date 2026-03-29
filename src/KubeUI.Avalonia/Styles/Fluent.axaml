@@ -15,15 +15,6 @@
                 <Setter Property="HorizontalContentAlignment" Value="Left" />
                 <Setter Property="VerticalContentAlignment" Value="Top" />
             </ControlTheme>
-            <ResourceDictionary.ThemeDictionaries>
-                <ResourceDictionary x:Key="Light">
-                    <Color x:Key="RegionColor">#EEEEF2</Color>
-                </ResourceDictionary>
-
-                <ResourceDictionary x:Key="Dark">
-                    <Color x:Key="RegionColor">#1F1F1F</Color>
-                </ResourceDictionary>
-            </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>
     </Styles.Resources>
     <Style Selector="DocumentControl">
@@ -63,6 +54,46 @@
     <Style Selector="DataGridSearchTextBlock#CellTextBlock">
         <Setter Property="MaxLines" Value="1" />
         <Setter Property="FontSize" Value="{DynamicResource DataGridFontSize}" />
+    </Style>
+
+    <Style Selector="StackPanel.filter-flyout-root">
+        <Setter Property="MinWidth" Value="296" />
+        <Setter Property="MaxWidth" Value="296" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="VerticalAlignment" Value="Top" />
+        <Setter Property="Spacing" Value="8" />
+        <Setter Property="Margin" Value="4" />
+    </Style>
+    <Style Selector="TextBlock.filter-flyout-title">
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Grid.filter-flyout-row">
+        <Setter Property="ColumnSpacing" Value="8" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="TextBlock.filter-flyout-label">
+        <Setter Property="Width" Value="72" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="ComboBox.filter-flyout-editor">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="TextBox.filter-flyout-editor">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="NumericUpDown.filter-flyout-editor">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="Grid.filter-flyout-composite-editor">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="StackPanel.filter-flyout-actions">
+        <Setter Property="Orientation" Value="Horizontal" />
+        <Setter Property="HorizontalAlignment" Value="Right" />
+        <Setter Property="Spacing" Value="6" />
+    </Style>
+    <Style Selector="Button.filter-flyout-action">
+        <Setter Property="MinWidth" Value="76" />
     </Style>
 
     <Style Selector="u|MultiComboBoxItem">

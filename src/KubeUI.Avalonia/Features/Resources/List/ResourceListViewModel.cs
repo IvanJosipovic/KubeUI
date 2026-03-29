@@ -30,6 +30,8 @@ namespace KubeUI.Avalonia.ViewModels;
 public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluster, IDisposable, IResourceListViewModel where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     private static readonly TimeSpan SearchDebounceDelay = TimeSpan.FromMilliseconds(250);
+    internal const string NamespaceScopeFilterId = "__namespace_scope__";
+    internal const string NamespaceScopePropertyPath = "namespace_scope";
     private readonly ILogger<ResourceListViewModel<T>> _logger;
 
     private static readonly IComparer s_noopSortComparer = Comparer<object>.Create(static (_, _) => 0);
@@ -270,11 +272,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             return;
         }
 
-        if (!_columnDefinitionsByKey.TryGetValue("namespace", out var namespaceColumn))
-        {
-            return;
-        }
-
         var selectedNamespaces = SelectedNamespaces;
 
         if (selectedNamespaces.Count > 0)
@@ -286,9 +283,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             }
 
             var descriptor = new FilteringDescriptor(
-                namespaceColumn,
+                NamespaceScopeFilterId,
                 FilteringOperator.In,
-                propertyPath: null,
+                propertyPath: NamespaceScopePropertyPath,
                 value: null,
                 values: values);
 
@@ -296,7 +293,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         }
         else
         {
-            FilteringModel.Remove(namespaceColumn);
+            FilteringModel.Remove(NamespaceScopeFilterId);
         }
     }
 
@@ -995,6 +992,21 @@ public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAd
 
     private Func<T, object?>? CreateSelector(FilteringDescriptor descriptor)
     {
+        if (string.Equals(descriptor.PropertyPath, ResourceListViewModel<T>.NamespaceScopePropertyPath, StringComparison.Ordinal))
+        {
+            return item =>
+            {
+                try
+                {
+                    return item.Namespace();
+                }
+                catch
+                {
+                    return null;
+                }
+            };
+        }
+
         if (ResolveResourceColumn(descriptor.ColumnId) is not IResourceListColumn column)
         {
             return null;

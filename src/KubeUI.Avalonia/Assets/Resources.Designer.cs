@@ -1231,7 +1231,16 @@ namespace KubeUI.Avalonia.Assets {
                 return ResourceManager.GetString("DataGridFilterFlyout_Clear", resourceCulture);
             }
         }
-
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Condition.
+        /// </summary>
+        public static string DataGridFilterFlyout_Condition {
+            get {
+                return ResourceManager.GetString("DataGridFilterFlyout_Condition", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   Looks up a localized string similar to Contains.
         /// </summary>

@@ -6,27 +6,36 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:filters="using:KubeUI.Avalonia.Controls.DataGridFilters"
     x:DataType="filters:TextFilterFlyoutContext">
-    <StackPanel MinWidth="320" MaxWidth="320" HorizontalAlignment="Left" VerticalAlignment="Top" Spacing="8" Margin="4">
-        <TextBlock FontWeight="SemiBold" Text="{Binding Title}" />
-        <ComboBox
-            Width="220"
-            HorizontalAlignment="Left"
-            ItemsSource="{Binding Operators}"
-            SelectedItem="{Binding SelectedOperator, Mode=TwoWay}">
-            <ComboBox.ItemTemplate>
-                <DataTemplate x:DataType="filters:FilterOperatorChoice">
-                    <TextBlock Text="{Binding Label}" />
-                </DataTemplate>
-            </ComboBox.ItemTemplate>
-        </ComboBox>
-        <TextBox
-            Width="220"
-            HorizontalAlignment="Left"
-            Text="{Binding Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-            Watermark="{x:Static assets:Resources.DataGridFilterFlyout_Value}" />
-        <StackPanel Orientation="Horizontal" Spacing="6">
-            <Button Command="{Binding ClearCommand}" Content="{x:Static assets:Resources.DataGridFilterFlyout_Clear}" />
-            <Button Command="{Binding ApplyCommand}" Content="{x:Static assets:Resources.DataGridFilterFlyout_Apply}" />
+    <StackPanel Classes="filter-flyout-root">
+        <TextBlock Classes="filter-flyout-title" Text="{Binding Title}" />
+        <Grid Classes="filter-flyout-row" ColumnDefinitions="72,*">
+            <TextBlock
+                Classes="filter-flyout-label"
+                Text="{x:Static assets:Resources.DataGridFilterFlyout_Condition}" />
+            <ComboBox
+                Classes="filter-flyout-editor"
+                Grid.Column="1"
+                ItemsSource="{Binding Operators}"
+                SelectedItem="{Binding SelectedOperator, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="filters:FilterOperatorChoice">
+                        <TextBlock Text="{Binding Label}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </Grid>
+        <Grid Classes="filter-flyout-row" ColumnDefinitions="72,*">
+            <TextBlock
+                Classes="filter-flyout-label"
+                Text="{x:Static assets:Resources.DataGridFilterFlyout_Value}" />
+            <TextBox
+                Classes="filter-flyout-editor"
+                Grid.Column="1"
+                Text="{Binding Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+        </Grid>
+        <StackPanel Classes="filter-flyout-actions">
+            <Button Classes="filter-flyout-action" Command="{Binding ClearCommand}" Content="{x:Static assets:Resources.DataGridFilterFlyout_Clear}" />
+            <Button Classes="filter-flyout-action" Command="{Binding ApplyCommand}" Content="{x:Static assets:Resources.DataGridFilterFlyout_Apply}" />
         </StackPanel>
     </StackPanel>
 </UserControl>

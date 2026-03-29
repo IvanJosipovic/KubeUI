@@ -463,8 +463,12 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var textFlyout = textColumn.FilterFlyout.ShouldBeOfType<Flyout>();
         var textContent = textFlyout.Content.ShouldBeOfType<TextFilterFlyoutView>();
         var textPanel = textContent.Content.ShouldBeOfType<StackPanel>();
-        textPanel.Children.OfType<ComboBox>().Single().HorizontalAlignment.ShouldBe(HorizontalAlignment.Left);
-        textPanel.Children.OfType<TextBox>().Single().HorizontalAlignment.ShouldBe(HorizontalAlignment.Left);
+        var textRows = textPanel.Children.OfType<Grid>().ToList();
+        textRows.Count.ShouldBeGreaterThanOrEqualTo(2);
+        textRows[0].Children.OfType<TextBlock>().Single().Text.ShouldBe(KubeUI.Avalonia.Assets.Resources.DataGridFilterFlyout_Condition);
+        textRows[1].Children.OfType<TextBlock>().Single().Text.ShouldBe(KubeUI.Avalonia.Assets.Resources.DataGridFilterFlyout_Value);
+        textPanel.GetVisualDescendants().OfType<ComboBox>().First().HorizontalAlignment.ShouldBe(HorizontalAlignment.Stretch);
+        textPanel.GetVisualDescendants().OfType<TextBox>().Single().HorizontalAlignment.ShouldBe(HorizontalAlignment.Stretch);
 
         var numericCluster = await CreateClusterAsync();
         var numericVm = GetRequiredService<ResourceListViewModel<Corev1Event>>();
@@ -488,7 +492,10 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         Grid.GetColumn(numericValueInput).ShouldBe(1);
         Grid.GetColumn(numericRangeInput).ShouldBe(1);
-        numericValueRow.Children.OfType<TextBlock>().Single().MinWidth.ShouldBe(numericRangeRow.Children.OfType<TextBlock>().Single().MinWidth);
+        numericValueInput.HorizontalAlignment.ShouldBe(HorizontalAlignment.Stretch);
+        numericRangeInput.HorizontalAlignment.ShouldBe(HorizontalAlignment.Stretch);
+        numericValueRow.Children.OfType<TextBlock>().Single().Width.ShouldBe(numericRangeRow.Children.OfType<TextBlock>().Single().Width);
+        numericRows[0].Children.OfType<TextBlock>().Single().Text.ShouldBe(KubeUI.Avalonia.Assets.Resources.DataGridFilterFlyout_Condition);
 
         var dateCluster = await CreateClusterAsync();
         var dateVm = GetRequiredService<ResourceListViewModel<Corev1Event>>();
@@ -502,8 +509,12 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var dateFlyout = dateColumn.FilterFlyout.ShouldBeOfType<Flyout>();
         var dateContent = dateFlyout.Content.ShouldBeOfType<DateFilterFlyoutView>();
         var datePanel = dateContent.Content.ShouldBeOfType<StackPanel>();
+        var dateRows = datePanel.Children.OfType<Grid>().ToList();
+        dateRows[0].Children.OfType<TextBlock>().Single().Text.ShouldBe(KubeUI.Avalonia.Assets.Resources.DataGridFilterFlyout_Condition);
+        dateRows[1].Children.OfType<TextBlock>().Single().Text.ShouldBe(KubeUI.Avalonia.Assets.Resources.DataGridFilterFlyout_Value);
         datePanel.GetVisualDescendants().OfType<NumericUpDown>().Count().ShouldBe(1);
         datePanel.GetVisualDescendants().OfType<ComboBox>().Count().ShouldBeGreaterThanOrEqualTo(2);
+        datePanel.GetVisualDescendants().OfType<ComboBox>().All(combo => combo.HorizontalAlignment == HorizontalAlignment.Stretch).ShouldBeTrue();
     }
 
     [AvaloniaFact(DisplayName = "Resource list numeric and date filters support comparison operators")]
@@ -882,6 +893,49 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         ReferenceEquals(vm.SelectedNamespaces, cluster.SelectedNamespaces).ShouldBeTrue();
         vm.SelectedNamespaces.Select(x => x.Name()).ShouldBe(["team-a"]);
         GetNamespaceFilterValues(vm).ShouldBe(["team-a"]);
+    }
+
+    [AvaloniaFact(DisplayName = "Clearing namespace column filter preserves namespace scope filter")]
+    public async Task clearing_namespace_column_filter_preserves_namespace_scope_filter()
+    {
+        var window = CreateWindow();
+        var cluster = await CreateClusterAsync();
+        var filterService = GetRequiredService<DataGridColumnFilterService>();
+
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+
+        window.Content = view;
+        window.Show();
+
+        await AddOrUpdateAsync(cluster, Pod("ns1", "a"));
+        await AddOrUpdateAsync(cluster, Pod("ns2", "b"));
+        await AddOrUpdateAsync(cluster, Pod("ns3", "c"));
+
+        cluster.SelectedNamespaces.Add(NamespaceResource("ns1"));
+        cluster.SelectedNamespaces.Add(NamespaceResource("ns2"));
+        Dispatcher.UIThread.RunJobs();
+
+        vm.View.Count.ShouldBe(2);
+        GetNamespaceFilterValues(vm).ShouldBe(["ns1", "ns2"]);
+
+        var namespaceColumn = vm.ColumnDefinitions.First(column => string.Equals(column.ColumnKey?.ToString(), "namespace", StringComparison.OrdinalIgnoreCase));
+        filterService.ApplyTextFilter(vm.FilteringModel, namespaceColumn, FilteringOperator.Contains, "ns1");
+        Dispatcher.UIThread.RunJobs();
+
+        vm.FilteringModel.Descriptors.Count.ShouldBe(2);
+        vm.View.Count.ShouldBe(1);
+        ((V1Pod)vm.View[0]).Namespace().ShouldBe("ns1");
+
+        filterService.ClearColumnFilter(vm.FilteringModel, namespaceColumn);
+        Dispatcher.UIThread.RunJobs();
+
+        vm.FilteringModel.Descriptors.Count.ShouldBe(1);
+        GetNamespaceFilterValues(vm).ShouldBe(["ns1", "ns2"]);
+        vm.View.Count.ShouldBe(2);
     }
 
     [AvaloniaFact(DisplayName = "Pod-specific actions are hidden for multi-select")]
@@ -1319,8 +1373,10 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     private static IList<string> GetNamespaceFilterValues<T>(ResourceListViewModel<T> vm)
         where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        vm.FilteringModel.Descriptors.Count.ShouldBe(1);
-        return vm.FilteringModel.Descriptors[0].Values.Cast<string>().ToList();
+        var descriptor = vm.FilteringModel.Descriptors.FirstOrDefault(x => Equals(x.ColumnId, ResourceListViewModel<T>.NamespaceScopeFilterId));
+        descriptor.ShouldNotBeNull();
+        descriptor!.Values.ShouldNotBeNull();
+        return descriptor.Values.Cast<string>().ToList();
     }
 
     private static DateRelativeUnit GetDateRelativeUnit<T>(T viewModel, int index)

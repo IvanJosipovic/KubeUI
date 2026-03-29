@@ -6,17 +6,15 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:filters="using:KubeUI.Avalonia.Controls.DataGridFilters"
     x:DataType="filters:EnumFilterFlyoutContext">
-    <StackPanel MinWidth="320" MaxWidth="320" HorizontalAlignment="Left" VerticalAlignment="Top" Spacing="8" Margin="4">
-        <TextBlock FontWeight="SemiBold" Text="{Binding Title}" />
-        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+    <StackPanel Classes="filter-flyout-root">
+        <TextBlock Classes="filter-flyout-title" Text="{Binding Title}" />
+        <Grid Classes="filter-flyout-row" ColumnDefinitions="72,*">
             <TextBlock
-                MinWidth="64"
-                VerticalAlignment="Center"
+                Classes="filter-flyout-label"
                 Text="{x:Static assets:Resources.DataGridFilterFlyout_Value}" />
             <ComboBox
+                Classes="filter-flyout-editor"
                 Grid.Column="1"
-                Width="220"
-                HorizontalAlignment="Left"
                 ItemsSource="{Binding Options}"
                 SelectedItem="{Binding SelectedValue, Mode=TwoWay}">
                 <ComboBox.ItemTemplate>
@@ -26,9 +24,9 @@
                 </ComboBox.ItemTemplate>
             </ComboBox>
         </Grid>
-        <StackPanel Orientation="Horizontal" Spacing="6">
-            <Button Command="{Binding ClearCommand}" Content="{x:Static assets:Resources.DataGridFilterFlyout_Clear}" />
-            <Button Command="{Binding ApplyCommand}" Content="{x:Static assets:Resources.DataGridFilterFlyout_Apply}" />
+        <StackPanel Classes="filter-flyout-actions">
+            <Button Classes="filter-flyout-action" Command="{Binding ClearCommand}" Content="{x:Static assets:Resources.DataGridFilterFlyout_Clear}" />
+            <Button Classes="filter-flyout-action" Command="{Binding ApplyCommand}" Content="{x:Static assets:Resources.DataGridFilterFlyout_Apply}" />
         </StackPanel>
     </StackPanel>
 </UserControl>

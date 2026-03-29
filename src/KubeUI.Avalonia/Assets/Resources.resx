@@ -723,6 +723,9 @@ Are you sure?</value>
   <data name="DataGridFilterFlyout_Clear" xml:space="preserve">
     <value>Clear</value>
   </data>
+  <data name="DataGridFilterFlyout_Condition" xml:space="preserve">
+    <value>Condition</value>
+  </data>
   <data name="DataGridFilterFlyout_Contains" xml:space="preserve">
     <value>Contains</value>
   </data>
