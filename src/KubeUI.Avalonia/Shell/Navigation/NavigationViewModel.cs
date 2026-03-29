@@ -626,11 +626,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     private void UpdatePortForwardersNavigation(ClusterNavigationNode node)
     {
         var cluster = node.Cluster;
-        var existingPortForwardersLink = FindNavigationItem(node.NavigationItems, $"{cluster.Name}-{NavigationTargets.PortForwarders}");
-        if (existingPortForwardersLink != null)
-        {
-            RemoveNavigationItem(node.NavigationItems, existingPortForwardersLink.Id);
-        }
+        var portForwardersId = $"{cluster.Name}-{NavigationTargets.PortForwarders}";
 
         var networkCategoryId = $"{cluster.Name}-category-{NetworkCategoryName}";
         if (FindNavigationItem(node.NavigationItems, networkCategoryId) is NavigationItem existingNetworkCategory
@@ -645,6 +641,17 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         }
 
         var networkCategory = EnsureCategoryNode(node.NavigationItems, cluster, NetworkCategoryName, NetworkCategoryOrder);
+        var currentParent = FindNavigationParentCollection(node.NavigationItems, portForwardersId);
+        if (currentParent != null && !ReferenceEquals(currentParent, networkCategory.NavigationItems))
+        {
+            var existingItem = currentParent.FirstOrDefault(item => item.Id == portForwardersId);
+            if (existingItem != null)
+            {
+                currentParent.Remove(existingItem);
+                RemoveEmptyCategories(node.NavigationItems, cluster);
+            }
+        }
+
         UpsertNavigationItem(networkCategory.NavigationItems, CreateNavigationLink(cluster, NavigationTargets.PortForwarders, Assets.Resources.PortForwarderListViewModel_Title, PortForwardersOrder));
     }
 
@@ -815,16 +822,20 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         var resourceId = $"{cluster.Name}-{config.Kind}";
         if (FindNavigationItem(currentList, resourceId) is ResourceNavigationLink existingLink)
         {
-            existingLink.Name = config.Name;
-            existingLink.ControlType = config.Type;
-            existingLink.Order = config.Order;
-            existingLink.Count ??= TryGetResourceCount(cluster, config.Type);
-            currentList.Remove(existingLink);
-            currentList.Add(existingLink);
+            UpsertNavigationItem(currentList, CreateResourceNavigationLink(cluster, config));
             return;
         }
 
-        RemoveNavigationItem(root.NavigationItems, resourceId);
+        var currentParent = FindNavigationParentCollection(root.NavigationItems, resourceId);
+        if (currentParent != null && !ReferenceEquals(currentParent, currentList))
+        {
+            var existingItem = currentParent.FirstOrDefault(item => item.Id == resourceId);
+            if (existingItem != null)
+            {
+                currentParent.Remove(existingItem);
+            }
+        }
+
         UpsertNavigationItem(currentList, CreateResourceNavigationLink(cluster, config));
     }
 
@@ -939,11 +950,12 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private void ApplyStandardResourceNavigationUpdate(ClusterNavigationNode node, ClusterWorkspaceViewModel cluster, IResourceConfig resourceConfig, bool isVisible)
     {
-        RemoveNavigationItem(node.NavigationItems, $"{cluster.Name}-{resourceConfig.Kind}");
-        RemoveEmptyCategories(node.NavigationItems, cluster);
+        var resourceId = $"{cluster.Name}-{resourceConfig.Kind}";
 
         if (!isVisible)
         {
+            RemoveNavigationItem(node.NavigationItems, resourceId);
+            RemoveEmptyCategories(node.NavigationItems, cluster);
             return;
         }
 
@@ -952,6 +964,17 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         {
             var category = EnsureCategoryNode(node.NavigationItems, cluster, resourceConfig.Category, resourceConfig.Order);
             targetCollection = category.NavigationItems;
+        }
+
+        var currentParent = FindNavigationParentCollection(node.NavigationItems, resourceId);
+        if (currentParent != null && !ReferenceEquals(currentParent, targetCollection))
+        {
+            var existingItem = currentParent.FirstOrDefault(item => item.Id == resourceId);
+            if (existingItem != null)
+            {
+                currentParent.Remove(existingItem);
+                RemoveEmptyCategories(node.NavigationItems, cluster);
+            }
         }
 
         UpsertNavigationItem(targetCollection, CreateResourceNavigationLink(cluster, resourceConfig));
@@ -1023,6 +1046,25 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         }
     }
 
+    private static ObservableCollection<NavigationItem>? FindNavigationParentCollection(ObservableCollection<NavigationItem> items, string id)
+    {
+        if (items.Any(item => item.Id == id))
+        {
+            return items;
+        }
+
+        foreach (var item in items)
+        {
+            var nested = FindNavigationParentCollection(item.NavigationItems, id);
+            if (nested != null)
+            {
+                return nested;
+            }
+        }
+
+        return null;
+    }
+
     private static void UpsertNavigationItem(ObservableCollection<NavigationItem> items, NavigationItem desired)
     {
         var existing = FindNavigationItem(items, desired.Id);
@@ -1039,9 +1081,16 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             return;
         }
 
+        var requiresReinsert = existing.Order != desired.Order
+            || !string.Equals(existing.Name, desired.Name, StringComparison.Ordinal)
+            || !string.Equals(existing.Id, desired.Id, StringComparison.Ordinal);
+
         UpdateNavigationItem(existing, desired);
-        items.Remove(existing);
-        items.Add(existing);
+        if (requiresReinsert)
+        {
+            items.Remove(existing);
+            items.Add(existing);
+        }
     }
 
     private static IReadOnlyList<string> ConstructCustomResourceGroupPath(string? group)

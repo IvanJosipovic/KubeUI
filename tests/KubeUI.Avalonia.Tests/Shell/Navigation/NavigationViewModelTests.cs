@@ -1474,6 +1474,47 @@ public class NavigationViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task namespace_addition_does_not_replace_namespace_navigation_link()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+
+        var workspace = CreateWorkspace(runtime);
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+        Dispatcher.UIThread.RunJobs();
+
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        var namespaceLink = clusterNode.NavigationItems
+            .OfType<ResourceNavigationLink>()
+            .Single(x => x.ControlType == typeof(V1Namespace));
+        var initialNamespaceCount = workspace.Namespaces.Count;
+
+        await runtime.AddOrUpdateResource(new V1Namespace
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "team-b"
+            }
+        });
+
+        await WaitForAsync(() => workspace.Namespaces.Count == initialNamespaceCount + 1);
+
+        var updatedNamespaceLink = clusterNode.NavigationItems
+            .OfType<ResourceNavigationLink>()
+            .Single(x => x.ControlType == typeof(V1Namespace));
+
+        ReferenceEquals(namespaceLink, updatedNamespaceLink).ShouldBeTrue();
+        updatedNamespaceLink.Count.ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
     public async Task custom_resource_definition_added_after_navigation_build_adds_custom_resource_entry()
     {
         var runtime = new TestCluster
