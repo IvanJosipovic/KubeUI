@@ -1,7 +1,7 @@
 using Avalonia.Controls;
 using k8s.Models;
 
-namespace KubeUI.Avalonia.Views;
+namespace KubeUI.Avalonia.Resources.Core.v1.Event.Views;
 
 public partial class EventPropertiesView : UserControl
 {

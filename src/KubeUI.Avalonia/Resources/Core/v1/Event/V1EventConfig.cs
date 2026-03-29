@@ -2,7 +2,7 @@ using Avalonia.Data.Converters;
 using Avalonia.Styling;
 using k8s.Models;
 using KubeUI.Avalonia.Controls;
-using KubeUI.Avalonia.Views;
+using KubeUI.Avalonia.Resources.Core.v1.Event.Views;
 
 namespace KubeUI.Avalonia.Resources.Core.v1;
 
