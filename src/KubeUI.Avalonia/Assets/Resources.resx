@@ -382,6 +382,33 @@ Are you sure?</value>
   <data name="ClusterSettingsView_Remove" xml:space="preserve">
     <value>Remove</value>
   </data>
+  <data name="ClusterSettingsView_AutoMetricsBackend_Prometheus" xml:space="preserve">
+    <value>Currently using Prometheus</value>
+  </data>
+  <data name="ClusterSettingsView_AutoMetricsBackend_PrometheusWithProvider" xml:space="preserve">
+    <value>Currently using Prometheus ({0})</value>
+  </data>
+  <data name="ClusterSettingsView_AutoMetricsBackend_KubernetesMetricsServer" xml:space="preserve">
+    <value>Currently using Kubernetes Metrics Server</value>
+  </data>
+  <data name="ClusterSettingsView_AutoMetricsBackend_None" xml:space="preserve">
+    <value>No metrics backend is currently available</value>
+  </data>
+  <data name="ClusterSettingsView_AutoMetricsBackend_AutoModeHelp" xml:space="preserve">
+    <value>Auto mode will try Prometheus first and fall back to Kubernetes Metrics Server.</value>
+  </data>
+  <data name="ClusterSettingsView_PrometheusProvider_Operator" xml:space="preserve">
+    <value>Prometheus Operator</value>
+  </data>
+  <data name="ClusterSettingsView_PrometheusProvider_OpenShift" xml:space="preserve">
+    <value>OpenShift</value>
+  </data>
+  <data name="ClusterSettingsView_PrometheusProvider_Manual" xml:space="preserve">
+    <value>Manual Service</value>
+  </data>
+  <data name="ClusterSettingsView_PrometheusProvider_External" xml:space="preserve">
+    <value>External URL</value>
+  </data>
   <data name="ClusterView_Cpu" xml:space="preserve">
     <value>CPU</value>
   </data>

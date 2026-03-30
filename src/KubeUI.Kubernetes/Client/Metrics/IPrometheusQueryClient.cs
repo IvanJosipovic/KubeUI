@@ -1,6 +1,6 @@
 namespace KubeUI.Kubernetes;
 
-internal interface IPrometheusQueryClient
+public interface IPrometheusQueryClient
 {
     Task PrepareAsync(Cluster cluster, ResolvedPrometheusEndpoint endpoint, CancellationToken cancellationToken = default);
 

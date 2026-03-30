@@ -13,6 +13,7 @@ namespace KubeUI.Avalonia.Features.Clusters.Settings.ViewModels;
 public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializeCluster
 {
     private ClusterSettings? _subscribedClusterSettings;
+    private ClusterWorkspaceViewModel? _subscribedCluster;
 
     public ISettingsService SettingsService { get; }
 
@@ -27,10 +28,18 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
 
     public void Initialize(ClusterWorkspaceViewModel cluster)
     {
+        if (_subscribedCluster != null)
+        {
+            _subscribedCluster.PropertyChanged -= OnClusterPropertyChanged;
+        }
+
         Cluster = cluster;
+        _subscribedCluster = cluster;
+        _subscribedCluster.PropertyChanged += OnClusterPropertyChanged;
         Id = nameof(ClusterSettingsViewModel) + Cluster.Name;
         ClusterSettings = SettingsService.Settings.GetClusterSettings(cluster);
         _ = LoadPrometheusProvidersAsync();
+        RaiseMetricsVisibilityPropertiesChanged();
     }
 
     [ObservableProperty]
@@ -48,6 +57,25 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
     public bool ShowPrometheusDirectUrlSettings => ShowPrometheusSettings;
 
     public bool ShowPrometheusBearerTokenSettings => ShowPrometheusSettings;
+
+    public bool ShowDetectedMetricsBackend => ClusterSettings?.MetricsServiceType == MetricsServiceType.Auto && Cluster != null;
+
+    public string? DetectedMetricsBackendText => !ShowDetectedMetricsBackend || Cluster == null
+        ? null
+        : Cluster.ActiveMetricsBackend.Type switch
+        {
+            MetricsServiceType.Prometheus when Cluster.ActivePrometheusProviderKind != null
+                => string.Format(
+                    Assets.Resources.ClusterSettingsView_AutoMetricsBackend_PrometheusWithProvider,
+                    GetProviderDisplayName(Cluster.ActivePrometheusProviderKind.Value)),
+            MetricsServiceType.Prometheus
+                => Assets.Resources.ClusterSettingsView_AutoMetricsBackend_Prometheus,
+            MetricsServiceType.KubernetesMetricsServer
+                => Assets.Resources.ClusterSettingsView_AutoMetricsBackend_KubernetesMetricsServer,
+            MetricsServiceType.None
+                => Assets.Resources.ClusterSettingsView_AutoMetricsBackend_None,
+            _ => null,
+        };
 
     [ObservableProperty]
     public partial string Namespace { get; set; }
@@ -110,6 +138,18 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
         OnPropertyChanged(nameof(ShowPrometheusServiceSettings));
         OnPropertyChanged(nameof(ShowPrometheusDirectUrlSettings));
         OnPropertyChanged(nameof(ShowPrometheusBearerTokenSettings));
+        OnPropertyChanged(nameof(ShowDetectedMetricsBackend));
+        OnPropertyChanged(nameof(DetectedMetricsBackendText));
+    }
+
+    private void OnClusterPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(ClusterWorkspaceViewModel.ActiveMetricsBackend)
+            or nameof(ClusterWorkspaceViewModel.MetricsServiceType)
+            or nameof(ClusterWorkspaceViewModel.ActivePrometheusProviderKind))
+        {
+            RaiseMetricsVisibilityPropertiesChanged();
+        }
     }
 
     private async Task LoadPrometheusProvidersAsync()
@@ -130,6 +170,15 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
             ];
         });
     }
+
+    private static string GetProviderDisplayName(PrometheusProviderKind providerKind) => providerKind switch
+    {
+        PrometheusProviderKind.Operator => Assets.Resources.ClusterSettingsView_PrometheusProvider_Operator,
+        PrometheusProviderKind.OpenShift => Assets.Resources.ClusterSettingsView_PrometheusProvider_OpenShift,
+        PrometheusProviderKind.Manual => Assets.Resources.ClusterSettingsView_PrometheusProvider_Manual,
+        PrometheusProviderKind.External => Assets.Resources.ClusterSettingsView_PrometheusProvider_External,
+        _ => providerKind.ToString(),
+    };
 }
 
 public sealed record MetricProviderOption(PrometheusProviderKind? Id, string Name);

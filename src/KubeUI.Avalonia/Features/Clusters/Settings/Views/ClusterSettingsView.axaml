@@ -22,7 +22,7 @@
 
         <Grid
             ColumnDefinitions="*,2*"
-            IsEnabled="{Binding !Cluster.ListNamespaces}"
+            IsVisible="{Binding !Cluster.ListNamespaces}"
             ToolTip.Tip="{x:Static assets:Resources.ClusterSettingsView_ManualNamespacesTooltip}">
             <Label Grid.Column="0" Content="{x:Static assets:Resources.ClusterSettingsView_NamespacesLabel}" />
 
@@ -64,6 +64,12 @@
                 EnumType="{x:Type metrics:MetricsServiceType}"
                 Value="{Binding ClusterSettings.MetricsServiceType}" />
         </Grid>
+
+        <TextBlock
+            IsVisible="{Binding ShowDetectedMetricsBackend}"
+            Margin="0,4,0,8"
+            Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+            Text="{Binding DetectedMetricsBackendText}" />
 
         <Grid
             ColumnDefinitions="*,2*"
@@ -135,7 +141,7 @@
             IsVisible="{Binding !ShowPrometheusSettings}"
             Margin="0,8,0,0"
             Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-            Text="Auto mode will try Prometheus first and fall back to Kubernetes Metrics Server." />
+            Text="{x:Static assets:Resources.ClusterSettingsView_AutoMetricsBackend_AutoModeHelp}" />
     </StackPanel>
 </UserControl>
 

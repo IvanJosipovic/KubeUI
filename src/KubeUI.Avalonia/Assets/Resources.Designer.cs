@@ -340,6 +340,51 @@ namespace KubeUI.Avalonia.Assets {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Auto mode will try Prometheus first and fall back to Kubernetes Metrics Server..
+        /// </summary>
+        public static string ClusterSettingsView_AutoMetricsBackend_AutoModeHelp {
+            get {
+                return ResourceManager.GetString("ClusterSettingsView_AutoMetricsBackend_AutoModeHelp", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Currently using Kubernetes Metrics Server.
+        /// </summary>
+        public static string ClusterSettingsView_AutoMetricsBackend_KubernetesMetricsServer {
+            get {
+                return ResourceManager.GetString("ClusterSettingsView_AutoMetricsBackend_KubernetesMetricsServer", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to No metrics backend is currently available.
+        /// </summary>
+        public static string ClusterSettingsView_AutoMetricsBackend_None {
+            get {
+                return ResourceManager.GetString("ClusterSettingsView_AutoMetricsBackend_None", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Currently using Prometheus.
+        /// </summary>
+        public static string ClusterSettingsView_AutoMetricsBackend_Prometheus {
+            get {
+                return ResourceManager.GetString("ClusterSettingsView_AutoMetricsBackend_Prometheus", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Currently using Prometheus ({0}).
+        /// </summary>
+        public static string ClusterSettingsView_AutoMetricsBackend_PrometheusWithProvider {
+            get {
+                return ResourceManager.GetString("ClusterSettingsView_AutoMetricsBackend_PrometheusWithProvider", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to {0} Settings.
         /// </summary>
         public static string ClusterSettingsView_TitleFormat {
@@ -372,6 +417,42 @@ namespace KubeUI.Avalonia.Assets {
         public static string ClusterSettingsView_Remove {
             get {
                 return ResourceManager.GetString("ClusterSettingsView_Remove", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to External URL.
+        /// </summary>
+        public static string ClusterSettingsView_PrometheusProvider_External {
+            get {
+                return ResourceManager.GetString("ClusterSettingsView_PrometheusProvider_External", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Manual Service.
+        /// </summary>
+        public static string ClusterSettingsView_PrometheusProvider_Manual {
+            get {
+                return ResourceManager.GetString("ClusterSettingsView_PrometheusProvider_Manual", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to OpenShift.
+        /// </summary>
+        public static string ClusterSettingsView_PrometheusProvider_OpenShift {
+            get {
+                return ResourceManager.GetString("ClusterSettingsView_PrometheusProvider_OpenShift", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Prometheus Operator.
+        /// </summary>
+        public static string ClusterSettingsView_PrometheusProvider_Operator {
+            get {
+                return ResourceManager.GetString("ClusterSettingsView_PrometheusProvider_Operator", resourceCulture);
             }
         }
         

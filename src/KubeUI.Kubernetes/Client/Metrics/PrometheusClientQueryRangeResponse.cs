@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace KubeUI.Kubernetes;
 
-internal sealed class PrometheusClientQueryRangeResponse
+public sealed class PrometheusClientQueryRangeResponse
 {
     [JsonPropertyName("status")]
     public string Status { get; set; } = string.Empty;
@@ -18,7 +18,7 @@ internal sealed class PrometheusClientQueryRangeResponse
     [JsonPropertyName("data")]
     public DataObject Data { get; set; } = new();
 
-    internal sealed class DataObject
+    public sealed class DataObject
     {
         [JsonPropertyName("resultType")]
         public string ResultType { get; set; } = string.Empty;
@@ -27,7 +27,7 @@ internal sealed class PrometheusClientQueryRangeResponse
         public ResultObject[] Result { get; set; } = [];
     }
 
-    internal sealed class ResultObject
+    public sealed class ResultObject
     {
         [JsonPropertyName("metric")]
         public IDictionary<string, string> Metric { get; set; } = new Dictionary<string, string>(StringComparer.Ordinal);
