@@ -54,7 +54,6 @@ public partial class App : Application
         this.AttachDeveloperTools();
 #endif
 
-        _logger.LogInformation("Application Started");
         Services.GetRequiredService<Instrumentation>().AppOpened.Add(1);
     }
 

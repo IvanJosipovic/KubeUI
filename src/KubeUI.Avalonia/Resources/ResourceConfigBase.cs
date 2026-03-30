@@ -97,6 +97,11 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public virtual IList<(Verb verb, string? subResource)> CustomPermissions() => [];
 
+    protected virtual Task RefreshPermissionAsync(Verb verb, string? subResource)
+    {
+        return Cluster.UpdatePermissionsAllNamespaceAsync<T>(verb, subResource);
+    }
+
     public virtual Control[] Properties(T resource) => [];
 
     protected ResourceListColumn<T, string> NameColumn(SortDirection sort = SortDirection.None)
@@ -201,25 +206,35 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             return;
         }
 
-        var tasks = new List<Task>();
+        var exceptions = new List<Exception>();
 
         foreach (var (verb, subResource) in DefaultPermissions())
         {
-            tasks.Add(Cluster.UpdatePermissionsAllNamespaceAsync<T>(verb, subResource));
+            try
+            {
+                await RefreshPermissionAsync(verb, subResource).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                exceptions.Add(ex);
+            }
         }
 
         foreach (var (verb, subResource) in CustomPermissions())
         {
-            tasks.Add(Cluster.UpdatePermissionsAllNamespaceAsync<T>(verb, subResource));
+            try
+            {
+                await RefreshPermissionAsync(verb, subResource).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                exceptions.Add(ex);
+            }
         }
 
-        try
+        if (exceptions.Count > 0)
         {
-            await Task.WhenAll(tasks).ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug(ex, "Unable to refresh non-list permissions for {Type}", typeof(T).FullName);
+            _logger.LogDebug(new AggregateException(exceptions), "Unable to refresh non-list permissions for {Type}", typeof(T).FullName);
         }
 
         PermissionsLoaded = true;

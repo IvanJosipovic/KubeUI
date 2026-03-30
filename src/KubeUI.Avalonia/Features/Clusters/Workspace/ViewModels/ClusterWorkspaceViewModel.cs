@@ -614,6 +614,11 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     private async Task EnsureEventResourceSeededAsync()
     {
+        if (Runtime.Objects.ContainsKey(GroupApiVersionKind.From<Corev1Event>()))
+        {
+            return;
+        }
+
         if (await CanSeedEventsAsync().ConfigureAwait(false))
         {
             await SeedResource<Corev1Event>().ConfigureAwait(false);

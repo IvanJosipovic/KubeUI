@@ -1,4 +1,6 @@
 using System.Collections;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
 using Avalonia;
@@ -7,9 +9,12 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Avalonia.Styling;
 using CommunityToolkit.Mvvm.Input;
+using DynamicData;
 using k8s;
+using k8s.KubeConfigModels;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using Microsoft.Extensions.DependencyInjection;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Testing;
@@ -220,6 +225,35 @@ public class ClusterWorkspaceViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task namespace_permission_refresh_does_not_reseed_events_when_events_are_already_seeded()
+    {
+        var runtime = new CountingClusterRuntime(new TestClusterRuntime
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+            DefaultPermissionAllowed = true,
+        });
+
+        var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspaceViewModel>(
+            Application.Current!.GetRequiredService<IServiceProvider>(),
+            runtime);
+        _disposables.Add(workspace);
+
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+        await WaitForAsync(() => runtime.EventSeedCalls == 1);
+
+        await runtime.AddOrUpdateResource(new V1Namespace
+        {
+            Metadata = new V1ObjectMeta { Name = "team-a" }
+        });
+
+        await Task.Delay(200);
+        Dispatcher.UIThread.RunJobs();
+
+        runtime.EventSeedCalls.ShouldBe(1);
+    }
+
+    [AvaloniaFact]
     public async Task connect_skips_workspace_initialization_when_runtime_remains_disconnected()
     {
         var runtime = new TestCluster
@@ -399,6 +433,88 @@ public class ClusterWorkspaceViewModelTests : AvaloniaTestBase
     {
         return (IList<IResourceInformerRegistration>)(container.GetType().GetProperty("InformerRegistrations")?.GetValue(container)
             ?? throw new InvalidOperationException("Container does not expose InformerRegistrations."));
+    }
+}
+
+internal sealed class CountingClusterRuntime : IClusterRuntime, INotifyPropertyChanged
+{
+    private readonly TestClusterRuntime _inner;
+
+    public CountingClusterRuntime(TestClusterRuntime inner)
+    {
+        _inner = inner;
+        _inner.PropertyChanged += (_, e) => PropertyChanged?.Invoke(this, e);
+    }
+
+    public int EventSeedCalls { get; private set; }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+    public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange
+    {
+        add => _inner.OnChange += value;
+        remove => _inner.OnChange -= value;
+    }
+
+    public event Action<V1CustomResourceDefinition>? OnCustomResourceDefinitionReady
+    {
+        add => _inner.OnCustomResourceDefinitionReady += value;
+        remove => _inner.OnCustomResourceDefinitionReady -= value;
+    }
+
+    public IReadOnlyDictionary<GroupApiVersionKind, object> Objects => _inner.Objects;
+    public bool Connected { get => _inner.Connected; set => _inner.Connected = value; }
+    public ClusterStatus Status { get => _inner.Status; set => _inner.Status = value; }
+    public string? LastError { get => _inner.LastError; set => _inner.LastError = value; }
+    public bool RequiresNamespaceSelectionPrompt { get => _inner.RequiresNamespaceSelectionPrompt; set => _inner.RequiresNamespaceSelectionPrompt = value; }
+    public bool IsMetricsAvailable => _inner.IsMetricsAvailable;
+    public bool ListNamespaces { get => _inner.ListNamespaces; set => _inner.ListNamespaces = value; }
+    public IKubernetes? Client { get => _inner.Client; set => _inner.Client = value; }
+    public K8SConfiguration KubeConfig { get => _inner.KubeConfig; set => _inner.KubeConfig = value; }
+    public ModelCache ModelCache { get => _inner.ModelCache; set => _inner.ModelCache = value; }
+    public string KubeConfigPath { get => _inner.KubeConfigPath; set => _inner.KubeConfigPath = value; }
+    public string Name { get => _inner.Name; set => _inner.Name = value; }
+    public ReadOnlyObservableCollection<V1Namespace> Namespaces => _inner.Namespaces;
+    public ObservableCollection<NodeMetrics> NodeMetrics => _inner.NodeMetrics;
+    public ObservableCollection<PodMetrics> PodMetrics => _inner.PodMetrics;
+    public ObservableCollection<PortForwarder> PortForwarders => _inner.PortForwarders;
+
+    public bool CanI(Type type, Verb verb, string? @namespace = null, string? subresource = null) => _inner.CanI(type, verb, @namespace, subresource);
+    public bool CanI<T>(Verb verb, string? @namespace = null, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.CanI<T>(verb, @namespace, subresource);
+    public bool CanIAnyNamespace(Type type, Verb verb, string? subresource = null) => _inner.CanIAnyNamespace(type, verb, subresource);
+    public bool CanIAnyNamespace<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.CanIAnyNamespace<T>(verb, subresource);
+    public bool IsResourceNamespaced(Type type) => _inner.IsResourceNamespaced(type);
+    public bool IsResourceNamespaced<T>() => _inner.IsResourceNamespaced<T>();
+    public PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort) => _inner.AddPodPortForward(@namespace, podName, containerPort);
+    public PortForwarder AddServicePortForward(string @namespace, string serviceName, int servicePort) => _inner.AddServicePortForward(@namespace, serviceName, servicePort);
+    public void RemovePortForward(PortForwarder pf) => _inner.RemovePortForward(pf);
+    public Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.AddOrUpdateResource(item);
+    public Task Connect() => _inner.Connect();
+    public Task Disconnect() => _inner.Disconnect();
+    public Task DeleteResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.DeleteResource(item);
+    public Task DryRunYaml(Stream stream) => _inner.DryRunYaml(stream);
+    public Task ImportFolder(string path) => _inner.ImportFolder(path);
+    public Task ImportYaml(Stream stream) => _inner.ImportYaml(stream);
+    public Task<bool> IsResourceReady<T>(CancellationToken? token = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.IsResourceReady<T>(token);
+    public T? GetResource<T>(string? @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.GetResource<T>(@namespace, name);
+    public IReadOnlyList<T> GetResourceList<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.GetResourceList<T>();
+    public ISourceCache<T, string> GetResourceSourceCache<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.GetResourceSourceCache<T>();
+    public IObservable<int> GetResourceCount(Type type) => _inner.GetResourceCount(type);
+    public IObservable<int> GetResourceCount<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.GetResourceCount<T>();
+    public Task UpdatePermissionsAllNamespaceAsync(Type type, Verb verb, string? subresource = null) => _inner.UpdatePermissionsAllNamespaceAsync(type, verb, subresource);
+    public Task UpdatePermissionsAllNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.UpdatePermissionsAllNamespaceAsync<T>(verb, subresource);
+    public Task<bool> UpdateCanI(Type type, Verb verb, string? @namespace = null, string? subresource = null) => _inner.UpdateCanI(type, verb, @namespace, subresource);
+    public Task<bool> UpdateCanI<T>(Verb verb, string? @namespace = null, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.UpdateCanI<T>(verb, @namespace, subresource);
+    public Task<bool> UpdateCanIAnyNamespaceAsync(Type type, Verb verb, string? subresource = null) => _inner.UpdateCanIAnyNamespaceAsync(type, verb, subresource);
+    public Task<bool> UpdateCanIAnyNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.UpdateCanIAnyNamespaceAsync<T>(verb, subresource);
+
+    public Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        if (typeof(T) == typeof(Corev1Event))
+        {
+            EventSeedCalls++;
+        }
+
+        return _inner.SeedResource<T>(waitForReady);
     }
 }
 
