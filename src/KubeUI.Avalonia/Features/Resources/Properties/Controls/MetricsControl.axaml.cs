@@ -201,7 +201,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster
             {
                 var result = await _cluster.RequestMetricsAsync(panel.Request).ConfigureAwait(false);
                 var series = CreateSeries(panel, result);
-                if (series.Length == 0)
+                if (series.Count == 0)
                 {
                     continue;
                 }
@@ -427,14 +427,14 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster
             : Tabs.FirstOrDefault(x => string.Equals(x.Title, selectedTitle, StringComparison.Ordinal)) ?? Tabs.FirstOrDefault();
     }
 
-    private static ISeries[] CreateSeries(MetricPanelDefinition panel, MetricResultSet result)
+    private static IReadOnlyList<MetricSeriesSnapshot> CreateSeries(MetricPanelDefinition panel, MetricResultSet result)
     {
         if (result.IsEmpty)
         {
             return [];
         }
 
-        var series = new List<ISeries>();
+        var series = new List<MetricSeriesSnapshot>();
 
         foreach (var query in panel.Request.Queries)
         {
@@ -454,16 +454,13 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster
                     legend += $" ({item.Labels.Values.FirstOrDefault()})";
                 }
 
-                series.Add(new LineSeries<DateTimePoint>
-                {
-                    Name = legend,
-                    GeometrySize = 0,
-                    Values = item.Points.Select(static value => new DateTimePoint(value.Timestamp.LocalDateTime, value.Value)).ToList(),
-                });
+                series.Add(new MetricSeriesSnapshot(
+                    legend,
+                    item.Points.Select(static value => new DateTimePoint(value.Timestamp.LocalDateTime, value.Value)).ToArray()));
             }
         }
 
-        return [.. series];
+        return series;
     }
 }
 
@@ -499,13 +496,14 @@ public sealed partial class MetricTabViewModel : ObservableObject
                 existing = new MetricPanelViewModel
                 {
                     Title = snapshot.Title,
-                    Series = snapshot.Series,
                 };
                 Panels.Insert(index, existing);
             }
-            else
+
+            existing.MergeSeries(snapshot.Series);
+
+            if (existing != null)
             {
-                existing.Series = snapshot.Series;
                 var currentIndex = Panels.IndexOf(existing);
                 if (currentIndex != index)
                 {
@@ -521,10 +519,15 @@ public sealed partial class MetricTabViewModel : ObservableObject
 
 public sealed partial class MetricPanelViewModel : ObservableObject
 {
+    private readonly Axis _yAxis = new()
+    {
+        LabelsPaint = CreateChartTextPaint(),
+        TextSize = 11,
+    };
+
     public required string Title { get; init; }
 
-    [ObservableProperty]
-    public partial ISeries[] Series { get; set; }
+    public ObservableCollection<ISeries> Series { get; } = [];
 
     public ICartesianAxis[] XAxes { get; } =
     [
@@ -536,13 +539,87 @@ public sealed partial class MetricPanelViewModel : ObservableObject
     ];
 
     public ICartesianAxis[] YAxes { get; } =
-    [
-        new Axis
+    [];
+
+    public MetricPanelViewModel()
+    {
+        YAxes = [_yAxis];
+    }
+
+    internal void MergeSeries(IReadOnlyList<MetricSeriesSnapshot> snapshots)
+    {
+        for (var i = Series.Count - 1; i >= 0; i--)
         {
-            LabelsPaint = CreateChartTextPaint(),
-            TextSize = 11,
-        },
-    ];
+            if (Series[i] is not LineSeries<DateTimePoint> line
+                || !snapshots.Any(x => string.Equals(x.Name, line.Name, StringComparison.Ordinal)))
+            {
+                Series.RemoveAt(i);
+            }
+        }
+
+        for (var index = 0; index < snapshots.Count; index++)
+        {
+            var snapshot = snapshots[index];
+            var existing = Series
+                .OfType<LineSeries<DateTimePoint>>()
+                .FirstOrDefault(x => string.Equals(x.Name, snapshot.Name, StringComparison.Ordinal));
+
+            if (existing == null)
+            {
+                existing = new LineSeries<DateTimePoint>
+                {
+                    Name = snapshot.Name,
+                    GeometrySize = 0,
+                    Values = snapshot.Points.ToList(),
+                };
+                Series.Insert(index, existing);
+            }
+            else
+            {
+                existing.Values = snapshot.Points.ToList();
+                var currentIndex = Series.IndexOf(existing);
+                if (currentIndex != index)
+                {
+                    Series.Move(currentIndex, index);
+                }
+            }
+        }
+
+        UpdateYAxisLimits(Series);
+    }
+
+    private void UpdateYAxisLimits(IEnumerable<ISeries> series)
+    {
+        var values = series
+            .OfType<LineSeries<DateTimePoint>>()
+            .SelectMany(x => x.Values?.OfType<DateTimePoint>() ?? [])
+            .Where(x => x.Value.HasValue)
+            .Select(x => x.Value!.Value)
+            .Where(x => !double.IsNaN(x) && !double.IsInfinity(x))
+            .ToArray();
+
+        if (values.Length == 0)
+        {
+            _yAxis.MinLimit = null;
+            _yAxis.MaxLimit = null;
+            return;
+        }
+
+        var min = values.Min();
+        var max = values.Max();
+
+        if (Math.Abs(max - min) < double.Epsilon)
+        {
+            var delta = Math.Max(Math.Abs(max) * 0.1, 0.01);
+            _yAxis.MinLimit = min - delta;
+            _yAxis.MaxLimit = max + delta;
+            return;
+        }
+
+        var padding = Math.Max((max - min) * 0.15, Math.Abs(max) * 0.02);
+        _yAxis.MinLimit = min - padding;
+        _yAxis.MaxLimit = max + padding;
+    }
 
     private static SolidColorPaint CreateChartTextPaint()
     {
@@ -567,4 +644,6 @@ public sealed partial class MetricSummaryItemViewModel : ObservableObject
 
 internal sealed record MetricTabSnapshot(string Title, Icon Icon, IReadOnlyList<MetricPanelSnapshot> Panels);
 
-internal sealed record MetricPanelSnapshot(string Title, ISeries[] Series);
+internal sealed record MetricPanelSnapshot(string Title, IReadOnlyList<MetricSeriesSnapshot> Series);
+
+internal sealed record MetricSeriesSnapshot(string Name, IReadOnlyList<DateTimePoint> Points);

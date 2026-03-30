@@ -41,11 +41,13 @@ internal static class ResourceMetricsCatalog
             [
                 new MetricTabDefinition("CPU", Icon.ArrowSync,
                 [
-                    MetricPanel("CPU", MetricCategory.Pods, podQueryOptions, ("cpuUsage", "Usage"), ("cpuRequests", "Requests"), ("cpuLimits", "Limits")),
+                    MetricPanel("Usage", MetricCategory.Pods, podQueryOptions, ("cpuUsage", "Usage")),
+                    MetricPanel("Requests & Limits", MetricCategory.Pods, podQueryOptions, ("cpuRequests", "Requests"), ("cpuLimits", "Limits")),
                 ]),
                 new MetricTabDefinition("Memory", Icon.Code,
                 [
-                    MetricPanel("Memory", MetricCategory.Pods, podQueryOptions, ("memoryUsage", "Usage"), ("memoryRequests", "Requests"), ("memoryLimits", "Limits")),
+                    MetricPanel("Usage", MetricCategory.Pods, podQueryOptions, ("memoryUsage", "Usage")),
+                    MetricPanel("Requests & Limits", MetricCategory.Pods, podQueryOptions, ("memoryRequests", "Requests"), ("memoryLimits", "Limits")),
                 ]),
                 new MetricTabDefinition("Storage & Network", Icon.Link,
                 [
@@ -70,11 +72,13 @@ internal static class ResourceMetricsCatalog
             [
                 new MetricTabDefinition("CPU", Icon.ArrowSync,
                 [
-                    MetricPanel("CPU", MetricCategory.Nodes, options, filter, ("cpuUsage", "Usage"), ("cpuCapacity", "Capacity"), ("cpuAllocatableCapacity", "Allocatable")),
+                    MetricPanel("Usage", MetricCategory.Nodes, options, filter, ("cpuUsage", "Usage")),
+                    MetricPanel("Capacity", MetricCategory.Nodes, options, filter, ("cpuCapacity", "Capacity"), ("cpuAllocatableCapacity", "Allocatable")),
                 ]),
                 new MetricTabDefinition("Memory", Icon.Code,
                 [
-                    MetricPanel("Memory", MetricCategory.Nodes, options, filter, ("memoryUsage", "Usage"), ("memoryCapacity", "Capacity"), ("memoryAllocatableCapacity", "Allocatable")),
+                    MetricPanel("Usage", MetricCategory.Nodes, options, filter, ("memoryUsage", "Usage")),
+                    MetricPanel("Capacity", MetricCategory.Nodes, options, filter, ("memoryCapacity", "Capacity"), ("memoryAllocatableCapacity", "Allocatable")),
                 ]),
                 new MetricTabDefinition("Filesystem", Icon.Save,
                 [
@@ -97,8 +101,10 @@ internal static class ResourceMetricsCatalog
             [
                 new MetricTabDefinition("Workloads", Icon.PanelRight,
                 [
-                    MetricPanel("CPU", MetricCategory.Namespace, options, ("cpuUsage", "Usage"), ("cpuRequests", "Requests"), ("cpuLimits", "Limits")),
-                    MetricPanel("Memory", MetricCategory.Namespace, options, ("memoryUsage", "Usage"), ("memoryRequests", "Requests"), ("memoryLimits", "Limits")),
+                    MetricPanel("CPU Usage", MetricCategory.Namespace, options, ("cpuUsage", "Usage")),
+                    MetricPanel("CPU Requests & Limits", MetricCategory.Namespace, options, ("cpuRequests", "Requests"), ("cpuLimits", "Limits")),
+                    MetricPanel("Memory Usage", MetricCategory.Namespace, options, ("memoryUsage", "Usage")),
+                    MetricPanel("Memory Requests & Limits", MetricCategory.Namespace, options, ("memoryRequests", "Requests"), ("memoryLimits", "Limits")),
                 ]),
             ],
             "No Prometheus metrics are available for this namespace.");
@@ -170,11 +176,13 @@ internal static class ResourceMetricsCatalog
             [
                 new MetricTabDefinition("CPU", Icon.ArrowSync,
                 [
-                    MetricPanel("CPU", MetricCategory.WorkloadPods, options, ("cpuUsage", "Usage"), ("cpuRequests", "Requests"), ("cpuLimits", "Limits")),
+                    MetricPanel("Usage", MetricCategory.WorkloadPods, options, ("cpuUsage", "Usage")),
+                    MetricPanel("Requests & Limits", MetricCategory.WorkloadPods, options, ("cpuRequests", "Requests"), ("cpuLimits", "Limits")),
                 ]),
                 new MetricTabDefinition("Memory", Icon.Code,
                 [
-                    MetricPanel("Memory", MetricCategory.WorkloadPods, options, ("memoryUsage", "Usage"), ("memoryRequests", "Requests"), ("memoryLimits", "Limits")),
+                    MetricPanel("Usage", MetricCategory.WorkloadPods, options, ("memoryUsage", "Usage")),
+                    MetricPanel("Requests & Limits", MetricCategory.WorkloadPods, options, ("memoryRequests", "Requests"), ("memoryLimits", "Limits")),
                 ]),
                 new MetricTabDefinition("Storage & Network", Icon.Link,
                 [
