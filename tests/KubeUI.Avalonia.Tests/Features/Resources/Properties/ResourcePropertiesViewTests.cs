@@ -1,6 +1,8 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using LiveChartsCore.Defaults;
+using LiveChartsCore.SkiaSharpView;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
 using KubeUI.Avalonia.Features.Resources.Properties.Views;
@@ -117,10 +119,69 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
             .Single();
 
         metrics.IsVisible.ShouldBeTrue();
-        metrics.ShowCurrentMetrics.ShouldBeTrue();
+        metrics.ShowTabs.ShouldBeTrue();
         metrics.ShowStatus.ShouldBeFalse();
-        metrics.CurrentMetrics.ShouldContain(x => x.Key == "CPU" && x.Value == "0.125c");
-        metrics.CurrentMetrics.ShouldContain(x => x.Key == "Memory");
+        metrics.Tabs.Select(x => x.Title).ShouldBe(["CPU", "Memory"]);
+        metrics.Tabs.SelectMany(x => x.Panels).ShouldAllBe(x => x.Series.Count == 1);
+        foreach (var series in metrics.Tabs.SelectMany(x => x.Panels).SelectMany(x => x.Series.OfType<LineSeries<DateTimePoint>>()))
+        {
+            (series.Values?.OfType<DateTimePoint>().Count() ?? 0).ShouldBe(2);
+        }
+    }
+
+    [AvaloniaFact]
+    public void embedded_metrics_control_is_initialized_for_node_properties()
+    {
+        var workspace = new TestCluster().CreateWorkspace();
+        workspace.NodeMetrics.Add(new NodeMetrics
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "node-1",
+            },
+            Usage = new Dictionary<string, ResourceQuantity>
+            {
+                ["cpu"] = new("750m"),
+                ["memory"] = new("2Gi"),
+            },
+        });
+        workspace.EnsureWorkspaceStateInitializedAsync().GetAwaiter().GetResult();
+        var viewModel = new ResourcePropertiesViewModel<V1Node>();
+        viewModel.Initialize(workspace, new V1Node
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "node-1",
+            }
+        });
+
+        var view = new ResourcePropertiesView
+        {
+            DataContext = viewModel
+        };
+
+        Dispatcher.UIThread.RunJobs();
+        Dispatcher.UIThread.RunJobs();
+
+        var nodeProperties = view.FindControl<StackPanel>("PART_Items")!
+            .Children
+            .OfType<KubeUI.Avalonia.Resources.Core.v1.Node.Views.PropertiesView>()
+            .Single();
+        var metrics = nodeProperties.Content
+            .ShouldBeOfType<StackPanel>()
+            .Children
+            .OfType<MetricsControl>()
+            .Single();
+
+        metrics.IsVisible.ShouldBeTrue();
+        metrics.ShowTabs.ShouldBeTrue();
+        metrics.ShowStatus.ShouldBeFalse();
+        metrics.Tabs.Select(x => x.Title).ShouldBe(["CPU", "Memory"]);
+        metrics.Tabs.SelectMany(x => x.Panels).ShouldAllBe(x => x.Series.Count == 1);
+        foreach (var series in metrics.Tabs.SelectMany(x => x.Panels).SelectMany(x => x.Series.OfType<LineSeries<DateTimePoint>>()))
+        {
+            (series.Values?.OfType<DateTimePoint>().Count() ?? 0).ShouldBe(2);
+        }
     }
 
     [AvaloniaFact]

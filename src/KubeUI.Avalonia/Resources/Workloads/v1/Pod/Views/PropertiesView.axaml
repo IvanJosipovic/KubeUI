@@ -9,6 +9,7 @@
     xmlns:generic="using:System.Collections.Generic"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="using:k8s.Models"
+    xmlns:p="using:KubeUI.Avalonia.Infrastructure.Presentation"
     d:DesignHeight="3000"
     d:DesignWidth="400"
     x:DataType="models:V1Pod"
@@ -22,28 +23,28 @@
                 <c:CollectionItem Key="Ports" Value="{Binding Ports}">
                     <c:CollectionItem.ItemTemplate>
                         <DataTemplate x:DataType="models:V1ContainerPort">
-                            <SelectableTextBlock Text="{Binding ContainerPort}" TextWrapping="Wrap" />
+                            <p:SafeSelectableTextBlock Text="{Binding ContainerPort}" TextWrapping="Wrap" />
                         </DataTemplate>
                     </c:CollectionItem.ItemTemplate>
                 </c:CollectionItem>
                 <c:CollectionItem Key="Environment" Value="{Binding Env}">
                     <c:CollectionItem.ItemTemplate>
                         <DataTemplate x:DataType="models:V1EnvVar">
-                            <SelectableTextBlock>
-                                <SelectableTextBlock.Text>
+                            <p:SafeSelectableTextBlock>
+                                <p:SafeSelectableTextBlock.Text>
                                     <MultiBinding StringFormat="{}{0}={1}">
                                         <Binding Path="Name" />
                                         <Binding Path="Value" />
                                     </MultiBinding>
-                                </SelectableTextBlock.Text>
-                            </SelectableTextBlock>
+                                </p:SafeSelectableTextBlock.Text>
+                            </p:SafeSelectableTextBlock>
                         </DataTemplate>
                     </c:CollectionItem.ItemTemplate>
                 </c:CollectionItem>
                 <c:CollectionItem Key="Mounts" Value="{Binding VolumeMounts}">
                     <c:CollectionItem.ItemTemplate>
                         <DataTemplate x:DataType="models:V1VolumeMount">
-                            <SelectableTextBlock Text="{Binding MountPath}" />
+                            <p:SafeSelectableTextBlock Text="{Binding MountPath}" />
                         </DataTemplate>
                     </c:CollectionItem.ItemTemplate>
                 </c:CollectionItem>
@@ -67,28 +68,28 @@
                 <c:CollectionItem Key="Labels" Value="{Binding Metadata.Labels}">
                     <c:CollectionItem.ItemTemplate>
                         <DataTemplate x:DataType="{x:Type generic:KeyValuePair, x:TypeArguments=x:String, x:TypeArguments=x:String}">
-                            <SelectableTextBlock>
-                                <SelectableTextBlock.Text>
+                            <p:SafeSelectableTextBlock>
+                                <p:SafeSelectableTextBlock.Text>
                                     <MultiBinding StringFormat="{}{0}={1}">
                                         <Binding Path="Key" />
                                         <Binding Path="Value" />
                                     </MultiBinding>
-                                </SelectableTextBlock.Text>
-                            </SelectableTextBlock>
+                                </p:SafeSelectableTextBlock.Text>
+                            </p:SafeSelectableTextBlock>
                         </DataTemplate>
                     </c:CollectionItem.ItemTemplate>
                 </c:CollectionItem>
                 <c:CollectionItem Key="Annotations" Value="{Binding Metadata.Annotations}">
                     <c:CollectionItem.ItemTemplate>
                         <DataTemplate x:DataType="{x:Type generic:KeyValuePair, x:TypeArguments=x:String, x:TypeArguments=x:String}">
-                            <SelectableTextBlock>
-                                <SelectableTextBlock.Text>
+                            <p:SafeSelectableTextBlock>
+                                <p:SafeSelectableTextBlock.Text>
                                     <MultiBinding StringFormat="{}{0}={1}">
                                         <Binding Path="Key" />
                                         <Binding Path="Value" />
                                     </MultiBinding>
-                                </SelectableTextBlock.Text>
-                            </SelectableTextBlock>
+                                </p:SafeSelectableTextBlock.Text>
+                            </p:SafeSelectableTextBlock>
                         </DataTemplate>
                     </c:CollectionItem.ItemTemplate>
                 </c:CollectionItem>

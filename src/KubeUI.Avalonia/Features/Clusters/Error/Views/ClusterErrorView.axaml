@@ -5,6 +5,7 @@
     xmlns:assets="clr-namespace:KubeUI.Avalonia.Assets;assembly=KubeUI.Avalonia"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:p="using:KubeUI.Avalonia.Infrastructure.Presentation"
     xmlns:vm="clr-namespace:KubeUI.Avalonia.Features.Clusters.Error.ViewModels"
     d:DesignHeight="450"
     d:DesignWidth="800"
@@ -18,7 +19,7 @@
         <TextBlock Grid.Row="0"
             Padding="5,0,0,0"
             Text="{x:Static assets:Resources.ClusterErrorView_Header}" />
-        <SelectableTextBlock Grid.Row="1"
+        <p:SafeSelectableTextBlock Grid.Row="1"
             Padding="5,0,0,0"
             Text="{Binding Error}"
             TextWrapping="Wrap" />

@@ -5,6 +5,7 @@
     xmlns:converters="using:KubeUI.Avalonia.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
+    xmlns:p="using:KubeUI.Avalonia.Infrastructure.Presentation"
     HorizontalAlignment="Stretch"
     VerticalAlignment="Stretch"
     d:DesignHeight="80"
@@ -14,19 +15,19 @@
         <Style Selector="SelectableTextBlock">
             <Setter Property="Padding" Value="5" />
         </Style>
-        <Style Selector="ContentPresenter &gt; SelectableTextBlock">
+        <Style Selector="ContentPresenter > SelectableTextBlock">
             <Setter Property="Padding" Value="0" />
         </Style>
     </UserControl.Styles>
     <UserControl.Resources>
         <DataTemplate x:Key="CollectionItemItemTemplate">
-            <SelectableTextBlock Text="{Binding}" />
+            <p:SafeSelectableTextBlock Text="{Binding}" />
         </DataTemplate>
         <converters:ResourceLabelConverter x:Key="ResourceLabelConverter" />
     </UserControl.Resources>
     <Border BorderBrush="{DynamicResource SystemAltHighColor}" BorderThickness="0,0,0,1">
         <Grid VerticalAlignment="Top" ColumnDefinitions="*,2*">
-            <SelectableTextBlock Grid.Row="0"
+            <p:SafeSelectableTextBlock Grid.Row="0"
                 Grid.Column="0"
                 Padding="5"
                 Text="{Binding Key, RelativeSource={RelativeSource AncestorType=local:CollectionItem}, Converter={StaticResource ResourceLabelConverter}}"

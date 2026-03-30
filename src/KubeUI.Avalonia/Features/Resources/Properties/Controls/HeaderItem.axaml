@@ -5,6 +5,7 @@
     xmlns:converters="using:KubeUI.Avalonia.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
+    xmlns:p="using:KubeUI.Avalonia.Infrastructure.Presentation"
     d:DesignHeight="30"
     d:DesignWidth="200">
     <UserControl.Resources>
@@ -16,6 +17,6 @@
         Background="{DynamicResource SystemAltHighColor}"
         BorderBrush="{DynamicResource SystemAltHighColor}"
         BorderThickness="0,0,0,1">
-        <SelectableTextBlock VerticalAlignment="Center" Text="{Binding Text, RelativeSource={RelativeSource AncestorType=local:HeaderItem}, Converter={StaticResource ResourceLabelConverter}}" />
+        <p:SafeSelectableTextBlock VerticalAlignment="Center" Text="{Binding Text, RelativeSource={RelativeSource AncestorType=local:HeaderItem}, Converter={StaticResource ResourceLabelConverter}}" />
     </Border>
 </UserControl>

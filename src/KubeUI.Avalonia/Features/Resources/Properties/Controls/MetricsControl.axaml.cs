@@ -1,7 +1,11 @@
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Styling;
+using Avalonia.VisualTree;
 using FluentIcons.Common;
 using Humanizer;
 using k8s;
@@ -14,13 +18,18 @@ using LiveChartsCore.SkiaSharpView.Painting;
 using SkiaSharp;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Threading;
 
 namespace KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 public sealed partial class MetricsControl : UserControl, IInitializeCluster
 {
+    private static readonly TimeSpan s_metricsServerSampleInterval = TimeSpan.FromSeconds(30);
     private static readonly DispatcherTimer s_timer = new(DispatcherPriority.Default);
     private ClusterWorkspaceViewModel? _cluster;
+    private MetricsServerHistoryState? _metricsServerHistory;
+    private readonly SemaphoreSlim _refreshGate = new(1, 1);
+    private int _refreshPending;
 
     [GeneratedDirectProperty]
     public partial ObservableCollection<MetricTabViewModel> Tabs { get; set; } = [];
@@ -46,6 +55,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster
     public MetricsControl()
     {
         InitializeComponent();
+        AddHandler(InputElement.PointerWheelChangedEvent, OnPointerWheelChanged, RoutingStrategies.Tunnel, handledEventsToo: true);
 
         if (!s_timer.IsEnabled)
         {
@@ -59,14 +69,14 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster
         UnsubscribeCluster();
         _cluster = cluster;
         SubscribeCluster();
-        _ = RefreshAsync();
+        QueueRefresh();
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
         s_timer.Tick += Timer_Tick;
-        _ = RefreshAsync();
+        QueueRefresh();
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
@@ -79,12 +89,12 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster
     protected override void OnDataContextChanged(EventArgs e)
     {
         base.OnDataContextChanged(e);
-        _ = RefreshAsync();
+        QueueRefresh();
     }
 
     private async void Timer_Tick(object? sender, EventArgs e)
     {
-        await RefreshAsync();
+        QueueRefresh();
     }
 
     private void SubscribeCluster()
@@ -125,7 +135,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster
 
     private void OnMetricsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        _ = RefreshAsync();
+        QueueRefresh();
     }
 
     private void OnClusterPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -135,18 +145,66 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster
             or nameof(ClusterWorkspaceViewModel.ActivePrometheusProviderKind)
             or nameof(ClusterWorkspaceViewModel.IsMetricsAvailable))
         {
-            _ = RefreshAsync();
+            QueueRefresh();
         }
     }
 
-    private async Task RefreshAsync()
+    private void QueueRefresh()
     {
+        Interlocked.Exchange(ref _refreshPending, 1);
+        _ = RefreshLoopAsync();
+    }
+
+    private async Task RefreshLoopAsync()
+    {
+        if (!await _refreshGate.WaitAsync(0).ConfigureAwait(false))
+        {
+            return;
+        }
+
+        try
+        {
+            while (Interlocked.Exchange(ref _refreshPending, 0) == 1)
+            {
+                try
+                {
+                    await Dispatcher.UIThread.InvokeAsync(RefreshCoreAsync);
+                }
+                catch (Exception)
+                {
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        Tabs.Clear();
+                        CurrentMetrics.Clear();
+                        SelectedTab = null;
+                        ShowTabs = false;
+                        ShowCurrentMetrics = false;
+                        ShowStatus = true;
+                        StatusText = "Unable to load metrics.";
+                    });
+                }
+            }
+        }
+        finally
+        {
+            _refreshGate.Release();
+        }
+    }
+
+    private async Task RefreshCoreAsync()
+    {
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            throw new InvalidOperationException("MetricsControl refresh must run on the UI thread.");
+        }
+
         if (_cluster == null || DataContext is not IKubernetesObject<V1ObjectMeta> resource)
         {
             IsVisible = false;
             Tabs.Clear();
             CurrentMetrics.Clear();
             SelectedTab = null;
+            _metricsServerHistory = null;
             return;
         }
 
@@ -154,20 +212,24 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster
 
         if (_cluster.MetricsServiceType == MetricsServiceType.KubernetesMetricsServer)
         {
-            await Dispatcher.UIThread.InvokeAsync(() =>
+            var historyTabs = TryCaptureMetricsServerCharts(resource);
+            MergeTabs(historyTabs);
+            ShowTabs = Tabs.Count > 0;
+            ShowCurrentMetrics = false;
+            CurrentMetrics.Clear();
+            ShowStatus = !ShowTabs;
+            StatusText = ShowTabs
+                ? null
+                : "Current metrics are unavailable for this resource while the cluster is using Kubernetes Metrics Server.";
+
+            if (SelectedTab == null || !Tabs.Contains(SelectedTab))
             {
-                Tabs.Clear();
-                SelectedTab = null;
-                MergeCurrentMetrics(CreateCurrentMetrics(resource));
-                ShowTabs = false;
-                ShowCurrentMetrics = CurrentMetrics.Count > 0;
-                ShowStatus = !ShowCurrentMetrics;
-                StatusText = ShowCurrentMetrics
-                    ? "Current metrics from Kubernetes Metrics Server."
-                    : "Current metrics are unavailable for this resource while the cluster is using Kubernetes Metrics Server.";
-            });
+                SelectedTab = Tabs.FirstOrDefault();
+            }
             return;
         }
+
+        _metricsServerHistory = null;
 
         if (_cluster.MetricsServiceType != MetricsServiceType.Prometheus)
         {
@@ -215,19 +277,37 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster
             }
         }
 
-        await Dispatcher.UIThread.InvokeAsync(() =>
+        MergeTabs(tabs);
+        CurrentMetrics.Clear();
+        ShowTabs = Tabs.Count > 0;
+        ShowCurrentMetrics = false;
+        ShowStatus = !ShowTabs;
+        if (SelectedTab == null || !Tabs.Contains(SelectedTab))
         {
-            MergeTabs(tabs);
-            CurrentMetrics.Clear();
-            ShowTabs = Tabs.Count > 0;
-            ShowCurrentMetrics = false;
-            ShowStatus = !ShowTabs;
-            if (SelectedTab == null || !Tabs.Contains(SelectedTab))
-            {
-                SelectedTab = Tabs.FirstOrDefault();
-            }
-            StatusText = ShowTabs ? null : descriptor.EmptyState ?? "No Prometheus metrics are available for this resource.";
-        });
+            SelectedTab = Tabs.FirstOrDefault();
+        }
+        StatusText = ShowTabs ? null : descriptor.EmptyState ?? "No Prometheus metrics are available for this resource.";
+    }
+
+    private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
+    {
+        if (e.Source is not Visual source
+            || source.FindAncestorOfType<LiveChartsCore.SkiaSharpView.Avalonia.CartesianChart>() == null)
+        {
+            return;
+        }
+
+        var scrollViewer = this.FindAncestorOfType<ScrollViewer>();
+        if (scrollViewer == null)
+        {
+            return;
+        }
+
+        const double scrollStep = 48;
+        var maxOffset = Math.Max(0, scrollViewer.Extent.Height - scrollViewer.Viewport.Height);
+        var nextOffset = Math.Clamp(scrollViewer.Offset.Y - (e.Delta.Y * scrollStep), 0, maxOffset);
+        scrollViewer.Offset = new Vector(scrollViewer.Offset.X, nextOffset);
+        e.Handled = true;
     }
 
     private void MergeCurrentMetrics(IReadOnlyList<MetricSummaryItemViewModel> snapshots)
@@ -264,6 +344,136 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster
                 }
             }
         }
+    }
+
+    private IReadOnlyList<MetricTabSnapshot> TryCaptureMetricsServerCharts(IKubernetesObject<V1ObjectMeta> resource)
+    {
+        var resourceKey = GetMetricsServerResourceKey(resource);
+        if (resourceKey == null)
+        {
+            _metricsServerHistory = null;
+            return [];
+        }
+
+        if (_metricsServerHistory == null
+            || !string.Equals(_metricsServerHistory.ResourceKey, resourceKey, StringComparison.Ordinal))
+        {
+            _metricsServerHistory = new MetricsServerHistoryState(resourceKey);
+        }
+
+        var sample = resource switch
+        {
+            V1Pod pod => TryCreatePodMetricsServerSample(pod),
+            V1Node node => TryCreateNodeMetricsServerSample(node),
+            _ => null,
+        };
+
+        if (sample == null)
+        {
+            return CreateMetricsServerTabs(_metricsServerHistory);
+        }
+
+        var timestamp = NormalizeMetricsServerTimestamp(DateTimeOffset.UtcNow);
+        _metricsServerHistory.Upsert(timestamp, sample.Value);
+        return CreateMetricsServerTabs(_metricsServerHistory);
+    }
+
+    private static string? GetMetricsServerResourceKey(IKubernetesObject<V1ObjectMeta> resource)
+    {
+        return resource switch
+        {
+            V1Pod pod => $"pod:{pod.Namespace()}:{pod.Name()}",
+            V1Node node => $"node::{node.Name()}",
+            _ => null,
+        };
+    }
+
+    private MetricsServerSample? TryCreatePodMetricsServerSample(V1Pod pod)
+    {
+        var metric = _cluster?.PodMetrics.FirstOrDefault(x =>
+            string.Equals(x.Name(), pod.Name(), StringComparison.Ordinal)
+            && string.Equals(x.Namespace(), pod.Namespace(), StringComparison.Ordinal));
+
+        if (metric == null || metric.Containers == null || metric.Containers.Count == 0)
+        {
+            return null;
+        }
+
+        var cpu = metric.Containers.Sum(static x => x.Usage["cpu"].ToDecimal());
+        var memory = metric.Containers.Sum(static x => (double)x.Usage["memory"].ToInt64());
+        return new MetricsServerSample(cpu, memory);
+    }
+
+    private MetricsServerSample? TryCreateNodeMetricsServerSample(V1Node node)
+    {
+        var metric = _cluster?.NodeMetrics.FirstOrDefault(x => string.Equals(x.Name(), node.Name(), StringComparison.Ordinal));
+        if (metric == null)
+        {
+            return null;
+        }
+
+        var cpu = metric.Usage["cpu"].ToDecimal();
+        var memory = (double)metric.Usage["memory"].ToInt64();
+        return new MetricsServerSample(cpu, memory);
+    }
+
+    private static DateTimeOffset NormalizeMetricsServerTimestamp(DateTimeOffset timestamp)
+    {
+        var seconds = (long)(timestamp.ToUnixTimeSeconds() / s_metricsServerSampleInterval.TotalSeconds * s_metricsServerSampleInterval.TotalSeconds);
+        return DateTimeOffset.FromUnixTimeSeconds(seconds);
+    }
+
+    private static IReadOnlyList<MetricTabSnapshot> CreateMetricsServerTabs(MetricsServerHistoryState history)
+    {
+        if (history.Samples.Count == 0)
+        {
+            return [];
+        }
+
+        var cpuPoints = CreateMetricsServerChartPoints(history.Samples, static x => (double)x.Cpu);
+        var memoryPoints = CreateMetricsServerChartPoints(history.Samples, static x => x.Memory);
+
+        return
+        [
+            new MetricTabSnapshot("CPU", Icon.ArrowSync,
+            [
+                new MetricPanelSnapshot("CPU",
+                [
+                    new MetricSeriesSnapshot(
+                        "Usage",
+                        cpuPoints),
+                ]),
+            ]),
+            new MetricTabSnapshot("Memory", Icon.Code,
+            [
+                new MetricPanelSnapshot("Memory",
+                [
+                    new MetricSeriesSnapshot(
+                        "Usage",
+                        memoryPoints),
+                ]),
+            ]),
+        ];
+    }
+
+    private static IReadOnlyList<DateTimePoint> CreateMetricsServerChartPoints(
+        IReadOnlyList<MetricsServerSamplePoint> samples,
+        Func<MetricsServerSamplePoint, double> selector)
+    {
+        if (samples.Count == 1)
+        {
+            var sample = samples[0];
+            var value = selector(sample);
+            return
+            [
+                new DateTimePoint(sample.Timestamp.Subtract(s_metricsServerSampleInterval).LocalDateTime, value),
+                new DateTimePoint(sample.Timestamp.LocalDateTime, value),
+            ];
+        }
+
+        return samples
+            .Select(sample => new DateTimePoint(sample.Timestamp.LocalDateTime, selector(sample)))
+            .ToArray();
     }
 
     private IReadOnlyList<MetricSummaryItemViewModel> CreateCurrentMetrics(IKubernetesObject<V1ObjectMeta> resource)
@@ -519,30 +729,31 @@ public sealed partial class MetricTabViewModel : ObservableObject
 
 public sealed partial class MetricPanelViewModel : ObservableObject
 {
+    private static readonly TimeSpan s_defaultTimeWindow = TimeSpan.FromHours(1);
     private readonly Axis _yAxis = new()
     {
         LabelsPaint = CreateChartTextPaint(),
         TextSize = 11,
     };
+    private readonly Axis _xAxis;
 
     public required string Title { get; init; }
 
     public ObservableCollection<ISeries> Series { get; } = [];
 
-    public ICartesianAxis[] XAxes { get; } =
-    [
-        new DateTimeAxis(TimeSpan.FromMinutes(10), value => value.ToString("HH:mm"))
-        {
-            LabelsPaint = CreateChartTextPaint(),
-            TextSize = 11,
-        },
-    ];
+    public ICartesianAxis[] XAxes { get; }
 
     public ICartesianAxis[] YAxes { get; } =
     [];
 
     public MetricPanelViewModel()
     {
+        _xAxis = new DateTimeAxis(TimeSpan.FromMinutes(10), value => value.ToString("HH:mm"))
+        {
+            LabelsPaint = CreateChartTextPaint(),
+            TextSize = 11,
+        };
+        XAxes = [_xAxis];
         YAxes = [_yAxis];
     }
 
@@ -570,13 +781,20 @@ public sealed partial class MetricPanelViewModel : ObservableObject
                 {
                     Name = snapshot.Name,
                     GeometrySize = 0,
-                    Values = snapshot.Points.ToList(),
+                    Values = new ObservableCollection<DateTimePoint>(snapshot.Points),
                 };
                 Series.Insert(index, existing);
             }
             else
             {
-                existing.Values = snapshot.Points.ToList();
+                var values = existing.Values as ObservableCollection<DateTimePoint>;
+                if (values == null)
+                {
+                    values = new ObservableCollection<DateTimePoint>();
+                    existing.Values = values;
+                }
+
+                SyncPoints(values, snapshot.Points);
                 var currentIndex = Series.IndexOf(existing);
                 if (currentIndex != index)
                 {
@@ -586,6 +804,27 @@ public sealed partial class MetricPanelViewModel : ObservableObject
         }
 
         UpdateYAxisLimits(Series);
+        UpdateXAxisLimits(Series);
+    }
+
+    private static void SyncPoints(ObservableCollection<DateTimePoint> target, IReadOnlyList<DateTimePoint> source)
+    {
+        while (target.Count > source.Count)
+        {
+            target.RemoveAt(target.Count - 1);
+        }
+
+        for (var i = 0; i < source.Count; i++)
+        {
+            if (i < target.Count)
+            {
+                target[i] = source[i];
+            }
+            else
+            {
+                target.Add(source[i]);
+            }
+        }
     }
 
     private void UpdateYAxisLimits(IEnumerable<ISeries> series)
@@ -621,6 +860,36 @@ public sealed partial class MetricPanelViewModel : ObservableObject
         _yAxis.MaxLimit = max + padding;
     }
 
+    private void UpdateXAxisLimits(IEnumerable<ISeries> series)
+    {
+        var timestamps = series
+            .OfType<LineSeries<DateTimePoint>>()
+            .SelectMany(x => x.Values?.OfType<DateTimePoint>() ?? [])
+            .Select(x => x.DateTime)
+            .Where(x => x != default)
+            .Order()
+            .ToArray();
+
+        if (timestamps.Length == 0)
+        {
+            _xAxis.MinLimit = null;
+            _xAxis.MaxLimit = null;
+            return;
+        }
+
+        var min = timestamps[0];
+        var max = timestamps[^1];
+        var span = max - min;
+
+        if (span < s_defaultTimeWindow)
+        {
+            min = max - s_defaultTimeWindow;
+        }
+
+        _xAxis.MinLimit = min.Ticks;
+        _xAxis.MaxLimit = max.Ticks;
+    }
+
     private static SolidColorPaint CreateChartTextPaint()
     {
         var color = Application.Current?.ActualThemeVariant == ThemeVariant.Light
@@ -647,3 +916,34 @@ internal sealed record MetricTabSnapshot(string Title, Icon Icon, IReadOnlyList<
 internal sealed record MetricPanelSnapshot(string Title, IReadOnlyList<MetricSeriesSnapshot> Series);
 
 internal sealed record MetricSeriesSnapshot(string Name, IReadOnlyList<DateTimePoint> Points);
+
+internal sealed class MetricsServerHistoryState(string resourceKey)
+{
+    private static readonly TimeSpan s_historyDuration = TimeSpan.FromHours(1);
+
+    public string ResourceKey { get; } = resourceKey;
+
+    public List<MetricsServerSamplePoint> Samples { get; } = [];
+
+    public void Upsert(DateTimeOffset timestamp, MetricsServerSample sample)
+    {
+        var cutoff = timestamp - s_historyDuration;
+        Samples.RemoveAll(x => x.Timestamp < cutoff);
+
+        var existing = Samples.FindIndex(x => x.Timestamp == timestamp);
+        var point = new MetricsServerSamplePoint(timestamp, sample.Cpu, sample.Memory);
+
+        if (existing >= 0)
+        {
+            Samples[existing] = point;
+            return;
+        }
+
+        Samples.Add(point);
+        Samples.Sort(static (a, b) => a.Timestamp.CompareTo(b.Timestamp));
+    }
+}
+
+internal readonly record struct MetricsServerSample(decimal Cpu, double Memory);
+
+internal readonly record struct MetricsServerSamplePoint(DateTimeOffset Timestamp, decimal Cpu, double Memory);
