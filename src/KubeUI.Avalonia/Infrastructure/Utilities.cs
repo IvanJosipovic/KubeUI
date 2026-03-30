@@ -15,14 +15,9 @@ public static class Utilities
     public static T GetRequiredService<T>(this Application? app)
     {
         var resourceHost = app ?? Application.Current;
-        if (resourceHost is App kubeApp && kubeApp.Services != null)
+        if (resourceHost is IServiceProviderAccessor serviceProviderAccessor && serviceProviderAccessor.Services != null)
         {
-            return kubeApp.Services.GetRequiredService<T>();
-        }
-
-        if (resourceHost?.Resources.TryGetValue(typeof(IServiceProvider), out var service) == true)
-        {
-            return ((IServiceProvider)service).GetRequiredService<T>();
+            return serviceProviderAccessor.Services.GetRequiredService<T>();
         }
 
         throw new Exception($"Cant find {typeof(IServiceProvider).Name}");
@@ -31,14 +26,9 @@ public static class Utilities
     public static object GetRequiredService(this Application? app, Type type)
     {
         var resourceHost = app ?? Application.Current;
-        if (resourceHost is App kubeApp && kubeApp.Services != null)
+        if (resourceHost is IServiceProviderAccessor serviceProviderAccessor && serviceProviderAccessor.Services != null)
         {
-            return kubeApp.Services.GetRequiredService(type);
-        }
-
-        if (resourceHost?.Resources.TryGetValue(typeof(IServiceProvider), out var service) == true)
-        {
-            return ((IServiceProvider)service!).GetRequiredService(type);
+            return serviceProviderAccessor.Services.GetRequiredService(type);
         }
 
         throw new Exception($"Cant find {typeof(IServiceProvider).Name}");

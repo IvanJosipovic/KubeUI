@@ -21,7 +21,7 @@ using Moq;
 
 namespace KubeUI.Avalonia.Tests.Infra;
 
-public class TestApp : Application
+public class TestApp : Application, KubeUI.Avalonia.Infrastructure.IServiceProviderAccessor
 {
     public IServiceProvider? Services { get; private set; }
     public static Mock<IDialogManager>? DialogManagerMock { get; private set; }
@@ -112,7 +112,6 @@ public class TestApp : Application
 
     private void ApplyResources(ServiceProvider provider)
     {
-        Resources[typeof(IServiceProvider)] = provider;
         Resources["AppearanceSettings"] = provider.GetRequiredService<ISettingsService>().Appearance;
         Resources["DataGridRowHeight"] = Convert.ToDouble(provider.GetRequiredService<ISettingsService>().Appearance.ListRowHeight);
         Resources["DataGridColumnHeaderMinHeight"] = Convert.ToDouble(provider.GetRequiredService<ISettingsService>().Appearance.ListRowHeight + 4m);
@@ -140,7 +139,6 @@ public class TestApp : Application
             disposable.Dispose();
         }
 
-        Resources.Remove(typeof(IServiceProvider));
         Services = null;
     }
 
