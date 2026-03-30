@@ -918,9 +918,16 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         _metricsRefreshTimer?.Dispose();
         _metricsRefreshTimer = null;
 
+        _prometheusServicePortForward?.Dispose();
+        _prometheusServicePortForward = null;
+
+        _metricsHttpClient?.Dispose();
+        _metricsHttpClient = null;
+
         NodeMetrics.Clear();
         PodMetrics.Clear();
         IsMetricsAvailable = false;
+        MetricsServiceType = MetricsServiceType.None;
     }
 
     private void StopPortForwarders()

@@ -5,6 +5,8 @@
     xmlns:assets="clr-namespace:KubeUI.Avalonia.Assets"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:metrics="using:KubeUI.Kubernetes"
+    xmlns:u="https://irihi.tech/ursa"
     xmlns:utils="clr-namespace:KubeUI.Avalonia.Utilities"
     xmlns:views="clr-namespace:KubeUI.Avalonia.Features.Clusters.Settings.Views"
     xmlns:vm="clr-namespace:KubeUI.Avalonia.Features.Clusters.Settings.ViewModels"
@@ -51,6 +53,64 @@
                     </ListBox.ItemTemplate>
                 </ListBox>
             </StackPanel>
+        </Grid>
+
+        <Grid ColumnDefinitions="*,2*" ToolTip.Tip="Metrics provider">
+            <Label Grid.Column="0" Content="Metrics Provider" />
+            <u:EnumSelector
+                Grid.Column="1"
+                Width="250"
+                DisplayDescription="True"
+                EnumType="{x:Type metrics:MetricsServiceType}"
+                Value="{Binding ClusterSettings.MetricsServiceType}" />
+        </Grid>
+
+        <Grid
+            ColumnDefinitions="*,2*"
+            IsVisible="{Binding ShowPrometheusServiceSettings}"
+            ToolTip.Tip="Prometheus service name">
+            <Label Grid.Column="0" Content="Prometheus Service Name" />
+            <TextBox Grid.Column="1" Text="{Binding ClusterSettings.PrometheusServiceName}" />
+        </Grid>
+
+        <Grid
+            ColumnDefinitions="*,2*"
+            IsVisible="{Binding ShowPrometheusServiceSettings}"
+            ToolTip.Tip="Prometheus service namespace">
+            <Label Grid.Column="0" Content="Prometheus Service Namespace" />
+            <TextBox Grid.Column="1" Text="{Binding ClusterSettings.PrometheusServiceNamespace}" />
+        </Grid>
+
+        <Grid
+            ColumnDefinitions="*,2*"
+            IsVisible="{Binding ShowPrometheusServiceSettings}"
+            ToolTip.Tip="Prometheus service port">
+            <Label Grid.Column="0" Content="Prometheus Service Port" />
+            <TextBox Grid.Column="1" Text="{Binding ClusterSettings.PrometheusServicePort}" />
+        </Grid>
+
+        <Grid
+            ColumnDefinitions="*,2*"
+            IsVisible="{Binding ShowPrometheusExternalSettings}"
+            ToolTip.Tip="External Prometheus base URL">
+            <Label Grid.Column="0" Content="Prometheus Server Url" />
+            <TextBox Grid.Column="1" Text="{Binding ClusterSettings.PrometheusServerUrl}" />
+        </Grid>
+
+        <Grid
+            ColumnDefinitions="*,2*"
+            IsVisible="{Binding ShowAzureManagedPrometheusSettings}"
+            ToolTip.Tip="Azure Managed Prometheus client id">
+            <Label Grid.Column="0" Content="Prometheus Client Id" />
+            <TextBox Grid.Column="1" Text="{Binding ClusterSettings.PrometheusClientId}" />
+        </Grid>
+
+        <Grid
+            ColumnDefinitions="*,2*"
+            IsVisible="{Binding ShowAzureManagedPrometheusSettings}"
+            ToolTip.Tip="Azure Managed Prometheus client secret">
+            <Label Grid.Column="0" Content="Prometheus Client Secret" />
+            <TextBox Grid.Column="1" Text="{Binding ClusterSettings.PrometheusClientSecret}" />
         </Grid>
     </StackPanel>
 </UserControl>

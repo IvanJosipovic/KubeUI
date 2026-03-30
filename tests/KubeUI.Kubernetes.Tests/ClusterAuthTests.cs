@@ -54,5 +54,14 @@ public sealed class ClusterAuthTests
         {
             return [];
         }
+
+        public ClusterMetricsSettings GetClusterMetricsSettings(IClusterRuntime cluster)
+        {
+            return new ClusterMetricsSettings();
+        }
+
+        public void Persist()
+        {
+        }
     }
 }

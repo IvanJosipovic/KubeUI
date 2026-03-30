@@ -44,7 +44,7 @@ public sealed partial class Settings : ObservableObject
     }
 }
 
-public sealed partial class ClusterSettings : ObservableObject
+public sealed partial class ClusterSettings : ClusterMetricsSettings
 {
     [ObservableProperty]
     public partial ObservableCollection<string>? Namespaces { get; set; } = [];

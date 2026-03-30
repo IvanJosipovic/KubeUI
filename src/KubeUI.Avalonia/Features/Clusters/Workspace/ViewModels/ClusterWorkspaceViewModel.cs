@@ -119,6 +119,8 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     public bool IsMetricsAvailable => Runtime.IsMetricsAvailable;
 
+    public MetricsServiceType MetricsServiceType => Runtime.MetricsServiceType;
+
     public bool ListNamespaces
     {
         get => Runtime.ListNamespaces;
@@ -215,6 +217,11 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
     public Task ImportYaml(Stream stream)
     {
         return Runtime.ImportYaml(stream);
+    }
+
+    public Task<PrometheusClientQueryRangeResponse?> GetPrometheusMetrics(string query, DateTimeOffset start, DateTimeOffset end, string step = "1")
+    {
+        return Runtime.GetPrometheusMetrics(query, start, end, step);
     }
 
     public Task DryRunYaml(Stream stream)
@@ -444,6 +451,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         OnPropertyChanged(nameof(ListNamespaces));
         OnPropertyChanged(nameof(Namespaces));
         OnPropertyChanged(nameof(IsMetricsAvailable));
+        OnPropertyChanged(nameof(MetricsServiceType));
     }
 
     private void BindRuntimeCollections()
@@ -749,6 +757,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
                     OnPropertyChanged(nameof(LastError));
                     OnPropertyChanged(nameof(RequiresNamespaceSelectionPrompt));
                     OnPropertyChanged(nameof(IsMetricsAvailable));
+                    OnPropertyChanged(nameof(MetricsServiceType));
                 });
                 break;
             case nameof(IClusterRuntime.LastError):
@@ -773,6 +782,9 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
                     SubscribeNamespaceCollection(Runtime.Namespaces);
                     OnPropertyChanged(nameof(Namespaces));
                 });
+                break;
+            case nameof(IClusterRuntime.MetricsServiceType):
+                PostToUiThread(() => OnPropertyChanged(nameof(MetricsServiceType)));
                 break;
         }
     }

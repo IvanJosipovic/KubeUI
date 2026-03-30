@@ -121,5 +121,14 @@ public class ClusterManagerTests
         {
             return [];
         }
+
+        public ClusterMetricsSettings GetClusterMetricsSettings(IClusterRuntime cluster)
+        {
+            return new ClusterMetricsSettings();
+        }
+
+        public void Persist()
+        {
+        }
     }
 }

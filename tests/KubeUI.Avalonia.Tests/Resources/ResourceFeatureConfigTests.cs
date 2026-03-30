@@ -47,6 +47,8 @@ using KubeUI.Avalonia.Resources.Storage;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 using KubeUI.Avalonia.Resources.Workloads;
 using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.Avalonia.Features.Resources.Properties.Controls;
+using KubeUI.Kubernetes;
 using k8s.Models;
 using Shouldly;
 
@@ -144,6 +146,23 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
 
         controls.Length.ShouldBe(1);
         controls[0].ShouldBeOfType<PodPropertiesView>();
+    }
+
+    [AvaloniaFact]
+    public async Task pod_config_adds_metrics_control_for_prometheus_clusters()
+    {
+        var runtime = new TestCluster { MetricsServiceType = MetricsServiceType.Prometheus };
+        var workspace = runtime.CreateWorkspace();
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+
+        var config = new V1PodConfig();
+        config.Initialize(workspace);
+
+        var controls = config.Properties(new V1Pod());
+
+        controls.Length.ShouldBe(2);
+        controls[0].ShouldBeOfType<PodPropertiesView>();
+        controls[1].ShouldBeOfType<MetricsControl>();
     }
 
     [AvaloniaFact]

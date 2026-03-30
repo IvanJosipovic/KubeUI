@@ -12,6 +12,7 @@ using k8s.Models;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Controls;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
+using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 
@@ -70,7 +71,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 },
             ];
 
-        if (Cluster.IsMetricsAvailable)
+        if (Cluster.MetricsServiceType == MetricsServiceType.KubernetesMetricsServer)
         {
             cols.Insert(3, new ResourceListColumn<V1Pod, decimal>()
             {
@@ -296,7 +297,15 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         return false;
     }
 
-    public override Control[] Properties(V1Pod resource) => [new PropertiesView()];
+    public override Control[] Properties(V1Pod resource)
+    {
+        if (Cluster?.MetricsServiceType is MetricsServiceType.Prometheus or MetricsServiceType.PrometheusExternal)
+        {
+            return [new PropertiesView(), new MetricsControl()];
+        }
+
+        return [new PropertiesView()];
+    }
 }
 
 

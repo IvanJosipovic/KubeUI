@@ -467,6 +467,7 @@ internal sealed class CountingClusterRuntime : IClusterRuntime, INotifyPropertyC
     public string? LastError { get => _inner.LastError; set => _inner.LastError = value; }
     public bool RequiresNamespaceSelectionPrompt { get => _inner.RequiresNamespaceSelectionPrompt; set => _inner.RequiresNamespaceSelectionPrompt = value; }
     public bool IsMetricsAvailable => _inner.IsMetricsAvailable;
+    public MetricsServiceType MetricsServiceType => _inner.MetricsServiceType;
     public bool ListNamespaces { get => _inner.ListNamespaces; set => _inner.ListNamespaces = value; }
     public IKubernetes? Client { get => _inner.Client; set => _inner.Client = value; }
     public K8SConfiguration KubeConfig { get => _inner.KubeConfig; set => _inner.KubeConfig = value; }
@@ -492,6 +493,7 @@ internal sealed class CountingClusterRuntime : IClusterRuntime, INotifyPropertyC
     public Task Disconnect() => _inner.Disconnect();
     public Task DeleteResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.DeleteResource(item);
     public Task DryRunYaml(Stream stream) => _inner.DryRunYaml(stream);
+    public Task<PrometheusClientQueryRangeResponse?> GetPrometheusMetrics(string query, DateTimeOffset start, DateTimeOffset end, string step = "1") => _inner.GetPrometheusMetrics(query, start, end, step);
     public Task ImportFolder(string path) => _inner.ImportFolder(path);
     public Task ImportYaml(Stream stream) => _inner.ImportYaml(stream);
     public Task<bool> IsResourceReady<T>(CancellationToken? token = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.IsResourceReady<T>(token);

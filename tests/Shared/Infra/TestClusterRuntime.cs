@@ -48,6 +48,7 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     private bool _defaultPermissionAllowed = true;
     private bool _listNamespaces;
     private string? _lastError;
+    private MetricsServiceType _metricsServiceType;
     private bool _requiresNamespaceSelectionPrompt;
     private ClusterStatus _status;
     private IKubernetes? _client;
@@ -65,6 +66,7 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
         Status = ClusterStatus.Connected;
         Connected = true;
         ListNamespaces = true;
+        MetricsServiceType = MetricsServiceType.KubernetesMetricsServer;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -119,7 +121,13 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
         set => SetProperty(ref _requiresNamespaceSelectionPrompt, value);
     }
 
-    public bool IsMetricsAvailable => true;
+    public bool IsMetricsAvailable => MetricsServiceType == MetricsServiceType.KubernetesMetricsServer;
+
+    public MetricsServiceType MetricsServiceType
+    {
+        get => _metricsServiceType;
+        set => SetProperty(ref _metricsServiceType, value);
+    }
 
     public IKubernetes? Client
     {
@@ -591,6 +599,11 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
         }
 
         await ImportYaml(stream);
+    }
+
+    public Task<PrometheusClientQueryRangeResponse?> GetPrometheusMetrics(string query, DateTimeOffset start, DateTimeOffset end, string step = "1")
+    {
+        return Task.FromResult<PrometheusClientQueryRangeResponse?>(null);
     }
 
     private async Task ProcessCustomResourceDefinitionAsync(V1CustomResourceDefinition crd)
