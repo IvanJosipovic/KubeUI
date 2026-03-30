@@ -24,7 +24,7 @@ public partial class PodMetricCPUCell : UserControl, IInitializeCluster
 
         if (!s_timer.IsEnabled)
         {
-            s_timer.Interval = TimeSpan.FromSeconds(1);
+            s_timer.Interval = TimeSpan.FromSeconds(30);
             s_timer.Start();
         }
     }

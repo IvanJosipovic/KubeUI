@@ -2,23 +2,23 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using k8s;
 using k8s.Models;
+using Microsoft.Extensions.Http.Resilience;
+using Polly;
 
 namespace KubeUI.Kubernetes;
 
 public sealed partial class MetricsService : ObservableObject, IMetricsService
 {
-    private static readonly TimeSpan[] s_retryDelays =
-    [
-        TimeSpan.Zero,
-        TimeSpan.FromSeconds(1),
-        TimeSpan.FromSeconds(2),
-        TimeSpan.FromSeconds(3),
-        TimeSpan.FromSeconds(5),
-    ];
+    private static readonly TimeSpan s_prometheusRetryBaseDelay = TimeSpan.FromSeconds(1);
+    private static readonly TimeSpan s_prometheusRequestTimeout = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan s_prometheusCacheDuration = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan s_prometheusFailureCooldown = TimeSpan.FromMinutes(1);
 
     private readonly ILogger<MetricsService> _logger;
     private readonly IClusterSettingsStore _settings;
     private readonly IReadOnlyDictionary<PrometheusProviderKind, IPrometheusProvider> _prometheusProviders;
+    private readonly ResiliencePipeline<HttpResponseMessage> _prometheusQueryPipeline;
+    private readonly object _metricsRequestSync = new();
     private Cluster? _cluster;
     private HttpClient? _prometheusHttpClient;
     private PortForwarder? _prometheusServicePortForward;
@@ -26,12 +26,30 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
     private CancellationTokenSource? _metricsRefreshCancellationTokenSource;
     private ResolvedPrometheusEndpoint? _resolvedPrometheusEndpoint;
     private IPrometheusProvider? _resolvedPrometheusProvider;
+    private MetricsServiceType _configuredMetricsServiceType = MetricsServiceType.None;
+    private DateTimeOffset? _prometheusUnavailableUntilUtc;
+    private bool _prometheusFailureLogged;
+    private Dictionary<string, CachedMetricResult> _metricResultCache = new(StringComparer.Ordinal);
+    private Dictionary<string, Task<MetricResultSet>> _inflightMetricRequests = new(StringComparer.Ordinal);
 
     public MetricsService(ILogger<MetricsService> logger, IClusterSettingsStore settings, IEnumerable<IPrometheusProvider> prometheusProviders)
     {
         _logger = logger;
         _settings = settings;
         _prometheusProviders = prometheusProviders.ToDictionary(static x => x.Kind);
+        _prometheusQueryPipeline = new ResiliencePipelineBuilder<HttpResponseMessage>
+        {
+            Name = nameof(MetricsService),
+            InstanceName = "PrometheusQueryRange",
+        }
+        .AddRetry(new HttpRetryStrategyOptions
+        {
+            MaxRetryAttempts = 3,
+            Delay = s_prometheusRetryBaseDelay,
+            BackoffType = DelayBackoffType.Exponential,
+            UseJitter = true,
+        })
+        .Build();
     }
 
     [ObservableProperty]
@@ -61,6 +79,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
 
         var settings = NormalizeLegacySettings(_settings.GetClusterMetricsSettings(cluster));
         var configuredType = settings.MetricsServiceType;
+        _configuredMetricsServiceType = configuredType;
 
         if (configuredType == MetricsServiceType.None)
         {
@@ -120,6 +139,14 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
         NodeMetrics.Clear();
         IsMetricsAvailable = false;
         ActiveMetricsBackend = ActiveMetricsBackend.None;
+        _configuredMetricsServiceType = MetricsServiceType.None;
+        _prometheusUnavailableUntilUtc = null;
+        _prometheusFailureLogged = false;
+        lock (_metricsRequestSync)
+        {
+            _metricResultCache.Clear();
+            _inflightMetricRequests.Clear();
+        }
         _cluster = null;
 
         return Task.CompletedTask;
@@ -137,6 +164,60 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
         }
 
         var (start, end, stepSeconds) = ResolveTimeRange(request);
+        if (_prometheusUnavailableUntilUtc is { } unavailableUntil && unavailableUntil > DateTimeOffset.UtcNow)
+        {
+            return MetricResultSet.Empty;
+        }
+
+        var cacheKey = CreateMetricRequestCacheKey(request, start, end, stepSeconds);
+        Task<MetricResultSet>? inflightTask;
+
+        lock (_metricsRequestSync)
+        {
+            if (_metricResultCache.TryGetValue(cacheKey, out var cached)
+                && DateTimeOffset.UtcNow - cached.TimestampUtc < s_prometheusCacheDuration)
+            {
+                return cached.Result;
+            }
+
+            if (_inflightMetricRequests.TryGetValue(cacheKey, out inflightTask))
+            {
+                goto AwaitInflight;
+            }
+
+            inflightTask = LoadMetricResultSetAsync(request, start, end, stepSeconds, cancellationToken);
+            _inflightMetricRequests[cacheKey] = inflightTask;
+        }
+
+        try
+        {
+            var result = await inflightTask.ConfigureAwait(false);
+            lock (_metricsRequestSync)
+            {
+                _metricResultCache[cacheKey] = new CachedMetricResult(DateTimeOffset.UtcNow, result);
+            }
+
+            return result;
+        }
+        finally
+        {
+            lock (_metricsRequestSync)
+            {
+                _inflightMetricRequests.Remove(cacheKey);
+            }
+        }
+
+AwaitInflight:
+        return await inflightTask.ConfigureAwait(false);
+    }
+
+    private async Task<MetricResultSet> LoadMetricResultSetAsync(
+        MetricRequest request,
+        DateTimeOffset start,
+        DateTimeOffset end,
+        int stepSeconds,
+        CancellationToken cancellationToken)
+    {
         var tasks = request.Queries.Select(query => LoadMetricSeriesAsync(query, request.Category, start, end, stepSeconds, request.Frames, cancellationToken));
         var loaded = await Task.WhenAll(tasks).ConfigureAwait(false);
 
@@ -299,7 +380,10 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
 
     private HttpClient CreatePrometheusHttpClient(ResolvedPrometheusEndpoint endpoint)
     {
-        var client = new HttpClient();
+        var client = new HttpClient
+        {
+            Timeout = Timeout.InfiniteTimeSpan,
+        };
 
         if (!string.IsNullOrWhiteSpace(endpoint.BearerToken))
         {
@@ -312,31 +396,31 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
     private async Task<PrometheusClientQueryRangeResponse?> ExecuteQueryRangeAsync(string query, DateTimeOffset start, DateTimeOffset end, int stepSeconds, CancellationToken cancellationToken)
     {
         var url = BuildPrometheusUrl(query, start, end, stepSeconds);
+        Exception? lastException = null;
 
-        for (var index = 0; index < s_retryDelays.Length; index++)
+        try
         {
-            if (index > 0)
-            {
-                await Task.Delay(s_retryDelays[index], cancellationToken).ConfigureAwait(false);
-            }
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeoutCts.CancelAfter(s_prometheusRequestTimeout);
 
-            try
-            {
-                using var response = await _prometheusHttpClient!.GetAsync(url, cancellationToken).ConfigureAwait(false);
-                if ((int)response.StatusCode >= 500)
-                {
-                    continue;
-                }
+            using var response = await _prometheusQueryPipeline.ExecuteAsync(
+                async token => await _prometheusHttpClient!.GetAsync(url, token).ConfigureAwait(false),
+                timeoutCts.Token).ConfigureAwait(false);
 
-                response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<PrometheusClientQueryRangeResponse>(cancellationToken: cancellationToken).ConfigureAwait(false);
-            }
-            catch (HttpRequestException ex) when (index < s_retryDelays.Length - 1)
-            {
-                _logger.LogDebug(ex, "Retrying Prometheus query for cluster {Name}", _cluster?.Name);
-            }
+            response.EnsureSuccessStatusCode();
+            HandlePrometheusQuerySuccess();
+            return await response.Content.ReadFromJsonAsync<PrometheusClientQueryRangeResponse>(cancellationToken: cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            lastException = ex;
+        }
+        catch (HttpRequestException ex)
+        {
+            lastException = ex;
         }
 
+        await HandlePrometheusQueryFailureAsync(lastException).ConfigureAwait(false);
         return null;
     }
 
@@ -392,10 +476,60 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
 
     private static (DateTimeOffset Start, DateTimeOffset End, int StepSeconds) ResolveTimeRange(MetricRequest request)
     {
-        var end = request.End ?? DateTimeOffset.UtcNow;
-        var start = request.Start ?? end.AddSeconds(-(request.RangeSeconds ?? 3600));
         var stepSeconds = request.StepSeconds ?? 60;
-        return (start, end, stepSeconds);
+        var rawEnd = request.End ?? DateTimeOffset.UtcNow;
+        var normalizedEnd = DateTimeOffset.FromUnixTimeSeconds(rawEnd.ToUnixTimeSeconds() / stepSeconds * stepSeconds);
+        var rawStart = request.Start ?? normalizedEnd.AddSeconds(-(request.RangeSeconds ?? 3600));
+        var normalizedStart = DateTimeOffset.FromUnixTimeSeconds(rawStart.ToUnixTimeSeconds() / stepSeconds * stepSeconds);
+        return (normalizedStart, normalizedEnd, stepSeconds);
+    }
+
+    private static string CreateMetricRequestCacheKey(MetricRequest request, DateTimeOffset start, DateTimeOffset end, int stepSeconds)
+    {
+        var queryKeys = request.Queries
+            .OrderBy(static x => x.Name, StringComparer.Ordinal)
+            .Select(static query => $"{query.Name}:{string.Join(",", query.Options.OrderBy(static option => option.Key, StringComparer.Ordinal).Select(static option => $"{option.Key}={option.Value}"))}");
+
+        return $"{request.Category}|{start.ToUnixTimeSeconds()}|{end.ToUnixTimeSeconds()}|{stepSeconds}|{request.Frames}|{string.Join("|", queryKeys)}";
+    }
+
+    private void HandlePrometheusQuerySuccess()
+    {
+        _prometheusUnavailableUntilUtc = null;
+        _prometheusFailureLogged = false;
+    }
+
+    private async Task HandlePrometheusQueryFailureAsync(Exception? exception)
+    {
+        if (_prometheusUnavailableUntilUtc is { } unavailableUntil && unavailableUntil > DateTimeOffset.UtcNow)
+        {
+            return;
+        }
+
+        _prometheusUnavailableUntilUtc = DateTimeOffset.UtcNow.Add(s_prometheusFailureCooldown);
+
+        if (!_prometheusFailureLogged)
+        {
+            _prometheusFailureLogged = true;
+            _logger.LogWarning(exception, "Prometheus metrics are temporarily unavailable for cluster {Name}. Suppressing Prometheus requests for {CooldownSeconds} seconds.", _cluster?.Name, (int)s_prometheusFailureCooldown.TotalSeconds);
+        }
+
+        if (_configuredMetricsServiceType != MetricsServiceType.Auto
+            || _cluster?.Client is not k8s.Kubernetes kube
+            || ActiveMetricsBackend.Type != MetricsServiceType.Prometheus)
+        {
+            return;
+        }
+
+        try
+        {
+            _logger.LogInformation("Falling back to Kubernetes Metrics Server for cluster {Name} after Prometheus query failure.", _cluster.Name);
+            await StartKubernetesMetricsAsync(_cluster, kube).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Unable to fall back to Kubernetes Metrics Server for cluster {Name}", _cluster?.Name);
+        }
     }
 
     private static IReadOnlyList<MetricSeries> NormalizeResultSet(string metricName, PrometheusClientQueryRangeResponse response, int frames)
@@ -526,4 +660,6 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
             && podResponse.Status.Allowed
             && nodeResponse.Status.Allowed;
     }
+
+    private sealed record CachedMetricResult(DateTimeOffset TimestampUtc, MetricResultSet Result);
 }
