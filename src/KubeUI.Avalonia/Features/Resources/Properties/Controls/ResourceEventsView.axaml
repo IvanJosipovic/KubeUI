@@ -46,11 +46,9 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
-            <SelectableTextBlock
+            <c:PropertyItem
                 IsVisible="{Binding !HasItems, RelativeSource={RelativeSource AncestorType=local:ResourceEventsView}}"
-                Opacity="0.7"
-                Text="{x:Static assets:Resources.NoEventsFound}"
-                TextWrapping="Wrap" />
+                Value="{x:Static assets:Resources.NoEventsFound}" />
         </StackPanel>
     </c:ExpandableSection>
 </UserControl>

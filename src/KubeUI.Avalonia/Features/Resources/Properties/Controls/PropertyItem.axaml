@@ -13,6 +13,8 @@
     <UserControl.Resources>
         <converters:PropertyItemValueConverter x:Key="PropertyItemValueConverter" />
         <converters:ResourceLabelConverter x:Key="ResourceLabelConverter" />
+        <converters:StringNotNullOrEmptyConverter x:Key="StringNotNullOrEmptyConverter" />
+        <converters:StringNullOrWhiteSpaceConverter x:Key="StringNullOrWhiteSpaceConverter" />
     </UserControl.Resources>
     <UserControl.Styles>
         <Style Selector="SelectableTextBlock">
@@ -23,11 +25,24 @@
         <Grid VerticalAlignment="Top" ColumnDefinitions="*,2*">
             <SelectableTextBlock Grid.Row="0"
                 Grid.Column="0"
+                IsVisible="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource StringNotNullOrEmptyConverter}}"
                 Text="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource ResourceLabelConverter}}"
                 TextWrapping="NoWrap"
                 ToolTip.Tip="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource ResourceLabelConverter}}" />
+
+            <!-- When Key exists, render value in the right column -->
             <ScrollViewer Grid.Row="0"
                 Grid.Column="1"
+                IsVisible="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource StringNotNullOrEmptyConverter}}"
+                MaxHeight="200"
+                VerticalScrollBarVisibility="Auto">
+                <SelectableTextBlock Text="{Binding Value, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource PropertyItemValueConverter}}" TextWrapping="Wrap" />
+            </ScrollViewer>
+
+            <!-- When Key is empty, span the value across both columns -->
+            <ScrollViewer Grid.Row="0"
+                Grid.ColumnSpan="2"
+                IsVisible="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource StringNullOrWhiteSpaceConverter}}"
                 MaxHeight="200"
                 VerticalScrollBarVisibility="Auto">
                 <SelectableTextBlock Text="{Binding Value, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource PropertyItemValueConverter}}" TextWrapping="Wrap" />
