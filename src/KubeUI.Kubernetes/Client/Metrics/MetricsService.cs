@@ -1,5 +1,3 @@
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using k8s;
 using k8s.Models;
 using Microsoft.Extensions.Http.Resilience;
@@ -17,11 +15,10 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
     private readonly ILogger<MetricsService> _logger;
     private readonly IClusterSettingsStore _settings;
     private readonly IReadOnlyDictionary<PrometheusProviderKind, IPrometheusProvider> _prometheusProviders;
+    private readonly IPrometheusQueryClient _prometheusQueryClient;
     private readonly ResiliencePipeline<HttpResponseMessage> _prometheusQueryPipeline;
     private readonly object _metricsRequestSync = new();
     private Cluster? _cluster;
-    private HttpClient? _prometheusHttpClient;
-    private PortForwarder? _prometheusServicePortForward;
     private PeriodicTimer? _metricsRefreshTimer;
     private CancellationTokenSource? _metricsRefreshCancellationTokenSource;
     private ResolvedPrometheusEndpoint? _resolvedPrometheusEndpoint;
@@ -32,11 +29,12 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
     private Dictionary<string, CachedMetricResult> _metricResultCache = new(StringComparer.Ordinal);
     private Dictionary<string, Task<MetricResultSet>> _inflightMetricRequests = new(StringComparer.Ordinal);
 
-    public MetricsService(ILogger<MetricsService> logger, IClusterSettingsStore settings, IEnumerable<IPrometheusProvider> prometheusProviders)
+    public MetricsService(ILogger<MetricsService> logger, IClusterSettingsStore settings, IEnumerable<IPrometheusProvider> prometheusProviders, IPrometheusQueryClient prometheusQueryClient)
     {
         _logger = logger;
         _settings = settings;
         _prometheusProviders = prometheusProviders.ToDictionary(static x => x.Kind);
+        _prometheusQueryClient = prometheusQueryClient;
         _prometheusQueryPipeline = new ResiliencePipelineBuilder<HttpResponseMessage>
         {
             Name = nameof(MetricsService),
@@ -141,11 +139,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
         _metricsRefreshTimer?.Dispose();
         _metricsRefreshTimer = null;
 
-        _prometheusServicePortForward?.Dispose();
-        _prometheusServicePortForward = null;
-
-        _prometheusHttpClient?.Dispose();
-        _prometheusHttpClient = null;
+        _prometheusQueryClient.ResetAsync().GetAwaiter().GetResult();
 
         _resolvedPrometheusEndpoint = null;
         _resolvedPrometheusProvider = null;
@@ -170,7 +164,6 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
     public async Task<MetricResultSet> RequestMetricsAsync(MetricRequest request, CancellationToken cancellationToken = default)
     {
         if (_cluster == null
-            || _prometheusHttpClient == null
             || _resolvedPrometheusProvider == null
             || _resolvedPrometheusEndpoint == null
             || ActiveMetricsBackend.Type != MetricsServiceType.Prometheus)
@@ -283,48 +276,43 @@ AwaitInflight:
 
             _resolvedPrometheusEndpoint = resolved.Endpoint;
             _resolvedPrometheusProvider = resolved.Provider;
-            _prometheusHttpClient = CreatePrometheusHttpClient(resolved.Endpoint);
+            await _prometheusQueryClient.PrepareAsync(cluster, resolved.Endpoint).ConfigureAwait(false);
             _logger.LogInformation(
                 "Resolved Prometheus provider {Provider} for cluster {Name}: {Endpoint}.",
                 resolved.Provider.Kind,
                 cluster.Name,
                 DescribeEndpoint(resolved.Endpoint));
-
-            if (!string.IsNullOrWhiteSpace(resolved.Endpoint.DirectUrl))
-            {
-                ActiveMetricsBackend = ActiveMetricsBackend.Prometheus(resolved.Provider.Kind);
-                IsMetricsAvailable = true;
-                _logger.LogInformation(
-                    "Prometheus metrics activated for cluster {Name} using direct endpoint and provider {Provider}.",
-                    cluster.Name,
-                    resolved.Provider.Kind);
-                return true;
-            }
-
             if (string.IsNullOrWhiteSpace(resolved.Endpoint.Namespace)
-                || string.IsNullOrWhiteSpace(resolved.Endpoint.ServiceName)
-                || resolved.Endpoint.ServicePort is not > 0)
+                && string.IsNullOrWhiteSpace(resolved.Endpoint.DirectUrl))
             {
                 _logger.LogWarning(
-                    "Resolved Prometheus provider {Provider} for cluster {Name}, but the endpoint was incomplete: {Endpoint}.",
+                    "Resolved Prometheus provider {Provider} for cluster {Name}, but neither a direct URL nor a service endpoint was available: {Endpoint}.",
                     resolved.Provider.Kind,
                     cluster.Name,
                     DescribeEndpoint(resolved.Endpoint));
                 return false;
             }
 
-            _prometheusServicePortForward = cluster.AddServicePortForward(
-                resolved.Endpoint.Namespace,
-                resolved.Endpoint.ServiceName,
-                resolved.Endpoint.ServicePort.Value);
-            _prometheusServicePortForward.Start();
+            if (string.IsNullOrWhiteSpace(resolved.Endpoint.Namespace)
+                || string.IsNullOrWhiteSpace(resolved.Endpoint.ServiceName)
+                || resolved.Endpoint.ServicePort is not > 0)
+            {
+                if (string.IsNullOrWhiteSpace(resolved.Endpoint.DirectUrl))
+                {
+                    _logger.LogWarning(
+                        "Resolved Prometheus provider {Provider} for cluster {Name}, but the service endpoint was incomplete: {Endpoint}.",
+                        resolved.Provider.Kind,
+                        cluster.Name,
+                        DescribeEndpoint(resolved.Endpoint));
+                    return false;
+                }
+            }
 
             ActiveMetricsBackend = ActiveMetricsBackend.Prometheus(resolved.Provider.Kind);
             IsMetricsAvailable = true;
             _logger.LogInformation(
-                "Prometheus metrics activated for cluster {Name} via service port-forward on local port {LocalPort} using provider {Provider}.",
+                "Prometheus metrics activated for cluster {Name} using provider {Provider}.",
                 cluster.Name,
-                _prometheusServicePortForward.LocalPort,
                 resolved.Provider.Kind);
             return true;
         }
@@ -333,10 +321,7 @@ AwaitInflight:
             _logger.LogDebug(ex, "Unable to initialize Prometheus metrics for cluster {Name}", cluster.Name);
             _resolvedPrometheusEndpoint = null;
             _resolvedPrometheusProvider = null;
-            _prometheusHttpClient?.Dispose();
-            _prometheusHttpClient = null;
-            _prometheusServicePortForward?.Dispose();
-            _prometheusServicePortForward = null;
+            await _prometheusQueryClient.ResetAsync().ConfigureAwait(false);
             ActiveMetricsBackend = ActiveMetricsBackend.None;
             return false;
         }
@@ -438,44 +423,28 @@ AwaitInflight:
         return _prometheusProviders.Values.OrderBy(GetRank).ThenBy(static x => x.Name, StringComparer.Ordinal);
     }
 
-    private HttpClient CreatePrometheusHttpClient(ResolvedPrometheusEndpoint endpoint)
-    {
-        var client = new HttpClient
-        {
-            Timeout = Timeout.InfiniteTimeSpan,
-        };
-
-        if (!string.IsNullOrWhiteSpace(endpoint.BearerToken))
-        {
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", endpoint.BearerToken);
-        }
-
-        _logger.LogDebug(
-            "Created Prometheus HTTP client for cluster {Name}. Endpoint: {Endpoint}, auth: {AuthMode}.",
-            _cluster?.Name,
-            DescribeEndpoint(endpoint),
-            string.IsNullOrWhiteSpace(endpoint.BearerToken) ? "none" : "bearer");
-
-        return client;
-    }
-
     private async Task<PrometheusClientQueryRangeResponse?> ExecuteQueryRangeAsync(string query, DateTimeOffset start, DateTimeOffset end, int stepSeconds, CancellationToken cancellationToken)
     {
-        var url = BuildPrometheusUrl(query, start, end, stepSeconds);
         Exception? lastException = null;
+        PrometheusClientQueryRangeResponse? queryResponse = null;
 
         try
         {
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeoutCts.CancelAfter(s_prometheusRequestTimeout);
 
-            using var response = await _prometheusQueryPipeline.ExecuteAsync(
-                async token => await _prometheusHttpClient!.GetAsync(url, token).ConfigureAwait(false),
+            _ = await _prometheusQueryPipeline.ExecuteAsync(
+                async token =>
+                {
+                    queryResponse = await _prometheusQueryClient.QueryRangeAsync(_cluster!, _resolvedPrometheusEndpoint!, query, start, end, stepSeconds, token).ConfigureAwait(false)
+                        ?? throw new HttpRequestException("Prometheus query returned no response.");
+
+                    return new HttpResponseMessage(System.Net.HttpStatusCode.OK);
+                },
                 timeoutCts.Token).ConfigureAwait(false);
 
-            response.EnsureSuccessStatusCode();
             HandlePrometheusQuerySuccess();
-            return await response.Content.ReadFromJsonAsync<PrometheusClientQueryRangeResponse>(cancellationToken: cancellationToken).ConfigureAwait(false);
+            return queryResponse;
         }
         catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
         {
@@ -488,33 +457,6 @@ AwaitInflight:
 
         await HandlePrometheusQueryFailureAsync(lastException).ConfigureAwait(false);
         return null;
-    }
-
-    private string BuildPrometheusUrl(string query, DateTimeOffset start, DateTimeOffset end, int stepSeconds)
-    {
-        var baseUrl = GetPrometheusBaseUrl();
-        return $"{baseUrl}/api/v1/query_range?query={Uri.EscapeDataString(query)}&start={start.ToUnixTimeSeconds()}&end={end.ToUnixTimeSeconds()}&step={stepSeconds}";
-    }
-
-    private string GetPrometheusBaseUrl()
-    {
-        if (_resolvedPrometheusEndpoint == null)
-        {
-            throw new InvalidOperationException("Prometheus endpoint has not been resolved.");
-        }
-
-        if (!string.IsNullOrWhiteSpace(_resolvedPrometheusEndpoint.DirectUrl))
-        {
-            return _resolvedPrometheusEndpoint.DirectUrl.TrimEnd('/') + _resolvedPrometheusEndpoint.PathPrefix;
-        }
-
-        if (_prometheusServicePortForward?.LocalPort is not > 0)
-        {
-            throw new InvalidOperationException("Prometheus port-forward is not active.");
-        }
-
-        var scheme = _resolvedPrometheusEndpoint.UseHttps ? "https" : "http";
-        return $"{scheme}://localhost:{_prometheusServicePortForward.LocalPort}{_resolvedPrometheusEndpoint.PathPrefix}";
     }
 
     private static ClusterMetricsSettings NormalizeLegacySettings(ClusterMetricsSettings settings)

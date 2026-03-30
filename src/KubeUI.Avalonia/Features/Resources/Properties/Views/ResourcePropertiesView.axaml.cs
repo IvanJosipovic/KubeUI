@@ -5,7 +5,9 @@ using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using AppResources = KubeUI.Avalonia.Assets.Resources;
+using Avalonia.LogicalTree;
 
 namespace KubeUI.Avalonia.Features.Resources.Properties.Views;
 
@@ -132,9 +134,9 @@ public partial class ResourcePropertiesView : UserControl
             foreach (var c in extras.Where(c => c != null))
             {
                 c.DataContext = obj;
-                if (viewModel.Cluster != null && c is IInitializeCluster init)
+                if (viewModel.Cluster != null)
                 {
-                    init.Initialize(viewModel.Cluster);
+                    InitializeClusterControls(c, viewModel.Cluster);
                 }
 
                 PART_Items.Children.Add(c);
@@ -152,6 +154,39 @@ public partial class ResourcePropertiesView : UserControl
 
             eventsView.Initialize(viewModel.Cluster);
             PART_Items.Children.Add(eventsView);
+        }
+    }
+
+    private static void InitializeClusterControls(Control control, ClusterWorkspaceViewModel cluster)
+    {
+        foreach (var current in EnumerateLogicalControls(control))
+        {
+            if (current is IInitializeCluster init)
+            {
+                init.Initialize(cluster);
+            }
+        }
+    }
+
+    private static IEnumerable<Control> EnumerateLogicalControls(Control root)
+    {
+        var stack = new Stack<Control>();
+        stack.Push(root);
+
+        while (stack.Count > 0)
+        {
+            var current = stack.Pop();
+            yield return current;
+
+            if (current is not ILogical logical)
+            {
+                continue;
+            }
+
+            foreach (var child in logical.LogicalChildren.OfType<Control>())
+            {
+                stack.Push(child);
+            }
         }
     }
 }

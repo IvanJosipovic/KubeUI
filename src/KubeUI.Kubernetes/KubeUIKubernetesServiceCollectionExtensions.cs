@@ -23,6 +23,7 @@ public static class KubeUIKubernetesServiceCollectionExtensions
         services.AddTransient<IPrometheusProvider, OpenShiftPrometheusProvider>();
         services.AddTransient<IPrometheusProvider, ManualPrometheusProvider>();
         services.AddTransient<IPrometheusProvider, ExternalPrometheusProvider>();
+        services.AddTransient<IPrometheusQueryClient, PrometheusQueryClient>();
         services.AddTransient<IMetricsService, MetricsService>();
         services.AddTransient<Cluster>();
         services.AddTransient<IClusterRuntime>(sp => sp.GetRequiredService<Cluster>());

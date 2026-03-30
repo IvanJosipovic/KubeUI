@@ -42,7 +42,7 @@ public partial class PodMetricMemoryCell : UserControl, IInitializeCluster
     {
         if (_cluster == null || DataContext is not V1Pod pod)
         {
-            PrettyString = string.Empty;
+            await SetPrettyStringAsync(string.Empty).ConfigureAwait(false);
             return;
         }
 
@@ -55,7 +55,7 @@ public partial class PodMetricMemoryCell : UserControl, IInitializeCluster
                 await UpdateFromPrometheusAsync(pod).ConfigureAwait(false);
                 break;
             default:
-                PrettyString = string.Empty;
+                await SetPrettyStringAsync(string.Empty).ConfigureAwait(false);
                 break;
         }
     }
@@ -88,7 +88,7 @@ public partial class PodMetricMemoryCell : UserControl, IInitializeCluster
         if (s_prometheusValues.TryGetValue(cacheKey, out var cached)
             && DateTimeOffset.UtcNow - cached.Timestamp < s_prometheusRefreshInterval)
         {
-            PrettyString = cached.Value;
+            await SetPrettyStringAsync(cached.Value).ConfigureAwait(false);
             return;
         }
 
@@ -126,17 +126,29 @@ public partial class PodMetricMemoryCell : UserControl, IInitializeCluster
                 ? series.SelectMany(static x => x.Points).OrderBy(static x => x.Timestamp).LastOrDefault()
                 : null;
 
-            PrettyString = latest == null ? string.Empty : ((long)latest.Value).Bytes().Humanize();
-            s_prometheusValues[cacheKey] = (DateTimeOffset.UtcNow, PrettyString);
+            var prettyString = latest == null ? string.Empty : ((long)latest.Value).Bytes().Humanize();
+            await SetPrettyStringAsync(prettyString).ConfigureAwait(false);
+            s_prometheusValues[cacheKey] = (DateTimeOffset.UtcNow, prettyString);
         }
         catch
         {
-            PrettyString = string.Empty;
+            await SetPrettyStringAsync(string.Empty).ConfigureAwait(false);
         }
         finally
         {
             _isRefreshing = false;
         }
+    }
+
+    private Task SetPrettyStringAsync(string value)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            PrettyString = value;
+            return Task.CompletedTask;
+        }
+
+        return Dispatcher.UIThread.InvokeAsync(() => PrettyString = value).GetTask();
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
