@@ -3,10 +3,12 @@ using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
 using KubeUI.Avalonia;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Options;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -22,13 +24,16 @@ public sealed class KindClusterScenarioHarness : IClusterScenarioHarness
     {
         var services = new ServiceCollection();
         services.AddLogging(builder => builder.AddDebug().SetMinimumLevel(LogLevel.Information));
-        services.AddKubeUIKubernetesServices();
-        services.AddSingleton<ISettingsService, TestSettingsService>();
-        services.AddSingleton<IClusterSettingsStore>(sp => sp.GetRequiredService<ISettingsService>().Clusters);
-        services.AddSingleton<IHostApplicationLifetime, TestHostApplicationLifetime>();
+        services.AddKubeUIAppServices(overrides =>
+        {
+            overrides.Replace(ServiceDescriptor.Singleton<ISettingsService, TestSettingsService>());
+            overrides.RemoveAll<IClusterSettingsStore>();
+            overrides.AddSingleton<IClusterSettingsStore>(sp => sp.GetRequiredService<ISettingsService>().Clusters);
+            overrides.Replace(ServiceDescriptor.Singleton<IHostApplicationLifetime, TestHostApplicationLifetime>());
+        });
 
         _services = services.BuildServiceProvider();
-        _services.ConfigureKubeUIKubernetesJson();
+        _services.ConfigureKubeUIKubernetesJsonLogging();
         _settingsService = (TestSettingsService)_services.GetRequiredService<ISettingsService>();
     }
 

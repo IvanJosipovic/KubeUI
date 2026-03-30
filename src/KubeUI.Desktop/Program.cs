@@ -1,17 +1,9 @@
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Notifications;
-using Avalonia.Threading;
-using Dock.Model.Core;
-using HanumanInstitute.MvvmDialogs;
-using HanumanInstitute.MvvmDialogs.Avalonia;
-using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia;
 using KubeUI.Avalonia.Assets;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
-using KubeUI.Avalonia.Infrastructure.Dialogs;
-using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
 using LiveChartsCore;
@@ -83,9 +75,7 @@ internal static class Program
 
         builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
-        builder.Services.AddKubeUIAvaloniaServices();
-        builder.Services.AddKubeUIKubernetesServices();
-        builder.Services.AddDialogServices();
+        builder.Services.AddKubeUIAppServices();
 
         if (settings.TelemetryEnabled)
         {
@@ -108,10 +98,7 @@ internal static class Program
 
         var services = new ServiceCollection();
         services.AddLogging(x => x.SetMinimumLevel(LogLevel.Debug));
-        services.AddKubeUIAvaloniaServices();
-        services.AddKubeUIKubernetesServices();
-        services.AddDialogServices();
-        services.AddSingleton<ServiceDescriptor[]>([.. services]);
+        services.AddKubeUIAppServices();
 
         var provider = services.BuildServiceProvider();
         provider.ConfigureKubeUIKubernetesJsonLogging();
@@ -125,19 +112,6 @@ internal static class Program
             .MaxDepth(1)
             .ShallowCopyForSameType(true)
             .PreserveReference(true);
-    }
-
-    private static IServiceCollection AddDialogServices(this IServiceCollection services)
-    {
-        services.AddSingleton<IDialogFactory, FluentDialogFactory>(_ => (FluentDialogFactory)new DialogFactory().AddFluent());
-        services.AddSingleton<IDialogManager, DialogManager>(x => new MyDialogManager(
-            dialogFactory: x.GetRequiredService<IDialogFactory>(),
-            logger: x.GetRequiredService<ILogger<DialogManager>>()));
-        services.AddSingleton<IDialogService, DialogService>(x => new DialogService(x.GetRequiredService<IDialogManager>()));
-
-        services.AddSingleton<IFactory>(sp => Dispatcher.UIThread.Invoke(() => (IFactory)new DockFactory(sp.GetRequiredService<ILogger<DockFactory>>())));
-        services.AddSingleton<INotificationManager>(_ => Dispatcher.UIThread.Invoke(() => (INotificationManager)new WindowNotificationManager(App.TopLevel) { MaxItems = 4 }));
-        return services;
     }
 
     private static void ConfigureLiveCharts()
