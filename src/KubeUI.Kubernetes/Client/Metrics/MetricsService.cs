@@ -461,25 +461,39 @@ AwaitInflight:
 
     private static ClusterMetricsSettings NormalizeLegacySettings(ClusterMetricsSettings settings)
     {
-        if (settings.PrometheusProviderKind == null && !string.IsNullOrWhiteSpace(settings.PrometheusDirectUrl))
+        var normalized = new ClusterMetricsSettings
         {
-            settings.PrometheusProviderKind = PrometheusProviderKind.External;
+            MetricsServiceType = settings.MetricsServiceType,
+            PrometheusServerUrl = settings.PrometheusServerUrl,
+            PrometheusProviderKind = settings.PrometheusProviderKind,
+            PrometheusServiceName = settings.PrometheusServiceName,
+            PrometheusServiceNamespace = settings.PrometheusServiceNamespace,
+            PrometheusServicePort = settings.PrometheusServicePort,
+            PrometheusPathPrefix = settings.PrometheusPathPrefix,
+            PrometheusUseHttps = settings.PrometheusUseHttps,
+            PrometheusDirectUrl = settings.PrometheusDirectUrl,
+            PrometheusBearerToken = settings.PrometheusBearerToken,
+        };
+
+        if (normalized.PrometheusProviderKind == null && !string.IsNullOrWhiteSpace(normalized.PrometheusDirectUrl))
+        {
+            normalized.PrometheusProviderKind = PrometheusProviderKind.External;
         }
 
-        if (settings.PrometheusProviderKind == null && !string.IsNullOrWhiteSpace(settings.PrometheusServerUrl))
+        if (normalized.PrometheusProviderKind == null && !string.IsNullOrWhiteSpace(normalized.PrometheusServerUrl))
         {
-            settings.PrometheusDirectUrl = settings.PrometheusServerUrl;
-            settings.PrometheusProviderKind = PrometheusProviderKind.External;
+            normalized.PrometheusDirectUrl = normalized.PrometheusServerUrl;
+            normalized.PrometheusProviderKind = PrometheusProviderKind.External;
         }
 
-        if (settings.MetricsServiceType == MetricsServiceType.Prometheus && settings.PrometheusProviderKind == null)
+        if (normalized.MetricsServiceType == MetricsServiceType.Prometheus && normalized.PrometheusProviderKind == null)
         {
-            settings.PrometheusProviderKind = !string.IsNullOrWhiteSpace(settings.PrometheusDirectUrl)
+            normalized.PrometheusProviderKind = !string.IsNullOrWhiteSpace(normalized.PrometheusDirectUrl)
                 ? PrometheusProviderKind.External
                 : PrometheusProviderKind.Manual;
         }
 
-        return settings;
+        return normalized;
     }
 
     private static (DateTimeOffset Start, DateTimeOffset End, int StepSeconds) ResolveTimeRange(MetricRequest request)

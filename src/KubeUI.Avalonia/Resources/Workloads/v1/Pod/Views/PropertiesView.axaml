@@ -10,12 +10,13 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="using:k8s.Models"
     xmlns:p="using:KubeUI.Avalonia.Infrastructure.Presentation"
+    xmlns:views="using:KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views"
     d:DesignHeight="3000"
     d:DesignWidth="400"
     x:DataType="models:V1Pod"
     mc:Ignorable="d">
     <UserControl.Resources>
-        <DataTemplate x:Key="V1ContainerTemplate" x:DataType="models:V1Container">
+        <DataTemplate x:Key="V1InitContainerTemplate" x:DataType="models:V1Container">
             <StackPanel>
                 <c:PropertyItem Key="{x:Static assets:Resources.PodPropertiesView_Name}" Value="{Binding Name}" />
                 <c:PropertyItem Key="{x:Static assets:Resources.PodPropertiesView_Image}" Value="{Binding Image}" />
@@ -52,6 +53,14 @@
                 <c:CollectionItem Key="Arguments" Value="{Binding Args}" />
                 <c:CollectionItem Key="Requests" Value="{Binding Resources.Requests}" />
                 <c:CollectionItem Key="Limits" Value="{Binding Resources.Limits}" />
+            </StackPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="V1ContainerTemplate" x:DataType="models:V1Container">
+            <StackPanel>
+                <ContentControl Content="{Binding .}" ContentTemplate="{StaticResource V1InitContainerTemplate}" />
+                <c:PodContainerMetricsControl
+                    Container="{Binding .}"
+                    Pod="{Binding DataContext, RelativeSource={RelativeSource AncestorType=views:PropertiesView}}" />
             </StackPanel>
         </DataTemplate>
     </UserControl.Resources>
@@ -111,7 +120,7 @@
             Header="{x:Static assets:Resources.PodPropertiesView_InitContainers}"
             IsExpanded="True"
             IsVisible="{Binding Spec.InitContainers, Converter={x:Static converters:NotEmptyCollectionConverter.Instance}}">
-            <ItemsControl ItemTemplate="{StaticResource V1ContainerTemplate}" ItemsSource="{Binding Spec.InitContainers}" />
+            <ItemsControl ItemTemplate="{StaticResource V1InitContainerTemplate}" ItemsSource="{Binding Spec.InitContainers}" />
         </c:ExpandableSection>
 
         <c:ExpandableSection Header="{x:Static assets:Resources.PodPropertiesView_Containers}" IsExpanded="True">

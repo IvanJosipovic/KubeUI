@@ -1,6 +1,9 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.LogicalTree;
+using Avalonia;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using LiveChartsCore.Defaults;
 using LiveChartsCore.SkiaSharpView;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
@@ -105,6 +108,8 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
             DataContext = viewModel
         };
 
+        view.Measure(Size.Infinity);
+        view.Arrange(new Rect(view.DesiredSize));
         Dispatcher.UIThread.RunJobs();
         Dispatcher.UIThread.RunJobs();
 
@@ -231,5 +236,64 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
         metrics.ShowStatus.ShouldBeTrue();
         metrics.StatusText.ShouldNotContain("Kubernetes Metrics Server");
         metrics.StatusText.ShouldContain("No Prometheus metrics");
+    }
+
+    [AvaloniaFact]
+    public void pod_container_metrics_control_shows_metrics_for_regular_container()
+    {
+        var workspace = new TestCluster().CreateWorkspace();
+        workspace.PodMetrics.Add(new PodMetrics
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "pod-1",
+                NamespaceProperty = "default",
+            },
+            Containers =
+            [
+                new ContainerMetrics
+                {
+                    Name = "main",
+                    Usage = new Dictionary<string, ResourceQuantity>
+                    {
+                        ["cpu"] = new("125m"),
+                        ["memory"] = new("96Mi"),
+                    },
+                },
+            ],
+        });
+        workspace.EnsureWorkspaceStateInitializedAsync().GetAwaiter().GetResult();
+
+        var pod = new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "pod-1",
+                NamespaceProperty = "default",
+            },
+            Spec = new V1PodSpec
+            {
+                Containers =
+                [
+                    new V1Container { Name = "main", Image = "main:latest" },
+                ],
+            },
+        };
+
+        var view = new PodContainerMetricsControl
+        {
+            Pod = pod,
+            Container = pod.Spec.Containers.Single(),
+        };
+        view.Initialize(workspace);
+
+        view.Measure(Size.Infinity);
+        view.Arrange(new Rect(view.DesiredSize));
+        Dispatcher.UIThread.RunJobs();
+        Dispatcher.UIThread.RunJobs();
+
+        view.IsVisible.ShouldBeTrue();
+        view.ShowTabs.ShouldBeTrue();
+        view.Tabs.Select(x => x.Title).ShouldBe(["CPU", "Memory"]);
     }
 }

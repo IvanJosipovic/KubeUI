@@ -1,0 +1,94 @@
+<UserControl
+    x:Class="KubeUI.Avalonia.Features.Resources.Properties.Controls.PodContainerMetricsControl"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:behaviors="using:KubeUI.Avalonia.Features.Resources.Properties.Behaviors"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:ic="using:FluentIcons.Avalonia"
+    xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
+    xmlns:local="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
+    xmlns:Interaction="using:Avalonia.Xaml.Interactivity"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    d:DesignHeight="320"
+    d:DesignWidth="720"
+    mc:Ignorable="d">
+    <local:ExpandableSection Header="Metrics" IsExpanded="False">
+        <StackPanel Margin="0,4,0,0" Spacing="8">
+            <local:PropertyItem
+                Key="Status"
+                IsVisible="{Binding ShowStatus, RelativeSource={RelativeSource AncestorType=local:PodContainerMetricsControl}}"
+                Value="{Binding StatusText, RelativeSource={RelativeSource AncestorType=local:PodContainerMetricsControl}}" />
+
+            <StackPanel
+                IsVisible="{Binding ShowTabs, RelativeSource={RelativeSource AncestorType=local:PodContainerMetricsControl}}"
+                Spacing="8">
+                <ListBox
+                    Background="Transparent"
+                    BorderThickness="0"
+                    HorizontalAlignment="Left"
+                    ItemsSource="{Binding Tabs, RelativeSource={RelativeSource AncestorType=local:PodContainerMetricsControl}}"
+                    SelectedItem="{Binding SelectedTab, RelativeSource={RelativeSource AncestorType=local:PodContainerMetricsControl}}"
+                    SelectionMode="Single">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" Spacing="6" />
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.Styles>
+                        <Style Selector="ListBoxItem">
+                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="Margin" Value="0" />
+                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="BorderThickness" Value="0" />
+                        </Style>
+                    </ListBox.Styles>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="local:MetricTabViewModel">
+                            <ToggleButton
+                                IsChecked="{Binding $parent[ListBoxItem].IsSelected, Mode=TwoWay}"
+                                ToolTip.Tip="{Binding Title}">
+                                <ic:FluentIcon
+                                    FontSize="14"
+                                    Icon="{Binding Icon}" />
+                            </ToggleButton>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <ContentControl Content="{Binding SelectedTab, RelativeSource={RelativeSource AncestorType=local:PodContainerMetricsControl}}">
+                    <ContentControl.ContentTemplate>
+                        <DataTemplate x:DataType="local:MetricTabViewModel">
+                            <StackPanel Spacing="6">
+                                <TextBlock
+                                    FontSize="11"
+                                    FontWeight="SemiBold"
+                                    Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                    IsVisible="{Binding ShowTitle}"
+                                    Text="{Binding Title}"
+                                    TextWrapping="Wrap" />
+
+                                <ItemsControl ItemsSource="{Binding Panels}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="local:MetricPanelViewModel">
+                                            <StackPanel Margin="0,0,0,8" Spacing="4">
+                                                <TextBlock
+                                                    FontSize="12"
+                                                    FontWeight="Bold"
+                                                    Text="{Binding Title}" />
+                                                <lvc:CartesianChart Height="190" Series="{Binding Series}" XAxes="{Binding XAxes}" YAxes="{Binding YAxes}">
+                                                    <Interaction.Behaviors>
+                                                        <behaviors:ChartWheelScrollBehavior />
+                                                    </Interaction.Behaviors>
+                                                </lvc:CartesianChart>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ContentControl.ContentTemplate>
+                </ContentControl>
+            </StackPanel>
+        </StackPanel>
+    </local:ExpandableSection>
+</UserControl>

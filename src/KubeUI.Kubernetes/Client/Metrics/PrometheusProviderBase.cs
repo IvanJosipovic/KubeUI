@@ -73,18 +73,25 @@ public abstract class PrometheusProviderBase : IPrometheusProvider
         var ns = GetRequiredOption(options, "namespace");
         var selector = GetOption(options, "selector", "pod, namespace");
         var rateAccuracy = GetRateAccuracy(options);
+        var container = GetOptionalOption(options, "container");
+        var containerUsageMatcher = string.IsNullOrWhiteSpace(container)
+            ? "container!=\"\""
+            : $"container=\"{container}\"";
+        var containerResourceMatcher = string.IsNullOrWhiteSpace(container)
+            ? string.Empty
+            : $",container=\"{container}\"";
 
         return queryName switch
         {
-            "cpuUsage" => $$"""sum(rate(container_cpu_usage_seconds_total{container!="",image!="",pod=~"{{pods}}",namespace="{{ns}}"}[{{rateAccuracy}}])) by ({{selector}})""",
-            "cpuRequests" => $$"""sum(kube_pod_container_resource_requests{pod=~"{{pods}}",resource="cpu",namespace="{{ns}}"} ) by ({{selector}})""",
-            "cpuLimits" => $$"""sum(kube_pod_container_resource_limits{pod=~"{{pods}}",resource="cpu",namespace="{{ns}}"} ) by ({{selector}})""",
-            "memoryUsage" => $$"""sum(container_memory_working_set_bytes{container!="",image!="",pod=~"{{pods}}",namespace="{{ns}}"}) by ({{selector}})""",
-            "memoryRequests" => $$"""sum(kube_pod_container_resource_requests{pod=~"{{pods}}",resource="memory",namespace="{{ns}}"} ) by ({{selector}})""",
-            "memoryLimits" => $$"""sum(kube_pod_container_resource_limits{pod=~"{{pods}}",resource="memory",namespace="{{ns}}"} ) by ({{selector}})""",
-            "fsUsage" => $$"""sum(container_fs_usage_bytes{container!="",image!="",pod=~"{{pods}}",namespace="{{ns}}"}) by ({{selector}})""",
-            "fsWrites" => $$"""sum(rate(container_fs_writes_bytes_total{container!="",image!="",pod=~"{{pods}}",namespace="{{ns}}"}[{{rateAccuracy}}])) by ({{selector}})""",
-            "fsReads" => $$"""sum(rate(container_fs_reads_bytes_total{container!="",image!="",pod=~"{{pods}}",namespace="{{ns}}"}[{{rateAccuracy}}])) by ({{selector}})""",
+            "cpuUsage" => $$"""sum(rate(container_cpu_usage_seconds_total{image!="",{{containerUsageMatcher}},pod=~"{{pods}}",namespace="{{ns}}"}[{{rateAccuracy}}])) by ({{selector}})""",
+            "cpuRequests" => $$"""sum(kube_pod_container_resource_requests{pod=~"{{pods}}",resource="cpu",namespace="{{ns}}"{{containerResourceMatcher}}} ) by ({{selector}})""",
+            "cpuLimits" => $$"""sum(kube_pod_container_resource_limits{pod=~"{{pods}}",resource="cpu",namespace="{{ns}}"{{containerResourceMatcher}}} ) by ({{selector}})""",
+            "memoryUsage" => $$"""sum(container_memory_working_set_bytes{image!="",{{containerUsageMatcher}},pod=~"{{pods}}",namespace="{{ns}}"}) by ({{selector}})""",
+            "memoryRequests" => $$"""sum(kube_pod_container_resource_requests{pod=~"{{pods}}",resource="memory",namespace="{{ns}}"{{containerResourceMatcher}}} ) by ({{selector}})""",
+            "memoryLimits" => $$"""sum(kube_pod_container_resource_limits{pod=~"{{pods}}",resource="memory",namespace="{{ns}}"{{containerResourceMatcher}}} ) by ({{selector}})""",
+            "fsUsage" => $$"""sum(container_fs_usage_bytes{image!="",{{containerUsageMatcher}},pod=~"{{pods}}",namespace="{{ns}}"}) by ({{selector}})""",
+            "fsWrites" => $$"""sum(rate(container_fs_writes_bytes_total{image!="",{{containerUsageMatcher}},pod=~"{{pods}}",namespace="{{ns}}"}[{{rateAccuracy}}])) by ({{selector}})""",
+            "fsReads" => $$"""sum(rate(container_fs_reads_bytes_total{image!="",{{containerUsageMatcher}},pod=~"{{pods}}",namespace="{{ns}}"}[{{rateAccuracy}}])) by ({{selector}})""",
             "networkReceive" => $$"""sum(rate(container_network_receive_bytes_total{pod=~"{{pods}}",namespace="{{ns}}"}[{{rateAccuracy}}])) by ({{selector}})""",
             "networkTransmit" => $$"""sum(rate(container_network_transmit_bytes_total{pod=~"{{pods}}",namespace="{{ns}}"}[{{rateAccuracy}}])) by ({{selector}})""",
             _ => throw new InvalidOperationException($"Unsupported pod query '{queryName}'."),
@@ -176,6 +183,11 @@ public abstract class PrometheusProviderBase : IPrometheusProvider
     protected static string GetOption(IReadOnlyDictionary<string, string> options, string key, string defaultValue)
     {
         return options.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value) ? value : defaultValue;
+    }
+
+    protected static string? GetOptionalOption(IReadOnlyDictionary<string, string> options, string key)
+    {
+        return options.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value) ? value : null;
     }
 
     protected static string NormalizePrefix(string? prefix)
