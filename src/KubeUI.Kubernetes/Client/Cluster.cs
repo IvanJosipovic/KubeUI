@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.Net.Http.Json;
 using System.Reactive.Linq;
 using System.Reflection;
@@ -34,6 +35,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
     private IGenerator _generator;
 
     private IServiceProvider _serviceProvider;
+    private IMetricsService _metricsService;
 
     public V2beta1APIGroupDiscoveryList NativeAPIGroupDiscoveryList { get; private set; }
 
@@ -83,7 +85,15 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
     [ObservableProperty]
     public partial ReadOnlyObservableCollection<V1Namespace> Namespaces { get; set; }
 
-    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ModelCache modelCache, IGenerator generator, IClusterSettingsStore settings, IServiceProvider serviceProvider)
+    public ObservableCollection<PodMetrics> PodMetrics => _metricsService.PodMetrics;
+
+    public ObservableCollection<NodeMetrics> NodeMetrics => _metricsService.NodeMetrics;
+
+    public bool IsMetricsAvailable => _metricsService.IsMetricsAvailable;
+
+    public ActiveMetricsBackend ActiveMetricsBackend => _metricsService.ActiveMetricsBackend;
+
+    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ModelCache modelCache, IGenerator generator, IClusterSettingsStore settings, IServiceProvider serviceProvider, IMetricsService metricsService)
     {
         _loggerFactory = loggerFactory;
         _logger = logger;
@@ -96,6 +106,11 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         ModelCache.AddToCache(typeof(V1Deployment).Assembly, kubeAssemblyXmlDoc);
         _settings = settings;
         _serviceProvider = serviceProvider;
+        _metricsService = metricsService;
+        if (_metricsService is INotifyPropertyChanged notifyMetrics)
+        {
+            notifyMetrics.PropertyChanged += OnMetricsServicePropertyChanged;
+        }
 
         _ = Task.Run(ProcessQueuedCustomResourceDefinitionsAsync);
     }
@@ -189,7 +204,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
                     LastError = null;
                     RequiresNamespaceSelectionPrompt = false;
 
-                    await InitMetrics();
+                    await _metricsService.InitializeAsync(this);
                 }
                 catch (Exception ex)
                 {
@@ -210,11 +225,11 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         }
     }
 
-    public Task Disconnect()
+    public async Task Disconnect()
     {
         _logger.LogInformation("Disconnecting from {name}", Name);
 
-        StopMetrics();
+        await _metricsService.StopAsync();
         StopPortForwarders();
         StopResourceInformers();
         ClearDynamicCustomResourceDefinitions();
@@ -232,7 +247,23 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         RequiresNamespaceSelectionPrompt = false;
 
         _logger.LogInformation("Disconnected from {name}", Name);
-        return Task.CompletedTask;
+    }
+
+    public Task<MetricResultSet> RequestMetricsAsync(MetricRequest request, CancellationToken cancellationToken = default) => _metricsService.RequestMetricsAsync(request, cancellationToken);
+
+    public Task<IReadOnlyList<MetricProviderInfo>> GetAvailablePrometheusProvidersAsync() => _metricsService.GetAvailablePrometheusProvidersAsync();
+
+    private void OnMetricsServicePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        switch (e.PropertyName)
+        {
+            case nameof(IMetricsService.IsMetricsAvailable):
+                OnPropertyChanged(nameof(IsMetricsAvailable));
+                break;
+            case nameof(IMetricsService.ActiveMetricsBackend):
+                OnPropertyChanged(nameof(ActiveMetricsBackend));
+                break;
+        }
     }
 
     public async Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -907,27 +938,6 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         }
 
         return false;
-    }
-
-    private void StopMetrics()
-    {
-        _metricsRefreshCancellationTokenSource?.Cancel();
-        _metricsRefreshCancellationTokenSource?.Dispose();
-        _metricsRefreshCancellationTokenSource = null;
-
-        _metricsRefreshTimer?.Dispose();
-        _metricsRefreshTimer = null;
-
-        _prometheusServicePortForward?.Dispose();
-        _prometheusServicePortForward = null;
-
-        _metricsHttpClient?.Dispose();
-        _metricsHttpClient = null;
-
-        NodeMetrics.Clear();
-        PodMetrics.Clear();
-        IsMetricsAvailable = false;
-        MetricsServiceType = MetricsServiceType.None;
     }
 
     private void StopPortForwarders()

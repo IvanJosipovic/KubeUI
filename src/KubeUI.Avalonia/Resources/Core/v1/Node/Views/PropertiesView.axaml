@@ -29,5 +29,6 @@
                 <c:PropertyItem Key="Allocatable Entries" Value="{Binding Status.Allocatable.Count}" />
             </StackPanel>
         </c:ExpandableSection>
+        <c:MetricsControl />
     </StackPanel>
 </UserControl>

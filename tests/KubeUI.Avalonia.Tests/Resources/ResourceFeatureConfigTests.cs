@@ -47,7 +47,6 @@ using KubeUI.Avalonia.Resources.Storage;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 using KubeUI.Avalonia.Resources.Workloads;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Kubernetes;
 using k8s.Models;
 using Shouldly;
@@ -107,12 +106,7 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     [AvaloniaFact]
     public void deployment_config_uses_deployment_properties_view()
     {
-        var config = new V1DeploymentConfig();
-
-        var controls = config.Properties(new V1Deployment());
-
-        controls.Length.ShouldBe(1);
-        controls[0].ShouldBeOfType<DeploymentPropertiesView>();
+        AssertProperties<V1DeploymentConfig, V1Deployment, DeploymentPropertiesView>(new V1Deployment());
     }
 
     [AvaloniaFact]
@@ -129,27 +123,17 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     [AvaloniaFact]
     public void node_config_uses_node_properties_view()
     {
-        var config = new V1NodeConfig();
-
-        var controls = config.Properties(new V1Node());
-
-        controls.Length.ShouldBe(1);
-        controls[0].ShouldBeOfType<NodePropertiesView>();
+        AssertProperties<V1NodeConfig, V1Node, NodePropertiesView>(new V1Node());
     }
 
     [AvaloniaFact]
     public void pod_config_uses_pod_properties_view()
     {
-        var config = new V1PodConfig();
-
-        var controls = config.Properties(new V1Pod());
-
-        controls.Length.ShouldBe(1);
-        controls[0].ShouldBeOfType<PodPropertiesView>();
+        AssertProperties<V1PodConfig, V1Pod, PodPropertiesView>(new V1Pod());
     }
 
     [AvaloniaFact]
-    public async Task pod_config_adds_metrics_control_for_prometheus_clusters()
+    public async Task pod_config_uses_single_properties_view_for_prometheus_clusters()
     {
         var runtime = new TestCluster { MetricsServiceType = MetricsServiceType.Prometheus };
         var workspace = runtime.CreateWorkspace();
@@ -160,42 +144,58 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
 
         var controls = config.Properties(new V1Pod());
 
-        controls.Length.ShouldBe(2);
+        controls.Length.ShouldBe(1);
         controls[0].ShouldBeOfType<PodPropertiesView>();
-        controls[1].ShouldBeOfType<MetricsControl>();
+    }
+
+    [AvaloniaFact]
+    public async Task deployment_config_uses_single_properties_view_for_prometheus_clusters()
+    {
+        var runtime = new TestCluster { MetricsServiceType = MetricsServiceType.Prometheus };
+        var workspace = runtime.CreateWorkspace();
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+
+        var config = new V1DeploymentConfig();
+        config.Initialize(workspace);
+
+        var controls = config.Properties(new V1Deployment());
+
+        controls.Length.ShouldBe(1);
+        controls[0].ShouldBeOfType<DeploymentPropertiesView>();
+    }
+
+    [AvaloniaFact]
+    public async Task node_config_uses_single_properties_view_for_prometheus_clusters()
+    {
+        var runtime = new TestCluster { MetricsServiceType = MetricsServiceType.Prometheus };
+        var workspace = runtime.CreateWorkspace();
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+
+        var config = new V1NodeConfig();
+        config.Initialize(workspace);
+
+        var controls = config.Properties(new V1Node());
+
+        controls.Length.ShouldBe(1);
+        controls[0].ShouldBeOfType<NodePropertiesView>();
     }
 
     [AvaloniaFact]
     public void daemonset_config_uses_daemonset_properties_view()
     {
-        var config = new V1DaemonSetConfig();
-
-        var controls = config.Properties(new V1DaemonSet());
-
-        controls.Length.ShouldBe(1);
-        controls[0].ShouldBeOfType<DaemonSetPropertiesView>();
+        AssertProperties<V1DaemonSetConfig, V1DaemonSet, DaemonSetPropertiesView>(new V1DaemonSet());
     }
 
     [AvaloniaFact]
     public void statefulset_config_uses_statefulset_properties_view()
     {
-        var config = new V1StatefulSetConfig();
-
-        var controls = config.Properties(new V1StatefulSet());
-
-        controls.Length.ShouldBe(1);
-        controls[0].ShouldBeOfType<StatefulSetPropertiesView>();
+        AssertProperties<V1StatefulSetConfig, V1StatefulSet, StatefulSetPropertiesView>(new V1StatefulSet());
     }
 
     [AvaloniaFact]
     public void replicaset_config_uses_replicaset_properties_view()
     {
-        var config = new V1ReplicaSetConfig();
-
-        var controls = config.Properties(new V1ReplicaSet());
-
-        controls.Length.ShouldBe(1);
-        controls[0].ShouldBeOfType<ReplicaSetPropertiesView>();
+        AssertProperties<V1ReplicaSetConfig, V1ReplicaSet, ReplicaSetPropertiesView>(new V1ReplicaSet());
     }
 
     [AvaloniaFact]
@@ -212,23 +212,26 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     [AvaloniaFact]
     public void job_config_uses_job_properties_view()
     {
-        var config = new V1JobConfig();
-
-        var controls = config.Properties(new V1Job());
-
-        controls.Length.ShouldBe(1);
-        controls[0].ShouldBeOfType<JobPropertiesView>();
+        AssertProperties<V1JobConfig, V1Job, JobPropertiesView>(new V1Job());
     }
 
     [AvaloniaFact] public void storage_class_config_uses_storage_class_properties_view() => AssertProperties<V1StorageClassConfig, V1StorageClass, StorageClassPropertiesView>(new V1StorageClass());
-    [AvaloniaFact] public void persistent_volume_claim_config_uses_pvc_properties_view() => AssertProperties<V1PersistentVolumeClaimConfig, V1PersistentVolumeClaim, PersistentVolumeClaimPropertiesView>(new V1PersistentVolumeClaim());
+    [AvaloniaFact]
+    public void persistent_volume_claim_config_uses_pvc_properties_view()
+    {
+        AssertProperties<V1PersistentVolumeClaimConfig, V1PersistentVolumeClaim, PersistentVolumeClaimPropertiesView>(new V1PersistentVolumeClaim());
+    }
     [AvaloniaFact] public void persistent_volume_config_uses_pv_properties_view() => AssertProperties<V1PersistentVolumeConfig, V1PersistentVolume, PersistentVolumePropertiesView>(new V1PersistentVolume());
     [AvaloniaFact] public void service_account_config_uses_service_account_properties_view() => AssertProperties<V1ServiceAccountConfig, V1ServiceAccount, ServiceAccountPropertiesView>(new V1ServiceAccount());
     [AvaloniaFact] public void role_binding_config_uses_role_binding_properties_view() => AssertProperties<V1RoleBindingConfig, V1RoleBinding, RoleBindingPropertiesView>(new V1RoleBinding());
     [AvaloniaFact] public void role_config_uses_role_properties_view() => AssertProperties<V1RoleConfig, V1Role, RolePropertiesView>(new V1Role());
     [AvaloniaFact] public void cluster_role_config_uses_cluster_role_properties_view() => AssertProperties<V1ClusterRoleConfig, V1ClusterRole, ClusterRolePropertiesView>(new V1ClusterRole());
     [AvaloniaFact] public void cluster_role_binding_config_uses_cluster_role_binding_properties_view() => AssertProperties<V1ClusterRoleBindingConfig, V1ClusterRoleBinding, ClusterRoleBindingPropertiesView>(new V1ClusterRoleBinding());
-    [AvaloniaFact] public void ingress_config_uses_ingress_properties_view() => AssertProperties<V1IngressConfig, V1Ingress, IngressPropertiesView>(new V1Ingress());
+    [AvaloniaFact]
+    public void ingress_config_uses_ingress_properties_view()
+    {
+        AssertProperties<V1IngressConfig, V1Ingress, IngressPropertiesView>(new V1Ingress());
+    }
     [AvaloniaFact] public void ingress_class_config_uses_ingress_class_properties_view() => AssertProperties<V1IngressClassConfig, V1IngressClass, IngressClassPropertiesView>(new V1IngressClass());
     [AvaloniaFact] public void endpoint_slice_config_uses_endpoint_slice_properties_view() => AssertProperties<V1EndpointSliceConfig, V1EndpointSlice, EndpointSlicePropertiesView>(new V1EndpointSlice());
     [AvaloniaFact] public void network_policy_config_uses_network_policy_properties_view() => AssertProperties<V1NetworkPolicyConfig, V1NetworkPolicy, NetworkPolicyPropertiesView>(new V1NetworkPolicy());
@@ -242,7 +245,11 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     [AvaloniaFact] public void pod_disruption_budget_config_uses_properties_view() => AssertProperties<V1PodDisruptionBudgetConfig, V1PodDisruptionBudget, PodDisruptionBudgetPropertiesView>(new V1PodDisruptionBudget());
     [AvaloniaFact] public void config_map_config_uses_properties_view() => AssertProperties<V1ConfigMapConfig, V1ConfigMap, ConfigMapPropertiesView>(new V1ConfigMap());
     [AvaloniaFact] public void limit_range_config_uses_properties_view() => AssertProperties<V1LimitRangeConfig, V1LimitRange, LimitRangePropertiesView>(new V1LimitRange());
-    [AvaloniaFact] public void namespace_config_uses_properties_view() => AssertProperties<V1NamespaceConfig, V1Namespace, NamespacePropertiesView>(new V1Namespace());
+    [AvaloniaFact]
+    public void namespace_config_uses_properties_view()
+    {
+        AssertProperties<V1NamespaceConfig, V1Namespace, NamespacePropertiesView>(new V1Namespace());
+    }
     [AvaloniaFact] public void crd_config_uses_properties_view() => AssertProperties<V1CustomResourceDefinitionConfig, V1CustomResourceDefinition, CrdPropertiesView>(new V1CustomResourceDefinition());
 
     [AvaloniaFact] public void workloads_category_is_localized() => AssertCategory<V1DeploymentConfig>("Workloads");

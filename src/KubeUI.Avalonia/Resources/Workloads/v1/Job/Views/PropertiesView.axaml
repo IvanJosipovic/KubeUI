@@ -31,5 +31,6 @@
                 <c:PropertyItem Key="Conditions" Value="{Binding Status.Conditions.Count}" />
             </StackPanel>
         </c:ExpandableSection>
+        <c:MetricsControl />
     </StackPanel>
 </UserControl>

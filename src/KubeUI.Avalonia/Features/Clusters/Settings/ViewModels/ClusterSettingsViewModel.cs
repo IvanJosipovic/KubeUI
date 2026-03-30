@@ -6,6 +6,7 @@ using KubeUI.Avalonia.Options;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using System.ComponentModel;
+using Avalonia.Threading;
 
 namespace KubeUI.Avalonia.Features.Clusters.Settings.ViewModels;
 
@@ -29,16 +30,24 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
         Cluster = cluster;
         Id = nameof(ClusterSettingsViewModel) + Cluster.Name;
         ClusterSettings = SettingsService.Settings.GetClusterSettings(cluster);
+        _ = LoadPrometheusProvidersAsync();
     }
 
     [ObservableProperty]
     public partial ClusterSettings ClusterSettings { get; set; }
 
-    public bool ShowPrometheusServiceSettings => ClusterSettings?.MetricsServiceType == MetricsServiceType.Prometheus;
+    [ObservableProperty]
+    public partial ObservableCollection<MetricProviderOption> PrometheusProviders { get; set; } = [];
 
-    public bool ShowPrometheusExternalSettings => ClusterSettings?.MetricsServiceType == MetricsServiceType.PrometheusExternal;
+    public bool ShowPrometheusSettings => ClusterSettings?.MetricsServiceType == MetricsServiceType.Prometheus;
 
-    public bool ShowAzureManagedPrometheusSettings => ClusterSettings?.MetricsServiceType == MetricsServiceType.AzureManagedPrometheus;
+    public bool ShowPrometheusProviderSettings => ShowPrometheusSettings;
+
+    public bool ShowPrometheusServiceSettings => ShowPrometheusSettings && ClusterSettings?.PrometheusProviderKind != PrometheusProviderKind.External;
+
+    public bool ShowPrometheusDirectUrlSettings => ShowPrometheusSettings;
+
+    public bool ShowPrometheusBearerTokenSettings => ShowPrometheusSettings;
 
     [ObservableProperty]
     public partial string Namespace { get; set; }
@@ -86,20 +95,44 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
 
     private void OnClusterSettingsPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(ClusterSettings.MetricsServiceType))
+        if (e.PropertyName is nameof(ClusterSettings.MetricsServiceType) or nameof(ClusterSettings.PrometheusProviderKind))
         {
             RaiseMetricsVisibilityPropertiesChanged();
-            SettingsService.SaveSettings();
         }
+
+        SettingsService.SaveSettings();
     }
 
     private void RaiseMetricsVisibilityPropertiesChanged()
     {
+        OnPropertyChanged(nameof(ShowPrometheusSettings));
+        OnPropertyChanged(nameof(ShowPrometheusProviderSettings));
         OnPropertyChanged(nameof(ShowPrometheusServiceSettings));
-        OnPropertyChanged(nameof(ShowPrometheusExternalSettings));
-        OnPropertyChanged(nameof(ShowAzureManagedPrometheusSettings));
+        OnPropertyChanged(nameof(ShowPrometheusDirectUrlSettings));
+        OnPropertyChanged(nameof(ShowPrometheusBearerTokenSettings));
+    }
+
+    private async Task LoadPrometheusProvidersAsync()
+    {
+        if (Cluster == null)
+        {
+            return;
+        }
+
+        var providers = await Cluster.GetAvailablePrometheusProvidersAsync().ConfigureAwait(false);
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            PrometheusProviders =
+            [
+                new MetricProviderOption(null, "Auto Detect"),
+                .. providers.Select(static provider => new MetricProviderOption(provider.Kind, provider.Name)),
+            ];
+        });
     }
 }
+
+public sealed record MetricProviderOption(PrometheusProviderKind? Id, string Name);
 
 
 

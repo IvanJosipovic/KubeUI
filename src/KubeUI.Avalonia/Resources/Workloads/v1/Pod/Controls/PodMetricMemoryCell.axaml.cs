@@ -3,14 +3,18 @@ using KubeUI.Avalonia.Infrastructure.Presentation;
 using Humanizer;
 using k8s.Models;
 using KubeUI.Kubernetes;
+using System.Collections.Concurrent;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Controls;
 
 public partial class PodMetricMemoryCell : UserControl, IInitializeCluster
 {
+    private static readonly TimeSpan s_prometheusRefreshInterval = TimeSpan.FromSeconds(30);
     private ClusterWorkspaceViewModel? _cluster;
+    private bool _isRefreshing;
 
     private static readonly DispatcherTimer s_timer = new(DispatcherPriority.Default);
+    private static readonly ConcurrentDictionary<string, (DateTimeOffset Timestamp, string Value)> s_prometheusValues = new(StringComparer.Ordinal);
 
     [GeneratedDirectProperty]
     public partial string PrettyString { get; set; } = string.Empty;
@@ -29,23 +33,41 @@ public partial class PodMetricMemoryCell : UserControl, IInitializeCluster
     protected override void OnDataContextChanged(EventArgs e)
     {
         base.OnDataContextChanged(e);
-        Update();
+        _ = UpdateAsync();
     }
 
-    private void Timer_Tick(object? sender, EventArgs e) => Update();
+    private async void Timer_Tick(object? sender, EventArgs e) => await UpdateAsync();
 
-    private void Update()
+    private async Task UpdateAsync()
     {
         if (_cluster == null || DataContext is not V1Pod pod)
         {
+            PrettyString = string.Empty;
             return;
         }
 
-        var metric = _cluster.PodMetrics.FirstOrDefault(m =>
+        switch (_cluster.MetricsServiceType)
+        {
+            case MetricsServiceType.KubernetesMetricsServer:
+                UpdateFromMetricsServer(pod);
+                break;
+            case MetricsServiceType.Prometheus:
+                await UpdateFromPrometheusAsync(pod).ConfigureAwait(false);
+                break;
+            default:
+                PrettyString = string.Empty;
+                break;
+        }
+    }
+
+    private void UpdateFromMetricsServer(V1Pod pod)
+    {
+        var metric = _cluster?.PodMetrics.FirstOrDefault(m =>
             m.Name() == pod.Name() && m.Namespace() == pod.Namespace());
 
         if (metric == null)
         {
+            PrettyString = string.Empty;
             return;
         }
 
@@ -57,6 +79,63 @@ public partial class PodMetricMemoryCell : UserControl, IInitializeCluster
         catch
         {
             PrettyString = string.Empty;
+        }
+    }
+
+    private async Task UpdateFromPrometheusAsync(V1Pod pod)
+    {
+        var cacheKey = $"{_cluster!.Name}:{pod.Namespace()}:{pod.Name()}";
+        if (s_prometheusValues.TryGetValue(cacheKey, out var cached)
+            && DateTimeOffset.UtcNow - cached.Timestamp < s_prometheusRefreshInterval)
+        {
+            PrettyString = cached.Value;
+            return;
+        }
+
+        if (_isRefreshing)
+        {
+            return;
+        }
+
+        _isRefreshing = true;
+
+        try
+        {
+            var result = await _cluster.RequestMetricsAsync(new MetricRequest
+            {
+                Category = MetricCategory.Pods,
+                RangeSeconds = 300,
+                StepSeconds = 60,
+                Frames = 5,
+                Queries =
+                [
+                    new MetricQueryDefinition
+                    {
+                        Name = "memoryUsage",
+                        Options = new Dictionary<string, string>(StringComparer.Ordinal)
+                        {
+                            ["namespace"] = pod.Namespace(),
+                            ["pods"] = System.Text.RegularExpressions.Regex.Escape(pod.Name()),
+                            ["selector"] = "pod, namespace",
+                        },
+                    },
+                ],
+            }).ConfigureAwait(false);
+
+            var latest = result.Metrics.TryGetValue("memoryUsage", out var series)
+                ? series.SelectMany(static x => x.Points).OrderBy(static x => x.Timestamp).LastOrDefault()
+                : null;
+
+            PrettyString = latest == null ? string.Empty : ((long)latest.Value).Bytes().Humanize();
+            s_prometheusValues[cacheKey] = (DateTimeOffset.UtcNow, PrettyString);
+        }
+        catch
+        {
+            PrettyString = string.Empty;
+        }
+        finally
+        {
+            _isRefreshing = false;
         }
     }
 
@@ -75,6 +154,7 @@ public partial class PodMetricMemoryCell : UserControl, IInitializeCluster
     public void Initialize(ClusterWorkspaceViewModel cluster)
     {
         _cluster = cluster;
+        _ = UpdateAsync();
     }
 }
 

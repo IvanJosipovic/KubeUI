@@ -115,7 +115,7 @@
         <c:ExpandableSection Header="{x:Static assets:Resources.PodPropertiesView_Containers}" IsExpanded="True">
             <ItemsControl ItemTemplate="{StaticResource V1ContainerTemplate}" ItemsSource="{Binding Spec.Containers}" />
         </c:ExpandableSection>
-
+        <c:MetricsControl />
     </StackPanel>
 </UserControl>
 

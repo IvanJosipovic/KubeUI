@@ -7,7 +7,6 @@ using LiveChartsCore;
 using LiveChartsCore.Defaults;
 using LiveChartsCore.Kernel.Sketches;
 using LiveChartsCore.SkiaSharpView;
-using System.Text.RegularExpressions;
 
 namespace KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
@@ -17,13 +16,16 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster
     private ClusterWorkspaceViewModel? _cluster;
 
     [GeneratedDirectProperty]
-    public partial ISeries[] Series { get; set; } = [];
+    public partial ObservableCollection<MetricTabViewModel> Tabs { get; set; } = [];
 
     [GeneratedDirectProperty]
-    public partial ICartesianAxis[] XAxes { get; set; } =
-    [
-        new DateTimeAxis(TimeSpan.FromMinutes(10), value => value.ToString("HH:mm")),
-    ];
+    public partial string? StatusText { get; set; }
+
+    [GeneratedDirectProperty]
+    public partial bool ShowStatus { get; set; }
+
+    [GeneratedDirectProperty]
+    public partial bool ShowTabs { get; set; }
 
     public MetricsControl()
     {
@@ -71,72 +73,134 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster
         if (_cluster == null || DataContext is not IKubernetesObject<V1ObjectMeta> resource)
         {
             IsVisible = false;
-            Series = [];
-            return;
-        }
-
-        if (_cluster.MetricsServiceType is not (MetricsServiceType.Prometheus or MetricsServiceType.PrometheusExternal))
-        {
-            IsVisible = false;
-            Series = [];
-            return;
-        }
-
-        if (resource is not V1Pod pod)
-        {
-            IsVisible = false;
-            Series = [];
+            Tabs = [];
             return;
         }
 
         IsVisible = true;
 
-        var from = DateTimeOffset.UtcNow.AddHours(-1);
-        var to = DateTimeOffset.UtcNow;
-        const string step = "5m";
-
-        try
+        if (_cluster.MetricsServiceType == MetricsServiceType.KubernetesMetricsServer)
         {
-            var podName = Regex.Escape(pod.Name());
-            var podNamespace = pod.Namespace();
-
-            var usageQuery = $$$"""sum(rate(container_cpu_usage_seconds_total{container!="POD",container!="",pod=~"{{{podName}}}",namespace="{{{podNamespace}}}"}[5m]))""";
-            var requestsQuery = $$$"""sum(kube_pod_container_resource_requests{pod=~"{{{podName}}}",resource="cpu",namespace="{{{podNamespace}}}"})""";
-            var limitsQuery = $$$"""sum(kube_pod_container_resource_limits{pod=~"{{{podName}}}",resource="cpu",namespace="{{{podNamespace}}}"})""";
-
-            var series = await Task.WhenAll(
-                CreateSeriesAsync("Usage", usageQuery, from, to, step),
-                CreateSeriesAsync("Requests", requestsQuery, from, to, step),
-                CreateSeriesAsync("Limits", limitsQuery, from, to, step));
-
-            Series = series.Where(static s => s.Values?.Cast<object>().Any() == true).ToArray();
-            IsVisible = Series.Length > 0;
+            Tabs = [];
+            ShowTabs = false;
+            ShowStatus = true;
+            StatusText = "Historical metrics are unavailable while the cluster is using Kubernetes Metrics Server.";
+            return;
         }
-        catch
+
+        if (_cluster.MetricsServiceType != MetricsServiceType.Prometheus)
+        {
+            Tabs = [];
+            ShowTabs = false;
+            ShowStatus = true;
+            StatusText = "Metrics are not available for this cluster.";
+            return;
+        }
+
+        var descriptor = await ResourceMetricsCatalog.CreateAsync(_cluster, resource).ConfigureAwait(false);
+        if (descriptor == null)
         {
             IsVisible = false;
-            Series = [];
+            Tabs = [];
+            return;
         }
-    }
 
-    private async Task<ISeries> CreateSeriesAsync(string name, string query, DateTimeOffset from, DateTimeOffset to, string step)
-    {
-        var result = await _cluster!.GetPrometheusMetrics(query, from, to, step);
-        if (result == null || !string.Equals(result.Status, "success", StringComparison.Ordinal))
+        var tabs = new List<MetricTabViewModel>();
+
+        foreach (var tab in descriptor.Tabs)
         {
-            return new StackedStepAreaSeries<DateTimePoint>
+            var panels = new List<MetricPanelViewModel>();
+
+            foreach (var panel in tab.Panels)
             {
-                Name = name,
-                Values = [],
-            };
+                var result = await _cluster.RequestMetricsAsync(panel.Request).ConfigureAwait(false);
+                var series = CreateSeries(panel, result);
+                if (series.Length == 0)
+                {
+                    continue;
+                }
+
+                panels.Add(new MetricPanelViewModel
+                {
+                    Title = panel.Title,
+                    Series = series,
+                });
+            }
+
+            if (panels.Count > 0)
+            {
+                tabs.Add(new MetricTabViewModel
+                {
+                    Title = tab.Title,
+                    Panels = panels,
+                });
+            }
         }
 
-        return new StackedStepAreaSeries<DateTimePoint>
+        await Dispatcher.UIThread.InvokeAsync(() =>
         {
-            Name = name,
-            Values = result.Data.Result.FirstOrDefault()?.Values
-                .Select(value => new DateTimePoint(value.Timestamp.LocalDateTime, value.Value))
-                .ToList() ?? [],
-        };
+            Tabs = [.. tabs];
+            ShowTabs = Tabs.Count > 0;
+            ShowStatus = !ShowTabs;
+            StatusText = ShowTabs ? null : descriptor.EmptyState ?? "No Prometheus metrics are available for this resource.";
+        });
     }
+
+    private static ISeries[] CreateSeries(MetricPanelDefinition panel, MetricResultSet result)
+    {
+        if (result.IsEmpty)
+        {
+            return [];
+        }
+
+        var series = new List<ISeries>();
+
+        foreach (var query in panel.Request.Queries)
+        {
+            if (!result.Metrics.TryGetValue(query.Name, out var metricSeries))
+            {
+                continue;
+            }
+
+            foreach (var item in metricSeries.Where(panel.Filter))
+            {
+                var legend = panel.LegendLabels.TryGetValue(query.Name, out var label)
+                    ? label
+                    : query.Name;
+
+                if (item.Labels.Count > 0 && metricSeries.Count > 1)
+                {
+                    legend += $" ({item.Labels.Values.FirstOrDefault()})";
+                }
+
+                series.Add(new LineSeries<DateTimePoint>
+                {
+                    Name = legend,
+                    GeometrySize = 0,
+                    Values = item.Points.Select(static value => new DateTimePoint(value.Timestamp.LocalDateTime, value.Value)).ToList(),
+                });
+            }
+        }
+
+        return [.. series];
+    }
+}
+
+public sealed class MetricTabViewModel
+{
+    public required string Title { get; init; }
+
+    public required IReadOnlyList<MetricPanelViewModel> Panels { get; init; }
+}
+
+public sealed class MetricPanelViewModel
+{
+    public required string Title { get; init; }
+
+    public required ISeries[] Series { get; init; }
+
+    public ICartesianAxis[] XAxes { get; } =
+    [
+        new DateTimeAxis(TimeSpan.FromMinutes(10), value => value.ToString("HH:mm")),
+    ];
 }

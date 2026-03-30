@@ -12,7 +12,6 @@ using k8s.Models;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Controls;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
-using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 
@@ -71,20 +70,24 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 },
             ];
 
-        if (Cluster.MetricsServiceType == MetricsServiceType.KubernetesMetricsServer)
+        if (Cluster.IsMetricsAvailable)
         {
             cols.Insert(3, new ResourceListColumn<V1Pod, decimal>()
             {
                 Name = "CPU",
                 CustomControl = typeof(PodMetricCPUCell),
-                Field = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
+                Field = x => Cluster.MetricsServiceType == MetricsServiceType.KubernetesMetricsServer
+                    ? Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]) ?? 0
+                    : 0,
                 Width = "80"
             });
             cols.Insert(4, new ResourceListColumn<V1Pod, decimal>()
             {
                 Name = "Memory",
                 CustomControl = typeof(PodMetricMemoryCell),
-                Field = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
+                Field = x => Cluster.MetricsServiceType == MetricsServiceType.KubernetesMetricsServer
+                    ? Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]) ?? 0
+                    : 0,
                 Width = "80"
             });
         }
@@ -297,15 +300,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         return false;
     }
 
-    public override Control[] Properties(V1Pod resource)
-    {
-        if (Cluster?.MetricsServiceType is MetricsServiceType.Prometheus or MetricsServiceType.PrometheusExternal)
-        {
-            return [new PropertiesView(), new MetricsControl()];
-        }
-
-        return [new PropertiesView()];
-    }
+    public override Control[] Properties(V1Pod resource) => [new PropertiesView()];
 }
 
 

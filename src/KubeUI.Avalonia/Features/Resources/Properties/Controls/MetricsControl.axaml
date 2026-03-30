@@ -6,15 +6,45 @@
     xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
     xmlns:local="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    d:DesignHeight="320"
-    d:DesignWidth="640"
+    d:DesignHeight="360"
+    d:DesignWidth="760"
     mc:Ignorable="d">
     <local:ExpandableSection Header="Metrics" IsExpanded="True">
-        <Border Padding="8,4,8,8">
-            <lvc:CartesianChart
-                Height="220"
-                Series="{Binding Series, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}"
-                XAxes="{Binding XAxes, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}" />
-        </Border>
+        <StackPanel Margin="0,4,0,0" Spacing="8">
+            <Border
+                Padding="12"
+                Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
+                IsVisible="{Binding ShowStatus, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}">
+                <TextBlock
+                    TextWrapping="Wrap"
+                    Text="{Binding StatusText, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}" />
+            </Border>
+
+            <TabControl
+                IsVisible="{Binding ShowTabs, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}"
+                ItemsSource="{Binding Tabs, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}">
+                <TabControl.ItemTemplate>
+                    <DataTemplate x:DataType="local:MetricTabViewModel">
+                        <TextBlock Text="{Binding Title}" />
+                    </DataTemplate>
+                </TabControl.ItemTemplate>
+                <TabControl.ContentTemplate>
+                    <DataTemplate x:DataType="local:MetricTabViewModel">
+                        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding Panels}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="local:MetricPanelViewModel">
+                                        <StackPanel Margin="0,0,0,12" Spacing="4">
+                                            <TextBlock FontWeight="SemiBold" Text="{Binding Title}" />
+                                            <lvc:CartesianChart Height="220" Series="{Binding Series}" XAxes="{Binding XAxes}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </DataTemplate>
+                </TabControl.ContentTemplate>
+            </TabControl>
+        </StackPanel>
     </local:ExpandableSection>
 </UserControl>

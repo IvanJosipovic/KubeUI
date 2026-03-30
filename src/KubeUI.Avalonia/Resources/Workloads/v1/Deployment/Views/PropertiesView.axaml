@@ -24,5 +24,6 @@
                 <c:PropertyItem Key="Revision History Limit" Value="{Binding Spec.RevisionHistoryLimit}" />
             </StackPanel>
         </c:ExpandableSection>
+        <c:MetricsControl />
     </StackPanel>
 </UserControl>

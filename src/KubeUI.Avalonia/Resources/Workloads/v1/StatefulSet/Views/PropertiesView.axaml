@@ -32,5 +32,6 @@
                 <c:PropertyItem Key="Min Ready Seconds" Value="{Binding Spec.MinReadySeconds}" />
             </StackPanel>
         </c:ExpandableSection>
+        <c:MetricsControl />
     </StackPanel>
 </UserControl>

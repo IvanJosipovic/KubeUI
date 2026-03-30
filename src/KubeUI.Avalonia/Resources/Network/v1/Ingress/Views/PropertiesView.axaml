@@ -15,5 +15,6 @@
         <c:PropertyItem Key="Rules" Value="{Binding Spec.Rules.Count}" />
         <c:PropertyItem Key="TLS Entries" Value="{Binding Spec.Tls.Count}" />
         <c:PropertyItem Key="Load Balancer Entries" Value="{Binding Status.LoadBalancer.Ingress.Count}" />
+        <c:MetricsControl />
     </StackPanel>
 </UserControl>

@@ -71,12 +71,6 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
     public partial ObservableCollection<V1Namespace> SelectedNamespaces { get; set; } = [];
 
     [ObservableProperty]
-    public partial ObservableCollection<NodeMetrics> NodeMetrics { get; set; } = [];
-
-    [ObservableProperty]
-    public partial ObservableCollection<PodMetrics> PodMetrics { get; set; } = [];
-
-    [ObservableProperty]
     public partial ObservableCollection<PortForwarder> PortForwarders { get; set; } = [];
     
     [ObservableProperty]
@@ -119,7 +113,11 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     public bool IsMetricsAvailable => Runtime.IsMetricsAvailable;
 
-    public MetricsServiceType MetricsServiceType => Runtime.MetricsServiceType;
+    public ActiveMetricsBackend ActiveMetricsBackend => Runtime.ActiveMetricsBackend;
+
+    public MetricsServiceType MetricsServiceType => ActiveMetricsBackend.Type;
+
+    public PrometheusProviderKind? ActivePrometheusProviderKind => ActiveMetricsBackend.PrometheusProviderKind;
 
     public bool ListNamespaces
     {
@@ -162,6 +160,10 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
     }
 
     public ReadOnlyObservableCollection<V1Namespace> Namespaces => Runtime.Namespaces;
+
+    public ObservableCollection<NodeMetrics> NodeMetrics => Runtime.NodeMetrics;
+
+    public ObservableCollection<PodMetrics> PodMetrics => Runtime.PodMetrics;
 
     ObservableCollection<NodeMetrics> IClusterRuntime.NodeMetrics => Runtime.NodeMetrics;
     ObservableCollection<PodMetrics> IClusterRuntime.PodMetrics => Runtime.PodMetrics;
@@ -219,10 +221,9 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         return Runtime.ImportYaml(stream);
     }
 
-    public Task<PrometheusClientQueryRangeResponse?> GetPrometheusMetrics(string query, DateTimeOffset start, DateTimeOffset end, string step = "1")
-    {
-        return Runtime.GetPrometheusMetrics(query, start, end, step);
-    }
+    public Task<MetricResultSet> RequestMetricsAsync(MetricRequest request, CancellationToken cancellationToken = default) => Runtime.RequestMetricsAsync(request, cancellationToken);
+
+    public Task<IReadOnlyList<MetricProviderInfo>> GetAvailablePrometheusProvidersAsync() => Runtime.GetAvailablePrometheusProvidersAsync();
 
     public Task DryRunYaml(Stream stream)
     {
@@ -451,13 +452,13 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         OnPropertyChanged(nameof(ListNamespaces));
         OnPropertyChanged(nameof(Namespaces));
         OnPropertyChanged(nameof(IsMetricsAvailable));
+        OnPropertyChanged(nameof(ActiveMetricsBackend));
         OnPropertyChanged(nameof(MetricsServiceType));
+        OnPropertyChanged(nameof(ActivePrometheusProviderKind));
     }
 
     private void BindRuntimeCollections()
     {
-        NodeMetrics = Runtime.NodeMetrics;
-        PodMetrics = Runtime.PodMetrics;
         PortForwarders = Runtime.PortForwarders;
     }
 
@@ -757,7 +758,9 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
                     OnPropertyChanged(nameof(LastError));
                     OnPropertyChanged(nameof(RequiresNamespaceSelectionPrompt));
                     OnPropertyChanged(nameof(IsMetricsAvailable));
+                    OnPropertyChanged(nameof(ActiveMetricsBackend));
                     OnPropertyChanged(nameof(MetricsServiceType));
+                    OnPropertyChanged(nameof(ActivePrometheusProviderKind));
                 });
                 break;
             case nameof(IClusterRuntime.LastError):
@@ -783,8 +786,16 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
                     OnPropertyChanged(nameof(Namespaces));
                 });
                 break;
-            case nameof(IClusterRuntime.MetricsServiceType):
-                PostToUiThread(() => OnPropertyChanged(nameof(MetricsServiceType)));
+            case nameof(IClusterRuntime.IsMetricsAvailable):
+                PostToUiThread(() => OnPropertyChanged(nameof(IsMetricsAvailable)));
+                break;
+            case nameof(IClusterRuntime.ActiveMetricsBackend):
+                PostToUiThread(() =>
+                {
+                    OnPropertyChanged(nameof(ActiveMetricsBackend));
+                    OnPropertyChanged(nameof(MetricsServiceType));
+                    OnPropertyChanged(nameof(ActivePrometheusProviderKind));
+                });
                 break;
         }
     }

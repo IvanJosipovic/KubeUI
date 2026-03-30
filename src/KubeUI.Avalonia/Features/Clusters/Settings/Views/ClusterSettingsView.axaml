@@ -55,8 +55,8 @@
             </StackPanel>
         </Grid>
 
-        <Grid ColumnDefinitions="*,2*" ToolTip.Tip="Metrics provider">
-            <Label Grid.Column="0" Content="Metrics Provider" />
+        <Grid ColumnDefinitions="*,2*" ToolTip.Tip="Metrics backend">
+            <Label Grid.Column="0" Content="Metrics Backend" />
             <u:EnumSelector
                 Grid.Column="1"
                 Width="250"
@@ -67,10 +67,20 @@
 
         <Grid
             ColumnDefinitions="*,2*"
-            IsVisible="{Binding ShowPrometheusServiceSettings}"
-            ToolTip.Tip="Prometheus service name">
-            <Label Grid.Column="0" Content="Prometheus Service Name" />
-            <TextBox Grid.Column="1" Text="{Binding ClusterSettings.PrometheusServiceName}" />
+            IsVisible="{Binding ShowPrometheusProviderSettings}"
+            ToolTip.Tip="Prometheus provider">
+            <Label Grid.Column="0" Content="Prometheus Provider" />
+            <ComboBox
+                Grid.Column="1"
+                ItemsSource="{Binding PrometheusProviders}"
+                SelectedValue="{Binding ClusterSettings.PrometheusProviderKind}"
+                SelectedValueBinding="{Binding Id}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:MetricProviderOption">
+                        <TextBlock Text="{Binding Name}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
         </Grid>
 
         <Grid
@@ -91,27 +101,41 @@
 
         <Grid
             ColumnDefinitions="*,2*"
-            IsVisible="{Binding ShowPrometheusExternalSettings}"
+            IsVisible="{Binding ShowPrometheusDirectUrlSettings}"
             ToolTip.Tip="External Prometheus base URL">
-            <Label Grid.Column="0" Content="Prometheus Server Url" />
-            <TextBox Grid.Column="1" Text="{Binding ClusterSettings.PrometheusServerUrl}" />
+            <Label Grid.Column="0" Content="Prometheus Direct Url" />
+            <TextBox Grid.Column="1" Text="{Binding ClusterSettings.PrometheusDirectUrl}" />
         </Grid>
 
         <Grid
             ColumnDefinitions="*,2*"
-            IsVisible="{Binding ShowAzureManagedPrometheusSettings}"
-            ToolTip.Tip="Azure Managed Prometheus client id">
-            <Label Grid.Column="0" Content="Prometheus Client Id" />
-            <TextBox Grid.Column="1" Text="{Binding ClusterSettings.PrometheusClientId}" />
+            IsVisible="{Binding ShowPrometheusSettings}"
+            ToolTip.Tip="Optional Prometheus request path prefix">
+            <Label Grid.Column="0" Content="Prometheus Path Prefix" />
+            <TextBox Grid.Column="1" Text="{Binding ClusterSettings.PrometheusPathPrefix}" />
         </Grid>
 
         <Grid
             ColumnDefinitions="*,2*"
-            IsVisible="{Binding ShowAzureManagedPrometheusSettings}"
-            ToolTip.Tip="Azure Managed Prometheus client secret">
-            <Label Grid.Column="0" Content="Prometheus Client Secret" />
-            <TextBox Grid.Column="1" Text="{Binding ClusterSettings.PrometheusClientSecret}" />
+            IsVisible="{Binding ShowPrometheusSettings}"
+            ToolTip.Tip="Use HTTPS when connecting to Prometheus">
+            <Label Grid.Column="0" Content="Use HTTPS" />
+            <CheckBox Grid.Column="1" IsChecked="{Binding ClusterSettings.PrometheusUseHttps}" />
         </Grid>
+
+        <Grid
+            ColumnDefinitions="*,2*"
+            IsVisible="{Binding ShowPrometheusBearerTokenSettings}"
+            ToolTip.Tip="Bearer token used for Prometheus authentication">
+            <Label Grid.Column="0" Content="Prometheus Bearer Token" />
+            <TextBox Grid.Column="1" Text="{Binding ClusterSettings.PrometheusBearerToken}" />
+        </Grid>
+
+        <TextBlock
+            IsVisible="{Binding !ShowPrometheusSettings}"
+            Margin="0,8,0,0"
+            Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+            Text="Auto mode will try Prometheus first and fall back to Kubernetes Metrics Server." />
     </StackPanel>
 </UserControl>
 

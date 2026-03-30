@@ -14,7 +14,7 @@ public interface IClusterRuntime
     string? LastError { get; set; }
     bool RequiresNamespaceSelectionPrompt { get; set; }
     bool IsMetricsAvailable { get; }
-    MetricsServiceType MetricsServiceType { get; }
+    ActiveMetricsBackend ActiveMetricsBackend { get; }
     bool ListNamespaces { get; set; }
     event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
     event Action<V1CustomResourceDefinition>? OnCustomResourceDefinitionReady;
@@ -43,7 +43,8 @@ public interface IClusterRuntime
     Task DryRunYaml(Stream stream);
     Task ImportFolder(string path);
     Task ImportYaml(Stream stream);
-    Task<PrometheusClientQueryRangeResponse?> GetPrometheusMetrics(string query, DateTimeOffset start, DateTimeOffset end, string step = "1");
+    Task<MetricResultSet> RequestMetricsAsync(MetricRequest request, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<MetricProviderInfo>> GetAvailablePrometheusProvidersAsync();
     Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task<bool> IsResourceReady<T>(CancellationToken? token = null) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     T? GetResource<T>(string? @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new();

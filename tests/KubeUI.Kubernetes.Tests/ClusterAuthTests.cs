@@ -20,7 +20,16 @@ public sealed class ClusterAuthTests
             new ModelCache(),
             new Generator(),
             new TestClusterSettingsStore(),
-            new ServiceCollection().BuildServiceProvider());
+            new ServiceCollection().BuildServiceProvider(),
+            new MetricsService(
+                NullLogger<MetricsService>.Instance,
+                new TestClusterSettingsStore(),
+                [
+                    new OperatorPrometheusProvider(),
+                    new OpenShiftPrometheusProvider(),
+                    new ManualPrometheusProvider(),
+                    new ExternalPrometheusProvider(),
+                ]));
 
         var exception = Should.Throw<Exception>(() => cluster.CanI(typeof(V1Pod), Verb.Create, subresource: "portforward"));
         exception.Message.ShouldContain("Missing V1SelfSubjectAccessReview");

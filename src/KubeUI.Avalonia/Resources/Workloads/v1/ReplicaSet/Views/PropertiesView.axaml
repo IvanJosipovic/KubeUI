@@ -28,5 +28,6 @@
                 <c:PropertyItem Key="Selector Labels" Value="{Binding Spec.Selector.MatchLabels.Count}" />
             </StackPanel>
         </c:ExpandableSection>
+        <c:MetricsControl />
     </StackPanel>
 </UserControl>
