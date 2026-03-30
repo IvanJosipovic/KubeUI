@@ -38,7 +38,7 @@ public class TestApp : Application
 
     public static void ResetForTest()
     {
-        Dispatcher.UIThread.Invoke(() =>
+        RunOnUiThread(() =>
         {
             if (Application.Current is TestApp app)
             {
@@ -49,7 +49,7 @@ public class TestApp : Application
 
     public static void CleanupAfterTest()
     {
-        Dispatcher.UIThread.Invoke(() =>
+        RunOnUiThread(() =>
         {
             if (Application.Current is TestApp app)
             {
@@ -155,6 +155,17 @@ public class TestApp : Application
         {
             window.Close();
         }
+    }
+
+    private static void RunOnUiThread(Action action)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            action();
+            return;
+        }
+
+        Dispatcher.UIThread.Invoke(action);
     }
 }
 
