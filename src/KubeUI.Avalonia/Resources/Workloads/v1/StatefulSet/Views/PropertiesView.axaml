@@ -17,6 +17,7 @@
         <c:PropertyItem Key="Updated Replicas" Value="{Binding Status.UpdatedReplicas}" />
         <c:PropertyItem Key="Available Replicas" Value="{Binding Status.AvailableReplicas}" />
         <c:PropertyItem Key="Service Name" Value="{Binding Spec.ServiceName}" />
+        <c:MetricsControl />
         <c:ExpandableSection Header="Status">
             <StackPanel>
                 <c:PropertyItem Key="Current Revision" Value="{Binding Status.CurrentRevision}" />
@@ -32,6 +33,5 @@
                 <c:PropertyItem Key="Min Ready Seconds" Value="{Binding Spec.MinReadySeconds}" />
             </StackPanel>
         </c:ExpandableSection>
-        <c:MetricsControl />
     </StackPanel>
 </UserControl>

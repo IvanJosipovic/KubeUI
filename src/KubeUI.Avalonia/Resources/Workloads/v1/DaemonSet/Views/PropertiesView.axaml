@@ -15,6 +15,7 @@
         <c:PropertyItem Key="Current Scheduled" Value="{Binding Status.CurrentNumberScheduled}" />
         <c:PropertyItem Key="Ready" Value="{Binding Status.NumberReady}" />
         <c:PropertyItem Key="Updated" Value="{Binding Status.UpdatedNumberScheduled}" />
+        <c:MetricsControl />
         <c:ExpandableSection Header="Status">
             <StackPanel>
                 <c:PropertyItem Key="Available" Value="{Binding Status.NumberAvailable}" />
@@ -30,6 +31,5 @@
                 <c:PropertyItem Key="Selector Labels" Value="{Binding Spec.Selector.MatchLabels.Count}" />
             </StackPanel>
         </c:ExpandableSection>
-        <c:MetricsControl />
     </StackPanel>
 </UserControl>

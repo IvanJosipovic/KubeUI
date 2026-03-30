@@ -15,6 +15,7 @@
         <c:PropertyItem Key="Current Replicas" Value="{Binding Status.Replicas}" />
         <c:PropertyItem Key="Ready Replicas" Value="{Binding Status.ReadyReplicas}" />
         <c:PropertyItem Key="Available Replicas" Value="{Binding Status.AvailableReplicas}" />
+        <c:MetricsControl />
         <c:ExpandableSection Header="Status">
             <StackPanel>
                 <c:PropertyItem Key="Fully Labeled Replicas" Value="{Binding Status.FullyLabeledReplicas}" />
@@ -28,6 +29,5 @@
                 <c:PropertyItem Key="Selector Labels" Value="{Binding Spec.Selector.MatchLabels.Count}" />
             </StackPanel>
         </c:ExpandableSection>
-        <c:MetricsControl />
     </StackPanel>
 </UserControl>

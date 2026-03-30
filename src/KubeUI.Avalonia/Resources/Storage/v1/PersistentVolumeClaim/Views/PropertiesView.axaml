@@ -15,6 +15,7 @@
         <c:PropertyItem Key="Storage Class" Value="{Binding Spec.StorageClassName}" />
         <c:PropertyItem Key="Volume Name" Value="{Binding Spec.VolumeName}" />
         <c:PropertyItem Key="Access Modes" Value="{Binding Spec.AccessModes.Count}" />
+        <c:MetricsControl />
         <c:ExpandableSection Header="Configuration">
             <StackPanel>
                 <c:PropertyItem Key="Volume Mode" Value="{Binding Spec.VolumeMode}" />
@@ -27,6 +28,5 @@
                 <c:PropertyItem Key="Conditions" Value="{Binding Status.Conditions.Count}" />
             </StackPanel>
         </c:ExpandableSection>
-        <c:MetricsControl />
     </StackPanel>
 </UserControl>

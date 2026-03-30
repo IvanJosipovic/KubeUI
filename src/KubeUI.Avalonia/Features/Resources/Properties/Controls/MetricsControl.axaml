@@ -3,6 +3,7 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:ic="using:FluentIcons.Avalonia"
     xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
     xmlns:local="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -11,40 +12,105 @@
     mc:Ignorable="d">
     <local:ExpandableSection Header="Metrics" IsExpanded="True">
         <StackPanel Margin="0,4,0,0" Spacing="8">
-            <Border
-                Padding="12"
-                Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
-                IsVisible="{Binding ShowStatus, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}">
-                <TextBlock
-                    TextWrapping="Wrap"
-                    Text="{Binding StatusText, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}" />
-            </Border>
+            <local:PropertyItem
+                Key="Status"
+                IsVisible="{Binding ShowStatus, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}"
+                Value="{Binding StatusText, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}" />
 
-            <TabControl
+            <StackPanel
                 IsVisible="{Binding ShowTabs, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}"
-                ItemsSource="{Binding Tabs, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}">
-                <TabControl.ItemTemplate>
-                    <DataTemplate x:DataType="local:MetricTabViewModel">
-                        <TextBlock Text="{Binding Title}" />
+                Spacing="8">
+                <ListBox
+                    Background="Transparent"
+                    BorderThickness="0"
+                    HorizontalAlignment="Left"
+                    ItemsSource="{Binding Tabs, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}"
+                    SelectedItem="{Binding SelectedTab, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}"
+                    SelectionMode="Single">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" Spacing="6" />
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.Styles>
+                        <Style Selector="ListBoxItem">
+                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="Margin" Value="0" />
+                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="BorderThickness" Value="0" />
+                        </Style>
+                    </ListBox.Styles>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="local:MetricTabViewModel">
+                            <ToggleButton
+                                IsChecked="{Binding $parent[ListBoxItem].IsSelected, Mode=TwoWay}"
+                                ToolTip.Tip="{Binding Title}">
+                                <ic:FluentIcon
+                                    FontSize="14"
+                                    Icon="{Binding Icon}" />
+                            </ToggleButton>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <ContentControl Content="{Binding SelectedTab, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}">
+                    <ContentControl.ContentTemplate>
+                        <DataTemplate x:DataType="local:MetricTabViewModel">
+                            <StackPanel Spacing="6">
+                                <TextBlock
+                                    FontSize="11"
+                                    FontWeight="SemiBold"
+                                    Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                    IsVisible="{Binding ShowTitle}"
+                                    Text="{Binding Title}"
+                                    TextWrapping="Wrap" />
+
+                                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                                    <ItemsControl ItemsSource="{Binding Panels}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="local:MetricPanelViewModel">
+                                                <StackPanel Margin="0,0,0,8" Spacing="4">
+                                                    <TextBlock
+                                                        FontSize="12"
+                                                        FontWeight="Bold"
+                                                        Text="{Binding Title}" />
+                                                    <lvc:CartesianChart Height="190" Series="{Binding Series}" XAxes="{Binding XAxes}" YAxes="{Binding YAxes}" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ContentControl.ContentTemplate>
+                </ContentControl>
+            </StackPanel>
+
+            <ItemsControl
+                IsVisible="{Binding ShowCurrentMetrics, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}"
+                ItemsSource="{Binding CurrentMetrics, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" ItemWidth="120" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="local:MetricSummaryItemViewModel">
+                        <StackPanel Margin="0,0,10,6" Spacing="1">
+                            <TextBlock
+                                FontSize="10"
+                                Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                Text="{Binding Key}"
+                                TextWrapping="Wrap" />
+                            <TextBlock
+                                FontSize="14"
+                                FontWeight="SemiBold"
+                                Text="{Binding Value}"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
                     </DataTemplate>
-                </TabControl.ItemTemplate>
-                <TabControl.ContentTemplate>
-                    <DataTemplate x:DataType="local:MetricTabViewModel">
-                        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                            <ItemsControl ItemsSource="{Binding Panels}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="local:MetricPanelViewModel">
-                                        <StackPanel Margin="0,0,0,12" Spacing="4">
-                                            <TextBlock FontWeight="SemiBold" Text="{Binding Title}" />
-                                            <lvc:CartesianChart Height="220" Series="{Binding Series}" XAxes="{Binding XAxes}" />
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
-                    </DataTemplate>
-                </TabControl.ContentTemplate>
-            </TabControl>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
         </StackPanel>
     </local:ExpandableSection>
 </UserControl>

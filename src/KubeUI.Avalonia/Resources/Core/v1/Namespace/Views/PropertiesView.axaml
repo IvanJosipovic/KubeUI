@@ -12,8 +12,8 @@
     mc:Ignorable="d">
     <StackPanel>
         <c:PropertyItem Key="Phase" Value="{Binding Status.Phase}" />
+        <c:MetricsControl />
         <c:PropertyItem Key="Finalizers" Value="{Binding Spec.Finalizers.Count}" />
         <c:PropertyItem Key="Conditions" Value="{Binding Status.Conditions.Count}" />
-        <c:MetricsControl />
     </StackPanel>
 </UserControl>

@@ -15,6 +15,7 @@
         <c:PropertyItem Key="Parallelism" Value="{Binding Spec.Parallelism}" />
         <c:PropertyItem Key="Succeeded" Value="{Binding Status.Succeeded}" />
         <c:PropertyItem Key="Failed" Value="{Binding Status.Failed}" />
+        <c:MetricsControl />
         <c:ExpandableSection Header="Configuration">
             <StackPanel>
                 <c:PropertyItem Key="Backoff Limit" Value="{Binding Spec.BackoffLimit}" />
@@ -31,6 +32,5 @@
                 <c:PropertyItem Key="Conditions" Value="{Binding Status.Conditions.Count}" />
             </StackPanel>
         </c:ExpandableSection>
-        <c:MetricsControl />
     </StackPanel>
 </UserControl>

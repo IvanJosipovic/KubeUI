@@ -16,6 +16,7 @@
         <c:PropertyItem Key="Kernel Version" Value="{Binding Status.NodeInfo.KernelVersion}" />
         <c:PropertyItem Key="Container Runtime" Value="{Binding Status.NodeInfo.ContainerRuntimeVersion}" />
         <c:PropertyItem Key="Kubelet Version" Value="{Binding Status.NodeInfo.KubeletVersion}" />
+        <c:MetricsControl />
         <c:ExpandableSection Header="Status">
             <StackPanel>
                 <c:PropertyItem Key="Addresses" Value="{Binding Status.Addresses.Count}" />
@@ -29,6 +30,5 @@
                 <c:PropertyItem Key="Allocatable Entries" Value="{Binding Status.Allocatable.Count}" />
             </StackPanel>
         </c:ExpandableSection>
-        <c:MetricsControl />
     </StackPanel>
 </UserControl>

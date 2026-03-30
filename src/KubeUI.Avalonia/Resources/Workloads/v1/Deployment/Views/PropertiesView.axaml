@@ -15,6 +15,7 @@
         <c:PropertyItem Key="Available Replicas" Value="{Binding Status.AvailableReplicas}" />
         <c:PropertyItem Key="Ready Replicas" Value="{Binding Status.ReadyReplicas}" />
         <c:PropertyItem Key="Updated Replicas" Value="{Binding Status.UpdatedReplicas}" />
+        <c:MetricsControl />
         <c:ExpandableSection Header="Rollout">
             <StackPanel>
                 <c:PropertyItem Key="Unavailable Replicas" Value="{Binding Status.UnavailableReplicas}" />
@@ -24,6 +25,5 @@
                 <c:PropertyItem Key="Revision History Limit" Value="{Binding Spec.RevisionHistoryLimit}" />
             </StackPanel>
         </c:ExpandableSection>
-        <c:MetricsControl />
     </StackPanel>
 </UserControl>

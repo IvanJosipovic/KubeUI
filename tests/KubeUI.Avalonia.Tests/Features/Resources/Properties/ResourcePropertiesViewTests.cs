@@ -68,6 +68,25 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
     public void embedded_metrics_control_is_initialized_for_pod_properties()
     {
         var workspace = new TestCluster().CreateWorkspace();
+        workspace.PodMetrics.Add(new PodMetrics
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "pod-1",
+                NamespaceProperty = "default",
+            },
+            Containers =
+            [
+                new ContainerMetrics
+                {
+                    Usage = new Dictionary<string, ResourceQuantity>
+                    {
+                        ["cpu"] = new("125m"),
+                        ["memory"] = new("96Mi"),
+                    },
+                },
+            ],
+        });
         workspace.EnsureWorkspaceStateInitializedAsync().GetAwaiter().GetResult();
         var viewModel = new ResourcePropertiesViewModel<V1Pod>();
         viewModel.Initialize(workspace, new V1Pod
@@ -98,7 +117,58 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
             .Single();
 
         metrics.IsVisible.ShouldBeTrue();
+        metrics.ShowCurrentMetrics.ShouldBeTrue();
+        metrics.ShowStatus.ShouldBeFalse();
+        metrics.CurrentMetrics.ShouldContain(x => x.Key == "CPU" && x.Value == "0.125c");
+        metrics.CurrentMetrics.ShouldContain(x => x.Key == "Memory");
+    }
+
+    [AvaloniaFact]
+    public void embedded_metrics_control_refreshes_when_active_metrics_backend_changes()
+    {
+        var cluster = new TestCluster();
+        var workspace = cluster.CreateWorkspace();
+        workspace.EnsureWorkspaceStateInitializedAsync().GetAwaiter().GetResult();
+
+        var viewModel = new ResourcePropertiesViewModel<V1Pod>();
+        viewModel.Initialize(workspace, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "pod-1",
+                NamespaceProperty = "default",
+            }
+        });
+
+        var view = new ResourcePropertiesView
+        {
+            DataContext = viewModel
+        };
+
+        Dispatcher.UIThread.RunJobs();
+        Dispatcher.UIThread.RunJobs();
+
+        var podProperties = view.FindControl<StackPanel>("PART_Items")!
+            .Children
+            .OfType<PropertiesView>()
+            .Single();
+        var metrics = podProperties.Content
+            .ShouldBeOfType<StackPanel>()
+            .Children
+            .OfType<MetricsControl>()
+            .Single();
+
         metrics.ShowStatus.ShouldBeTrue();
         metrics.StatusText.ShouldContain("Kubernetes Metrics Server");
+
+        cluster.MetricsServiceType = KubeUI.Kubernetes.MetricsServiceType.Prometheus;
+
+        Dispatcher.UIThread.RunJobs();
+        Dispatcher.UIThread.RunJobs();
+
+        metrics.IsVisible.ShouldBeTrue();
+        metrics.ShowStatus.ShouldBeTrue();
+        metrics.StatusText.ShouldNotContain("Kubernetes Metrics Server");
+        metrics.StatusText.ShouldContain("No Prometheus metrics");
     }
 }

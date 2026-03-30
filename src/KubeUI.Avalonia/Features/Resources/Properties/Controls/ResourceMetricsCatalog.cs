@@ -1,5 +1,6 @@
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Kubernetes;
+using FluentIcons.Common;
 using k8s.Models;
 using System.Text.RegularExpressions;
 
@@ -38,15 +39,15 @@ internal static class ResourceMetricsCatalog
 
         return new ResourceMetricsDescriptor(
             [
-                new MetricTabDefinition("CPU",
+                new MetricTabDefinition("CPU", Icon.ArrowSync,
                 [
                     MetricPanel("CPU", MetricCategory.Pods, podQueryOptions, ("cpuUsage", "Usage"), ("cpuRequests", "Requests"), ("cpuLimits", "Limits")),
                 ]),
-                new MetricTabDefinition("Memory",
+                new MetricTabDefinition("Memory", Icon.Code,
                 [
                     MetricPanel("Memory", MetricCategory.Pods, podQueryOptions, ("memoryUsage", "Usage"), ("memoryRequests", "Requests"), ("memoryLimits", "Limits")),
                 ]),
-                new MetricTabDefinition("Storage & Network",
+                new MetricTabDefinition("Storage & Network", Icon.Link,
                 [
                     MetricPanel("Filesystem", MetricCategory.Pods, podQueryOptions, ("fsUsage", "Usage"), ("fsReads", "Reads"), ("fsWrites", "Writes")),
                     MetricPanel("Network", MetricCategory.Pods, podQueryOptions, ("networkReceive", "Receive"), ("networkTransmit", "Transmit")),
@@ -67,15 +68,15 @@ internal static class ResourceMetricsCatalog
 
         return new ResourceMetricsDescriptor(
             [
-                new MetricTabDefinition("CPU",
+                new MetricTabDefinition("CPU", Icon.ArrowSync,
                 [
                     MetricPanel("CPU", MetricCategory.Nodes, options, filter, ("cpuUsage", "Usage"), ("cpuCapacity", "Capacity"), ("cpuAllocatableCapacity", "Allocatable")),
                 ]),
-                new MetricTabDefinition("Memory",
+                new MetricTabDefinition("Memory", Icon.Code,
                 [
                     MetricPanel("Memory", MetricCategory.Nodes, options, filter, ("memoryUsage", "Usage"), ("memoryCapacity", "Capacity"), ("memoryAllocatableCapacity", "Allocatable")),
                 ]),
-                new MetricTabDefinition("Filesystem",
+                new MetricTabDefinition("Filesystem", Icon.Save,
                 [
                     MetricPanel("Filesystem", MetricCategory.Nodes, options, filter, ("fsUsage", "Usage"), ("fsSize", "Size")),
                 ]),
@@ -94,7 +95,7 @@ internal static class ResourceMetricsCatalog
 
         return new ResourceMetricsDescriptor(
             [
-                new MetricTabDefinition("Workloads",
+                new MetricTabDefinition("Workloads", Icon.PanelRight,
                 [
                     MetricPanel("CPU", MetricCategory.Namespace, options, ("cpuUsage", "Usage"), ("cpuRequests", "Requests"), ("cpuLimits", "Limits")),
                     MetricPanel("Memory", MetricCategory.Namespace, options, ("memoryUsage", "Usage"), ("memoryRequests", "Requests"), ("memoryLimits", "Limits")),
@@ -113,7 +114,7 @@ internal static class ResourceMetricsCatalog
 
         return new ResourceMetricsDescriptor(
             [
-                new MetricTabDefinition("Storage",
+                new MetricTabDefinition("Storage", Icon.Save,
                 [
                     MetricPanel("PVC Storage", MetricCategory.Pvc, options, ("diskUsage", "Usage"), ("diskCapacity", "Capacity")),
                 ]),
@@ -131,7 +132,7 @@ internal static class ResourceMetricsCatalog
 
         return new ResourceMetricsDescriptor(
             [
-                new MetricTabDefinition("Traffic",
+                new MetricTabDefinition("Traffic", Icon.Link,
                 [
                     MetricPanel("Bytes Sent", MetricCategory.Ingress, options, ("bytesSentSuccess", "Success"), ("bytesSentFailure", "Failure")),
                     MetricPanel("Latency", MetricCategory.Ingress, options, ("requestDurationSeconds", "Request"), ("responseDurationSeconds", "Response")),
@@ -167,15 +168,15 @@ internal static class ResourceMetricsCatalog
 
         return new ResourceMetricsDescriptor(
             [
-                new MetricTabDefinition("CPU",
+                new MetricTabDefinition("CPU", Icon.ArrowSync,
                 [
                     MetricPanel("CPU", MetricCategory.WorkloadPods, options, ("cpuUsage", "Usage"), ("cpuRequests", "Requests"), ("cpuLimits", "Limits")),
                 ]),
-                new MetricTabDefinition("Memory",
+                new MetricTabDefinition("Memory", Icon.Code,
                 [
                     MetricPanel("Memory", MetricCategory.WorkloadPods, options, ("memoryUsage", "Usage"), ("memoryRequests", "Requests"), ("memoryLimits", "Limits")),
                 ]),
-                new MetricTabDefinition("Storage & Network",
+                new MetricTabDefinition("Storage & Network", Icon.Link,
                 [
                     MetricPanel("Filesystem", MetricCategory.WorkloadPods, options, ("fsUsage", "Usage"), ("fsReads", "Reads"), ("fsWrites", "Writes")),
                     MetricPanel("Network", MetricCategory.WorkloadPods, options, ("networkReceive", "Receive"), ("networkTransmit", "Transmit")),
@@ -259,4 +260,4 @@ internal sealed class MetricPanelDefinition
     public required Func<MetricSeries, bool> Filter { get; init; }
 }
 
-internal sealed record MetricTabDefinition(string Title, IReadOnlyList<MetricPanelDefinition> Panels);
+internal sealed record MetricTabDefinition(string Title, Icon Icon, IReadOnlyList<MetricPanelDefinition> Panels);
