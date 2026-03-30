@@ -1,0 +1,19 @@
+﻿<UserControl
+    x:Class="KubeUI.Avalonia.Resources.Configuration.v1.ResourceQuota.Views.PropertiesView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:k8s.Models"
+    d:DesignHeight="250"
+    d:DesignWidth="450"
+    x:DataType="models:V1ResourceQuota"
+    mc:Ignorable="d">
+    <StackPanel>
+        <c:PropertyItem Key="Spec Hard" Value="{Binding Spec.Hard.Count}" />
+        <c:PropertyItem Key="Spec Scopes" Value="{Binding Spec.Scopes.Count}" />
+        <c:PropertyItem Key="Status Hard" Value="{Binding Status.Hard.Count}" />
+        <c:PropertyItem Key="Status Used" Value="{Binding Status.Used.Count}" />
+    </StackPanel>
+</UserControl>

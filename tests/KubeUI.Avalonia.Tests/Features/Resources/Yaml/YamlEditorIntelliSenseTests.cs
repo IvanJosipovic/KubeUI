@@ -2,7 +2,6 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using k8s.Models;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Avalonia.ViewModels;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Yaml;

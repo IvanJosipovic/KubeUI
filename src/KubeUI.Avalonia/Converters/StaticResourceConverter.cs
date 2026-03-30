@@ -1,4 +1,5 @@
 using System.Globalization;
+using Avalonia;
 using Avalonia.Data.Converters;
 
 namespace KubeUI.Avalonia.Converters;
@@ -11,10 +12,10 @@ class StaticResourceConverter : IValueConverter
     {
         if (value == null)
         {
-            return null;
+            return AvaloniaProperty.UnsetValue;
         }
 
-        return Application.Current.FindResource(value);
+        return Application.Current?.FindResource(value) ?? AvaloniaProperty.UnsetValue;
     }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

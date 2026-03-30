@@ -1,9 +1,10 @@
 using Avalonia.Styling;
 using KubeUI.Kubernetes;
+using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
 
-namespace KubeUI.Avalonia.Views;
+namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
 
 public sealed partial class PodLogsView : UserControl
 {

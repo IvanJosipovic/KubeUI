@@ -1,0 +1,62 @@
+﻿<UserControl
+    x:Class="KubeUI.Avalonia.Shell.Documents.About.Views.AboutView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="clr-namespace:KubeUI.Avalonia.Assets;assembly=KubeUI.Avalonia"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:views="clr-namespace:KubeUI.Avalonia.Shell.Documents.About.Views"
+    xmlns:vm="clr-namespace:KubeUI.Avalonia.Shell.Documents.About.ViewModels"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    x:DataType="vm:AboutViewModel"
+    mc:Ignorable="d">
+    <Design.DataContext>
+        <vm:AboutViewModel />
+    </Design.DataContext>
+    <StackPanel>
+        <Image
+            Width="128"
+            Height="128"
+            Margin="0,15,0,5"
+            HorizontalAlignment="Center"
+            Source="{SvgImage /Assets/kube/infrastructure_components/unlabeled/control-plane.svg}" />
+
+        <TextBlock
+            HorizontalAlignment="Center"
+            FontSize="24"
+            Text="{x:Static assets:Resources.MainWindow_Title}" />
+        <TextBlock HorizontalAlignment="Center" Text="{Binding Version, StringFormat={x:Static assets:Resources.AboutView_Version_StringFormat}}" />
+
+        <TextBlock
+            Padding="0,15,0,0"
+            HorizontalAlignment="Center"
+            Text="{x:Static assets:Resources.AboutView_CreatedBy}" />
+
+        <StackPanel
+            Margin="0,15,0,0"
+            HorizontalAlignment="Center"
+            Orientation="Horizontal">
+            <TextBlock Text="{x:Static assets:Resources.AboutView_Contact}" />
+            <HyperlinkButton
+                Padding="2,-2,0,0"
+                Content="{x:Static assets:Resources.AboutView_ContactEmailContent}"
+                NavigateUri="{x:Static assets:Resources.AboutView_ContactEmailUri}" />
+        </StackPanel>
+        <StackPanel
+            Margin="0,5,0,0"
+            HorizontalAlignment="Center"
+            Orientation="Horizontal">
+            <TextBlock Padding="0,0,0,0" Text="{x:Static assets:Resources.AboutView_Website}" />
+            <HyperlinkButton
+                Padding="2,-2,0,0"
+                Content="{x:Static assets:Resources.AboutView_WebsiteContent}"
+                NavigateUri="{x:Static assets:Resources.AboutView_WebsiteUri}" />
+        </StackPanel>
+    </StackPanel>
+</UserControl>
+
+
+
+
+

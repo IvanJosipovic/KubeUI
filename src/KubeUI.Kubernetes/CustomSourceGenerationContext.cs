@@ -109,6 +109,22 @@ namespace KubeUI.Kubernetes;
 
 [JsonSerializable(typeof(ExecCredentialResponse))]
 [JsonSerializable(typeof(ExecCredentialResponse.ExecStatus))]
+[JsonSerializable(typeof(V1SelfSubjectAccessReview))]
+[JsonSerializable(typeof(V1SelfSubjectAccessReviewSpec))]
+[JsonSerializable(typeof(V1NonResourceAttributes))]
+[JsonSerializable(typeof(V1ResourceAttributes))]
+[JsonSerializable(typeof(V1FieldSelectorAttributes))]
+[JsonSerializable(typeof(IList<V1FieldSelectorRequirement>))]
+[JsonSerializable(typeof(V1FieldSelectorRequirement))]
+[JsonSerializable(typeof(V1LabelSelectorAttributes))]
+[JsonSerializable(typeof(V1SubjectAccessReviewStatus))]
+[JsonSerializable(typeof(V1APIGroupList))]
+[JsonSerializable(typeof(IList<V1APIGroup>))]
+[JsonSerializable(typeof(V1APIGroup))]
+[JsonSerializable(typeof(V1GroupVersionForDiscovery))]
+[JsonSerializable(typeof(IList<V1ServerAddressByClientCIDR>))]
+[JsonSerializable(typeof(V1ServerAddressByClientCIDR))]
+[JsonSerializable(typeof(IList<V1GroupVersionForDiscovery>))]
 
 [JsonSourceGenerationOptions(
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,

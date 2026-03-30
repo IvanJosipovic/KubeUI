@@ -1,9 +1,11 @@
 using Avalonia.Data.Converters;
 using Avalonia.Styling;
 using k8s.Models;
-using KubeUI.Avalonia.Controls;
+using KubeUI.Avalonia.Features.Resources.Properties.Controls;
+using KubeUI.Avalonia.Resources.Core.v1.Event.Controls;
+using KubeUI.Avalonia.Resources.Core.v1.Event.Views;
 
-namespace KubeUI.Avalonia.Resources.Core.v1;
+namespace KubeUI.Avalonia.Resources.Core.v1.Event;
 
 public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
 {
@@ -49,13 +51,15 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
             {
                 Name = "Last Seen",
                 CustomControl = typeof(EventLastSeenCell),
-                Field = x => x.LastTimestamp ?? (x.EventTime ?? x.Metadata.CreationTimestamp),
+                Field = x => EventTimeFormatter.ResolveTimestamp(x),
                 Sort = SortDirection.Descending,
                 Width = "80"
             },
             AgeColumn(),
         ];
     }
+
+    public override Control[] Properties(Corev1Event resource) => [new PropertiesView()];
 
     public override IStyle ListStyle()
     {
@@ -81,4 +85,5 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
         return style;
     }
 }
+
 

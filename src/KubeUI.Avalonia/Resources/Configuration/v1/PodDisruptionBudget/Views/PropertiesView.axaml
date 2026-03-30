@@ -1,0 +1,22 @@
+﻿<UserControl
+    x:Class="KubeUI.Avalonia.Resources.Configuration.v1.PodDisruptionBudget.Views.PropertiesView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:k8s.Models"
+    d:DesignHeight="250"
+    d:DesignWidth="450"
+    x:DataType="models:V1PodDisruptionBudget"
+    mc:Ignorable="d">
+    <StackPanel>
+        <c:PropertyItem Key="Min Available" Value="{Binding Spec.MinAvailable}" />
+        <c:PropertyItem Key="Max Unavailable" Value="{Binding Spec.MaxUnavailable}" />
+        <c:PropertyItem Key="Selector Labels" Value="{Binding Spec.Selector.MatchLabels.Count}" />
+        <c:PropertyItem Key="Disruptions Allowed" Value="{Binding Status.DisruptionsAllowed}" />
+        <c:PropertyItem Key="Current Healthy" Value="{Binding Status.CurrentHealthy}" />
+        <c:PropertyItem Key="Desired Healthy" Value="{Binding Status.DesiredHealthy}" />
+        <c:PropertyItem Key="Expected Pods" Value="{Binding Status.ExpectedPods}" />
+    </StackPanel>
+</UserControl>

@@ -21,15 +21,13 @@ using Shouldly;
 using CommunityToolkit.Mvvm.Input;
 using FluentAvalonia.Core;
 using KubeUI.Avalonia;
-using KubeUI.Avalonia.Behaviors;
+using KubeUI.Avalonia.Features.Resources.List.Behaviors;
 using KubeUI.Avalonia.Controls.DataGridFilters;
 using KubeUI.Avalonia.Resources;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Avalonia.ViewModels;
-using KubeUI.Avalonia.Views;
 
 namespace KubeUI.Avalonia.Tests;
 
@@ -1484,7 +1482,7 @@ internal sealed class FakeDoubleTapResourceConfig : IResourceConfig
     public int Order => 0;
     public string Name => "Pods";
     public string? Category => null;
-    public IStyle ListStyle() => null;
+    public IStyle ListStyle() => new global::Avalonia.Styling.Style();
     public Task UpdatePermissions() => Task.CompletedTask;
     public Type Type => typeof(V1Pod);
     public IRelayCommand NewResourceCommand => new RelayCommand(() => { });

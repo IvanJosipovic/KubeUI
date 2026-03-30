@@ -1,0 +1,56 @@
+﻿<UserControl
+    x:Class="KubeUI.Avalonia.Features.Resources.Properties.Controls.PropertyItem"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="using:KubeUI.Avalonia.Converters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
+    HorizontalAlignment="Stretch"
+    VerticalAlignment="Stretch"
+    d:DesignHeight="40"
+    d:DesignWidth="400"
+    x:DataType="local:PropertyItem">
+    <UserControl.Resources>
+        <converters:PropertyItemValueConverter x:Key="PropertyItemValueConverter" />
+        <converters:ResourceLabelConverter x:Key="ResourceLabelConverter" />
+        <converters:StringNotNullOrEmptyConverter x:Key="StringNotNullOrEmptyConverter" />
+        <converters:StringNullOrWhiteSpaceConverter x:Key="StringNullOrWhiteSpaceConverter" />
+    </UserControl.Resources>
+    <UserControl.Styles>
+        <Style Selector="SelectableTextBlock">
+            <Setter Property="Padding" Value="5" />
+        </Style>
+    </UserControl.Styles>
+    <Border BorderBrush="{DynamicResource SystemAltHighColor}" BorderThickness="0,0,0,1">
+        <Grid VerticalAlignment="Top" ColumnDefinitions="*,2*">
+            <SelectableTextBlock Grid.Row="0"
+                Grid.Column="0"
+                IsVisible="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource StringNotNullOrEmptyConverter}}"
+                Text="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource ResourceLabelConverter}}"
+                TextWrapping="NoWrap"
+                ToolTip.Tip="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource ResourceLabelConverter}}" />
+
+            <!--  When Key exists, render value in the right column  -->
+            <ScrollViewer Grid.Row="0"
+                Grid.Column="1"
+                MaxHeight="200"
+                IsVisible="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource StringNotNullOrEmptyConverter}}"
+                VerticalScrollBarVisibility="Auto">
+                <SelectableTextBlock Text="{Binding Value, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource PropertyItemValueConverter}}" TextWrapping="Wrap" />
+            </ScrollViewer>
+
+            <!--  When Key is empty, span the value across both columns  -->
+            <ScrollViewer Grid.Row="0"
+                Grid.ColumnSpan="2"
+                MaxHeight="200"
+                IsVisible="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource StringNullOrWhiteSpaceConverter}}"
+                VerticalScrollBarVisibility="Auto">
+                <SelectableTextBlock Text="{Binding Value, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource PropertyItemValueConverter}}" TextWrapping="Wrap" />
+            </ScrollViewer>
+        </Grid>
+    </Border>
+
+</UserControl>
+
+
+

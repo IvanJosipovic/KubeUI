@@ -1,16 +1,19 @@
+using KubeUI.Avalonia.Features.Resources.Common;
+using Avalonia.Controls;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
 using k8s.Models;
+using KubeUI.Avalonia.Resources.Workloads.v1.ReplicaSet.Views;
 
-namespace KubeUI.Avalonia.Resources.Workloads;
+namespace KubeUI.Avalonia.Resources.Workloads.v1.ReplicaSet;
 
 public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet>
 {
     public override bool IsNamespaced => true;
-    public override string Category => "Workloads";
+    public override string Category => CategoryString("ResourceConfig_Category_Workloads", "Workloads");
 
     public override int Order => 4;
 
@@ -53,6 +56,8 @@ public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet
             },
         ];
     }
+
+    public override Control[] Properties(V1ReplicaSet resource) => [new PropertiesView()];
 }
 
 

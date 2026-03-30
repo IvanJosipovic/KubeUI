@@ -1,0 +1,136 @@
+<UserControl
+    x:Class="KubeUI.Avalonia.Features.Resources.Visualization.Views.VisualizationView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:agc="clr-namespace:AvaloniaGraphControl;assembly=AvaloniaGraphControl"
+    xmlns:assets="clr-namespace:KubeUI.Avalonia.Assets;assembly=KubeUI.Avalonia"
+    xmlns:controls="clr-namespace:NodifyM.Avalonia.Controls;assembly=NodifyM.Avalonia"
+    xmlns:converters="clr-namespace:NodifyM.Avalonia.Converters;assembly=NodifyM.Avalonia"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:ic="using:FluentIcons.Avalonia"
+    xmlns:k8s="using:k8s.Models"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:panzoom="using:Avalonia.Controls.PanAndZoom"
+    xmlns:u="https://irihi.tech/ursa"
+    xmlns:viewModelBase="clr-namespace:NodifyM.Avalonia.ViewModelBase;assembly=NodifyM.Avalonia"
+    xmlns:viewmodels="using:KubeUI.Avalonia.Features.Resources.Visualization.ViewModels"
+    xmlns:vm="clr-namespace:KubeUI.Avalonia.Features.Resources.Visualization.ViewModels"
+    d:DesignHeight="980"
+    d:DesignWidth="1200"
+    x:DataType="vm:VisualizationViewModel"
+    mc:Ignorable="d">
+
+    <Design.DataContext>
+        <vm:VisualizationViewModel />
+    </Design.DataContext>
+
+    <UserControl.Styles />
+
+    <Grid RowDefinitions="Auto,*">
+        <StackPanel Grid.Row="0"
+            HorizontalAlignment="Left"
+            Orientation="Horizontal">
+            <ToggleButton IsChecked="{Binding HideNoise}" ToolTip.Tip="{x:Static assets:Resources.VisualizationView_HideNoiseTooltip}">
+                <ic:FluentIcon Icon="EyeOff" />
+            </ToggleButton>
+
+            <Label
+                Width="200"
+                VerticalContentAlignment="Center"
+                Content="{Binding Resources.Count, StringFormat={x:Static assets:Resources.VisualizationView_ItemsFormat}}" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="0"
+            HorizontalAlignment="Right"
+            Orientation="Horizontal">
+            <u:MultiComboBox
+                Width="200"
+                MaxHeight="20"
+                Classes="ClearButton"
+                ItemsSource="{Binding Cluster.Namespaces}"
+                SelectedItems="{Binding Cluster.SelectedNamespaces}">
+
+                <u:MultiComboBox.SelectedItemTemplate>
+                    <DataTemplate x:DataType="k8s:V1Namespace">
+                        <TextBlock Text="{Binding Metadata.Name}" />
+                    </DataTemplate>
+                </u:MultiComboBox.SelectedItemTemplate>
+
+                <u:MultiComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="k8s:V1Namespace">
+                        <TextBlock Text="{Binding Metadata.Name}" />
+                    </DataTemplate>
+                </u:MultiComboBox.ItemTemplate>
+
+            </u:MultiComboBox>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1"
+            HorizontalScrollBarVisibility="Auto"
+            VerticalScrollBarVisibility="Auto">
+            <panzoom:ZoomBorder x:Name="ZoomBorder"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                ClipToBounds="True"
+                EnableConstrains="False"
+                EnableGestures="True"
+                Focusable="True"
+                PanButton="Left"
+                Stretch="None"
+                ZoomSpeed="1.5">
+                <panzoom:ZoomBorder.GestureRecognizers>
+                    <PinchGestureRecognizer />
+                </panzoom:ZoomBorder.GestureRecognizers>
+                <agc:GraphPanel Name="Graph"
+                    Graph="{Binding Graph}"
+                    LayoutMethod="{Binding LayoutMethod}">
+                    <agc:GraphPanel.DataTemplates>
+                        <DataTemplate x:DataType="vm:VisualizationViewModel+ResourceNodeViewModel">
+                            <StackPanel Width="64" Margin="40,16,40,16">
+                                <ToolTip.Tip>
+                                    <MultiBinding StringFormat="{} {0}/{1} {2}">
+                                        <Binding Path="Resource.ApiVersion" />
+                                        <Binding Path="Resource.Kind" />
+                                        <Binding Path="Resource.Metadata.Name" />
+                                    </MultiBinding>
+                                </ToolTip.Tip>
+                                <Svg Width="64" Path="{Binding IconPath}">
+                                    <Svg.ContextFlyout>
+                                        <MenuFlyout>
+                                            <MenuItem
+                                                Command="{Binding ViewPropertiesCommand}"
+                                                CommandParameter="{Binding Resource}"
+                                                Header="{x:Static assets:Resources.VisualizationView_Properties}" />
+                                            <MenuItem
+                                                Command="{Binding ViewYamlCommand}"
+                                                CommandParameter="{Binding Resource}"
+                                                Header="{x:Static assets:Resources.VisualizationView_ViewYaml}" />
+                                        </MenuFlyout>
+                                    </Svg.ContextFlyout>
+                                </Svg>
+                                <TextBlock
+                                    Width="128"
+                                    ClipToBounds="false"
+                                    Text="{Binding Resource.Kind}"
+                                    TextAlignment="Center"
+                                    TextWrapping="NoWrap" />
+                                <TextBlock
+                                    Width="128"
+                                    ClipToBounds="false"
+                                    Text="{Binding Resource.Metadata.Name}"
+                                    TextAlignment="Center"
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+                        </DataTemplate>
+                        <DataTemplate DataType="agc:Edge">
+                            <agc:Connection Brush="Green" />
+                        </DataTemplate>
+                    </agc:GraphPanel.DataTemplates>
+                </agc:GraphPanel>
+            </panzoom:ZoomBorder>
+        </ScrollViewer>
+    </Grid>
+</UserControl>
+
+
+

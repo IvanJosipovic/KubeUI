@@ -1,0 +1,19 @@
+﻿<UserControl
+    x:Class="KubeUI.Avalonia.Resources.Network.v1.Ingress.Views.PropertiesView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:k8s.Models"
+    d:DesignHeight="300"
+    d:DesignWidth="450"
+    x:DataType="models:V1Ingress"
+    mc:Ignorable="d">
+    <StackPanel>
+        <c:PropertyItem Key="Ingress Class" Value="{Binding Spec.IngressClassName}" />
+        <c:PropertyItem Key="Rules" Value="{Binding Spec.Rules.Count}" />
+        <c:PropertyItem Key="TLS Entries" Value="{Binding Spec.Tls.Count}" />
+        <c:PropertyItem Key="Load Balancer Entries" Value="{Binding Status.LoadBalancer.Ingress.Count}" />
+    </StackPanel>
+</UserControl>

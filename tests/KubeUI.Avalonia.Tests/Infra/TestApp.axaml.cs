@@ -9,8 +9,13 @@ using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Moq;
 
@@ -33,7 +38,7 @@ public class TestApp : Application
 
     public static void ResetForTest()
     {
-        Dispatcher.UIThread.Invoke(() =>
+        RunOnUiThread(() =>
         {
             if (Application.Current is TestApp app)
             {
@@ -44,7 +49,7 @@ public class TestApp : Application
 
     public static void CleanupAfterTest()
     {
-        Dispatcher.UIThread.Invoke(() =>
+        RunOnUiThread(() =>
         {
             if (Application.Current is TestApp app)
             {
@@ -68,13 +73,7 @@ public class TestApp : Application
     private ServiceProvider BuildServiceProvider()
     {
         var services = new ServiceCollection();
-
-        services.AddKubeUIAvaloniaServices();
-        services.AddKubeUIKubernetesServices();
         services.AddLogging();
-
-        services.AddSingleton<ISettingsService, TestSettingsService>();
-        services.AddSingleton<IClusterSettingsStore>(sp => sp.GetRequiredService<ISettingsService>().Clusters);
 
         LastContentDialogSettings = null;
         LastNotification = null;
@@ -90,18 +89,24 @@ public class TestApp : Application
 
         var dialog = new Mock<IDialogService>();
         dialog.SetupGet(x => x.DialogManager).Returns(dialogManager.Object);
-        services.AddSingleton<IDialogService>(dialog.Object);
 
         var notifications = new Mock<INotificationManager>();
         notifications
             .Setup(x => x.Show(It.IsAny<INotification>()))
             .Callback<INotification>(notification => LastNotification = notification);
-        services.AddSingleton<INotificationManager>(notifications.Object);
-        services.AddSingleton<IFactory>(sp => Dispatcher.UIThread.Invoke(() => (IFactory)new DockFactory(sp.GetRequiredService<ILogger<DockFactory>>())));
-        services.AddSingleton<ServiceDescriptor[]>([.. services]);
+
+        services.AddKubeUIAppServices(overrides =>
+        {
+            overrides.Replace(ServiceDescriptor.Singleton<ISettingsService, TestSettingsService>());
+            overrides.RemoveAll<IClusterSettingsStore>();
+            overrides.AddSingleton<IClusterSettingsStore>(sp => sp.GetRequiredService<ISettingsService>().Clusters);
+            overrides.Replace(ServiceDescriptor.Singleton<IDialogService>(dialog.Object));
+            overrides.Replace(ServiceDescriptor.Singleton<INotificationManager>(notifications.Object));
+            overrides.Replace(ServiceDescriptor.Singleton<IFactory>(sp => Dispatcher.UIThread.Invoke(() => (IFactory)new DockFactory(sp.GetRequiredService<ILogger<DockFactory>>()))));
+        });
 
         var provider = services.BuildServiceProvider();
-        provider.ConfigureKubeUIKubernetesJson();
+        provider.ConfigureKubeUIKubernetesJsonLogging();
         return provider;
     }
 
@@ -150,6 +155,17 @@ public class TestApp : Application
         {
             window.Close();
         }
+    }
+
+    private static void RunOnUiThread(Action action)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            action();
+            return;
+        }
+
+        Dispatcher.UIThread.Invoke(action);
     }
 }
 

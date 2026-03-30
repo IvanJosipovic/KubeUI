@@ -1,5 +1,11 @@
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Common;
+using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Docking;
 using System.Text.Json;
 using System.Text;
+using System.Globalization;
 using Avalonia.Controls.Notifications;
 using Avalonia.Styling;
 using Dock.Model.Core;
@@ -12,7 +18,8 @@ using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Kubernetes;
-using KubeUI.Avalonia.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
+using KubeUI.Avalonia.Features.Resources.List.Controls;
 
 namespace KubeUI.Avalonia.Resources;
 
@@ -41,6 +48,11 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public virtual string? Category { get; } = null;
 
+    protected static string CategoryString(string resourceKey, string fallback)
+    {
+        return Assets.Resources.ResourceManager.GetString(resourceKey, CultureInfo.CurrentUICulture) ?? fallback;
+    }
+
     public virtual bool ShowNewResource { get; } = true;
 
     public virtual bool IsNamespaced { get; private set; }
@@ -53,7 +65,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public virtual int Order { get; }
 
-    public virtual IStyle ListStyle() => null;
+    public virtual IStyle ListStyle() => new global::Avalonia.Styling.Style();
 
     public virtual IList<IResourceListColumn> Columns()
     {
@@ -84,6 +96,11 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     protected virtual IEnumerable<MenuItemViewModel> CreateCustomMenuItems(IEnumerable<T>? selectedItems) => [];
 
     public virtual IList<(Verb verb, string? subResource)> CustomPermissions() => [];
+
+    protected virtual Task RefreshPermissionAsync(Verb verb, string? subResource)
+    {
+        return Cluster.UpdatePermissionsAllNamespaceAsync<T>(verb, subResource);
+    }
 
     public virtual Control[] Properties(T resource) => [];
 
@@ -189,25 +206,35 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             return;
         }
 
-        var tasks = new List<Task>();
+        var exceptions = new List<Exception>();
 
         foreach (var (verb, subResource) in DefaultPermissions())
         {
-            tasks.Add(Cluster.UpdatePermissionsAllNamespaceAsync<T>(verb, subResource));
+            try
+            {
+                await RefreshPermissionAsync(verb, subResource).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                exceptions.Add(ex);
+            }
         }
 
         foreach (var (verb, subResource) in CustomPermissions())
         {
-            tasks.Add(Cluster.UpdatePermissionsAllNamespaceAsync<T>(verb, subResource));
+            try
+            {
+                await RefreshPermissionAsync(verb, subResource).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                exceptions.Add(ex);
+            }
         }
 
-        try
+        if (exceptions.Count > 0)
         {
-            await Task.WhenAll(tasks).ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug(ex, "Unable to refresh non-list permissions for {Type}", typeof(T).FullName);
+            _logger.LogDebug(new AggregateException(exceptions), "Unable to refresh non-list permissions for {Type}", typeof(T).FullName);
         }
 
         PermissionsLoaded = true;
@@ -369,7 +396,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             {
                 try
                 {
-                    using var genClient = Cluster.Client.GetGenericClient(item);
+                    using var genClient = KubeUI.Kubernetes.KubernetesClientExtensions.GetGenericClient(Cluster.Client, item);
 
                     await genClient.PatchNamespacedAsync<T>(new V1Patch(sRestartControllerPatch, V1Patch.PatchType.MergePatch), item.Metadata.NamespaceProperty, item.Metadata.Name);
                 }
@@ -527,6 +554,7 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
         }
     }
 }
+
 
 
 

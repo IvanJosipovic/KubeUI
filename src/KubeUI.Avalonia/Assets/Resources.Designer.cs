@@ -22,7 +22,7 @@ namespace KubeUI.Avalonia.Assets {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "18.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    public class Resources {
+    public partial class Resources {
         
         private static global::System.Resources.ResourceManager resourceMan;
         
@@ -1609,6 +1609,69 @@ namespace KubeUI.Avalonia.Assets {
         public static string ResourcePropertiesView_Created {
             get {
                 return ResourceManager.GetString("ResourcePropertiesView_Created", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Involved Object.
+        /// </summary>
+        public static string InvolvedObject {
+            get {
+                return ResourceManager.GetString("InvolvedObject", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to No events found.
+        /// </summary>
+        public static string NoEventsFound {
+            get {
+                return ResourceManager.GetString("NoEventsFound", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Count.
+        /// </summary>
+        public static string ResourceEventsView_Count {
+            get {
+                return ResourceManager.GetString("ResourceEventsView_Count", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Events.
+        /// </summary>
+        public static string ResourceEventsView_Title {
+            get {
+                return ResourceManager.GetString("ResourceEventsView_Title", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Last seen.
+        /// </summary>
+        public static string ResourceEventsView_LastSeen {
+            get {
+                return ResourceManager.GetString("ResourceEventsView_LastSeen", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Source.
+        /// </summary>
+        public static string ResourceEventsView_Source {
+            get {
+                return ResourceManager.GetString("ResourceEventsView_Source", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Sub-object.
+        /// </summary>
+        public static string ResourceEventsView_SubObject {
+            get {
+                return ResourceManager.GetString("ResourceEventsView_SubObject", resourceCulture);
             }
         }
 

@@ -1,0 +1,25 @@
+﻿<UserControl
+    x:Class="KubeUI.Avalonia.Resources.CustomResourceDefinition.Views.PropertiesView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:k8s.Models"
+    d:DesignHeight="250"
+    d:DesignWidth="450"
+    x:DataType="models:V1CustomResourceDefinition"
+    mc:Ignorable="d">
+    <StackPanel>
+        <c:PropertyItem Key="Group" Value="{Binding Spec.Group}" />
+        <c:PropertyItem Key="Scope" Value="{Binding Spec.Scope}" />
+        <c:PropertyItem Key="Kind" Value="{Binding Spec.Names.Kind}" />
+        <c:PropertyItem Key="Versions" Value="{Binding Spec.Versions.Count}" />
+        <c:ExpandableSection Header="Status">
+            <StackPanel>
+                <c:PropertyItem Key="Accepted Kind" Value="{Binding Status.AcceptedNames.Kind}" />
+                <c:PropertyItem Key="Stored Versions" Value="{Binding Status.StoredVersions.Count}" />
+            </StackPanel>
+        </c:ExpandableSection>
+    </StackPanel>
+</UserControl>

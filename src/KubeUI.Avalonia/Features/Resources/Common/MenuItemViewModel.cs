@@ -1,8 +1,10 @@
+using KubeUI.Avalonia.Features.Resources.Common;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using Avalonia.Collections;
 using FluentIcons.Common;
 using System.Windows.Input;
 
-namespace KubeUI.Avalonia.ViewModels;
+namespace KubeUI.Avalonia.Features.Resources.Common;
 
 public sealed partial class MenuItemViewModel : ViewModelBase
 {

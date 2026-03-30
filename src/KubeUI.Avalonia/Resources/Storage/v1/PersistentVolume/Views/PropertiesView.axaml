@@ -1,0 +1,25 @@
+﻿<UserControl
+    x:Class="KubeUI.Avalonia.Resources.Storage.v1.PersistentVolume.Views.PropertiesView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:k8s.Models"
+    d:DesignHeight="300"
+    d:DesignWidth="450"
+    x:DataType="models:V1PersistentVolume"
+    mc:Ignorable="d">
+    <StackPanel>
+        <c:PropertyItem Key="Phase" Value="{Binding Status.Phase}" />
+        <c:PropertyItem Key="Reason" Value="{Binding Status.Reason}" />
+        <c:PropertyItem Key="Storage Class" Value="{Binding Spec.StorageClassName}" />
+        <c:PropertyItem Key="Reclaim Policy" Value="{Binding Spec.PersistentVolumeReclaimPolicy}" />
+        <c:PropertyItem Key="Volume Mode" Value="{Binding Spec.VolumeMode}" />
+        <c:PropertyItem Key="Access Modes" Value="{Binding Spec.AccessModes.Count}" />
+        <c:PropertyItem Key="Capacity Entries" Value="{Binding Spec.Capacity.Count}" />
+        <c:PropertyItem Key="Mount Options" Value="{Binding Spec.MountOptions.Count}" />
+        <c:PropertyItem Key="Claim Name" Value="{Binding Spec.ClaimRef.Name}" />
+        <c:PropertyItem Key="Last Phase Transition" Value="{Binding Status.LastPhaseTransitionTime}" />
+    </StackPanel>
+</UserControl>

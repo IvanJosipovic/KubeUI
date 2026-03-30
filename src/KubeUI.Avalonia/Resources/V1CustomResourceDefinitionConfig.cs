@@ -1,5 +1,12 @@
+using KubeUI.Avalonia.Features.Resources.Common;
+using KubeUI.Avalonia.Features.Resources.List.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Kubernetes;
 using Dock.Model.Core;
 using k8s.Models;
+using KubeUI.Avalonia.Resources.CustomResourceDefinition.Views;
 
 namespace KubeUI.Avalonia.Resources;
 
@@ -38,6 +45,8 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
             AgeColumn(),
         ];
     }
+
+    public override Control[] Properties(V1CustomResourceDefinition resource) => [new PropertiesView()];
 
     protected override IEnumerable<MenuItemViewModel> CreateCustomMenuItems(IEnumerable<V1CustomResourceDefinition>? selectedItems)
     {

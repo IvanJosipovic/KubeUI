@@ -1,4 +1,4 @@
-<UserControl
+﻿<UserControl
     x:Class="KubeUI.Avalonia.Controls.DataGridFilters.TextFilterFlyoutView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -9,12 +9,10 @@
     <StackPanel Classes="filter-flyout-root">
         <TextBlock Classes="filter-flyout-title" Text="{Binding Title}" />
         <Grid Classes="filter-flyout-row" ColumnDefinitions="72,*">
-            <TextBlock
-                Classes="filter-flyout-label"
-                Text="{x:Static assets:Resources.DataGridFilterFlyout_Condition}" />
+            <TextBlock Classes="filter-flyout-label" Text="{x:Static assets:Resources.DataGridFilterFlyout_Condition}" />
             <ComboBox
-                Classes="filter-flyout-editor"
                 Grid.Column="1"
+                Classes="filter-flyout-editor"
                 ItemsSource="{Binding Operators}"
                 SelectedItem="{Binding SelectedOperator, Mode=TwoWay}">
                 <ComboBox.ItemTemplate>
@@ -25,17 +23,21 @@
             </ComboBox>
         </Grid>
         <Grid Classes="filter-flyout-row" ColumnDefinitions="72,*">
-            <TextBlock
-                Classes="filter-flyout-label"
-                Text="{x:Static assets:Resources.DataGridFilterFlyout_Value}" />
+            <TextBlock Classes="filter-flyout-label" Text="{x:Static assets:Resources.DataGridFilterFlyout_Value}" />
             <TextBox
-                Classes="filter-flyout-editor"
                 Grid.Column="1"
+                Classes="filter-flyout-editor"
                 Text="{Binding Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
         </Grid>
         <StackPanel Classes="filter-flyout-actions">
-            <Button Classes="filter-flyout-action" Command="{Binding ClearCommand}" Content="{x:Static assets:Resources.DataGridFilterFlyout_Clear}" />
-            <Button Classes="filter-flyout-action" Command="{Binding ApplyCommand}" Content="{x:Static assets:Resources.DataGridFilterFlyout_Apply}" />
+            <Button
+                Classes="filter-flyout-action"
+                Command="{Binding ClearCommand}"
+                Content="{x:Static assets:Resources.DataGridFilterFlyout_Clear}" />
+            <Button
+                Classes="filter-flyout-action"
+                Command="{Binding ApplyCommand}"
+                Content="{x:Static assets:Resources.DataGridFilterFlyout_Apply}" />
         </StackPanel>
     </StackPanel>
 </UserControl>

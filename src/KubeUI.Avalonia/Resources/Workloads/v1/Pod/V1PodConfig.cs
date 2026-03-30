@@ -1,11 +1,17 @@
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Features.Resources.Common;
+using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Kubernetes;
 using Avalonia.Collections;
+using Avalonia.Controls;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Controls;
-using KubeUI.Avalonia.Views;
+using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
+using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 
@@ -13,7 +19,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 {
     public override bool IsNamespaced => true;
 
-    public override string Category => "Workloads";
+    public override string Category => CategoryString("ResourceConfig_Category_Workloads", "Workloads");
 
     public override int Order => 0;
 
@@ -170,8 +176,6 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         ];
     }
 
-    public override Control[] Properties(V1Pod resource) => [new PodPropertiesView()];
-
     public override IList<(Verb verb, string? subResource)> CustomPermissions() => [
         (Verb.Get, "log"),
         (Verb.Create, "portforward"),
@@ -291,6 +295,8 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 
         return false;
     }
+
+    public override Control[] Properties(V1Pod resource) => [new PropertiesView()];
 }
 
 

@@ -1,10 +1,12 @@
+using Avalonia.Controls;
 using k8s.Models;
+using KubeUI.Avalonia.Resources.Network.v1.IngressClass.Views;
 
-namespace KubeUI.Avalonia.Resources.Network;
+namespace KubeUI.Avalonia.Resources.Network.v1.IngressClass;
 
 public sealed partial class V1IngressClassConfig : ResourceConfigBase<V1IngressClass>
 {
-    public override string Category => "Network";
+    public override string Category => CategoryString("ResourceConfig_Category_Network", "Network");
     public override int Order => 4;
 
     public override IList<IResourceListColumn> Columns()
@@ -38,5 +40,7 @@ public sealed partial class V1IngressClassConfig : ResourceConfigBase<V1IngressC
             AgeColumn(),
         ];
     }
+
+    public override Control[] Properties(V1IngressClass resource) => [new PropertiesView()];
 }
 

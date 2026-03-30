@@ -1,0 +1,45 @@
+﻿<UserControl
+    x:Class="KubeUI.Avalonia.Resources.Core.v1.Event.Views.PropertiesView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="clr-namespace:KubeUI.Avalonia.Assets;assembly=KubeUI.Avalonia"
+    xmlns:c="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:k8s.Models"
+    d:DesignHeight="3000"
+    d:DesignWidth="400"
+    x:DataType="models:Corev1Event"
+    mc:Ignorable="d">
+    <StackPanel>
+        <c:PropertyItem Key="Message" Value="{Binding Message}" />
+        <c:PropertyItem Key="Source">
+            <c:PropertyItem.Value>
+                <MultiBinding StringFormat="{}{0} {1}">
+                    <Binding Path="Source.Component" />
+                    <Binding Path="Source.Host" />
+                </MultiBinding>
+            </c:PropertyItem.Value>
+        </c:PropertyItem>
+        <c:PropertyItem Key="Reason" Value="{Binding Reason}" />
+        <c:PropertyItem Key="First Seen" Value="{Binding FirstTimestamp}" />
+        <c:PropertyItem Key="Last Seen" Value="{Binding LastTimestamp}" />
+        <c:PropertyItem Key="Count" Value="{Binding Count}" />
+        <c:PropertyItem Key="Type" Value="{Binding Type}" />
+        <c:ExpandableSection Header="{x:Static assets:Resources.InvolvedObject}">
+            <StackPanel>
+                <c:PropertyItem Key="Kind">
+                    <c:PropertyItem.Value>
+                        <MultiBinding StringFormat="{}{0}/{1}">
+                            <Binding Path="InvolvedObject.ApiVersion" />
+                            <Binding Path="InvolvedObject.Kind" />
+                        </MultiBinding>
+                    </c:PropertyItem.Value>
+                </c:PropertyItem>
+                <c:PropertyItem Key="Name" Value="{Binding InvolvedObject.Name}" />
+                <c:PropertyItem Key="Namespace" Value="{Binding InvolvedObject.NamespaceProperty}" />
+                <c:PropertyItem Key="Field Path" Value="{Binding InvolvedObject.FieldPath}" />
+            </StackPanel>
+        </c:ExpandableSection>
+    </StackPanel>
+</UserControl>

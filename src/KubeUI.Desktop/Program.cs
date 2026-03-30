@@ -1,14 +1,10 @@
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Notifications;
-using Avalonia.Threading;
-using Dock.Model.Core;
-using HanumanInstitute.MvvmDialogs;
-using HanumanInstitute.MvvmDialogs.Avalonia;
-using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia;
 using KubeUI.Avalonia.Assets;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
 using LiveChartsCore;
 using LiveChartsCore.Drawing;
@@ -17,6 +13,7 @@ using LiveChartsCore.SkiaSharpView.Painting;
 using LiveChartsCore.Themes;
 using Mapster;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NReco.Logging.File;
 using OpenTelemetry.Logs;
@@ -30,64 +27,91 @@ namespace KubeUI.Desktop;
 
 internal static class Program
 {
+    private static IHost? _host;
+    private static IServiceProvider? _designTimeServices;
+
     [STAThread]
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
         VelopackApp.Build().Run();
+
+        _host = CreateHostBuilder(args).Build();
+        _host.Services.ConfigureKubeUIKubernetesJsonLogging();
+
+        await _host.StartAsync();
+
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+
+        await _host.StopAsync();
+
+        _host.Dispose();
+        _host = null;
     }
 
     public static AppBuilder BuildAvaloniaApp()
-        => AppBuilder.Configure(() => new App(BuildLauncherServices()))
+        => AppBuilder.Configure(() => new App(GetAppServices()))
             .ConfigureFonts(fontManager => fontManager.AddFontCollection(new CascadiaMonoFontCollection()))
             .WithInterFont()
             .UsePlatformDetect();
 
-    private static ServiceProvider BuildLauncherServices()
+    private static IServiceProvider GetAppServices()
     {
-        var services = new ServiceCollection();
+        if (Design.IsDesignMode)
+        {
+            _designTimeServices ??= BuildDesignTimeServices();
+            return _designTimeServices;
+        }
 
+        return _host?.Services ?? throw new InvalidOperationException("Application host has not been initialized.");
+    }
+
+    private static HostApplicationBuilder CreateHostBuilder(string[] args)
+    {
         ConfigureLiveCharts();
+        ConfigureTypeAdapter();
 
+        var builder = Host.CreateApplicationBuilder(args);
+        var settings = SettingsService.LoadSettingsFromFile();
+
+        builder.Logging.SetMinimumLevel(LogLevel.Debug);
+
+        builder.Services.AddKubeUIAppServices();
+
+        if (settings.TelemetryEnabled)
+        {
+            builder.Services.AddTelemetry();
+        }
+
+        if (settings.LoggingEnabled)
+        {
+            builder.Services.AddFileLogging();
+        }
+
+        builder.Services.AddSingleton<ServiceDescriptor[]>([.. builder.Services]);
+        return builder;
+    }
+
+    private static ServiceProvider BuildDesignTimeServices()
+    {
+        ConfigureLiveCharts();
+        ConfigureTypeAdapter();
+
+        var services = new ServiceCollection();
+        services.AddLogging(x => x.SetMinimumLevel(LogLevel.Debug));
+        services.AddKubeUIAppServices();
+
+        var provider = services.BuildServiceProvider();
+        provider.ConfigureKubeUIKubernetesJsonLogging();
+        return provider;
+    }
+
+    private static void ConfigureTypeAdapter()
+    {
         TypeAdapterConfig.GlobalSettings
             .Default
             .MaxDepth(1)
             .ShallowCopyForSameType(true)
             .PreserveReference(true);
-
-        var settings = SettingsService.LoadSettingsFromFile();
-
-        services.AddKubeUIAvaloniaServices();
-        services.AddKubeUIKubernetesServices();
-        services.AddSingleton<IThreadDispatcher, AvaloniaThreadDispatcher>();
-        services.AddLogging(x => x.SetMinimumLevel(LogLevel.Debug));
-
-        if (!Design.IsDesignMode)
-        {
-            if (settings.TelemetryEnabled)
-            {
-                services.AddTelemetry();
-            }
-
-            if (settings.LoggingEnabled)
-            {
-                services.AddFileLogging();
-            }
-        }
-
-        services.AddSingleton<IDialogFactory, FluentDialogFactory>(_ => (FluentDialogFactory)new DialogFactory().AddFluent());
-        services.AddSingleton<IDialogManager, DialogManager>(x => new MyDialogManager(
-            dialogFactory: x.GetRequiredService<IDialogFactory>(),
-            logger: x.GetRequiredService<ILogger<DialogManager>>()));
-        services.AddSingleton<IDialogService, DialogService>(x => new DialogService(x.GetRequiredService<IDialogManager>()));
-
-        services.AddSingleton<IFactory>(sp => Dispatcher.UIThread.Invoke(() => (IFactory)new DockFactory(sp.GetRequiredService<ILogger<DockFactory>>())));
-        services.AddSingleton<INotificationManager>(_ => Dispatcher.UIThread.Invoke(() => (INotificationManager)new WindowNotificationManager(App.TopLevel) { MaxItems = 4 }));
-        services.AddSingleton<ServiceDescriptor[]>([.. services]);
-
-        var provider = services.BuildServiceProvider();
-        provider.ConfigureKubeUIKubernetesJson();
-        return provider;
     }
 
     private static void ConfigureLiveCharts()
@@ -144,7 +168,7 @@ internal static class Program
         services.AddOpenTelemetry()
             .ConfigureResource(resource => resource
                 .AddService("Desktop", "com.KubeUI.Desktop", serviceVersion: version)
-                .AddOperatingSystemDetector()
+            .AddOperatingSystemDetector()
                 .AddAttributes(new Dictionary<string, object>(StringComparer.Ordinal)
                 {
 #if DEBUG
@@ -177,8 +201,10 @@ internal static class Program
                     .AddProcessInstrumentation()
                     .AddRuntimeInstrumentation()
                     .AddMeter(Instrumentation.MeterName)
-                    .AddOtlpExporter((e, _) =>
+                    .AddOtlpExporter((e, readerOptions) =>
                     {
+                        readerOptions.PeriodicExportingMetricReaderOptions.ExportIntervalMilliseconds = 5000;
+                        readerOptions.PeriodicExportingMetricReaderOptions.ExportTimeoutMilliseconds = 30000;
 #if DEBUG
                         e.Endpoint = new Uri("http://localhost:4317");
 #else
@@ -195,7 +221,6 @@ internal static class Program
                     .AddHttpClientInstrumentation()
                     .AddOtlpExporter(e =>
                     {
-                        e.Endpoint = new Uri("http://localhost:4317");
                     });
             })
 #endif

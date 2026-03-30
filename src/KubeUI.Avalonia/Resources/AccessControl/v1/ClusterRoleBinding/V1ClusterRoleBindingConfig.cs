@@ -1,10 +1,12 @@
+using Avalonia.Controls;
 using k8s.Models;
+using KubeUI.Avalonia.Resources.AccessControl.v1.ClusterRoleBinding.Views;
 
-namespace KubeUI.Avalonia.Resources.AccessControl;
+namespace KubeUI.Avalonia.Resources.AccessControl.v1.ClusterRoleBinding;
 
 public sealed partial class V1ClusterRoleBindingConfig : ResourceConfigBase<V1ClusterRoleBinding>
 {
-    public override string Category => "Access Control";
+    public override string Category => CategoryString("ResourceConfig_Category_AccessControl", "Access Control");
     public override int Order => 3;
 
     public override IList<IResourceListColumn> Columns()
@@ -20,5 +22,7 @@ public sealed partial class V1ClusterRoleBindingConfig : ResourceConfigBase<V1Cl
             AgeColumn(),
         ];
     }
+
+    public override Control[] Properties(V1ClusterRoleBinding resource) => [new PropertiesView()];
 }
 

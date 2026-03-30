@@ -1,7 +1,7 @@
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Indentation;
 
-namespace KubeUI.Avalonia.ViewModels;
+namespace KubeUI.Avalonia.Features.Resources.Yaml;
 
 internal sealed class YamlIndentationStrategy : IIndentationStrategy
 {

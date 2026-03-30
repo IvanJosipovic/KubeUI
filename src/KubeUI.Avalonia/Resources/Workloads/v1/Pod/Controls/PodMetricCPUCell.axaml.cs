@@ -1,7 +1,9 @@
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using k8s.Models;
 using KubeUI.Kubernetes;
 
-namespace KubeUI.Avalonia.Controls;
+namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Controls;
 
 public partial class PodMetricCPUCell : UserControl, IInitializeCluster
 {

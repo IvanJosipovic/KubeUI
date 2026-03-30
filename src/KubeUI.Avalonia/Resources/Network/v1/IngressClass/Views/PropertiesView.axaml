@@ -1,0 +1,20 @@
+﻿<UserControl
+    x:Class="KubeUI.Avalonia.Resources.Network.v1.IngressClass.Views.PropertiesView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:k8s.Models"
+    d:DesignHeight="250"
+    d:DesignWidth="450"
+    x:DataType="models:V1IngressClass"
+    mc:Ignorable="d">
+    <StackPanel>
+        <c:PropertyItem Key="Controller" Value="{Binding Spec.Controller}" />
+        <c:PropertyItem Key="Parameters Kind" Value="{Binding Spec.Parameters.Kind}" />
+        <c:PropertyItem Key="Parameters Name" Value="{Binding Spec.Parameters.Name}" />
+        <c:PropertyItem Key="Parameters Scope" Value="{Binding Spec.Parameters.Scope}" />
+        <c:PropertyItem Key="Parameters Namespace" Value="{Binding Spec.Parameters.NamespaceProperty}" />
+    </StackPanel>
+</UserControl>

@@ -1,16 +1,18 @@
+using KubeUI.Avalonia.Features.Resources.Common;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
 using k8s.Models;
+using KubeUI.Avalonia.Resources.Workloads.v1.Deployment.Views;
 
-namespace KubeUI.Avalonia.Resources.Workloads;
+namespace KubeUI.Avalonia.Resources.Workloads.v1.Deployment;
 
 public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment>
 {
     public override bool IsNamespaced => true;
-    public override string Category => "Workloads";
+    public override string Category => CategoryString("ResourceConfig_Category_Workloads", "Workloads");
 
     public override int Order => 1;
 
@@ -54,6 +56,8 @@ public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment
             },
         ];
     }
+
+    public override Control[] Properties(V1Deployment resource) => [new PropertiesView()];
 }
 
 

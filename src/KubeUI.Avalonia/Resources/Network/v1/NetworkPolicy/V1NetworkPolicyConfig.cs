@@ -1,11 +1,13 @@
+using Avalonia.Controls;
 using k8s.Models;
+using KubeUI.Avalonia.Resources.Network.v1.NetworkPolicy.Views;
 
-namespace KubeUI.Avalonia.Resources.Network;
+namespace KubeUI.Avalonia.Resources.Network.v1.NetworkPolicy;
 
 public sealed partial class V1NetworkPolicyConfig : ResourceConfigBase<V1NetworkPolicy>
 {
     public override bool IsNamespaced => true;
-    public override string Category => "Network";
+    public override string Category => CategoryString("ResourceConfig_Category_Network", "Network");
     public override int Order => 5;
 
     public override IList<IResourceListColumn> Columns()
@@ -23,5 +25,7 @@ public sealed partial class V1NetworkPolicyConfig : ResourceConfigBase<V1Network
             AgeColumn(),
         ];
     }
+
+    public override Control[] Properties(V1NetworkPolicy resource) => [new PropertiesView()];
 }
 

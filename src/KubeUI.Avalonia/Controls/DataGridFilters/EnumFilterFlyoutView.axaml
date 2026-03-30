@@ -1,4 +1,4 @@
-<UserControl
+﻿<UserControl
     x:Class="KubeUI.Avalonia.Controls.DataGridFilters.EnumFilterFlyoutView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -9,12 +9,10 @@
     <StackPanel Classes="filter-flyout-root">
         <TextBlock Classes="filter-flyout-title" Text="{Binding Title}" />
         <Grid Classes="filter-flyout-row" ColumnDefinitions="72,*">
-            <TextBlock
-                Classes="filter-flyout-label"
-                Text="{x:Static assets:Resources.DataGridFilterFlyout_Value}" />
+            <TextBlock Classes="filter-flyout-label" Text="{x:Static assets:Resources.DataGridFilterFlyout_Value}" />
             <ComboBox
-                Classes="filter-flyout-editor"
                 Grid.Column="1"
+                Classes="filter-flyout-editor"
                 ItemsSource="{Binding Options}"
                 SelectedItem="{Binding SelectedValue, Mode=TwoWay}">
                 <ComboBox.ItemTemplate>
@@ -25,8 +23,14 @@
             </ComboBox>
         </Grid>
         <StackPanel Classes="filter-flyout-actions">
-            <Button Classes="filter-flyout-action" Command="{Binding ClearCommand}" Content="{x:Static assets:Resources.DataGridFilterFlyout_Clear}" />
-            <Button Classes="filter-flyout-action" Command="{Binding ApplyCommand}" Content="{x:Static assets:Resources.DataGridFilterFlyout_Apply}" />
+            <Button
+                Classes="filter-flyout-action"
+                Command="{Binding ClearCommand}"
+                Content="{x:Static assets:Resources.DataGridFilterFlyout_Clear}" />
+            <Button
+                Classes="filter-flyout-action"
+                Command="{Binding ApplyCommand}"
+                Content="{x:Static assets:Resources.DataGridFilterFlyout_Apply}" />
         </StackPanel>
     </StackPanel>
 </UserControl>

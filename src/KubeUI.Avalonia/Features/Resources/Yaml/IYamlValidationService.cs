@@ -1,6 +1,7 @@
+using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Kubernetes;
 
-namespace KubeUI.Avalonia.ViewModels;
+namespace KubeUI.Avalonia.Features.Resources.Yaml;
 
 internal interface IYamlValidationService
 {

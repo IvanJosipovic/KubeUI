@@ -1,10 +1,12 @@
+using Avalonia.Controls;
 using k8s.Models;
+using KubeUI.Avalonia.Resources.Storage.v1.StorageClass.Views;
 
-namespace KubeUI.Avalonia.Resources.Storage;
+namespace KubeUI.Avalonia.Resources.Storage.v1.StorageClass;
 
 public sealed partial class V1StorageClassConfig : ResourceConfigBase<V1StorageClass>
 {
-    public override string Category => "Storage";
+    public override string Category => CategoryString("ResourceConfig_Category_Storage", "Storage");
     public override int Order => 2;
 
     public override IList<IResourceListColumn> Columns()
@@ -33,5 +35,7 @@ public sealed partial class V1StorageClassConfig : ResourceConfigBase<V1StorageC
             AgeColumn(),
         ];
     }
+
+    public override Control[] Properties(V1StorageClass resource) => [new PropertiesView()];
 }
 

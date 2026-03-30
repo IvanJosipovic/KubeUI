@@ -1,0 +1,29 @@
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Shell.Documents.About.ViewModels;
+using System.Reflection;
+
+namespace KubeUI.Avalonia.Shell.Documents.About.ViewModels;
+
+public sealed partial class AboutViewModel : ViewModelBase
+{
+    public AboutViewModel()
+    {
+        Title = Assets.Resources.AboutView_Title;
+        Id = nameof(AboutViewModel);
+    }
+
+    public static string? GetVersion()
+    {
+        var version = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+
+        if (version.Contains('+'))
+        {
+            version = version[..version.IndexOf('+')];
+        }
+
+        return version;
+    }
+
+    public string? Version { get; } = GetVersion();
+}
+

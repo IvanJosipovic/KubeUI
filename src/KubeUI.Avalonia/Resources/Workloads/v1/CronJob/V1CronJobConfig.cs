@@ -1,11 +1,13 @@
+using Avalonia.Controls;
 using k8s.Models;
+using KubeUI.Avalonia.Resources.Workloads.v1.CronJob.Views;
 
-namespace KubeUI.Avalonia.Resources.Workloads;
+namespace KubeUI.Avalonia.Resources.Workloads.v1.CronJob;
 
 public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
 {
     public override bool IsNamespaced => true;
-    public override string Category => "Workloads";
+    public override string Category => CategoryString("ResourceConfig_Category_Workloads", "Workloads");
     public override int Order => 6;
 
     public override IList<IResourceListColumn> Columns()
@@ -41,5 +43,7 @@ public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
             AgeColumn(),
         ];
     }
+
+    public override Control[] Properties(V1CronJob resource) => [new PropertiesView()];
 }
 

@@ -1,0 +1,33 @@
+﻿<UserControl
+    x:Class="KubeUI.Avalonia.Resources.Core.v1.Node.Views.PropertiesView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:k8s.Models"
+    d:DesignHeight="420"
+    d:DesignWidth="500"
+    x:DataType="models:V1Node"
+    mc:Ignorable="d">
+    <StackPanel>
+        <c:PropertyItem Key="Operating System" Value="{Binding Status.NodeInfo.OperatingSystem}" />
+        <c:PropertyItem Key="Architecture" Value="{Binding Status.NodeInfo.Architecture}" />
+        <c:PropertyItem Key="Kernel Version" Value="{Binding Status.NodeInfo.KernelVersion}" />
+        <c:PropertyItem Key="Container Runtime" Value="{Binding Status.NodeInfo.ContainerRuntimeVersion}" />
+        <c:PropertyItem Key="Kubelet Version" Value="{Binding Status.NodeInfo.KubeletVersion}" />
+        <c:ExpandableSection Header="Status">
+            <StackPanel>
+                <c:PropertyItem Key="Addresses" Value="{Binding Status.Addresses.Count}" />
+                <c:PropertyItem Key="Taints" Value="{Binding Spec.Taints.Count}" />
+                <c:PropertyItem Key="Conditions" Value="{Binding Status.Conditions.Count}" />
+            </StackPanel>
+        </c:ExpandableSection>
+        <c:ExpandableSection Header="Resources">
+            <StackPanel>
+                <c:PropertyItem Key="Capacity Entries" Value="{Binding Status.Capacity.Count}" />
+                <c:PropertyItem Key="Allocatable Entries" Value="{Binding Status.Allocatable.Count}" />
+            </StackPanel>
+        </c:ExpandableSection>
+    </StackPanel>
+</UserControl>

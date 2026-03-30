@@ -1,16 +1,20 @@
+using KubeUI.Avalonia.Features.Resources.Common;
+using KubeUI.Kubernetes;
 using Avalonia.Collections;
+using Avalonia.Controls;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
+using KubeUI.Avalonia.Resources.Network.v1.Service.Views;
 
-namespace KubeUI.Avalonia.Resources.Network;
+namespace KubeUI.Avalonia.Resources.Network.v1.Service;
 
 public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
 {
     public override bool IsNamespaced => true;
-    public override string Category => "Network";
+    public override string Category => CategoryString("ResourceConfig_Category_Network", "Network");
     public override int Order => 0;
 
     public override IList<IResourceListColumn> Columns()
@@ -101,6 +105,8 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
 
         return false;
     }
+
+    public override Control[] Properties(V1Service resource) => [new PropertiesView()];
 }
 
 

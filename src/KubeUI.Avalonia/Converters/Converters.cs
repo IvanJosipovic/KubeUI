@@ -1,6 +1,8 @@
+using Avalonia.Media;
 using Avalonia.Data.Converters;
 using k8s;
 using k8s.Models;
+using System.Globalization;
 
 namespace KubeUI.Avalonia.Converters;
 
@@ -24,5 +26,70 @@ public static class Converters
         });
 
     public static readonly IValueConverter NotNull = new FuncValueConverter<object, bool>((x) => x != null && x != AvaloniaProperty.UnsetValue);
+}
+
+public sealed class PropertyItemValueConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value == null || value == AvaloniaProperty.UnsetValue)
+        {
+            return string.Empty;
+        }
+
+        if (value is DateTimeOffset dto)
+        {
+            return dto.ToLocalTime().ToString(culture);
+        }
+
+        if (value is DateTime dt)
+        {
+            return dt.Kind == DateTimeKind.Utc
+                ? dt.ToLocalTime().ToString(culture)
+                : dt.ToString(culture);
+        }
+
+        return value.ToString() ?? string.Empty;
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public sealed class EventWarningForegroundConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        var isWarning = value is bool flag
+            ? flag
+            : string.Equals(value?.ToString(), "Warning", StringComparison.Ordinal);
+
+        return isWarning ? Brushes.Red : AvaloniaProperty.UnsetValue;
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public sealed class ResourceLabelConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is null || value == AvaloniaProperty.UnsetValue)
+        {
+            return string.Empty;
+        }
+
+        string key = value.ToString() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return string.Empty;
+        }
+
+        return Assets.Resources.ResourceManager.GetString(key, CultureInfo.CurrentUICulture) ?? key;
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
 }
 

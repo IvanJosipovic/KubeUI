@@ -1,4 +1,4 @@
-namespace KubeUI.Avalonia.ViewModels;
+namespace KubeUI.Avalonia.Features.Resources.Yaml;
 
 /// <summary>
 /// Represents the severity of a YAML editor diagnostic.

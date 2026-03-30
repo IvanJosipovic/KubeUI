@@ -256,7 +256,7 @@ public static class KubernetesYaml
         }
     }
 
-    public static object Deserialize(string yaml, Type type, bool strict = false)
+    public static object? Deserialize(string yaml, Type type, bool strict = false)
     {
         using var reader = new StringReader(yaml);
         lock (s_deserializerLockObject)
@@ -265,7 +265,7 @@ public static class KubernetesYaml
         }
     }
 
-    public static object Deserialize(IParser parser, Type type, bool strict = false)
+    public static object? Deserialize(IParser parser, Type type, bool strict = false)
     {
         lock (s_deserializerLockObject)
         {
@@ -273,7 +273,7 @@ public static class KubernetesYaml
         }
     }
 
-    public static object Deserialize(IParser parser, bool strict = false)
+    public static object? Deserialize(IParser parser, bool strict = false)
     {
         lock (s_deserializerLockObject)
         {

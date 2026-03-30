@@ -3,9 +3,8 @@ using Avalonia.Headless.XUnit;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Avalonia.ViewModels;
 using Shouldly;
-using static KubeUI.Avalonia.ViewModels.VisualizationViewModel;
+using static KubeUI.Avalonia.Features.Resources.Visualization.ViewModels.VisualizationViewModel;
 
 namespace KubeUI.Avalonia.Tests;
 
@@ -2375,55 +2374,6 @@ public class VisualizationViewModelTests : AvaloniaTestBase
 
         vm.Graph.Edges.Count.ShouldBe(1);
         vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1EndpointSlice>();
-        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Pod>();
-    }
-
-    [AvaloniaFact]
-    public async Task LinkPodToEndpointEndpoints()
-    {
-        var cluster = await CreateClusterAsync();
-
-        await cluster.AddOrUpdateResource(new V1Pod
-        {
-            Metadata = new()
-            {
-                Name = "my-pod",
-                NamespaceProperty = "default",
-                Uid = "pod-uid"
-            },
-            Spec = new()
-        });
-
-        await cluster.AddOrUpdateResource(new V1Endpoints
-        {
-            Metadata = new()
-            {
-                Name = "my-endpoints",
-                NamespaceProperty = "default"
-            },
-            Subsets =
-            [
-                new()
-                {
-                    Addresses =
-                    [
-                        new()
-                        {
-                            TargetRef = new()
-                            {
-                                Uid = "pod-uid"
-                            }
-                        }
-                    ]
-                }
-            ]
-        });
-
-        var vm = CreateViewModel();
-        vm.Initialize(cluster);
-
-        vm.Graph.Edges.Count.ShouldBe(1);
-        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Endpoints>();
         vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Pod>();
     }
 

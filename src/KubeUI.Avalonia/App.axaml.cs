@@ -1,14 +1,19 @@
+using KubeUI.Avalonia.Features.Clusters.Error.ViewModels;
+using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Avalonia.Services.Settings;
 using System.Diagnostics;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using k8s;
+using KubeUI.Avalonia.Shell.Main.Views;
 using KubeUI.Kubernetes;
-using KubeUI.Avalonia.ViewModels;
-using KubeUI.Avalonia.Views;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
+using Microsoft.Extensions.Hosting;
 
 namespace KubeUI.Avalonia;
 
@@ -19,11 +24,14 @@ public partial class App : Application
     public static TopLevel TopLevel { get; private set; }
 
     private readonly ILogger<App> _logger;
+    private readonly IHostApplicationLifetime _hostApplicationLifetime;
+    private int _shutdownRequested;
 
     public App(IServiceProvider serviceProvider)
     {
         Services = serviceProvider;
         _logger = Services.GetRequiredService<ILogger<App>>();
+        _hostApplicationLifetime = Services.GetRequiredService<IHostApplicationLifetime>();
 
         Resources["AppearanceSettings"] = Services.GetRequiredService<ISettingsService>().Appearance;
         Resources["DataGridRowHeight"] = Convert.ToDouble(Services.GetRequiredService<ISettingsService>().Appearance.ListRowHeight);
@@ -46,7 +54,6 @@ public partial class App : Application
         this.AttachDeveloperTools();
 #endif
 
-        _logger.LogInformation("Application Started");
         Services.GetRequiredService<Instrumentation>().AppOpened.Add(1);
     }
 
@@ -129,9 +136,16 @@ public partial class App : Application
 
     private void GracefulShutdown()
     {
+        if (Interlocked.Exchange(ref _shutdownRequested, 1) == 1)
+        {
+            return;
+        }
+
         KubernetesClientConfiguration.ExecStdError -= KubernetesClientConfiguration_ExecStdError;
         Services.GetService<LoggerProvider>()?.ForceFlush();
         Services.GetService<MeterProvider>()?.ForceFlush();
+        Services.GetService<TracerProvider>()?.ForceFlush();
+        _hostApplicationLifetime.StopApplication();
     }
 
     private static void DisableAvaloniaDataAnnotationValidation()

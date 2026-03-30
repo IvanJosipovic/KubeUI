@@ -1,10 +1,12 @@
 using k8s.Models;
+using Avalonia.Controls;
+using KubeUI.Avalonia.Resources.Configuration.v1.MutatingWebhookConfiguration.Views;
 
-namespace KubeUI.Avalonia.Resources.Configuration;
+namespace KubeUI.Avalonia.Resources.Configuration.v1.MutatingWebhookConfiguration;
 
 public sealed partial class V1MutatingWebhookConfig : ResourceConfigBase<V1MutatingWebhookConfiguration>
 {
-    public override string Category => "Configuration";
+    public override string Category => CategoryString("ResourceConfig_Category_Configuration", "Configuration");
     public override int Order => 9;
 
     public override IList<IResourceListColumn> Columns()
@@ -20,5 +22,7 @@ public sealed partial class V1MutatingWebhookConfig : ResourceConfigBase<V1Mutat
             AgeColumn(),
         ];
     }
+
+    public override Control[] Properties(V1MutatingWebhookConfiguration resource) => [new PropertiesView()];
 }
 

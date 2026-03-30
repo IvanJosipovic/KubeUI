@@ -1,3 +1,7 @@
+using KubeUI.Avalonia.Features.Resources.Common;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Kubernetes;
+using Avalonia.Controls;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
@@ -5,8 +9,9 @@ using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.Resources.Core.v1.Node.Views;
 
-namespace KubeUI.Avalonia.Resources;
+namespace KubeUI.Avalonia.Resources.Core.v1.Node;
 
 public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 {
@@ -257,6 +262,8 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
     {
         return items?.Count > 0 && Cluster.CanI<V1Node>(Verb.Patch);
     }
+
+    public override Control[] Properties(V1Node resource) => [new PropertiesView()];
 }
 
 

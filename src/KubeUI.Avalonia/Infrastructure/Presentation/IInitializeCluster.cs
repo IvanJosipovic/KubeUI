@@ -1,6 +1,8 @@
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
 
-namespace KubeUI.Avalonia.ViewModels;
+namespace KubeUI.Avalonia.Infrastructure.Presentation;
 
 public interface IInitializeCluster
 {
