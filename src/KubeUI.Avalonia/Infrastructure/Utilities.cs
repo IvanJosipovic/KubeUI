@@ -1,4 +1,4 @@
-using KubeUI.Avalonia.Infrastructure;
+﻿using KubeUI.Avalonia.Infrastructure;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.Json;
@@ -15,6 +15,11 @@ public static class Utilities
     public static T GetRequiredService<T>(this Application? app)
     {
         var resourceHost = app ?? Application.Current;
+        if (resourceHost is App kubeApp && kubeApp.Services != null)
+        {
+            return kubeApp.Services.GetRequiredService<T>();
+        }
+
         if (resourceHost?.Resources.TryGetValue(typeof(IServiceProvider), out var service) == true)
         {
             return ((IServiceProvider)service).GetRequiredService<T>();
@@ -26,6 +31,11 @@ public static class Utilities
     public static object GetRequiredService(this Application? app, Type type)
     {
         var resourceHost = app ?? Application.Current;
+        if (resourceHost is App kubeApp && kubeApp.Services != null)
+        {
+            return kubeApp.Services.GetRequiredService(type);
+        }
+
         if (resourceHost?.Resources.TryGetValue(typeof(IServiceProvider), out var service) == true)
         {
             return ((IServiceProvider)service!).GetRequiredService(type);
