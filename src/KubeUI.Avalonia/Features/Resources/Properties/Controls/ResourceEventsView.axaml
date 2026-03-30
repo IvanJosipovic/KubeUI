@@ -15,13 +15,9 @@
     <UserControl.Resources>
         <converters:EventWarningForegroundConverter x:Key="EventWarningForegroundConverter" />
     </UserControl.Resources>
-    <c:ExpandableSection
-        Header="{x:Static assets:Resources.ResourceEventsView_Title}"
-        IsExpanded="True">
+    <c:ExpandableSection Header="{x:Static assets:Resources.ResourceEventsView_Title}" IsExpanded="True">
         <StackPanel Margin="0,-4,0,0" Spacing="2">
-            <ItemsControl
-                IsVisible="{Binding HasItems, RelativeSource={RelativeSource AncestorType=local:ResourceEventsView}}"
-                ItemsSource="{Binding Items, RelativeSource={RelativeSource AncestorType=local:ResourceEventsView}}">
+            <ItemsControl IsVisible="{Binding HasItems, RelativeSource={RelativeSource AncestorType=local:ResourceEventsView}}" ItemsSource="{Binding Items, RelativeSource={RelativeSource AncestorType=local:ResourceEventsView}}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="local:ResourceEventItem">
                         <Border
@@ -30,9 +26,9 @@
                             Classes="card">
                             <StackPanel Spacing="2">
                                 <TextBlock
-                                    IsVisible="{Binding HasMessage}"
                                     FontWeight="SemiBold"
                                     Foreground="{Binding IsWarning, Converter={StaticResource EventWarningForegroundConverter}}"
+                                    IsVisible="{Binding HasMessage}"
                                     Text="{Binding Message}"
                                     TextWrapping="Wrap" />
                                 <StackPanel Spacing="0">
@@ -46,9 +42,7 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
-            <c:PropertyItem
-                IsVisible="{Binding !HasItems, RelativeSource={RelativeSource AncestorType=local:ResourceEventsView}}"
-                Value="{x:Static assets:Resources.NoEventsFound}" />
+            <c:PropertyItem IsVisible="{Binding !HasItems, RelativeSource={RelativeSource AncestorType=local:ResourceEventsView}}" Value="{x:Static assets:Resources.NoEventsFound}" />
         </StackPanel>
     </c:ExpandableSection>
 </UserControl>

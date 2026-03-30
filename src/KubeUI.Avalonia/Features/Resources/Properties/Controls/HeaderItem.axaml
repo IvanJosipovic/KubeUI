@@ -1,4 +1,4 @@
-<UserControl
+﻿<UserControl
     x:Class="KubeUI.Avalonia.Features.Resources.Properties.Controls.HeaderItem"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -16,8 +16,6 @@
         Background="{DynamicResource SystemAltHighColor}"
         BorderBrush="{DynamicResource SystemAltHighColor}"
         BorderThickness="0,0,0,1">
-        <SelectableTextBlock
-            VerticalAlignment="Center"
-            Text="{Binding Text, RelativeSource={RelativeSource AncestorType=local:HeaderItem}, Converter={StaticResource ResourceLabelConverter}}" />
+        <SelectableTextBlock VerticalAlignment="Center" Text="{Binding Text, RelativeSource={RelativeSource AncestorType=local:HeaderItem}, Converter={StaticResource ResourceLabelConverter}}" />
     </Border>
 </UserControl>

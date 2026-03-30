@@ -114,7 +114,11 @@ public partial class ResourcePropertiesView : UserControl
         var obj = viewModel.Object;
 
         PART_Items.Children.Add(new PropertyItem { Key = AppResources.ResourcePropertiesView_Name, Value = obj.Metadata.Name });
-        PART_Items.Children.Add(new PropertyItem { Key = AppResources.ResourcePropertiesView_Namespace, Value = obj.Metadata.NamespaceProperty });
+        if (viewModel.ResourceConfig?.IsNamespaced == true)
+        {
+            PART_Items.Children.Add(new PropertyItem { Key = AppResources.ResourcePropertiesView_Namespace, Value = obj.Metadata.NamespaceProperty });
+        }
+
         PART_Items.Children.Add(new PropertyItem { Key = AppResources.ResourcePropertiesView_Created, Value = obj.Metadata.CreationTimestamp });
 
         if (viewModel.ResourceConfig == null)

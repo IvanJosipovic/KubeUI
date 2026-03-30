@@ -30,20 +30,20 @@
                 TextWrapping="NoWrap"
                 ToolTip.Tip="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource ResourceLabelConverter}}" />
 
-            <!-- When Key exists, render value in the right column -->
+            <!--  When Key exists, render value in the right column  -->
             <ScrollViewer Grid.Row="0"
                 Grid.Column="1"
-                IsVisible="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource StringNotNullOrEmptyConverter}}"
                 MaxHeight="200"
+                IsVisible="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource StringNotNullOrEmptyConverter}}"
                 VerticalScrollBarVisibility="Auto">
                 <SelectableTextBlock Text="{Binding Value, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource PropertyItemValueConverter}}" TextWrapping="Wrap" />
             </ScrollViewer>
 
-            <!-- When Key is empty, span the value across both columns -->
+            <!--  When Key is empty, span the value across both columns  -->
             <ScrollViewer Grid.Row="0"
                 Grid.ColumnSpan="2"
-                IsVisible="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource StringNullOrWhiteSpaceConverter}}"
                 MaxHeight="200"
+                IsVisible="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource StringNullOrWhiteSpaceConverter}}"
                 VerticalScrollBarVisibility="Auto">
                 <SelectableTextBlock Text="{Binding Value, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource PropertyItemValueConverter}}" TextWrapping="Wrap" />
             </ScrollViewer>
