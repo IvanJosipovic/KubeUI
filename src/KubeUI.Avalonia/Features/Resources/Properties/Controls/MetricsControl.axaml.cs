@@ -1,11 +1,8 @@
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
-using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Input;
 using Avalonia.Styling;
-using Avalonia.VisualTree;
 using FluentIcons.Common;
 using Humanizer;
 using k8s;
@@ -55,7 +52,6 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster
     public MetricsControl()
     {
         InitializeComponent();
-        AddHandler(InputElement.PointerWheelChangedEvent, OnPointerWheelChanged, RoutingStrategies.Tunnel, handledEventsToo: true);
 
         if (!s_timer.IsEnabled)
         {
@@ -287,27 +283,6 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster
             SelectedTab = Tabs.FirstOrDefault();
         }
         StatusText = ShowTabs ? null : descriptor.EmptyState ?? "No Prometheus metrics are available for this resource.";
-    }
-
-    private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
-    {
-        if (e.Source is not Visual source
-            || source.FindAncestorOfType<LiveChartsCore.SkiaSharpView.Avalonia.CartesianChart>() == null)
-        {
-            return;
-        }
-
-        var scrollViewer = this.FindAncestorOfType<ScrollViewer>();
-        if (scrollViewer == null)
-        {
-            return;
-        }
-
-        const double scrollStep = 48;
-        var maxOffset = Math.Max(0, scrollViewer.Extent.Height - scrollViewer.Viewport.Height);
-        var nextOffset = Math.Clamp(scrollViewer.Offset.Y - (e.Delta.Y * scrollStep), 0, maxOffset);
-        scrollViewer.Offset = new Vector(scrollViewer.Offset.X, nextOffset);
-        e.Handled = true;
     }
 
     private void MergeCurrentMetrics(IReadOnlyList<MetricSummaryItemViewModel> snapshots)
