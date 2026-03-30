@@ -14,7 +14,8 @@ public static class Utilities
 {
     public static T GetRequiredService<T>(this Application? app)
     {
-        if (app.TryFindResource(typeof(IServiceProvider), out var service))
+        var resourceHost = app ?? Application.Current;
+        if (resourceHost?.Resources.TryGetValue(typeof(IServiceProvider), out var service) == true)
         {
             return ((IServiceProvider)service).GetRequiredService<T>();
         }
@@ -24,7 +25,8 @@ public static class Utilities
 
     public static object GetRequiredService(this Application? app, Type type)
     {
-        if (app.TryFindResource(typeof(IServiceProvider), out var service))
+        var resourceHost = app ?? Application.Current;
+        if (resourceHost?.Resources.TryGetValue(typeof(IServiceProvider), out var service) == true)
         {
             return ((IServiceProvider)service!).GetRequiredService(type);
         }
