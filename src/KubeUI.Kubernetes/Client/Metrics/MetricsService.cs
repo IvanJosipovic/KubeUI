@@ -74,26 +74,35 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
         var kube = cluster.Client as k8s.Kubernetes;
         if (kube == null)
         {
+            _logger.LogDebug("Skipping metrics initialization for cluster {Name} because the Kubernetes client is not available.", cluster.Name);
             return;
         }
 
         var settings = NormalizeLegacySettings(_settings.GetClusterMetricsSettings(cluster));
         var configuredType = settings.MetricsServiceType;
         _configuredMetricsServiceType = configuredType;
+        _logger.LogInformation(
+            "Initializing metrics for cluster {Name}. Configured backend: {MetricsBackend}, configured Prometheus provider: {PrometheusProvider}.",
+            cluster.Name,
+            configuredType,
+            settings.PrometheusProviderKind?.ToString() ?? "auto");
 
         if (configuredType == MetricsServiceType.None)
         {
+            _logger.LogInformation("Metrics are disabled for cluster {Name}.", cluster.Name);
             return;
         }
 
         if (configuredType == MetricsServiceType.KubernetesMetricsServer)
         {
+            _logger.LogInformation("Cluster {Name} is configured to use Kubernetes Metrics Server.", cluster.Name);
             await StartKubernetesMetricsAsync(cluster, kube).ConfigureAwait(false);
             return;
         }
 
         if (configuredType is MetricsServiceType.Prometheus or MetricsServiceType.Auto)
         {
+            _logger.LogInformation("Cluster {Name} will attempt Prometheus metrics initialization.", cluster.Name);
             var promReady = await TryStartPrometheusAsync(cluster, kube, settings).ConfigureAwait(false);
             if (promReady)
             {
@@ -102,6 +111,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
 
             if (configuredType == MetricsServiceType.Auto)
             {
+                _logger.LogInformation("Prometheus was not available for cluster {Name}. Falling back to Kubernetes Metrics Server because backend is set to Auto.", cluster.Name);
                 await StartKubernetesMetricsAsync(cluster, kube).ConfigureAwait(false);
             }
         }
@@ -119,6 +129,11 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
 
     public Task StopAsync()
     {
+        if (_cluster != null)
+        {
+            _logger.LogDebug("Stopping metrics service for cluster {Name}.", _cluster.Name);
+        }
+
         _metricsRefreshCancellationTokenSource?.Cancel();
         _metricsRefreshCancellationTokenSource?.Dispose();
         _metricsRefreshCancellationTokenSource = null;
@@ -166,6 +181,10 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
         var (start, end, stepSeconds) = ResolveTimeRange(request);
         if (_prometheusUnavailableUntilUtc is { } unavailableUntil && unavailableUntil > DateTimeOffset.UtcNow)
         {
+            _logger.LogDebug(
+                "Suppressing Prometheus metrics request for cluster {Name} until {UnavailableUntil:u} because Prometheus is in cooldown.",
+                _cluster.Name,
+                unavailableUntil);
             return MetricResultSet.Empty;
         }
 
@@ -251,20 +270,34 @@ AwaitInflight:
     {
         try
         {
+            _logger.LogDebug(
+                "Resolving Prometheus endpoint for cluster {Name}. Configured provider: {Provider}.",
+                cluster.Name,
+                settings.PrometheusProviderKind?.ToString() ?? "auto");
             var resolved = await ResolvePrometheusEndpointAsync(kube, settings, CancellationToken.None).ConfigureAwait(false);
             if (resolved.Endpoint == null || resolved.Provider == null)
             {
+                _logger.LogInformation("No Prometheus endpoint could be resolved for cluster {Name}.", cluster.Name);
                 return false;
             }
 
             _resolvedPrometheusEndpoint = resolved.Endpoint;
             _resolvedPrometheusProvider = resolved.Provider;
             _prometheusHttpClient = CreatePrometheusHttpClient(resolved.Endpoint);
+            _logger.LogInformation(
+                "Resolved Prometheus provider {Provider} for cluster {Name}: {Endpoint}.",
+                resolved.Provider.Kind,
+                cluster.Name,
+                DescribeEndpoint(resolved.Endpoint));
 
             if (!string.IsNullOrWhiteSpace(resolved.Endpoint.DirectUrl))
             {
                 ActiveMetricsBackend = ActiveMetricsBackend.Prometheus(resolved.Provider.Kind);
                 IsMetricsAvailable = true;
+                _logger.LogInformation(
+                    "Prometheus metrics activated for cluster {Name} using direct endpoint and provider {Provider}.",
+                    cluster.Name,
+                    resolved.Provider.Kind);
                 return true;
             }
 
@@ -272,6 +305,11 @@ AwaitInflight:
                 || string.IsNullOrWhiteSpace(resolved.Endpoint.ServiceName)
                 || resolved.Endpoint.ServicePort is not > 0)
             {
+                _logger.LogWarning(
+                    "Resolved Prometheus provider {Provider} for cluster {Name}, but the endpoint was incomplete: {Endpoint}.",
+                    resolved.Provider.Kind,
+                    cluster.Name,
+                    DescribeEndpoint(resolved.Endpoint));
                 return false;
             }
 
@@ -283,6 +321,11 @@ AwaitInflight:
 
             ActiveMetricsBackend = ActiveMetricsBackend.Prometheus(resolved.Provider.Kind);
             IsMetricsAvailable = true;
+            _logger.LogInformation(
+                "Prometheus metrics activated for cluster {Name} via service port-forward on local port {LocalPort} using provider {Provider}.",
+                cluster.Name,
+                _prometheusServicePortForward.LocalPort,
+                resolved.Provider.Kind);
             return true;
         }
         catch (Exception ex)
@@ -301,14 +344,18 @@ AwaitInflight:
 
     private async Task StartKubernetesMetricsAsync(Cluster cluster, k8s.Kubernetes kube)
     {
+        _logger.LogDebug("Checking Kubernetes Metrics Server availability for cluster {Name}.", cluster.Name);
         if (!await CanUseKubernetesMetricsServerAsync(cluster, kube).ConfigureAwait(false))
         {
             ActiveMetricsBackend = ActiveMetricsBackend.None;
+            IsMetricsAvailable = false;
+            _logger.LogInformation("Kubernetes Metrics Server is not available for cluster {Name}.", cluster.Name);
             return;
         }
 
         ActiveMetricsBackend = ActiveMetricsBackend.KubernetesMetricsServer;
         IsMetricsAvailable = true;
+        _logger.LogInformation("Kubernetes Metrics Server metrics activated for cluster {Name}.", cluster.Name);
         _metricsRefreshCancellationTokenSource = new CancellationTokenSource();
         _metricsRefreshTimer = new PeriodicTimer(TimeSpan.FromSeconds(30));
 
@@ -342,6 +389,10 @@ AwaitInflight:
                 throw new InvalidOperationException($"Unknown Prometheus provider '{settings.PrometheusProviderKind}'.");
             }
 
+            _logger.LogInformation(
+                "Using explicitly configured Prometheus provider {Provider} for cluster {Name}.",
+                selectedProvider.Kind,
+                _cluster?.Name);
             return (await selectedProvider.TryResolveServiceAsync(kube, settings, cancellationToken).ConfigureAwait(false), selectedProvider);
         }
 
@@ -349,11 +400,19 @@ AwaitInflight:
         {
             try
             {
+                _logger.LogDebug("Trying Prometheus provider {Provider} for cluster {Name}.", provider.Kind, _cluster?.Name);
                 var endpoint = await provider.TryResolveServiceAsync(kube, settings, cancellationToken).ConfigureAwait(false);
                 if (endpoint != null)
                 {
+                    _logger.LogInformation(
+                        "Prometheus provider {Provider} matched cluster {Name}: {Endpoint}.",
+                        provider.Kind,
+                        _cluster?.Name,
+                        DescribeEndpoint(endpoint));
                     return (endpoint, provider);
                 }
+
+                _logger.LogDebug("Prometheus provider {Provider} did not match cluster {Name}.", provider.Kind, _cluster?.Name);
             }
             catch (Exception ex)
             {
@@ -361,6 +420,7 @@ AwaitInflight:
             }
         }
 
+        _logger.LogInformation("No Prometheus providers matched cluster {Name}.", _cluster?.Name);
         return (null, null);
     }
 
@@ -389,6 +449,12 @@ AwaitInflight:
         {
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", endpoint.BearerToken);
         }
+
+        _logger.LogDebug(
+            "Created Prometheus HTTP client for cluster {Name}. Endpoint: {Endpoint}, auth: {AuthMode}.",
+            _cluster?.Name,
+            DescribeEndpoint(endpoint),
+            string.IsNullOrWhiteSpace(endpoint.BearerToken) ? "none" : "bearer");
 
         return client;
     }
@@ -495,6 +561,11 @@ AwaitInflight:
 
     private void HandlePrometheusQuerySuccess()
     {
+        if (_prometheusUnavailableUntilUtc != null)
+        {
+            _logger.LogInformation("Prometheus metrics recovered for cluster {Name}.", _cluster?.Name);
+        }
+
         _prometheusUnavailableUntilUtc = null;
         _prometheusFailureLogged = false;
     }
@@ -655,10 +726,30 @@ AwaitInflight:
         var podResponse = await kube.CreateSelfSubjectAccessReviewAsync(podReview).ConfigureAwait(false);
         var nodeResponse = await kube.CreateSelfSubjectAccessReviewAsync(nodeReview).ConfigureAwait(false);
         var apiGroups = await cluster.Client!.Apis.GetAPIVersionsAsync().ConfigureAwait(false);
-
-        return apiGroups.Groups.Any(g => g.Name == "metrics.k8s.io")
+        var apiGroupAvailable = apiGroups.Groups.Any(g => g.Name == "metrics.k8s.io");
+        var allowed = apiGroupAvailable
             && podResponse.Status.Allowed
             && nodeResponse.Status.Allowed;
+
+        _logger.LogDebug(
+            "Kubernetes Metrics Server detection for cluster {Name}: apiGroupAvailable={ApiGroupAvailable}, podListAllowed={PodAllowed}, nodeListAllowed={NodeAllowed}, result={Result}.",
+            cluster.Name,
+            apiGroupAvailable,
+            podResponse.Status.Allowed,
+            nodeResponse.Status.Allowed,
+            allowed);
+
+        return allowed;
+    }
+
+    private static string DescribeEndpoint(ResolvedPrometheusEndpoint endpoint)
+    {
+        if (!string.IsNullOrWhiteSpace(endpoint.DirectUrl))
+        {
+            return $"directUrl={endpoint.DirectUrl}, useHttps={endpoint.UseHttps}, pathPrefix={endpoint.PathPrefix}";
+        }
+
+        return $"namespace={endpoint.Namespace}, service={endpoint.ServiceName}, port={endpoint.ServicePort}, useHttps={endpoint.UseHttps}, pathPrefix={endpoint.PathPrefix}";
     }
 
     private sealed record CachedMetricResult(DateTimeOffset TimestampUtc, MetricResultSet Result);
