@@ -39,20 +39,21 @@ internal static class ResourceMetricsCatalog
 
         return new ResourceMetricsDescriptor(
             [
-                new MetricTabDefinition("CPU", Icon.ArrowSync,
+                new MetricTabDefinition("CPU", Icon.TopSpeed,
                 [
-                    MetricPanel("Usage", MetricCategory.Pods, podQueryOptions, ("cpuUsage", "Usage")),
-                    MetricPanel("Requests & Limits", MetricCategory.Pods, podQueryOptions, ("cpuRequests", "Requests"), ("cpuLimits", "Limits")),
+                    MetricPanel("CPU", MetricCategory.Pods, podQueryOptions, ("cpuUsage", "Usage"), ("cpuRequests", "Requests"), ("cpuLimits", "Limits")),
                 ]),
-                new MetricTabDefinition("Memory", Icon.Code,
+                new MetricTabDefinition("Memory", Icon.Ram,
                 [
-                    MetricPanel("Usage", MetricCategory.Pods, podQueryOptions, ("memoryUsage", "Usage")),
-                    MetricPanel("Requests & Limits", MetricCategory.Pods, podQueryOptions, ("memoryRequests", "Requests"), ("memoryLimits", "Limits")),
+                    MetricPanel("Memory", MetricCategory.Pods, podQueryOptions, ("memoryUsage", "Usage"), ("memoryRequests", "Requests"), ("memoryLimits", "Limits")),
                 ]),
-                new MetricTabDefinition("Storage & Network", Icon.Link,
+                new MetricTabDefinition("Network", Icon.VirtualNetwork,
+                [
+                    MetricPanel("Network", MetricCategory.Pods, podQueryOptions, ("networkReceive", "Receive"), ("networkTransmit", "Transmit")),
+                ]),
+                new MetricTabDefinition("Filesystem", Icon.HardDrive,
                 [
                     MetricPanel("Filesystem", MetricCategory.Pods, podQueryOptions, ("fsUsage", "Usage"), ("fsReads", "Reads"), ("fsWrites", "Writes")),
-                    MetricPanel("Network", MetricCategory.Pods, podQueryOptions, ("networkReceive", "Receive"), ("networkTransmit", "Transmit")),
                 ]),
             ],
             "No Prometheus metrics are available for this pod.");
@@ -70,17 +71,15 @@ internal static class ResourceMetricsCatalog
 
         return new ResourceMetricsDescriptor(
             [
-                new MetricTabDefinition("CPU", Icon.ArrowSync,
+                new MetricTabDefinition("CPU", Icon.TopSpeed,
                 [
-                    MetricPanel("Usage", MetricCategory.Nodes, options, filter, ("cpuUsage", "Usage")),
-                    MetricPanel("Capacity", MetricCategory.Nodes, options, filter, ("cpuCapacity", "Capacity"), ("cpuAllocatableCapacity", "Allocatable")),
+                    MetricPanel("CPU", MetricCategory.Nodes, options, filter, ("cpuUsage", "Usage"), ("cpuCapacity", "Capacity"), ("cpuAllocatableCapacity", "Allocatable")),
                 ]),
-                new MetricTabDefinition("Memory", Icon.Code,
+                new MetricTabDefinition("Memory", Icon.Ram,
                 [
-                    MetricPanel("Usage", MetricCategory.Nodes, options, filter, ("memoryUsage", "Usage")),
-                    MetricPanel("Capacity", MetricCategory.Nodes, options, filter, ("memoryCapacity", "Capacity"), ("memoryAllocatableCapacity", "Allocatable")),
+                    MetricPanel("Memory", MetricCategory.Nodes, options, filter, ("memoryUsage", "Usage"), ("memoryCapacity", "Capacity"), ("memoryAllocatableCapacity", "Allocatable")),
                 ]),
-                new MetricTabDefinition("Filesystem", Icon.Save,
+                new MetricTabDefinition("Filesystem", Icon.HardDrive,
                 [
                     MetricPanel("Filesystem", MetricCategory.Nodes, options, filter, ("fsUsage", "Usage"), ("fsSize", "Size")),
                 ]),
@@ -101,10 +100,8 @@ internal static class ResourceMetricsCatalog
             [
                 new MetricTabDefinition("Workloads", Icon.PanelRight,
                 [
-                    MetricPanel("CPU Usage", MetricCategory.Namespace, options, ("cpuUsage", "Usage")),
-                    MetricPanel("CPU Requests & Limits", MetricCategory.Namespace, options, ("cpuRequests", "Requests"), ("cpuLimits", "Limits")),
-                    MetricPanel("Memory Usage", MetricCategory.Namespace, options, ("memoryUsage", "Usage")),
-                    MetricPanel("Memory Requests & Limits", MetricCategory.Namespace, options, ("memoryRequests", "Requests"), ("memoryLimits", "Limits")),
+                    MetricPanel("CPU", MetricCategory.Namespace, options, ("cpuUsage", "Usage"), ("cpuRequests", "Requests"), ("cpuLimits", "Limits")),
+                    MetricPanel("Memory", MetricCategory.Namespace, options, ("memoryUsage", "Usage"), ("memoryRequests", "Requests"), ("memoryLimits", "Limits")),
                 ]),
             ],
             "No Prometheus metrics are available for this namespace.");
@@ -120,7 +117,7 @@ internal static class ResourceMetricsCatalog
 
         return new ResourceMetricsDescriptor(
             [
-                new MetricTabDefinition("Storage", Icon.Save,
+                new MetricTabDefinition("Storage", Icon.Storage,
                 [
                     MetricPanel("PVC Storage", MetricCategory.Pvc, options, ("diskUsage", "Usage"), ("diskCapacity", "Capacity")),
                 ]),
@@ -138,7 +135,7 @@ internal static class ResourceMetricsCatalog
 
         return new ResourceMetricsDescriptor(
             [
-                new MetricTabDefinition("Traffic", Icon.Link,
+                new MetricTabDefinition("Traffic", Icon.DataUsage,
                 [
                     MetricPanel("Bytes Sent", MetricCategory.Ingress, options, ("bytesSentSuccess", "Success"), ("bytesSentFailure", "Failure")),
                     MetricPanel("Latency", MetricCategory.Ingress, options, ("requestDurationSeconds", "Request"), ("responseDurationSeconds", "Response")),
@@ -174,20 +171,21 @@ internal static class ResourceMetricsCatalog
 
         return new ResourceMetricsDescriptor(
             [
-                new MetricTabDefinition("CPU", Icon.ArrowSync,
+                new MetricTabDefinition("CPU", Icon.TopSpeed,
                 [
-                    MetricPanel("Usage", MetricCategory.WorkloadPods, options, ("cpuUsage", "Usage")),
-                    MetricPanel("Requests & Limits", MetricCategory.WorkloadPods, options, ("cpuRequests", "Requests"), ("cpuLimits", "Limits")),
+                    MetricPanel("CPU", MetricCategory.WorkloadPods, options, ("cpuUsage", "Usage"), ("cpuRequests", "Requests"), ("cpuLimits", "Limits")),
                 ]),
-                new MetricTabDefinition("Memory", Icon.Code,
+                new MetricTabDefinition("Memory", Icon.Ram,
                 [
-                    MetricPanel("Usage", MetricCategory.WorkloadPods, options, ("memoryUsage", "Usage")),
-                    MetricPanel("Requests & Limits", MetricCategory.WorkloadPods, options, ("memoryRequests", "Requests"), ("memoryLimits", "Limits")),
+                    MetricPanel("Memory", MetricCategory.WorkloadPods, options, ("memoryUsage", "Usage"), ("memoryRequests", "Requests"), ("memoryLimits", "Limits")),
                 ]),
-                new MetricTabDefinition("Storage & Network", Icon.Link,
+                new MetricTabDefinition("Network", Icon.VirtualNetwork,
+                [
+                    MetricPanel("Network", MetricCategory.WorkloadPods, options, ("networkReceive", "Receive"), ("networkTransmit", "Transmit")),
+                ]),
+                new MetricTabDefinition("Filesystem", Icon.HardDrive,
                 [
                     MetricPanel("Filesystem", MetricCategory.WorkloadPods, options, ("fsUsage", "Usage"), ("fsReads", "Reads"), ("fsWrites", "Writes")),
-                    MetricPanel("Network", MetricCategory.WorkloadPods, options, ("networkReceive", "Receive"), ("networkTransmit", "Transmit")),
                 ]),
             ],
             $"No Prometheus metrics are available for this {workloadName.ToLowerInvariant()}.");

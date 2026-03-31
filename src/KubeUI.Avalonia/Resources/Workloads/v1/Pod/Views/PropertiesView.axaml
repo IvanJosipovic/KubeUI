@@ -51,17 +51,23 @@
                 </c:CollectionItem>
                 <c:CollectionItem Key="Command" Value="{Binding Command}" />
                 <c:CollectionItem Key="Arguments" Value="{Binding Args}" />
-                <c:CollectionItem Key="Requests" Value="{Binding Resources.Requests}" />
-                <c:CollectionItem Key="Limits" Value="{Binding Resources.Limits}" />
+                <c:ExpandableSection Header="Resources">
+                    <StackPanel>
+                        <c:CollectionItem Key="Requests" Value="{Binding Resources.Requests}" />
+                        <c:CollectionItem Key="Limits" Value="{Binding Resources.Limits}" />
+                    </StackPanel>
+                </c:ExpandableSection>
             </StackPanel>
         </DataTemplate>
         <DataTemplate x:Key="V1ContainerTemplate" x:DataType="models:V1Container">
-            <StackPanel>
-                <ContentControl Content="{Binding .}" ContentTemplate="{StaticResource V1InitContainerTemplate}" />
-                <c:PodContainerMetricsControl
+            <Grid HorizontalAlignment="Stretch" RowDefinitions="Auto,*">
+                <c:MetricsControl
+                    Grid.Row="0"
+                    HorizontalAlignment="Stretch"
                     Container="{Binding .}"
                     Pod="{Binding DataContext, RelativeSource={RelativeSource AncestorType=views:PropertiesView}}" />
-            </StackPanel>
+                <ContentControl Grid.Row="1" Content="{Binding .}" ContentTemplate="{StaticResource V1InitContainerTemplate}" />
+            </Grid>
         </DataTemplate>
     </UserControl.Resources>
     <StackPanel>
@@ -120,11 +126,29 @@
             Header="{x:Static assets:Resources.PodPropertiesView_InitContainers}"
             IsExpanded="True"
             IsVisible="{Binding Spec.InitContainers, Converter={x:Static converters:NotEmptyCollectionConverter.Instance}}">
-            <ItemsControl ItemTemplate="{StaticResource V1InitContainerTemplate}" ItemsSource="{Binding Spec.InitContainers}" />
+            <ItemsControl
+                HorizontalAlignment="Stretch"
+                ItemTemplate="{StaticResource V1InitContainerTemplate}"
+                ItemsSource="{Binding Spec.InitContainers}">
+                <ItemsControl.Styles>
+                    <Style Selector="ItemsControl > ContentPresenter">
+                        <Setter Property="HorizontalAlignment" Value="Stretch" />
+                    </Style>
+                </ItemsControl.Styles>
+            </ItemsControl>
         </c:ExpandableSection>
 
         <c:ExpandableSection Header="{x:Static assets:Resources.PodPropertiesView_Containers}" IsExpanded="True">
-            <ItemsControl ItemTemplate="{StaticResource V1ContainerTemplate}" ItemsSource="{Binding Spec.Containers}" />
+            <ItemsControl
+                HorizontalAlignment="Stretch"
+                ItemTemplate="{StaticResource V1ContainerTemplate}"
+                ItemsSource="{Binding Spec.Containers}">
+                <ItemsControl.Styles>
+                    <Style Selector="ItemsControl > ContentPresenter">
+                        <Setter Property="HorizontalAlignment" Value="Stretch" />
+                    </Style>
+                </ItemsControl.Styles>
+            </ItemsControl>
         </c:ExpandableSection>
     </StackPanel>
 </UserControl>

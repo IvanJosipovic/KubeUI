@@ -37,12 +37,16 @@ public abstract class PrometheusProviderBase : IPrometheusProvider
 
         return queryName switch
         {
-            "cpuUsage" => $$"""sum(rate(node_cpu_seconds_total{mode=~"user|system"}[{{GetRateAccuracy(options)}}]) * on (pod, namespace) group_left(node) kube_pod_info{node=~"{{nodes}}"})""",
+            "cpuUsage" => $$"""sum(rate(node_cpu_seconds_total{node=~"{{nodes}}",mode=~"user|system"}[{{GetRateAccuracy(options)}}]))""",
             "cpuCapacity" => $$"""sum(kube_node_status_capacity{node=~"{{nodes}}", resource="cpu"})""",
             "cpuAllocatableCapacity" => $$"""sum(kube_node_status_allocatable{node=~"{{nodes}}", resource="cpu"})""",
-            "memoryUsage" => $$"""sum(node_memory_MemTotal_bytes * on (pod,namespace) group_left(node) kube_pod_info{node=~"{{nodes}}"} - (node_memory_MemFree_bytes + node_memory_Buffers_bytes + node_memory_Cached_bytes) * on (pod,namespace) group_left(node) kube_pod_info{node=~"{{nodes}}"})""",
+            "memoryUsage" => $$"""sum(node_memory_MemTotal_bytes{node=~"{{nodes}}"} - (node_memory_MemFree_bytes{node=~"{{nodes}}"} + node_memory_Buffers_bytes{node=~"{{nodes}}"} + node_memory_Cached_bytes{node=~"{{nodes}}"}) )""",
+            "workloadMemoryUsage" => $$"""sum(container_memory_working_set_bytes{image!="",pod!="" ,node=~"{{nodes}}"})""",
             "memoryCapacity" => $$"""sum(kube_node_status_capacity{node=~"{{nodes}}", resource="memory"})""",
             "memoryAllocatableCapacity" => $$"""sum(kube_node_status_allocatable{node=~"{{nodes}}", resource="memory"})""",
+            "podUsage" => $$"""sum(kube_pod_info{node=~"{{nodes}}"})""",
+            "podCapacity" => $$"""sum(kube_node_status_capacity{node=~"{{nodes}}", resource="pods"})""",
+            "podAllocatableCapacity" => $$"""sum(kube_node_status_allocatable{node=~"{{nodes}}", resource="pods"})""",
             "fsSize" => $$"""sum(node_filesystem_size_bytes{mountpoint=~"{{mountpoints}}"} * on (pod,namespace) group_left(node) kube_pod_info{node=~"{{nodes}}"})""",
             "fsUsage" => $$"""sum((node_filesystem_size_bytes{mountpoint=~"{{mountpoints}}"} - node_filesystem_avail_bytes{mountpoint=~"{{mountpoints}}"}) * on (pod,namespace) group_left(node) kube_pod_info{node=~"{{nodes}}"})""",
             _ => throw new InvalidOperationException($"Unsupported cluster query '{queryName}'."),
@@ -55,12 +59,16 @@ public abstract class PrometheusProviderBase : IPrometheusProvider
 
         return queryName switch
         {
-            "cpuUsage" => $$"""sum(rate(node_cpu_seconds_total{mode=~"user|system"}[{{GetRateAccuracy(options)}}]) * on (pod, namespace) group_left(node) kube_pod_info) by (node)""",
+            "cpuUsage" => $$"""sum(rate(node_cpu_seconds_total{mode=~"user|system"}[{{GetRateAccuracy(options)}}])) by (node)""",
             "cpuCapacity" => """sum(kube_node_status_capacity{resource="cpu"}) by (node)""",
             "cpuAllocatableCapacity" => """sum(kube_node_status_allocatable{resource="cpu"}) by (node)""",
-            "memoryUsage" => """sum((node_memory_MemTotal_bytes - (node_memory_MemFree_bytes + node_memory_Buffers_bytes + node_memory_Cached_bytes)) * on (pod, namespace) group_left(node) kube_pod_info) by (node)""",
+            "memoryUsage" => """sum(node_memory_MemTotal_bytes - (node_memory_MemFree_bytes + node_memory_Buffers_bytes + node_memory_Cached_bytes)) by (node)""",
+            "workloadMemoryUsage" => """sum(container_memory_working_set_bytes{image!="",pod!=""}) by (node)""",
             "memoryCapacity" => """sum(kube_node_status_capacity{resource="memory"}) by (node)""",
             "memoryAllocatableCapacity" => """sum(kube_node_status_allocatable{resource="memory"}) by (node)""",
+            "podUsage" => """sum(kube_pod_info) by (node)""",
+            "podCapacity" => """sum(kube_node_status_capacity{resource="pods"}) by (node)""",
+            "podAllocatableCapacity" => """sum(kube_node_status_allocatable{resource="pods"}) by (node)""",
             "fsSize" => $$"""sum(node_filesystem_size_bytes{mountpoint=~"{{mountpoints}}"} * on (pod,namespace) group_left(node) kube_pod_info) by (node)""",
             "fsUsage" => $$"""sum((node_filesystem_size_bytes{mountpoint=~"{{mountpoints}}"} - node_filesystem_avail_bytes{mountpoint=~"{{mountpoints}}"}) * on (pod, namespace) group_left(node) kube_pod_info) by (node)""",
             _ => throw new InvalidOperationException($"Unsupported node query '{queryName}'."),

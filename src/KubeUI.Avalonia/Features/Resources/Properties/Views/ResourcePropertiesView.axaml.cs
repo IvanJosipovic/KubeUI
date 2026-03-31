@@ -8,6 +8,10 @@ using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using AppResources = KubeUI.Avalonia.Assets.Resources;
 using Avalonia.LogicalTree;
+using Avalonia.Threading;
+using Avalonia;
+using Avalonia.Layout;
+using Avalonia.Controls.Primitives;
 
 namespace KubeUI.Avalonia.Features.Resources.Properties.Views;
 
@@ -24,7 +28,7 @@ public partial class ResourcePropertiesView : UserControl
     {
         base.OnDataContextChanged(e);
         SubscribeToViewModel();
-        AttachAndReload();
+        ReloadNowOrLater();
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
@@ -95,11 +99,22 @@ public partial class ResourcePropertiesView : UserControl
     {
         if (e.PropertyName is "Object" or "ResourceConfig" or "Cluster")
         {
-            AttachAndReload();
+            ReloadNowOrLater();
         }
     }
 
     private void ClearItems() => PART_Items.Children.Clear();
+
+    private void ReloadNowOrLater()
+    {
+        if (VisualRoot == null)
+        {
+            AttachAndReload();
+            return;
+        }
+
+        Dispatcher.UIThread.Post(AttachAndReload, DispatcherPriority.Background);
+    }
 
     private void Reload<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
@@ -134,12 +149,14 @@ public partial class ResourcePropertiesView : UserControl
             foreach (var c in extras.Where(c => c != null))
             {
                 c.DataContext = obj;
+                c.HorizontalAlignment = HorizontalAlignment.Stretch;
+                PART_Items.Children.Add(c);
+
                 if (viewModel.Cluster != null)
                 {
                     InitializeClusterControls(c, viewModel.Cluster);
+                    Dispatcher.UIThread.Post(() => InitializeClusterControls(c, viewModel.Cluster), DispatcherPriority.Background);
                 }
-
-                PART_Items.Children.Add(c);
             }
         }
 
@@ -150,11 +167,39 @@ public partial class ResourcePropertiesView : UserControl
             var eventsView = new ResourceEventsView
             {
                 DataContext = obj,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
             };
 
-            eventsView.Initialize(viewModel.Cluster);
             PART_Items.Children.Add(eventsView);
+            eventsView.Initialize(viewModel.Cluster);
         }
+
+        QueueScrollToTop();
+    }
+
+    private void QueueScrollToTop()
+    {
+        QueueScrollToTop(0);
+    }
+
+    private void QueueScrollToTop(int attempt)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (PART_ScrollViewer is not { } scrollViewer)
+            {
+                return;
+            }
+
+            if (scrollViewer.Extent.Height <= scrollViewer.Viewport.Height && attempt < 4)
+            {
+                QueueScrollToTop(attempt + 1);
+                return;
+            }
+
+            scrollViewer.Offset = default;
+            scrollViewer.ScrollToHome();
+        }, DispatcherPriority.Loaded);
     }
 
     private static void InitializeClusterControls(Control control, ClusterWorkspaceViewModel cluster)
@@ -171,12 +216,34 @@ public partial class ResourcePropertiesView : UserControl
     private static IEnumerable<Control> EnumerateLogicalControls(Control root)
     {
         var stack = new Stack<Control>();
+        var seen = new HashSet<Control>();
         stack.Push(root);
 
         while (stack.Count > 0)
         {
             var current = stack.Pop();
+            if (!seen.Add(current))
+            {
+                continue;
+            }
+
             yield return current;
+
+            switch (current)
+            {
+                case Panel panel:
+                    foreach (var child in panel.Children.OfType<Control>())
+                    {
+                        stack.Push(child);
+                    }
+                    break;
+                case Decorator decorator when decorator.Child is Control child:
+                    stack.Push(child);
+                    break;
+                case ContentControl contentControl when contentControl.Content is Control child:
+                    stack.Push(child);
+                    break;
+            }
 
             if (current is not ILogical logical)
             {

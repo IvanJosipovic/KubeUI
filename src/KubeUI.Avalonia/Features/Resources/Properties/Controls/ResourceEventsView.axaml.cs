@@ -69,13 +69,21 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
         DisposeEventSubscription();
     }
 
-    public void Initialize(ClusterWorkspaceViewModel cluster)
-    {
-        _cluster = cluster;
-        _eventCache = cluster.GetResourceSourceCache<Corev1Event>();
-        RebuildEventSubscription();
-        Refresh();
-    }
+public void Initialize(ClusterWorkspaceViewModel cluster)
+{
+_cluster = cluster;
+try
+{
+_eventCache = cluster.GetResourceSourceCache<Corev1Event>();
+}
+catch (Exception)
+{
+_eventCache = null;
+}
+
+RebuildEventSubscription();
+Refresh();
+}
 
     private void Timer_Tick(object? sender, EventArgs e)
     {
