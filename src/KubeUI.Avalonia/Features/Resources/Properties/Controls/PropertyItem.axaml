@@ -5,7 +5,6 @@
     xmlns:converters="using:KubeUI.Avalonia.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
-    xmlns:p="using:KubeUI.Avalonia.Infrastructure.Presentation"
     HorizontalAlignment="Stretch"
     VerticalAlignment="Stretch"
     d:DesignHeight="40"
@@ -24,7 +23,7 @@
     </UserControl.Styles>
     <Border BorderBrush="{DynamicResource SystemAltHighColor}" BorderThickness="0,0,0,1">
         <Grid VerticalAlignment="Top" ColumnDefinitions="*,2*">
-            <p:SafeSelectableTextBlock Grid.Row="0"
+            <SelectableTextBlock Grid.Row="0"
                 Grid.Column="0"
                 IsVisible="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource StringNotNullOrEmptyConverter}}"
                 Text="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource ResourceLabelConverter}}"
@@ -37,7 +36,7 @@
                 MaxHeight="200"
                 IsVisible="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource StringNotNullOrEmptyConverter}}"
                 VerticalScrollBarVisibility="Auto">
-                <p:SafeSelectableTextBlock Text="{Binding Value, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource PropertyItemValueConverter}}" TextWrapping="Wrap" />
+                <SelectableTextBlock Text="{Binding Value, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource PropertyItemValueConverter}}" TextWrapping="Wrap" />
             </ScrollViewer>
 
             <!--  When Key is empty, span the value across both columns  -->
@@ -46,7 +45,7 @@
                 MaxHeight="200"
                 IsVisible="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource StringNullOrWhiteSpaceConverter}}"
                 VerticalScrollBarVisibility="Auto">
-                <p:SafeSelectableTextBlock Text="{Binding Value, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource PropertyItemValueConverter}}" TextWrapping="Wrap" />
+                <SelectableTextBlock Text="{Binding Value, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource PropertyItemValueConverter}}" TextWrapping="Wrap" />
             </ScrollViewer>
         </Grid>
     </Border>
