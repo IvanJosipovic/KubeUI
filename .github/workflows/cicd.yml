@@ -34,11 +34,11 @@ jobs:
       - name: Build
         run: dotnet build -c Release
 
-      - name: Test
-        run: dotnet test -c Release --collect:"XPlat Code Coverage" --no-build --logger "trx;LogFileName=test-results.trx"
+      - name: Test Avalonia
+        run: dotnet test tests/KubeUI.Avalonia.Tests/KubeUI.Avalonia.Tests.csproj -c Release --no-build --collect:"XPlat Code Coverage" --logger "trx;LogFileName=test-results.trx"
 
       - name: Test Kubernetes E2E
-        run: dotnet test tests/KubeUI.Kubernetes.Tests/KubeUI.Kubernetes.Tests.csproj -c Release --no-build --logger "trx;LogFileName=test-results.trx"
+        run: dotnet test tests/KubeUI.Kubernetes.Tests/KubeUI.Kubernetes.Tests.csproj -c Release --no-build --collect:"XPlat Code Coverage" --logger "trx;LogFileName=test-results.trx"
         env:
           KUBEUI_RUN_KIND_TESTS: 1
 
