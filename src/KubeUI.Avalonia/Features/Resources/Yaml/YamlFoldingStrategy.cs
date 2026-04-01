@@ -7,7 +7,8 @@ internal static class YamlFoldingStrategy
 {
     public static void UpdateFoldings(FoldingManager? manager, TextDocument? document)
     {
-        if (manager == null || document == null) return;
+        if (manager == null || document == null)
+            return;
         var newFoldings = CreateNewFoldings(document, out var firstErrorOffset);
         manager.UpdateFoldings(newFoldings, firstErrorOffset);
     }

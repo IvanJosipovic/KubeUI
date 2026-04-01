@@ -1,26 +1,26 @@
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Input;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using AvaloniaEdit.CodeCompletion;
 using Avalonia.Xaml.Interactivity;
+using AvaloniaEdit.CodeCompletion;
 using AvaloniaEdit.Document;
-using AvaloniaEdit.Folding;
 using AvaloniaEdit.Editing;
+using AvaloniaEdit.Folding;
 using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
-using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
-using KubeUI.Avalonia.Tests.Infra;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
+using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;
 
-namespace KubeUI.Avalonia.Tests;
+namespace KubeUI.Avalonia.Tests.Features.Resources.Yaml;
 
 public class ResourceYamlViewModelTests : AvaloniaTestBase
 {
@@ -1900,7 +1900,8 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         while (sw.ElapsedMilliseconds < timeoutMs)
         {
             Dispatcher.UIThread.RunJobs();
-            if (predicate()) return;
+            if (predicate())
+                return;
             System.Threading.Thread.Sleep(10);
         }
         predicate().ShouldBeTrue();

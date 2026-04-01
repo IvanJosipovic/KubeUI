@@ -1,10 +1,10 @@
-using KubeUI.Avalonia.Infrastructure;
 using System.Diagnostics;
 using System.Reflection;
 using Avalonia.Controls.Templates;
 using Dock.Model.Core;
 using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
 using KubeUI.Avalonia.Features.Resources.Properties.Views;
+using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Infrastructure.Presentation;

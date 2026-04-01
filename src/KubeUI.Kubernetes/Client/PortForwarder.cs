@@ -72,13 +72,38 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
     {
         _isDisposing = true;
         Status = "Inactive";
+        try
+        {
+            _listener.Stop();
+        }
+        catch
+        {
+        }
     }
 
     private void ClientConnected(IAsyncResult result)
     {
-        var socket = _listener.EndAcceptSocket(result);
-        Task.Run(async () => await HandleConnection(socket));
-        _listener.BeginAcceptSocket(new AsyncCallback(ClientConnected), null);
+        if (_isDisposing)
+        {
+            return;
+        }
+
+        try
+        {
+            var socket = _listener.EndAcceptSocket(result);
+            Task.Run(async () => await HandleConnection(socket));
+
+            if (!_isDisposing)
+            {
+                _listener.BeginAcceptSocket(new AsyncCallback(ClientConnected), null);
+            }
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+        catch (InvalidOperationException)
+        {
+        }
     }
 
     private async Task HandleConnection(Socket socket)
@@ -197,7 +222,7 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
 
     public void Dispose()
     {
-        _isDisposing = true;
+        Stop();
     }
 }
 

@@ -31,18 +31,18 @@ internal static class Program
     private static IServiceProvider? _designTimeServices;
 
     [STAThread]
-    public static async Task Main(string[] args)
+    public static void Main(string[] args)
     {
         VelopackApp.Build().Run();
 
         _host = CreateHostBuilder(args).Build();
         _host.Services.ConfigureKubeUIKubernetesJsonLogging();
 
-        await _host.StartAsync();
+        _host.StartAsync().GetAwaiter().GetResult();
 
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
 
-        await _host.StopAsync();
+        _host.StopAsync().GetAwaiter().GetResult();
 
         _host.Dispose();
         _host = null;

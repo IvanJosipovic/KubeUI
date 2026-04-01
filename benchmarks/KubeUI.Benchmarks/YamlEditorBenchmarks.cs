@@ -36,7 +36,7 @@ public class YamlEditorBenchmarks
 
     private static string BuildSimpleYaml(int resourceCount)
     {
-                return string.Concat(Enumerable.Range(0, resourceCount).Select(static index => $$"""
+        return string.Concat(Enumerable.Range(0, resourceCount).Select(static index => $$"""
                         apiVersion: v1
                         kind: ConfigMap
                         metadata:
@@ -54,7 +54,7 @@ public class YamlEditorBenchmarks
 
     private static string BuildMixedYaml(int resourceCount)
     {
-                return string.Concat(Enumerable.Range(0, resourceCount).Select(static index => $$"""
+        return string.Concat(Enumerable.Range(0, resourceCount).Select(static index => $$"""
                         apiVersion: apps/v1
                         kind: Deployment
                         metadata:

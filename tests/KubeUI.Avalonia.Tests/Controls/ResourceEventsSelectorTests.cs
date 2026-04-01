@@ -1,7 +1,7 @@
 using Avalonia.Headless.XUnit;
+using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Tests.Infra;
-using k8s.Models;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Controls;

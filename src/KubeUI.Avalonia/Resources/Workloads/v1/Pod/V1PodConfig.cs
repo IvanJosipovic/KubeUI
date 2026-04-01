@@ -1,7 +1,3 @@
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Features.Resources.Common;
-using KubeUI.Avalonia.Infrastructure.Docking;
-using KubeUI.Kubernetes;
 using Avalonia.Collections;
 using Avalonia.Controls;
 using FluentAvalonia.UI.Controls;
@@ -9,9 +5,13 @@ using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
+using KubeUI.Avalonia.Features.Resources.Common;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Controls;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 

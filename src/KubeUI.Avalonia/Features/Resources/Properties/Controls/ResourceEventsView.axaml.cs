@@ -1,13 +1,13 @@
+using System.Collections.ObjectModel;
+using System.Reactive.Linq;
+using DynamicData;
+using DynamicData.Binding;
+using k8s;
+using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Threading;
-using k8s;
-using k8s.Models;
-using DynamicData;
-using DynamicData.Binding;
 using KubeUI.Kubernetes;
-using System.Collections.ObjectModel;
-using System.Reactive.Linq;
 
 namespace KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
@@ -72,7 +72,15 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
     public void Initialize(ClusterWorkspaceViewModel cluster)
     {
         _cluster = cluster;
-        _eventCache = cluster.GetResourceSourceCache<Corev1Event>();
+        try
+        {
+            _eventCache = cluster.GetResourceSourceCache<Corev1Event>();
+        }
+        catch (Exception)
+        {
+            _eventCache = null;
+        }
+
         RebuildEventSubscription();
         Refresh();
     }

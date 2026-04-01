@@ -1,7 +1,7 @@
-using KubeUI.Avalonia.Infrastructure;
+using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
-using k8s.Models;
+using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml.Views;
@@ -48,4 +48,5 @@ public sealed partial class ResourceYamlView : UserControl
         }
 #endif
     }
+
 }

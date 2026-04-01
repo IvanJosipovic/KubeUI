@@ -1,8 +1,8 @@
-using KubeUI.Avalonia.Infrastructure;
+using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Visualization.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Presentation;
-using k8s.Models;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Resources.Visualization.Views;

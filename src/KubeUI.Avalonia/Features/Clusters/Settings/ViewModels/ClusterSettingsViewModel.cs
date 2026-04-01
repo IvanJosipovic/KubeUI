@@ -1,10 +1,10 @@
-using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Features.Clusters.Settings.ViewModels;
-using KubeUI.Kubernetes;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Options;
 using KubeUI.Avalonia.Services.Settings;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Clusters.Settings.ViewModels;
 

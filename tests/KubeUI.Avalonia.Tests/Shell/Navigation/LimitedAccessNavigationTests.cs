@@ -6,7 +6,7 @@ using KubeUI.Kubernetes.Tests.Infra;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
-namespace KubeUI.Avalonia.Tests;
+namespace KubeUI.Avalonia.Tests.Shell.Navigation;
 
 public sealed class LimitedAccessNavigationTests : AvaloniaTestBase
 {

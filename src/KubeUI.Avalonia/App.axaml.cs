@@ -1,27 +1,28 @@
-using KubeUI.Avalonia.Features.Clusters.Error.ViewModels;
-using KubeUI.Avalonia.Infrastructure.Docking;
-using KubeUI.Avalonia.Services.Settings;
 using System.Diagnostics;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using k8s;
+using KubeUI.Avalonia.Features.Clusters.Error.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Shell.Main.Views;
 using KubeUI.Kubernetes;
-using KubeUI.Avalonia.Infrastructure.Presentation;
+using Microsoft.Extensions.Hosting;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
-using Microsoft.Extensions.Hosting;
 
 namespace KubeUI.Avalonia;
 
-public partial class App : Application
+public partial class App : Application, IServiceProviderAccessor
 {
     public IServiceProvider Services { get; set; }
 
-    public static TopLevel TopLevel { get; private set; }
+    public static TopLevel? TopLevel { get; private set; }
 
     private readonly ILogger<App> _logger;
     private readonly IHostApplicationLifetime _hostApplicationLifetime;
@@ -37,7 +38,6 @@ public partial class App : Application
         Resources["DataGridRowHeight"] = Convert.ToDouble(Services.GetRequiredService<ISettingsService>().Appearance.ListRowHeight);
         Resources["DataGridColumnHeaderMinHeight"] = Convert.ToDouble(Services.GetRequiredService<ISettingsService>().Appearance.ListRowHeight + 4m);
         Resources["DataGridFontSize"] = Convert.ToDouble(Services.GetRequiredService<ISettingsService>().Appearance.FontSize);
-        Resources[typeof(IServiceProvider)] = Services;
         DataTemplates.Add(Services.GetRequiredService<ViewLocator>());
 
         AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;

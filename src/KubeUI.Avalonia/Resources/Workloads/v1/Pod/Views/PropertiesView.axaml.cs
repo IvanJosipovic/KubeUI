@@ -33,8 +33,8 @@ public partial class PropertiesView : UserControl
                 {
                     NodeName = "r720",
                     ServiceAccountName = "actions-runner-controller",
-                    Tolerations = [ new() { Key = "example", Value = "true" } ],
-                    ImagePullSecrets = [ new() { Name = "controller-manager" }, new() { Name = "actions-runner-controller-serving-cert" } ],
+                    Tolerations = [new() { Key = "example", Value = "true" }],
+                    ImagePullSecrets = [new() { Name = "controller-manager" }, new() { Name = "actions-runner-controller-serving-cert" }],
                     Volumes = [
                         new() { Name = "secret-vol", Secret = new() { SecretName = "controller-manager" } },
                         new() { Name = "empty-dir-vol", EmptyDir = new() { } },
@@ -103,7 +103,7 @@ public partial class PropertiesView : UserControl
                 {
                     Phase = "Running",
                     PodIP = "10.1.43.156",
-                    PodIPs = [ new() { Ip = "10.1.43.156" } ],
+                    PodIPs = [new() { Ip = "10.1.43.156" }],
                     QosClass = "BestEffort",
                     Conditions = [
                         new() { Type = "PodReady", Status = "True" },

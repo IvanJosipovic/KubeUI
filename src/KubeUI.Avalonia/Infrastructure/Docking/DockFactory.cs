@@ -1,12 +1,12 @@
-using KubeUI.Avalonia.Shell.Main.ViewModels;
-using KubeUI.Avalonia.Shell.Navigation.ViewModels;
-using KubeUI.Avalonia.Infrastructure;
 using System.Runtime.Serialization;
 using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm;
 using Dock.Model.Mvvm.Controls;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Shell.Main.ViewModels;
+using KubeUI.Avalonia.Shell.Navigation.ViewModels;
 using Orientation = Dock.Model.Core.Orientation;
 
 namespace KubeUI.Avalonia.Infrastructure.Docking;

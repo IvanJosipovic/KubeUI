@@ -1,11 +1,11 @@
-using KubeUI.Avalonia.Infrastructure;
 using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Microsoft.Extensions.DependencyInjection;
-using KubeUI.Kubernetes;
+using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
+using KubeUI.Kubernetes;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
 

@@ -14,6 +14,6 @@
         <Thickness x:Key="ExpanderHeaderPadding">10,0,0,0</Thickness>
         <Thickness x:Key="ExpanderChevronMargin">8,0,4,0</Thickness>
         <x:Double x:Key="ExpanderChevronButtonSize">24</x:Double>
-        <Thickness x:Key="ExpanderContentPadding">0</Thickness>
+        <Thickness x:Key="ExpanderContentPadding">5,0,0,0</Thickness>
     </Expander.Resources>
 </Expander>

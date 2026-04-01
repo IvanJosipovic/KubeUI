@@ -1,14 +1,14 @@
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Features.Resources.List.ViewModels;
-using KubeUI.Avalonia.Infrastructure.Presentation;
 using System.Reflection;
 using Dock.Model.Core;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Controls.DataGridFilters;
-using KubeUI.Kubernetes;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
+using KubeUI.Avalonia.Features.Resources.List.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Resources.List.Views;
 

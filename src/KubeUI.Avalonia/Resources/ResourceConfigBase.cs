@@ -1,11 +1,6 @@
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Common;
-using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Infrastructure.Docking;
-using System.Text.Json;
-using System.Text;
 using System.Globalization;
+using System.Text;
+using System.Text.Json;
 using Avalonia.Controls.Notifications;
 using Avalonia.Styling;
 using Dock.Model.Core;
@@ -17,9 +12,14 @@ using Humanizer;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Kubernetes;
-using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Features.Resources.List.Controls;
+using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources;
 

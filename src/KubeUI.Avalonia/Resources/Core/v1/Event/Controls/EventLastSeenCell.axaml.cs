@@ -1,9 +1,9 @@
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Avalonia.Infrastructure.Presentation;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Core.v1.Event.Controls;

@@ -1,7 +1,7 @@
+using System.Collections.Specialized;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Kubernetes;
-using System.Collections.Specialized;
 using Swordfish.NET.Collections;
 
 namespace KubeUI.Avalonia.Features.Clusters.Workspace;

@@ -1,10 +1,10 @@
-using System.Xml;
 using System.Reflection;
+using System.Text.Json.Serialization;
+using System.Xml;
 using AvaloniaEdit.Document;
 using k8s.Models;
 using KubeUI.Kubernetes;
 using Shouldly;
-using System.Text.Json.Serialization;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Yaml;
 

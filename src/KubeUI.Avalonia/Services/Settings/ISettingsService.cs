@@ -1,7 +1,7 @@
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
-using AppSettings = KubeUI.Avalonia.Options.Settings;
 using AppAppearanceSettings = KubeUI.Avalonia.Options.AppearanceSettings;
+using AppSettings = KubeUI.Avalonia.Options.Settings;
 
 namespace KubeUI.Avalonia.Services.Settings;
 
