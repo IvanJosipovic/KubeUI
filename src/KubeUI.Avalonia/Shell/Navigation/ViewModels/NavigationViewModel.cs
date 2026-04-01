@@ -229,11 +229,6 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         {
             await Task.Run(cluster.Connect).ConfigureAwait(false);
 
-            if (cluster.Status == ClusterStatus.Connected)
-            {
-                await cluster.EnsureWorkspaceStateInitializedAsync().ConfigureAwait(false);
-            }
-
             await Dispatcher.UIThread.InvokeAsync(async () =>
             {
                 if (cluster.RequiresNamespaceSelectionPrompt)
