@@ -122,18 +122,18 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
             var endpointSlice = endpointSlices.FirstOrDefault(x => x.Namespace() == service.Namespace() && x.GetLabel("kubernetes.io/service-name") == service.Name());
             if (endpointSlice == null)
             {
-                Status = "No endpoint slices found for Service";
                 socket.Close();
                 Connections--;
+                Status = "No endpoint slices found for Service";
                 return;
             }
 
             var portData = endpointSlice.Ports.FirstOrDefault(y => y.Name == servicePort.Name);
             if (portData == null || portData.Port == null)
             {
-                Status = "No port found for Service";
                 socket.Close();
                 Connections--;
+                Status = "No port found for Service";
                 return;
             }
 
@@ -146,9 +146,9 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
 
             if (pod == null)
             {
-                Status = "No pods found for Service";
                 socket.Close();
                 Connections--;
+                Status = "No pods found for Service";
                 return;
             }
             else
