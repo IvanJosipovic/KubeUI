@@ -150,13 +150,26 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     private void PopulateAllResources()
     {
+        if (Cluster?.Objects == null)
+        {
+            return;
+        }
+
         foreach (var kvp in Cluster.Objects)
         {
             var container = kvp.Value;
 
-            var items = container.GetType().GetProperty("Items").GetValue(container);
+            var itemsProperty = container.GetType().GetProperty("Items");
+            var items = itemsProperty?.GetValue(container);
+            var nestedItemsProperty = items?.GetType().GetProperty("Items");
+            var nestedItems = nestedItemsProperty?.GetValue(items) as IList;
 
-            foreach (object item in (IList)items.GetType().GetProperty("Items").GetValue(items))
+            if (nestedItems == null)
+            {
+                continue;
+            }
+
+            foreach (object item in nestedItems)
             {
                 var value = (IKubernetesObject<V1ObjectMeta>)item;
 
@@ -386,9 +399,9 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     }
                 }
 
-                if (ingress.Spec.DefaultBackend != null)
+                if (ingress?.Spec?.DefaultBackend != null)
                 {
-                    if (ingress?.Spec?.DefaultBackend?.Service != null)
+                    if (ingress.Spec.DefaultBackend.Service != null)
                     {
                         foreach (var end in resources)
                         {

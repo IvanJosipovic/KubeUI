@@ -22,7 +22,7 @@ public partial class App : Application, IServiceProviderAccessor
 {
     public IServiceProvider Services { get; set; }
 
-    public static TopLevel TopLevel { get; private set; }
+    public static TopLevel? TopLevel { get; private set; }
 
     private readonly ILogger<App> _logger;
     private readonly IHostApplicationLifetime _hostApplicationLifetime;

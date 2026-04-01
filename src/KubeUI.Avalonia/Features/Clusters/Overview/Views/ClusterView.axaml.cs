@@ -1,17 +1,19 @@
 using KubeUI.Avalonia.Features.Clusters.Overview.ViewModels;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using System.ComponentModel;
+using System.Linq;
 
 namespace KubeUI.Avalonia.Features.Clusters.Overview.Views;
 
 public sealed partial class ClusterView : UserControl
 {
     private readonly DispatcherTimer _timer = new(DispatcherPriority.Background);
-    private MetricsControl? _metricsControl;
     private INotifyPropertyChanged? _viewModelNotifications;
+    private bool _isAttachedToVisualTree;
 
     public ClusterViewModel? ViewModel => DataContext as ClusterViewModel;
 
@@ -22,24 +24,7 @@ public sealed partial class ClusterView : UserControl
 #if DEBUG
         if (Design.IsDesignMode)
         {
-            Dispatcher.UIThread.Post(async () =>
-            {
-                if (Application.Current == null)
-                {
-                    return;
-                }
-
-                var cluster = Application.Current.GetRequiredService<ClusterWorkspaceCatalog>().GetDefault();
-                await cluster.Connect().ConfigureAwait(false);
-
-                var vm = Application.Current.GetRequiredService<ClusterViewModel>();
-                if (vm is IInitializeCluster init)
-                {
-                    init.Initialize(cluster);
-                }
-
-                DataContext = vm;
-            });
+            _ = InitializeDesignTimeDataContextAsync();
         }
 #endif
 
@@ -50,6 +35,7 @@ public sealed partial class ClusterView : UserControl
     protected override async void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
+        _isAttachedToVisualTree = true;
 
         if (!_timer.IsEnabled)
         {
@@ -61,19 +47,12 @@ public sealed partial class ClusterView : UserControl
         {
             await ViewModel.RefreshData();
         }
-
-        _metricsControl ??= this.FindControl<MetricsControl>("ClusterMetricsControl");
-        if (_metricsControl != null)
-        {
-            _metricsControl.ClusterOverviewMode = true;
-        }
-
-        TryInitializeMetricsControl();
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
+        _isAttachedToVisualTree = false;
         _timer.Stop();
         DetachViewModelNotifications();
     }
@@ -82,7 +61,11 @@ public sealed partial class ClusterView : UserControl
     {
         base.OnDataContextChanged(e);
         AttachViewModelNotifications();
-        TryInitializeMetricsControl();
+
+        if (_isAttachedToVisualTree && ViewModel != null)
+        {
+            _ = ViewModel.RefreshData();
+        }
     }
 
     private async void TimerOnTick(object? sender, EventArgs e)
@@ -90,6 +73,51 @@ public sealed partial class ClusterView : UserControl
         if (ViewModel != null)
         {
             await ViewModel.RefreshData();
+        }
+    }
+
+    private async Task InitializeDesignTimeDataContextAsync()
+    {
+        if (Application.Current == null)
+        {
+            return;
+        }
+
+        var catalog = Application.Current.GetRequiredService<ClusterWorkspaceCatalog>();
+        var cluster = catalog.GetDefault() ?? catalog.Clusters.FirstOrDefault();
+        if (cluster == null)
+        {
+            return;
+        }
+
+        try
+        {
+            var vm = Application.Current.GetRequiredService<ClusterViewModel>();
+            await Dispatcher.UIThread.InvokeAsync(() => DataContext = vm);
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await cluster.Connect().ConfigureAwait(false);
+
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        if (vm is IInitializeCluster init)
+                        {
+                            init.Initialize(cluster);
+                        }
+                    });
+                }
+                catch
+                {
+                    // Design-time preview should fail closed; runtime still uses the normal app path.
+                }
+            });
+        }
+        catch
+        {
+            // Design-time preview should fail closed; runtime still uses the normal app path.
         }
     }
 
@@ -121,17 +149,10 @@ public sealed partial class ClusterView : UserControl
     {
         if (e.PropertyName == nameof(ClusterViewModel.Cluster))
         {
-            TryInitializeMetricsControl();
-        }
-    }
-
-    private void TryInitializeMetricsControl()
-    {
-        _metricsControl ??= this.FindControl<MetricsControl>("ClusterMetricsControl");
-        if (_metricsControl != null && ViewModel?.Cluster != null)
-        {
-            _metricsControl.ClusterOverviewMode = true;
-            _metricsControl.Initialize(ViewModel.Cluster);
+            if (_isAttachedToVisualTree && ViewModel != null)
+            {
+                _ = ViewModel.RefreshData();
+            }
         }
     }
 }

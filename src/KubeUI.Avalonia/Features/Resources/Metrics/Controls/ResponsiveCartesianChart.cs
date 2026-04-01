@@ -3,7 +3,7 @@ using LiveChartsCore.Kernel;
 using LiveChartsCore.Measure;
 using LiveChartsCore.SkiaSharpView.Avalonia;
 
-namespace KubeUI.Avalonia.Features.Resources.Properties.Controls;
+namespace KubeUI.Avalonia.Features.Resources.Metrics.Controls;
 
 public sealed class ResponsiveCartesianChart : CartesianChart
 {

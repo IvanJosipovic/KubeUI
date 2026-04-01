@@ -42,20 +42,13 @@ public sealed partial class ClusterOverviewEventGridViewModel : ObservableObject
 
     public bool HasNoRows => !HasRows;
 
-public void Initialize(ClusterWorkspaceViewModel cluster)
-{
-try
-{
-_eventCache = cluster.GetResourceSourceCache<Corev1Event>();
-}
-catch (Exception)
-{
-_eventCache = null;
-}
+    public void Initialize(ClusterWorkspaceViewModel cluster)
+    {
+        _eventCache = TryGetEventCache(cluster);
 
-RebuildSubscription();
-RefreshRows();
-}
+        RebuildSubscription();
+        RefreshRows();
+    }
 
     public void Dispose()
     {
@@ -86,6 +79,18 @@ RefreshRows();
             .Subscribe(_ => RefreshRows());
     }
 
+    private static ISourceCache<Corev1Event, string>? TryGetEventCache(ClusterWorkspaceViewModel cluster)
+    {
+        try
+        {
+            return cluster.GetResourceSourceCache<Corev1Event>();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     private void RefreshRows()
     {
         if (!Dispatcher.UIThread.CheckAccess())
@@ -97,21 +102,26 @@ RefreshRows();
         var utcNow = DateTime.UtcNow;
         var rows = _matchedEvents
             .Take(_limit)
-            .Select(@event => new ClusterOverviewEventRow(
-                @event.Type ?? string.Empty,
-                @event.Namespace() ?? string.Empty,
-                @event.InvolvedObject?.Name ?? string.Empty,
-                @event.Reason ?? string.Empty,
-                string.IsNullOrWhiteSpace(@event.Message) ? (@event.Reason ?? string.Empty) : @event.Message.Trim(),
-                FormatSource(@event),
-                @event.Count ?? 0,
-                EventTimeFormatter.FormatPrettyLastSeen(EventTimeFormatter.ResolveTimestamp(@event), utcNow),
-                string.Equals(@event.Type, "Warning", StringComparison.Ordinal)))
+            .Select(@event => CreateRow(@event, utcNow))
             .ToArray();
 
         Rows = rows;
         HasRows = rows.Length > 0;
         OnPropertyChanged(nameof(HasNoRows));
+    }
+
+    private static ClusterOverviewEventRow CreateRow(Corev1Event @event, DateTime utcNow)
+    {
+        return new ClusterOverviewEventRow(
+            @event.Type ?? string.Empty,
+            @event.Namespace() ?? string.Empty,
+            @event.InvolvedObject?.Name ?? string.Empty,
+            @event.Reason ?? string.Empty,
+            string.IsNullOrWhiteSpace(@event.Message) ? (@event.Reason ?? string.Empty) : @event.Message.Trim(),
+            FormatSource(@event),
+            @event.Count ?? 0,
+            EventTimeFormatter.FormatPrettyLastSeen(EventTimeFormatter.ResolveTimestamp(@event), utcNow),
+            string.Equals(@event.Type, "Warning", StringComparison.Ordinal));
     }
 
     private static string FormatSource(Corev1Event @event)

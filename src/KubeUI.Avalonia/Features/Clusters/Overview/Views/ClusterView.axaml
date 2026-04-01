@@ -3,8 +3,10 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:controls="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
+    xmlns:controls="using:KubeUI.Avalonia.Features.Clusters.Overview.Controls"
     xmlns:local="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
+    xmlns:overview="using:KubeUI.Avalonia.Features.Clusters.Overview.Controls"
+    xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="using:KubeUI.Avalonia.Features.Clusters.Overview.ViewModels"
     d:DesignHeight="900"
@@ -12,14 +14,18 @@
     x:DataType="vm:ClusterViewModel"
     mc:Ignorable="d">
 
-    <Design.DataContext>
-        <vm:ClusterViewModel />
-    </Design.DataContext>
+    <Grid RowDefinitions="360,Auto" RowSpacing="12">
+        <Grid Grid.Row="0" ColumnDefinitions="*,*" ColumnSpacing="12">
+            <Border Padding="0">
+                <controls:ClusterOverviewControl x:Name="ClusterOverviewControl" />
+            </Border>
 
-    <Grid RowDefinitions="Auto,Auto">
-        <Border Grid.Row="0" Padding="0">
-            <controls:MetricsControl x:Name="ClusterMetricsControl" />
-        </Border>
+            <Grid Grid.Column="1" ColumnDefinitions="*,*,*" ColumnSpacing="12">
+                <overview:ClusterOverviewRingControl ViewModel="{Binding ClusterCpuChart}" />
+                <overview:ClusterOverviewRingControl Grid.Column="1" ViewModel="{Binding ClusterMemoryChart}" />
+                <overview:ClusterOverviewRingControl Grid.Column="2" ViewModel="{Binding ClusterPodChart}" />
+            </Grid>
+        </Grid>
 
         <local:ExpandableSection Grid.Row="1" Header="{Binding WarningsGrid.Title}" IsExpanded="True">
             <Grid RowDefinitions="Auto,*">
@@ -28,6 +34,7 @@
                     CanUserSortColumns="False"
                     HeadersVisibility="Column"
                     IsReadOnly="True"
+                    IsVisible="{Binding WarningsGrid.HasRows}"
                     ItemsSource="{Binding WarningsGrid.Rows}">
                     <DataGrid.Columns>
                         <DataGridTextColumn Binding="{Binding Message}" Header="Message" Width="3*" />

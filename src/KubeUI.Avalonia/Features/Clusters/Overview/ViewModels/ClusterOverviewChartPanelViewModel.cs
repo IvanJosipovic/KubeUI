@@ -3,6 +3,7 @@ using KubeUI.Avalonia.Infrastructure;
 using LiveChartsCore;
 using LiveChartsCore.Defaults;
 using LiveChartsCore.Kernel.Sketches;
+using LiveChartsCore.SkiaSharpView.Avalonia;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
 using LiveChartsCore.SkiaSharpView.VisualElements;
@@ -24,7 +25,7 @@ public sealed partial class ClusterOverviewChartPanelViewModel : ObservableObjec
 
     public ClusterOverviewChartPanelViewModel()
     {
-        ChartTitle = new LabelVisual
+        ChartTitle = new XamlDrawnLabelVisual
         {
             TextSize = 11,
             Paint = CreateChartTextPaint(),
@@ -51,7 +52,9 @@ public sealed partial class ClusterOverviewChartPanelViewModel : ObservableObjec
 
     public bool HasNoData => !HasData;
 
-    public LabelVisual ChartTitle { get; }
+#pragma warning disable CS0618
+    public XamlDrawnLabelVisual ChartTitle { get; }
+#pragma warning restore CS0618
 
     public ObservableCollection<ISeries> Series { get; } = [];
 
@@ -216,5 +219,3 @@ public sealed partial class ClusterOverviewChartPanelViewModel : ObservableObjec
         }
     }
 }
-
-public sealed record ClusterOverviewMetricSeries(string Name, IReadOnlyList<DateTimePoint> Points);

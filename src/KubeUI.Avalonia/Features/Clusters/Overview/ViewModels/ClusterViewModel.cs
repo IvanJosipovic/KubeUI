@@ -13,6 +13,7 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
 {
     private ClusterWorkspaceViewModel? _cluster;
     private bool _disposed;
+    private Task? _overviewSeedTask;
 
     public ClusterViewModel()
     {
@@ -26,18 +27,6 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
     [ObservableProperty]
     public partial ClusterOverviewEventGridViewModel WarningsGrid { get; set; }
 
-    [ObservableProperty]
-    public partial string BackendText { get; set; } = "Metrics backend unavailable";
-
-    [ObservableProperty]
-    public partial string LastUpdatedText { get; set; } = "Not loaded";
-
-    [ObservableProperty]
-    public partial string StatusText { get; set; } = "Cluster overview metrics are loading.";
-
-    [ObservableProperty]
-    public partial bool ShowStatus { get; set; } = true;
-
     public async Task RefreshData()
     {
         if (_cluster == null)
@@ -45,26 +34,11 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
             return;
         }
 
-        await _cluster.SeedResource<V1Pod>(true).ConfigureAwait(false);
-        await _cluster.SeedResource<V1Node>(true).ConfigureAwait(false);
-        await _cluster.SeedResource<V1Namespace>(true).ConfigureAwait(false);
-        await _cluster.SeedResource<V1Deployment>().ConfigureAwait(false);
-        await _cluster.SeedResource<V1StatefulSet>().ConfigureAwait(false);
-        await _cluster.SeedResource<V1DaemonSet>().ConfigureAwait(false);
-        await _cluster.SeedResource<V1Job>().ConfigureAwait(false);
+        await EnsureOverviewResourcesSeededAsync().ConfigureAwait(false);
 
-        await Dispatcher.UIThread.InvokeAsync(() =>
-        {
-            BackendText = FormatBackendText(_cluster);
-            LastUpdatedText = DateTime.Now.ToString("g");
-            ShowStatus = true;
-            StatusText = _cluster.MetricsServiceType switch
-            {
-                MetricsServiceType.Prometheus => "Cluster overview metrics and live event grids are active.",
-                MetricsServiceType.KubernetesMetricsServer => "Cluster overview is using live resource summaries and event grids. Historical charting is still limited on Metrics Server.",
-                _ => "Metrics are not available for this cluster yet.",
-            };
-        });
+        await Dispatcher.UIThread.InvokeAsync(() => WarningsGrid.Initialize(_cluster));
+
+        await RefreshOverviewChartsAsync().ConfigureAwait(false);
     }
 
     public void Initialize(ClusterWorkspaceViewModel cluster)
@@ -73,6 +47,7 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
 
         _cluster = cluster;
         Cluster = cluster;
+        _overviewSeedTask = null;
         Id = nameof(ClusterViewModel) + "-" + cluster.Name + "-" + Title;
 
         WarningsGrid.Initialize(cluster);
@@ -91,6 +66,7 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
         _disposed = true;
         UnsubscribeCluster();
         WarningsGrid.Dispose();
+        DisposeOverviewCharts();
     }
 
     private void SubscribeCluster()
@@ -145,15 +121,30 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
         _ = RefreshData();
     }
 
-    private static string FormatBackendText(ClusterWorkspaceViewModel cluster)
+    private Task EnsureOverviewResourcesSeededAsync()
     {
-        return cluster.MetricsServiceType switch
+        var seedTask = _overviewSeedTask;
+        if (seedTask != null)
         {
-            MetricsServiceType.Prometheus => cluster.ActivePrometheusProviderKind is { } provider
-                ? $"Prometheus ({provider})"
-                : "Prometheus",
-            MetricsServiceType.KubernetesMetricsServer => "Kubernetes Metrics Server",
-            _ => "No metrics backend",
-        };
+            return seedTask;
+        }
+
+        var cluster = _cluster;
+        if (cluster == null)
+        {
+            return Task.CompletedTask;
+        }
+
+        seedTask = SeedOverviewResourcesAsync(cluster);
+        return Interlocked.CompareExchange(ref _overviewSeedTask, seedTask, null) ?? seedTask;
+    }
+
+    private static async Task SeedOverviewResourcesAsync(ClusterWorkspaceViewModel cluster)
+    {
+        Task podSeedTask = cluster.SeedResource<V1Pod>();
+        Task nodeSeedTask = cluster.SeedResource<V1Node>();
+        Task eventSeedTask = cluster.SeedResource<Corev1Event>();
+
+        await Task.WhenAll(podSeedTask, nodeSeedTask, eventSeedTask).ConfigureAwait(false);
     }
 }

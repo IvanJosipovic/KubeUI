@@ -3,6 +3,7 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:c="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
+    xmlns:m="using:KubeUI.Avalonia.Features.Resources.Metrics.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="using:k8s.Models"
@@ -15,7 +16,7 @@
         <c:PropertyItem Key="Parallelism" Value="{Binding Spec.Parallelism}" />
         <c:PropertyItem Key="Succeeded" Value="{Binding Status.Succeeded}" />
         <c:PropertyItem Key="Failed" Value="{Binding Status.Failed}" />
-        <c:MetricsControl />
+        <m:MetricsControl />
         <c:ExpandableSection Header="Configuration">
             <StackPanel>
                 <c:PropertyItem Key="Backoff Limit" Value="{Binding Spec.BackoffLimit}" />

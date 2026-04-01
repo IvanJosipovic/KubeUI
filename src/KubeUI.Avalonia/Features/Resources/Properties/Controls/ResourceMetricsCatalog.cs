@@ -98,9 +98,12 @@ internal static class ResourceMetricsCatalog
 
         return new ResourceMetricsDescriptor(
             [
-                new MetricTabDefinition("Workloads", Icon.PanelRight,
+                new MetricTabDefinition("CPU", Icon.TopSpeed,
                 [
                     MetricPanel("CPU", MetricCategory.Namespace, options, ("cpuUsage", "Usage"), ("cpuRequests", "Requests"), ("cpuLimits", "Limits")),
+                ]),
+                new MetricTabDefinition("Memory", Icon.Ram,
+                [
                     MetricPanel("Memory", MetricCategory.Namespace, options, ("memoryUsage", "Usage"), ("memoryRequests", "Requests"), ("memoryLimits", "Limits")),
                 ]),
             ],
@@ -135,9 +138,12 @@ internal static class ResourceMetricsCatalog
 
         return new ResourceMetricsDescriptor(
             [
-                new MetricTabDefinition("Traffic", Icon.DataUsage,
+                new MetricTabDefinition("Bytes Sent", Icon.DataUsage,
                 [
                     MetricPanel("Bytes Sent", MetricCategory.Ingress, options, ("bytesSentSuccess", "Success"), ("bytesSentFailure", "Failure")),
+                ]),
+                new MetricTabDefinition("Latency", Icon.DataUsage,
+                [
                     MetricPanel("Latency", MetricCategory.Ingress, options, ("requestDurationSeconds", "Request"), ("responseDurationSeconds", "Response")),
                 ]),
             ],
