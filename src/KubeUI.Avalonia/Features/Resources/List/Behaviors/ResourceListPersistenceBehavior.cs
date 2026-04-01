@@ -1,15 +1,15 @@
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Features.Resources.List.ViewModels;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Threading;
 using Avalonia.Xaml.Interactivity;
+using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Core.Events;
-using Dock.Model.Controls;
-using Avalonia.Controls;
-using ProDataGrid;
 using k8s;
 using k8s.Models;
+using KubeUI.Avalonia.Features.Resources.List.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using ProDataGrid;
 
 namespace KubeUI.Avalonia.Features.Resources.List.Behaviors;
 
@@ -163,14 +163,16 @@ public sealed class ResourceListPersistenceBehavior : Behavior<DataGrid>
             },
             ItemKeyResolver = (key) =>
             {
-                if (key == null) return null;
+                if (key == null)
+                    return null;
                 foreach (var it in vm.View)
                 {
                     var id = it is IKubernetesObject<V1ObjectMeta> r
                         ? $"{r.Metadata?.NamespaceProperty}|{r.Metadata?.Name}"
                         : (object?)it?.GetHashCode();
 
-                    if (Equals(id, key)) return it;
+                    if (Equals(id, key))
+                        return it;
                 }
 
                 return null;
@@ -178,7 +180,8 @@ public sealed class ResourceListPersistenceBehavior : Behavior<DataGrid>
             ColumnKeySelector = column => column.ColumnKey?.ToString(),
             ColumnKeyResolver = (key) =>
             {
-                if (key == null) return null;
+                if (key == null)
+                    return null;
                 var s = key.ToString();
                 return grid.Columns.FirstOrDefault(c => string.Equals(c.ColumnKey?.ToString(), s, StringComparison.Ordinal));
             }

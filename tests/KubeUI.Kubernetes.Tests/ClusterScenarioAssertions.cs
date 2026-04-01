@@ -2,9 +2,9 @@ using System.Collections;
 using System.Text;
 using k8s;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Tests.Infra;
-using KubernetesClient.Informer.Client;
 using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests;

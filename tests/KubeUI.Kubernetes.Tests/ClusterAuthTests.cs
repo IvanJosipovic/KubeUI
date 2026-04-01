@@ -1,8 +1,8 @@
-using Microsoft.Extensions.DependencyInjection;
 using k8s.Models;
+using KubernetesCRDModelGen;
 using KubeUI.Kubernetes;
 using KubeUI.Testing;
-using KubernetesCRDModelGen;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 

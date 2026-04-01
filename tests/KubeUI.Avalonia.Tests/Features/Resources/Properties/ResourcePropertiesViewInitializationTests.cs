@@ -2,13 +2,13 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
 using KubeUI.Avalonia.Features.Resources.Properties.Views;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Tests.Infra;
-using k8s.Models;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Properties;

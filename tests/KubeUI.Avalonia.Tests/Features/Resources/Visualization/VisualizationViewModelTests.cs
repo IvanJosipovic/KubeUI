@@ -6,7 +6,7 @@ using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;
 using static KubeUI.Avalonia.Features.Resources.Visualization.ViewModels.VisualizationViewModel;
 
-namespace KubeUI.Avalonia.Tests;
+namespace KubeUI.Avalonia.Tests.Features.Resources.Visualization;
 
 public class VisualizationViewModelTests : AvaloniaTestBase
 {

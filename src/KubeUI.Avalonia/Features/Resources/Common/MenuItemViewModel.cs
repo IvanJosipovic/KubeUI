@@ -1,8 +1,8 @@
-using KubeUI.Avalonia.Features.Resources.Common;
-using KubeUI.Avalonia.Infrastructure.Presentation;
+using System.Windows.Input;
 using Avalonia.Collections;
 using FluentIcons.Common;
-using System.Windows.Input;
+using KubeUI.Avalonia.Features.Resources.Common;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 
 namespace KubeUI.Avalonia.Features.Resources.Common;
 

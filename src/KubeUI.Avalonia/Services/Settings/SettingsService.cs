@@ -1,11 +1,11 @@
-using KubeUI.Avalonia.Services.Settings;
-using KubeUI.Kubernetes;
 using System.ComponentModel;
 using System.Text.Json;
 using Avalonia.Styling;
 using Avalonia.Threading;
-using Microsoft.Extensions.Configuration;
 using KubeUI.Avalonia.Options;
+using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Kubernetes;
+using Microsoft.Extensions.Configuration;
 using AppAppearanceSettings = KubeUI.Avalonia.Options.AppearanceSettings;
 using AppSettings = KubeUI.Avalonia.Options.Settings;
 

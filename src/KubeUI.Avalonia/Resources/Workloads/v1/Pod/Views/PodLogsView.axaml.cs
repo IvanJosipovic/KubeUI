@@ -1,6 +1,6 @@
 using Avalonia.Styling;
-using KubeUI.Kubernetes;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
+using KubeUI.Kubernetes;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
 

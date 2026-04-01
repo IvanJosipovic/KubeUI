@@ -1,24 +1,18 @@
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Common;
-using KubeUI.Avalonia.Features.Resources.List.ViewModels;
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Avalonia.Infrastructure.Threading;
-using KubeUI.Avalonia.Services.Settings;
-using Avalonia;
-using System.Collections.Specialized;
 using System.Collections;
+using System.Collections.Specialized;
 using System.Globalization;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Windows.Input;
+using Avalonia;
 using Avalonia.Controls.DataGridFiltering;
 using Avalonia.Controls.DataGridSearching;
 using Avalonia.Controls.DataGridSorting;
-using Avalonia.Data;
 using Avalonia.Controls.Selection;
 using Avalonia.Controls.Templates;
+using Avalonia.Data;
 using AvaloniaEdit.Utils;
 using DynamicData;
 using DynamicData.Binding;
@@ -27,10 +21,16 @@ using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Controls.DataGridFilters;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Features.Resources.List.Controls;
-using KubeUI.Kubernetes;
+using KubeUI.Avalonia.Features.Resources.List.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Resources;
-using System.Windows.Input;
+using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Kubernetes;
 using SortDirection = KubeUI.Avalonia.Resources.SortDirection;
 
 namespace KubeUI.Avalonia.Features.Resources.List.ViewModels;
@@ -869,7 +869,7 @@ public sealed class DynamicDataSortingAdapterFactory<T> : IDataGridSortingAdapte
     }
 }
 
-public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAdapterFactory where T : class, IKubernetesObject<V1ObjectMeta>, new ()
+public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAdapterFactory where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     private static readonly Func<T, bool> s_alwaysTrue = static _ => true;
 

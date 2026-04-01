@@ -1,5 +1,4 @@
-﻿using KubeUI.Avalonia.Infrastructure;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.Json;
 using Avalonia.Controls.Notifications;
@@ -7,6 +6,7 @@ using k8s;
 using k8s.Autorest;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.Infrastructure;
 
 namespace KubeUI.Avalonia.Infrastructure;
 
@@ -17,6 +17,11 @@ public static class Utilities
         var resourceHost = app ?? Application.Current;
         if (resourceHost is IServiceProviderAccessor serviceProviderAccessor && serviceProviderAccessor.Services != null)
         {
+            if (typeof(T) == typeof(IServiceProvider))
+            {
+                return (T)serviceProviderAccessor.Services;
+            }
+
             return serviceProviderAccessor.Services.GetRequiredService<T>();
         }
 
@@ -28,6 +33,11 @@ public static class Utilities
         var resourceHost = app ?? Application.Current;
         if (resourceHost is IServiceProviderAccessor serviceProviderAccessor && serviceProviderAccessor.Services != null)
         {
+            if (type == typeof(IServiceProvider))
+            {
+                return serviceProviderAccessor.Services;
+            }
+
             return serviceProviderAccessor.Services.GetRequiredService(type);
         }
 

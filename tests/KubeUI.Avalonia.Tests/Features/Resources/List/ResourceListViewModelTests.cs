@@ -9,27 +9,27 @@ using Avalonia.Controls.DataGridSearching;
 using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Selection;
+using Avalonia.Headless.XUnit;
+using Avalonia.Layout;
 using Avalonia.Styling;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
+using CommunityToolkit.Mvvm.Input;
 using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
-using Avalonia.Headless.XUnit;
-using Avalonia.Layout;
-using Avalonia.Threading;
-using Avalonia.VisualTree;
-using Shouldly;
-using CommunityToolkit.Mvvm.Input;
 using FluentAvalonia.Core;
-using KubeUI.Avalonia;
-using KubeUI.Avalonia.Features.Resources.List.Behaviors;
-using KubeUI.Avalonia.Controls.DataGridFilters;
-using KubeUI.Avalonia.Resources;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia;
+using KubeUI.Avalonia.Controls.DataGridFilters;
+using KubeUI.Avalonia.Features.Resources.List.Behaviors;
+using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Tests.Infra;
+using Shouldly;
 
-namespace KubeUI.Avalonia.Tests;
+namespace KubeUI.Avalonia.Tests.Features.Resources.List;
 
 public class ResourceListViewModelTests : AvaloniaTestBase
 {
@@ -1126,7 +1126,8 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         while (sw.ElapsedMilliseconds < 3000)
         {
             Dispatcher.UIThread.RunJobs();
-            if (scrollViewer.Extent.Height > scrollViewer.Viewport.Height) break;
+            if (scrollViewer.Extent.Height > scrollViewer.Viewport.Height)
+                break;
             System.Threading.Thread.Sleep(10);
         }
 
@@ -1162,7 +1163,8 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         while (sw.ElapsedMilliseconds < 3000)
         {
             Dispatcher.UIThread.RunJobs();
-            if (restoredScrollViewer.Extent.Height > restoredScrollViewer.Viewport.Height) break;
+            if (restoredScrollViewer.Extent.Height > restoredScrollViewer.Viewport.Height)
+                break;
             System.Threading.Thread.Sleep(10);
         }
 

@@ -1,16 +1,16 @@
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Visualization.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Infrastructure.Docking;
-using KubeUI.Avalonia.Infrastructure.Presentation;
 using System.Collections.Specialized;
 using System.Reactive.Subjects;
 using AvaloniaGraphControl;
 using Dock.Model.Core;
 using k8s;
 using k8s.Models;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Visualization.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
 using static AvaloniaGraphControl.GraphPanel;
 
@@ -2036,7 +2036,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         catch { }
     }
 
-    public sealed partial class ResourceNodeViewModel: ViewModelBase
+    public sealed partial class ResourceNodeViewModel : ViewModelBase
     {
         [ObservableProperty]
         public partial ClusterWorkspaceViewModel Cluster { get; set; }

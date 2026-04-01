@@ -1,18 +1,18 @@
+using System.Collections;
+using Avalonia.Collections;
+using Avalonia.Controls.DataGridFiltering;
+using Avalonia.Controls.DataGridSearching;
+using Avalonia.Controls.DataGridSorting;
+using Avalonia.Controls.Selection;
+using k8s;
+using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Features.Resources.List.ViewModels;
-using KubeUI.Avalonia.Services.Settings;
-using Avalonia.Collections;
-using Avalonia.Controls.DataGridFiltering;
-using Avalonia.Controls.DataGridSorting;
-using Avalonia.Controls.Selection;
-using System.Collections;
-using k8s;
-using k8s.Models;
-using KubeUI.Kubernetes;
 using KubeUI.Avalonia.Resources;
-using KubernetesClient.Informer.Client;
-using Avalonia.Controls.DataGridSearching;
+using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Resources.List.ViewModels
 {

@@ -1,7 +1,7 @@
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Infrastructure.Presentation;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 
 namespace KubeUI.Avalonia.Infrastructure.Presentation;
 

@@ -1,19 +1,19 @@
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Kubernetes;
 using System.Collections.Concurrent;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Reflection;
 using Avalonia.Media.Immutable;
-using DynamicData;
 using Avalonia.Threading;
+using DynamicData;
 using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 
@@ -78,7 +78,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     [ObservableProperty]
     public partial ObservableCollection<PortForwarder> PortForwarders { get; set; } = [];
-    
+
     [ObservableProperty]
     public partial int ResourceConfigVersion { get; set; }
 

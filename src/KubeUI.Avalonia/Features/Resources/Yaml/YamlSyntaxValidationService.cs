@@ -1,8 +1,8 @@
+using k8s;
 using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Infrastructure;
-using YamlDotNet.Core;
-using k8s;
 using KubeUI.Kubernetes;
+using YamlDotNet.Core;
 using KubernetesYamlSerializer = KubeUI.Kubernetes.Serialization.KubernetesYaml;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml;

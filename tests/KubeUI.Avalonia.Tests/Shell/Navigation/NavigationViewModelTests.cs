@@ -1,28 +1,29 @@
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Reactive.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Controls;
 using Dock.Model.Core;
-using System.Diagnostics;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Reactive.Linq;
 using FluentAvalonia.UI.Controls;
-using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Kubernetes;
-using KubeUI.Avalonia.Resources;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.Resources;
+using KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
+using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.Kubernetes;
 using Moq;
 using Shouldly;
-using CommunityToolkit.Mvvm.Input;
 
-namespace KubeUI.Avalonia.Tests;
+namespace KubeUI.Avalonia.Tests.Shell.Navigation;
 
 public class NavigationViewModelTests : AvaloniaTestBase
 {
@@ -421,8 +422,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         await vm.TreeViewSelectionChangedAsync(clusterNode);
-        await Task.Delay(10);
-        Dispatcher.UIThread.RunJobs();
+        await WaitForAsync(() => runtime.Status == ClusterStatus.Connected);
 
         runtime.Status.ShouldBe(ClusterStatus.Connected);
         documents.VisibleDockables!

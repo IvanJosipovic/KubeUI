@@ -1,6 +1,6 @@
-using KubeUI.Avalonia.Infrastructure.Docking;
 using Dock.Model.Controls;
 using Dock.Model.Core;
+using KubeUI.Avalonia.Infrastructure.Docking;
 
 namespace KubeUI.Avalonia.Infrastructure.Docking;
 

@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Reactive.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Xml;
@@ -9,12 +10,11 @@ using DynamicData.Kernel;
 using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
-using KubeUI.Kubernetes;
 using KubernetesClient.Informer.Client;
 using KubernetesCRDModelGen;
+using KubeUI.Kubernetes;
 using Mapster;
 using Microsoft.Extensions.Logging.Abstractions;
-using System.Reactive.Linq;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 

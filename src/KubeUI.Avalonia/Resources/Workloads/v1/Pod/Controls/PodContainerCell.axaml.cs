@@ -1,12 +1,12 @@
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Avalonia.Infrastructure.Presentation;
 using System.Globalization;
 using DynamicData;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Kubernetes;
 using KubeUI.Avalonia.Converters;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Kubernetes;
 using AppResources = KubeUI.Avalonia.Assets.Resources;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Controls;
@@ -95,7 +95,7 @@ public partial class PodContainerCell : UserControl, IInitializeCluster
 
     private void PopulateData()
     {
-        if(DataContext is V1Pod pod)
+        if (DataContext is V1Pod pod)
         {
             _viewModel = pod;
 

@@ -1,18 +1,18 @@
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Yaml;
-using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Avalonia.Services.Settings;
 using System.Text;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Folding;
 using FluentAvalonia.UI.Controls;
 using k8s;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Yaml;
+using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Serialization;
-using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
 

@@ -1,13 +1,13 @@
 using Avalonia;
 using Avalonia.Headless.XUnit;
-using Microsoft.Extensions.DependencyInjection;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Tests.Infra;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
-namespace KubeUI.Avalonia.Tests;
+namespace KubeUI.Avalonia.Tests.Resources;
 
 public class V1CustomResourceDefinitionConfigTests : AvaloniaTestBase
 {

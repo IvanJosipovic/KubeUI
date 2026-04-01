@@ -6,21 +6,22 @@ using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
-using Avalonia.Threading;
 using Avalonia.Styling;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
 using DynamicData;
 using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using Microsoft.Extensions.DependencyInjection;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.Avalonia.Tests.Shell.Navigation;
 using KubeUI.Testing;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
-namespace KubeUI.Avalonia.Tests;
+namespace KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
 
 public class ClusterWorkspaceViewModelTests : AvaloniaTestBase
 {

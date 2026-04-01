@@ -1,20 +1,20 @@
-using KubeUI.Avalonia.Features.Clusters.Error.ViewModels;
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Infrastructure.Docking;
-using KubeUI.Avalonia.Services.Settings;
 using System.Diagnostics;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using k8s;
+using KubeUI.Avalonia.Features.Clusters.Error.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Shell.Main.Views;
 using KubeUI.Kubernetes;
-using KubeUI.Avalonia.Infrastructure.Presentation;
+using Microsoft.Extensions.Hosting;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
-using Microsoft.Extensions.Hosting;
 
 namespace KubeUI.Avalonia;
 

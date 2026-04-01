@@ -1,5 +1,3 @@
-using KubeUI.Avalonia.Features.Resources.Common;
-using KubeUI.Kubernetes;
 using Avalonia.Collections;
 using Avalonia.Controls;
 using FluentAvalonia.UI.Controls;
@@ -7,7 +5,9 @@ using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
+using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Resources.Network.v1.Service.Views;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Network.v1.Service;
 

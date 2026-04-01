@@ -1,5 +1,5 @@
-using k8s.Models;
 using Avalonia.Controls;
+using k8s.Models;
 using KubeUI.Avalonia.Resources.Configuration.v1.MutatingWebhookConfiguration.Views;
 
 namespace KubeUI.Avalonia.Resources.Configuration.v1.MutatingWebhookConfiguration;

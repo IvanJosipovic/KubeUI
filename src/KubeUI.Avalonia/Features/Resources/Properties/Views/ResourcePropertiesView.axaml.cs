@@ -1,17 +1,17 @@
-using KubeUI.Avalonia.Infrastructure.Presentation;
-using System.Reflection;
 using System.ComponentModel;
-using k8s;
-using k8s.Models;
-using KubeUI.Avalonia.Features.Resources.Properties.Controls;
-using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using AppResources = KubeUI.Avalonia.Assets.Resources;
+using System.Reflection;
+using Avalonia;
+using Avalonia.Controls.Primitives;
+using Avalonia.Layout;
 using Avalonia.LogicalTree;
 using Avalonia.Threading;
-using Avalonia;
-using Avalonia.Layout;
-using Avalonia.Controls.Primitives;
+using k8s;
+using k8s.Models;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Properties.Controls;
+using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using AppResources = KubeUI.Avalonia.Assets.Resources;
 
 namespace KubeUI.Avalonia.Features.Resources.Properties.Views;
 

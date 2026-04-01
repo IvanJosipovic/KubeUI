@@ -1,13 +1,13 @@
-using KubeUI.Avalonia.Features.Resources.Yaml;
-using KubeUI.Avalonia.Services.Settings;
 using Avalonia.Controls.Templates;
 using Avalonia.Logging;
 using KubeUI.Avalonia.Controls.DataGridFilters;
+using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Infrastructure.Logging;
-using KubeUI.Kubernetes;
 using KubeUI.Avalonia.Infrastructure.Presentation;
-using Microsoft.Extensions.Hosting;
+using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using ServiceScan.SourceGenerator;
 
 namespace KubeUI.Avalonia.Infrastructure.DependencyInjection;
