@@ -14,7 +14,7 @@
         <Style Selector="SelectableTextBlock">
             <Setter Property="Padding" Value="5" />
         </Style>
-        <Style Selector="ContentPresenter &gt; SelectableTextBlock">
+        <Style Selector="ContentPresenter > SelectableTextBlock">
             <Setter Property="Padding" Value="0" />
         </Style>
     </UserControl.Styles>

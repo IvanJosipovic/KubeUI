@@ -3,6 +3,7 @@ using KubeUI.Kubernetes;
 using System.ComponentModel;
 using System.Text.Json;
 using Avalonia.Styling;
+using Avalonia.Threading;
 using Microsoft.Extensions.Configuration;
 using KubeUI.Avalonia.Options;
 using AppAppearanceSettings = KubeUI.Avalonia.Options.AppearanceSettings;
@@ -146,7 +147,14 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
             _logger.LogError(ex, "Unable to save settings file");
         }
 
-        ApplySettings();
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            ApplySettings();
+        }
+        else
+        {
+            Dispatcher.UIThread.Post(ApplySettings);
+        }
     }
 
     public virtual void ApplySettings()

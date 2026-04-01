@@ -44,7 +44,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
 
     private readonly SemaphoreSlim _connectionLimiter = new(1,1);
 
-    private readonly SemaphoreSlim _seedLimiter = new(1,1);
+    private readonly ConcurrentDictionary<GroupApiVersionKind, Lazy<Task>> _seedTasks = new();
     private readonly SemaphoreSlim _customResourceDefinitionSignal = new(0);
     private readonly ConcurrentDictionary<string, V1CustomResourceDefinition> _pendingCustomResourceDefinitions = new(StringComparer.Ordinal);
     private CancellationTokenSource? _resourceInformerCancellationTokenSource = new();
@@ -237,86 +237,92 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
 
     public async Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        _logger.LogDebug("Starting Seed: {type}", typeof(T));
-
         var type = typeof(T);
         var kind = GroupApiVersionKind.From<T>();
-
-        ContainerClass<T> container;
-
-        await _seedLimiter.WaitAsync();
-
-        if (Objects.TryGetValue(kind, out var obj) && obj is ContainerClass<T> container2)
+        var createdSeedTask = false;
+        if (!_seedTasks.TryGetValue(kind, out var seedTask))
         {
-            container = container2;
-        }
-        else
-        {
-            container = new ContainerClass<T>();
-
-            if (!Objects.TryAdd(kind, container))
-            {
-                throw new Exception($"Duplicate Object Set detected for: {kind}");
-            }
+            var newSeedTask = new Lazy<Task>(() => SeedResourceCoreAsync<T>(), LazyThreadSafetyMode.ExecutionAndPublication);
+            seedTask = _seedTasks.GetOrAdd(kind, newSeedTask);
+            createdSeedTask = ReferenceEquals(seedTask, newSeedTask);
         }
 
-        if (!container.Initialized)
+        _logger.LogDebug(
+            createdSeedTask ? "Seed requested for {type}; scheduling initialization." : "Seed requested for {type}; initialization already pending or completed.",
+            type);
+
+        try
         {
-            container.Initialized = true;
-            _seedLimiter.Release();
-
-            if (await UpdateCanI(type, Verb.List) && await UpdateCanI(type, Verb.Watch))
-            {
-                var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>());
-                container.Informers.Add(informer);
-                container.InformerRegistrations.Add(informer.Register(GetResourceInformerCallback<T>()));
-                var informerCancellationToken = GetResourceInformerCancellationToken();
-                _ = Task.Run(() =>
-                {
-                    informer.StartWatching();
-                    _ = informer.RunInfinite(informerCancellationToken);
-                });
-            }
-            else
-            {
-                if (!IsResourceNamespaced<T>())
-                {
-                    return;
-                }
-
-                foreach (var item in GetResourceList<V1Namespace>())
-                {
-                    string ns = item.Name();
-
-                    if (await UpdateCanI(type, Verb.List, ns) && await UpdateCanI(type, Verb.Watch, ns))
-                    {
-                        var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), @namespace: ns);
-                        container.Informers.Add(informer);
-                        container.InformerRegistrations.Add(informer.Register(GetResourceInformerCallback<T>()));
-                        var informerCancellationToken = GetResourceInformerCancellationToken();
-
-                        _ = Task.Run(() =>
-                        {
-                            informer.StartWatching();
-                            _ = informer.RunInfinite(informerCancellationToken);
-                        });
-                    }
-                }
-            }
+            await seedTask.Value.ConfigureAwait(false);
         }
-        else
+        catch
         {
-            _seedLimiter.Release();
+            if (_seedTasks.TryGetValue(kind, out var current) && ReferenceEquals(current, seedTask))
+            {
+                _seedTasks.TryRemove(kind, out _);
+            }
+
+            throw;
         }
 
         if (waitForReady)
         {
-            _logger.LogDebug("Waiting for Ready: {type}", typeof(T));
-            await IsResourceReady<T>();
-            _logger.LogDebug("Ready: {type}", typeof(T));
+            _logger.LogDebug("Waiting for resource readiness for {type}.", typeof(T));
+            await IsResourceReady<T>().ConfigureAwait(false);
+            _logger.LogDebug("Resource readiness reached for {type}.", typeof(T));
+        }
+    }
+
+    private async Task SeedResourceCoreAsync<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        _logger.LogDebug("Starting seed initialization for {type}.", typeof(T));
+
+        var type = typeof(T);
+        var kind = GroupApiVersionKind.From<T>();
+
+        ContainerClass<T> container = (ContainerClass<T>)Objects.GetOrAdd(kind, _ => new ContainerClass<T>());
+        container.Initialized = true;
+
+        if (await UpdateCanI(type, Verb.List).ConfigureAwait(false) && await UpdateCanI(type, Verb.Watch).ConfigureAwait(false))
+        {
+            var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>());
+            container.Informers.Add(informer);
+            container.InformerRegistrations.Add(informer.Register(GetResourceInformerCallback<T>()));
+            var informerCancellationToken = GetResourceInformerCancellationToken();
+            _ = Task.Run(() =>
+            {
+                informer.StartWatching();
+                _ = informer.RunInfinite(informerCancellationToken);
+            });
+        }
+        else
+        {
+            if (!IsResourceNamespaced<T>())
+            {
+                return;
+            }
+
+            foreach (var item in GetResourceList<V1Namespace>())
+            {
+                string ns = item.Name();
+
+                if (await UpdateCanI(type, Verb.List, ns).ConfigureAwait(false) && await UpdateCanI(type, Verb.Watch, ns).ConfigureAwait(false))
+                {
+                    var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), @namespace: ns);
+                    container.Informers.Add(informer);
+                    container.InformerRegistrations.Add(informer.Register(GetResourceInformerCallback<T>()));
+                    var informerCancellationToken = GetResourceInformerCancellationToken();
+
+                    _ = Task.Run(() =>
+                    {
+                        informer.StartWatching();
+                        _ = informer.RunInfinite(informerCancellationToken);
+                    });
+                }
+            }
         }
 
-        _logger.LogDebug("Finished Seed: {type}", typeof(T));
+        _logger.LogDebug("Finished seed initialization for {type}.", typeof(T));
     }
 
     private ResourceInformerCallback<T> GetResourceInformerCallback<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -909,6 +915,14 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         return false;
     }
 
+    private void StopPortForwarders()
+    {
+        foreach (var portForwarder in PortForwarders.ToList())
+        {
+            RemovePortForward(portForwarder);
+        }
+    }
+
     private void StopMetrics()
     {
         _metricsRefreshCancellationTokenSource?.Cancel();
@@ -921,14 +935,6 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         NodeMetrics.Clear();
         PodMetrics.Clear();
         IsMetricsAvailable = false;
-    }
-
-    private void StopPortForwarders()
-    {
-        foreach (var portForwarder in PortForwarders.ToList())
-        {
-            RemovePortForward(portForwarder);
-        }
     }
 
     private void StopResourceInformers()

@@ -48,4 +48,5 @@ public sealed partial class ResourceYamlView : UserControl
         }
 #endif
     }
+
 }

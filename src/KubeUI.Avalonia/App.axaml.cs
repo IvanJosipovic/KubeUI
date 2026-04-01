@@ -1,4 +1,5 @@
 using KubeUI.Avalonia.Features.Clusters.Error.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Services.Settings;
 using System.Diagnostics;
@@ -17,11 +18,11 @@ using Microsoft.Extensions.Hosting;
 
 namespace KubeUI.Avalonia;
 
-public partial class App : Application
+public partial class App : Application, IServiceProviderAccessor
 {
     public IServiceProvider Services { get; set; }
 
-    public static TopLevel TopLevel { get; private set; }
+    public static TopLevel? TopLevel { get; private set; }
 
     private readonly ILogger<App> _logger;
     private readonly IHostApplicationLifetime _hostApplicationLifetime;
@@ -37,7 +38,6 @@ public partial class App : Application
         Resources["DataGridRowHeight"] = Convert.ToDouble(Services.GetRequiredService<ISettingsService>().Appearance.ListRowHeight);
         Resources["DataGridColumnHeaderMinHeight"] = Convert.ToDouble(Services.GetRequiredService<ISettingsService>().Appearance.ListRowHeight + 4m);
         Resources["DataGridFontSize"] = Convert.ToDouble(Services.GetRequiredService<ISettingsService>().Appearance.FontSize);
-        Resources[typeof(IServiceProvider)] = Services;
         DataTemplates.Add(Services.GetRequiredService<ViewLocator>());
 
         AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;

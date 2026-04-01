@@ -1,4 +1,4 @@
-using KubeUI.Avalonia.Infrastructure;
+﻿using KubeUI.Avalonia.Infrastructure;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.Json;
@@ -15,9 +15,9 @@ public static class Utilities
     public static T GetRequiredService<T>(this Application? app)
     {
         var resourceHost = app ?? Application.Current;
-        if (resourceHost?.Resources.TryGetValue(typeof(IServiceProvider), out var service) == true)
+        if (resourceHost is IServiceProviderAccessor serviceProviderAccessor && serviceProviderAccessor.Services != null)
         {
-            return ((IServiceProvider)service).GetRequiredService<T>();
+            return serviceProviderAccessor.Services.GetRequiredService<T>();
         }
 
         throw new Exception($"Cant find {typeof(IServiceProvider).Name}");
@@ -26,9 +26,9 @@ public static class Utilities
     public static object GetRequiredService(this Application? app, Type type)
     {
         var resourceHost = app ?? Application.Current;
-        if (resourceHost?.Resources.TryGetValue(typeof(IServiceProvider), out var service) == true)
+        if (resourceHost is IServiceProviderAccessor serviceProviderAccessor && serviceProviderAccessor.Services != null)
         {
-            return ((IServiceProvider)service!).GetRequiredService(type);
+            return serviceProviderAccessor.Services.GetRequiredService(type);
         }
 
         throw new Exception($"Cant find {typeof(IServiceProvider).Name}");
