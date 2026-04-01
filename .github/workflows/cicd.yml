@@ -38,23 +38,23 @@ jobs:
         run: dotnet test -c Release --collect:"XPlat Code Coverage" --no-build --logger "trx;LogFileName=test-results.trx"
 
       - name: Test Kubernetes E2E
-        run: dotnet test tests/KubeUI.Kubernetes.Tests/KubeUI.Kubernetes.Tests.csproj -c Release --no-build --logger "trx;LogFileName=kind-test-results.trx"
+        run: dotnet test tests/KubeUI.Kubernetes.Tests/KubeUI.Kubernetes.Tests.csproj -c Release --no-build --logger "trx;LogFileName=test-results.trx"
         env:
           KUBEUI_RUN_KIND_TESTS: 1
 
       - name: Test Report
-        uses: dorny/test-reporter@v3
-        if: success() || failure()
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: (!cancelled())
         with:
-          name: KubeUI Tests
-          path: tests/**/TestResults/*.trx
-          reporter: dotnet-trx
+          check_name: KubeUI Tests
+          comment_mode: always
+          files: tests/*/TestResults/test-results.trx
 
       - name: Coverage
         uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage.cobertura.xml
+          files: tests/*/TestResults/*/coverage.cobertura.xml
           fail_ci_if_error: false
 
     #   - name: Run Benchmark
