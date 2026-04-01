@@ -43,12 +43,20 @@ jobs:
           KUBEUI_RUN_KIND_TESTS: 1
 
       - name: Test Report
+        uses: dorny/test-reporter@v3
+        if: (!cancelled())
+        with:
+          name: KubeUI Tests
+          path: tests/**/TestResults/*.trx
+          reporter: dotnet-trx
+
+      - name: Test Summary
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: (!cancelled())
         with:
           check_name: KubeUI Tests
           comment_mode: always
-          files: tests/*/TestResults/test-results.trx
+          files: tests/*/TestResults/*.trx
 
       - name: Coverage
         uses: codecov/codecov-action@v6
