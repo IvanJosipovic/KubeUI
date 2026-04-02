@@ -1251,11 +1251,29 @@ namespace KubeUI.Avalonia.Assets {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Not contains.
+        /// </summary>
+        public static string DataGridFilterFlyout_NotContains {
+            get {
+                return ResourceManager.GetString("DataGridFilterFlyout_NotContains", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Ends with.
         /// </summary>
         public static string DataGridFilterFlyout_EndsWith {
             get {
                 return ResourceManager.GetString("DataGridFilterFlyout_EndsWith", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Not ends with.
+        /// </summary>
+        public static string DataGridFilterFlyout_NotEndsWith {
+            get {
+                return ResourceManager.GetString("DataGridFilterFlyout_NotEndsWith", resourceCulture);
             }
         }
 
@@ -1269,11 +1287,29 @@ namespace KubeUI.Avalonia.Assets {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Not equals.
+        /// </summary>
+        public static string DataGridFilterFlyout_NotEquals {
+            get {
+                return ResourceManager.GetString("DataGridFilterFlyout_NotEquals", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Greater than.
         /// </summary>
         public static string DataGridFilterFlyout_GreaterThan {
             get {
                 return ResourceManager.GetString("DataGridFilterFlyout_GreaterThan", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Not greater than.
+        /// </summary>
+        public static string DataGridFilterFlyout_NotGreaterThan {
+            get {
+                return ResourceManager.GetString("DataGridFilterFlyout_NotGreaterThan", resourceCulture);
             }
         }
 
@@ -1287,11 +1323,29 @@ namespace KubeUI.Avalonia.Assets {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Not greater than or equal.
+        /// </summary>
+        public static string DataGridFilterFlyout_NotGreaterThanOrEqual {
+            get {
+                return ResourceManager.GetString("DataGridFilterFlyout_NotGreaterThanOrEqual", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Less than.
         /// </summary>
         public static string DataGridFilterFlyout_LessThan {
             get {
                 return ResourceManager.GetString("DataGridFilterFlyout_LessThan", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Not less than.
+        /// </summary>
+        public static string DataGridFilterFlyout_NotLessThan {
+            get {
+                return ResourceManager.GetString("DataGridFilterFlyout_NotLessThan", resourceCulture);
             }
         }
 
@@ -1305,11 +1359,38 @@ namespace KubeUI.Avalonia.Assets {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Not less than or equal.
+        /// </summary>
+        public static string DataGridFilterFlyout_NotLessThanOrEqual {
+            get {
+                return ResourceManager.GetString("DataGridFilterFlyout_NotLessThanOrEqual", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Not between.
+        /// </summary>
+        public static string DataGridFilterFlyout_NotBetween {
+            get {
+                return ResourceManager.GetString("DataGridFilterFlyout_NotBetween", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Newer than.
         /// </summary>
         public static string DataGridFilterFlyout_NewerThan {
             get {
                 return ResourceManager.GetString("DataGridFilterFlyout_NewerThan", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Not newer than.
+        /// </summary>
+        public static string DataGridFilterFlyout_NotNewerThan {
+            get {
+                return ResourceManager.GetString("DataGridFilterFlyout_NotNewerThan", resourceCulture);
             }
         }
 
@@ -1323,11 +1404,29 @@ namespace KubeUI.Avalonia.Assets {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Not older than.
+        /// </summary>
+        public static string DataGridFilterFlyout_NotOlderThan {
+            get {
+                return ResourceManager.GetString("DataGridFilterFlyout_NotOlderThan", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Starts with.
         /// </summary>
         public static string DataGridFilterFlyout_StartsWith {
             get {
                 return ResourceManager.GetString("DataGridFilterFlyout_StartsWith", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Not starts with.
+        /// </summary>
+        public static string DataGridFilterFlyout_NotStartsWith {
+            get {
+                return ResourceManager.GetString("DataGridFilterFlyout_NotStartsWith", resourceCulture);
             }
         }
 

@@ -5,7 +5,24 @@ using Avalonia.Controls.DataGridFiltering;
 
 namespace KubeUI.Avalonia.Controls.DataGridFilters;
 
-internal sealed record FilterOperatorChoice(FilteringOperator Operator, string Label);
+internal sealed record FilterOperatorChoice(FilteringOperator Operator, string Label, string? CustomKey = null)
+{
+    public bool Matches(FilteringDescriptor? descriptor)
+    {
+        if (descriptor == null)
+        {
+            return false;
+        }
+
+        if (CustomKey == null)
+        {
+            return descriptor.Operator == Operator;
+        }
+
+        return descriptor.Operator == FilteringOperator.Custom &&
+               string.Equals(descriptor.PropertyPath, CustomKey, StringComparison.Ordinal);
+    }
+}
 
 internal enum DateRelativeUnit
 {
@@ -52,23 +69,21 @@ internal abstract class ColumnFilterFlyoutContextBase : ObservableObject
         }
     }
 
-    public bool IsRangeVisible => SelectedOperator.Operator == FilteringOperator.Between;
+    public bool IsRangeVisible =>
+        SelectedOperator.Operator == FilteringOperator.Between ||
+        string.Equals(SelectedOperator.CustomKey, FilterOperatorKeys.NumericNotBetween, StringComparison.Ordinal);
 }
 
-internal sealed class EnumFilterFlyoutContext : ObservableObject
+internal sealed class EnumFilterFlyoutContext : ColumnFilterFlyoutContextBase
 {
     private EnumFilterChoice? _selectedValue;
 
     public EnumFilterFlyoutContext(string title, Type enumType, Action apply, Action clear)
+        : base(title, ResourceListFilterFlyoutOptions.EnumOperators, apply, clear)
     {
-        Title = title;
         Options = CreateOptions(enumType);
-        ApplyCommand = new RelayCommand(apply);
-        ClearCommand = new RelayCommand(clear);
         _selectedValue = Options[0];
     }
-
-    public string Title { get; }
 
     public ObservableCollection<EnumFilterChoice> Options { get; }
 
@@ -78,10 +93,6 @@ internal sealed class EnumFilterFlyoutContext : ObservableObject
         set => SetProperty(ref _selectedValue, value);
     }
 
-    public ICommand ApplyCommand { get; }
-
-    public ICommand ClearCommand { get; }
-
     public void LoadFromDescriptor(FilteringDescriptor? descriptor)
     {
         if (descriptor == null)
@@ -90,12 +101,14 @@ internal sealed class EnumFilterFlyoutContext : ObservableObject
             return;
         }
 
+        SelectedOperator = Operators.FirstOrDefault(option => option.Matches(descriptor)) ?? Operators[0];
         var selected = Options.FirstOrDefault(option => Equals(option.Value, descriptor.Value));
         SelectedValue = selected ?? Options[0];
     }
 
     public void ClearState()
     {
+        SelectedOperator = Operators[0];
         SelectedValue = Options[0];
     }
 
@@ -139,7 +152,7 @@ internal sealed class TextFilterFlyoutContext : ColumnFilterFlyoutContextBase
             return;
         }
 
-        SelectedOperator = Operators.FirstOrDefault(x => x.Operator == descriptor.Operator) ?? Operators[0];
+        SelectedOperator = Operators.FirstOrDefault(x => x.Matches(descriptor)) ?? Operators[0];
         Query = descriptor.Value?.ToString() ?? string.Empty;
     }
 
@@ -180,9 +193,11 @@ internal sealed class NumericFilterFlyoutContext : ColumnFilterFlyoutContextBase
             return;
         }
 
-        SelectedOperator = Operators.FirstOrDefault(x => x.Operator == descriptor.Operator) ?? Operators[0];
+        SelectedOperator = Operators.FirstOrDefault(x => x.Matches(descriptor)) ?? Operators[0];
 
-        if (descriptor.Operator == FilteringOperator.Between && descriptor.Values is { Count: >= 2 })
+        if ((descriptor.Operator == FilteringOperator.Between ||
+             string.Equals(SelectedOperator.CustomKey, FilterOperatorKeys.NumericNotBetween, StringComparison.Ordinal)) &&
+            descriptor.Values is { Count: >= 2 })
         {
             Value = ToDouble(descriptor.Values[0]);
             SecondValue = ToDouble(descriptor.Values[1]);
@@ -256,7 +271,7 @@ internal sealed class DateFilterFlyoutContext : ColumnFilterFlyoutContextBase
         }
 
         var normalizedOperator = NormalizeDateOperator(descriptor.Operator);
-        SelectedOperator = Operators.FirstOrDefault(x => x.Operator == normalizedOperator) ?? Operators[0];
+        SelectedOperator = Operators.FirstOrDefault(x => x.Matches(descriptor) || x.Operator == normalizedOperator) ?? Operators[0];
 
         var threshold = ToDateTimeOffset(descriptor.Value);
         if (threshold == null)
@@ -332,25 +347,43 @@ internal static class ResourceListFilterFlyoutOptions
     public static IReadOnlyList<FilterOperatorChoice> TextOperators { get; } =
     [
         new(FilteringOperator.Contains, Assets.Resources.DataGridFilterFlyout_Contains),
+        new(FilteringOperator.Custom, Assets.Resources.DataGridFilterFlyout_NotContains, FilterOperatorKeys.TextNotContains),
         new(FilteringOperator.Equals, Assets.Resources.DataGridFilterFlyout_Equals),
+        new(FilteringOperator.NotEquals, Assets.Resources.DataGridFilterFlyout_NotEquals),
         new(FilteringOperator.StartsWith, Assets.Resources.DataGridFilterFlyout_StartsWith),
+        new(FilteringOperator.Custom, Assets.Resources.DataGridFilterFlyout_NotStartsWith, FilterOperatorKeys.TextNotStartsWith),
         new(FilteringOperator.EndsWith, Assets.Resources.DataGridFilterFlyout_EndsWith),
+        new(FilteringOperator.Custom, Assets.Resources.DataGridFilterFlyout_NotEndsWith, FilterOperatorKeys.TextNotEndsWith),
     ];
 
     public static IReadOnlyList<FilterOperatorChoice> NumericOperators { get; } =
     [
         new(FilteringOperator.Between, Assets.Resources.DataGridFilterFlyout_Between),
+        new(FilteringOperator.Custom, Assets.Resources.DataGridFilterFlyout_NotBetween, FilterOperatorKeys.NumericNotBetween),
         new(FilteringOperator.Equals, Assets.Resources.DataGridFilterFlyout_Equals),
+        new(FilteringOperator.NotEquals, Assets.Resources.DataGridFilterFlyout_NotEquals),
         new(FilteringOperator.GreaterThan, Assets.Resources.DataGridFilterFlyout_GreaterThan),
+        new(FilteringOperator.Custom, Assets.Resources.DataGridFilterFlyout_NotGreaterThan, FilterOperatorKeys.NumericNotGreaterThan),
         new(FilteringOperator.GreaterThanOrEqual, Assets.Resources.DataGridFilterFlyout_GreaterThanOrEqual),
+        new(FilteringOperator.Custom, Assets.Resources.DataGridFilterFlyout_NotGreaterThanOrEqual, FilterOperatorKeys.NumericNotGreaterThanOrEqual),
         new(FilteringOperator.LessThan, Assets.Resources.DataGridFilterFlyout_LessThan),
+        new(FilteringOperator.Custom, Assets.Resources.DataGridFilterFlyout_NotLessThan, FilterOperatorKeys.NumericNotLessThan),
         new(FilteringOperator.LessThanOrEqual, Assets.Resources.DataGridFilterFlyout_LessThanOrEqual),
+        new(FilteringOperator.Custom, Assets.Resources.DataGridFilterFlyout_NotLessThanOrEqual, FilterOperatorKeys.NumericNotLessThanOrEqual),
     ];
 
     public static IReadOnlyList<FilterOperatorChoice> DateOperators { get; } =
     [
         new(FilteringOperator.GreaterThan, Assets.Resources.DataGridFilterFlyout_NewerThan),
+        new(FilteringOperator.Custom, Assets.Resources.DataGridFilterFlyout_NotNewerThan, FilterOperatorKeys.DateNotNewerThan),
         new(FilteringOperator.LessThan, Assets.Resources.DataGridFilterFlyout_OlderThan),
+        new(FilteringOperator.Custom, Assets.Resources.DataGridFilterFlyout_NotOlderThan, FilterOperatorKeys.DateNotOlderThan),
+    ];
+
+    public static IReadOnlyList<FilterOperatorChoice> EnumOperators { get; } =
+    [
+        new(FilteringOperator.Equals, Assets.Resources.DataGridFilterFlyout_Equals),
+        new(FilteringOperator.NotEquals, Assets.Resources.DataGridFilterFlyout_NotEquals),
     ];
 
     public static IReadOnlyList<DateRelativeUnitChoice> DateRelativeUnits { get; } =
@@ -360,4 +393,18 @@ internal static class ResourceListFilterFlyoutOptions
         new(DateRelativeUnit.Days, Assets.Resources.DataGridFilterFlyout_Days),
         new(DateRelativeUnit.Months, Assets.Resources.DataGridFilterFlyout_Months),
     ];
+}
+
+internal static class FilterOperatorKeys
+{
+    public const string TextNotContains = "__text_not_contains__";
+    public const string TextNotStartsWith = "__text_not_starts_with__";
+    public const string TextNotEndsWith = "__text_not_ends_with__";
+    public const string NumericNotBetween = "__numeric_not_between__";
+    public const string NumericNotGreaterThan = "__numeric_not_greater_than__";
+    public const string NumericNotGreaterThanOrEqual = "__numeric_not_greater_than_or_equal__";
+    public const string NumericNotLessThan = "__numeric_not_less_than__";
+    public const string NumericNotLessThanOrEqual = "__numeric_not_less_than_or_equal__";
+    public const string DateNotNewerThan = "__date_not_newer_than__";
+    public const string DateNotOlderThan = "__date_not_older_than__";
 }
