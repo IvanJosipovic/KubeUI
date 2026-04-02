@@ -20,6 +20,7 @@ namespace KubeUI.Desktop;
 
 internal static class Program
 {
+    private static readonly object HostLock = new();
     private static IHost? _host;
 
     [STAThread]
@@ -27,10 +28,7 @@ internal static class Program
     {
         VelopackApp.Build().Run();
 
-        _host = CreateHostBuilder(args).Build();
-        _host.Services.ConfigureKubeUIKubernetesJsonLogging();
-
-        _host.StartAsync().GetAwaiter().GetResult();
+        EnsureHostInitialized();
 
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
 
@@ -41,14 +39,29 @@ internal static class Program
     }
 
     public static AppBuilder BuildAvaloniaApp()
-        => AppBuilder.Configure(() => new App(GetAppServices()))
+            => AppBuilder.Configure(() => new App(EnsureHostInitialized().Services))
             .ConfigureFonts(fontManager => fontManager.AddFontCollection(new CascadiaMonoFontCollection()))
             .WithInterFont()
             .UsePlatformDetect();
 
-    private static IServiceProvider GetAppServices()
+    private static IHost EnsureHostInitialized()
     {
-        return _host?.Services ?? throw new InvalidOperationException("Application host has not been initialized.");
+        if (_host != null)
+        {
+            return _host;
+        }
+
+        lock (HostLock)
+        {
+            if (_host == null)
+            {
+                _host = CreateHostBuilder(Environment.GetCommandLineArgs()).Build();
+                _host.Services.ConfigureKubeUIKubernetesJsonLogging();
+                _host.StartAsync().GetAwaiter().GetResult();
+            }
+        }
+
+        return _host;
     }
 
     private static HostApplicationBuilder CreateHostBuilder(string[] args)
