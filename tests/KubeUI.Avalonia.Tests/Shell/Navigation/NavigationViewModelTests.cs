@@ -814,11 +814,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
         clusterNode.IsExpanded.ShouldBeFalse();
 
         await vm.TreeViewSelectionChangedAsync(clusterNode);
-        await Task.Delay(10);
-        Dispatcher.UIThread.RunJobs();
 
-        clusterNode.Cluster.Connected.ShouldBeTrue();
-        clusterNode.IsExpanded.ShouldBeTrue();
+        await WaitForAsync(() => clusterNode.Cluster.Connected && clusterNode.IsExpanded);
     }
 
     [AvaloniaFact]
