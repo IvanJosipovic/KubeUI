@@ -5,6 +5,7 @@ using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
 using KubeUI.Avalonia.Features.Resources.Properties.Views;
 using KubeUI.Avalonia.Tests.Infra;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using AppResources = KubeUI.Avalonia.Assets.Resources;
 
@@ -17,7 +18,8 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
     {
         var workspace = new TestCluster().CreateWorkspace();
         workspace.EnsureWorkspaceStateInitializedAsync().GetAwaiter().GetResult();
-        var viewModel = new ResourcePropertiesViewModel<V1Pod>();
+        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
         viewModel.Initialize(workspace, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -42,7 +44,8 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
     {
         var workspace = new TestCluster().CreateWorkspace();
         workspace.EnsureWorkspaceStateInitializedAsync().GetAwaiter().GetResult();
-        var viewModel = new ResourcePropertiesViewModel<V1Node>();
+        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Node>>();
         viewModel.Initialize(workspace, new V1Node
         {
             Metadata = new V1ObjectMeta

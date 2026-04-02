@@ -63,9 +63,10 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         return cluster;
     }
 
-    private T ResolveService<T>()
+    private T ResolveService<T>() where T : class
     {
-        var service = Application.Current.GetRequiredService<T>();
+        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var service = services.GetRequiredService<T>();
         if (service is IDisposable disposable)
         {
             _disposables.Add(disposable);

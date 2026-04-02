@@ -6,12 +6,6 @@ using KubeUI.Avalonia.Assets;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
-using LiveChartsCore;
-using LiveChartsCore.Drawing;
-using LiveChartsCore.SkiaSharpView;
-using LiveChartsCore.SkiaSharpView.Painting;
-using LiveChartsCore.Themes;
-using Mapster;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -20,7 +14,6 @@ using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-using SkiaSharp;
 using Velopack;
 
 namespace KubeUI.Desktop;
@@ -28,7 +21,6 @@ namespace KubeUI.Desktop;
 internal static class Program
 {
     private static IHost? _host;
-    private static IServiceProvider? _designTimeServices;
 
     [STAThread]
     public static void Main(string[] args)
@@ -56,20 +48,11 @@ internal static class Program
 
     private static IServiceProvider GetAppServices()
     {
-        if (Design.IsDesignMode)
-        {
-            _designTimeServices ??= BuildDesignTimeServices();
-            return _designTimeServices;
-        }
-
         return _host?.Services ?? throw new InvalidOperationException("Application host has not been initialized.");
     }
 
     private static HostApplicationBuilder CreateHostBuilder(string[] args)
     {
-        ConfigureLiveCharts();
-        ConfigureTypeAdapter();
-
         var builder = Host.CreateApplicationBuilder(args);
         var settings = SettingsService.LoadSettingsFromFile();
 
@@ -89,53 +72,6 @@ internal static class Program
 
         builder.Services.AddSingleton<ServiceDescriptor[]>([.. builder.Services]);
         return builder;
-    }
-
-    private static ServiceProvider BuildDesignTimeServices()
-    {
-        ConfigureLiveCharts();
-        ConfigureTypeAdapter();
-
-        var services = new ServiceCollection();
-        services.AddLogging(x => x.SetMinimumLevel(LogLevel.Debug));
-        services.AddKubeUIAppServices();
-
-        var provider = services.BuildServiceProvider();
-        provider.ConfigureKubeUIKubernetesJsonLogging();
-        return provider;
-    }
-
-    private static void ConfigureTypeAdapter()
-    {
-        TypeAdapterConfig.GlobalSettings
-            .Default
-            .MaxDepth(1)
-            .ShallowCopyForSameType(true)
-            .PreserveReference(true);
-    }
-
-    private static void ConfigureLiveCharts()
-    {
-        LiveCharts.Configure(config => config
-            .AddSkiaSharp()
-            .AddDefaultMappers()
-            .AddDefaultTheme(theme =>
-                theme.OnInitialized(() =>
-                {
-                    theme.AnimationsSpeed = TimeSpan.FromMilliseconds(800);
-                    theme.EasingFunction = EasingFunctions.ExponentialOut;
-
-                    if (theme.IsDark)
-                    {
-                        theme.VirtualBackroundColor = LvcColor.Parse("#1E1E1E");
-                        theme.LegendTextPaint = new SolidColorPaint(SKColors.White);
-                    }
-                    else
-                    {
-                        theme.VirtualBackroundColor = new(255, 255, 255);
-                        theme.LegendTextPaint = new SolidColorPaint(SKColors.Black);
-                    }
-                })));
     }
 
     private static IServiceCollection AddFileLogging(this IServiceCollection services)
@@ -221,6 +157,7 @@ internal static class Program
                     .AddHttpClientInstrumentation()
                     .AddOtlpExporter(e =>
                     {
+                        e.Endpoint = new Uri("http://localhost:4317");
                     });
             })
 #endif

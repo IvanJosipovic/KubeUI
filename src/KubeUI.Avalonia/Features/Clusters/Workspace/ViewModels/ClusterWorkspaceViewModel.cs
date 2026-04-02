@@ -459,10 +459,10 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         {
             var serviceDescriptors = _serviceProvider.GetRequiredService<ServiceDescriptor[]>();
             var types = serviceDescriptors
-                .Where(t => t.ServiceType.IsGenericType
-                    && t.ServiceType.GetGenericTypeDefinition() == typeof(ResourceConfigBase<>)
-                    && t.ServiceType.GenericTypeArguments.Length == 1)
                 .Select(x => x.ServiceType)
+                .Where(t => !t.IsAbstract
+                    && !t.ContainsGenericParameters
+                    && typeof(IResourceConfig).IsAssignableFrom(t))
                 .Distinct()
                 .ToList();
 

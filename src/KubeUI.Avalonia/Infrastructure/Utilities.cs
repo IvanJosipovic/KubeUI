@@ -12,38 +12,6 @@ namespace KubeUI.Avalonia.Infrastructure;
 
 public static class Utilities
 {
-    public static T GetRequiredService<T>(this Application? app)
-    {
-        var resourceHost = app ?? Application.Current;
-        if (resourceHost is IServiceProviderAccessor serviceProviderAccessor && serviceProviderAccessor.Services != null)
-        {
-            if (typeof(T) == typeof(IServiceProvider))
-            {
-                return (T)serviceProviderAccessor.Services;
-            }
-
-            return serviceProviderAccessor.Services.GetRequiredService<T>();
-        }
-
-        throw new Exception($"Cant find {typeof(IServiceProvider).Name}");
-    }
-
-    public static object GetRequiredService(this Application? app, Type type)
-    {
-        var resourceHost = app ?? Application.Current;
-        if (resourceHost is IServiceProviderAccessor serviceProviderAccessor && serviceProviderAccessor.Services != null)
-        {
-            if (type == typeof(IServiceProvider))
-            {
-                return serviceProviderAccessor.Services;
-            }
-
-            return serviceProviderAccessor.Services.GetRequiredService(type);
-        }
-
-        throw new Exception($"Cant find {typeof(IServiceProvider).Name}");
-    }
-
     public static string GetKubeAssetPath(Type type)
     {
         const string infrastructure_componentsBasePath = "/Assets/kube/infrastructure_components/unlabeled/";

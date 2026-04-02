@@ -9,6 +9,7 @@ using KubeUI.Avalonia.Features.Resources.Properties.Views;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Tests.Infra;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Properties;
@@ -21,8 +22,9 @@ public sealed class ResourcePropertiesViewInitializationTests : AvaloniaTestBase
         var workspace = new TestCluster().CreateWorkspace();
         workspace.EnsureWorkspaceStateInitializedAsync().GetAwaiter().GetResult();
 
-        var trackingConfig = new TrackingResourceConfig();
-        var viewModel = new ResourcePropertiesViewModel<V1Pod>();
+        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var trackingConfig = new TrackingResourceConfig(services);
+        var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
         viewModel.Initialize(workspace, new V1Pod
         {
             Metadata = new V1ObjectMeta
@@ -47,6 +49,11 @@ public sealed class ResourcePropertiesViewInitializationTests : AvaloniaTestBase
 
     private sealed class TrackingResourceConfig : ResourceConfigBase<V1Pod>
     {
+        public TrackingResourceConfig(IServiceProvider serviceProvider)
+            : base(serviceProvider)
+        {
+        }
+
         public TrackingClusterControl TrackingControl { get; } = new();
 
         public override Control[] Properties(V1Pod resource)

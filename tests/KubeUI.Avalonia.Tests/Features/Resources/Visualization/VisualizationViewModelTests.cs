@@ -31,7 +31,8 @@ public class VisualizationViewModelTests : AvaloniaTestBase
 
     private VisualizationViewModel CreateViewModel()
     {
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = TestApp.CurrentServices?.GetRequiredService<VisualizationViewModel>()
+            ?? throw new InvalidOperationException("Test services are not initialized.");
         _disposables.Add(vm);
         return vm;
     }

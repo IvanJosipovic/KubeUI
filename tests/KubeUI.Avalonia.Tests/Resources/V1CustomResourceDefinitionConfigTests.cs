@@ -15,7 +15,7 @@ public class V1CustomResourceDefinitionConfigTests : AvaloniaTestBase
     public void list_crd_command_does_not_throw_when_type_is_unavailable()
     {
         var cluster = new TestCluster().CreateWorkspace();
-        var services = Application.Current.GetRequiredService<IServiceProvider>();
+        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
         var config = ActivatorUtilities.CreateInstance<V1CustomResourceDefinitionConfig>(services);
         config.Initialize(cluster);
 
@@ -50,7 +50,7 @@ public class V1CustomResourceDefinitionConfigTests : AvaloniaTestBase
     public void generate_uses_humanized_plural_kind_for_display_name()
     {
         var cluster = new TestCluster().CreateWorkspace();
-        var services = Application.Current.GetRequiredService<IServiceProvider>();
+        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
         var config = ActivatorUtilities.CreateInstance<CRDResourceConfig<TestCustomResource>>(services);
         config.Initialize(cluster);
 

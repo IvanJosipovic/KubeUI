@@ -17,7 +17,7 @@ public sealed class LimitedAccessNavigationTests : AvaloniaTestBase
         await harness.InitializeAsync();
 
         var runtime = await harness.CreateLimitedAccessClusterAsync(includeNamespaceFallback: true);
-        var services = Application.Current!.GetRequiredService<IServiceProvider>();
+        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
         var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspaceViewModel>(services, runtime);
         var navigation = services.GetRequiredService<NavigationViewModel>();
 

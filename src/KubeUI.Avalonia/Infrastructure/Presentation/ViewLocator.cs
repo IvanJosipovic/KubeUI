@@ -6,17 +6,20 @@ using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
 using KubeUI.Avalonia.Features.Resources.Properties.Views;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Kubernetes;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Avalonia.Infrastructure.Presentation;
 
 public sealed class ViewLocator : IDataTemplate
 {
+    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ViewLocator> _logger;
     private readonly Instrumentation _instrumentation;
     private Type[]? _types;
 
-    public ViewLocator(ILogger<ViewLocator> logger, Instrumentation instrumentation)
+    public ViewLocator(IServiceProvider serviceProvider, ILogger<ViewLocator> logger, Instrumentation instrumentation)
     {
+        _serviceProvider = serviceProvider;
         _logger = logger;
         _instrumentation = instrumentation;
     }
@@ -30,7 +33,7 @@ public sealed class ViewLocator : IDataTemplate
 
         if (viewType is not null)
         {
-            var instance = Application.Current.GetRequiredService(viewType);
+            var instance = _serviceProvider.GetRequiredService(viewType);
             _instrumentation.ViewOpened.Add(1, new TagList { { "view", GetPrettyName(instance.GetType()) } });
             return (Control)instance;
         }

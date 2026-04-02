@@ -48,7 +48,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
     private NavigationViewModel CreateViewModel()
     {
-        var vm = Application.Current.GetRequiredService<NavigationViewModel>();
+        var vm = TestApp.CurrentServices?.GetRequiredService<NavigationViewModel>()
+            ?? throw new InvalidOperationException("Test services are not initialized.");
         _disposables.Add(vm);
         return vm;
     }
@@ -345,7 +346,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
         vm.ClusterCatalog.Clusters.Add(workspace);
         Dispatcher.UIThread.RunJobs();
 
-        var existingSettings = Application.Current.GetRequiredService<ClusterSettingsViewModel>();
+        var existingSettings = TestApp.CurrentServices?.GetRequiredService<ClusterSettingsViewModel>()
+            ?? throw new InvalidOperationException("Test services are not initialized.");
         existingSettings.Initialize(workspace);
         vm.Factory.AddToDocuments(existingSettings);
 
@@ -411,7 +413,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        Application.Current.GetRequiredService<ISettingsService>().Settings.GetClusterSettings(workspace).Namespaces!.Add("my-app");
+        var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
+            ?? throw new InvalidOperationException("Test services are not initialized.");
+        settingsService.Settings.GetClusterSettings(workspace).Namespaces!.Add("my-app");
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
@@ -458,7 +462,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        Application.Current.GetRequiredService<ISettingsService>().Settings.GetClusterSettings(workspace).Namespaces!.Add("my-app");
+        var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
+            ?? throw new InvalidOperationException("Test services are not initialized.");
+        settingsService.Settings.GetClusterSettings(workspace).Namespaces!.Add("my-app");
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
@@ -553,7 +559,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        Application.Current.GetRequiredService<ISettingsService>().Settings.GetClusterSettings(workspace).Namespaces!.Add("my-app");
+        var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
+            ?? throw new InvalidOperationException("Test services are not initialized.");
+        settingsService.Settings.GetClusterSettings(workspace).Namespaces!.Add("my-app");
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
@@ -586,7 +594,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
         runtime.SetPermission<TestPermissionResourceAlpha>(Verb.Watch, true, "my-app");
 
         var workspace = CreateWorkspace(runtime);
-        Application.Current.GetRequiredService<ISettingsService>().Settings.GetClusterSettings(workspace).Namespaces!.Add("my-app");
+        var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
+            ?? throw new InvalidOperationException("Test services are not initialized.");
+        settingsService.Settings.GetClusterSettings(workspace).Namespaces!.Add("my-app");
         await workspace.EnsureWorkspaceStateInitializedAsync();
         Dispatcher.UIThread.RunJobs();
 
@@ -620,7 +630,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
         runtime.SetPermission<TestPermissionResourceAlpha>(Verb.Watch, true, "my-app");
 
         var workspace = CreateWorkspace(runtime);
-        Application.Current.GetRequiredService<ISettingsService>().Settings.GetClusterSettings(workspace).Namespaces!.Add("my-app");
+        var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
+            ?? throw new InvalidOperationException("Test services are not initialized.");
+        settingsService.Settings.GetClusterSettings(workspace).Namespaces!.Add("my-app");
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(TestPermissionResourceAlpha), "Alpha Permission Resource"));
 
         var vm = CreateViewModel();
@@ -694,7 +706,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        Application.Current.GetRequiredService<ISettingsService>().Settings.GetClusterSettings(workspace).Namespaces!.Add("my-app");
+        var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
+            ?? throw new InvalidOperationException("Test services are not initialized.");
+        settingsService.Settings.GetClusterSettings(workspace).Namespaces!.Add("my-app");
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
@@ -759,7 +773,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
-        Application.Current.GetRequiredService<ISettingsService>().Settings.GetClusterSettings(workspace).Namespaces!.Add("my-app");
+        var settingsService = TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
+            ?? throw new InvalidOperationException("Test services are not initialized.");
+        settingsService.Settings.GetClusterSettings(workspace).Namespaces!.Add("my-app");
 
         var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);

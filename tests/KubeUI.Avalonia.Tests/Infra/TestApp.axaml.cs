@@ -22,14 +22,16 @@ using Moq;
 
 namespace KubeUI.Avalonia.Tests.Infra;
 
-public class TestApp : Application, IServiceProviderAccessor
+public class TestApp : Application, IServiceProviderHost
 {
-    public IServiceProvider? Services { get; private set; }
+    public static IServiceProvider? CurrentServices { get; private set; }
     public static Mock<IDialogManager>? DialogManagerMock { get; private set; }
     public static INotification? LastNotification { get; private set; }
     public static ContentDialogSettings? LastContentDialogSettings { get; private set; }
 
     public static TopLevel TopLevel { get; private set; }
+
+    public IServiceProvider Services => CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
 
     public override void Initialize()
     {
@@ -66,7 +68,7 @@ public class TestApp : Application, IServiceProviderAccessor
         DisposeServices();
 
         var provider = BuildServiceProvider();
-        Services = provider;
+        CurrentServices = provider;
         ApplyResources(provider);
         InitializeDockFactory(provider);
     }
@@ -103,7 +105,7 @@ public class TestApp : Application, IServiceProviderAccessor
             overrides.AddSingleton<IClusterSettingsStore>(sp => sp.GetRequiredService<ISettingsService>().Clusters);
             overrides.Replace(ServiceDescriptor.Singleton<IDialogService>(dialog.Object));
             overrides.Replace(ServiceDescriptor.Singleton<INotificationManager>(notifications.Object));
-            overrides.Replace(ServiceDescriptor.Singleton<IFactory>(sp => Dispatcher.UIThread.Invoke(() => (IFactory)new DockFactory(sp.GetRequiredService<ILogger<DockFactory>>()))));
+            overrides.Replace(ServiceDescriptor.Singleton<IFactory>(sp => Dispatcher.UIThread.Invoke(() => (IFactory)new DockFactory(sp, sp.GetRequiredService<ILogger<DockFactory>>()))));
         });
 
         var provider = services.BuildServiceProvider();
@@ -135,11 +137,11 @@ public class TestApp : Application, IServiceProviderAccessor
 
     private void DisposeServices()
     {
-        if (Services is IDisposable disposable)
+        if (CurrentServices is IDisposable disposable)
         {
             disposable.Dispose();
         }
-        Services = null;
+        CurrentServices = null;
     }
 
     private void CloseOpenWindows()

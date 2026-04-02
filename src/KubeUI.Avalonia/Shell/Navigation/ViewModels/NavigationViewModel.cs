@@ -25,6 +25,7 @@ using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Avalonia.Features.Resources.List.ViewModels;
 using KubeUI.Avalonia.Features.Resources.Visualization.ViewModels;
 using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
@@ -32,6 +33,7 @@ using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Kubernetes;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Avalonia.Shell.Navigation.ViewModels;
 
@@ -61,9 +63,12 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     };
 
     private readonly ILogger<NavigationViewModel> _logger;
+    private readonly INotificationManager _notificationManager;
+    private readonly IServiceProvider _serviceProvider;
+    private readonly IDialogService _dialogService;
+    public new IFactory Factory => _serviceProvider.GetRequiredService<IFactory>();
     private readonly Dictionary<ClusterWorkspaceViewModel, ClusterNavigationNode> _clusterNodes = [];
     private readonly Dictionary<ClusterWorkspaceViewModel, PendingClusterNavigationUpdate> _clusterRebuildDelays = [];
-    private INotificationManager _notificationManager => Application.Current.GetRequiredService<INotificationManager>();
 
     [ObservableProperty]
     public partial ClusterWorkspaceCatalog ClusterCatalog { get; set; }
@@ -71,12 +76,20 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     public partial ObservableCollection<ClusterNavigationNode> Clusters { get; set; } = [];
 
-    public NavigationViewModel()
+    public NavigationViewModel(
+        ILogger<NavigationViewModel> logger,
+        INotificationManager notificationManager,
+        IDialogService dialogService,
+        ClusterWorkspaceCatalog clusterCatalog,
+        IServiceProvider serviceProvider)
     {
-        ClusterCatalog = Application.Current.GetRequiredService<ClusterWorkspaceCatalog>();
+        _logger = logger;
+        _notificationManager = notificationManager;
+        _serviceProvider = serviceProvider;
+        _dialogService = dialogService;
+        ClusterCatalog = clusterCatalog;
         Title = Assets.Resources.NavigationViewModel_Title;
         Id = nameof(NavigationViewModel);
-        _logger = Application.Current.GetRequiredService<ILogger<NavigationViewModel>>();
 
         if (ClusterCatalog.Clusters is INotifyCollectionChanged collection)
         {
@@ -257,11 +270,10 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private async Task ShowMissingNamespacePermissionPromptAsync(ClusterWorkspaceViewModel cluster)
     {
-        var settingsVm = Application.Current.GetRequiredService<ClusterSettingsViewModel>();
+        var settingsVm = _serviceProvider.GetRequiredService<ClusterSettingsViewModel>();
         settingsVm.Initialize(cluster);
         Factory.AddToDocuments(settingsVm);
 
-        var dialogService = Application.Current.GetRequiredService<IDialogService>();
         var settings = new ContentDialogSettings
         {
             Title = Assets.Resources.Cluster_Missing_Namespace_Permission_Title,
@@ -270,7 +282,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             DefaultButton = ContentDialogButton.Primary
         };
 
-        await dialogService.ShowContentDialogAsync(this, settings);
+        await _dialogService.ShowContentDialogAsync(this, settings);
     }
 
     private void ShowClusterError(string? error)
@@ -289,7 +301,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        var vm = Application.Current.GetRequiredService<ClusterErrorViewModel>();
+        var vm = _serviceProvider.GetRequiredService<ClusterErrorViewModel>();
         vm.Id = id;
         vm.Error = error;
         Factory.AddToDocuments(vm);
@@ -1364,7 +1376,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         }
 
         var resourceListType = typeof(ResourceListViewModel<>).MakeGenericType(nav.ControlType);
-        var vm = Application.Current.GetRequiredService(resourceListType) as IDockable;
+        var vm = _serviceProvider.GetRequiredService(resourceListType) as IDockable;
 
         if (vm == null)
         {
@@ -1457,7 +1469,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                 return;
             }
 
-            var vm = Application.Current.GetRequiredService(vmType) as IDockable;
+            var vm = _serviceProvider.GetRequiredService(vmType) as IDockable;
 
             if (vm == null)
             {

@@ -16,6 +16,7 @@ using AvaloniaEdit.TextMate;
 using KubeUI.Avalonia;
 using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
 using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -1049,7 +1050,12 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
             }
             catch (Exception ex)
             {
-                var logger = Application.Current?.GetRequiredService<ILogger<YamlEditorBehavior>>();
+                if (Application.Current is not IServiceProviderHost host)
+                {
+                    return;
+                }
+
+                var logger = host.Services.GetRequiredService<ILogger<YamlEditorBehavior>>();
                 logger?.LogWarning(ex, "Error loading foldings");
             }
         }

@@ -6,6 +6,10 @@ namespace KubeUI.Avalonia.Resources.Storage.v1.PersistentVolume;
 
 public sealed partial class V1PersistentVolumeConfig : ResourceConfigBase<V1PersistentVolume>
 {
+    public V1PersistentVolumeConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
     public override string Category => CategoryString("ResourceConfig_Category_Storage", "Storage");
     public override int Order => 1;
 

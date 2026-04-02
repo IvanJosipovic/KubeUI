@@ -1,8 +1,7 @@
+using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Overview.ViewModels;
-using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Kubernetes;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 
 namespace KubeUI.Avalonia.Features.Clusters.Overview.Views;
 
@@ -15,25 +14,12 @@ public sealed partial class ClusterView : UserControl
     {
         InitializeComponent();
 
-#if DEBUG
-        if (Design.IsDesignMode)
-        {
-            Dispatcher.UIThread.Post(async () =>
-            {
-                var cluster = Application.Current.GetRequiredService<ClusterWorkspaceCatalog>().GetDefault();
-                await cluster.Connect();
+        DesignTimePreview.Run(InitializeDesignTimeDataAsync);
+    }
 
-                var vm = Application.Current.GetRequiredService<ClusterViewModel>();
-
-                if (vm is IInitializeCluster init)
-                {
-                    init.Initialize(cluster);
-                }
-
-                DataContext = vm;
-            });
-        }
-#endif
+    private async Task InitializeDesignTimeDataAsync()
+    {
+        DataContext = await DesignTimePreview.CreateClusterBoundViewModelAsync<ClusterViewModel, V1Pod>();
     }
 
     private async void TimerOnTick(object? sender, EventArgs e)

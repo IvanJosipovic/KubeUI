@@ -14,11 +14,10 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
 
     public ClusterWorkspaceViewModel? Cluster { get; set; }
 
-    public ClusterSettingsViewModel()
+    public ClusterSettingsViewModel(ISettingsService settingsService)
     {
         Title = Assets.Resources.ClusterSettingsViewModel_Title;
-
-        SettingsService = Application.Current.GetRequiredService<ISettingsService>();
+        SettingsService = settingsService;
     }
 
     public void Initialize(ClusterWorkspaceViewModel cluster)

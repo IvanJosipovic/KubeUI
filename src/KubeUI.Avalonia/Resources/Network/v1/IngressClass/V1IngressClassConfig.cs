@@ -6,6 +6,10 @@ namespace KubeUI.Avalonia.Resources.Network.v1.IngressClass;
 
 public sealed partial class V1IngressClassConfig : ResourceConfigBase<V1IngressClass>
 {
+    public V1IngressClassConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
     public override string Category => CategoryString("ResourceConfig_Category_Network", "Network");
     public override int Order => 4;
 

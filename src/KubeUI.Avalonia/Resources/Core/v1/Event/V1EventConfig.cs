@@ -9,6 +9,10 @@ namespace KubeUI.Avalonia.Resources.Core.v1.Event;
 
 public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
 {
+    public V1EventConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
     public override bool IsNamespaced => true;
     public override bool ShowNewResource => false;
     public override int Order => 7;

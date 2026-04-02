@@ -138,7 +138,7 @@ public class ClusterWorkspaceViewModelTests : AvaloniaTestBase
         };
         var workspace = CreateWorkspace(runtime);
 
-        Application.Current.GetRequiredService<ISettingsService>()
+        TestApp.CurrentServices!.GetRequiredService<ISettingsService>()
             .Settings
             .GetClusterSettings(workspace)
             .Namespaces!
@@ -166,7 +166,7 @@ public class ClusterWorkspaceViewModelTests : AvaloniaTestBase
         runtime.SetPermission<V1Pod>(Verb.Watch, true, "team-b");
 
         var workspace = CreateWorkspace(runtime);
-        var clusterSettings = Application.Current.GetRequiredService<ISettingsService>()
+        var clusterSettings = TestApp.CurrentServices!.GetRequiredService<ISettingsService>()
             .Settings
             .GetClusterSettings(workspace);
         clusterSettings.Namespaces!.Add("team-a");
@@ -236,7 +236,7 @@ public class ClusterWorkspaceViewModelTests : AvaloniaTestBase
         });
 
         var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspaceViewModel>(
-            Application.Current!.GetRequiredService<IServiceProvider>(),
+            TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized."),
             runtime);
         _disposables.Add(workspace);
 

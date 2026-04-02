@@ -7,6 +7,7 @@ using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Features.Clusters.Catalog.ViewModels;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Options;
@@ -14,6 +15,7 @@ using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Shell.Documents.About.ViewModels;
 using KubeUI.Avalonia.Shell.Documents.Settings.ViewModels;
 using KubeUI.Kubernetes;
+using Microsoft.Extensions.DependencyInjection;
 using Velopack;
 using Velopack.Sources;
 
@@ -21,7 +23,9 @@ namespace KubeUI.Avalonia.Shell.Main.ViewModels;
 
 public sealed partial class MainViewModel : ViewModelBase
 {
+    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<MainViewModel> _logger;
+    private readonly IFactory _factory = null!;
 
     [ObservableProperty]
     private partial ISettingsService SettingsService { get; set; }
@@ -31,22 +35,27 @@ public sealed partial class MainViewModel : ViewModelBase
 
     private readonly IDialogService _dialogService;
 
-    public MainViewModel()
+    public MainViewModel(
+        IServiceProvider serviceProvider,
+        ILogger<MainViewModel> logger,
+        IFactory factory,
+        ISettingsService settingsService,
+        ClusterWorkspaceCatalog clusterCatalog,
+        IDialogService dialogService)
     {
-        _logger = Application.Current.GetRequiredService<ILogger<MainViewModel>>();
+        _serviceProvider = serviceProvider;
+        _logger = logger;
+        _factory = factory;
+        SettingsService = settingsService;
+        ClusterCatalog = clusterCatalog;
+        _dialogService = dialogService;
 
-        SettingsService = Application.Current.GetRequiredService<ISettingsService>();
+        DebugFactoryEvents(_factory);
 
-        ClusterCatalog = Application.Current.GetRequiredService<ClusterWorkspaceCatalog>();
-
-        _dialogService = Application.Current.GetRequiredService<IDialogService>();
-
-        DebugFactoryEvents(Factory);
-
-        Layout = Factory?.CreateLayout();
+        Layout = _factory?.CreateLayout();
         if (Layout is not null)
         {
-            Factory?.InitLayout(Layout);
+            _factory?.InitLayout(Layout);
         }
 
         _ = Task.Run(CheckForUpdates);
@@ -204,11 +213,11 @@ public sealed partial class MainViewModel : ViewModelBase
             }
         }
 
-        var layout = Factory?.CreateLayout();
+        var layout = _factory?.CreateLayout();
         if (layout is not null)
         {
             Layout = layout;
-            Factory?.InitLayout(layout);
+            _factory?.InitLayout(layout);
         }
     }
 
@@ -222,9 +231,9 @@ public sealed partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void OpenAbout()
     {
-        var vm = Application.Current.GetRequiredService<AboutViewModel>();
+        var vm = _serviceProvider.GetRequiredService<AboutViewModel>();
 
-        Factory?.AddToDocuments(vm);
+        _factory.AddToDocuments(vm);
 
         _ = Task.Run(CheckForUpdates);
     }
@@ -232,17 +241,17 @@ public sealed partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void OpenSettings()
     {
-        var vm = Application.Current.GetRequiredService<SettingsViewModel>();
+        var vm = _serviceProvider.GetRequiredService<SettingsViewModel>();
 
-        Factory?.AddToDocuments(vm);
+        _factory.AddToDocuments(vm);
     }
 
     [RelayCommand]
     private void OpenClusters()
     {
-        var vm = Application.Current.GetRequiredService<ClusterListViewModel>();
+        var vm = _serviceProvider.GetRequiredService<ClusterListViewModel>();
 
-        Factory?.AddToDocuments(vm);
+        _factory.AddToDocuments(vm);
     }
 
     [RelayCommand]

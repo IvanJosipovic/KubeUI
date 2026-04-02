@@ -6,6 +6,11 @@ namespace KubeUI.Avalonia.Resources.AccessControl.v1.Role;
 
 public sealed partial class V1RoleConfig : ResourceConfigBase<V1Role>
 {
+    public V1RoleConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
+
     public override bool IsNamespaced => true;
     public override string Category => CategoryString("ResourceConfig_Category_AccessControl", "Access Control");
     public override int Order => 2;

@@ -22,10 +22,10 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
     [ObservableProperty]
     public partial PortForwarder? SelectedItem { get; set; }
 
-    public PortForwarderListViewModel()
+    public PortForwarderListViewModel(ISettingsService settings, IDialogService dialogService)
     {
-        Settings = Application.Current.GetRequiredService<ISettingsService>();
-        _dialogService = Application.Current.GetRequiredService<IDialogService>();
+        Settings = settings;
+        _dialogService = dialogService;
         Title = Assets.Resources.PortForwarderListViewModel_Title;
     }
 

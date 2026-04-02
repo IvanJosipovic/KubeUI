@@ -80,13 +80,17 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
     public InfoBarSeverity ActionResultSeverity => ActionResultSuccess ? InfoBarSeverity.Success : InfoBarSeverity.Error;
 
-    public ResourceYamlViewModel()
+    public ResourceYamlViewModel(
+        ILogger<ResourceYamlViewModel> logger,
+        IKubernetesYamlSerializer yamlSerializer,
+        IYamlValidationService yamlValidationService,
+        ISettingsService settings)
     {
         Title = Assets.Resources.ResourceYamlViewModel_Title;
-        _logger = Application.Current.GetRequiredService<ILogger<ResourceYamlViewModel>>();
-        _yamlSerializer = Application.Current.GetRequiredService<IKubernetesYamlSerializer>();
-        _yamlValidationService = Application.Current.GetRequiredService<IYamlValidationService>();
-        Settings = Application.Current.GetRequiredService<ISettingsService>();
+        _logger = logger;
+        _yamlSerializer = yamlSerializer;
+        _yamlValidationService = yamlValidationService;
+        Settings = settings;
         AttachValidationDocument(YamlDocument);
     }
 

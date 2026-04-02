@@ -11,6 +11,10 @@ namespace KubeUI.Avalonia.Resources.Workloads.v1.Deployment;
 
 public sealed partial class V1DeploymentConfig : ResourceConfigBase<V1Deployment>
 {
+    public V1DeploymentConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
     public override bool IsNamespaced => true;
     public override string Category => CategoryString("ResourceConfig_Category_Workloads", "Workloads");
 

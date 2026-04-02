@@ -7,6 +7,10 @@ namespace KubeUI.Avalonia.Resources.Configuration.v1.Secret;
 
 public sealed partial class V1SecretConfig : ResourceConfigBase<k8s.Models.V1Secret>
 {
+    public V1SecretConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
     public override bool IsNamespaced => true;
     public override string Category => CategoryString("ResourceConfig_Category_Configuration", "Configuration");
     public override int Order => 1;
