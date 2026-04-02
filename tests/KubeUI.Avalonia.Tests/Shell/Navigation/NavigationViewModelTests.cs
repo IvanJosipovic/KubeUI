@@ -201,9 +201,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
         clusterNode.NavigationItems.Count.ShouldBe(0);
 
         await vm.TreeViewSelectionChangedAsync(clusterNode);
-        await Task.Delay(10);
-        Dispatcher.UIThread.RunJobs();
 
+        await WaitForAsync(() => clusterNode.Cluster.Status == ClusterStatus.Connecting);
         clusterNode.NavigationItems.Count.ShouldBe(0);
         clusterNode.IsExpanded.ShouldBeFalse();
 
@@ -234,9 +233,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
 
         await vm.TreeViewSelectionChangedAsync(clusterNode);
-        await Task.Delay(10);
-        Dispatcher.UIThread.RunJobs();
 
+        await WaitForAsync(() => clusterNode.Cluster.Status == ClusterStatus.Errored);
         clusterNode.NavigationItems.Count.ShouldBe(0);
     }
 
@@ -264,8 +262,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
 
         await vm.TreeViewSelectionChangedAsync(clusterNode);
-        await Task.Delay(10);
-        Dispatcher.UIThread.RunJobs();
+
+        await WaitForAsync(() =>
+            documents.VisibleDockables?.OfType<ClusterErrorViewModel>().Any(x => x.Id == "cluster-error") == true);
 
         var errorDocument = documents.VisibleDockables?
             .OfType<ClusterErrorViewModel>()
