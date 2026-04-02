@@ -1209,32 +1209,65 @@ Are you sure?</value>
   <data name="DataGridFilterFlyout_Contains" xml:space="preserve">
     <value>Contains</value>
   </data>
+  <data name="DataGridFilterFlyout_NotContains" xml:space="preserve">
+    <value>Not contains</value>
+  </data>
   <data name="DataGridFilterFlyout_EndsWith" xml:space="preserve">
     <value>Ends with</value>
+  </data>
+  <data name="DataGridFilterFlyout_NotEndsWith" xml:space="preserve">
+    <value>Not ends with</value>
   </data>
   <data name="DataGridFilterFlyout_Equals" xml:space="preserve">
     <value>Equals</value>
   </data>
+  <data name="DataGridFilterFlyout_NotEquals" xml:space="preserve">
+    <value>Not equals</value>
+  </data>
   <data name="DataGridFilterFlyout_GreaterThan" xml:space="preserve">
     <value>Greater than</value>
+  </data>
+  <data name="DataGridFilterFlyout_NotGreaterThan" xml:space="preserve">
+    <value>Not greater than</value>
   </data>
   <data name="DataGridFilterFlyout_GreaterThanOrEqual" xml:space="preserve">
     <value>Greater than or equal</value>
   </data>
+  <data name="DataGridFilterFlyout_NotGreaterThanOrEqual" xml:space="preserve">
+    <value>Not greater than or equal</value>
+  </data>
   <data name="DataGridFilterFlyout_LessThan" xml:space="preserve">
     <value>Less than</value>
+  </data>
+  <data name="DataGridFilterFlyout_NotLessThan" xml:space="preserve">
+    <value>Not less than</value>
   </data>
   <data name="DataGridFilterFlyout_LessThanOrEqual" xml:space="preserve">
     <value>Less than or equal</value>
   </data>
+  <data name="DataGridFilterFlyout_NotLessThanOrEqual" xml:space="preserve">
+    <value>Not less than or equal</value>
+  </data>
+  <data name="DataGridFilterFlyout_NotBetween" xml:space="preserve">
+    <value>Not between</value>
+  </data>
   <data name="DataGridFilterFlyout_NewerThan" xml:space="preserve">
     <value>Newer than</value>
+  </data>
+  <data name="DataGridFilterFlyout_NotNewerThan" xml:space="preserve">
+    <value>Not newer than</value>
   </data>
   <data name="DataGridFilterFlyout_OlderThan" xml:space="preserve">
     <value>Older than</value>
   </data>
+  <data name="DataGridFilterFlyout_NotOlderThan" xml:space="preserve">
+    <value>Not older than</value>
+  </data>
   <data name="DataGridFilterFlyout_StartsWith" xml:space="preserve">
     <value>Starts with</value>
+  </data>
+  <data name="DataGridFilterFlyout_NotStartsWith" xml:space="preserve">
+    <value>Not starts with</value>
   </data>
   <data name="DataGridFilterFlyout_Value" xml:space="preserve">
     <value>Value</value>
