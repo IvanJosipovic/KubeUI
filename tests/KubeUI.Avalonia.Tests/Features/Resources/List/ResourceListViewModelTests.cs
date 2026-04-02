@@ -571,13 +571,13 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         filterService.ApplyNumericFilter(
             vm.FilteringModel,
             countColumn,
-            ResourceListFilterFlyoutOptions.NumericOperators.First(option => option.CustomKey == FilterOperatorKeys.NumericNotBetween),
+            ResourceListFilterFlyoutOptions.NumericOperators.First(option => option.CustomId == FilterOperatorId.NumericNotBetween),
             2d,
             8d);
         vm.FilteringModel.Descriptors.Count(descriptor => ReferenceEquals(descriptor.ColumnId, countColumn) || Equals(descriptor.ColumnId, countColumn)).ShouldBe(1);
         numericDescriptor = GetDescriptorForColumn(countColumn);
         numericDescriptor.Operator.ShouldBe(FilteringOperator.Custom);
-        numericDescriptor.PropertyPath.ShouldBe(FilterOperatorKeys.NumericNotBetween);
+        numericDescriptor.PropertyPath.ShouldBe(FilterOperatorIdCatalog.GetDescriptorKey(FilterOperatorId.NumericNotBetween));
         numericDescriptor.Predicate.ShouldNotBeNull();
         numericDescriptor.Values.ShouldNotBeNull();
         numericDescriptor.Values.Count.ShouldBe(2);
@@ -607,13 +607,13 @@ public class ResourceListViewModelTests : AvaloniaTestBase
             vm.FilteringModel,
             lastSeenColumn,
             lastSeenColumn.ValueType,
-            ResourceListFilterFlyoutOptions.DateOperators.First(option => option.CustomKey == FilterOperatorKeys.DateNotNewerThan),
+            ResourceListFilterFlyoutOptions.DateOperators.First(option => option.CustomId == FilterOperatorId.DateNotNewerThan),
             5d,
             days);
         vm.FilteringModel.Descriptors.Count(descriptor => ReferenceEquals(descriptor.ColumnId, lastSeenColumn) || Equals(descriptor.ColumnId, lastSeenColumn)).ShouldBe(1);
         dateDescriptor = GetDescriptorForColumn(lastSeenColumn);
         dateDescriptor.Operator.ShouldBe(FilteringOperator.Custom);
-        dateDescriptor.PropertyPath.ShouldBe(FilterOperatorKeys.DateNotNewerThan);
+        dateDescriptor.PropertyPath.ShouldBe(FilterOperatorIdCatalog.GetDescriptorKey(FilterOperatorId.DateNotNewerThan));
         dateDescriptor.Predicate.ShouldNotBeNull();
     }
 
@@ -658,7 +658,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         filterService.ApplyTextFilter(
             vm.FilteringModel,
             nameColumn,
-            ResourceListFilterFlyoutOptions.TextOperators.First(option => option.CustomKey == FilterOperatorKeys.TextNotContains),
+            ResourceListFilterFlyoutOptions.TextOperators.First(option => option.CustomId == FilterOperatorId.TextNotContains),
             "alp");
         Dispatcher.UIThread.RunJobs();
 
@@ -741,7 +741,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var flyout = (Flyout)nameColumn.FilterFlyout!;
         var flyoutContext = flyout.Content.ShouldBeOfType<TextFilterFlyoutView>().DataContext.ShouldBeOfType<TextFilterFlyoutContext>();
 
-        flyoutContext.SelectedOperator = ResourceListFilterFlyoutOptions.TextOperators.First(option => option.Operator == FilteringOperator.Contains && option.CustomKey == null);
+        flyoutContext.SelectedOperator = ResourceListFilterFlyoutOptions.TextOperators.First(option => option.Operator == FilteringOperator.Contains && (option.CustomId is null || !FilterOperatorIdCatalog.UsesCustomDescriptor(option.CustomId.Value)));
         flyoutContext.Query = "alp";
         flyoutContext.ApplyCommand.Execute(null);
         Dispatcher.UIThread.RunJobs();
@@ -749,7 +749,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         vm.View.Count.ShouldBe(1);
         ((V1Pod)vm.View[0]).Name().ShouldBe("alpha");
 
-        flyoutContext.SelectedOperator = ResourceListFilterFlyoutOptions.TextOperators.First(option => option.CustomKey == FilterOperatorKeys.TextNotContains);
+        flyoutContext.SelectedOperator = ResourceListFilterFlyoutOptions.TextOperators.First(option => option.CustomId == FilterOperatorId.TextNotContains);
         flyoutContext.Query = "alp";
         flyoutContext.ApplyCommand.Execute(null);
         Dispatcher.UIThread.RunJobs();
@@ -1497,22 +1497,22 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
     private static FilterOperatorChoice GetTextOperator(FilteringOperator filterOperator)
     {
-        return ResourceListFilterFlyoutOptions.TextOperators.First(option => option.Operator == filterOperator && option.CustomKey == null);
+        return ResourceListFilterFlyoutOptions.TextOperators.First(option => option.Operator == filterOperator && (option.CustomId is null || !FilterOperatorIdCatalog.UsesCustomDescriptor(option.CustomId.Value)));
     }
 
     private static FilterOperatorChoice GetNumericOperator(FilteringOperator filterOperator)
     {
-        return ResourceListFilterFlyoutOptions.NumericOperators.First(option => option.Operator == filterOperator && option.CustomKey == null);
+        return ResourceListFilterFlyoutOptions.NumericOperators.First(option => option.Operator == filterOperator && (option.CustomId is null || !FilterOperatorIdCatalog.UsesCustomDescriptor(option.CustomId.Value)));
     }
 
     private static FilterOperatorChoice GetDateOperator(FilteringOperator filterOperator)
     {
-        return ResourceListFilterFlyoutOptions.DateOperators.First(option => option.Operator == filterOperator && option.CustomKey == null);
+        return ResourceListFilterFlyoutOptions.DateOperators.First(option => option.Operator == filterOperator && (option.CustomId is null || !FilterOperatorIdCatalog.UsesCustomDescriptor(option.CustomId.Value)));
     }
 
     private static FilterOperatorChoice GetEnumOperator(FilteringOperator filterOperator)
     {
-        return ResourceListFilterFlyoutOptions.EnumOperators.First(option => option.Operator == filterOperator && option.CustomKey == null);
+        return ResourceListFilterFlyoutOptions.EnumOperators.First(option => option.Operator == filterOperator && (option.CustomId is null || !FilterOperatorIdCatalog.UsesCustomDescriptor(option.CustomId.Value)));
     }
 }
 

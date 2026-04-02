@@ -131,12 +131,12 @@ internal sealed class DataGridColumnFilterService
         }
 
         var trimmed = query.Trim();
-        if (filterOperator.CustomKey != null)
+        if (filterOperator.CustomId is { } customId && FilterOperatorIdCatalog.UsesCustomDescriptor(customId))
         {
             filteringModel.SetOrUpdate(CreateCustomDescriptor(
                 column,
-                filterOperator.CustomKey,
-                CreateTextPredicate(column, filterOperator.CustomKey, trimmed, StringComparison.OrdinalIgnoreCase),
+                customId,
+                CreateTextPredicate(column, customId, trimmed, StringComparison.OrdinalIgnoreCase),
                 value: trimmed,
                 stringComparison: StringComparison.OrdinalIgnoreCase));
             return;
@@ -204,9 +204,9 @@ internal sealed class DataGridColumnFilterService
             return;
         }
 
-        if (filterOperator.CustomKey != null)
+        if (filterOperator.CustomId is { } customId && FilterOperatorIdCatalog.UsesCustomDescriptor(customId))
         {
-            if (filterOperator.CustomKey == FilterOperatorKeys.NumericNotBetween && secondValue == null)
+            if (customId == FilterOperatorId.NumericNotBetween && secondValue == null)
             {
                 ClearColumnFilter(filteringModel, column);
                 return;
@@ -214,8 +214,8 @@ internal sealed class DataGridColumnFilterService
 
             filteringModel.SetOrUpdate(CreateCustomDescriptor(
                 column,
-                filterOperator.CustomKey,
-                CreateNumericPredicate(column, filterOperator.CustomKey, value.Value, secondValue),
+                customId,
+                CreateNumericPredicate(column, customId, value.Value, secondValue),
                 value: value.Value,
                 values: secondValue != null ? [value.Value, secondValue.Value] : null));
             return;
@@ -245,12 +245,12 @@ internal sealed class DataGridColumnFilterService
         var threshold = ComputeRelativeDateThreshold(amount.Value, unit);
         object value = IsDateTimeOffsetType(valueType) ? threshold : threshold.UtcDateTime;
 
-        if (filterOperator.CustomKey != null)
+        if (filterOperator.CustomId is { } customId && FilterOperatorIdCatalog.UsesCustomDescriptor(customId))
         {
             filteringModel.SetOrUpdate(CreateCustomDescriptor(
                 column,
-                filterOperator.CustomKey,
-                CreateDatePredicate(column, filterOperator.CustomKey, value),
+                customId,
+                CreateDatePredicate(column, customId, value),
                 value: value));
             return;
         }
@@ -264,7 +264,7 @@ internal sealed class DataGridColumnFilterService
 
     private static FilteringDescriptor CreateCustomDescriptor(
         DataGridColumnDefinition column,
-        string customKey,
+        FilterOperatorId customId,
         Func<object, bool> predicate,
         object? value = null,
         IReadOnlyList<object>? values = null,
@@ -273,7 +273,7 @@ internal sealed class DataGridColumnFilterService
         return new FilteringDescriptor(
             columnId: column,
             @operator: FilteringOperator.Custom,
-            propertyPath: customKey,
+            propertyPath: FilterOperatorIdCatalog.GetDescriptorKey(customId),
             value: value,
             values: values,
             predicate: predicate,
@@ -282,47 +282,47 @@ internal sealed class DataGridColumnFilterService
 
     private static Func<object, bool> CreateTextPredicate(
         DataGridColumnDefinition column,
-        string customKey,
+        FilterOperatorId customId,
         string query,
         StringComparison comparison)
     {
-        return customKey switch
+        return customId switch
         {
-            FilterOperatorKeys.TextNotContains => item => !Contains(GetColumnValue(column, item), query, comparison),
-            FilterOperatorKeys.TextNotStartsWith => item => !StartsWith(GetColumnValue(column, item), query, comparison),
-            FilterOperatorKeys.TextNotEndsWith => item => !EndsWith(GetColumnValue(column, item), query, comparison),
+            FilterOperatorId.TextNotContains => item => !Contains(GetColumnValue(column, item), query, comparison),
+            FilterOperatorId.TextNotStartsWith => item => !StartsWith(GetColumnValue(column, item), query, comparison),
+            FilterOperatorId.TextNotEndsWith => item => !EndsWith(GetColumnValue(column, item), query, comparison),
             _ => item => !Equals(GetColumnValue(column, item), query)
         };
     }
 
     private static Func<object, bool> CreateNumericPredicate(
         DataGridColumnDefinition column,
-        string customKey,
+        FilterOperatorId customId,
         double value,
         double? secondValue)
     {
         CultureInfo culture = CultureInfo.InvariantCulture;
-        return customKey switch
+        return customId switch
         {
-            FilterOperatorKeys.NumericNotBetween => item => secondValue.HasValue && !Between(GetColumnValue(column, item), [value, secondValue.Value], culture),
-            FilterOperatorKeys.NumericNotGreaterThan => item => Compare(GetColumnValue(column, item), value, culture) <= 0,
-            FilterOperatorKeys.NumericNotGreaterThanOrEqual => item => Compare(GetColumnValue(column, item), value, culture) < 0,
-            FilterOperatorKeys.NumericNotLessThan => item => Compare(GetColumnValue(column, item), value, culture) >= 0,
-            FilterOperatorKeys.NumericNotLessThanOrEqual => item => Compare(GetColumnValue(column, item), value, culture) > 0,
+            FilterOperatorId.NumericNotBetween => item => secondValue.HasValue && !Between(GetColumnValue(column, item), [value, secondValue.Value], culture),
+            FilterOperatorId.NumericNotGreaterThan => item => Compare(GetColumnValue(column, item), value, culture) <= 0,
+            FilterOperatorId.NumericNotGreaterThanOrEqual => item => Compare(GetColumnValue(column, item), value, culture) < 0,
+            FilterOperatorId.NumericNotLessThan => item => Compare(GetColumnValue(column, item), value, culture) >= 0,
+            FilterOperatorId.NumericNotLessThanOrEqual => item => Compare(GetColumnValue(column, item), value, culture) > 0,
             _ => item => !Equals(GetColumnValue(column, item), value)
         };
     }
 
     private static Func<object, bool> CreateDatePredicate(
         DataGridColumnDefinition column,
-        string customKey,
+        FilterOperatorId customId,
         object value)
     {
         CultureInfo culture = CultureInfo.InvariantCulture;
-        return customKey switch
+        return customId switch
         {
-            FilterOperatorKeys.DateNotNewerThan => item => Compare(GetColumnValue(column, item), value, culture) <= 0,
-            FilterOperatorKeys.DateNotOlderThan => item => Compare(GetColumnValue(column, item), value, culture) >= 0,
+            FilterOperatorId.DateNotNewerThan => item => Compare(GetColumnValue(column, item), value, culture) <= 0,
+            FilterOperatorId.DateNotOlderThan => item => Compare(GetColumnValue(column, item), value, culture) >= 0,
             _ => item => !Equals(GetColumnValue(column, item), value)
         };
     }
