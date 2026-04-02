@@ -404,11 +404,13 @@ public class NavigationViewModelTests : AvaloniaTestBase
             Status = ClusterStatus.None,
             ListNamespaces = false,
         };
+        var connectCompleted = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
         runtime.ConnectBehavior = () =>
         {
             runtime.Connected = true;
             runtime.Status = ClusterStatus.Connected;
             runtime.RequiresNamespaceSelectionPrompt = false;
+            connectCompleted.TrySetResult(null);
             return Task.CompletedTask;
         };
 
@@ -426,7 +428,8 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         await vm.TreeViewSelectionChangedAsync(clusterNode);
-        await WaitForAsync(() => runtime.Status == ClusterStatus.Connected);
+        await connectCompleted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Dispatcher.UIThread.RunJobs();
 
         runtime.Status.ShouldBe(ClusterStatus.Connected);
         documents.VisibleDockables!
