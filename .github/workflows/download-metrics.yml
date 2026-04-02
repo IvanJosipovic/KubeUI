@@ -94,24 +94,24 @@ jobs:
               }
 
               # Normalize common architecture and OS name variants
-              $isWindows = ($name -like '*win*' -or $name -like '*windows*')
-              $isLinux = ($name -like '*linux*')
-              $isMac = ($name -like '*mac*' -or $name -like '*darwin*' -or $name -like '*osx*')
+              $isWindowsAsset = ($name -like '*win*' -or $name -like '*windows*')
+              $isLinuxAsset = ($name -like '*linux*')
+              $isMacAsset = ($name -like '*mac*' -or $name -like '*darwin*' -or $name -like '*osx*')
 
               $isX64 = ($name -like '*x64*' -or $name -like '*x86_64*' -or $name -like '*amd64*')
               $isArm64 = ($name -like '*arm64*' -or $name -like '*aarch64*')
 
-              if ($isWindows -and $isX64) {
+              if ($isWindowsAsset -and $isX64) {
                 $osArchMetrics.Windows_x64 += $downloadCount
-              } elseif ($isWindows -and $isArm64) {
+              } elseif ($isWindowsAsset -and $isArm64) {
                 $osArchMetrics.Windows_arm64 += $downloadCount
-              } elseif ($isLinux -and $isX64) {
+              } elseif ($isLinuxAsset -and $isX64) {
                 $osArchMetrics.Linux_x64 += $downloadCount
-              } elseif ($isLinux -and $isArm64) {
+              } elseif ($isLinuxAsset -and $isArm64) {
                 $osArchMetrics.Linux_arm64 += $downloadCount
-              } elseif ($isMac -and $isX64) {
+              } elseif ($isMacAsset -and $isX64) {
                 $osArchMetrics.macOS_x64 += $downloadCount
-              } elseif ($isMac -and $isArm64) {
+              } elseif ($isMacAsset -and $isArm64) {
                 $osArchMetrics.macOS_arm64 += $downloadCount
               }
             }
