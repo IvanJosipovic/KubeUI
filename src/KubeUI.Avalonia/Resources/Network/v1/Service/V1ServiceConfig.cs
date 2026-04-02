@@ -13,6 +13,10 @@ namespace KubeUI.Avalonia.Resources.Network.v1.Service;
 
 public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
 {
+    public V1ServiceConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
     public override bool IsNamespaced => true;
     public override string Category => CategoryString("ResourceConfig_Category_Network", "Network");
     public override int Order => 0;

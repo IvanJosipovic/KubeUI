@@ -7,24 +7,29 @@ using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Avalonia.Features.Clusters.Catalog.ViewModels;
 
 public sealed partial class ClusterListViewModel : ViewModelBase
 {
+    private readonly IDialogService _dialogService;
+
     [ObservableProperty]
     public partial ClusterWorkspaceCatalog ClusterCatalog { get; set; }
 
     [ObservableProperty]
     public partial ISettingsService Settings { get; set; }
 
-    private readonly IDialogService _dialogService;
-
-    public ClusterListViewModel()
+    public ClusterListViewModel(
+        IServiceProvider serviceProvider,
+        ClusterWorkspaceCatalog clusterCatalog,
+        ISettingsService settings,
+        IDialogService dialogService)
     {
-        ClusterCatalog = Application.Current.GetRequiredService<ClusterWorkspaceCatalog>();
-        Settings = Application.Current.GetRequiredService<ISettingsService>();
-        _dialogService = Application.Current.GetRequiredService<IDialogService>();
+        ClusterCatalog = clusterCatalog;
+        Settings = settings;
+        _dialogService = dialogService;
 
         Title = Assets.Resources.ClusterListViewModel_Title;
         Id = nameof(ClusterListViewModel);

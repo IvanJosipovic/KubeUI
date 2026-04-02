@@ -12,6 +12,7 @@ using KubeUI.Avalonia.Resources.Storage;
 using KubeUI.Avalonia.Resources.Workloads;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 using KubeUI.Avalonia.Tests.Infra;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using ClusterRoleBindingPropertiesView = KubeUI.Avalonia.Resources.AccessControl.v1.ClusterRoleBinding.Views.PropertiesView;
 using ClusterRolePropertiesView = KubeUI.Avalonia.Resources.AccessControl.v1.ClusterRole.Views.PropertiesView;
@@ -55,11 +56,11 @@ namespace KubeUI.Avalonia.Tests.Resources;
 public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
 {
     private static void AssertProperties<TConfig, TResource, TView>(TResource resource)
-        where TConfig : ResourceConfigBase<TResource>, new()
+        where TConfig : ResourceConfigBase<TResource>
         where TResource : class, k8s.IKubernetesObject<k8s.Models.V1ObjectMeta>, new()
         where TView : Control
     {
-        var config = new TConfig();
+        var config = ResolveConfig<TConfig>();
 
         var controls = config.Properties(resource);
 
@@ -68,17 +69,24 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     }
 
     private static void AssertCategory<TConfig>(string expected)
-        where TConfig : IResourceConfig, new()
+        where TConfig : IResourceConfig
     {
-        IResourceConfig config = new TConfig();
+        IResourceConfig config = ResolveConfig<TConfig>();
 
         config.Category.ShouldBe(expected);
+    }
+
+    private static TConfig ResolveConfig<TConfig>()
+        where TConfig : IResourceConfig
+    {
+        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        return services.GetRequiredService<TConfig>();
     }
 
     [AvaloniaFact]
     public void secret_config_uses_secret_local_properties_view()
     {
-        var config = new V1SecretConfig();
+        var config = ResolveConfig<V1SecretConfig>();
 
         var controls = config.Properties(new V1Secret());
 
@@ -89,7 +97,7 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     [AvaloniaFact]
     public void event_config_uses_custom_last_seen_cell()
     {
-        var config = new V1EventConfig();
+        var config = ResolveConfig<V1EventConfig>();
 
         var lastSeenColumn = config.Columns().Single(x => x.Name == "Last Seen");
 
@@ -105,7 +113,7 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     [AvaloniaFact]
     public void deployment_config_uses_deployment_properties_view()
     {
-        var config = new V1DeploymentConfig();
+        var config = ResolveConfig<V1DeploymentConfig>();
 
         var controls = config.Properties(new V1Deployment());
 
@@ -116,7 +124,7 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     [AvaloniaFact]
     public void service_config_uses_service_properties_view()
     {
-        var config = new V1ServiceConfig();
+        var config = ResolveConfig<V1ServiceConfig>();
 
         var controls = config.Properties(new V1Service());
 
@@ -127,7 +135,7 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     [AvaloniaFact]
     public void node_config_uses_node_properties_view()
     {
-        var config = new V1NodeConfig();
+        var config = ResolveConfig<V1NodeConfig>();
 
         var controls = config.Properties(new V1Node());
 
@@ -138,7 +146,8 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     [AvaloniaFact]
     public void pod_config_uses_pod_properties_view()
     {
-        var config = new V1PodConfig();
+        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var config = services.GetRequiredService<V1PodConfig>();
 
         var controls = config.Properties(new V1Pod());
 
@@ -149,7 +158,7 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     [AvaloniaFact]
     public void daemonset_config_uses_daemonset_properties_view()
     {
-        var config = new V1DaemonSetConfig();
+        var config = ResolveConfig<V1DaemonSetConfig>();
 
         var controls = config.Properties(new V1DaemonSet());
 
@@ -160,7 +169,7 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     [AvaloniaFact]
     public void statefulset_config_uses_statefulset_properties_view()
     {
-        var config = new V1StatefulSetConfig();
+        var config = ResolveConfig<V1StatefulSetConfig>();
 
         var controls = config.Properties(new V1StatefulSet());
 
@@ -171,7 +180,7 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     [AvaloniaFact]
     public void replicaset_config_uses_replicaset_properties_view()
     {
-        var config = new V1ReplicaSetConfig();
+        var config = ResolveConfig<V1ReplicaSetConfig>();
 
         var controls = config.Properties(new V1ReplicaSet());
 
@@ -182,7 +191,7 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     [AvaloniaFact]
     public void cronjob_config_uses_cronjob_properties_view()
     {
-        var config = new V1CronJobConfig();
+        var config = ResolveConfig<V1CronJobConfig>();
 
         var controls = config.Properties(new V1CronJob());
 
@@ -193,7 +202,7 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     [AvaloniaFact]
     public void job_config_uses_job_properties_view()
     {
-        var config = new V1JobConfig();
+        var config = ResolveConfig<V1JobConfig>();
 
         var controls = config.Properties(new V1Job());
 
@@ -224,7 +233,17 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     [AvaloniaFact] public void config_map_config_uses_properties_view() => AssertProperties<V1ConfigMapConfig, V1ConfigMap, ConfigMapPropertiesView>(new V1ConfigMap());
     [AvaloniaFact] public void limit_range_config_uses_properties_view() => AssertProperties<V1LimitRangeConfig, V1LimitRange, LimitRangePropertiesView>(new V1LimitRange());
     [AvaloniaFact] public void namespace_config_uses_properties_view() => AssertProperties<V1NamespaceConfig, V1Namespace, NamespacePropertiesView>(new V1Namespace());
-    [AvaloniaFact] public void crd_config_uses_properties_view() => AssertProperties<V1CustomResourceDefinitionConfig, V1CustomResourceDefinition, CrdPropertiesView>(new V1CustomResourceDefinition());
+    [AvaloniaFact]
+    public void crd_config_uses_properties_view()
+    {
+        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var config = services.GetRequiredService<V1CustomResourceDefinitionConfig>();
+
+        var controls = config.Properties(new V1CustomResourceDefinition());
+
+        controls.Length.ShouldBe(1);
+        controls[0].ShouldBeOfType<CrdPropertiesView>();
+    }
 
     [AvaloniaFact] public void workloads_category_is_localized() => AssertCategory<V1DeploymentConfig>("Workloads");
     [AvaloniaFact] public void network_category_is_localized() => AssertCategory<V1ServiceConfig>("Network");

@@ -1,12 +1,12 @@
 using System.Windows.Input;
 using Avalonia.Collections;
+using CommunityToolkit.Mvvm.ComponentModel;
 using FluentIcons.Common;
 using KubeUI.Avalonia.Features.Resources.Common;
-using KubeUI.Avalonia.Infrastructure.Presentation;
 
 namespace KubeUI.Avalonia.Features.Resources.Common;
 
-public sealed partial class MenuItemViewModel : ViewModelBase
+public sealed partial class MenuItemViewModel : ObservableObject
 {
     [ObservableProperty]
     public partial string? Header { get; set; }

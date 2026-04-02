@@ -8,5 +8,6 @@ public sealed partial class HomeViewModel : ViewModelBase
         Title = Assets.Resources.HomeViewModel_Title;
         Id = nameof(HomeViewModel);
     }
+
 }
 

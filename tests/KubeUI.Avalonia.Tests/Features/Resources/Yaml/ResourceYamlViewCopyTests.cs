@@ -4,7 +4,9 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Input.Platform;
 using Avalonia.Threading;
 using k8s.Models;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Tests.Infra;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Yaml;
@@ -17,7 +19,7 @@ public sealed class ResourceYamlViewCopyTests : AvaloniaTestBase
         var cluster = new TestCluster().CreateWorkspace();
         await cluster.EnsureWorkspaceStateInitializedAsync();
 
-        var viewModel = new ResourceYamlViewModel();
+        var viewModel = TestApp.CurrentServices!.GetRequiredService<ResourceYamlViewModel>();
         viewModel.Initialize(cluster, new V1Pod
         {
             Metadata = new V1ObjectMeta

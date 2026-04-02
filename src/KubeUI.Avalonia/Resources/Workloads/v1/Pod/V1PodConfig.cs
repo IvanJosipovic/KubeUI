@@ -7,16 +7,23 @@ using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Controls;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
 using KubeUI.Kubernetes;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 
 public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 {
+    public V1PodConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
+
     public override bool IsNamespaced => true;
 
     public override string Category => CategoryString("ResourceConfig_Category_Workloads", "Workloads");
@@ -187,7 +194,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
     {
         if (parameters[0] is V1Pod pod && parameters[1] is V1Container container)
         {
-            var vm = Application.Current.GetRequiredService<PodLogsViewModel>();
+            var vm = ServiceProvider.GetRequiredService<PodLogsViewModel>();
             vm.Cluster = Cluster;
             vm.Object = pod;
             vm.ContainerName = container.Name;
@@ -228,7 +235,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
     {
         if (parameters?[0] is V1Pod pod && parameters?[1] is V1Container container)
         {
-            var vm = Application.Current.GetRequiredService<PodConsoleViewModel>();
+            var vm = ServiceProvider.GetRequiredService<PodConsoleViewModel>();
             vm.Cluster = Cluster;
             vm.Object = pod;
             vm.ContainerName = container.Name;

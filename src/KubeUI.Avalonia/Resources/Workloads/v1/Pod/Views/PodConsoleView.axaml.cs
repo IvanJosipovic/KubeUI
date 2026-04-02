@@ -2,10 +2,11 @@ using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
 
@@ -16,9 +17,13 @@ public sealed partial class PodConsoleView : UserControl
     public PodConsoleViewModel? ViewModel => DataContext as PodConsoleViewModel;
 
     public PodConsoleView()
+        : this(DesignTimePreview.Get<ILogger<PodConsoleView>>())
     {
-        _logger = Application.Current.GetRequiredService<ILogger<PodConsoleView>>();
+    }
 
+    public PodConsoleView(ILogger<PodConsoleView> logger)
+    {
+        _logger = logger;
         InitializeComponent();
 
         Loaded += OnLoaded;

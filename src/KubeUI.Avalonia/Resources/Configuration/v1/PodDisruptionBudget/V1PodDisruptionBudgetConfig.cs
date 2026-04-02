@@ -6,6 +6,10 @@ namespace KubeUI.Avalonia.Resources.Configuration.v1.PodDisruptionBudget;
 
 public sealed partial class V1PodDisruptionBudgetConfig : ResourceConfigBase<V1PodDisruptionBudget>
 {
+    public V1PodDisruptionBudgetConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
     public override bool IsNamespaced => true;
     public override string Category => CategoryString("ResourceConfig_Category_Configuration", "Configuration");
     public override int Order => 5;

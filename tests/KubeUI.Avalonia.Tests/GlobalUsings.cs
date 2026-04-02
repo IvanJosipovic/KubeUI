@@ -51,3 +51,4 @@ global using KubeUI.Avalonia.Services.Settings;
 global using KubeUI.Avalonia.Shell.Documents.About.ViewModels;
 global using KubeUI.Avalonia.Shell.Navigation.ViewModels;
 global using KubeUI.Avalonia.Shell.Navigation.Views;
+global using Microsoft.Extensions.DependencyInjection;

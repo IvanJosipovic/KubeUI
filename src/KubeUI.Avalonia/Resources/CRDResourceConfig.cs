@@ -13,6 +13,11 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : clas
     private bool _showNamespaces = true;
     private string? _generatedName;
 
+    public CRDResourceConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
+
     public override bool IsNamespaced => _showNamespaces;
 
     public override bool IsCustomResource => true;

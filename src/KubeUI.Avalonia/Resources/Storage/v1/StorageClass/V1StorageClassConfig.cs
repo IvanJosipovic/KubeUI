@@ -6,6 +6,10 @@ namespace KubeUI.Avalonia.Resources.Storage.v1.StorageClass;
 
 public sealed partial class V1StorageClassConfig : ResourceConfigBase<V1StorageClass>
 {
+    public V1StorageClassConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
     public override string Category => CategoryString("ResourceConfig_Category_Storage", "Storage");
     public override int Order => 2;
 

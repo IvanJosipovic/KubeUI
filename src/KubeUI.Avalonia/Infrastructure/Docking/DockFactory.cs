@@ -7,16 +7,19 @@ using Dock.Model.Mvvm.Controls;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Shell.Main.ViewModels;
 using KubeUI.Avalonia.Shell.Navigation.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 using Orientation = Dock.Model.Core.Orientation;
 
 namespace KubeUI.Avalonia.Infrastructure.Docking;
 
 public class DockFactory : Factory
 {
+    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<DockFactory> _logger;
 
-    public DockFactory(ILogger<DockFactory> logger)
+    public DockFactory(IServiceProvider serviceProvider, ILogger<DockFactory> logger)
     {
+        _serviceProvider = serviceProvider;
         _logger = logger;
     }
 
@@ -32,7 +35,7 @@ public class DockFactory : Factory
 
     public override IRootDock CreateLayout()
     {
-        var nav = Application.Current.GetRequiredService<NavigationViewModel>();
+        var nav = _serviceProvider.GetRequiredService<NavigationViewModel>();
         nav.CanClose = false;
         nav.CanFloat = false;
         nav.CanDrag = false;
@@ -70,7 +73,7 @@ public class DockFactory : Factory
             VisibleDockables = CreateList<IDockable>()
         };
 
-        var home = Application.Current.GetRequiredService<HomeViewModel>();
+        var home = _serviceProvider.GetRequiredService<HomeViewModel>();
 
         _documentDock = new DocumentDock
         {

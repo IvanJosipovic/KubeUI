@@ -74,9 +74,10 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         return cluster;
     }
 
-    private T GetRequiredService<T>()
+    private T GetRequiredService<T>() where T : class
     {
-        var service = Application.Current.GetRequiredService<T>();
+        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var service = services.GetRequiredService<T>();
         if (service is IDisposable disposable)
         {
             _disposables.Add(disposable);
@@ -1444,7 +1445,8 @@ internal sealed class FakeDoubleTapResourceListViewModel : IResourceListViewMode
     public GroupApiVersionKind Kind => GroupApiVersionKind.From<V1Pod>();
     public int ItemCount => View.Count;
     public string SearchQuery { get; set; } = string.Empty;
-    public ISettingsService SettingsService => Application.Current.GetRequiredService<ISettingsService>();
+    public ISettingsService SettingsService => TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
+        ?? throw new InvalidOperationException("Test services are not initialized.");
     public IResourceConfig ResourceConfig { get; }
     public ObservableCollection<DataGridColumnDefinition> ColumnDefinitions { get; } = [];
     public IDataGridSortingAdapterFactory SortingAdapterFactory => throw new NotImplementedException();

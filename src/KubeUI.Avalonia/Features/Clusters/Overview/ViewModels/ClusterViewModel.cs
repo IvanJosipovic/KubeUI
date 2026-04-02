@@ -22,11 +22,13 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
     [ObservableProperty]
     public partial ResourceListViewModel<Corev1Event> EventsVM { get; set; }
 
-    public ClusterViewModel()
+    public ClusterViewModel(
+        ResourceListViewModel<Corev1Event> eventsVm,
+        ISettingsService settings)
     {
         Title = Assets.Resources.ClusterViewModel_Title;
-        EventsVM = Application.Current.GetRequiredService<ResourceListViewModel<Corev1Event>>();
-        Settings = Application.Current.GetRequiredService<ISettingsService>();
+        EventsVM = eventsVm;
+        Settings = settings;
     }
 
     [ObservableProperty]

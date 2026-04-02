@@ -24,7 +24,7 @@ public sealed class TestCluster : TestClusterRuntime
     public ClusterWorkspaceViewModel CreateWorkspace()
     {
         _workspace ??= ActivatorUtilities.CreateInstance<ClusterWorkspaceViewModel>(
-            Application.Current?.GetRequiredService<IServiceProvider>() ?? throw new InvalidOperationException("Avalonia Application.Current is not initialized."),
+            TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized."),
             this);
 
         return _workspace;

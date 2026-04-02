@@ -4,6 +4,7 @@ using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Tests.Infra;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Resources;
@@ -14,7 +15,8 @@ public sealed class ResourceConfigBasePermissionTests : AvaloniaTestBase
     public async Task update_permissions_refreshes_non_list_permissions_sequentially()
     {
         var runtime = new TestCluster();
-        var config = new TrackingResourceConfig();
+        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var config = new TrackingResourceConfig(services);
         config.Initialize(runtime.CreateWorkspace());
 
         await config.UpdatePermissions();
@@ -37,6 +39,11 @@ public sealed class ResourceConfigBasePermissionTests : AvaloniaTestBase
     private sealed class TrackingResourceConfig : ResourceConfigBase<V1Pod>
     {
         private int _activeRefreshes;
+
+        public TrackingResourceConfig(IServiceProvider serviceProvider)
+            : base(serviceProvider)
+        {
+        }
 
         public List<(Verb Verb, string? SubResource)> RecordedPermissions { get; } = [];
 

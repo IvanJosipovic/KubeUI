@@ -9,13 +9,14 @@ using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.List.ViewModels;
 using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using ProDataGrid;
 
 namespace KubeUI.Avalonia.Features.Resources.List.Behaviors;
 
 public sealed class ResourceListPersistenceBehavior : Behavior<DataGrid>
 {
-    private readonly IFactory _factory = Application.Current.GetRequiredService<IFactory>();
+    private IFactory? _factory;
     private IResourceListViewModel? _currentViewModel;
     private bool _isCurrentViewModelActive;
     private bool _hasBeenVisible;
@@ -23,6 +24,22 @@ public sealed class ResourceListPersistenceBehavior : Behavior<DataGrid>
     private bool _restoreScheduled;
     private int _restoreAttempts;
     private const int MaxRestoreAttempts = 50;
+
+    private bool TryEnsureFactory()
+    {
+        if (_factory is not null)
+        {
+            return true;
+        }
+
+        if (!TryGetServices(out IServiceProvider services))
+        {
+            return false;
+        }
+
+        _factory = services.GetRequiredService<IFactory>();
+        return true;
+    }
 
     protected override void OnAttached()
     {
@@ -33,7 +50,8 @@ public sealed class ResourceListPersistenceBehavior : Behavior<DataGrid>
             return;
         }
 
-        _factory.ActiveDockableChanged += FactoryActiveDockableChanged;
+        TryEnsureFactory();
+        _factory?.ActiveDockableChanged += FactoryActiveDockableChanged;
         AssociatedObject.DataContextChanged += AssociatedObjectOnDataContextChanged;
 
         _visibilitySubscription = AssociatedObject.GetObservable(Visual.IsVisibleProperty)
@@ -58,7 +76,7 @@ public sealed class ResourceListPersistenceBehavior : Behavior<DataGrid>
     {
         PersistState(force: true);
 
-        _factory.ActiveDockableChanged -= FactoryActiveDockableChanged;
+        _factory?.ActiveDockableChanged -= FactoryActiveDockableChanged;
         _currentViewModel = null;
         _isCurrentViewModelActive = false;
         _hasBeenVisible = false;
@@ -78,6 +96,10 @@ public sealed class ResourceListPersistenceBehavior : Behavior<DataGrid>
     private void AssociatedObjectOnDataContextChanged(object? sender, EventArgs e)
     {
         UpdateCurrentViewModel(AssociatedObject?.DataContext as IResourceListViewModel);
+        if (_factory is null && TryEnsureFactory())
+        {
+            _factory!.ActiveDockableChanged += FactoryActiveDockableChanged;
+        }
     }
 
     private void FactoryActiveDockableChanged(object? sender, ActiveDockableChangedEventArgs e)
@@ -137,6 +159,11 @@ public sealed class ResourceListPersistenceBehavior : Behavior<DataGrid>
             return false;
         }
 
+        if (_factory == null)
+        {
+            return false;
+        }
+
         foreach (var dock in _factory.Find(_ => true).OfType<IDock>())
         {
             if (ReferenceEquals(dock.ActiveDockable, _currentViewModel))
@@ -145,6 +172,18 @@ public sealed class ResourceListPersistenceBehavior : Behavior<DataGrid>
             }
         }
 
+        return false;
+    }
+
+    private bool TryGetServices(out IServiceProvider services)
+    {
+        if (global::Avalonia.Application.Current is IServiceProviderHost host)
+        {
+            services = host.Services;
+            return true;
+        }
+
+        services = null!;
         return false;
     }
 

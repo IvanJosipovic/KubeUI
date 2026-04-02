@@ -6,6 +6,10 @@ namespace KubeUI.Avalonia.Resources.Configuration.v1.MutatingWebhookConfiguratio
 
 public sealed partial class V1MutatingWebhookConfig : ResourceConfigBase<V1MutatingWebhookConfiguration>
 {
+    public V1MutatingWebhookConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
     public override string Category => CategoryString("ResourceConfig_Category_Configuration", "Configuration");
     public override int Order => 9;
 

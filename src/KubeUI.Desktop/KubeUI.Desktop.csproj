@@ -5,6 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
+    <EnableAvaloniaXamlCompilation>false</EnableAvaloniaXamlCompilation>
+    <AvaloniaIncludeApplicationIconAsWindowIcon>false</AvaloniaIncludeApplicationIconAsWindowIcon>
     <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <PublishSingleFile>true</PublishSingleFile>

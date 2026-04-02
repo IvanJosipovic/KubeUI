@@ -20,22 +20,25 @@ using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Kubernetes;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Avalonia.Resources;
 
 public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourceConfig where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
+    protected IServiceProvider ServiceProvider { get; }
     protected readonly ILogger<ResourceConfigBase<T>> _logger;
     protected readonly IDialogService _dialogService;
     protected readonly INotificationManager _notificationManager;
     protected readonly IFactory _factory;
 
-    public ResourceConfigBase()
+    protected ResourceConfigBase(IServiceProvider serviceProvider)
     {
-        _logger = Application.Current.GetRequiredService<ILogger<ResourceConfigBase<T>>>();
-        _dialogService = Application.Current.GetRequiredService<IDialogService>();
-        _factory = Application.Current.GetRequiredService<IFactory>();
-        _notificationManager = Application.Current.GetRequiredService<INotificationManager>();
+        ServiceProvider = serviceProvider;
+        _logger = serviceProvider.GetRequiredService<ILogger<ResourceConfigBase<T>>>();
+        _dialogService = serviceProvider.GetRequiredService<IDialogService>();
+        _factory = serviceProvider.GetRequiredService<IFactory>();
+        _notificationManager = serviceProvider.GetRequiredService<INotificationManager>();
     }
 
     public Type Type { get; } = typeof(T);
@@ -258,7 +261,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             resource.Metadata.NamespaceProperty = "default";
         }
 
-        var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
+        var vm = ServiceProvider.GetRequiredService<ResourceYamlViewModel>();
         vm.Initialize(Cluster, resource);
         vm.EditMode = true;
 
@@ -333,7 +336,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     [RelayCommand(CanExecute = nameof(CanView))]
     public void View(IList items)
     {
-        var instance = Application.Current.GetRequiredService<ResourcePropertiesViewModel<T>>();
+        var instance = ServiceProvider.GetRequiredService<ResourcePropertiesViewModel<T>>();
         instance.Initialize(Cluster, (T)items[0]!);
         instance.CanFloat = false;
 
@@ -348,7 +351,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     [RelayCommand(CanExecute = nameof(CanViewYaml))]
     public void ViewYaml(IList items)
     {
-        var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
+        var vm = ServiceProvider.GetRequiredService<ResourceYamlViewModel>();
 
         vm.Initialize(Cluster, (T)items[0]!);
 

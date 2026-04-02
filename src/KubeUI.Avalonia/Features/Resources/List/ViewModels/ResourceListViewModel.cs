@@ -40,6 +40,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     private static readonly TimeSpan SearchDebounceDelay = TimeSpan.FromMilliseconds(250);
     internal const string NamespaceScopeFilterId = "__namespace_scope__";
     internal const string NamespaceScopePropertyPath = "namespace_scope";
+    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ResourceListViewModel<T>> _logger;
 
     private static readonly IComparer s_noopSortComparer = Comparer<object>.Create(static (_, _) => 0);
@@ -152,10 +153,11 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     public ObservableCollection<V1Namespace> SelectedNamespaces
         => IsNamespaceSelectionLinked && Cluster != null ? Cluster.SelectedNamespaces : _localSelectedNamespaces;
 
-    public ResourceListViewModel()
+    public ResourceListViewModel(IServiceProvider serviceProvider, ILogger<ResourceListViewModel<T>> logger, ISettingsService settingsService)
     {
-        _logger = Application.Current.GetRequiredService<ILogger<ResourceListViewModel<T>>>();
-        SettingsService = Application.Current.GetRequiredService<ISettingsService>();
+        _serviceProvider = serviceProvider;
+        _logger = logger;
+        SettingsService = settingsService;
 
         _searchQuerySubscription = _searchQueryChanges
             .Throttle(SearchDebounceDelay)
@@ -512,7 +514,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         {
             try
             {
-                var control = Application.Current.GetRequiredService(columnDefinition.CustomControl) as Control;
+                var control = _serviceProvider.GetRequiredService(columnDefinition.CustomControl) as Control;
 
                 if (control == null)
                 {
