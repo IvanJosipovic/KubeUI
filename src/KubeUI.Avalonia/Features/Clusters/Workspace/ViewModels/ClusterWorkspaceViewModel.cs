@@ -84,6 +84,10 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     public IReadOnlyDictionary<GroupApiVersionKind, object> Objects => Runtime.Objects;
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
+    /// <summary>
+    /// Raised after a resource type has been seeded into the runtime cache.
+    /// </summary>
+    public event Action<ClusterWorkspaceViewModel, Type>? ResourceSeeded;
     public event Action<V1CustomResourceDefinition>? OnCustomResourceDefinitionReady
     {
         add => Runtime.OnCustomResourceDefinitionReady += value;
@@ -519,6 +523,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         }
 
         await Runtime.SeedResource<T>(waitForReady).ConfigureAwait(false);
+        ResourceSeeded?.Invoke(this, typeof(T));
     }
 
     private void QueueResourceConfigPermissionsRefresh()

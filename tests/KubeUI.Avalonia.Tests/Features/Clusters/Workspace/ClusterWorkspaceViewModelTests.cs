@@ -105,6 +105,19 @@ public class ClusterWorkspaceViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task seeding_resource_raises_resource_seeded_event()
+    {
+        var runtime = new TestCluster();
+        var workspace = CreateWorkspace(runtime);
+        Type? seededType = null;
+        workspace.ResourceSeeded += (_, resourceType) => seededType = resourceType;
+
+        await workspace.SeedResource<V1Pod>();
+
+        seededType.ShouldBe(typeof(V1Pod));
+    }
+
+    [AvaloniaFact]
     public async Task deleted_crd_removes_resource_config_model_cache_entry_and_seeded_informer()
     {
         var runtime = new TestCluster();
