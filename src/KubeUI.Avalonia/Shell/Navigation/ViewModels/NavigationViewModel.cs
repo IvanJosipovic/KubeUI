@@ -1239,16 +1239,74 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         return cluster.Status == ClusterStatus.Connected;
     }
 
-    private static IObservable<int> TryGetResourceCount(ClusterWorkspaceViewModel cluster, Type resourceType)
+    private static IObservable<int> CreateResourceCountStream(ClusterWorkspaceViewModel cluster, Type resourceType)
+    {
+        if (IsResourceSeeded(cluster, resourceType))
+        {
+            return CreateLiveResourceCountStream(cluster, resourceType);
+        }
+
+        return Observable.Create<int>(observer =>
+        {
+            IDisposable? liveSubscription = null;
+
+            void AttachLiveStream(bool emitInitialCount)
+            {
+                if (emitInitialCount)
+                {
+                    observer.OnNext(0);
+                }
+
+                liveSubscription = CreateLiveResourceCountStream(cluster, resourceType).Subscribe(observer);
+            }
+
+            void OnResourceSeeded(ClusterWorkspaceViewModel seededCluster, Type seededType)
+            {
+                if (!ReferenceEquals(seededCluster, cluster) || seededType != resourceType)
+                {
+                    return;
+                }
+
+                cluster.ResourceSeeded -= OnResourceSeeded;
+                AttachLiveStream(emitInitialCount: true);
+            }
+
+            cluster.ResourceSeeded += OnResourceSeeded;
+
+            if (IsResourceSeeded(cluster, resourceType))
+            {
+                cluster.ResourceSeeded -= OnResourceSeeded;
+                AttachLiveStream(emitInitialCount: false);
+            }
+
+            return Disposable.Create(() =>
+            {
+                cluster.ResourceSeeded -= OnResourceSeeded;
+                liveSubscription?.Dispose();
+            });
+        });
+    }
+
+    private static IObservable<int> CreateLiveResourceCountStream(ClusterWorkspaceViewModel cluster, Type resourceType)
+    {
+        return cluster.GetResourceCount(resourceType)
+            .Sample(TimeSpan.FromMilliseconds(100), AvaloniaScheduler.Instance)
+            .ObserveOn(AvaloniaScheduler.Instance)
+            .DistinctUntilChanged()
+            .Replay(1)
+            .RefCount();
+    }
+
+    private static bool IsResourceSeeded(ClusterWorkspaceViewModel cluster, Type resourceType)
     {
         try
         {
             var kind = GroupApiVersionKind.From(resourceType);
-            return cluster.Objects.ContainsKey(kind) ? cluster.GetResourceCount(resourceType) : Observable.Empty<int>();
+            return cluster.Objects.ContainsKey(kind);
         }
         catch
         {
-            return Observable.Empty<int>();
+            return false;
         }
     }
 
@@ -1335,13 +1393,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             Order = resourceConfig.Order,
             OpenCommand = OpenResourceNavigationCommand,
             OpenInNewTabCommand = OpenResourceNavigationInNewTabCommand,
-            // Throttle rapid updates to the resource count to reduce UI churn.
-            // Sample emits the latest value at most once per 100ms and ensures
-            // updates are observed on the Avalonia UI scheduler. Also avoid
-            // emitting duplicate consecutive values.
-            Count = TryGetResourceCount(cluster, resourceConfig.Type)
-                .Sample(TimeSpan.FromMilliseconds(100), AvaloniaScheduler.Instance)
-                .DistinctUntilChanged(),
+            Count = CreateResourceCountStream(cluster, resourceConfig.Type),
         };
         return link;
     }
@@ -1367,11 +1419,6 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         if (!forceNewTab && FindExistingResourceDocument(nav) is IDockable existingDocument)
         {
             ActivateDocument(existingDocument);
-            if (existingDocument is IResourceListViewModel existingResourceList)
-            {
-                nav.Count = ObserveResourceListItemCount(existingResourceList);
-            }
-
             return;
         }
 
@@ -1392,11 +1439,6 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         if (forceNewTab)
         {
             vm.Id = CreateUniqueDockableId(expectedId);
-        }
-
-        if (vm is IResourceListViewModel resourceList)
-        {
-            nav.Count = ObserveResourceListItemCount(resourceList);
         }
 
         Factory.AddToDocuments(vm);
@@ -1509,31 +1551,6 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         var documents = Factory.GetDockable<IDocumentDock>("Documents")!;
         Factory.SetActiveDockable(dockable);
         Factory.SetFocusedDockable(documents, dockable);
-    }
-
-    private static IObservable<int> ObserveResourceListItemCount(IResourceListViewModel resourceList)
-    {
-        return Observable.Create<int>(observer =>
-        {
-            observer.OnNext(resourceList.ItemCount);
-
-            if (resourceList is not INotifyPropertyChanged propertyChanged)
-            {
-                observer.OnCompleted();
-                return Disposable.Empty;
-            }
-
-            PropertyChangedEventHandler handler = (_, args) =>
-            {
-                if (string.IsNullOrEmpty(args.PropertyName) || args.PropertyName == nameof(IResourceListViewModel.ItemCount))
-                {
-                    observer.OnNext(resourceList.ItemCount);
-                }
-            };
-
-            propertyChanged.PropertyChanged += handler;
-            return Disposable.Create(() => propertyChanged.PropertyChanged -= handler);
-        }).DistinctUntilChanged();
     }
 
     private IDockable? FindExistingResourceDocument(ResourceNavigationLink nav)

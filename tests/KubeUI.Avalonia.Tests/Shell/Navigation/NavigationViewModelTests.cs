@@ -125,6 +125,34 @@ public class NavigationViewModelTests : AvaloniaTestBase
         return null;
     }
 
+    private static async Task<int?> WaitForCountValueAsync(IObservable<int>? count, int expectedValue, int timeoutMs = 3000)
+    {
+        if (count == null)
+        {
+            return null;
+        }
+
+        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+        int? observed = null;
+
+        using var subscription = count.Subscribe(value =>
+        {
+            if (value == expectedValue)
+            {
+                observed = value;
+            }
+        });
+
+        while (DateTime.UtcNow < deadline && observed == null)
+        {
+            Dispatcher.UIThread.RunJobs();
+            await Task.Delay(25);
+        }
+
+        Dispatcher.UIThread.RunJobs();
+        return observed;
+    }
+
     private static ResourceNavigationLink? FindResourceLink(ClusterNavigationNode root, string name)
     {
         return FindResourceLink(root.NavigationItems, name);
@@ -188,6 +216,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
+        await workspace.SeedResource<V1Namespace>();
         await workspace.EnsureWorkspaceStateInitializedAsync();
         Dispatcher.UIThread.RunJobs();
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
@@ -1400,6 +1429,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         };
 
         var workspace = CreateWorkspace(runtime);
+        await workspace.SeedResource<V1Namespace>();
         await workspace.EnsureWorkspaceStateInitializedAsync();
         Dispatcher.UIThread.RunJobs();
 
@@ -1428,7 +1458,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public async Task selecting_empty_resource_navigation_link_updates_count_to_zero()
+    public async Task selecting_unseeded_resource_navigation_link_keeps_count_blank()
     {
         var runtime = new TestCluster
         {
@@ -1448,10 +1478,86 @@ public class NavigationViewModelTests : AvaloniaTestBase
         var podsLink = FindResourceLink(clusterNode, "Pods");
 
         podsLink.ShouldNotBeNull();
+        (podsLink.Count is not null).ShouldBeTrue();
+        var countTask = WaitForCountValueAsync(podsLink.Count, 0, timeoutMs: 10000);
+        await vm.TreeViewSelectionChangedAsync(podsLink);
+        var count = await countTask;
+        count.ShouldBe(0);
+    }
+
+    [AvaloniaFact]
+    public async Task first_click_on_resource_navigation_link_shows_count()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+
+        await runtime.AddOrUpdateResource(new V1Namespace
+        {
+            Metadata = new() { Name = "default" }
+        });
+
+        var workspace = CreateWorkspace(runtime);
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+        Dispatcher.UIThread.RunJobs();
+
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        var podsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, "Pods"));
+
+        podsLink.ShouldNotBeNull();
+        (podsLink.Count is not null).ShouldBeTrue();
+        var countTask = WaitForCountValueAsync(podsLink.Count, 1, timeoutMs: 10000);
+        await vm.TreeViewSelectionChangedAsync(podsLink);
+        var count = await countTask;
+        count.ShouldBe(0);
+    }
+
+    [AvaloniaFact]
+    public async Task selecting_seeded_resource_navigation_link_shows_source_cache_count()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+
+        await runtime.AddOrUpdateResource(new V1Namespace
+        {
+            Metadata = new() { Name = "default" }
+        });
+
+        var workspace = CreateWorkspace(runtime);
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+        Dispatcher.UIThread.RunJobs();
+
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        var podsLink = FindResourceLink(clusterNode, "Pods");
+
+        podsLink.ShouldNotBeNull();
+        (podsLink.Count is not null).ShouldBeTrue();
+        var countTask = WaitForCountAsync(podsLink.Count, timeoutMs: 10000);
+        await runtime.AddOrUpdateResource(new V1Pod
+        {
+            Metadata = new()
+            {
+                Name = "pod-one",
+                NamespaceProperty = "default"
+            }
+        });
 
         await vm.TreeViewSelectionChangedAsync(podsLink);
 
-        var count = await WaitForCountAsync(podsLink.Count);
+        var count = await countTask;
         count.ShouldBe(0);
     }
 
@@ -1463,6 +1569,11 @@ public class NavigationViewModelTests : AvaloniaTestBase
             Connected = true,
             Status = ClusterStatus.Connected,
         };
+
+        await runtime.AddOrUpdateResource(new V1Namespace
+        {
+            Metadata = new() { Name = "default" }
+        });
 
         var workspace = CreateWorkspace(runtime);
         await workspace.EnsureWorkspaceStateInitializedAsync();
@@ -1496,6 +1607,11 @@ public class NavigationViewModelTests : AvaloniaTestBase
             Connected = true,
             Status = ClusterStatus.Connected,
         };
+
+        await runtime.AddOrUpdateResource(new V1Namespace
+        {
+            Metadata = new() { Name = "default" }
+        });
 
         var workspace = CreateWorkspace(runtime);
         await workspace.EnsureWorkspaceStateInitializedAsync();
