@@ -125,34 +125,6 @@ public class NavigationViewModelTests : AvaloniaTestBase
         return null;
     }
 
-    private static async Task<int?> WaitForCountValueAsync(IObservable<int>? count, int expectedValue, int timeoutMs = 3000)
-    {
-        if (count == null)
-        {
-            return null;
-        }
-
-        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
-        int? observed = null;
-
-        using var subscription = count.Subscribe(value =>
-        {
-            if (value == expectedValue)
-            {
-                observed = value;
-            }
-        });
-
-        while (DateTime.UtcNow < deadline && observed == null)
-        {
-            Dispatcher.UIThread.RunJobs();
-            await Task.Delay(25);
-        }
-
-        Dispatcher.UIThread.RunJobs();
-        return observed;
-    }
-
     private static ResourceNavigationLink? FindResourceLink(ClusterNavigationNode root, string name)
     {
         return FindResourceLink(root.NavigationItems, name);
@@ -1479,7 +1451,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         podsLink.ShouldNotBeNull();
         (podsLink.Count is not null).ShouldBeTrue();
-        var countTask = WaitForCountValueAsync(podsLink.Count, 0, timeoutMs: 10000);
+        var countTask = WaitForCountAsync(podsLink.Count, timeoutMs: 10000);
         await vm.TreeViewSelectionChangedAsync(podsLink);
         var count = await countTask;
         count.ShouldBe(0);
@@ -1512,7 +1484,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         podsLink.ShouldNotBeNull();
         (podsLink.Count is not null).ShouldBeTrue();
-        var countTask = WaitForCountValueAsync(podsLink.Count, 1, timeoutMs: 10000);
+        var countTask = WaitForCountAsync(podsLink.Count, timeoutMs: 10000);
         await vm.TreeViewSelectionChangedAsync(podsLink);
         var count = await countTask;
         count.ShouldBe(0);
