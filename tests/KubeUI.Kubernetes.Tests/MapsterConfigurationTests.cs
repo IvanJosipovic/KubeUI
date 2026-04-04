@@ -2,6 +2,7 @@ using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Kubernetes;
 using Mapster;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests;
@@ -11,7 +12,7 @@ public class MapsterConfigurationTests
     [Fact]
     public void SameTypeAdapter_HandlesNestedResourceQuantityWithoutThrowing()
     {
-        MapsterConfiguration.Configure();
+        new ServiceCollection().AddKubeUIKubernetesServices();
 
         V1Pod source = new V1Pod
         {
@@ -57,7 +58,7 @@ public class MapsterConfigurationTests
     [Fact]
     public void Adapter_PreservesSharedReferencesAcrossDifferentTypes()
     {
-        MapsterConfiguration.Configure();
+        new ServiceCollection().AddKubeUIKubernetesServices();
 
         ParentSource source = new ParentSource
         {
