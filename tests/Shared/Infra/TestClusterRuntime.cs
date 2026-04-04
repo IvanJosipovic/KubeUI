@@ -14,6 +14,7 @@ using KubernetesClient.Informer.Client;
 using KubernetesCRDModelGen;
 using KubeUI.Kubernetes;
 using Mapster;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
@@ -22,6 +23,11 @@ namespace KubeUI.Testing;
 
 public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
 {
+    static TestClusterRuntime()
+    {
+        MapsterConfiguration.Configure();
+    }
+
     private readonly ObservableCollection<V1Namespace> _namespaces = [];
     private readonly ReadOnlyObservableCollection<V1Namespace> _readonlyNamespaces;
     private readonly ConcurrentDictionary<string, bool> _permissions = new(StringComparer.Ordinal);
@@ -44,6 +50,7 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     });
 
     private readonly IGenerator _generator = s_sharedGenerator.Value;
+    private readonly ILogger _logger = NullLogger.Instance;
     private bool _connected;
     private bool _defaultPermissionAllowed = true;
     private bool _listNamespaces;
@@ -377,14 +384,20 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
 
             if (original.HasValue)
             {
-                item.Adapt(original.Value);
-                list.Refresh(key);
-                OnChange?.Invoke(WatchEventType.Modified, kind, original.Value);
+                ResourceInformerCallbackGuard.Execute(_logger, WatchEventType.Modified, kind, item, () =>
+                {
+                    item.Adapt(original.Value);
+                    list.Refresh(key);
+                    OnChange?.Invoke(WatchEventType.Modified, kind, original.Value);
+                });
             }
             else
             {
-                list.AddOrUpdate(item);
-                OnChange?.Invoke(WatchEventType.Added, kind, item);
+                ResourceInformerCallbackGuard.Execute(_logger, WatchEventType.Added, kind, item, () =>
+                {
+                    list.AddOrUpdate(item);
+                    OnChange?.Invoke(WatchEventType.Added, kind, item);
+                });
             }
         });
 
@@ -406,7 +419,10 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
         if (Objects.TryGetValue(kind, out var obj) && obj is ContainerClass<T> container)
         {
             container.Items.Remove(item);
-            OnChange?.Invoke(WatchEventType.Deleted, kind, item);
+            ResourceInformerCallbackGuard.Execute(_logger, WatchEventType.Deleted, kind, item, () =>
+            {
+                OnChange?.Invoke(WatchEventType.Deleted, kind, item);
+            });
         }
 
         if (item is V1CustomResourceDefinition crd)
