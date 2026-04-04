@@ -17,12 +17,18 @@ internal sealed class DataGridColumnFilterFlyoutFactory
     public FlyoutBase Create(IResourceListColumn columnDefinition, DataGridColumnDefinition column, IFilteringModel filteringModel)
     {
         var definition = _filterService.CreateDefinition(columnDefinition, column, filteringModel);
+        Control? content = null;
         var flyout = new Flyout
         {
-            Content = CreateContent(definition)
+            Content = null
         };
 
-        flyout.Opened += (_, _) => definition.Load();
+        flyout.Opened += (_, _) =>
+        {
+            content ??= CreateContent(definition);
+            flyout.Content = content;
+            definition.Load();
+        };
 
         if (Application.Current?.TryFindResource("DataGridFilterFlyoutPresenterTheme", out var presenterTheme) == true &&
             presenterTheme is ControlTheme controlTheme)
