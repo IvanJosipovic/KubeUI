@@ -330,55 +330,57 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         return new ResourceInformerCallback<T>((eventType, item) =>
         {
             var kind = GroupApiVersionKind.From<T>();
-
-            var items = GetResourceSourceCache<T>();
-
-            switch (eventType)
+            ResourceInformerCallbackGuard.Execute(_logger, eventType, kind, item, () =>
             {
-                case WatchEventType.Added:
-                    if (item is V1CustomResourceDefinition crd)
-                    {
-                        items.AddOrUpdate(item);
-                        QueueCustomResourceDefinition(crd);
-                    }
-                    else
-                    {
-                        items.AddOrUpdate(item);
-                    }
-                    break;
-                case WatchEventType.Modified:
-                    items.Edit(o =>
-                    {
-                        var key = o.GetKey(item);
-                        var original = o.Lookup(key);
-                        if (original.HasValue)
+                var items = GetResourceSourceCache<T>();
+
+                switch (eventType)
+                {
+                    case WatchEventType.Added:
+                        if (item is V1CustomResourceDefinition crd)
                         {
-                            item.Adapt(original.Value);
-                            o.Refresh(key);
+                            items.AddOrUpdate(item);
+                            QueueCustomResourceDefinition(crd);
                         }
                         else
                         {
-                            o.AddOrUpdate(item);
+                            items.AddOrUpdate(item);
                         }
-                    });
+                        break;
+                    case WatchEventType.Modified:
+                        items.Edit(o =>
+                        {
+                            var key = o.GetKey(item);
+                            var original = o.Lookup(key);
+                            if (original.HasValue)
+                            {
+                                item.Adapt(original.Value);
+                                o.Refresh(key);
+                            }
+                            else
+                            {
+                                o.AddOrUpdate(item);
+                            }
+                        });
 
-                    if (item is V1CustomResourceDefinition modifiedCrd)
-                    {
-                        QueueCustomResourceDefinition(modifiedCrd);
-                    }
-                    break;
-                case WatchEventType.Deleted:
-                    items.Remove(item);
-                    if (item is V1CustomResourceDefinition crd2)
-                    {
-                        RemoveQueuedCustomResourceDefinition(crd2);
-                        RemoveCustomResourceDefinitionArtifacts(crd2);
-                        _ = Task.Run(RefreshApiGroupDiscoveryListAsync);
-                    }
-                    break;
-            }
+                        if (item is V1CustomResourceDefinition modifiedCrd)
+                        {
+                            QueueCustomResourceDefinition(modifiedCrd);
+                        }
+                        break;
+                    case WatchEventType.Deleted:
+                        items.Remove(item);
+                        if (item is V1CustomResourceDefinition crd2)
+                        {
+                            RemoveQueuedCustomResourceDefinition(crd2);
+                            RemoveCustomResourceDefinitionArtifacts(crd2);
+                            _ = Task.Run(RefreshApiGroupDiscoveryListAsync);
+                        }
+                        break;
+                }
 
-            OnChange?.Invoke(eventType, kind, item);
+                OnChange?.Invoke(eventType, kind, item);
+            });
         });
     }
 
