@@ -156,6 +156,37 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public void pod_config_view_logs_combines_direct_action_and_submenu()
+    {
+        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var config = services.GetRequiredService<V1PodConfig>();
+
+        V1Pod pod = new()
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "app-0",
+                NamespaceProperty = "default",
+            },
+            Spec = new V1PodSpec
+            {
+                Containers = [new V1Container { Name = "app" }],
+                InitContainers = [new V1Container { Name = "init-db" }],
+            },
+        };
+
+        var menuItems = config.GetCustomMenuItems(new[] { pod }).ToList();
+        var viewLogs = menuItems.Single(x => x.Header == "View Logs");
+        var viewLogsByContainer = menuItems.Single(x => x.Header == "View Logs by Container");
+
+        viewLogs.Command.ShouldNotBeNull();
+        viewLogs.CommandParameter.ShouldBe(pod);
+        viewLogs.Items.ShouldBeNull();
+        viewLogsByContainer.Items.ShouldNotBeNull();
+        viewLogsByContainer.Items!.Select(x => x.Header).ShouldBe(["Init", "Normal"]);
+    }
+
+    [AvaloniaFact]
     public void daemonset_config_uses_daemonset_properties_view()
     {
         var config = ResolveConfig<V1DaemonSetConfig>();

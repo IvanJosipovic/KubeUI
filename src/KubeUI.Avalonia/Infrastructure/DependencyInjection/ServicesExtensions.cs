@@ -4,6 +4,7 @@ using KubeUI.Avalonia.Controls.DataGridFilters;
 using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Infrastructure.Logging;
 using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -29,6 +30,7 @@ public static partial class KubeUIShellServiceCollectionExtensions
         services.AddSingleton<ViewLocator>();
         services.AddSingleton<DataGridColumnFilterService>();
         services.AddSingleton<DataGridColumnFilterFlyoutFactory>();
+        services.AddSingleton<IPodLogExportService, PodLogExportService>();
         services.AddSingleton<IDataTemplate>(sp => sp.GetRequiredService<ViewLocator>());
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<IClusterSettingsStore>(sp => sp.GetRequiredService<ISettingsService>());

@@ -3,9 +3,12 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:assets="using:KubeUI.Avalonia.Assets"
+    xmlns:behaviors="using:KubeUI.Avalonia.Resources.Workloads.v1.Pod.Behaviors"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:edit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+    xmlns:ia="using:Avalonia.Xaml.Interactions.Core"
     xmlns:ic="using:FluentIcons.Avalonia"
+    xmlns:u="https://irihi.tech/ursa"
     xmlns:vm="using:KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels"
     d:DesignHeight="400"
     d:DesignWidth="500"
@@ -17,19 +20,77 @@
         <!--  Top bar  -->
         <StackPanel Grid.Row="0" Orientation="Horizontal">
             <Label VerticalAlignment="Center" Content="{x:Static assets:Resources.PodLogsView_PodLabel}" />
-            <Label VerticalAlignment="Center">
-                <Label.Content>
-                    <MultiBinding StringFormat="{}{0}/{1}/{2}">
-                        <Binding Path="Object.Metadata.NamespaceProperty" />
-                        <Binding Path="Object.Metadata.Name" />
-                        <Binding Path="ContainerName" />
-                    </MultiBinding>
-                </Label.Content>
-            </Label>
+            <u:MultiComboBox
+                Width="220"
+                Margin="0,0,8,0"
+                VerticalAlignment="Center"
+                ItemsSource="{Binding PodSelectionItems}"
+                SelectedItems="{Binding SelectedPodItems, Mode=TwoWay}"
+                ToolTip.Tip="{x:Static assets:Resources.PodLogsView_PodLabel}">
+                <u:MultiComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:PodLogPodSelectionItem">
+                        <TextBlock Text="{Binding DisplayName}" />
+                    </DataTemplate>
+                </u:MultiComboBox.ItemTemplate>
+                <u:MultiComboBox.SelectedItemTemplate>
+                    <DataTemplate x:DataType="vm:PodLogPodSelectionItem">
+                        <TextBlock Text="{Binding DisplayName}" />
+                    </DataTemplate>
+                </u:MultiComboBox.SelectedItemTemplate>
+                <u:MultiComboBox.Styles />
+            </u:MultiComboBox>
+
+            <Label VerticalAlignment="Center" Content="{x:Static assets:Resources.PodLogsView_ContainerLabel}" />
+            <u:MultiComboBox
+                Width="180"
+                Margin="0,0,8,0"
+                VerticalAlignment="Center"
+                ItemsSource="{Binding ContainerSelectionItems}"
+                SelectedItems="{Binding SelectedContainerItems, Mode=TwoWay}"
+                ToolTip.Tip="{x:Static assets:Resources.PodLogsView_ContainerLabel}">
+                <u:MultiComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:PodLogContainerSelectionItem">
+                        <TextBlock Text="{Binding DisplayName}" />
+                    </DataTemplate>
+                </u:MultiComboBox.ItemTemplate>
+                <u:MultiComboBox.SelectedItemTemplate>
+                    <DataTemplate x:DataType="vm:PodLogContainerSelectionItem">
+                        <TextBlock Text="{Binding DisplayName}" />
+                    </DataTemplate>
+                </u:MultiComboBox.SelectedItemTemplate>
+                <u:MultiComboBox.Styles />
+            </u:MultiComboBox>
 
             <Button Command="{Binding Clear}" ToolTip.Tip="{x:Static assets:Resources.PodLogsView_Clear}">
                 <Button.Content>
                     <ic:FluentIcon Icon="Delete" />
+                </Button.Content>
+            </Button>
+
+            <Button Command="{Binding JumpToPresentCommand}" ToolTip.Tip="{x:Static assets:Resources.PodLogsView_JumpToPresent}">
+                <Button.Content>
+                    <ic:FluentIcon Icon="ArrowDown" />
+                </Button.Content>
+            </Button>
+
+            <Button Command="{Binding DownloadLogsCommand}" ToolTip.Tip="{x:Static assets:Resources.PodLogsView_Download}">
+                <Button.Content>
+                    <ic:FluentIcon Icon="Save" />
+                </Button.Content>
+            </Button>
+
+            <ToggleButton
+                IsChecked="{Binding ShowResourceNames, Mode=TwoWay}"
+                IsEnabled="{Binding CanShowResourceNames}"
+                ToolTip.Tip="{x:Static assets:Resources.PodLogsView_ShowResourceNames}">
+                <ToggleButton.Content>
+                    <ic:FluentIcon Icon="Tag" />
+                </ToggleButton.Content>
+            </ToggleButton>
+
+            <Button Command="{Binding JumpToControlledByLogsCommand}" ToolTip.Tip="{x:Static assets:Resources.PodLogsView_Controller}">
+                <Button.Content>
+                    <ic:FluentIcon Icon="ArrowUp" />
                 </Button.Content>
             </Button>
 
@@ -42,12 +103,6 @@
             <ToggleButton IsChecked="{Binding Timestamps, Mode=TwoWay}" ToolTip.Tip="{x:Static assets:Resources.PodLogsView_Timestamps}">
                 <ToggleButton.Content>
                     <ic:FluentIcon Icon="Timer" />
-                </ToggleButton.Content>
-            </ToggleButton>
-
-            <ToggleButton IsChecked="{Binding AutoScrollToBottom, Mode=TwoWay}" ToolTip.Tip="{x:Static assets:Resources.PodLogsView_AutoScrollToBottom}">
-                <ToggleButton.Content>
-                    <ic:FluentIcon Icon="PaddingDown" />
                 </ToggleButton.Content>
             </ToggleButton>
 
@@ -67,9 +122,11 @@
             HorizontalScrollBarVisibility="Auto"
             IsReadOnly="True"
             ShowLineNumbers="False"
-            TextChanged="TextEditorControl_TextChanged"
             VerticalScrollBarVisibility="Visible"
             WordWrap="{Binding WordWrap}">
+            <Interaction.Behaviors>
+                <behaviors:PodLogsEditorBehavior />
+            </Interaction.Behaviors>
             <edit:TextEditor.Options>
                 <edit:TextEditorOptions
                     AllowScrollBelowDocument="false"
@@ -79,10 +136,12 @@
             </edit:TextEditor.Options>
             <edit:TextEditor.ContextMenu>
                 <ContextMenu>
-                    <MenuItem
-                        Click="CopyMenuItem_Click"
-                        Header="{x:Static assets:Resources.Action_Copy}"
-                        HotKey="Ctrl+C">
+                    <MenuItem Header="{x:Static assets:Resources.Action_Copy}" HotKey="Ctrl+C">
+                        <Interaction.Behaviors>
+                            <ia:EventTriggerBehavior EventName="Click">
+                                <ia:CallMethodAction MethodName="Copy" TargetObject="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                            </ia:EventTriggerBehavior>
+                        </Interaction.Behaviors>
                         <MenuItem.Icon>
                             <ic:FluentIcon Icon="Copy" />
                         </MenuItem.Icon>

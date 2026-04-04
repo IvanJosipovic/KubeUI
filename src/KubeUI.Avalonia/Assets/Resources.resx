@@ -198,9 +198,6 @@
   <data name="PodLogsViewModel_Title" xml:space="preserve">
     <value>Pod Logs</value>
   </data>
-  <data name="PodLogsView_AutoScrollToBottom" xml:space="preserve">
-    <value>Auto-scroll to bottom</value>
-  </data>
   <data name="PodLogsView_Previous" xml:space="preserve">
     <value>Show last container</value>
   </data>
@@ -432,6 +429,9 @@ Are you sure?</value>
   </data>
   <data name="PodLogsView_PodLabel" xml:space="preserve">
     <value>Pod:</value>
+  </data>
+  <data name="PodLogsView_ContainerLabel" xml:space="preserve">
+    <value>Container:</value>
   </data>
   <data name="PodPropertiesView_ControlledBy" xml:space="preserve">
     <value>Controlled By</value>
@@ -1187,6 +1187,33 @@ Are you sure?</value>
   </data>
   <data name="PodLogsView_Clear" xml:space="preserve">
     <value>Clear Logs</value>
+  </data>
+  <data name="PodLogsView_JumpToPresent" xml:space="preserve">
+    <value>Jump to Present</value>
+  </data>
+  <data name="PodLogsView_Download" xml:space="preserve">
+    <value>Download Logs</value>
+  </data>
+  <data name="PodLogsView_ShowResourceNames" xml:space="preserve">
+    <value>Show Resource Names</value>
+  </data>
+  <data name="PodLogsView_AllPods" xml:space="preserve">
+    <value>All Pods</value>
+  </data>
+  <data name="PodLogsView_AllContainers" xml:space="preserve">
+    <value>All Containers</value>
+  </data>
+  <data name="PodLogsView_Controller" xml:space="preserve">
+    <value>Jump to Controlled By Logs</value>
+  </data>
+  <data name="PodLogsView_Search" xml:space="preserve">
+    <value>Search Logs</value>
+  </data>
+  <data name="PodLogsView_SearchPrevious" xml:space="preserve">
+    <value>Previous Match</value>
+  </data>
+  <data name="PodLogsView_SearchNext" xml:space="preserve">
+    <value>Next Match</value>
   </data>
   <data name="DataGridFilterFlyout_Apply" xml:space="preserve">
     <value>Apply</value>

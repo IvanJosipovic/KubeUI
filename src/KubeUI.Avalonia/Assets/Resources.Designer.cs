@@ -889,6 +889,15 @@ namespace KubeUI.Avalonia.Assets {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Container:.
+        /// </summary>
+        public static string PodLogsView_ContainerLabel {
+            get {
+                return ResourceManager.GetString("PodLogsView_ContainerLabel", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Running.
         /// </summary>
         public static string PodStatusCell_Running {
@@ -1006,15 +1015,6 @@ namespace KubeUI.Avalonia.Assets {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Auto-scroll to bottom.
-        /// </summary>
-        public static string PodLogsView_AutoScrollToBottom {
-            get {
-                return ResourceManager.GetString("PodLogsView_AutoScrollToBottom", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Clear Logs.
         /// </summary>
         public static string PodLogsView_Clear {
@@ -1022,7 +1022,88 @@ namespace KubeUI.Avalonia.Assets {
                 return ResourceManager.GetString("PodLogsView_Clear", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Looks up a localized string similar to Jump to Present.
+        /// </summary>
+        public static string PodLogsView_JumpToPresent {
+            get {
+                return ResourceManager.GetString("PodLogsView_JumpToPresent", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Download Logs.
+        /// </summary>
+        public static string PodLogsView_Download {
+            get {
+                return ResourceManager.GetString("PodLogsView_Download", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Show Resource Names.
+        /// </summary>
+        public static string PodLogsView_ShowResourceNames {
+            get {
+                return ResourceManager.GetString("PodLogsView_ShowResourceNames", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to All Pods.
+        /// </summary>
+        public static string PodLogsView_AllPods {
+            get {
+                return ResourceManager.GetString("PodLogsView_AllPods", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to All Containers.
+        /// </summary>
+        public static string PodLogsView_AllContainers {
+            get {
+                return ResourceManager.GetString("PodLogsView_AllContainers", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Jump to Controlled By Logs.
+        /// </summary>
+        public static string PodLogsView_Controller {
+            get {
+                return ResourceManager.GetString("PodLogsView_Controller", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Search Logs.
+        /// </summary>
+        public static string PodLogsView_Search {
+            get {
+                return ResourceManager.GetString("PodLogsView_Search", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Previous Match.
+        /// </summary>
+        public static string PodLogsView_SearchPrevious {
+            get {
+                return ResourceManager.GetString("PodLogsView_SearchPrevious", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Next Match.
+        /// </summary>
+        public static string PodLogsView_SearchNext {
+            get {
+                return ResourceManager.GetString("PodLogsView_SearchNext", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Looks up a localized string similar to Show last container.
         /// </summary>
