@@ -471,7 +471,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         textRows[0].Children.OfType<TextBlock>().Single().Text.ShouldBe(KubeUI.Avalonia.Assets.Resources.DataGridFilterFlyout_Condition);
         textRows[1].Children.OfType<TextBlock>().Single().Text.ShouldBe(KubeUI.Avalonia.Assets.Resources.DataGridFilterFlyout_Value);
         textPanel.GetVisualDescendants().OfType<ComboBox>().First().HorizontalAlignment.ShouldBe(HorizontalAlignment.Stretch);
-        textPanel.GetVisualDescendants().OfType<TextBox>().Single().HorizontalAlignment.ShouldBe(HorizontalAlignment.Stretch);
+        textRows[1].Children.OfType<TextBox>().Single().HorizontalAlignment.ShouldBe(HorizontalAlignment.Stretch);
 
         var numericCluster = await CreateClusterAsync();
         var numericVm = GetRequiredService<ResourceListViewModel<Corev1Event>>();
