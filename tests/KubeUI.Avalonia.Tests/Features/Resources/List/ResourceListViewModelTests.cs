@@ -462,6 +462,8 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         var textColumn = textVm.ColumnDefinitions.First(column => column.ValueType == typeof(string));
         var textFlyout = textColumn.FilterFlyout.ShouldBeOfType<Flyout>();
+        textFlyout.ShowAt(textView);
+        Dispatcher.UIThread.RunJobs();
         var textContent = textFlyout.Content.ShouldBeOfType<TextFilterFlyoutView>();
         var textPanel = textContent.Content.ShouldBeOfType<StackPanel>();
         var textRows = textPanel.Children.OfType<Grid>().ToList();
@@ -469,7 +471,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         textRows[0].Children.OfType<TextBlock>().Single().Text.ShouldBe(KubeUI.Avalonia.Assets.Resources.DataGridFilterFlyout_Condition);
         textRows[1].Children.OfType<TextBlock>().Single().Text.ShouldBe(KubeUI.Avalonia.Assets.Resources.DataGridFilterFlyout_Value);
         textPanel.GetVisualDescendants().OfType<ComboBox>().First().HorizontalAlignment.ShouldBe(HorizontalAlignment.Stretch);
-        textPanel.GetVisualDescendants().OfType<TextBox>().Single().HorizontalAlignment.ShouldBe(HorizontalAlignment.Stretch);
+        textRows[1].Children.OfType<TextBox>().Single().HorizontalAlignment.ShouldBe(HorizontalAlignment.Stretch);
 
         var numericCluster = await CreateClusterAsync();
         var numericVm = GetRequiredService<ResourceListViewModel<Corev1Event>>();
@@ -481,6 +483,8 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         var numericColumn = numericVm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Count", StringComparison.Ordinal));
         var numericFlyout = numericColumn.FilterFlyout.ShouldBeOfType<Flyout>();
+        numericFlyout.ShowAt(numericView);
+        Dispatcher.UIThread.RunJobs();
         var numericContent = numericFlyout.Content.ShouldBeOfType<NumericFilterFlyoutView>();
         var numericRows = numericContent.Content.ShouldBeOfType<StackPanel>().Children.OfType<Grid>().ToList();
 
@@ -508,6 +512,8 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         var dateColumn = dateVm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Last Seen", StringComparison.Ordinal));
         var dateFlyout = dateColumn.FilterFlyout.ShouldBeOfType<Flyout>();
+        dateFlyout.ShowAt(dateView);
+        Dispatcher.UIThread.RunJobs();
         var dateContent = dateFlyout.Content.ShouldBeOfType<DateFilterFlyoutView>();
         var datePanel = dateContent.Content.ShouldBeOfType<StackPanel>();
         var dateRows = datePanel.Children.OfType<Grid>().ToList();
@@ -520,6 +526,11 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var enumColumnDefinition = new TestEnumColumnDefinition();
         var enumDataGridColumn = new DataGridControlTemplateColumnDefinition();
         var enumFlyout = flyoutFactory.Create(enumColumnDefinition, enumDataGridColumn, new FilteringModel()).ShouldBeOfType<Flyout>();
+        var enumHost = new Button();
+        var enumWindow = CreateWindow(content: enumHost);
+        enumWindow.Show();
+        enumFlyout.ShowAt(enumHost);
+        Dispatcher.UIThread.RunJobs();
         var enumContent = enumFlyout.Content.ShouldBeOfType<EnumFilterFlyoutView>();
         var enumPanel = enumContent.Content.ShouldBeOfType<StackPanel>();
         var enumRows = enumPanel.Children.OfType<Grid>().ToList();
@@ -739,6 +750,8 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         var nameColumn = vm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Name", StringComparison.Ordinal));
         var flyout = (Flyout)nameColumn.FilterFlyout!;
+        flyout.ShowAt(view);
+        Dispatcher.UIThread.RunJobs();
         var flyoutContext = flyout.Content.ShouldBeOfType<TextFilterFlyoutView>().DataContext.ShouldBeOfType<TextFilterFlyoutContext>();
 
         flyoutContext.SelectedOperator = ResourceListFilterFlyoutOptions.TextOperators.First(option => option.Operator == FilteringOperator.Contains && (option.CustomId is null || !FilterOperatorIdCatalog.UsesCustomDescriptor(option.CustomId.Value)));
@@ -903,6 +916,11 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var dataGridColumn = new DataGridControlTemplateColumnDefinition();
 
         var flyout = flyoutFactory.Create(column, dataGridColumn, vm.FilteringModel).ShouldBeOfType<Flyout>();
+        var host = new Button();
+        var window = CreateWindow(content: host);
+        window.Show();
+        flyout.ShowAt(host);
+        Dispatcher.UIThread.RunJobs();
         var content = flyout.Content.ShouldBeOfType<EnumFilterFlyoutView>();
 
         var enumComboBoxes = content.Content.ShouldBeOfType<StackPanel>().GetVisualDescendants().OfType<ComboBox>().ToList();
