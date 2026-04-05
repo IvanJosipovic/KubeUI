@@ -119,22 +119,22 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                     new()
                     {
                         Header = "Init",
-                        Items = new AvaloniaList<MenuItemViewModel>(initContainers.Select(c => new MenuItemViewModel()
+                        Items = [.. initContainers.Select(c => new MenuItemViewModel()
                         {
                             Header = c.Name,
                             Command = ViewConsoleCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
-                        }).ToList()),
+                        }).ToList()],
                     },
                     new()
                     {
                         Header = "Normal",
-                        Items = new AvaloniaList<MenuItemViewModel>(containers.Select(c => new MenuItemViewModel()
+                        Items = [.. containers.Select(c => new MenuItemViewModel()
                         {
                             Header = c.Name,
                             Command = ViewConsoleCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
-                        }).ToList()),
+                        }).ToList()],
                     },
                 ]),
             },
@@ -142,33 +142,32 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             {
                 Header = "View Logs",
                 FluentIcon = Icon.TextDescription,
-                Command = ViewLogsCommand,
-                CommandParameter = selectedItem,
-            },
-            new()
-            {
-                Header = "View Logs by Container",
-                FluentIcon = Icon.TextDescription,
                 Items = selectedItem == null ? null : new AvaloniaList<MenuItemViewModel>([
                     new()
                     {
+                        Header = "All Containers",
+                        Command = ViewLogsCommand,
+                        CommandParameter = selectedItem,
+                    },
+                    new()
+                    {
                         Header = "Init",
-                        Items = new AvaloniaList<MenuItemViewModel>(initContainers.Select(c => new MenuItemViewModel()
+                        Items = [.. initContainers.Select(c => new MenuItemViewModel()
                         {
                             Header = c.Name,
                             Command = ViewLogsCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
-                        }).ToList()),
+                        }).ToList()],
                     },
                     new()
                     {
                         Header = "Normal",
-                        Items = new AvaloniaList<MenuItemViewModel>(containers.Select(c => new MenuItemViewModel()
+                        Items = [.. containers.Select(c => new MenuItemViewModel()
                         {
                             Header = c.Name,
                             Command = ViewLogsCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
-                        }).ToList()),
+                        }).ToList()],
                     },
                 ]),
             },
@@ -176,16 +175,16 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             {
                 Header = "Port Forwarding",
                 FluentIcon = Icon.CloudFlow,
-                Items = selectedItem == null ? null : new AvaloniaList<MenuItemViewModel>(containers.Select(c => new MenuItemViewModel()
+                Items = selectedItem == null ? null : [.. containers.Select(c => new MenuItemViewModel()
                 {
                     Header = c.Name,
-                    Items = new AvaloniaList<MenuItemViewModel>(c.Ports?.Select(p => new MenuItemViewModel()
+                    Items = [.. c.Ports?.Select(p => new MenuItemViewModel()
                     {
                         Header = $"{p.Name} - {p.ContainerPort}",
                         Command = PortForwardCommand,
                         CommandParameter = new ArrayList { selectedItem, p },
-                    }).ToList() ?? []),
-                }).ToList()),
+                    }).ToList() ?? []],
+                }).ToList()],
             }
         ];
     }
@@ -246,6 +245,10 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 _logger.LogError(ex, "Error viewing logs");
                 return;
             }
+        }
+        else
+        {
+            vm.Dispose();
         }
     }
 

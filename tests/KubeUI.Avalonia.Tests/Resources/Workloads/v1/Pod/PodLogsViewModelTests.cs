@@ -335,6 +335,17 @@ public sealed class PodLogsViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public void Dispose_should_be_idempotent()
+    {
+        TestCluster runtime = new();
+        ClusterWorkspaceViewModel workspace = runtime.CreateWorkspace();
+        PodLogsViewModel viewModel = CreateViewModel(workspace, new RecordingPodLogStreamClient());
+
+        viewModel.Dispose();
+        Should.NotThrow(() => viewModel.Dispose());
+    }
+
+    [AvaloniaFact]
     public async Task Selecting_all_while_connecting_should_queue_a_follow_up_reconnect()
     {
         TestCluster runtime = new();
@@ -423,6 +434,39 @@ public sealed class PodLogsViewModelTests : AvaloniaTestBase
         viewModel.CanShowResourceNames.ShouldBeFalse();
         viewModel.ShowResourceNames.ShouldBeFalse();
         viewModel.Logs.Text.ShouldBe("line");
+    }
+
+    [AvaloniaFact]
+    public async Task Selecting_all_containers_should_not_throw_and_should_normalize_selection()
+    {
+        TestCluster runtime = new();
+        ClusterWorkspaceViewModel workspace = runtime.CreateWorkspace();
+        V1Pod pod = CreatePod(
+            name: "app-7c9dd9f4f4-abcde",
+            namespaceName: "default",
+            uid: "pod-uid",
+            containers: ["app", "sidecar"]);
+
+        await runtime.AddOrUpdateResource(pod);
+
+        RecordingPodLogStreamClient streamClient = new(["line\n"]);
+        PodLogsViewModel viewModel = CreateViewModel(workspace, streamClient);
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+
+        await viewModel.Connect();
+
+        await WaitForAsync(() => viewModel.ContainerSelectionItems.Count == 3);
+
+        viewModel.SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>(
+            [viewModel.ContainerSelectionItems[1]]);
+
+        Should.NotThrow(() => viewModel.SelectedContainerItems.Add(viewModel.ContainerSelectionItems[0]));
+
+        await WaitForAsync(() => viewModel.SelectedContainerItems.Count == 1 && viewModel.SelectedContainerItems[0].IsAll);
+
+        viewModel.SelectedContainerItems.Count.ShouldBe(1);
+        viewModel.SelectedContainerItems[0].IsAll.ShouldBeTrue();
     }
 
     [AvaloniaFact]

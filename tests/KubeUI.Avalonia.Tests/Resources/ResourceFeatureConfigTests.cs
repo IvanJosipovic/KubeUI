@@ -156,7 +156,7 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public void pod_config_view_logs_combines_direct_action_and_submenu()
+    public void pod_config_view_logs_uses_all_containers_root_submenu()
     {
         var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
         var config = services.GetRequiredService<V1PodConfig>();
@@ -177,13 +177,12 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
 
         var menuItems = config.GetCustomMenuItems(new[] { pod }).ToList();
         var viewLogs = menuItems.Single(x => x.Header == "View Logs");
-        var viewLogsByContainer = menuItems.Single(x => x.Header == "View Logs by Container");
 
-        viewLogs.Command.ShouldNotBeNull();
-        viewLogs.CommandParameter.ShouldBe(pod);
-        viewLogs.Items.ShouldBeNull();
-        viewLogsByContainer.Items.ShouldNotBeNull();
-        viewLogsByContainer.Items!.Select(x => x.Header).ShouldBe(["Init", "Normal"]);
+        viewLogs.Items.ShouldNotBeNull();
+        viewLogs.Items!.Select(x => x.Header).ShouldBe(["All Containers", "Init", "Normal"]);
+        viewLogs.Items![0].Command.ShouldNotBeNull();
+        viewLogs.Items![0].CommandParameter.ShouldBe(pod);
+        menuItems.Count.ShouldBe(3);
     }
 
     [AvaloniaFact]

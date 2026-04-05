@@ -24,6 +24,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     private readonly IPodLogStreamClient _streamClient;
     private readonly SemaphoreSlim _connectionGate = new(1, 1);
     private CancellationTokenSource? _connectionCts;
+    private bool _disposed;
     private readonly object _outputEntriesGate = new();
     private readonly List<PodLogOutputEntry> _outputEntries = [];
     private readonly List<Stream> _streams = [];
@@ -32,6 +33,8 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     private bool _isApplyingSession;
     private bool _isNormalizingPodSelection;
     private bool _isNormalizingContainerSelection;
+    private bool _pendingNormalizePodSelection;
+    private bool _pendingNormalizeContainerSelection;
     private bool _pendingReconnect;
     private int _activeReaderCount;
 
@@ -321,7 +324,16 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
-        _connectionCts?.Cancel();
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+
+        CancellationTokenSource? connectionCts = _connectionCts;
+        _connectionCts = null;
+        connectionCts?.Cancel();
         for (int i = 0; i < _streamReaders.Count; i++)
         {
             _streamReaders[i].Dispose();
@@ -332,7 +344,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
             _streams[i].Dispose();
         }
 
-        _connectionCts?.Dispose();
+        connectionCts?.Dispose();
         _connectionGate.Dispose();
     }
 
@@ -831,19 +843,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
         if (SelectedPodItems.Count == 0 || SelectedPodItems.Count == PodSelectionItems.Count - 1 || ContainsAllSelection(SelectedPodItems))
         {
-            _isNormalizingPodSelection = true;
-            try
-            {
-                if (PodSelectionItems.Count > 0)
-                {
-                    SelectedPodItems.Clear();
-                    SelectedPodItems.Add(PodSelectionItems[0]);
-                }
-            }
-            finally
-            {
-                _isNormalizingPodSelection = false;
-            }
+            QueueNormalizeSelectedPodItems();
         }
 
         UpdateResourceNameToggleState();
@@ -859,19 +859,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
         if (SelectedContainerItems.Count == 0 || SelectedContainerItems.Count == ContainerSelectionItems.Count - 1 || ContainsAllSelection(SelectedContainerItems))
         {
-            _isNormalizingContainerSelection = true;
-            try
-            {
-                if (ContainerSelectionItems.Count > 0)
-                {
-                    SelectedContainerItems.Clear();
-                    SelectedContainerItems.Add(ContainerSelectionItems[0]);
-                }
-            }
-            finally
-            {
-                _isNormalizingContainerSelection = false;
-            }
+            QueueNormalizeSelectedContainerItems();
         }
 
         UpdateResourceNameToggleState();
@@ -905,6 +893,64 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         if (ShowResourceNames)
         {
             RenderOutputEntries();
+        }
+    }
+
+    private void QueueNormalizeSelectedPodItems()
+    {
+        if (_pendingNormalizePodSelection || PodSelectionItems.Count == 0)
+        {
+            return;
+        }
+
+        _pendingNormalizePodSelection = true;
+        Dispatcher.UIThread.Post(NormalizeSelectedPodItems, DispatcherPriority.Background);
+    }
+
+    private void QueueNormalizeSelectedContainerItems()
+    {
+        if (_pendingNormalizeContainerSelection || ContainerSelectionItems.Count == 0)
+        {
+            return;
+        }
+
+        _pendingNormalizeContainerSelection = true;
+        Dispatcher.UIThread.Post(NormalizeSelectedContainerItems, DispatcherPriority.Background);
+    }
+
+    private void NormalizeSelectedPodItems()
+    {
+        _pendingNormalizePodSelection = false;
+        _isNormalizingPodSelection = true;
+        try
+        {
+            if (PodSelectionItems.Count > 0)
+            {
+                SelectedPodItems.Clear();
+                SelectedPodItems.Add(PodSelectionItems[0]);
+            }
+        }
+        finally
+        {
+            _isNormalizingPodSelection = false;
+        }
+    }
+
+    private void NormalizeSelectedContainerItems()
+    {
+        _pendingNormalizeContainerSelection = false;
+        _isNormalizingContainerSelection = true;
+        try
+        {
+            if (ContainerSelectionItems.Count > 0)
+            {
+                SelectedContainerItems.Clear();
+                SelectedContainerItems.Add(ContainerSelectionItems[0]);
+            }
+        }
+        finally
+        {
+            _isNormalizingContainerSelection = false;
         }
     }
 

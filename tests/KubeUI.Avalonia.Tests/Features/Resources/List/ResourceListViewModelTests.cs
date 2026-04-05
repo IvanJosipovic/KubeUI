@@ -1,15 +1,20 @@
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Reflection;
+using System.Text;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.DataGridFiltering;
 using Avalonia.Controls.DataGridSearching;
 using Avalonia.Controls.DataGridSorting;
+using Avalonia.Controls.Notifications;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Selection;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Styling;
 using Avalonia.Threading;
@@ -18,15 +23,24 @@ using CommunityToolkit.Mvvm.Input;
 using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
+using Dock.Model.Mvvm.Controls;
 using FluentAvalonia.Core;
+using HanumanInstitute.MvvmDialogs;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia;
 using KubeUI.Avalonia.Controls.DataGridFilters;
 using KubeUI.Avalonia.Features.Resources.List.Behaviors;
+using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Resources;
+using KubeUI.Avalonia.Resources.Workloads.v1.Pod;
+using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
+using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
+using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.Testing;
+using Moq;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.List;
@@ -903,6 +917,191 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         containers[0].Header.ShouldBe("d-container");
     }
 
+    [AvaloniaFact(DisplayName = "Pod context menu updates when right-click selection changes")]
+    public async Task pod_context_menu_updates_when_selection_changes()
+    {
+        var cluster = await CreateClusterAsync();
+
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var podA = Pod("ns1", "a");
+        podA.Spec = new V1PodSpec
+        {
+            Containers = [new V1Container { Name = "a-container" }]
+        };
+        var podB = Pod("ns2", "b");
+        podB.Spec = new V1PodSpec
+        {
+            Containers = [new V1Container { Name = "b-container" }]
+        };
+
+        await AddOrUpdateAsync(cluster, podA);
+        await AddOrUpdateAsync(cluster, podB);
+
+        var selectionModel = vm.SelectionModel.ShouldBeOfType<SelectionModel<V1Pod>>();
+        selectionModel.Source = vm.View;
+
+        vm.SelectionModel.Select(0);
+        Dispatcher.UIThread.RunJobs();
+
+        var firstMenu = vm.ContextMenuItems.FirstOrDefault(x => x.Header == "View Logs");
+        firstMenu.ShouldNotBeNull();
+        firstMenu!.Items.ShouldNotBeNull();
+        firstMenu.Items!.First(x => x.Header == "All Containers").CommandParameter.ShouldBe(podA);
+
+        selectionModel.Clear();
+        selectionModel.Select(1);
+        Dispatcher.UIThread.RunJobs();
+
+        var secondMenu = vm.ContextMenuItems.FirstOrDefault(x => x.Header == "View Logs");
+        secondMenu.ShouldNotBeNull();
+        secondMenu!.Items.ShouldNotBeNull();
+        secondMenu.Items!.First(x => x.Header == "All Containers").CommandParameter.ShouldBe(podB);
+    }
+
+    [AvaloniaFact(DisplayName = "Pod context menu updates through right-click row selection")]
+    public async Task pod_context_menu_updates_through_right_click_row_selection()
+    {
+        var window = CreateWindow();
+        var cluster = await CreateClusterAsync();
+
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+
+        window.Content = view;
+        window.Show();
+
+        var podA = Pod("ns1", "a");
+        podA.Spec = new V1PodSpec
+        {
+            Containers = [new V1Container { Name = "a-container" }]
+        };
+        var podB = Pod("ns2", "b");
+        podB.Spec = new V1PodSpec
+        {
+            Containers = [new V1Container { Name = "b-container" }]
+        };
+
+        await AddOrUpdateAsync(cluster, podA);
+        await AddOrUpdateAsync(cluster, podB);
+
+        var grid = view.GetVisualDescendants().OfType<DataGrid>().Single();
+        var rows = GetAllRows(grid).Where(x => x.IsVisible).ToList();
+        rows.Count.ShouldBeGreaterThanOrEqualTo(2);
+        var firstRowPod = rows[0].DataContext.ShouldBeOfType<V1Pod>();
+        var secondRowPod = rows[1].DataContext.ShouldBeOfType<V1Pod>();
+
+        Point? rowAPoint = rows[0].TranslatePoint(new Point(rows[0].Bounds.Width / 2, rows[0].Bounds.Height / 2), window);
+        rowAPoint.ShouldNotBeNull();
+        window.MouseDown(rowAPoint.Value, MouseButton.Right);
+        window.MouseUp(rowAPoint.Value, MouseButton.Right);
+        Dispatcher.UIThread.RunJobs();
+
+        vm.SelectedItem.ShouldNotBeNull();
+        vm.SelectedItem.ShouldBe(firstRowPod);
+        vm.ContextMenuItems.First(x => x.Header == "View Logs").Items!.First(x => x.Header == "All Containers").CommandParameter.ShouldBe(firstRowPod);
+
+        Point? rowBPoint = rows[1].TranslatePoint(new Point(rows[1].Bounds.Width / 2, rows[1].Bounds.Height / 2), window);
+        rowBPoint.ShouldNotBeNull();
+        window.MouseDown(rowBPoint.Value, MouseButton.Right);
+        window.MouseUp(rowBPoint.Value, MouseButton.Right);
+        Dispatcher.UIThread.RunJobs();
+
+        vm.SelectedItem.ShouldNotBeNull();
+        vm.SelectedItem.ShouldBe(secondRowPod);
+        vm.ContextMenuItems.First(x => x.Header == "View Logs").Items!.First(x => x.Header == "All Containers").CommandParameter.ShouldBe(secondRowPod);
+    }
+
+    [AvaloniaFact(DisplayName = "Pod View Logs command opens a dockable on the second click too")]
+    public async Task pod_view_logs_command_opens_a_dockable_on_the_second_click_too()
+    {
+        var cluster = await CreateClusterAsync();
+        ((TestClusterRuntime)cluster.Runtime).SetPermission<V1Pod>(Verb.Get, true, subresource: "log");
+
+        var podA = Pod("ns1", "a");
+        podA.Spec = new V1PodSpec
+        {
+            Containers = [new V1Container { Name = "a-container" }]
+        };
+        var podB = Pod("ns2", "b");
+        podB.Spec = new V1PodSpec
+        {
+            Containers = [new V1Container { Name = "b-container" }]
+        };
+
+        var insertedDockables = new List<IDockable>();
+        var bottomDock = new ToolDock
+        {
+            Id = "BottomDock",
+            VisibleDockables = new List<IDockable>(),
+        };
+
+        var factoryMock = new Mock<IFactory>();
+        factoryMock.Setup(factory => factory.GetDockable<IToolDock>("BottomDock")).Returns(bottomDock);
+        factoryMock.Setup(factory => factory.Find(It.IsAny<Func<IDockable, bool>>()))
+            .Returns((Func<IDockable, bool> predicate) => insertedDockables.Where(predicate));
+        factoryMock.Setup(factory => factory.InsertDockable(It.IsAny<IDock>(), It.IsAny<IDockable>(), It.IsAny<int>()))
+            .Callback<IDock, IDockable, int>((dock, dockable, index) =>
+            {
+                insertedDockables.Add(dockable);
+
+                if (dock.VisibleDockables is not null)
+                {
+                    dock.VisibleDockables.Insert(index, dockable);
+                }
+            });
+        factoryMock.Setup(factory => factory.SetActiveDockable(It.IsAny<IDockable>()));
+        factoryMock.Setup(factory => factory.SetFocusedDockable(It.IsAny<IDock>(), It.IsAny<IDockable>()));
+
+        await AddOrUpdateAsync(cluster, podA);
+        await AddOrUpdateAsync(cluster, podB);
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton(TestApp.CurrentServices!.GetRequiredService<ISettingsService>());
+        services.AddSingleton(factoryMock.Object);
+        services.AddSingleton(Mock.Of<IDialogService>());
+        services.AddSingleton(Mock.Of<INotificationManager>());
+        services.AddSingleton<IPodLogExportService, NoOpPodLogExportService>();
+        services.AddSingleton<IPodLogSessionResolver, PodLogSessionResolver>();
+        var streamClient = new RecordingPodLogStreamClient("first line\n", "second line\n");
+        services.AddSingleton<IPodLogStreamClient>(streamClient);
+        services.AddTransient<PodLogsViewModel>();
+
+        using var provider = services.BuildServiceProvider();
+        var config = new V1PodConfig(provider);
+        config.Initialize(cluster);
+
+        var firstMenu = config.GetCustomMenuItems(new[] { podA }).Single(x => x.Header == "View Logs");
+        firstMenu.Items.ShouldNotBeNull();
+        var firstAllContainers = firstMenu.Items!.Single(x => x.Header == "All Containers");
+        (firstAllContainers.Command as IAsyncRelayCommand).ShouldNotBeNull();
+        firstAllContainers.Command!.CanExecute(firstAllContainers.CommandParameter).ShouldBeTrue();
+        await ((IAsyncRelayCommand)firstAllContainers.Command!).ExecuteAsync(firstAllContainers.CommandParameter);
+
+        var firstId = $"ViewLogs-{cluster.Name}-{podA.Namespace()} - {podA.Name()}-all";
+        await WaitForAsync(() => streamClient.Requests.Count > 0 && factoryMock.Object.FindDockableById(firstId) != null);
+        var requestsAfterFirstClick = streamClient.Requests.Count;
+        requestsAfterFirstClick.ShouldBeGreaterThan(0);
+        factoryMock.Object.FindDockableById(firstId).ShouldNotBeNull();
+
+        var secondMenu = config.GetCustomMenuItems(new[] { podB }).Single(x => x.Header == "View Logs");
+        secondMenu.Items.ShouldNotBeNull();
+        var secondAllContainers = secondMenu.Items!.Single(x => x.Header == "All Containers");
+        (secondAllContainers.Command as IAsyncRelayCommand).ShouldNotBeNull();
+        secondAllContainers.Command!.CanExecute(secondAllContainers.CommandParameter).ShouldBeTrue();
+        await ((IAsyncRelayCommand)secondAllContainers.Command!).ExecuteAsync(secondAllContainers.CommandParameter);
+
+        var secondId = $"ViewLogs-{cluster.Name}-{podB.Namespace()} - {podB.Name()}-all";
+        await WaitForAsync(() => streamClient.Requests.Count > requestsAfterFirstClick && factoryMock.Object.FindDockableById(secondId) != null);
+        streamClient.Requests.Count.ShouldBeGreaterThan(requestsAfterFirstClick);
+        factoryMock.Object.FindDockableById(secondId).ShouldNotBeNull();
+    }
+
     [AvaloniaFact(DisplayName = "Resource list enum filters render a selector")]
     public async Task resource_list_enum_filters_render_a_selector()
     {
@@ -1632,6 +1831,35 @@ internal sealed class FakeDoubleTapResourceConfig : IResourceConfig
 
     public void Initialize(ClusterWorkspaceViewModel cluster)
     {
+    }
+}
+
+internal sealed class NoOpPodLogExportService : IPodLogExportService
+{
+    public Task ExportAsync(string suggestedFileName, string content, CancellationToken cancellationToken = default)
+    {
+        return Task.CompletedTask;
+    }
+}
+
+internal sealed class RecordingPodLogStreamClient : IPodLogStreamClient
+{
+    private readonly Queue<string> _payloads;
+
+    public RecordingPodLogStreamClient(params string[] payloads)
+    {
+        _payloads = new Queue<string>(payloads.Length == 0 ? ["line\n"] : payloads);
+        Requests = [];
+    }
+
+    public List<PodLogReadOptions> Requests { get; }
+
+    public Task<Stream> OpenAsync(IClusterRuntime cluster, PodLogReadOptions options, CancellationToken cancellationToken = default)
+    {
+        Requests.Add(options);
+        string payload = _payloads.Count > 0 ? _payloads.Dequeue() : "line\n";
+        Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(payload));
+        return Task.FromResult(stream);
     }
 }
 

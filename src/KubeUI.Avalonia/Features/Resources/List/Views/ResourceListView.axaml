@@ -104,6 +104,7 @@
             SortingModel="{Binding SortingModel, Mode=OneWay}"
             UseLogicalScrollable="True">
             <Interaction.Behaviors>
+                <behaviors:ResourceListContextMenuSelectionBehavior />
                 <behaviors:ResourceListDoubleTapBehavior />
                 <behaviors:ResourceListPersistenceBehavior />
             </Interaction.Behaviors>
