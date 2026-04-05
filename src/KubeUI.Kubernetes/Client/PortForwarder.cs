@@ -1,15 +1,17 @@
 using System.Net;
-using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using k8s;
 using k8s.Models;
 
+#pragma warning disable RCS1075
 namespace KubeUI.Kubernetes;
 
 public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>, IDisposable
 {
     private readonly IClusterRuntime _cluster;
     private readonly TcpListener _listener;
+    private readonly IPortForwardSessionFactory _sessionFactory;
+    private readonly HashSet<Socket> _activeSockets = [];
+    private readonly object _activeSocketsGate = new();
 
     public string Name { get; private set; }
 
@@ -31,10 +33,16 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
     private bool _isDisposing;
 
     public PortForwarder(IClusterRuntime cluster, string @namespace, int localPort = 0)
+        : this(cluster, @namespace, localPort, null)
+    {
+    }
+
+    public PortForwarder(IClusterRuntime cluster, string @namespace, int localPort, IPortForwardSessionFactory? sessionFactory)
     {
         _cluster = cluster;
         Namespace = @namespace;
         LocalPort = localPort;
+        _sessionFactory = sessionFactory ?? new KubernetesPortForwardSessionFactory(cluster);
 
         _listener = new TcpListener(IPAddress.Loopback, localPort);
     }
@@ -55,23 +63,61 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
 
     public void Start()
     {
-        if (LocalPort != 0 && !IsPortAvailable(LocalPort))
+        try
+        {
+            _listener.Start();
+            _listener.BeginAcceptSocket(ClientConnected, null);
+            LocalPort = ((IPEndPoint)_listener.LocalEndpoint).Port;
+            Status = "Active";
+        }
+        catch (SocketException)
         {
             Status = "Local port is busy";
-            return;
+
+            try
+            {
+                _listener.Stop();
+            }
+            catch
+            {
+            }
         }
-
-        _listener.Start();
-
-        _listener.BeginAcceptSocket(new AsyncCallback(ClientConnected), null);
-        LocalPort = ((IPEndPoint)_listener.LocalEndpoint).Port;
-        Status = "Active";
+        catch (ObjectDisposedException)
+        {
+            Status = "Inactive";
+        }
     }
 
     public void Stop()
     {
         _isDisposing = true;
         Status = "Inactive";
+
+        Socket[] sockets;
+        lock (_activeSocketsGate)
+        {
+            sockets = _activeSockets.ToArray();
+        }
+
+        foreach (var socket in sockets)
+        {
+            try
+            {
+                socket.Shutdown(SocketShutdown.Both);
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                socket.Close();
+            }
+            catch
+            {
+            }
+        }
+
         try
         {
             _listener.Stop();
@@ -91,11 +137,15 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
         try
         {
             var socket = _listener.EndAcceptSocket(result);
-            Task.Run(async () => await HandleConnection(socket));
+            lock (_activeSocketsGate)
+            {
+                _activeSockets.Add(socket);
+            }
+            _ = Task.Run(() => HandleConnection(socket));
 
             if (!_isDisposing)
             {
-                _listener.BeginAcceptSocket(new AsyncCallback(ClientConnected), null);
+                _listener.BeginAcceptSocket(ClientConnected, null);
             }
         }
         catch (ObjectDisposedException)
@@ -109,110 +159,272 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
     private async Task HandleConnection(Socket socket)
     {
         Connections++;
-        var podName = Name;
-        var podPort = Port;
-        if (Type == "Service")
+        try
         {
-            var service = _cluster.GetResource<V1Service>(Namespace, Name);
-            var servicePort = service.Spec.Ports.First(x => x.Port == Port);
+            var podName = Name;
+            var podPort = Port;
+            if (Type == "Service")
+            {
+                var service = _cluster.GetResource<V1Service>(Namespace, Name);
+                if (service == null)
+                {
+                    Status = "Service not found";
+                    return;
+                }
 
-            await _cluster.SeedResource<V1EndpointSlice>(true);
-            var endpointSlices = _cluster.GetResourceList<V1EndpointSlice>();
+                var servicePort = FindServicePort(service, Port);
+                if (servicePort == null)
+                {
+                    Status = "No port found for Service";
+                    return;
+                }
 
-            var endpointSlice = endpointSlices.FirstOrDefault(x => x.Namespace() == service.Namespace() && x.GetLabel("kubernetes.io/service-name") == service.Name());
-            if (endpointSlice == null)
+                await _cluster.SeedResource<V1EndpointSlice>(true).ConfigureAwait(false);
+                var endpointSlice = FindEndpointSlice(service);
+                if (endpointSlice == null)
+                {
+                    Status = "No endpoint slices found for Service";
+                    return;
+                }
+
+                var portData = FindEndpointSlicePort(endpointSlice, servicePort);
+                if (portData == null || portData.Port == null)
+                {
+                    Status = "No port found for Service";
+                    return;
+                }
+
+                if (!TrySelectPod(endpointSlice, out var selectedPod))
+                {
+                    Status = "No pods found for Service";
+                    return;
+                }
+
+                podName = selectedPod;
+                podPort = (int)portData.Port;
+            }
+
+            using var session = await _sessionFactory.CreateAsync(podName, Namespace, podPort).ConfigureAwait(false);
+            var stream = session.Stream;
+
+            var read = Task.Run(() => CopySocketToStream(socket, stream));
+            var write = Task.Run(() => CopyStreamToSocket(socket, stream));
+
+            await Task.WhenAll(read, write).ConfigureAwait(false);
+        }
+        catch
+        {
+            if (!_isDisposing)
+            {
+                Status = "Port forward failed";
+            }
+        }
+        finally
+        {
+            lock (_activeSocketsGate)
+            {
+                _activeSockets.Remove(socket);
+            }
+
+            try
+            {
+                socket.Shutdown(SocketShutdown.Both);
+            }
+            catch
+            {
+            }
+
+            try
             {
                 socket.Close();
-                Connections--;
-                Status = "No endpoint slices found for Service";
-                return;
             }
-
-            var portData = endpointSlice.Ports.FirstOrDefault(y => y.Name == servicePort.Name);
-            if (portData == null || portData.Port == null)
+            catch
             {
-                socket.Close();
-                Connections--;
-                Status = "No port found for Service";
-                return;
             }
 
-            var random = new Random();
-            var pod = endpointSlice.Endpoints
-                .Where(x => x.Conditions != null && x.Conditions.Ready == true && x.Conditions.Serving == true && x.TargetRef.Kind == "Pod")
-                .Select(x => x.TargetRef.Name)
-                .OrderBy(x => random.Next())
-                .FirstOrDefault();
+            Connections--;
+        }
+    }
 
-            if (pod == null)
-            {
-                socket.Close();
-                Connections--;
-                Status = "No pods found for Service";
-                return;
-            }
-            else
-            {
-                Status = "Active";
-            }
-
-            podName = pod;
-            podPort = (int)portData.Port;
+    private static V1ServicePort? FindServicePort(V1Service? service, int port)
+    {
+        var ports = service?.Spec?.Ports;
+        if (ports == null)
+        {
+            return null;
         }
 
-        using var webSocket = await _cluster.Client.WebSocketNamespacedPodPortForwardAsync(podName, Namespace, [podPort], "v4.channel.k8s.io");
-        using var demux = new StreamDemuxer(webSocket, StreamType.PortForward);
-        demux.Start();
-
-        await using var stream = demux.GetStream((byte?)0, (byte?)0);
-
-        var read = Task.Run(() =>
+        foreach (var candidate in ports)
         {
-            var buffer = new byte[4096];
-            while (!_isDisposing && SocketConnected(socket))
+            if (candidate.Port == port)
             {
-                try
-                {
-                    int bytesReceived = socket.Receive(buffer);
-                    stream.Write(buffer, 0, bytesReceived);
-                }
-                catch (Exception) { }
+                return candidate;
             }
-        });
+        }
 
-        var write = Task.Run(() =>
-        {
-            var buffer = new byte[4096];
-            while (!_isDisposing && SocketConnected(socket))
-            {
-                try
-                {
-                    var bytesReceived = stream.Read(buffer, 0, 4096);
-                    socket.Send(buffer, bytesReceived, 0);
-                }
-                catch (Exception) { }
-            }
-        });
-
-        await read;
-        await write;
-
-        socket.Close();
-        Connections--;
+        return null;
     }
 
-    private static bool IsPortAvailable(int port)
+    private V1EndpointSlice? FindEndpointSlice(V1Service service)
     {
-        var properties = IPGlobalProperties.GetIPGlobalProperties();
-        var activeTcpListeners = properties.GetActiveTcpListeners();
-        return !activeTcpListeners.Any(x => x.Port == port);
+        var endpointSlices = _cluster.GetResourceList<V1EndpointSlice>();
+
+        foreach (var endpointSlice in endpointSlices)
+        {
+            if (endpointSlice.Namespace() == service.Namespace()
+                && endpointSlice.GetLabel("kubernetes.io/service-name") == service.Name())
+            {
+                return endpointSlice;
+            }
+        }
+
+        return null;
     }
 
-    private static bool SocketConnected(Socket s)
+    private static Discoveryv1EndpointPort? FindEndpointSlicePort(V1EndpointSlice endpointSlice, V1ServicePort servicePort)
     {
-        bool part1 = s.Poll(1000, SelectMode.SelectRead);
-        bool part2 = (s.Available == 0);
-        return !part1 || !part2;
+        var ports = endpointSlice.Ports;
+        if (ports == null)
+        {
+            return null;
+        }
+
+        foreach (var candidate in ports)
+        {
+            if (!string.IsNullOrEmpty(servicePort.Name) && string.Equals(candidate.Name, servicePort.Name, StringComparison.Ordinal))
+            {
+                return candidate;
+            }
+
+            if (string.IsNullOrEmpty(servicePort.Name) && candidate.Port == servicePort.Port)
+            {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool TrySelectPod(V1EndpointSlice endpointSlice, out string podName)
+    {
+        podName = string.Empty;
+
+        var endpoints = endpointSlice.Endpoints;
+        if (endpoints == null)
+        {
+            return false;
+        }
+
+        string? selectedPod = null;
+        var eligiblePods = 0;
+
+        foreach (var endpoint in endpoints)
+        {
+            var targetRef = endpoint?.TargetRef;
+            var conditions = endpoint?.Conditions;
+
+            if (targetRef?.Kind != "Pod"
+                || string.IsNullOrEmpty(targetRef.Name)
+                || conditions?.Ready != true
+                || conditions.Serving != true)
+            {
+                continue;
+            }
+
+            eligiblePods++;
+            if (Random.Shared.Next(eligiblePods) == 0)
+            {
+                selectedPod = targetRef.Name;
+            }
+        }
+
+        if (selectedPod == null)
+        {
+            return false;
+        }
+
+        podName = selectedPod;
+        return true;
+    }
+
+    private static void CopySocketToStream(Socket socket, Stream stream)
+    {
+        var buffer = new byte[4096];
+
+        while (true)
+        {
+            int bytesReceived;
+            try
+            {
+                bytesReceived = socket.Receive(buffer);
+            }
+            catch (ObjectDisposedException)
+            {
+                return;
+            }
+            catch (SocketException)
+            {
+                return;
+            }
+
+            if (bytesReceived <= 0)
+            {
+                return;
+            }
+
+            try
+            {
+                stream.Write(buffer, 0, bytesReceived);
+            }
+            catch (IOException)
+            {
+                return;
+            }
+            catch (ObjectDisposedException)
+            {
+                return;
+            }
+        }
+    }
+
+    private static void CopyStreamToSocket(Socket socket, Stream stream)
+    {
+        var buffer = new byte[4096];
+
+        while (true)
+        {
+            int bytesReceived;
+            try
+            {
+                bytesReceived = stream.Read(buffer, 0, buffer.Length);
+            }
+            catch (ObjectDisposedException)
+            {
+                return;
+            }
+            catch (IOException)
+            {
+                return;
+            }
+
+            if (bytesReceived <= 0)
+            {
+                return;
+            }
+
+            try
+            {
+                socket.Send(buffer, 0, bytesReceived, SocketFlags.None);
+            }
+            catch (ObjectDisposedException)
+            {
+                return;
+            }
+            catch (SocketException)
+            {
+                return;
+            }
+        }
     }
 
     public bool Equals(PortForwarder? other)
@@ -225,4 +437,5 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
         Stop();
     }
 }
+#pragma warning restore RCS1075
 

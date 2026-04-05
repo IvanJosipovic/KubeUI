@@ -1,19 +1,27 @@
 namespace KubeUI.Kubernetes;
 
+public interface IPortForwardSessionFactory
+{
+    Task<IPortForwardSession> CreateAsync(string podName, string @namespace, int port);
+}
+
 public partial class Cluster
 {
+    private readonly IPortForwardSessionFactory _portForwardSessionFactory;
+
     [ObservableProperty]
     public partial ObservableCollection<PortForwarder> PortForwarders { get; set; } = [];
 
     public PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort)
     {
-        var pf = new PortForwarder(this, @namespace);
+        var pf = new PortForwarder(this, @namespace, localPort: 0, _portForwardSessionFactory);
 
         pf.SetPod(podName, containerPort);
 
-        if (PortForwarders.Contains(pf))
+        var existing = FindPortForwarder(pf);
+        if (existing != null)
         {
-            return PortForwarders.First(p => p.Equals(pf));
+            return existing;
         }
 
         PortForwarders.Add(pf);
@@ -25,13 +33,14 @@ public partial class Cluster
 
     public PortForwarder AddServicePortForward(string @namespace, string serviceName, int servicePort)
     {
-        var pf = new PortForwarder(this, @namespace);
+        var pf = new PortForwarder(this, @namespace, localPort: 0, _portForwardSessionFactory);
 
         pf.SetService(serviceName, servicePort);
 
-        if (PortForwarders.Contains(pf))
+        var existing = FindPortForwarder(pf);
+        if (existing != null)
         {
-            return PortForwarders.First(p => p.Equals(pf));
+            return existing;
         }
 
         PortForwarders.Add(pf);
@@ -45,6 +54,19 @@ public partial class Cluster
     {
         pf.Stop();
         PortForwarders.Remove(pf);
+    }
+
+    private PortForwarder? FindPortForwarder(PortForwarder candidate)
+    {
+        foreach (var portForwarder in PortForwarders)
+        {
+            if (portForwarder.Equals(candidate))
+            {
+                return portForwarder;
+            }
+        }
+
+        return null;
     }
 }
 

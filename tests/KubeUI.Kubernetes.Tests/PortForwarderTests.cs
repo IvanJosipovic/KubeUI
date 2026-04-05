@@ -1,7 +1,9 @@
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using k8s.Models;
 using KubeUI.Testing;
+using Moq;
 using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests;
@@ -98,6 +100,63 @@ public sealed class PortForwarderTests
         right.SetService("grafana", 9090);
 
         left.Equals(right).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void AddPodPortForward_returns_existing_instance_for_same_target()
+    {
+        var cluster = new TestClusterRuntime();
+
+        var left = cluster.AddPodPortForward("default", "pod-1", 8080);
+        var right = cluster.AddPodPortForward("default", "pod-1", 8080);
+
+        ReferenceEquals(left, right).ShouldBeTrue();
+        cluster.PortForwarders.Count.ShouldBe(1);
+    }
+
+    [Fact]
+    public void AddServicePortForward_returns_existing_instance_for_same_target()
+    {
+        var cluster = new TestClusterRuntime();
+
+        var left = cluster.AddServicePortForward("default", "prometheus", 9090);
+        var right = cluster.AddServicePortForward("default", "prometheus", 9090);
+
+        ReferenceEquals(left, right).ShouldBeTrue();
+        cluster.PortForwarders.Count.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task Port_forward_uses_mocked_transport_and_copies_client_bytes()
+    {
+        var cluster = new TestClusterRuntime();
+        var stream = new CaptureStream();
+        var session = new Mock<IPortForwardSession>(MockBehavior.Strict);
+        session.SetupGet(x => x.Stream).Returns(stream);
+        session.Setup(x => x.Dispose());
+
+        var factory = new Mock<IPortForwardSessionFactory>(MockBehavior.Strict);
+        factory.Setup(x => x.CreateAsync("pod-1", "default", 8080)).ReturnsAsync(session.Object);
+
+        using var sut = new PortForwarder(cluster, "default", localPort: 0, sessionFactory: factory.Object);
+        sut.SetPod("pod-1", 8080);
+        sut.Start();
+
+        var payload = Encoding.UTF8.GetBytes("ping");
+
+        using (var client = new TcpClient())
+        {
+            await client.ConnectAsync(IPAddress.Loopback, sut.LocalPort);
+            await client.GetStream().WriteAsync(payload);
+            client.Client.Shutdown(SocketShutdown.Send);
+        }
+
+        await WaitForAsync(() => stream.WrittenBytes.SequenceEqual(payload));
+        await WaitForAsync(() => sut.Connections == 0);
+
+        factory.Verify(x => x.CreateAsync("pod-1", "default", 8080), Times.Once);
+        session.VerifyGet(x => x.Stream, Times.AtLeastOnce);
+        stream.WrittenBytes.ShouldBe(payload);
     }
 
     [Fact]
@@ -248,5 +307,46 @@ public sealed class PortForwarderTests
         }
 
         predicate().ShouldBeTrue();
+    }
+
+    private sealed class CaptureStream : Stream
+    {
+        private readonly MemoryStream _written = new();
+
+        public byte[] WrittenBytes => _written.ToArray();
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => true;
+        public override long Length => throw new NotSupportedException();
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush()
+        {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            return 0;
+        }
+
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override void SetLength(long value)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            _written.Write(buffer, offset, count);
+        }
     }
 }
