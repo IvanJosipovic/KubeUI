@@ -105,7 +105,7 @@ public class TestApp : Application, IServiceProviderHost
             overrides.AddSingleton<IClusterSettingsStore>(sp => sp.GetRequiredService<ISettingsService>().Clusters);
             overrides.Replace(ServiceDescriptor.Singleton<IDialogService>(dialog.Object));
             overrides.Replace(ServiceDescriptor.Singleton<INotificationManager>(notifications.Object));
-            overrides.Replace(ServiceDescriptor.Singleton<IFactory>(sp => Dispatcher.UIThread.Invoke(() => (IFactory)new DockFactory(sp, sp.GetRequiredService<ILogger<DockFactory>>()))));
+            overrides.Replace(ServiceDescriptor.Singleton<IFactory>(sp => Dispatcher.UIThread.InvokeAsync(() => (IFactory)new DockFactory(sp, sp.GetRequiredService<ILogger<DockFactory>>())).GetAwaiter().GetResult()));
         });
 
         var provider = services.BuildServiceProvider();
@@ -165,7 +165,7 @@ public class TestApp : Application, IServiceProviderHost
             return;
         }
 
-        Dispatcher.UIThread.Invoke(action);
+        Dispatcher.UIThread.InvokeAsync(action).GetAwaiter().GetResult();
     }
 }
 
