@@ -8,6 +8,7 @@
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <NoWarn>CS8602,CS8618,CS8625,CS8604,CS8605,CS8600</NoWarn>
+    <WarningsAsErrors>xUnit1031</WarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>

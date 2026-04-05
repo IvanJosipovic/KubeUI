@@ -27,17 +27,17 @@ public sealed class ClusterAuthTests
     }
 
     [Fact]
-    public void cani_any_namespace_uses_namespace_scoped_permission_when_cluster_scope_is_denied()
+    public async Task cani_any_namespace_uses_namespace_scoped_permission_when_cluster_scope_is_denied()
     {
         var cluster = new TestClusterRuntime();
 
         cluster.SetPermission<V1Pod>(Verb.Create, false, subresource: "portforward");
         cluster.SetPermission<V1Pod>(Verb.Create, true, "my-app", "portforward");
 
-        cluster.AddOrUpdateResource(new V1Namespace
+        await cluster.AddOrUpdateResource(new V1Namespace
         {
             Metadata = new V1ObjectMeta { Name = "my-app" }
-        }).GetAwaiter().GetResult();
+        });
 
         cluster.CanIAnyNamespace<V1Pod>(Verb.Create, "portforward").ShouldBeTrue();
     }
