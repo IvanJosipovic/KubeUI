@@ -374,6 +374,24 @@ namespace KubeUI.Avalonia.Assets {
                 return ResourceManager.GetString("ClusterSettingsView_Remove", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Ephemeral Debug Image.
+        /// </summary>
+        public static string ClusterSettingsView_DebugContainerImageLabel {
+            get {
+                return ResourceManager.GetString("ClusterSettingsView_DebugContainerImageLabel", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Image used when starting an ephemeral debug container.
+        /// </summary>
+        public static string ClusterSettingsView_DebugContainerImageTooltip {
+            get {
+                return ResourceManager.GetString("ClusterSettingsView_DebugContainerImageTooltip", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to Cluster.
@@ -885,6 +903,33 @@ namespace KubeUI.Avalonia.Assets {
         public static string PodLogsView_PodLabel {
             get {
                 return ResourceManager.GetString("PodLogsView_PodLabel", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Debug Container.
+        /// </summary>
+        public static string V1PodConfig_DebugContainer {
+            get {
+                return ResourceManager.GetString("V1PodConfig_DebugContainer", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Pod.
+        /// </summary>
+        public static string V1PodConfig_DebugContainer_Pod {
+            get {
+                return ResourceManager.GetString("V1PodConfig_DebugContainer_Pod", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Error adding debug container.
+        /// </summary>
+        public static string V1PodConfig_DebugContainer_Error {
+            get {
+                return ResourceManager.GetString("V1PodConfig_DebugContainer_Error", resourceCulture);
             }
         }
 

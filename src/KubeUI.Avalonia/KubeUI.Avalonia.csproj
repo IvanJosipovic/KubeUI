@@ -56,9 +56,6 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Update="Resources\Workloads\v1\Pod\Views\PodConsoleView.axaml.cs">
-      <DependentUpon>PodConsoleView.axaml</DependentUpon>
-    </Compile>
   </ItemGroup>
 
   <ItemGroup>

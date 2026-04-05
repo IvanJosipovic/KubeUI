@@ -357,6 +357,12 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
         return pf;
     }
 
+    public Task AddPodEphemeralDebugContainer(V1Pod pod, string? targetContainerName, string image)
+    {
+        var updatedPod = PodEphemeralContainerBuilder.WithDebugContainer(pod, targetContainerName, image);
+        return AddOrUpdateResource(updatedPod);
+    }
+
     public PortForwarder AddServicePortForward(string @namespace, string serviceName, int servicePort)
     {
         var pf = new PortForwarder(this, @namespace);

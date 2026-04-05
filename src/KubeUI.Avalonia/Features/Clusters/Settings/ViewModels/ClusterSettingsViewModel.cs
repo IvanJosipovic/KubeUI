@@ -25,6 +25,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
         Cluster = cluster;
         Id = nameof(ClusterSettingsViewModel) + Cluster.Name;
         ClusterSettings = SettingsService.Settings.GetClusterSettings(cluster);
+        DebugContainerImage = ClusterSettings.DebugContainerImage;
     }
 
     [ObservableProperty]
@@ -32,6 +33,9 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
 
     [ObservableProperty]
     public partial string Namespace { get; set; }
+
+    [ObservableProperty]
+    public partial string DebugContainerImage { get; set; } = string.Empty;
 
     [RelayCommand]
     private void AddNamespace()
@@ -55,6 +59,17 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
 
             SettingsService.SaveSettings();
         }
+    }
+
+    partial void OnDebugContainerImageChanged(string value)
+    {
+        if (ClusterSettings == null)
+        {
+            return;
+        }
+
+        ClusterSettings.DebugContainerImage = value;
+        SettingsService.SaveSettings();
     }
 }
 

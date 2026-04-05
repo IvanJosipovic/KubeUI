@@ -9,9 +9,11 @@ using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Avalonia.Options;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Controls;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
+using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -167,6 +169,25 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             },
             new()
             {
+                Header = Assets.Resources.V1PodConfig_DebugContainer,
+                FluentIcon = Icon.Code,
+                Items = selectedItem == null ? null : new AvaloniaList<MenuItemViewModel>([
+                    new()
+                    {
+                        Header = Assets.Resources.V1PodConfig_DebugContainer_Pod,
+                        Command = DebugContainerCommand,
+                        CommandParameter = new ArrayList { selectedItem },
+                    },
+                    .. containers.Select(c => new MenuItemViewModel()
+                    {
+                        Header = c.Name,
+                        Command = DebugContainerCommand,
+                        CommandParameter = new ArrayList { selectedItem, c.Name },
+                    })
+                ]),
+            },
+            new()
+            {
                 Header = "Port Forwarding",
                 FluentIcon = Icon.CloudFlow,
                 Items = selectedItem == null ? null : new AvaloniaList<MenuItemViewModel>(containers.Select(c => new MenuItemViewModel()
@@ -187,6 +208,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         (Verb.Get, "log"),
         (Verb.Create, "portforward"),
         (Verb.Create, "exec"),
+        (Verb.Update, "ephemeralcontainers"),
     ];
 
     [RelayCommand(CanExecute = nameof(CanViewLogs))]
@@ -258,6 +280,50 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         }
 
         return false;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanDebugContainer))]
+    private async Task DebugContainer(IList parameters)
+    {
+        if (parameters.Count < 1 || parameters[0] is not V1Pod pod)
+        {
+            return;
+        }
+
+        string? targetContainerName = parameters.Count > 1 ? parameters[1] as string : null;
+        string debugContainerImage = ServiceProvider.GetRequiredService<ISettingsService>()
+            .Settings
+            .GetClusterSettings(Cluster)
+            .DebugContainerImage;
+
+        if (string.IsNullOrWhiteSpace(debugContainerImage))
+        {
+            debugContainerImage = ClusterSettings.DefaultDebugContainerImage;
+        }
+
+        try
+        {
+            await Cluster.AddPodEphemeralDebugContainer(pod, targetContainerName, debugContainerImage);
+        }
+        catch (Exception ex)
+        {
+            Utilities.HandleException(_logger, _notificationManager, ex, Assets.Resources.V1PodConfig_DebugContainer_Error, sendNotification: true);
+        }
+    }
+
+    private bool CanDebugContainer(IList? parameters)
+    {
+        if (parameters?.Count is not (1 or 2))
+        {
+            return false;
+        }
+
+        if (parameters[0] is not V1Pod pod)
+        {
+            return false;
+        }
+
+        return Cluster.CanI<V1Pod>(Verb.Update, pod.Namespace(), "ephemeralcontainers");
     }
 
     [RelayCommand(CanExecute = nameof(CanPortForward))]
