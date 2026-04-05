@@ -3,6 +3,11 @@ using k8s;
 
 namespace KubeUI.Kubernetes;
 
+public interface IPortForwardSessionFactory
+{
+    Task<IPortForwardSession> CreateAsync(string podName, string @namespace, int port);
+}
+
 public interface IPortForwardSession : IDisposable
 {
     Stream Stream { get; }

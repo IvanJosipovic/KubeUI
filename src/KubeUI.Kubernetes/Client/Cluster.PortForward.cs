@@ -1,10 +1,5 @@
 namespace KubeUI.Kubernetes;
 
-public interface IPortForwardSessionFactory
-{
-    Task<IPortForwardSession> CreateAsync(string podName, string @namespace, int port);
-}
-
 public partial class Cluster
 {
     private readonly IPortForwardSessionFactory _portForwardSessionFactory;
