@@ -1,3 +1,4 @@
+using System.Runtime.ExceptionServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -105,7 +106,7 @@ public class TestApp : Application, IServiceProviderHost
             overrides.AddSingleton<IClusterSettingsStore>(sp => sp.GetRequiredService<ISettingsService>().Clusters);
             overrides.Replace(ServiceDescriptor.Singleton<IDialogService>(dialog.Object));
             overrides.Replace(ServiceDescriptor.Singleton<INotificationManager>(notifications.Object));
-            overrides.Replace(ServiceDescriptor.Singleton<IFactory>(sp => Dispatcher.UIThread.InvokeAsync(() => (IFactory)new DockFactory(sp, sp.GetRequiredService<ILogger<DockFactory>>())).GetAwaiter().GetResult()));
+            overrides.Replace(ServiceDescriptor.Singleton<IFactory>(sp => new DockFactory(sp, sp.GetRequiredService<ILogger<DockFactory>>())));
         });
 
         var provider = services.BuildServiceProvider();
@@ -165,7 +166,24 @@ public class TestApp : Application, IServiceProviderHost
             return;
         }
 
-        Dispatcher.UIThread.InvokeAsync(action).GetAwaiter().GetResult();
+        Exception? capturedException = null;
+        Dispatcher.UIThread.Post(() =>
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                capturedException = ex;
+            }
+        });
+        Dispatcher.UIThread.RunJobs();
+
+        if (capturedException != null)
+        {
+            ExceptionDispatchInfo.Capture(capturedException).Throw();
+        }
     }
 }
 

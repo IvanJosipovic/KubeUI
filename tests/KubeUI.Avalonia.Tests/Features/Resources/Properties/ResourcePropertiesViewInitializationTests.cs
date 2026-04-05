@@ -17,10 +17,10 @@ namespace KubeUI.Avalonia.Tests.Features.Resources.Properties;
 public sealed class ResourcePropertiesViewInitializationTests : AvaloniaTestBase
 {
     [AvaloniaFact]
-    public void cluster_aware_property_controls_are_initialized_once()
+    public async Task cluster_aware_property_controls_are_initialized_once()
     {
         var workspace = new TestCluster().CreateWorkspace();
-        workspace.EnsureWorkspaceStateInitializedAsync().GetAwaiter().GetResult();
+        await workspace.EnsureWorkspaceStateInitializedAsync();
 
         var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
         var trackingConfig = new TrackingResourceConfig(services);
