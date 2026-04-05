@@ -172,7 +172,7 @@ public sealed class PortForwarderTests
         await ConnectAsync(sut.LocalPort);
 
         await WaitForAsync(() => sut.Status == "No endpoint slices found for Service");
-        sut.Connections.ShouldBe(0);
+        await WaitForAsync(() => sut.Connections == 0);
     }
 
     [Fact]
@@ -208,7 +208,7 @@ public sealed class PortForwarderTests
         await ConnectAsync(sut.LocalPort);
 
         await WaitForAsync(() => sut.Status == "No port found for Service");
-        sut.Connections.ShouldBe(0);
+        await WaitForAsync(() => sut.Connections == 0);
     }
 
     [Fact]
@@ -260,7 +260,7 @@ public sealed class PortForwarderTests
         await ConnectAsync(sut.LocalPort);
 
         await WaitForAsync(() => sut.Status == "No pods found for Service");
-        sut.Connections.ShouldBe(0);
+        await WaitForAsync(() => sut.Connections == 0);
     }
 
     private static V1Service CreateService()
