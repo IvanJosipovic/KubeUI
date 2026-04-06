@@ -1185,6 +1185,57 @@ Are you sure?</value>
   <data name="MainView_Menu_File_LoadKubeConfig_Open" xml:space="preserve">
     <value>Select Kube Config</value>
   </data>
+  <data name="MainView_Menu_File_ImportAksCluster" xml:space="preserve">
+    <value>_Load AKS Cluster</value>
+  </data>
+  <data name="ImportAksClusterViewModel_Title" xml:space="preserve">
+    <value>Import AKS Cluster</value>
+  </data>
+  <data name="ImportAksClusterView_Description" xml:space="preserve">
+    <value>Select a subscription, choose an AKS cluster, and import its kubeconfig into KubeUI.</value>
+  </data>
+  <data name="ImportAksClusterView_Prerequisites" xml:space="preserve">
+    <value>Azure CLI must be installed and signed in and run az aks install-cli to install the Kubernetes tools.</value>
+  </data>
+  <data name="ImportAksClusterView_Subscription" xml:space="preserve">
+    <value>Subscription</value>
+  </data>
+  <data name="ImportAksClusterView_Tenant" xml:space="preserve">
+    <value>Tenant</value>
+  </data>
+  <data name="ImportAksClusterView_TenantId" xml:space="preserve">
+    <value>Tenant Id</value>
+  </data>
+  <data name="ImportAksClusterView_Cluster" xml:space="preserve">
+    <value>Cluster</value>
+  </data>
+  <data name="ImportAksClusterView_Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="ImportAksClusterView_Import" xml:space="preserve">
+    <value>Import</value>
+  </data>
+  <data name="ImportAksClusterView_Importing" xml:space="preserve">
+    <value>Importing AKS cluster...</value>
+  </data>
+  <data name="ImportAksClusterView_Imported" xml:space="preserve">
+    <value>Imported {0}.</value>
+  </data>
+  <data name="ImportAksClusterView_ResourceGroupFormat" xml:space="preserve">
+    <value>Resource group: {0}</value>
+  </data>
+  <data name="ImportAksClusterView_VersionFormat" xml:space="preserve">
+    <value>Kubernetes version: {0}</value>
+  </data>
+  <data name="CloudClusterConnectView_Description" xml:space="preserve">
+    <value>Choose a subscription first, then discover and connect to a managed cluster.</value>
+  </data>
+  <data name="CloudClusterConnectView_SubscriptionFirst" xml:space="preserve">
+    <value>Subscription-first discovery is the first implementation step.</value>
+  </data>
+  <data name="CloudClusterConnectView_AksOnly" xml:space="preserve">
+    <value>AKS support will be wired up here first.</value>
+  </data>
   <data name="PodLogsView_Clear" xml:space="preserve">
     <value>Clear Logs</value>
   </data>
@@ -1370,5 +1421,17 @@ Are you sure?</value>
   </data>
   <data name="Volume Mode" xml:space="preserve">
     <value>Volume Mode</value>
+  </data>
+  <data name="ImportAksClusterView_NoSubscriptions" xml:space="preserve">
+    <value>No Azure subscriptions were found. Sign in to Azure and refresh.</value>
+  </data>
+  <data name="ImportAksClusterView_AzureCliSignedIn" xml:space="preserve">
+    <value>Azure CLI is signed in.</value>
+  </data>
+  <data name="ImportAksClusterView_AzureCliNotSignedIn" xml:space="preserve">
+    <value>Azure CLI is not signed in.</value>
+  </data>
+  <data name="ImportAksClusterView_AccountFormat" xml:space="preserve">
+    <value>Account: {0} ({1})</value>
   </data>
 </root>

@@ -18,8 +18,10 @@ public static class KubeUIKubernetesServiceCollectionExtensions
         MapsterConfiguration.Configure();
         ConfigureKubeUIKubernetesJson();
         services.AddSingleton<IThreadDispatcher, ImmediateThreadDispatcher>();
+        services.AddSingleton<IKubeConfigPathProvider, DefaultKubeConfigPathProvider>();
         services.AddTransient<ModelCache>();
         services.AddSingleton<IKubernetesYamlSerializer, KubernetesYamlSerializer>();
+        services.AddSingleton<IAksClusterService, AksClusterService>();
         services.AddTransient<Cluster>();
         services.AddTransient<IClusterRuntime>(sp => sp.GetRequiredService<Cluster>());
         services.AddSingleton<ClusterManager>();

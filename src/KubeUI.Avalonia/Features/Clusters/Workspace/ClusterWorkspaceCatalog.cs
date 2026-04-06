@@ -1,4 +1,5 @@
 using System.Collections.Specialized;
+using k8s.KubeConfigModels;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Kubernetes;
@@ -50,6 +51,16 @@ public sealed class ClusterWorkspaceCatalog : IDisposable
     public void LoadFromConfigFromPath(string path)
     {
         _runtimeCatalog.LoadFromConfigFromPath(path);
+    }
+
+    public void LoadFromConfig(K8SConfiguration kubeConfig)
+    {
+        _runtimeCatalog.LoadFromConfig(kubeConfig);
+    }
+
+    public void ImportIntoKubeConfig(K8SConfiguration kubeConfig)
+    {
+        _runtimeCatalog.ImportIntoKubeConfig(kubeConfig);
     }
 
     public void RemoveCluster(ClusterWorkspaceViewModel cluster)
