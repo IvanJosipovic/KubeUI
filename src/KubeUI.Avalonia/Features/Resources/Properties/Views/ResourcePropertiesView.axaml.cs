@@ -18,6 +18,7 @@ namespace KubeUI.Avalonia.Features.Resources.Properties.Views;
 public partial class ResourcePropertiesView : UserControl
 {
     private INotifyPropertyChanged? _viewModel;
+    private bool _isDetached;
 
     public ResourcePropertiesView()
     {
@@ -31,9 +32,17 @@ public partial class ResourcePropertiesView : UserControl
         ReloadNowOrLater();
     }
 
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        _isDetached = false;
+        ReloadNowOrLater();
+    }
+
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
+        _isDetached = true;
         UnsubscribeFromViewModel();
     }
 
@@ -107,6 +116,11 @@ public partial class ResourcePropertiesView : UserControl
 
     private void ReloadNowOrLater()
     {
+        if (_isDetached)
+        {
+            return;
+        }
+
         if (VisualRoot == null)
         {
             AttachAndReload();
@@ -118,6 +132,11 @@ public partial class ResourcePropertiesView : UserControl
 
     private void Reload<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
+        if (_isDetached)
+        {
+            return;
+        }
+
         ClearItems();
 
         if (DataContext is not ResourcePropertiesViewModel<T> viewModel)

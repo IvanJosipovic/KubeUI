@@ -109,4 +109,47 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
 
         changeCount.ShouldBe(1);
     }
+
+    [AvaloniaFact]
+    public async Task detached_resource_properties_view_does_not_throw_when_view_model_changes()
+    {
+        var workspace = new TestCluster().CreateWorkspace();
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
+        viewModel.Initialize(workspace, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "pod-1",
+                NamespaceProperty = "default",
+            }
+        });
+
+        var window = new Window
+        {
+            Content = new ResourcePropertiesView
+            {
+                DataContext = viewModel,
+            }
+        };
+
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        window.Content = null;
+        window.Close();
+        Dispatcher.UIThread.RunJobs();
+
+        viewModel.Object = new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "pod-2",
+                NamespaceProperty = "default",
+            }
+        };
+
+        Dispatcher.UIThread.RunJobs();
+    }
 }
