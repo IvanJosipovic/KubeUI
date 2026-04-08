@@ -35,16 +35,55 @@ public sealed class ResourcePropertiesViewInitializationTests : AvaloniaTestBase
         });
         viewModel.ResourceConfig = trackingConfig;
 
-        var view = new ResourcePropertiesView
+        var window = new Window
         {
-            DataContext = viewModel,
+            Content = new ResourcePropertiesView
+            {
+                DataContext = viewModel,
+            }
         };
 
+        window.Show();
         Dispatcher.UIThread.RunJobs();
         Dispatcher.UIThread.RunJobs();
 
         trackingConfig.TrackingControl.InitializeCount.ShouldBe(1);
-        view.FindControl<StackPanel>("PART_Items")!.Children.ShouldContain(trackingConfig.TrackingControl);
+        window.FindControl<StackPanel>("PART_Items")!.Children.ShouldContain(trackingConfig.TrackingControl);
+    }
+
+    [AvaloniaFact]
+    public async Task properties_view_populates_on_first_attach()
+    {
+        var workspace = new TestCluster().CreateWorkspace();
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+
+        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
+        viewModel.Initialize(workspace, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "pod-1",
+                NamespaceProperty = "default",
+            }
+        });
+
+        var window = new Window
+        {
+            Content = new ResourcePropertiesView
+            {
+                DataContext = viewModel,
+            }
+        };
+
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+        Dispatcher.UIThread.RunJobs();
+
+        var items = window.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
+
+        items.ShouldNotBeEmpty();
+        items.Any(x => x.Key == AppResources.ResourcePropertiesView_Name).ShouldBeTrue();
     }
 
     private sealed class TrackingResourceConfig : ResourceConfigBase<V1Pod>

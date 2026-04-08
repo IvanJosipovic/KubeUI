@@ -32,12 +32,18 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
             }
         });
 
-        var view = new ResourcePropertiesView
+        var window = new Window
         {
-            DataContext = viewModel
+            Content = new ResourcePropertiesView
+            {
+                DataContext = viewModel
+            }
         };
 
-        var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        var items = window.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
 
         items.Any(x => x.Key == AppResources.ResourcePropertiesView_Namespace).ShouldBeTrue();
     }
@@ -58,12 +64,18 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
             }
         });
 
-        var view = new ResourcePropertiesView
+        var window = new Window
         {
-            DataContext = viewModel
+            Content = new ResourcePropertiesView
+            {
+                DataContext = viewModel
+            }
         };
 
-        var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        var items = window.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
 
         items.Any(x => x.Key == AppResources.ResourcePropertiesView_Namespace).ShouldBeFalse();
     }

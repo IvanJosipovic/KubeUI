@@ -123,7 +123,6 @@ public partial class ResourcePropertiesView : UserControl
 
         if (VisualRoot == null)
         {
-            AttachAndReload();
             return;
         }
 
