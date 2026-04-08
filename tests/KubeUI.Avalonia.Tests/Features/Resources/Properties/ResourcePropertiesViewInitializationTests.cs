@@ -4,6 +4,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
 using KubeUI.Avalonia.Features.Resources.Properties.Views;
 using KubeUI.Avalonia.Infrastructure.Presentation;
@@ -11,6 +12,7 @@ using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Tests.Infra;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using AppResources = KubeUI.Avalonia.Assets.Resources;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Properties;
 
@@ -35,12 +37,14 @@ public sealed class ResourcePropertiesViewInitializationTests : AvaloniaTestBase
         });
         viewModel.ResourceConfig = trackingConfig;
 
+        var view = new ResourcePropertiesView
+        {
+            DataContext = viewModel,
+        };
+
         var window = new Window
         {
-            Content = new ResourcePropertiesView
-            {
-                DataContext = viewModel,
-            }
+            Content = view
         };
 
         window.Show();
@@ -48,7 +52,7 @@ public sealed class ResourcePropertiesViewInitializationTests : AvaloniaTestBase
         Dispatcher.UIThread.RunJobs();
 
         trackingConfig.TrackingControl.InitializeCount.ShouldBe(1);
-        window.FindControl<StackPanel>("PART_Items")!.Children.ShouldContain(trackingConfig.TrackingControl);
+        view.FindControl<StackPanel>("PART_Items")!.Children.ShouldContain(trackingConfig.TrackingControl);
     }
 
     [AvaloniaFact]
@@ -68,19 +72,21 @@ public sealed class ResourcePropertiesViewInitializationTests : AvaloniaTestBase
             }
         });
 
+        var view = new ResourcePropertiesView
+        {
+            DataContext = viewModel,
+        };
+
         var window = new Window
         {
-            Content = new ResourcePropertiesView
-            {
-                DataContext = viewModel,
-            }
+            Content = view
         };
 
         window.Show();
         Dispatcher.UIThread.RunJobs();
         Dispatcher.UIThread.RunJobs();
 
-        var items = window.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
+        var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
 
         items.ShouldNotBeEmpty();
         items.Any(x => x.Key == AppResources.ResourcePropertiesView_Name).ShouldBeTrue();
