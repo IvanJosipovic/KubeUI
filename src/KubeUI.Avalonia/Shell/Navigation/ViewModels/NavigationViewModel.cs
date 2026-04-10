@@ -548,6 +548,9 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
         foreach (var resourceConfig in cluster.GetResourceConfigs().OrderBy(config => config.Order).ThenBy(config => config.Name, StringComparer.Ordinal))
         {
+            // Navigation is only shown once the resource config is ready and the
+            // cluster has permission to list/watch it. Actual cache seeding still
+            // happens lazily when the list view opens.
             if (!CanListAndWatchResource(cluster, resourceConfig))
             {
                 continue;
@@ -764,6 +767,11 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
         foreach (var addedConfig in addedConfigs)
         {
+            if (!addedConfig.ResourceConfig.CanListAndWatch)
+            {
+                continue;
+            }
+
             ApplyCustomResourceNavigationUpdate(node, cluster, addedConfig.ResourceConfig, isVisible: true);
         }
     }
@@ -952,7 +960,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                 cluster,
                 definitionsLink: CreateDefinitionsNavigationLink(cluster, resourceConfig),
                 customResourceConfigs: cluster.GetResourceConfigs()
-                    .Where(config => config.IsCustomResource && CanListAndWatchResource(cluster, config))
+                    .Where(config => config.IsCustomResource && config.CanListAndWatch)
                     .OrderBy(config => config.Order)
                     .ThenBy(config => config.Name, StringComparer.Ordinal)
                     .ToList());
@@ -1315,6 +1323,14 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         if (!resourceConfig.PermissionsLoaded)
         {
             return false;
+        }
+
+        if (resourceConfig.IsCustomResource)
+        {
+            // Custom resources are discovered and materialized into resource
+            // configs before the list cache is seeded. Visibility is driven by
+            // config readiness and permissions, not by cache presence.
+            return resourceConfig.CanListAndWatch;
         }
 
         if (resourceConfig.CanListAndWatch)
