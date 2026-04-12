@@ -2338,6 +2338,15 @@ namespace KubeUI.Avalonia.Assets {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Image: {0}.
+        /// </summary>
+        public static string PodContainerCell_ImageFormat {
+            get {
+                return ResourceManager.GetString("PodContainerCell_ImageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Init-Ready.
         /// </summary>
         public static string PodContainerCell_InitReady {
@@ -2383,6 +2392,15 @@ namespace KubeUI.Avalonia.Assets {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Restarts: {0}.
+        /// </summary>
+        public static string PodContainerCell_RestartsFormat {
+            get {
+                return ResourceManager.GetString("PodContainerCell_RestartsFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Starting.
         /// </summary>
         public static string PodContainerCell_Starting {
@@ -2392,11 +2410,29 @@ namespace KubeUI.Avalonia.Assets {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Status: {0}.
+        /// </summary>
+        public static string PodContainerCell_StatusFormat {
+            get {
+                return ResourceManager.GetString("PodContainerCell_StatusFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Stopped.
         /// </summary>
         public static string PodContainerCell_Stopped {
             get {
                 return ResourceManager.GetString("PodContainerCell_Stopped", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Type: {0}.
+        /// </summary>
+        public static string PodContainerCell_TypeFormat {
+            get {
+                return ResourceManager.GetString("PodContainerCell_TypeFormat", resourceCulture);
             }
         }
         

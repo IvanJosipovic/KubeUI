@@ -34,7 +34,7 @@ namespace KubeUI.Avalonia.Features.Resources.List.ViewModels
         ISelectionModel SelectionModel { get; }
         Func<IList, object, int> ReferenceIndexResolver { get; }
         IList View { get; }
-        IEnumerable<MenuItemViewModel> ContextMenuItems { get; }
+        IEnumerable<MenuItemViewModel> GetContextMenuItems(IEnumerable? selectedItems);
         ISearchModel SearchModel { get; set; }
         IDataGridSearchAdapterFactory SearchAdapterFactory { get; }
         // Runtime DataGrid state captured from ProDataGrid (in-memory snapshot)

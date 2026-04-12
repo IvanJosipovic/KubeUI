@@ -106,9 +106,10 @@
             <Interaction.Behaviors>
                 <behaviors:ResourceListDoubleTapBehavior />
                 <behaviors:ResourceListPersistenceBehavior />
+                <behaviors:ResourceListContextMenuBehavior />
             </Interaction.Behaviors>
             <DataGrid.ContextMenu>
-                <ContextMenu ItemsSource="{Binding ContextMenuItems}">
+                <ContextMenu>
                     <ContextMenu.Styles>
                         <Style x:DataType="common:MenuItemViewModel" Selector="MenuItem">
                             <Setter Property="Header" Value="{Binding Header}" />
