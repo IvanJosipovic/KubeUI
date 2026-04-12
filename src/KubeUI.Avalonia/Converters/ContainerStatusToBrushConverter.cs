@@ -1,5 +1,6 @@
 using System.Globalization;
 using Avalonia.Data.Converters;
+using Avalonia.Media;
 using k8s.Models;
 
 namespace KubeUI.Avalonia.Converters;
@@ -15,17 +16,31 @@ public class ContainerStatusToBrushConverter : IValueConverter
 
         try
         {
+            var param = parameter?.ToString();
+            var isEphemeral = param == "ephemeral";
+            var isInit = param == "init";
+
             // Ready & Started
             if (status.Ready && status.Started == true)
-                return Brushes.LimeGreen;
+                return isEphemeral ? Brushes.DodgerBlue : isInit ? Brushes.MediumPurple : Brushes.LimeGreen;
 
             // Started but not ready
             if (!status.Ready && status.Started == true)
-                return Brushes.Orange;
+                return isEphemeral ? Brushes.CornflowerBlue : isInit ? Brushes.MediumOrchid : Brushes.Orange;
 
             // Waiting state
             if (status.State?.Waiting != null)
-                return Brushes.Orange;
+                return isEphemeral ? Brushes.OrangeRed : isInit ? Brushes.PaleVioletRed : Brushes.Orange;
+
+            // Running state (container is running but may not be Ready)
+            if (status.State?.Running != null)
+            {
+                // If Ready is true prefer the ready color; otherwise indicate running-but-not-ready
+                if (status.Ready && status.Started == true)
+                    return isEphemeral ? Brushes.DodgerBlue : isInit ? Brushes.MediumPurple : Brushes.LimeGreen;
+
+                return isEphemeral ? Brushes.CornflowerBlue : isInit ? Brushes.MediumOrchid : Brushes.Orange;
+            }
 
             // Terminated state
             var terminated = status.State?.Terminated;
@@ -34,7 +49,7 @@ public class ContainerStatusToBrushConverter : IValueConverter
                 if (terminated.Reason == "Completed")
                     return Brushes.Gray;
 
-                return Brushes.Orange;
+                return isEphemeral ? Brushes.OrangeRed : isInit ? Brushes.PaleVioletRed : Brushes.Orange;
             }
 
             // Fallback

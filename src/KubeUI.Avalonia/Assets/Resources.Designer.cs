@@ -574,6 +574,24 @@ namespace KubeUI.Avalonia.Assets {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Ephemeral Debug Image.
+        /// </summary>
+        public static string ClusterSettingsView_DebugContainerImageLabel {
+            get {
+                return ResourceManager.GetString("ClusterSettingsView_DebugContainerImageLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Image used when starting an ephemeral debug container.
+        /// </summary>
+        public static string ClusterSettingsView_DebugContainerImageTooltip {
+            get {
+                return ResourceManager.GetString("ClusterSettingsView_DebugContainerImageTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Manually specified namespaces.
         /// </summary>
         public static string ClusterSettingsView_ManualNamespacesTooltip {
@@ -2320,6 +2338,15 @@ namespace KubeUI.Avalonia.Assets {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Image: {0}.
+        /// </summary>
+        public static string PodContainerCell_ImageFormat {
+            get {
+                return ResourceManager.GetString("PodContainerCell_ImageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Init-Ready.
         /// </summary>
         public static string PodContainerCell_InitReady {
@@ -2365,6 +2392,15 @@ namespace KubeUI.Avalonia.Assets {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Restarts: {0}.
+        /// </summary>
+        public static string PodContainerCell_RestartsFormat {
+            get {
+                return ResourceManager.GetString("PodContainerCell_RestartsFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Starting.
         /// </summary>
         public static string PodContainerCell_Starting {
@@ -2374,11 +2410,29 @@ namespace KubeUI.Avalonia.Assets {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Status: {0}.
+        /// </summary>
+        public static string PodContainerCell_StatusFormat {
+            get {
+                return ResourceManager.GetString("PodContainerCell_StatusFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Stopped.
         /// </summary>
         public static string PodContainerCell_Stopped {
             get {
                 return ResourceManager.GetString("PodContainerCell_Stopped", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Type: {0}.
+        /// </summary>
+        public static string PodContainerCell_TypeFormat {
+            get {
+                return ResourceManager.GetString("PodContainerCell_TypeFormat", resourceCulture);
             }
         }
         
@@ -3876,6 +3930,33 @@ namespace KubeUI.Avalonia.Assets {
         public static string UpdateView_Title {
             get {
                 return ResourceManager.GetString("UpdateView_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Debug Container.
+        /// </summary>
+        public static string V1PodConfig_DebugContainer {
+            get {
+                return ResourceManager.GetString("V1PodConfig_DebugContainer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Error adding debug container.
+        /// </summary>
+        public static string V1PodConfig_DebugContainer_Error {
+            get {
+                return ResourceManager.GetString("V1PodConfig_DebugContainer_Error", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Pod.
+        /// </summary>
+        public static string V1PodConfig_DebugContainer_Pod {
+            get {
+                return ResourceManager.GetString("V1PodConfig_DebugContainer_Pod", resourceCulture);
             }
         }
         

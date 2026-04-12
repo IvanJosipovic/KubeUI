@@ -523,6 +523,7 @@ internal sealed class CountingClusterRuntime : IClusterRuntime, INotifyPropertyC
     public bool IsResourceNamespaced(Type type) => _inner.IsResourceNamespaced(type);
     public bool IsResourceNamespaced<T>() => _inner.IsResourceNamespaced<T>();
     public PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort) => _inner.AddPodPortForward(@namespace, podName, containerPort);
+    public Task AddPodEphemeralDebugContainer(V1Pod pod, string? targetContainerName, string image) => _inner.AddPodEphemeralDebugContainer(pod, targetContainerName, image);
     public PortForwarder AddServicePortForward(string @namespace, string serviceName, int servicePort) => _inner.AddServicePortForward(@namespace, serviceName, servicePort);
     public void RemovePortForward(PortForwarder pf) => _inner.RemovePortForward(pf);
     public Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.AddOrUpdateResource(item);

@@ -52,6 +52,11 @@
                 </ListBox>
             </StackPanel>
         </Grid>
+
+        <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{x:Static assets:Resources.ClusterSettingsView_DebugContainerImageTooltip}">
+            <Label Grid.Column="0" Content="{x:Static assets:Resources.ClusterSettingsView_DebugContainerImageLabel}" />
+            <TextBox Grid.Column="1" Text="{Binding ClusterSettings.DebugContainerImage, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+        </Grid>
     </StackPanel>
 </UserControl>
 

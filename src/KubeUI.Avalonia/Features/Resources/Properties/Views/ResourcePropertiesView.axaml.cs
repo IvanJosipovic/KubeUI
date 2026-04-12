@@ -112,7 +112,35 @@ public partial class ResourcePropertiesView : UserControl
         }
     }
 
-    private void ClearItems() => PART_Items.Children.Clear();
+    protected virtual void ClearItems()
+    {
+        void action()
+        {
+            try
+            {
+                if (_isDetached)
+                {
+                    return;
+                }
+
+                PART_Items.Children.Clear();
+            }
+            catch
+            {
+                // Swallow any exceptions here to avoid crashing the UI thread during detach/race conditions.
+                // The state will be reconciled on the next valid reload.
+            }
+        }
+
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            action();
+        }
+        else
+        {
+            Dispatcher.UIThread.Post(action, DispatcherPriority.Background);
+        }
+    }
 
     private void ReloadNowOrLater()
     {

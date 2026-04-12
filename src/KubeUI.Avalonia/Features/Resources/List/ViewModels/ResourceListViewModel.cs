@@ -59,8 +59,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
 
     public IReadOnlyList<T?> SelectedItems => ((SelectionModel<T>)SelectionModel).SelectedItems;
 
-    public IEnumerable<MenuItemViewModel> ContextMenuItems => BuildContextMenuItems();
-
     [ObservableProperty]
     public partial string SearchQuery { get; set; }
 
@@ -186,8 +184,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             }
         }
 
-        OnPropertyChanged(nameof(ContextMenuItems));
-
         _sortingAdapterFactory = new DynamicDataSortingAdapterFactory<T>(_resourceColumnsByKey);
         _sortSubject = new(_sortingAdapterFactory.SortComparer);
 
@@ -223,7 +219,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         }
     }
 
-    private IEnumerable<MenuItemViewModel> BuildContextMenuItems()
+    public IEnumerable<MenuItemViewModel> GetContextMenuItems(IEnumerable? selectedItems)
     {
         if (ResourceConfig == null)
         {
@@ -231,9 +227,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         }
 
         var items = new List<MenuItemViewModel>();
-        items.AddRange(ResourceConfig.GetDefaultMenuItems(SelectedItems));
+        items.AddRange(ResourceConfig.GetDefaultMenuItems(selectedItems));
 
-        var custom = ResourceConfig.GetCustomMenuItems(SelectedItems).ToList();
+        var custom = ResourceConfig.GetCustomMenuItems(selectedItems).ToList();
         if (custom.Count > 0)
         {
             items.Add(new MenuItemViewModel
@@ -580,7 +576,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     {
         OnPropertyChanged(nameof(SelectedItem));
         OnPropertyChanged(nameof(SelectedItems));
-        OnPropertyChanged(nameof(ContextMenuItems));
     }
 
     // Runtime DataGrid state captured from ProDataGrid (in-memory snapshot)
