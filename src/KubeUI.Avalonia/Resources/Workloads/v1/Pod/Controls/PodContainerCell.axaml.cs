@@ -116,6 +116,14 @@ public partial class PodContainerCell : UserControl, IInitializeCluster
                     Brush = (IBrush)ContainerStatusToBrushConverter.Instance().Convert(x, typeof(IBrush), null, CultureInfo.InvariantCulture)
                 }));
             }
+            if (pod?.Status?.EphemeralContainerStatuses != null)
+            {
+                coll.AddRange(pod.Status.EphemeralContainerStatuses.Select(x => new ViewModel()
+                {
+                    Name = x.Name,
+                    Brush = (IBrush)ContainerStatusToBrushConverter.Instance().Convert(x, typeof(IBrush), null, CultureInfo.InvariantCulture)
+                }));
+            }
             ContainerStatuses = coll;
         }
     }

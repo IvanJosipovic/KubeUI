@@ -382,6 +382,12 @@ Are you sure?</value>
   <data name="ClusterSettingsView_Remove" xml:space="preserve">
     <value>Remove</value>
   </data>
+  <data name="ClusterSettingsView_DebugContainerImageLabel" xml:space="preserve">
+    <value>Ephemeral Debug Image</value>
+  </data>
+  <data name="ClusterSettingsView_DebugContainerImageTooltip" xml:space="preserve">
+    <value>Image used when starting an ephemeral debug container</value>
+  </data>
   <data name="ClusterView_Cpu" xml:space="preserve">
     <value>CPU</value>
   </data>
@@ -1238,6 +1244,15 @@ Are you sure?</value>
   </data>
   <data name="PodLogsView_Clear" xml:space="preserve">
     <value>Clear Logs</value>
+  </data>
+  <data name="V1PodConfig_DebugContainer" xml:space="preserve">
+    <value>Debug Container</value>
+  </data>
+  <data name="V1PodConfig_DebugContainer_Pod" xml:space="preserve">
+    <value>Pod</value>
+  </data>
+  <data name="V1PodConfig_DebugContainer_Error" xml:space="preserve">
+    <value>Error adding debug container</value>
   </data>
   <data name="DataGridFilterFlyout_Apply" xml:space="preserve">
     <value>Apply</value>
