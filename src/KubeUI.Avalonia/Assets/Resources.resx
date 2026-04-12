@@ -1229,6 +1229,7 @@ Are you sure?</value>
   </data>
   <data name="DataGridFilterFlyout_EndsWith" xml:space="preserve">
     <value>Ends with</value>
+  </data>
   <data name="MainView_Menu_File_ImportAksCluster" xml:space="preserve">
     <value>_Load AKS Cluster</value>
   </data>
