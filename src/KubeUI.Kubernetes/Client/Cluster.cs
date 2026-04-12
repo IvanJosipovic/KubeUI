@@ -87,6 +87,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
     {
         _loggerFactory = loggerFactory;
         _logger = logger;
+        _portForwardSessionFactory = new KubernetesPortForwardSessionFactory(this);
         ModelCache = modelCache;
         _generator = generator;
         _generator.SetEnumSupport(false);
@@ -219,6 +220,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         StopResourceInformers();
         ClearDynamicCustomResourceDefinitions();
         ClearSeededResources();
+        ClearSeedTasks();
 
         if (Client is IDisposable disposableClient)
         {
@@ -988,6 +990,11 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         }
 
         Objects.Clear();
+    }
+
+    private void ClearSeedTasks()
+    {
+        _seedTasks.Clear();
     }
 
     private static void ClearResourceContainer(IClearableResourceContainer container)

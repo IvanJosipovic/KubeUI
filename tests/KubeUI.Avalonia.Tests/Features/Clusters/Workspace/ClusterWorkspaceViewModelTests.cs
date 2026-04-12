@@ -222,6 +222,30 @@ public class ClusterWorkspaceViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task disconnect_allows_resource_types_to_be_seeded_again()
+    {
+        var runtime = new TestCluster();
+        var workspace = CreateWorkspace(runtime);
+
+        await workspace.SeedResource<V1Pod>();
+
+        var initialContainer = GetSeededContainer(runtime, typeof(V1Pod));
+        initialContainer.ShouldNotBeNull();
+        GetInformers(initialContainer).Count.ShouldBe(1);
+
+        await workspace.Disconnect();
+
+        runtime.Objects.ShouldBeEmpty();
+
+        await workspace.SeedResource<V1Pod>();
+
+        var reseededContainer = GetSeededContainer(runtime, typeof(V1Pod));
+        reseededContainer.ShouldNotBeNull();
+        GetInformers(reseededContainer).Count.ShouldBe(1);
+        GetInformerRegistrations(reseededContainer).Count.ShouldBe(1);
+    }
+
+    [AvaloniaFact]
     public async Task disconnect_removes_dynamic_crd_model_cache_entries()
     {
         var runtime = new TestCluster();

@@ -410,6 +410,8 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
 
         Dispatcher.UIThread.RunJobs();
 
+        vm.YamlDocument.Text.ShouldNotContain("updated: \"true\"");
+
         var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
@@ -434,6 +436,8 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
 
         await cluster.AddOrUpdateResource(updatedResource);
         Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text.ShouldContain("updated: \"true\"");
 
         foldingManager = GetFoldingManager(behavior);
         foldingManager.ShouldNotBeNull();

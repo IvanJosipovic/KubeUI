@@ -394,7 +394,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             {
                 ResetOnFirstTimeLoad = true,
                 UseReplaceForUpdates = true,
-                UseBinarySearch = true,
                 InitialCapacity = Objects.Count
             })
             .Subscribe(

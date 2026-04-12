@@ -13,6 +13,7 @@ using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Options;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Shell.Documents.About.ViewModels;
+using KubeUI.Avalonia.Shell.Documents.CloudClusters.Aks.ViewModels;
 using KubeUI.Avalonia.Shell.Documents.Settings.ViewModels;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
@@ -250,6 +251,14 @@ public sealed partial class MainViewModel : ViewModelBase
     private void OpenClusters()
     {
         var vm = _serviceProvider.GetRequiredService<ClusterListViewModel>();
+
+        _factory.AddToDocuments(vm);
+    }
+
+    [RelayCommand]
+    private void ImportAksCluster()
+    {
+        var vm = _serviceProvider.GetRequiredService<ImportAksClusterViewModel>();
 
         _factory.AddToDocuments(vm);
     }

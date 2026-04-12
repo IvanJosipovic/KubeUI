@@ -22,6 +22,7 @@
             VerticalAlignment="Top">
             <MenuItem Header="{x:Static assets:Resources.MainView_Menu_File}">
                 <MenuItem Command="{Binding LoadKubeConfigCommand}" Header="{x:Static assets:Resources.MainView_Menu_File_LoadKubeConfig}" />
+                <MenuItem Command="{Binding ImportAksClusterCommand}" Header="{x:Static assets:Resources.MainView_Menu_File_ImportAksCluster}" />
                 <MenuItem Command="{Binding OpenClustersCommand}" Header="{x:Static assets:Resources.MainView_Menu_File_Clusters}" />
                 <MenuItem Command="{Binding OpenSettingsCommand}" Header="{x:Static assets:Resources.MainView_Menu_File_Settings}" />
                 <Separator />

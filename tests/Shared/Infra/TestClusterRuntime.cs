@@ -353,7 +353,15 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     {
         var pf = new PortForwarder(this, @namespace);
         pf.SetPod(podName, containerPort);
+
+        var existing = FindPortForwarder(pf);
+        if (existing != null)
+        {
+            return existing;
+        }
+
         PortForwarders.Add(pf);
+        pf.Start();
         return pf;
     }
 
@@ -367,13 +375,34 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     {
         var pf = new PortForwarder(this, @namespace);
         pf.SetService(serviceName, servicePort);
+
+        var existing = FindPortForwarder(pf);
+        if (existing != null)
+        {
+            return existing;
+        }
+
         PortForwarders.Add(pf);
+        pf.Start();
         return pf;
     }
 
     public void RemovePortForward(PortForwarder pf)
     {
         PortForwarders.Remove(pf);
+    }
+
+    private PortForwarder? FindPortForwarder(PortForwarder candidate)
+    {
+        foreach (var portForwarder in PortForwarders)
+        {
+            if (portForwarder.Equals(candidate))
+            {
+                return portForwarder;
+            }
+        }
+
+        return null;
     }
 
     public async Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()

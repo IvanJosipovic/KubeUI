@@ -32,8 +32,17 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     public partial ClusterWorkspaceViewModel? Cluster { get; set; }
 
-    [ObservableProperty]
-    public partial IKubernetesObject<V1ObjectMeta>? Object { get; set; }
+    private IKubernetesObject<V1ObjectMeta>? _object;
+
+    public IKubernetesObject<V1ObjectMeta>? Object
+    {
+        get => _object;
+        set
+        {
+            _object = value;
+            OnPropertyChanged();
+        }
+    }
 
     [ObservableProperty]
     public partial TextDocument YamlDocument { get; set; } = new();

@@ -20,6 +20,7 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
     private ISourceCache<Corev1Event, string>? _eventCache;
     private IDisposable? _eventCacheSubscription;
     private ReadOnlyObservableCollection<Corev1Event> _matchedEvents;
+    private bool _isDetached;
 
     private IKubernetesObject<V1ObjectMeta>? _resource;
 
@@ -48,6 +49,7 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
+        _isDetached = false;
         if (!_timer.IsEnabled)
         {
             _timer.Start();
@@ -57,10 +59,13 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
+        _isDetached = true;
         if (_timer.IsEnabled)
         {
             _timer.Stop();
         }
+
+        DisposeEventSubscription();
     }
 
     protected override void OnUnloaded(RoutedEventArgs e)
@@ -92,6 +97,11 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
 
     private void Refresh()
     {
+        if (_isDetached)
+        {
+            return;
+        }
+
         if (_resource == null)
         {
             Clear();

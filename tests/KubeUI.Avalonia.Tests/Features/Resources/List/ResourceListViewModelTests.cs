@@ -99,19 +99,24 @@ public class ResourceListViewModelTests : AvaloniaTestBase
             }
         };
 
-    private static Corev1Event Event(string ns, string name)
-    => new()
+    private static Corev1Event Event(string ns, string name, DateTime? timestamp = null, int? count = null)
     {
-        ApiVersion = Corev1Event.KubeApiVersion,
-        Kind = Corev1Event.KubeKind,
-        Metadata = new V1ObjectMeta
+        var actualTimestamp = timestamp ?? DateTime.UtcNow;
+
+        return new()
         {
-            NamespaceProperty = ns,
-            Name = name,
-            CreationTimestamp = DateTime.UtcNow,
-        },
-        LastTimestamp = DateTime.UtcNow,
-    };
+            ApiVersion = Corev1Event.KubeApiVersion,
+            Kind = Corev1Event.KubeKind,
+            Metadata = new V1ObjectMeta
+            {
+                NamespaceProperty = ns,
+                Name = name,
+                CreationTimestamp = actualTimestamp,
+            },
+            LastTimestamp = actualTimestamp,
+            Count = count,
+        };
+    }
 
     private static V1Namespace NamespaceResource(string name)
         => new()
@@ -422,6 +427,67 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var after = GetFirstRowFirstColumnText(grid, 0, 1);
         after.ShouldNotBeNull();
         after.ShouldContain("test=value");
+    }
+
+    [AvaloniaFact(DisplayName = "Mutable sort updates keep the resource list live")]
+    public async Task mutable_sort_updates_keep_the_resource_list_live()
+    {
+        var window = CreateWindow();
+        var cluster = await CreateClusterAsync();
+
+        var vm = GetRequiredService<ResourceListViewModel<Corev1Event>>();
+        vm.Initialize(cluster);
+
+        var view = GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+
+        window.Content = view;
+        window.Show();
+
+        var baseTimestamp = DateTime.UtcNow.AddHours(-2);
+        for (var i = 0; i < 200; i++)
+        {
+            await AddOrUpdateAsync(cluster, Event("ns", $"seed-{i}", baseTimestamp.AddMinutes(i), i));
+        }
+
+        Dispatcher.UIThread.RunJobs();
+        vm.View.Count.ShouldBe(200);
+        await WaitForAsync(() => vm.ItemCount == 200, 5000);
+
+        var left = Event("ns", "left", baseTimestamp.AddHours(5), 1);
+        var right = Event("ns", "right", baseTimestamp.AddHours(5).AddMinutes(1), 2);
+
+        await AddOrUpdateAsync(cluster, left);
+        await AddOrUpdateAsync(cluster, right);
+        Dispatcher.UIThread.RunJobs();
+
+        vm.View.Count.ShouldBe(202);
+        await WaitForAsync(() => vm.ItemCount == 202, 5000);
+        vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("right");
+
+        for (var i = 0; i < 50; i++)
+        {
+            left.LastTimestamp = baseTimestamp.AddHours(6 + (i * 2));
+            left.Count = i + 10;
+            await AddOrUpdateAsync(cluster, left);
+
+            right.LastTimestamp = baseTimestamp.AddHours(6 + (i * 2) + 1);
+            right.Count = i + 20;
+            await AddOrUpdateAsync(cluster, right);
+
+            Dispatcher.UIThread.RunJobs();
+
+            vm.View.Count.ShouldBe(202);
+            vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("right");
+            vm.View[1].ShouldBeOfType<Corev1Event>().Name().ShouldBe("left");
+        }
+
+        await AddOrUpdateAsync(cluster, Event("ns", "tail", baseTimestamp.AddHours(200), 999));
+        Dispatcher.UIThread.RunJobs();
+
+        vm.View.Count.ShouldBe(203);
+        await WaitForAsync(() => vm.ItemCount == 203, 5000);
+        vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("tail");
     }
 
     [AvaloniaFact(DisplayName = "Resource list columns expose filter buttons")]
