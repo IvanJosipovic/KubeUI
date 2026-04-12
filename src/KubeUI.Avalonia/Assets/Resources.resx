@@ -382,12 +382,6 @@ Are you sure?</value>
   <data name="ClusterSettingsView_Remove" xml:space="preserve">
     <value>Remove</value>
   </data>
-  <data name="ClusterSettingsView_DebugContainerImageLabel" xml:space="preserve">
-    <value>Ephemeral Debug Image</value>
-  </data>
-  <data name="ClusterSettingsView_DebugContainerImageTooltip" xml:space="preserve">
-    <value>Image used when starting an ephemeral debug container</value>
-  </data>
   <data name="ClusterView_Cpu" xml:space="preserve">
     <value>CPU</value>
   </data>
@@ -1190,45 +1184,6 @@ Are you sure?</value>
   </data>
   <data name="MainView_Menu_File_LoadKubeConfig_Open" xml:space="preserve">
     <value>Select Kube Config</value>
-  </data>
-  <data name="PodLogsView_Clear" xml:space="preserve">
-    <value>Clear Logs</value>
-  </data>
-  <data name="V1PodConfig_DebugContainer" xml:space="preserve">
-    <value>Debug Container</value>
-  </data>
-  <data name="V1PodConfig_DebugContainer_Pod" xml:space="preserve">
-    <value>Pod</value>
-  </data>
-  <data name="V1PodConfig_DebugContainer_Error" xml:space="preserve">
-    <value>Error adding debug container</value>
-  </data>
-  <data name="DataGridFilterFlyout_Apply" xml:space="preserve">
-    <value>Apply</value>
-  </data>
-  <data name="DataGridFilterFlyout_Any" xml:space="preserve">
-    <value>Any</value>
-  </data>
-  <data name="DataGridFilterFlyout_And" xml:space="preserve">
-    <value>And</value>
-  </data>
-  <data name="DataGridFilterFlyout_Between" xml:space="preserve">
-    <value>Between</value>
-  </data>
-  <data name="DataGridFilterFlyout_Clear" xml:space="preserve">
-    <value>Clear</value>
-  </data>
-  <data name="DataGridFilterFlyout_Condition" xml:space="preserve">
-    <value>Condition</value>
-  </data>
-  <data name="DataGridFilterFlyout_Contains" xml:space="preserve">
-    <value>Contains</value>
-  </data>
-  <data name="DataGridFilterFlyout_NotContains" xml:space="preserve">
-    <value>Not contains</value>
-  </data>
-  <data name="DataGridFilterFlyout_EndsWith" xml:space="preserve">
-    <value>Ends with</value>
   </data>
   <data name="MainView_Menu_File_ImportAksCluster" xml:space="preserve">
     <value>_Load AKS Cluster</value>
