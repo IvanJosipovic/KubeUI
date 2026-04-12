@@ -9,9 +9,11 @@ using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Avalonia.Options;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Controls;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
+using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -109,6 +111,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         var selectedItem = selectedList[0];
         var initContainers = selectedItem?.Spec?.InitContainers ?? [];
         var containers = selectedItem?.Spec?.Containers ?? [];
+        var ephemeralContainers = selectedItem?.Spec?.EphemeralContainers ?? [];
 
         return [
             new()
@@ -130,6 +133,16 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                     {
                         Header = "Normal",
                         Items = new AvaloniaList<MenuItemViewModel>(containers.Select(c => new MenuItemViewModel()
+                        {
+                            Header = c.Name,
+                            Command = ViewConsoleCommand,
+                            CommandParameter = new ArrayList { selectedItem, c },
+                        }).ToList()),
+                    },
+                    new()
+                    {
+                        Header = "Ephemeral",
+                        Items = new AvaloniaList<MenuItemViewModel>(ephemeralContainers.Select(c => new MenuItemViewModel()
                         {
                             Header = c.Name,
                             Command = ViewConsoleCommand,
@@ -163,6 +176,35 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                             CommandParameter = new ArrayList { selectedItem, c },
                         }).ToList()),
                     },
+                    new()
+                    {
+                        Header = "Ephemeral",
+                        Items = new AvaloniaList<MenuItemViewModel>(ephemeralContainers.Select(c => new MenuItemViewModel()
+                        {
+                            Header = c.Name,
+                            Command = ViewLogsCommand,
+                            CommandParameter = new ArrayList { selectedItem, c },
+                        }).ToList()),
+                    },
+                ]),
+            },
+            new()
+            {
+                Header = Assets.Resources.V1PodConfig_DebugContainer,
+                FluentIcon = Icon.Code,
+                Items = selectedItem == null ? null : new AvaloniaList<MenuItemViewModel>([
+                    new()
+                    {
+                        Header = Assets.Resources.V1PodConfig_DebugContainer_Pod,
+                        Command = DebugContainerCommand,
+                        CommandParameter = new ArrayList { selectedItem },
+                    },
+                    .. containers.Select(c => new MenuItemViewModel()
+                    {
+                        Header = c.Name,
+                        Command = DebugContainerCommand,
+                        CommandParameter = new ArrayList { selectedItem, c.Name },
+                    })
                 ]),
             },
             new()
@@ -187,30 +229,49 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         (Verb.Get, "log"),
         (Verb.Create, "portforward"),
         (Verb.Create, "exec"),
+        (Verb.Update, "ephemeralcontainers"),
     ];
 
     [RelayCommand(CanExecute = nameof(CanViewLogs))]
     private async Task ViewLogs(IList parameters)
     {
-        if (parameters[0] is V1Pod pod && parameters[1] is V1Container container)
+        if (parameters.Count != 2 || parameters[0] is not V1Pod pod)
         {
-            var vm = ServiceProvider.GetRequiredService<PodLogsViewModel>();
-            vm.Cluster = Cluster;
-            vm.Object = pod;
-            vm.ContainerName = container.Name;
-            vm.Id = $"{nameof(ViewLogs)}-{Cluster.Name}-{pod.Namespace()} - {pod.Name()}-{container.Name}";
+            return;
+        }
 
-            if (_factory.AddToBottom(vm))
+        string? containerName = null;
+
+        if (parameters[1] is V1Container container)
+        {
+            containerName = container.Name;
+        }
+        else if (parameters[1] is k8s.Models.V1EphemeralContainer ephemeral)
+        {
+            containerName = ephemeral.Name;
+        }
+
+        if (containerName == null)
+        {
+            return;
+        }
+
+        var vm = ServiceProvider.GetRequiredService<PodLogsViewModel>();
+        vm.Cluster = Cluster;
+        vm.Object = pod;
+        vm.ContainerName = containerName;
+        vm.Id = $"{nameof(ViewLogs)}-{Cluster.Name}-{pod.Namespace()} - {pod.Name()}-{containerName}";
+
+        if (_factory.AddToBottom(vm))
+        {
+            try
             {
-                try
-                {
-                    await vm.Connect();
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error viewing logs");
-                    return;
-                }
+                await vm.Connect();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error viewing logs");
+                return;
             }
         }
     }
@@ -222,7 +283,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             return false;
         }
 
-        if (parameters?[0] is V1Pod pod && parameters?[1] is V1Container container)
+        if (parameters?[0] is V1Pod pod && (parameters?[1] is V1Container || parameters?[1] is k8s.Models.V1EphemeralContainer))
         {
             return Cluster.CanI<V1Pod>(Verb.Get, pod.Namespace(), "log");
         }
@@ -233,16 +294,34 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
     [RelayCommand(CanExecute = nameof(CanViewConsole))]
     private void ViewConsole(IList parameters)
     {
-        if (parameters?[0] is V1Pod pod && parameters?[1] is V1Container container)
+        if (parameters?.Count != 2 || parameters[0] is not V1Pod pod)
         {
-            var vm = ServiceProvider.GetRequiredService<PodConsoleViewModel>();
-            vm.Cluster = Cluster;
-            vm.Object = pod;
-            vm.ContainerName = container.Name;
-            vm.Id = $"{nameof(ViewConsole)}-{Cluster.Name}-{pod.Namespace()}-{pod.Name()}-{container.Name}";
-
-            _factory.AddToBottom(vm);
+            return;
         }
+
+        string? containerName = null;
+
+        if (parameters[1] is V1Container container)
+        {
+            containerName = container.Name;
+        }
+        else if (parameters[1] is k8s.Models.V1EphemeralContainer ephemeral)
+        {
+            containerName = ephemeral.Name;
+        }
+
+        if (containerName == null)
+        {
+            return;
+        }
+
+        var vm = ServiceProvider.GetRequiredService<PodConsoleViewModel>();
+        vm.Cluster = Cluster;
+        vm.Object = pod;
+        vm.ContainerName = containerName;
+        vm.Id = $"{nameof(ViewConsole)}-{Cluster.Name}-{pod.Namespace()}-{pod.Name()}-{containerName}";
+
+        _factory.AddToBottom(vm);
     }
 
     private bool CanViewConsole(IList? parameters)
@@ -252,12 +331,56 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             return false;
         }
 
-        if (parameters?[0] is V1Pod pod && parameters?[1] is V1Container container)
+        if (parameters?[0] is V1Pod pod && (parameters?[1] is V1Container || parameters?[1] is k8s.Models.V1EphemeralContainer))
         {
             return Cluster.CanI<V1Pod>(Verb.Create, pod.Namespace(), "exec");
         }
 
         return false;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanDebugContainer))]
+    private async Task DebugContainer(IList parameters)
+    {
+        if (parameters.Count < 1 || parameters[0] is not V1Pod pod)
+        {
+            return;
+        }
+
+        string? targetContainerName = parameters.Count > 1 ? parameters[1] as string : null;
+        string debugContainerImage = ServiceProvider.GetRequiredService<ISettingsService>()
+            .Settings
+            .GetClusterSettings(Cluster)
+            .DebugContainerImage;
+
+        if (string.IsNullOrWhiteSpace(debugContainerImage))
+        {
+            debugContainerImage = ClusterSettings.DefaultDebugContainerImage;
+        }
+
+        try
+        {
+            await Cluster.AddPodEphemeralDebugContainer(pod, targetContainerName, debugContainerImage);
+        }
+        catch (Exception ex)
+        {
+            Utilities.HandleException(_logger, _notificationManager, ex, Assets.Resources.V1PodConfig_DebugContainer_Error, sendNotification: true);
+        }
+    }
+
+    private bool CanDebugContainer(IList? parameters)
+    {
+        if (parameters?.Count is not (1 or 2))
+        {
+            return false;
+        }
+
+        if (parameters[0] is not V1Pod pod)
+        {
+            return false;
+        }
+
+        return Cluster.CanI<V1Pod>(Verb.Update, pod.Namespace(), "ephemeralcontainers");
     }
 
     [RelayCommand(CanExecute = nameof(CanPortForward))]

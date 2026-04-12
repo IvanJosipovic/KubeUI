@@ -76,6 +76,7 @@ References:
 - https://github.com/AvaloniaUI/Avalonia
 - https://docs.avaloniaui.net/docs/testing/setting-up-the-headless-platform
 
+- For UI bugs, add a failing headless regression test first, verify it reproduces the issue, then make the production change and rerun the same test before doing broader validation.
 - UI tests must use Avalonia Headless and follow the headless testing guidance and helpers for input simulation.
 - Unit-test ViewModels and UI-facing services.
 - UI tests should validate navigation flows, docking, and editor behaviors.

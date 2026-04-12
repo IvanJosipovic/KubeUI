@@ -25,6 +25,10 @@
                         <ToolTip.Tip>
                             <StackPanel>
                                 <TextBlock Text="{Binding Name, StringFormat={x:Static assets:Resources.PodContainerCell_NameFormat}}" />
+                                <TextBlock Text="{Binding Type, StringFormat={x:Static assets:Resources.PodContainerCell_TypeFormat}}" />
+                                <TextBlock Text="{Binding Status, StringFormat={x:Static assets:Resources.PodContainerCell_StatusFormat}}" />
+                                <TextBlock Text="{Binding Restarts, StringFormat={x:Static assets:Resources.PodContainerCell_RestartsFormat}}" />
+                                <TextBlock Text="{Binding Image, StringFormat={x:Static assets:Resources.PodContainerCell_ImageFormat}}" />
                             </StackPanel>
                         </ToolTip.Tip>
                         <Ellipse.Styles>

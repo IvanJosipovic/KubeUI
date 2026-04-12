@@ -50,6 +50,7 @@ Docker
 - All production code must be covered by unit tests; xUnit is required for unit testing.
 - Use integration tests for parsing, IO, and docking layout persistence.
 - Avalonia UI tests and headless UI guidance live in `src/KubeUI.Avalonia/AGENTS.md`.
+- For Avalonia UI bugs, write the failing headless regression test first, confirm the failure reproduces, then implement the fix and rerun the same test before widening scope.
 
 ## 7) Code conventions
 

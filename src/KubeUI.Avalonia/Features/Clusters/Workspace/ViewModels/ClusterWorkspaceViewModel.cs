@@ -314,6 +314,11 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         return Runtime.AddPodPortForward(@namespace, podName, containerPort);
     }
 
+    public Task AddPodEphemeralDebugContainer(V1Pod pod, string? targetContainerName, string image)
+    {
+        return Runtime.AddPodEphemeralDebugContainer(pod, targetContainerName, image);
+    }
+
     public PortForwarder AddServicePortForward(string @namespace, string serviceName, int servicePort)
     {
         return Runtime.AddServicePortForward(@namespace, serviceName, servicePort);
