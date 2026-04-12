@@ -5,10 +5,10 @@
     xmlns:local="using:KubeUI.Avalonia"
     xmlns:semi="https://irihi.tech/semi"
     xmlns:styling="using:FluentAvalonia.Styling"
-    xmlns:u-semi="https://irihi.tech/ursa/themes/semi">
+    xmlns:u-semi="using:Ursa.Themes.Semi">
     <Application.Styles>
         <semi:SemiTheme Locale="en-US" />
-        <u-semi:SemiTheme Locale="en-US" />
+        <u-semi:UrsaSemiTheme Locale="en-US" />
         <styling:FluentAvaloniaTheme />
         <!--
             https://theme.xaml.live/

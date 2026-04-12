@@ -50,8 +50,8 @@
                     VerticalAlignment="Stretch"
                     VerticalContentAlignment="Center"
                     Background="Transparent"
-                    Text="{Binding SearchQuery}"
-                    Watermark="{x:Static assets:Resources.ResourceListView_SearchWatermark}" />
+                    PlaceholderText="{x:Static assets:Resources.ResourceListView_SearchWatermark}"
+                    Text="{Binding SearchQuery}" />
 
                 <u:MultiComboBox
                     Width="200"
@@ -62,8 +62,8 @@
                     Classes="ClearButton"
                     IsVisible="{Binding ResourceConfig.IsNamespaced}"
                     ItemsSource="{Binding Cluster.Namespaces}"
-                    SelectedItems="{Binding SelectedNamespaces}"
-                    Watermark="{x:Static assets:Resources.ResourceListView_SelectNamespace}">
+                    PlaceholderText="{x:Static assets:Resources.ResourceListView_SelectNamespace}"
+                    SelectedItems="{Binding SelectedNamespaces}">
                     <u:MultiComboBox.ItemTemplate>
                         <DataTemplate x:DataType="models:V1Namespace">
                             <TextBlock Text="{Binding Metadata.Name}" />
