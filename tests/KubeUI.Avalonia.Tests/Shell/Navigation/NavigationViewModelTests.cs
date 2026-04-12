@@ -319,7 +319,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         TestApp.LastContentDialogSettings.Title.ShouldBe(Assets.Resources.Cluster_Missing_Namespace_Permission_Title);
         TestApp.LastContentDialogSettings.Content.ShouldBe(Assets.Resources.Cluster_Missing_Namespace_Permission_Content);
         TestApp.LastContentDialogSettings.PrimaryButtonText.ShouldBe(Assets.Resources.Cluster_Missing_Namespace_Permission_Primary);
-        TestApp.LastContentDialogSettings.DefaultButton.ShouldBe(ContentDialogButton.Primary);
+        TestApp.LastContentDialogSettings.DefaultButton.ShouldBe(FAContentDialogButton.Primary);
     }
 
     [AvaloniaFact]

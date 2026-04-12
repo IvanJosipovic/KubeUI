@@ -1,8 +1,8 @@
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
-using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Dialogs;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
@@ -11,7 +11,7 @@ namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 
 public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitializeCluster
 {
-    private readonly IDialogService _dialogService;
+    private readonly IContentDialogService _dialogService;
 
     [ObservableProperty]
     public partial ISettingsService Settings { get; set; }
@@ -22,7 +22,7 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
     [ObservableProperty]
     public partial PortForwarder? SelectedItem { get; set; }
 
-    public PortForwarderListViewModel(ISettingsService settings, IDialogService dialogService)
+    public PortForwarderListViewModel(ISettingsService settings, IContentDialogService dialogService)
     {
         Settings = settings;
         _dialogService = dialogService;
@@ -38,12 +38,12 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
             Content = string.Format(Assets.Resources.PortForwarderListViewModel_Remove_Content, pf.Namespace, pf.Name, pf.Port),
             PrimaryButtonText = Assets.Resources.PortForwarderListViewModel_Remove_Primary,
             SecondaryButtonText = Assets.Resources.PortForwarderListViewModel_Remove_Secondary,
-            DefaultButton = ContentDialogButton.Secondary
+            DefaultButton = FAContentDialogButton.Secondary
         };
 
         var result = await _dialogService.ShowContentDialogAsync(this, settings);
 
-        if (result == ContentDialogResult.Primary)
+        if (result == FAContentDialogResult.Primary)
         {
             Cluster.RemovePortForward(pf);
         }
@@ -57,8 +57,7 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
     [RelayCommand(CanExecute = nameof(CanOpen))]
     private async Task Open(PortForwarder pf)
     {
-        var window = (Window)_dialogService.DialogManager.GetMainWindow()!.RefObj;
-        await window!.Launcher.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
+        await App.TopLevel!.Launcher.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
     }
 
     private bool CanOpen(PortForwarder pf)

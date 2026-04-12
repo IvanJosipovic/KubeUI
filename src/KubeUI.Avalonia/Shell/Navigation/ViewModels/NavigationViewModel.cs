@@ -13,7 +13,6 @@ using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
-using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -26,6 +25,7 @@ using KubeUI.Avalonia.Features.Resources.List.ViewModels;
 using KubeUI.Avalonia.Features.Resources.Visualization.ViewModels;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Dialogs;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
@@ -65,7 +65,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     private readonly ILogger<NavigationViewModel> _logger;
     private readonly INotificationManager _notificationManager;
     private readonly IServiceProvider _serviceProvider;
-    private readonly IDialogService _dialogService;
+    private readonly IContentDialogService _dialogService;
     public new IFactory Factory => _serviceProvider.GetRequiredService<IFactory>();
     private readonly Dictionary<ClusterWorkspaceViewModel, ClusterNavigationNode> _clusterNodes = [];
     private readonly Dictionary<ClusterWorkspaceViewModel, PendingClusterNavigationUpdate> _clusterRebuildDelays = [];
@@ -79,7 +79,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     public NavigationViewModel(
         ILogger<NavigationViewModel> logger,
         INotificationManager notificationManager,
-        IDialogService dialogService,
+        IContentDialogService dialogService,
         ClusterWorkspaceCatalog clusterCatalog,
         IServiceProvider serviceProvider)
     {
@@ -279,7 +279,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             Title = Assets.Resources.Cluster_Missing_Namespace_Permission_Title,
             Content = Assets.Resources.Cluster_Missing_Namespace_Permission_Content,
             PrimaryButtonText = Assets.Resources.Cluster_Missing_Namespace_Permission_Primary,
-            DefaultButton = ContentDialogButton.Primary
+            DefaultButton = FAContentDialogButton.Primary
         };
 
         await _dialogService.ShowContentDialogAsync(this, settings);

@@ -1,10 +1,10 @@
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
-using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Common;
+using KubeUI.Avalonia.Infrastructure.Dialogs;
 using KubeUI.Avalonia.Resources.Workloads.v1.Deployment.Views;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Deployment;

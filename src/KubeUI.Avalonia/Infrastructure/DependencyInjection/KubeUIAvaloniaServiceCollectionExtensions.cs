@@ -1,9 +1,6 @@
 using Avalonia.Controls.Notifications;
 using Avalonia.Threading;
 using Dock.Model.Core;
-using HanumanInstitute.MvvmDialogs;
-using HanumanInstitute.MvvmDialogs.Avalonia;
-using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Infrastructure.Dialogs;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Kubernetes;
@@ -19,7 +16,7 @@ public static class KubeUIAvaloniaServiceCollectionExtensions
     {
         services.AddKubeUIAvaloniaServices();
         services.AddKubeUIKubernetesServices();
-        services.AddKubeUIDialogServices();
+        services.AddKubeUIContentDialogServices();
 
         configureOverrides?.Invoke(services);
 
@@ -28,13 +25,9 @@ public static class KubeUIAvaloniaServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddKubeUIDialogServices(this IServiceCollection services)
+    public static IServiceCollection AddKubeUIContentDialogServices(this IServiceCollection services)
     {
-        services.TryAdd(ServiceDescriptor.Singleton<IDialogFactory, FluentDialogFactory>(_ => (FluentDialogFactory)new DialogFactory().AddFluent()));
-        services.TryAdd(ServiceDescriptor.Singleton<IDialogManager, DialogManager>(x => new MyDialogManager(
-            dialogFactory: x.GetRequiredService<IDialogFactory>(),
-            logger: x.GetRequiredService<ILogger<DialogManager>>())));
-        services.TryAdd(ServiceDescriptor.Singleton<IDialogService, DialogService>(x => new DialogService(x.GetRequiredService<IDialogManager>())));
+        services.TryAddSingleton<IContentDialogService, ContentDialogService>();
 
         services.TryAdd(ServiceDescriptor.Singleton<IFactory>(sp => Dispatcher.UIThread.Invoke(() => (IFactory)new DockFactory(sp, sp.GetRequiredService<ILogger<DockFactory>>()))));
         services.TryAdd(ServiceDescriptor.Singleton<INotificationManager>(_ => Dispatcher.UIThread.Invoke(() => (INotificationManager)new WindowNotificationManager(App.TopLevel) { MaxItems = 4 })));

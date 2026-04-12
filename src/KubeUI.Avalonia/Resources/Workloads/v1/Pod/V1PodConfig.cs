@@ -3,11 +3,11 @@ using Avalonia.Controls;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
-using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Dialogs;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Options;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Controls;
@@ -396,15 +396,14 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 Content = string.Format(Assets.Resources.ResourceListViewModel_PortForward_Content, containerPort.ContainerPort, pf.LocalPort),
                 PrimaryButtonText = Assets.Resources.ResourceListViewModel_PortForward_Primary,
                 SecondaryButtonText = Assets.Resources.ResourceListViewModel_PortForward_Secondary,
-                DefaultButton = ContentDialogButton.Secondary
+                DefaultButton = FAContentDialogButton.Secondary
             };
 
             var result = await _dialogService.ShowContentDialogAsync(this, settings);
 
-            if (result == ContentDialogResult.Primary)
+            if (result == FAContentDialogResult.Primary)
             {
-                var window = (Window)_dialogService.DialogManager.GetMainWindow()!.RefObj;
-                await window!.Launcher.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
+                await App.TopLevel!.Launcher.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
             }
         }
     }

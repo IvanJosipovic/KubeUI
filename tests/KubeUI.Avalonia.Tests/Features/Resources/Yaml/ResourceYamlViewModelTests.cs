@@ -1136,10 +1136,10 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         vm.HasActionFailureResult.ShouldBeTrue();
         vm.ActionResultTitle.ShouldBe("Validation failed");
         vm.ActionResultMessage.ShouldContain("expected");
-        var actionBar = view.FindControl<InfoBar>("ActionResultBar");
+        var actionBar = view.FindControl<FAInfoBar>("ActionResultBar");
         actionBar.ShouldNotBeNull();
         actionBar.IsOpen.ShouldBeTrue();
-        actionBar.Severity.ShouldBe(InfoBarSeverity.Error);
+        actionBar.Severity.ShouldBe(FAInfoBarSeverity.Error);
     }
 
     [AvaloniaFact]
@@ -1275,10 +1275,10 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         vm.ActionResultTitle.ShouldBe("Save failed");
         vm.ActionResultMessage.ShouldContain("line");
         vm.ActionResultMessage.ShouldContain("column");
-        var actionBar = view.FindControl<InfoBar>("ActionResultBar");
+        var actionBar = view.FindControl<FAInfoBar>("ActionResultBar");
         actionBar.ShouldNotBeNull();
         actionBar.IsOpen.ShouldBeTrue();
-        actionBar.Severity.ShouldBe(InfoBarSeverity.Error);
+        actionBar.Severity.ShouldBe(FAInfoBarSeverity.Error);
         TestApp.LastNotification.ShouldBeNull();
     }
 
@@ -1404,10 +1404,10 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         vm.HasActionSuccessResult.ShouldBeTrue();
         vm.ActionResultTitle.ShouldBe("Dry run succeeded");
         vm.ActionResultMessage.ShouldBe("The server accepted the manifest using dry-run.");
-        var actionBar = view.FindControl<InfoBar>("ActionResultBar");
+        var actionBar = view.FindControl<FAInfoBar>("ActionResultBar");
         actionBar.ShouldNotBeNull();
         actionBar.IsOpen.ShouldBeTrue();
-        actionBar.Severity.ShouldBe(InfoBarSeverity.Success);
+        actionBar.Severity.ShouldBe(FAInfoBarSeverity.Success);
     }
 
     [AvaloniaFact]
@@ -1460,10 +1460,10 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         vm.HasActionFailureResult.ShouldBeTrue();
         vm.ActionResultTitle.ShouldBe("Dry run failed");
         vm.ActionResultMessage.ShouldBe("Server-side validation failed.");
-        var actionBar = view.FindControl<InfoBar>("ActionResultBar");
+        var actionBar = view.FindControl<FAInfoBar>("ActionResultBar");
         actionBar.ShouldNotBeNull();
         actionBar.IsOpen.ShouldBeTrue();
-        actionBar.Severity.ShouldBe(InfoBarSeverity.Error);
+        actionBar.Severity.ShouldBe(FAInfoBarSeverity.Error);
     }
 
     [AvaloniaFact]
@@ -1513,7 +1513,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
 
         vm.HasActionResult.ShouldBeTrue();
         vm.ActionResultTitle.ShouldBe("Dry run succeeded");
-        var actionBar = view.FindControl<InfoBar>("ActionResultBar");
+        var actionBar = view.FindControl<FAInfoBar>("ActionResultBar");
         actionBar.ShouldNotBeNull();
         actionBar.IsOpen.ShouldBeTrue();
         actionBar.IsVisible.ShouldBeTrue();
@@ -1561,7 +1561,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
 
         vm.HasActionSuccessResult.ShouldBeTrue();
         vm.DismissActionResultCommand.CanExecute(null).ShouldBeTrue();
-        var actionBar = view.FindControl<InfoBar>("ActionResultBar");
+        var actionBar = view.FindControl<FAInfoBar>("ActionResultBar");
         actionBar.ShouldNotBeNull();
         actionBar.IsOpen.ShouldBeTrue();
         actionBar.IsClosable.ShouldBeTrue();
@@ -1582,7 +1582,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         var view = ResolveService<ResourceYamlView>();
         view.DataContext = vm;
 
-        var actionBar = view.FindControl<InfoBar>("ActionResultBar");
+        var actionBar = view.FindControl<FAInfoBar>("ActionResultBar");
         actionBar.ShouldNotBeNull();
         actionBar.IsOpen.ShouldBeFalse();
         actionBar.IsVisible.ShouldBeFalse();

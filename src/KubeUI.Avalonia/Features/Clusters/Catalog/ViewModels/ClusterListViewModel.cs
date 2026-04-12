@@ -1,9 +1,9 @@
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
-using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Dialogs;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
@@ -13,7 +13,7 @@ namespace KubeUI.Avalonia.Features.Clusters.Catalog.ViewModels;
 
 public sealed partial class ClusterListViewModel : ViewModelBase
 {
-    private readonly IDialogService _dialogService;
+    private readonly IContentDialogService _dialogService;
 
     [ObservableProperty]
     public partial ClusterWorkspaceCatalog ClusterCatalog { get; set; }
@@ -25,7 +25,7 @@ public sealed partial class ClusterListViewModel : ViewModelBase
         IServiceProvider serviceProvider,
         ClusterWorkspaceCatalog clusterCatalog,
         ISettingsService settings,
-        IDialogService dialogService)
+        IContentDialogService dialogService)
     {
         ClusterCatalog = clusterCatalog;
         Settings = settings;
@@ -47,12 +47,12 @@ public sealed partial class ClusterListViewModel : ViewModelBase
             Content = string.Format(Assets.Resources.ClusterListViewModel_Delete_Content, cluster.Name),
             PrimaryButtonText = Assets.Resources.ClusterListViewModel_Delete_Primary,
             SecondaryButtonText = Assets.Resources.ClusterListViewModel_Delete_Secondary,
-            DefaultButton = ContentDialogButton.Secondary
+            DefaultButton = FAContentDialogButton.Secondary
         };
 
         var result = await _dialogService.ShowContentDialogAsync(this, settings);
 
-        if (result == ContentDialogResult.Primary)
+        if (result == FAContentDialogResult.Primary)
         {
             ClusterCatalog.RemoveCluster(cluster);
         }

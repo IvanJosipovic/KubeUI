@@ -3,11 +3,11 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
-using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Features.Clusters.Catalog.ViewModels;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Dialogs;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Options;
@@ -34,7 +34,7 @@ public sealed partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     public partial ClusterWorkspaceCatalog ClusterCatalog { get; set; }
 
-    private readonly IDialogService _dialogService;
+    private readonly IContentDialogService _dialogService;
 
     public MainViewModel(
         IServiceProvider serviceProvider,
@@ -42,7 +42,7 @@ public sealed partial class MainViewModel : ViewModelBase
         IFactory factory,
         ISettingsService settingsService,
         ClusterWorkspaceCatalog clusterCatalog,
-        IDialogService dialogService)
+        IContentDialogService dialogService)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
@@ -328,12 +328,12 @@ public sealed partial class MainViewModel : ViewModelBase
                     Content = Assets.Resources.MainViewModel_CheckForUpdates_Content + "\n\n" + Markdig.Markdown.ToPlainText(update.TargetFullRelease.NotesMarkdown),
                     PrimaryButtonText = Assets.Resources.MainViewModel_CheckForUpdates_Primary,
                     SecondaryButtonText = Assets.Resources.MainViewModel_CheckForUpdates_Secondary,
-                    DefaultButton = ContentDialogButton.Secondary
+                    DefaultButton = FAContentDialogButton.Secondary
                 };
 
                 var result = await _dialogService.ShowContentDialogAsync(this, settings).ConfigureAwait(true);
 
-                if (result == ContentDialogResult.Primary)
+                if (result == FAContentDialogResult.Primary)
                 {
                     ContentDialogSettings updatePrompt = new()
                     {

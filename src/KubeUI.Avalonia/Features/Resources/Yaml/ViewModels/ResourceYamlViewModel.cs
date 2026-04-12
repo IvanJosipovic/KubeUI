@@ -87,7 +87,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
     public bool HasActionFailureResult => HasActionResult && !ActionResultSuccess;
 
-    public InfoBarSeverity ActionResultSeverity => ActionResultSuccess ? InfoBarSeverity.Success : InfoBarSeverity.Error;
+    public FAInfoBarSeverity ActionResultSeverity => ActionResultSuccess ? FAInfoBarSeverity.Success : FAInfoBarSeverity.Error;
 
     public ResourceYamlViewModel(
         ILogger<ResourceYamlViewModel> logger,

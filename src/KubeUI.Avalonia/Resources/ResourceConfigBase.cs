@@ -7,7 +7,6 @@ using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
-using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using Humanizer;
 using k8s;
 using k8s.Models;
@@ -18,6 +17,7 @@ using KubeUI.Avalonia.Features.Resources.List.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
 using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
 using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Dialogs;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,7 +28,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 {
     protected IServiceProvider ServiceProvider { get; }
     protected readonly ILogger<ResourceConfigBase<T>> _logger;
-    protected readonly IDialogService _dialogService;
+    protected readonly IContentDialogService _dialogService;
     protected readonly INotificationManager _notificationManager;
     protected readonly IFactory _factory;
 
@@ -36,7 +36,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     {
         ServiceProvider = serviceProvider;
         _logger = serviceProvider.GetRequiredService<ILogger<ResourceConfigBase<T>>>();
-        _dialogService = serviceProvider.GetRequiredService<IDialogService>();
+        _dialogService = serviceProvider.GetRequiredService<IContentDialogService>();
         _factory = serviceProvider.GetRequiredService<IFactory>();
         _notificationManager = serviceProvider.GetRequiredService<INotificationManager>();
     }
@@ -282,12 +282,12 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             Content = string.Format(Assets.Resources.ResourceListViewModel_Delete_Content, items.Count),
             PrimaryButtonText = Assets.Resources.ResourceListViewModel_Delete_Primary,
             SecondaryButtonText = Assets.Resources.ResourceListViewModel_Delete_Secondary,
-            DefaultButton = ContentDialogButton.Secondary
+            DefaultButton = FAContentDialogButton.Secondary
         };
 
         var result = await _dialogService.ShowContentDialogAsync(this, settings);
 
-        if (result == ContentDialogResult.Primary)
+        if (result == FAContentDialogResult.Primary)
         {
             var exceptions = new List<Exception>();
 
@@ -372,7 +372,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             Content = string.Format(Assets.Resources.ResourceListViewModel_Restart_Content, items.Count),
             PrimaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Primary,
             SecondaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Secondary,
-            DefaultButton = ContentDialogButton.Secondary
+            DefaultButton = FAContentDialogButton.Secondary
         };
 
         var result = await _dialogService.ShowContentDialogAsync(this, settings);
@@ -391,7 +391,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
                 }
                 """;
 
-        if (result == ContentDialogResult.Primary)
+        if (result == FAContentDialogResult.Primary)
         {
             var exceptions = new List<Exception>();
 
