@@ -1312,51 +1312,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private bool CanListAndWatchResource(ClusterWorkspaceViewModel cluster, IResourceConfig resourceConfig)
     {
-        if (!resourceConfig.PermissionsLoaded)
-        {
-            return false;
-        }
-
-        if (resourceConfig.CanListAndWatch)
-        {
-            if (!resourceConfig.IsNamespaced)
-            {
-                return true;
-            }
-
-            if (cluster.CanI(resourceConfig.Type, Verb.List)
-                && cluster.CanI(resourceConfig.Type, Verb.Watch))
-            {
-                return true;
-            }
-
-            if (cluster.Namespaces.Count > 0)
-            {
-                return true;
-            }
-        }
-
-        if (!resourceConfig.IsNamespaced)
-        {
-            return false;
-        }
-
-        foreach (var @namespace in cluster.Namespaces)
-        {
-            var namespaceName = @namespace.Name();
-            if (string.IsNullOrWhiteSpace(namespaceName))
-            {
-                continue;
-            }
-
-            if (cluster.CanI(resourceConfig.Type, Verb.List, namespaceName)
-                && cluster.CanI(resourceConfig.Type, Verb.Watch, namespaceName))
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return resourceConfig.PermissionsLoaded && resourceConfig.CanListAndWatch;
     }
 
     private static NavigationLink CreateNavigationLink(ClusterWorkspaceViewModel cluster, string id, string name, int order)
@@ -1633,6 +1589,5 @@ internal sealed class PendingClusterNavigationUpdate
         }
     }
 }
-
 
 

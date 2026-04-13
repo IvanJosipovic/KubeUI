@@ -3,6 +3,7 @@ using Avalonia.Headless.XUnit;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Resources;
+using KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Tests.Infra;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
@@ -19,26 +20,7 @@ public class V1CustomResourceDefinitionConfigTests : AvaloniaTestBase
         var config = ActivatorUtilities.CreateInstance<V1CustomResourceDefinitionConfig>(services);
         config.Initialize(cluster);
 
-        var crd = new V1CustomResourceDefinition
-        {
-            Spec = new V1CustomResourceDefinitionSpec
-            {
-                Group = "example.com",
-                Names = new V1CustomResourceDefinitionNames
-                {
-                    Kind = "Example",
-                },
-                Versions =
-                [
-                    new V1CustomResourceDefinitionVersion
-                    {
-                        Name = "v1",
-                        Storage = true,
-                        Served = true,
-                    }
-                ]
-            }
-        };
+        var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("example.com", "examples", "someString");
 
         Should.NotThrow(() =>
         {

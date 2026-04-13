@@ -122,8 +122,7 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
             return false;
         }
 
-        return Cluster.CanIAnyNamespace(type, Verb.List) && Cluster.CanIAnyNamespace(type, Verb.Watch);
+        var resourceConfig = Cluster.GetResourceConfigs().FirstOrDefault(config => config.Type == type);
+        return resourceConfig?.PermissionsLoaded == true && resourceConfig.CanListAndWatch;
     }
 }
-
-
