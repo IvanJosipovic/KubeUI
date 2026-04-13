@@ -5,6 +5,7 @@
     xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
     xmlns:assets="clr-namespace:KubeUI.Avalonia.Assets;assembly=KubeUI.Avalonia"
     xmlns:behaviors="using:KubeUI.Avalonia.Features.Resources.Yaml.Behaviors"
+    xmlns:controls="using:KubeUI.Avalonia.Features.Resources.Yaml.Controls"
     xmlns:converters="using:KubeUI.Avalonia.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:fa="using:FluentAvalonia.UI.Controls"
@@ -75,7 +76,7 @@
             Severity="{Binding ActionResultSeverity}" />
 
         <!--  YAML editor  -->
-        <ae:TextEditor Name="Editor" Grid.Row="2"
+        <controls:YamlTextEditor Name="Editor" Grid.Row="2"
             Background="{DynamicResource SystemAltHighColor}"
             FontFamily="Cascadia Mono"
             FontSize="{Binding Settings.Appearance.ConsoleFontSize}"
@@ -85,7 +86,7 @@
             ShowLineNumbers="True"
             VerticalScrollBarVisibility="Visible"
             WordWrap="{Binding WordWrap}">
-            <ae:TextEditor.Options>
+            <controls:YamlTextEditor.Options>
                 <ae:TextEditorOptions
                     AllowScrollBelowDocument="False"
                     ConvertTabsToSpaces="True"
@@ -94,16 +95,16 @@
                     HighlightCurrentLine="True"
                     IndentationSize="2"
                     ShowBoxForControlCharacters="False" />
-            </ae:TextEditor.Options>
+            </controls:YamlTextEditor.Options>
             <Interaction.Behaviors>
                 <behaviors:YamlEditorBehavior />
                 <behaviors:YamlEditorScrollBehavior />
             </Interaction.Behaviors>
-            <ae:TextEditor.KeyBindings>
+            <controls:YamlTextEditor.KeyBindings>
                 <KeyBinding Command="{Binding RequestCompletionCommand}" Gesture="Ctrl+Space" />
                 <KeyBinding Command="{Binding UndoCommand}" Gesture="Ctrl+Z" />
-            </ae:TextEditor.KeyBindings>
-            <ae:TextEditor.ContextMenu>
+            </controls:YamlTextEditor.KeyBindings>
+            <controls:YamlTextEditor.ContextMenu>
                 <ContextMenu>
                     <MenuItem
                         Header="{x:Static assets:Resources.Action_Cut}"
@@ -184,7 +185,7 @@
                         </MenuItem.Icon>
                     </MenuItem>
                 </ContextMenu>
-            </ae:TextEditor.ContextMenu>
-        </ae:TextEditor>
+            </controls:YamlTextEditor.ContextMenu>
+        </controls:YamlTextEditor>
     </Grid>
 </UserControl>

@@ -493,6 +493,70 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public void ResourceYamlView_ShowsDocumentationPopupOnHoverOverFieldName()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            spec: value
+            metadata:
+              name: test
+              namespace: default
+            """.ReplaceLineEndings("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<global::KubeUI.Avalonia.Features.Resources.Yaml.Controls.YamlTextEditor>("Editor");
+        editor.ShouldNotBeNull();
+
+        var invokeHover = typeof(global::KubeUI.Avalonia.Features.Resources.Yaml.Controls.YamlTextEditor).GetMethod("TryShowHoverTooltipAtOffset", BindingFlags.Instance | BindingFlags.NonPublic);
+        invokeHover.ShouldNotBeNull();
+
+        var fieldNameOffset = editor.Document!.Text.IndexOf("spec", StringComparison.Ordinal) + 1;
+        var shown = (bool)invokeHover.Invoke(editor, [fieldNameOffset])!;
+        shown.ShouldBeTrue();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var popup = GetDocumentationWindow(editor);
+        popup.ShouldNotBeNull();
+        popup!.ShouldBeOfType<StackPanel>();
+        ToolTip.GetIsOpen(editor).ShouldBeTrue();
+
+        var panel = (StackPanel)popup;
+        var title = panel.Children.OfType<TextBlock>().FirstOrDefault();
+        title.ShouldNotBeNull();
+        title!.Text.ShouldBe("spec");
+
+        var valueOffset = editor.Document!.Text.IndexOf("value", StringComparison.Ordinal) + 1;
+        shown = (bool)invokeHover.Invoke(editor, [valueOffset])!;
+        shown.ShouldBeFalse();
+
+        Dispatcher.UIThread.RunJobs();
+
+        ToolTip.GetIsOpen(editor).ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
     public async Task ResourceYamlView_DoesNotShowCompletion_WhenEnterCreatesNewLine()
     {
         var window = CreateWindow(width: 800, height: 600);
@@ -1833,6 +1897,11 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         return field?.GetValue(behavior) as CompletionWindow;
     }
 
+    private static object? GetDocumentationWindow(global::KubeUI.Avalonia.Features.Resources.Yaml.Controls.YamlTextEditor editor)
+    {
+        return global::Avalonia.Controls.ToolTip.GetTip(editor);
+    }
+
     private static IReadOnlyList<string> GetDiagnosticMessages(YamlEditorBehavior behavior)
     {
         var field = typeof(YamlEditorBehavior).GetField("_diagnosticRenderer", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -1912,4 +1981,3 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         predicate().ShouldBeTrue();
     }
 }
-
