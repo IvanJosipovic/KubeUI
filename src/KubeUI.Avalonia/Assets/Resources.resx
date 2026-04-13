@@ -475,6 +475,9 @@ Are you sure?</value>
   <data name="PodPropertiesView_InitContainers" xml:space="preserve">
     <value>Init Containers</value>
   </data>
+  <data name="PodPropertiesView_EphemeralContainers" xml:space="preserve">
+    <value>Ephemeral Containers</value>
+  </data>
   <data name="PodPropertiesView_Containers" xml:space="preserve">
     <value>Containers</value>
   </data>
