@@ -3,6 +3,7 @@ using Avalonia.Headless.XUnit;
 using FluentAvalonia.UI.Controls;
 using k8s;
 using k8s.Models;
+using KubeUI.Avalonia.Assets;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Avalonia.Tests.Infra;
@@ -48,8 +49,88 @@ public sealed class PodAttachTests : AvaloniaTestBase
         attachMenu.Items.ShouldNotBeNull();
 
         List<MenuItemViewModel> attachGroups = attachMenu.Items.Cast<MenuItemViewModel>().ToList();
+        attachGroups.Select(x => x.Header).ShouldContain("Init");
         attachGroups.Select(x => x.Header).ShouldContain("Normal");
         attachGroups.Select(x => x.Header).ShouldContain("Ephemeral");
+    }
+
+    [AvaloniaFact]
+    public void pod_config_exposes_init_ephemeral_groups_for_debug_and_port_forwarding()
+    {
+        var config = TestApp.CurrentServices!.GetRequiredService<V1PodConfig>();
+
+        var pod = new V1Pod
+        {
+            Spec = new V1PodSpec
+            {
+                InitContainers =
+                [
+                    new V1Container
+                    {
+                        Name = "init",
+                        Ports =
+                        [
+                            new V1ContainerPort
+                            {
+                                Name = "metrics",
+                                ContainerPort = 9000,
+                                Protocol = "TCP",
+                            }
+                        ],
+                    }
+                ],
+                Containers =
+                [
+                    new V1Container
+                    {
+                        Name = "app",
+                        Ports =
+                        [
+                            new V1ContainerPort
+                            {
+                                Name = "http",
+                                ContainerPort = 8080,
+                                Protocol = "TCP",
+                            }
+                        ],
+                    }
+                ],
+                EphemeralContainers =
+                [
+                    new V1EphemeralContainer
+                    {
+                        Name = "debug",
+                        Ports =
+                        [
+                            new V1ContainerPort
+                            {
+                                Name = "probe",
+                                ContainerPort = 7777,
+                                Protocol = "TCP",
+                            }
+                        ],
+                    }
+                ]
+            }
+        };
+
+        List<MenuItemViewModel> items = config.GetCustomMenuItems(new[] { pod }).ToList();
+
+        MenuItemViewModel debugMenu = items.Single(x => x.Header == Assets.Resources.V1PodConfig_DebugContainer);
+        List<MenuItemViewModel> debugGroups = debugMenu.Items!.Cast<MenuItemViewModel>().ToList();
+        debugGroups.Select(x => x.Header).ShouldContain("Init");
+        debugGroups.Select(x => x.Header).ShouldContain("Normal");
+        debugGroups.Select(x => x.Header).ShouldContain("Ephemeral");
+
+        MenuItemViewModel portForwardMenu = items.Single(x => x.Header == "Port Forwarding");
+        List<MenuItemViewModel> portForwardGroups = portForwardMenu.Items!.Cast<MenuItemViewModel>().ToList();
+        portForwardGroups.Select(x => x.Header).ShouldContain("Init");
+        portForwardGroups.Select(x => x.Header).ShouldContain("Normal");
+        portForwardGroups.Select(x => x.Header).ShouldContain("Ephemeral");
+
+        portForwardGroups.Single(x => x.Header == "Init").Items!.Cast<MenuItemViewModel>().Select(x => x.Header).ShouldContain("metrics - 9000");
+        portForwardGroups.Single(x => x.Header == "Normal").Items!.Cast<MenuItemViewModel>().Select(x => x.Header).ShouldContain("http - 8080");
+        portForwardGroups.Single(x => x.Header == "Ephemeral").Items!.Cast<MenuItemViewModel>().Select(x => x.Header).ShouldContain("probe - 7777");
     }
 
     [AvaloniaFact]
