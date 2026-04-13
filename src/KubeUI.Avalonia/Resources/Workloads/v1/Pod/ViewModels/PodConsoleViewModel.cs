@@ -39,6 +39,9 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
     public partial string ContainerName { get; set; }
 
     [ObservableProperty]
+    internal partial bool UseAttach { get; set; }
+
+    [ObservableProperty]
     public partial double Width { get; set; }
 
     [ObservableProperty]
@@ -63,14 +66,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        var command = new string[]
-        {
-            "sh",
-            "-c",
-            "clear; (bash || ash || sh || echo 'No Shell Found!')",
-        };
-
-        _webSocket = await Cluster.Client.WebSocketNamespacedPodExecAsync(Object.Name(), Object.Namespace(), command, ContainerName);
+        _webSocket = await OpenConnectionAsync().ConfigureAwait(false);
 
         _streamDemuxer = new StreamDemuxer(_webSocket);
         _streamDemuxer.Start();
@@ -100,6 +96,30 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
                 catch (Exception) { break; }
             }
         });
+    }
+
+    internal Task<WebSocket> OpenConnectionAsync()
+    {
+        if (UseAttach)
+        {
+            return Cluster.Client!.WebSocketNamespacedPodAttachAsync(
+                Object.Name(),
+                Object.Namespace(),
+                ContainerName,
+                stderr: true,
+                stdin: true,
+                stdout: true,
+                tty: true);
+        }
+
+        string[] command =
+        [
+            "sh",
+            "-c",
+            "clear; (bash || ash || sh || echo 'No Shell Found!')",
+        ];
+
+        return Cluster.Client!.WebSocketNamespacedPodExecAsync(Object.Name(), Object.Namespace(), command, ContainerName);
     }
 
     public void Input(byte[] input)
