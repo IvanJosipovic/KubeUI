@@ -1303,7 +1303,11 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var portForwardMenu = vm.GetContextMenuItems(vm.SelectionModel.SelectedItems).FirstOrDefault(x => x.Header == "Port Forwarding");
         portForwardMenu.ShouldNotBeNull();
 
-        var containers = portForwardMenu!.Items?.ToList();
+        var groups = portForwardMenu!.Items?.ToList();
+        groups.Count.ShouldBe(3);
+
+        var normalGroup = groups.Single(x => x.Header == "Normal");
+        var containers = normalGroup.Items?.ToList();
         containers.Count.ShouldBe(1);
         containers[0].Header.ShouldBe("d-container");
     }
@@ -2070,4 +2074,3 @@ internal sealed class FakeContextMenuResourceListViewModel : IResourceListViewMo
     public IDataGridSearchAdapterFactory SearchAdapterFactory => throw new NotImplementedException();
     public global::Avalonia.Controls.DataGridState? DataGridRuntimeState { get; set; }
 }
-

@@ -128,9 +128,14 @@ public sealed class PodAttachTests : AvaloniaTestBase
         portForwardGroups.Select(x => x.Header).ShouldContain("Normal");
         portForwardGroups.Select(x => x.Header).ShouldContain("Ephemeral");
 
-        portForwardGroups.Single(x => x.Header == "Init").Items!.Cast<MenuItemViewModel>().Select(x => x.Header).ShouldContain("metrics - 9000");
-        portForwardGroups.Single(x => x.Header == "Normal").Items!.Cast<MenuItemViewModel>().Select(x => x.Header).ShouldContain("http - 8080");
-        portForwardGroups.Single(x => x.Header == "Ephemeral").Items!.Cast<MenuItemViewModel>().Select(x => x.Header).ShouldContain("probe - 7777");
+        var initContainer = portForwardGroups.Single(x => x.Header == "Init").Items!.Cast<MenuItemViewModel>().Single(x => x.Header == "init");
+        initContainer.Items!.Cast<MenuItemViewModel>().Select(x => x.Header).ShouldContain("metrics - 9000");
+
+        var normalContainer = portForwardGroups.Single(x => x.Header == "Normal").Items!.Cast<MenuItemViewModel>().Single(x => x.Header == "app");
+        normalContainer.Items!.Cast<MenuItemViewModel>().Select(x => x.Header).ShouldContain("http - 8080");
+
+        var ephemeralContainer = portForwardGroups.Single(x => x.Header == "Ephemeral").Items!.Cast<MenuItemViewModel>().Single(x => x.Header == "debug");
+        ephemeralContainer.Items!.Cast<MenuItemViewModel>().Select(x => x.Header).ShouldContain("probe - 7777");
     }
 
     [AvaloniaFact]
