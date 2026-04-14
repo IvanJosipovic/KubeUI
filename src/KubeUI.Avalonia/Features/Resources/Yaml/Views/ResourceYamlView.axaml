@@ -5,7 +5,6 @@
     xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
     xmlns:assets="clr-namespace:KubeUI.Avalonia.Assets;assembly=KubeUI.Avalonia"
     xmlns:behaviors="using:KubeUI.Avalonia.Features.Resources.Yaml.Behaviors"
-    xmlns:controls="using:KubeUI.Avalonia.Features.Resources.Yaml.Controls"
     xmlns:converters="using:KubeUI.Avalonia.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:fa="using:FluentAvalonia.UI.Controls"
@@ -76,7 +75,7 @@
             Severity="{Binding ActionResultSeverity}" />
 
         <!--  YAML editor  -->
-        <controls:YamlTextEditor Name="Editor" Grid.Row="2"
+        <ae:TextEditor Name="Editor" Grid.Row="2"
             Background="{DynamicResource SystemAltHighColor}"
             FontFamily="Cascadia Mono"
             FontSize="{Binding Settings.Appearance.ConsoleFontSize}"
@@ -86,7 +85,7 @@
             ShowLineNumbers="True"
             VerticalScrollBarVisibility="Visible"
             WordWrap="{Binding WordWrap}">
-            <controls:YamlTextEditor.Options>
+            <ae:TextEditor.Options>
                 <ae:TextEditorOptions
                     AllowScrollBelowDocument="False"
                     ConvertTabsToSpaces="True"
@@ -95,16 +94,18 @@
                     HighlightCurrentLine="True"
                     IndentationSize="2"
                     ShowBoxForControlCharacters="False" />
-            </controls:YamlTextEditor.Options>
+            </ae:TextEditor.Options>
             <Interaction.Behaviors>
                 <behaviors:YamlEditorBehavior />
+                <behaviors:YamlDiagnosticRenderingBehavior />
+                <behaviors:YamlHoverToolTipBehavior />
                 <behaviors:YamlEditorScrollBehavior />
             </Interaction.Behaviors>
-            <controls:YamlTextEditor.KeyBindings>
+            <ae:TextEditor.KeyBindings>
                 <KeyBinding Command="{Binding RequestCompletionCommand}" Gesture="Ctrl+Space" />
                 <KeyBinding Command="{Binding UndoCommand}" Gesture="Ctrl+Z" />
-            </controls:YamlTextEditor.KeyBindings>
-            <controls:YamlTextEditor.ContextMenu>
+            </ae:TextEditor.KeyBindings>
+            <ae:TextEditor.ContextMenu>
                 <ContextMenu>
                     <MenuItem
                         Header="{x:Static assets:Resources.Action_Cut}"
@@ -185,7 +186,7 @@
                         </MenuItem.Icon>
                     </MenuItem>
                 </ContextMenu>
-            </controls:YamlTextEditor.ContextMenu>
-        </controls:YamlTextEditor>
+            </ae:TextEditor.ContextMenu>
+        </ae:TextEditor>
     </Grid>
 </UserControl>

@@ -50,7 +50,7 @@ internal static class YamlSchemaContext
         {
             if (!TryCreateImplicitKeyContext(document, location.Line, lineText, frame, containerType, modelCache, out var implicitContext))
             {
-                return new YamlContextResult(containerType, null, null, currentIndent, currentIndent, string.Empty, []);
+                return new YamlContextResult(containerType, null, null, YamlKeyContext.Empty(lineOffset + currentIndent), []);
             }
 
             return implicitContext;
@@ -64,9 +64,7 @@ internal static class YamlSchemaContext
             containerType,
             member,
             BuildDocumentation(member, containerType, modelCache),
-            keyInfo.KeyStartColumn,
-            keyInfo.KeyEndColumn,
-            keyInfo.KeyPrefix,
+            new YamlKeyContext(lineOffset + keyInfo.KeyStartColumn, lineOffset + keyInfo.KeyEndColumn, keyInfo.KeyPrefix),
             suggestions);
     }
 
@@ -251,9 +249,7 @@ internal static class YamlSchemaContext
             containerType,
             null,
             BuildDocumentation(null, containerType, modelCache),
-            keyStartColumn,
-            keyStartColumn,
-            string.Empty,
+            YamlKeyContext.Empty(document.GetLineByNumber(currentLineNumber).Offset + keyStartColumn),
             GetCompletionItems(containerType, modelCache, usedKeys));
 
         return true;
@@ -733,14 +729,23 @@ internal sealed record YamlContextResult(
     Type ContainerType,
     PropertyInfo? CurrentProperty,
     YamlDocumentationInfo? Documentation,
-    int KeyStartColumn,
-    int KeyEndColumn,
-    string KeyPrefix,
+    YamlKeyContext Key,
     IReadOnlyList<YamlCompletionItemInfo> CompletionItems)
 {
     public static YamlContextResult Empty(Type rootType)
     {
-        return new YamlContextResult(rootType, null, null, 0, 0, string.Empty, []);
+        return new YamlContextResult(rootType, null, null, YamlKeyContext.Empty(0), []);
+    }
+}
+
+internal sealed record YamlKeyContext(
+    int StartOffset,
+    int EndOffset,
+    string Prefix)
+{
+    public static YamlKeyContext Empty(int offset)
+    {
+        return new YamlKeyContext(offset, offset, string.Empty);
     }
 }
 
