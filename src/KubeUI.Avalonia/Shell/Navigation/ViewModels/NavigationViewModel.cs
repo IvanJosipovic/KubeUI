@@ -1634,5 +1634,3 @@ internal sealed class PendingClusterNavigationUpdate
     }
 }
 
-
-

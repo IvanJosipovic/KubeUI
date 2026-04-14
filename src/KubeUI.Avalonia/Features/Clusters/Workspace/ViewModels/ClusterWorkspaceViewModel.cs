@@ -27,6 +27,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
     private readonly ILogger<ClusterWorkspaceViewModel> _logger;
     private readonly ConcurrentDictionary<GroupApiVersionKind, IResourceConfig> _resourceConfigs = new();
     private readonly ConcurrentDictionary<string, PendingCustomResourceDefinitionChange> _pendingCustomResourceDefinitions = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, string> _customResourceDefinitionSignatures = new(StringComparer.Ordinal);
     private readonly SemaphoreSlim _pendingCustomResourceDefinitionSignal = new(0);
     private readonly SemaphoreSlim _workspaceStateRefreshGate = new(1, 1);
     private readonly SemaphoreSlim _resourcePermissionRefreshGate = new(1, 1);
@@ -804,6 +805,8 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
             _resourceConfigs.TryRemove(removedKind, out _);
         }
 
+        _customResourceDefinitionSignatures.Clear();
+
         NotifyCustomResourceDefinitionsChanged([], removedCustomResourceKinds);
     }
 
@@ -899,6 +902,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
                     {
                         if (change.Kind == CustomResourceDefinitionChangeKind.Delete)
                         {
+                            _customResourceDefinitionSignatures.TryRemove(change.Crd.Name(), out _);
                             var removedKind = TryResolveCustomResourceKind(change.Crd);
                             if (removedKind != null)
                             {
@@ -908,9 +912,17 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
                             continue;
                         }
 
+                        var signature = GetCustomResourceDefinitionSignature(change.Crd);
+                        if (_customResourceDefinitionSignatures.TryGetValue(change.Crd.Name(), out var existingSignature)
+                            && string.Equals(existingSignature, signature, StringComparison.Ordinal))
+                        {
+                            continue;
+                        }
+
                         var builtConfig = await BuildCustomResourceConfigAsync(change.Crd).ConfigureAwait(false);
                         if (builtConfig != null)
                         {
+                            _customResourceDefinitionSignatures[change.Crd.Name()] = signature;
                             builtConfigs.Add(builtConfig);
                             continue;
                         }
@@ -1021,6 +1033,11 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         return null;
     }
 
+    private static string GetCustomResourceDefinitionSignature(V1CustomResourceDefinition crd)
+    {
+        return System.Text.Json.JsonSerializer.Serialize(crd.Spec);
+    }
+
     private void NotifyResourcePermissionsChanged()
     {
         if (!Dispatcher.UIThread.CheckAccess())
@@ -1092,4 +1109,3 @@ internal enum CustomResourceDefinitionChangeKind
 internal sealed record PendingCustomResourceDefinitionChange(CustomResourceDefinitionChangeKind Kind, V1CustomResourceDefinition Crd);
 
 public sealed record PendingCustomResourceConfig(GroupApiVersionKind Kind, IResourceConfig ResourceConfig);
-

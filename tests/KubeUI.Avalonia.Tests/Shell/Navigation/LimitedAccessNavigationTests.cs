@@ -39,8 +39,14 @@ public sealed class LimitedAccessNavigationTests : AvaloniaTestBase
         workspace.GetResourceConfig<k8s.Models.V1Pod>().CanListAndWatch.ShouldBeTrue();
         workspace.GetResourceConfig<k8s.Models.V1Deployment>().PermissionsLoaded.ShouldBeTrue();
         workspace.GetResourceConfig<k8s.Models.V1Deployment>().CanListAndWatch.ShouldBeTrue();
-        FindResourceLink(clusterNode, "Pods").ShouldNotBeNull();
-        FindResourceLink(clusterNode, "Deployments").ShouldNotBeNull();
+
+        var podsLink = FindResourceLink(clusterNode, "Pods");
+        var deploymentsLink = FindResourceLink(clusterNode, "Deployments");
+        podsLink.ShouldNotBeNull();
+        deploymentsLink.ShouldNotBeNull();
+
+        await navigation.TreeViewSelectionChangedAsync(podsLink);
+        await navigation.TreeViewSelectionChangedAsync(deploymentsLink);
     }
 
     private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs)

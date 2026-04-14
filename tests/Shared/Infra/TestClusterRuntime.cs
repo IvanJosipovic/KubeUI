@@ -31,6 +31,7 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     private readonly ObservableCollection<V1Namespace> _namespaces = [];
     private readonly ReadOnlyObservableCollection<V1Namespace> _readonlyNamespaces;
     private readonly ConcurrentDictionary<string, bool> _permissions = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, string> _customResourceDefinitionSignatures = new(StringComparer.Ordinal);
     private static readonly Lazy<IGenerator> s_sharedGenerator = new(() =>
     {
         var g = new Generator();
@@ -197,6 +198,7 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
 
         Objects.Clear();
         _namespaces.Clear();
+        _customResourceDefinitionSignatures.Clear();
         NodeMetrics.Clear();
         PodMetrics.Clear();
         Client = null;
@@ -646,6 +648,13 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
 
     private async Task ProcessCustomResourceDefinitionAsync(V1CustomResourceDefinition crd)
     {
+        var signature = GetCustomResourceDefinitionSignature(crd);
+        if (_customResourceDefinitionSignatures.TryGetValue(crd.Name(), out var existingSignature)
+            && string.Equals(existingSignature, signature, StringComparison.Ordinal))
+        {
+            return;
+        }
+
         var result = _generator.GenerateAssembly(crd, "KubeUI.Models");
 
         if (!result.Success || result.Assembly == null || result.XmlDocumentation == null)
@@ -660,6 +669,8 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
             throw new InvalidOperationException($"Unable to resolve generated type for {crd.Name()}");
         }
 
+        _customResourceDefinitionSignatures[crd.Name()] = signature;
+
         await ReplaceCustomResourceDefinitionArtifactsAsync(previousType, currentType);
         await Task.Yield();
         OnCustomResourceDefinitionReady?.Invoke(crd);
@@ -667,6 +678,7 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
 
     private void RemoveCustomResourceDefinitionArtifacts(V1CustomResourceDefinition crd)
     {
+        _customResourceDefinitionSignatures.TryRemove(crd.Name(), out _);
         var removedType = ModelCache.RemoveCustomResourceDefinition(crd);
         if (removedType != null)
         {
@@ -730,6 +742,11 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     {
         var kind = GroupApiVersionKind.From(type);
         return $"{verb}:{kind.Group}:{kind.PluralName}:{@namespace}:{subresource}:{kind.ApiVersion}";
+    }
+
+    private static string GetCustomResourceDefinitionSignature(V1CustomResourceDefinition crd)
+    {
+        return System.Text.Json.JsonSerializer.Serialize(crd.Spec);
     }
 
     private static void ClearResourceContainer(IClearableResourceContainer container)

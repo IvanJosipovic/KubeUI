@@ -105,6 +105,44 @@ public class ClusterWorkspaceViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task metadata_only_crd_update_does_not_rebuild_resource_config_or_reseed_informer()
+    {
+        var runtime = new TestCluster();
+        var workspace = CreateWorkspace(runtime);
+        var originalCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
+
+        await runtime.AddOrUpdateResource(originalCrd);
+
+        var originalType = await WaitForValueAsync(() => GetCustomResourceType(runtime, originalCrd));
+        originalType.ShouldNotBeNull();
+        await SeedResourceAsync(runtime, originalType);
+
+        var originalContainer = GetSeededContainer(runtime, originalType);
+        originalContainer.ShouldNotBeNull();
+        GetInformers(originalContainer).Count.ShouldBe(1);
+
+        var originalResourceConfig = await WaitForValueAsync(() => GetCustomResourceConfig(workspace, originalCrd));
+        originalResourceConfig.ShouldNotBeNull();
+        var originalResourceConfigVersion = workspace.ResourceConfigVersion;
+
+        var updatedCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
+        updatedCrd.Metadata.Annotations = new Dictionary<string, string>
+        {
+            ["metadata-only"] = "true"
+        };
+
+        await runtime.AddOrUpdateResource(updatedCrd);
+
+        await Task.Delay(250);
+        Dispatcher.UIThread.RunJobs();
+
+        var updatedResourceConfig = GetCustomResourceConfig(workspace, updatedCrd);
+        updatedResourceConfig.ShouldBeSameAs(originalResourceConfig);
+        workspace.ResourceConfigVersion.ShouldBe(originalResourceConfigVersion);
+        GetInformers(originalContainer).Count.ShouldBe(1);
+    }
+
+    [AvaloniaFact]
     public async Task seeding_resource_raises_resource_seeded_event()
     {
         var runtime = new TestCluster();
