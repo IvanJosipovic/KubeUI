@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Styling;
@@ -210,14 +211,8 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         AssociatedObject.DataContextChanged += OnDataContextChanged;
         AssociatedObject.AttachedToVisualTree += AttachedToVisualTree;
         AssociatedObject.DetachedFromVisualTree += DetachedFromVisualTree;
-        AssociatedObject.TextArea.TextView.PointerReleased += TextView_PointerReleased;
-        AssociatedObject.TextArea.TextView.PointerHover += TextView_PointerHover;
-        AssociatedObject.TextArea.TextView.PointerHoverStopped += TextView_PointerHoverStopped;
-        AssociatedObject.TextArea.TextView.BackgroundRenderers.Add(_diagnosticRenderer);
         AssociatedObject.TextArea.TextEntering += TextArea_TextEntering;
         AssociatedObject.TextArea.TextEntered += TextArea_TextEntered;
-        AssociatedObject.TextArea.SelectionChanged += TextArea_SelectionChanged;
-        AssociatedObject.TextArea.Caret.PositionChanged += Caret_PositionChanged;
         _editorInputHandler = new EditorInputHandler(
             AssociatedObject.TextArea,
             ShowCompletionWindow,
@@ -242,6 +237,8 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         {
             return;
         }
+
+        CloseHoverPopups();
 
         var nextViewModel = AssociatedObject.DataContext as ResourceYamlViewModel;
         if (ReferenceEquals(_currentViewModel, nextViewModel))
@@ -310,6 +307,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
     private void DetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
     {
         PersistFoldingState(_currentViewModel, persistToViewModel: true);
+        CloseHoverPopups();
     }
 
     protected override void OnDetaching()
@@ -321,15 +319,9 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
             AssociatedObject.DataContextChanged -= OnDataContextChanged;
             AssociatedObject.AttachedToVisualTree -= AttachedToVisualTree;
             AssociatedObject.DetachedFromVisualTree -= DetachedFromVisualTree;
-            AssociatedObject.TextArea.TextView.PointerReleased -= TextView_PointerReleased;
-            AssociatedObject.TextArea.TextView.PointerHover -= TextView_PointerHover;
-            AssociatedObject.TextArea.TextView.PointerHoverStopped -= TextView_PointerHoverStopped;
-            AssociatedObject.TextArea.TextView.BackgroundRenderers.Remove(_diagnosticRenderer);
             AssociatedObject.TextChanged -= Editor_TextChanged;
             AssociatedObject.TextArea.TextEntering -= TextArea_TextEntering;
             AssociatedObject.TextArea.TextEntered -= TextArea_TextEntered;
-            AssociatedObject.TextArea.SelectionChanged -= TextArea_SelectionChanged;
-            AssociatedObject.TextArea.Caret.PositionChanged -= Caret_PositionChanged;
 
             if (_editorInputHandler != null)
             {
@@ -340,8 +332,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
 
         Application.Current!.ActualThemeVariantChanged -= ThemeChanged;
         CloseCompletionWindow();
-        CloseInsightWindow();
-        CloseDiagnosticToolTip();
+        CloseHoverPopups();
 
         _textMateInstallation?.Dispose();
         _textMateInstallation = null;
@@ -383,9 +374,8 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         }
 
         UpdateFoldings();
-        UpdateDocumentationForCaret();
+        CloseHoverPopups();
         _isRefreshingFromViewModel = false;
-        UpdateDocumentationForCaret();
     }
 
     private void PersistFoldingState(ResourceYamlViewModel? vm, bool persistToViewModel = false)
@@ -495,7 +485,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
             _completionWindow.CompletionList.RequestInsertion(e);
         }
 
-        _insightWindow?.Hide();
+        CloseInsightWindow();
     }
 
     private bool TryExitListOnNewLine(TextInputEventArgs e)
@@ -783,39 +773,9 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         return document.Text.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
     }
 
-    private void TextArea_SelectionChanged(object? sender, EventArgs e)
-    {
-        UpdateDocumentationForCaret();
-    }
-
-    private void Caret_PositionChanged(object? sender, EventArgs e)
-    {
-        UpdateDocumentationForCaret();
-    }
-
-    private void TextView_PointerReleased(object? sender, PointerReleasedEventArgs e)
-    {
-        if (AssociatedObject?.Document == null || _currentViewModel?.Object == null)
-        {
-            return;
-        }
-
-        AssociatedObject.Focus();
-        AssociatedObject.TextArea.Focus();
-
-        var position = AssociatedObject.TextArea.TextView.GetPosition(e.GetPosition(AssociatedObject.TextArea.TextView));
-        if (!position.HasValue)
-        {
-            CloseInsightWindow();
-            return;
-        }
-
-        ShowDocumentation(position.Value.Location);
-    }
-
     private void TextView_PointerHover(object? sender, PointerEventArgs e)
     {
-        if (AssociatedObject?.Document == null)
+        if (AssociatedObject?.Document == null || _currentViewModel?.Object == null || _currentViewModel.Cluster == null)
         {
             return;
         }
@@ -823,25 +783,32 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         var position = AssociatedObject.TextArea.TextView.GetPosition(e.GetPosition(AssociatedObject.TextArea.TextView));
         if (!position.HasValue)
         {
-            CloseDiagnosticToolTip();
+            CloseHoverPopups();
             return;
         }
 
         var offset = AssociatedObject.Document.GetOffset(position.Value.Location);
-        var message = _diagnosticRenderer.TryGetMessageAt(offset);
-        if (string.IsNullOrEmpty(message))
+        if (TryShowDocumentationAtOffset(offset))
         {
             CloseDiagnosticToolTip();
             return;
         }
 
+        var message = _diagnosticRenderer.TryGetMessageAt(offset);
+        if (string.IsNullOrEmpty(message))
+        {
+            CloseHoverPopups();
+            return;
+        }
+
+        CloseInsightWindow();
         ToolTip.SetTip(AssociatedObject, message);
         ToolTip.SetIsOpen(AssociatedObject, true);
     }
 
     private void TextView_PointerHoverStopped(object? sender, PointerEventArgs e)
     {
-        CloseDiagnosticToolTip();
+        CloseHoverPopups();
     }
 
     private void ShowCompletionWindow()
@@ -938,65 +905,62 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         }
     }
 
-    private void UpdateDocumentationForCaret()
-    {
-        if (AssociatedObject?.Document == null || _currentViewModel?.Object == null)
-        {
-            return;
-        }
-
-        var location = AssociatedObject.TextArea.Selection.IsEmpty
-            ? AssociatedObject.Document.GetLocation(AssociatedObject.CaretOffset)
-            : AssociatedObject.Document.GetLocation(AssociatedObject.TextArea.Selection.SurroundingSegment.Offset);
-
-        ShowDocumentation(location);
-    }
-
-    private void ShowDocumentation(TextLocation location)
+    private bool TryShowDocumentationAtOffset(int offset)
     {
         if (AssociatedObject?.Document == null || _currentViewModel?.Object == null || _currentViewModel.Cluster == null)
         {
-            return;
+            return false;
         }
 
-        var context = ResolveDocumentationContext(location);
-        if (context.Documentation == null || context.CurrentProperty == null || !IsWithinFieldName(location, context))
+        var document = AssociatedObject.Document;
+        var context = ResolveDocumentationContext(offset);
+        if (context.Documentation == null || context.CurrentProperty == null || !IsWithinFieldName(offset, context))
         {
             CloseInsightWindow();
-            return;
+            return false;
         }
 
-        var currentLine = AssociatedObject.Document.GetLineByNumber(location.Line);
+        var currentLine = document.GetLineByOffset(offset);
         var startOffset = currentLine.Offset + context.KeyStartColumn;
         var endOffset = currentLine.Offset + context.KeyEndColumn;
+
+        if (_insightWindow is { IsOpen: true } existingWindow
+            && existingWindow.StartOffset == startOffset
+            && existingWindow.EndOffset == endOffset)
+        {
+            return true;
+        }
 
         CloseInsightWindow();
 
         _insightWindow = new OverloadInsightWindow(AssociatedObject.TextArea)
         {
             CloseAutomatically = true,
+            Placement = PlacementMode.Pointer,
             Provider = new YamlDocumentationOverloadProvider(context.Documentation)
         };
         _insightWindow.Closed += InsightWindow_Closed;
         _insightWindow.StartOffset = startOffset;
         _insightWindow.EndOffset = endOffset;
         _insightWindow.Show();
+        return true;
     }
 
-    private YamlContextResult ResolveDocumentationContext(TextLocation location)
+    private YamlContextResult ResolveDocumentationContext(int offset)
     {
-        var offset = AssociatedObject!.Document!.GetOffset(location);
+        var document = AssociatedObject?.Document;
+        ArgumentNullException.ThrowIfNull(document);
         return YamlSchemaContext.Resolve(
-            AssociatedObject.Document,
+            document,
             offset,
             _currentViewModel!.Object!.GetType(),
             _currentViewModel.Cluster!.ModelCache);
     }
 
-    private bool IsWithinFieldName(TextLocation location, YamlContextResult context)
+    private bool IsWithinFieldName(int offset, YamlContextResult context)
     {
-        var currentLine = AssociatedObject!.Document!.GetLineByNumber(location.Line);
-        var offset = AssociatedObject.Document.GetOffset(location);
+        var document = AssociatedObject!.Document!;
+        var currentLine = document.GetLineByOffset(offset);
         var startOffset = currentLine.Offset + context.KeyStartColumn;
         var endOffset = currentLine.Offset + context.KeyEndColumn;
         return offset >= startOffset && offset <= endOffset;
@@ -1024,6 +988,12 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         }
 
         _insightWindow = null;
+    }
+
+    private void CloseHoverPopups()
+    {
+        CloseInsightWindow();
+        CloseDiagnosticToolTip();
     }
 
     private void UpdateFoldings()
