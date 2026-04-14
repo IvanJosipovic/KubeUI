@@ -22,7 +22,6 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia.Desktop" Version="11.3.14" />
-    <PackageReference Include="Tmds.DBus.Protocol" Version="0.21.3" />
   </ItemGroup>
 
   <ItemGroup>
