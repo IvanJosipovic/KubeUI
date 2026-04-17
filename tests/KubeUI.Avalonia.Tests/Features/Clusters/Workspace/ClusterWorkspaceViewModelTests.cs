@@ -415,6 +415,52 @@ public class ClusterWorkspaceViewModelTests : AvaloniaTestBase
         workspace.GetResourceConfig<V1Pod>().PermissionsLoaded.ShouldBeTrue();
     }
 
+    [AvaloniaFact]
+    public async Task workspace_exposes_runtime_authorization_index_state_after_initialization()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+
+        var workspace = CreateWorkspace(runtime);
+
+        workspace.AuthorizationIndexReady.ShouldBeFalse();
+        workspace.AuthorizationIndexVersion.ShouldBe(0);
+
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+
+        workspace.AuthorizationIndexReady.ShouldBeTrue();
+        workspace.AuthorizationIndexVersion.ShouldBeGreaterThan(0);
+    }
+
+    [AvaloniaFact]
+    public async Task added_crd_refreshes_authorization_index_for_generated_resource_before_config_is_published()
+    {
+        var runtime = new RecordingAuthorizationClusterRuntime(new TestCluster());
+        var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspaceViewModel>(
+            TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized."),
+            runtime);
+        _disposables.Add(workspace);
+
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+        runtime.ClearRecordedAuthorizationRequests();
+
+        var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
+        await runtime.AddOrUpdateResource(crd);
+
+        var resourceType = await WaitForValueAsync(() => GetCustomResourceType(runtime.Inner, crd));
+        resourceType.ShouldNotBeNull();
+
+        await WaitForAsync(() => GetCustomResourceConfig(workspace, crd) != null);
+
+        runtime.RecordedAuthorizationRequests
+            .SelectMany(static batch => batch)
+            .Any(request => request.ResourceType == resourceType)
+            .ShouldBeTrue();
+    }
+
     private ClusterWorkspaceViewModel CreateWorkspace(TestCluster runtime)
     {
         var workspace = runtime.CreateWorkspace();
@@ -542,6 +588,8 @@ internal sealed class CountingClusterRuntime : IClusterRuntime, INotifyPropertyC
     public ClusterStatus Status { get => _inner.Status; set => _inner.Status = value; }
     public string? LastError { get => _inner.LastError; set => _inner.LastError = value; }
     public bool RequiresNamespaceSelectionPrompt { get => _inner.RequiresNamespaceSelectionPrompt; set => _inner.RequiresNamespaceSelectionPrompt = value; }
+    public bool AuthorizationIndexReady => _inner.AuthorizationIndexReady;
+    public long AuthorizationIndexVersion => _inner.AuthorizationIndexVersion;
     public bool IsMetricsAvailable => _inner.IsMetricsAvailable;
     public bool ListNamespaces { get => _inner.ListNamespaces; set => _inner.ListNamespaces = value; }
     public IKubernetes? Client { get => _inner.Client; set => _inner.Client = value; }
@@ -577,6 +625,7 @@ internal sealed class CountingClusterRuntime : IClusterRuntime, INotifyPropertyC
     public ISourceCache<T, string> GetResourceSourceCache<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.GetResourceSourceCache<T>();
     public IObservable<int> GetResourceCount(Type type) => _inner.GetResourceCount(type);
     public IObservable<int> GetResourceCount<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.GetResourceCount<T>();
+    public Task RefreshAuthorizationIndexAsync(IEnumerable<AuthorizationRequest> requests) => _inner.RefreshAuthorizationIndexAsync(requests);
     public Task UpdatePermissionsAllNamespaceAsync(Type type, Verb verb, string? subresource = null) => _inner.UpdatePermissionsAllNamespaceAsync(type, verb, subresource);
     public Task UpdatePermissionsAllNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.UpdatePermissionsAllNamespaceAsync<T>(verb, subresource);
     public Task<bool> UpdateCanI(Type type, Verb verb, string? @namespace = null, string? subresource = null) => _inner.UpdateCanI(type, verb, @namespace, subresource);
@@ -593,6 +642,95 @@ internal sealed class CountingClusterRuntime : IClusterRuntime, INotifyPropertyC
 
         return _inner.SeedResource<T>(waitForReady);
     }
+}
+
+internal sealed class RecordingAuthorizationClusterRuntime : IClusterRuntime, INotifyPropertyChanged
+{
+    private readonly TestClusterRuntime _inner;
+
+    public RecordingAuthorizationClusterRuntime(TestClusterRuntime inner)
+    {
+        _inner = inner;
+        _inner.PropertyChanged += (_, e) => PropertyChanged?.Invoke(this, e);
+    }
+
+    public TestClusterRuntime Inner => _inner;
+    public List<AuthorizationRequest[]> RecordedAuthorizationRequests { get; } = [];
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+    public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange
+    {
+        add => _inner.OnChange += value;
+        remove => _inner.OnChange -= value;
+    }
+
+    public event Action<V1CustomResourceDefinition>? OnCustomResourceDefinitionReady
+    {
+        add => _inner.OnCustomResourceDefinitionReady += value;
+        remove => _inner.OnCustomResourceDefinitionReady -= value;
+    }
+
+    public IReadOnlyDictionary<GroupApiVersionKind, object> Objects => _inner.Objects;
+    public bool Connected { get => _inner.Connected; set => _inner.Connected = value; }
+    public ClusterStatus Status { get => _inner.Status; set => _inner.Status = value; }
+    public string? LastError { get => _inner.LastError; set => _inner.LastError = value; }
+    public bool RequiresNamespaceSelectionPrompt { get => _inner.RequiresNamespaceSelectionPrompt; set => _inner.RequiresNamespaceSelectionPrompt = value; }
+    public bool AuthorizationIndexReady => _inner.AuthorizationIndexReady;
+    public long AuthorizationIndexVersion => _inner.AuthorizationIndexVersion;
+    public bool IsMetricsAvailable => _inner.IsMetricsAvailable;
+    public bool ListNamespaces { get => _inner.ListNamespaces; set => _inner.ListNamespaces = value; }
+    public IKubernetes? Client { get => _inner.Client; set => _inner.Client = value; }
+    public K8SConfiguration KubeConfig { get => _inner.KubeConfig; set => _inner.KubeConfig = value; }
+    public ModelCache ModelCache { get => _inner.ModelCache; set => _inner.ModelCache = value; }
+    public string KubeConfigPath { get => _inner.KubeConfigPath; set => _inner.KubeConfigPath = value; }
+    public string Name { get => _inner.Name; set => _inner.Name = value; }
+    public ReadOnlyObservableCollection<V1Namespace> Namespaces => _inner.Namespaces;
+    public ObservableCollection<NodeMetrics> NodeMetrics => _inner.NodeMetrics;
+    public ObservableCollection<PodMetrics> PodMetrics => _inner.PodMetrics;
+    public ObservableCollection<PortForwarder> PortForwarders => _inner.PortForwarders;
+
+    public void ClearRecordedAuthorizationRequests()
+    {
+        RecordedAuthorizationRequests.Clear();
+    }
+
+    public bool CanI(Type type, Verb verb, string? @namespace = null, string? subresource = null) => _inner.CanI(type, verb, @namespace, subresource);
+    public bool CanI<T>(Verb verb, string? @namespace = null, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.CanI<T>(verb, @namespace, subresource);
+    public bool CanIAnyNamespace(Type type, Verb verb, string? subresource = null) => _inner.CanIAnyNamespace(type, verb, subresource);
+    public bool CanIAnyNamespace<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.CanIAnyNamespace<T>(verb, subresource);
+    public bool IsResourceNamespaced(Type type) => _inner.IsResourceNamespaced(type);
+    public bool IsResourceNamespaced<T>() => _inner.IsResourceNamespaced<T>();
+    public PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort) => _inner.AddPodPortForward(@namespace, podName, containerPort);
+    public Task AddPodEphemeralDebugContainer(V1Pod pod, string? targetContainerName, string image) => _inner.AddPodEphemeralDebugContainer(pod, targetContainerName, image);
+    public PortForwarder AddServicePortForward(string @namespace, string serviceName, int servicePort) => _inner.AddServicePortForward(@namespace, serviceName, servicePort);
+    public void RemovePortForward(PortForwarder pf) => _inner.RemovePortForward(pf);
+    public Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.AddOrUpdateResource(item);
+    public Task Connect() => _inner.Connect();
+    public Task Disconnect() => _inner.Disconnect();
+    public Task DeleteResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.DeleteResource(item);
+    public Task DryRunYaml(Stream stream) => _inner.DryRunYaml(stream);
+    public Task ImportFolder(string path) => _inner.ImportFolder(path);
+    public Task ImportYaml(Stream stream) => _inner.ImportYaml(stream);
+    public Task<bool> IsResourceReady<T>(CancellationToken? token = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.IsResourceReady<T>(token);
+    public T? GetResource<T>(string? @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.GetResource<T>(@namespace, name);
+    public IReadOnlyList<T> GetResourceList<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.GetResourceList<T>();
+    public ISourceCache<T, string> GetResourceSourceCache<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.GetResourceSourceCache<T>();
+    public IObservable<int> GetResourceCount(Type type) => _inner.GetResourceCount(type);
+    public IObservable<int> GetResourceCount<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.GetResourceCount<T>();
+
+    public Task RefreshAuthorizationIndexAsync(IEnumerable<AuthorizationRequest> requests)
+    {
+        RecordedAuthorizationRequests.Add(requests.Distinct().ToArray());
+        return _inner.RefreshAuthorizationIndexAsync(requests);
+    }
+
+    public Task UpdatePermissionsAllNamespaceAsync(Type type, Verb verb, string? subresource = null) => _inner.UpdatePermissionsAllNamespaceAsync(type, verb, subresource);
+    public Task UpdatePermissionsAllNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.UpdatePermissionsAllNamespaceAsync<T>(verb, subresource);
+    public Task<bool> UpdateCanI(Type type, Verb verb, string? @namespace = null, string? subresource = null) => _inner.UpdateCanI(type, verb, @namespace, subresource);
+    public Task<bool> UpdateCanI<T>(Verb verb, string? @namespace = null, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.UpdateCanI<T>(verb, @namespace, subresource);
+    public Task<bool> UpdateCanIAnyNamespaceAsync(Type type, Verb verb, string? subresource = null) => _inner.UpdateCanIAnyNamespaceAsync(type, verb, subresource);
+    public Task<bool> UpdateCanIAnyNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.UpdateCanIAnyNamespaceAsync<T>(verb, subresource);
+    public Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.SeedResource<T>(waitForReady);
 }
 
 internal sealed class BlockingPodPermissionResourceConfig : IResourceConfig
@@ -622,6 +760,7 @@ internal sealed class BlockingPodPermissionResourceConfig : IResourceConfig
     public Type Type { get; } = typeof(V1Pod);
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
     public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
+    public IEnumerable<(Verb verb, string? subresource)> Permissions() => [(Verb.List, null), (Verb.Watch, null), (Verb.Create, "portforward")];
 
     public async Task UpdatePermissions()
     {
@@ -663,6 +802,7 @@ internal sealed class ImmediatePermissionResourceConfig : IResourceConfig
     public Type Type { get; }
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
     public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
+    public IEnumerable<(Verb verb, string? subresource)> Permissions() => [(Verb.List, null), (Verb.Watch, null)];
 
     public Task UpdatePermissions()
     {

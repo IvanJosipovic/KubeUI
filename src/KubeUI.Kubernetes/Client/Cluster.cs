@@ -116,6 +116,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
                     Status = ClusterStatus.Connecting;
                     LastError = null;
                     RequiresNamespaceSelectionPrompt = false;
+                    ResetAuthorizationIndex();
                     KubernetesClientConfiguration config;
 
                     if (string.IsNullOrEmpty(KubeConfigPath))
@@ -233,6 +234,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         Status = ClusterStatus.None;
         LastError = null;
         RequiresNamespaceSelectionPrompt = false;
+        ResetAuthorizationIndex();
 
         _logger.LogInformation("Disconnected from {name}", Name);
         return Task.CompletedTask;

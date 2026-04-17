@@ -11,7 +11,7 @@ namespace KubeUI.Kubernetes.Tests;
 public sealed class ClusterAuthTests
 {
     [Fact]
-    public void cani_throws_when_permission_review_has_not_been_cached_yet()
+    public void cani_returns_false_when_permission_review_has_not_been_cached_yet()
     {
         using var loggerFactory = NullLoggerFactory.Instance;
         var cluster = new Cluster(
@@ -22,8 +22,7 @@ public sealed class ClusterAuthTests
             new TestClusterSettingsStore(),
             new ServiceCollection().BuildServiceProvider());
 
-        var exception = Should.Throw<Exception>(() => cluster.CanI(typeof(V1Pod), Verb.Create, subresource: "portforward"));
-        exception.Message.ShouldContain("Missing V1SelfSubjectAccessReview");
+        cluster.CanI(typeof(V1Pod), Verb.Create, subresource: "portforward").ShouldBeFalse();
     }
 
     [Fact]
