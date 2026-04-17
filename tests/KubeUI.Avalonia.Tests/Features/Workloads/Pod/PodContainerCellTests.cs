@@ -82,4 +82,52 @@ public sealed class PodContainerCellTests : AvaloniaTestBase
         eph.Restarts.ShouldBe(0);
         eph.Image.ShouldBe("ephemeral:image");
     }
+
+    [AvaloniaFact]
+    public async Task refresh_keeps_a_stable_container_statuses_collection_instance()
+    {
+        var firstPod = new V1Pod
+        {
+            Status = new V1PodStatus
+            {
+                ContainerStatuses = new List<V1ContainerStatus>
+                {
+                    new() { Name = "normal1", Ready = true, Started = true, RestartCount = 1 }
+                }
+            }
+        };
+
+        var secondPod = new V1Pod
+        {
+            Status = new V1PodStatus
+            {
+                ContainerStatuses = new List<V1ContainerStatus>
+                {
+                    new() { Name = "normal2", Ready = false, Started = false, RestartCount = 0 }
+                }
+            }
+        };
+
+        var view = new PodContainerCell
+        {
+            DataContext = firstPod
+        };
+
+        var window = new Window { Content = view };
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        var statusesBeforeRefresh = view.ContainerStatuses;
+        statusesBeforeRefresh.ShouldNotBeNull();
+
+        view.DataContext = secondPod;
+        Dispatcher.UIThread.RunJobs();
+
+        view.ContainerStatuses.ShouldBeSameAs(statusesBeforeRefresh);
+        view.ContainerStatuses.Count.ShouldBe(1);
+        view.ContainerStatuses[0].Name.ShouldBe("normal2");
+
+        window.Content = null;
+        window.Close();
+    }
 }
