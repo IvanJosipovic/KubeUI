@@ -190,6 +190,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     {
         PermissionsLoaded = false;
         CanListAndWatch = false;
+        var exceptions = new List<Exception>();
 
         try
         {
@@ -205,11 +206,26 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
         if (!CanListAndWatch)
         {
+            foreach (var verb in new[] { Verb.List, Verb.Watch })
+            {
+                try
+                {
+                    await RefreshPermissionAsync(verb, null).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex);
+                }
+            }
+
+            if (exceptions.Count > 0)
+            {
+                _logger.LogDebug(new AggregateException(exceptions), "Unable to refresh list/watch permissions for {Type}", typeof(T).FullName);
+            }
+
             PermissionsLoaded = true;
             return;
         }
-
-        var exceptions = new List<Exception>();
 
         foreach (var (verb, subResource) in DefaultPermissions())
         {
@@ -557,7 +573,6 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
         }
     }
 }
-
 
 
 

@@ -36,6 +36,38 @@ public sealed class ResourceConfigBasePermissionTests : AvaloniaTestBase
         config.CanListAndWatch.ShouldBeTrue();
     }
 
+    [AvaloniaFact]
+    public async Task update_permissions_prefetches_list_and_watch_before_marking_partial_access_ready()
+    {
+        var runtime = new TestCluster
+        {
+            DefaultPermissionAllowed = false,
+        };
+        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var config = new TrackingResourceConfig(services);
+        config.Initialize(runtime.CreateWorkspace());
+
+        await runtime.AddOrUpdateResource(new V1Namespace
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "team-a"
+            }
+        });
+        runtime.SetPermission<V1Pod>(Verb.List, true, "team-a");
+        runtime.SetPermission<V1Pod>(Verb.Watch, false, "team-a");
+
+        await config.UpdatePermissions();
+
+        config.RecordedPermissions.ShouldBe(
+        [
+            (Verb.List, null),
+            (Verb.Watch, null)
+        ]);
+        config.PermissionsLoaded.ShouldBeTrue();
+        config.CanListAndWatch.ShouldBeFalse();
+    }
+
     private sealed class TrackingResourceConfig : ResourceConfigBase<V1Pod>
     {
         private int _activeRefreshes;
