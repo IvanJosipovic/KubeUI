@@ -6,6 +6,8 @@ using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Kubernetes;
 
+public readonly record struct AuthorizationRequest(Type ResourceType, Verb Verb, string? Subresource);
+
 public interface IClusterRuntime
 {
     IReadOnlyDictionary<GroupApiVersionKind, object> Objects { get; }
@@ -13,6 +15,8 @@ public interface IClusterRuntime
     ClusterStatus Status { get; set; }
     string? LastError { get; set; }
     bool RequiresNamespaceSelectionPrompt { get; set; }
+    bool AuthorizationIndexReady { get; }
+    long AuthorizationIndexVersion { get; }
     bool IsMetricsAvailable { get; }
     bool ListNamespaces { get; set; }
     event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
@@ -50,6 +54,7 @@ public interface IClusterRuntime
     ISourceCache<T, string> GetResourceSourceCache<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
     IObservable<int> GetResourceCount(Type type);
     IObservable<int> GetResourceCount<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    Task RefreshAuthorizationIndexAsync(IEnumerable<AuthorizationRequest> requests);
     Task UpdatePermissionsAllNamespaceAsync(Type type, Verb verb, string? subresource = null);
     Task UpdatePermissionsAllNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task<bool> UpdateCanI(Type type, Verb verb, string? @namespace = null, string? subresource = null);
@@ -57,4 +62,3 @@ public interface IClusterRuntime
     Task<bool> UpdateCanIAnyNamespaceAsync(Type type, Verb verb, string? subresource = null);
     Task<bool> UpdateCanIAnyNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new();
 }
-

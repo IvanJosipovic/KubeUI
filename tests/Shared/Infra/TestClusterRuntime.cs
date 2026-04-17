@@ -55,6 +55,8 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     private bool _connected;
     private bool _defaultPermissionAllowed = true;
     private bool _listNamespaces;
+    private bool _authorizationIndexReady;
+    private long _authorizationIndexVersion;
     private string? _lastError;
     private bool _requiresNamespaceSelectionPrompt;
     private ClusterStatus _status;
@@ -128,6 +130,18 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     }
 
     public bool IsMetricsAvailable => true;
+
+    public bool AuthorizationIndexReady
+    {
+        get => _authorizationIndexReady;
+        set => SetProperty(ref _authorizationIndexReady, value);
+    }
+
+    public long AuthorizationIndexVersion
+    {
+        get => _authorizationIndexVersion;
+        set => SetProperty(ref _authorizationIndexVersion, value);
+    }
 
     public IKubernetes? Client
     {
@@ -206,6 +220,7 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
         Status = ClusterStatus.None;
         LastError = null;
         RequiresNamespaceSelectionPrompt = false;
+        AuthorizationIndexReady = false;
 
         return Task.CompletedTask;
     }
@@ -339,6 +354,13 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     public Task<bool> UpdateCanIAnyNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         return Task.FromResult(CanIAnyNamespace<T>(verb, subresource));
+    }
+
+    public Task RefreshAuthorizationIndexAsync(IEnumerable<AuthorizationRequest> requests)
+    {
+        AuthorizationIndexReady = true;
+        AuthorizationIndexVersion++;
+        return Task.CompletedTask;
     }
 
     public Task UpdatePermissionsAllNamespaceAsync(Type type, Verb verb, string? subresource = null)

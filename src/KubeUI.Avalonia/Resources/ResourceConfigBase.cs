@@ -186,6 +186,18 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         (Verb.Watch, null),
     ];
 
+    public IEnumerable<(Verb verb, string? subresource)> Permissions()
+    {
+        return DefaultPermissions()
+            .Concat(CustomPermissions())
+            .Distinct();
+    }
+
+    public virtual IEnumerable<AuthorizationRequest> AuthorizationRequests()
+    {
+        return Permissions().Select(permission => new AuthorizationRequest(Type, permission.verb, permission.subresource));
+    }
+
     public async Task UpdatePermissions()
     {
         PermissionsLoaded = false;
@@ -207,37 +219,6 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         {
             PermissionsLoaded = true;
             return;
-        }
-
-        var exceptions = new List<Exception>();
-
-        foreach (var (verb, subResource) in DefaultPermissions())
-        {
-            try
-            {
-                await RefreshPermissionAsync(verb, subResource).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                exceptions.Add(ex);
-            }
-        }
-
-        foreach (var (verb, subResource) in CustomPermissions())
-        {
-            try
-            {
-                await RefreshPermissionAsync(verb, subResource).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                exceptions.Add(ex);
-            }
-        }
-
-        if (exceptions.Count > 0)
-        {
-            _logger.LogDebug(new AggregateException(exceptions), "Unable to refresh non-list permissions for {Type}", typeof(T).FullName);
         }
 
         PermissionsLoaded = true;
@@ -557,7 +538,3 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
         }
     }
 }
-
-
-
-
