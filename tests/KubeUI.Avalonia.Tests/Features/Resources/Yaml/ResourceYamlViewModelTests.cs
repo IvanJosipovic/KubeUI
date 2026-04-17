@@ -190,6 +190,19 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public void YamlEditorScrollBehavior_TreatsNearlyEqualOffsetsAsEqual()
+    {
+        var method = typeof(YamlEditorScrollBehavior).GetMethod("AreOffsetsClose", BindingFlags.Static | BindingFlags.NonPublic);
+        method.ShouldNotBeNull();
+
+        var closeResult = (bool)method.Invoke(null, [new Vector(10, 20), new Vector(10.25, 20.25)])!;
+        closeResult.ShouldBeTrue();
+
+        var farResult = (bool)method.Invoke(null, [new Vector(10, 20), new Vector(11, 20)])!;
+        farResult.ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
     public void YamlFoldingStrategy_DoesNotCreateFoldingsForListItemsWithoutChildren()
     {
         var text = new TextDocument();
