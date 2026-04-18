@@ -59,6 +59,8 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
         {
             _timer.Start();
         }
+
+        RequestRefresh();
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
@@ -102,7 +104,7 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
 
     private void RequestRefresh()
     {
-        if (_isDetached || _refreshPending)
+        if (_isDetached || _refreshPending || VisualRoot == null)
         {
             return;
         }
