@@ -12,6 +12,39 @@ namespace KubeUI.Avalonia.Tests.Features.Resources.Properties;
 public sealed class ResourceEventsViewTests : AvaloniaTestBase
 {
     [AvaloniaFact]
+    public async Task pre_attach_refresh_does_not_throw_when_dispatcher_flushes()
+    {
+        var workspace = new TestCluster().CreateWorkspace();
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+        _ = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+
+        var view = new ResourceEventsView();
+        view.Initialize(workspace);
+        view.DataContext = new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "pod-1",
+                NamespaceProperty = "default",
+            }
+        };
+
+        Dispatcher.UIThread.RunJobs();
+
+        var window = new Window
+        {
+            Content = view,
+        };
+
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        window.Content = null;
+        window.Close();
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    [AvaloniaFact]
     public async Task detached_resource_events_view_does_not_throw_when_data_context_changes()
     {
         var workspace = new TestCluster().CreateWorkspace();
