@@ -2982,6 +2982,34 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task ResourceYamlView_LeavesScrollBelowDocumentEnabled()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        editor.Options.AllowScrollBelowDocument.ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
     public async Task ResourceYamlView_PreservesParentFoldState_WhenResourceGrowsAboveFold()
     {
         var window = CreateWindow(width: 800, height: 600);

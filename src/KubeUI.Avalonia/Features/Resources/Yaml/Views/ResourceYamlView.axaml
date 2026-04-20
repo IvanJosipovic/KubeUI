@@ -87,7 +87,6 @@
             WordWrap="{Binding WordWrap}">
             <ae:TextEditor.Options>
                 <ae:TextEditorOptions
-                    AllowScrollBelowDocument="False"
                     ConvertTabsToSpaces="True"
                     EnableEmailHyperlinks="False"
                     EnableHyperlinks="False"
