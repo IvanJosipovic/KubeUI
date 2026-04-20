@@ -29,9 +29,8 @@
             <Button Command="{Binding SetEditModeCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Edit}">
                 <ic:FluentIcon Icon="DocumentEdit" />
             </Button>
-            <ToggleButton
-                Command="{Binding SetHideNoisyFieldsCommand}"
-                IsChecked="{Binding HideNoisyFields}"
+            <ToggleButton Name="HideNoisyFieldsToggle"
+                IsChecked="{Binding HideNoisyFields, Mode=TwoWay}"
                 ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_HideNoisyFields}">
                 <ic:FluentIcon Icon="EyeOff" />
             </ToggleButton>
