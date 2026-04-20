@@ -1,6 +1,7 @@
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Threading;
@@ -2854,6 +2855,25 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         actionBar.ShouldNotBeNull();
         actionBar.IsOpen.ShouldBeFalse();
         actionBar.IsVisible.ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public void ResourceYamlView_HideNoisyFieldsToggle_BindsDirectlyToViewModel()
+    {
+        var vm = ResolveService<ResourceYamlViewModel>();
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+
+        var toggleButton = view.FindControl<ToggleButton>("HideNoisyFieldsToggle");
+        toggleButton.ShouldNotBeNull();
+        toggleButton.Command.ShouldBeNull();
+        toggleButton.IsChecked.ShouldBe(true);
+
+        toggleButton.IsChecked = false;
+        Dispatcher.UIThread.RunJobs();
+
+        vm.HideNoisyFields.ShouldBeFalse();
+        toggleButton.IsChecked.ShouldBe(false);
     }
 
     [AvaloniaFact]

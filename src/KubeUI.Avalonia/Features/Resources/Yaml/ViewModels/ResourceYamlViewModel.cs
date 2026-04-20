@@ -254,12 +254,6 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         return HasActionResult;
     }
 
-    [RelayCommand]
-    private void SetHideNoisyFields()
-    {
-        HideNoisyFields = !HideNoisyFields;
-    }
-
     [RelayCommand(CanExecute = nameof(CanSetEditMode))]
     private void SetEditMode()
     {
@@ -422,7 +416,6 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         ActionResultSuccess = false;
     }
 }
-
 
 
 
