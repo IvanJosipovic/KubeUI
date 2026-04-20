@@ -122,7 +122,7 @@
                     <MenuItem Header="{x:Static assets:Resources.Action_Copy}" HotKey="Ctrl+C">
                         <Interaction.Behaviors>
                             <ia:EventTriggerBehavior EventName="Click">
-                                <ia:CallMethodAction MethodName="Copy" TargetObject="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                <ia:CallMethodAction MethodName="Copy" TargetObject="{Binding #Editor}" />
                             </ia:EventTriggerBehavior>
                         </Interaction.Behaviors>
                         <MenuItem.Icon>
