@@ -3,6 +3,7 @@ using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
@@ -82,6 +83,50 @@ public sealed class ResourcePropertiesViewTests : AvaloniaTestBase
         var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
 
         items.Any(x => x.Key == AppResources.ResourcePropertiesView_Namespace).ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public async Task pod_properties_view_shows_ephemeral_containers_section_when_present()
+    {
+        var pod = new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "pod-1",
+                NamespaceProperty = "default",
+            },
+            Spec = new V1PodSpec
+            {
+                EphemeralContainers =
+                [
+                    new V1EphemeralContainer
+                    {
+                        Name = "debug",
+                        Image = "example.com/debug:1",
+                    }
+                ],
+            },
+        };
+
+        var view = new KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views.PropertiesView
+        {
+            DataContext = pod,
+        };
+
+        var window = new Window
+        {
+            Content = view,
+        };
+
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+        Dispatcher.UIThread.RunJobs();
+
+        ExpandableSection section = view.GetVisualDescendants()
+            .OfType<ExpandableSection>()
+            .Single(x => Equals(x.Header, AppResources.PodPropertiesView_EphemeralContainers));
+
+        section.IsVisible.ShouldBeTrue();
     }
 
     [AvaloniaFact]

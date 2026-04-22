@@ -47,6 +47,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
     private readonly ConcurrentDictionary<GroupApiVersionKind, Lazy<Task>> _seedTasks = new();
     private readonly SemaphoreSlim _customResourceDefinitionSignal = new(0);
     private readonly ConcurrentDictionary<string, V1CustomResourceDefinition> _pendingCustomResourceDefinitions = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, string> _customResourceDefinitionSignatures = new(StringComparer.Ordinal);
     private CancellationTokenSource? _resourceInformerCancellationTokenSource = new();
 
     public ConcurrentDictionary<GroupApiVersionKind, object> Objects { get; } = [];
@@ -115,6 +116,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
                     Status = ClusterStatus.Connecting;
                     LastError = null;
                     RequiresNamespaceSelectionPrompt = false;
+                    ResetAuthorizationIndex();
                     KubernetesClientConfiguration config;
 
                     if (string.IsNullOrEmpty(KubeConfigPath))
@@ -232,6 +234,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         Status = ClusterStatus.None;
         LastError = null;
         RequiresNamespaceSelectionPrompt = false;
+        ResetAuthorizationIndex();
 
         _logger.LogInformation("Disconnected from {name}", Name);
         return Task.CompletedTask;
@@ -402,6 +405,11 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         return crd.Name();
     }
 
+    private static string GetCustomResourceDefinitionSignature(V1CustomResourceDefinition crd)
+    {
+        return System.Text.Json.JsonSerializer.Serialize(crd.Spec);
+    }
+
     private async Task ProcessQueuedCustomResourceDefinitionsAsync()
     {
         while (true)
@@ -460,6 +468,16 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
 
     private async Task<bool> ProcessNewCRD(V1CustomResourceDefinition crd)
     {
+        var key = GetCustomResourceDefinitionKey(crd);
+        var signature = GetCustomResourceDefinitionSignature(crd);
+
+        if (_customResourceDefinitionSignatures.TryGetValue(key, out var existingSignature)
+            && string.Equals(existingSignature, signature, StringComparison.Ordinal))
+        {
+            _logger.LogDebug("Skipping CRD {name} update because its signature is unchanged.", crd.Name());
+            return false;
+        }
+
         var result = _generator.GenerateAssembly(crd, "KubeUI.Models");
 
         if (!result.Success || result.Assembly == null || result.XmlDocumentation == null)
@@ -489,6 +507,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
             return false;
         }
 
+        _customResourceDefinitionSignatures[key] = signature;
+
         await ReplaceCustomResourceDefinitionArtifactsAsync(previousType, currentType).ConfigureAwait(false);
 
         await RefreshApiGroupDiscoveryListAsync().ConfigureAwait(false);
@@ -498,6 +518,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
 
     private void RemoveCustomResourceDefinitionArtifacts(V1CustomResourceDefinition crd)
     {
+        _customResourceDefinitionSignatures.TryRemove(GetCustomResourceDefinitionKey(crd), out _);
         var removedType = ModelCache.RemoveCustomResourceDefinition(crd);
         if (removedType != null)
         {
@@ -1099,6 +1120,3 @@ public sealed class OperationKeyHandler : DelegatingHandler
         }
     }
 }
-
-
-

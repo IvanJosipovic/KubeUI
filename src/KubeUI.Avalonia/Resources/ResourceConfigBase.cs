@@ -105,6 +105,18 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         return Cluster.UpdatePermissionsAllNamespaceAsync<T>(verb, subResource);
     }
 
+    public IEnumerable<(Verb verb, string? subresource)> Permissions()
+    {
+        return DefaultPermissions()
+            .Concat(CustomPermissions())
+            .Distinct();
+    }
+
+    public virtual IEnumerable<AuthorizationRequest> AuthorizationRequests()
+    {
+        return Permissions().Select(permission => new AuthorizationRequest(Type, permission.verb, permission.subresource));
+    }
+
     public virtual Control[] Properties(T resource) => [];
 
     protected ResourceListColumn<T, string> NameColumn(SortDirection sort = SortDirection.None)

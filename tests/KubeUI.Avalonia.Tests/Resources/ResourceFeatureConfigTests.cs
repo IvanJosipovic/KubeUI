@@ -12,6 +12,7 @@ using KubeUI.Avalonia.Resources.Storage;
 using KubeUI.Avalonia.Resources.Workloads;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using ClusterRoleBindingPropertiesView = KubeUI.Avalonia.Resources.AccessControl.v1.ClusterRoleBinding.Views.PropertiesView;
@@ -130,6 +131,16 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
 
         controls.Length.ShouldBe(1);
         controls[0].ShouldBeOfType<ServicePropertiesView>();
+    }
+
+    [AvaloniaFact]
+    public void service_config_authorization_requests_include_port_forward_dependencies()
+    {
+        var config = ResolveConfig<V1ServiceConfig>();
+
+        config.AuthorizationRequests().ShouldContain(new AuthorizationRequest(typeof(V1Pod), Verb.Create, "portforward"));
+        config.AuthorizationRequests().ShouldContain(new AuthorizationRequest(typeof(V1EndpointSlice), Verb.List, null));
+        config.AuthorizationRequests().ShouldContain(new AuthorizationRequest(typeof(V1EndpointSlice), Verb.Watch, null));
     }
 
     [AvaloniaFact]

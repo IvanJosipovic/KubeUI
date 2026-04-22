@@ -17,6 +17,7 @@ public partial class PodContainerCell : UserControl, IInitializeCluster
     private ClusterWorkspaceViewModel? _cluster;
 
     private V1Pod? _viewModel;
+    private readonly ObservableCollection<ViewModel> _containerStatuses = [];
 
     private GroupApiVersionKind _groupApiVersionKind = GroupApiVersionKind.From<V1Pod>();
 
@@ -26,6 +27,7 @@ public partial class PodContainerCell : UserControl, IInitializeCluster
     public PodContainerCell()
     {
         InitializeComponent();
+        ContainerStatuses = _containerStatuses;
 
 #if DEBUG
         if (Design.IsDesignMode)
@@ -96,14 +98,15 @@ public partial class PodContainerCell : UserControl, IInitializeCluster
 
     private void PopulateData()
     {
+        _containerStatuses.Clear();
+
         if (DataContext is V1Pod pod)
         {
             _viewModel = pod;
 
-            var coll = new ObservableCollection<ViewModel>();
             if (pod?.Status?.ContainerStatuses != null)
             {
-                coll.AddRange(pod.Status.ContainerStatuses.Select(x =>
+                _containerStatuses.AddRange(pod.Status.ContainerStatuses.Select(x =>
                 {
                     var vm = new ViewModel()
                     {
@@ -125,7 +128,7 @@ public partial class PodContainerCell : UserControl, IInitializeCluster
             }
             if (pod?.Status?.InitContainerStatuses != null)
             {
-                coll.AddRange(pod.Status.InitContainerStatuses.Select(x =>
+                _containerStatuses.AddRange(pod.Status.InitContainerStatuses.Select(x =>
                 {
                     var vm = new ViewModel()
                     {
@@ -148,7 +151,7 @@ public partial class PodContainerCell : UserControl, IInitializeCluster
             }
             if (pod?.Status?.EphemeralContainerStatuses != null)
             {
-                coll.AddRange(pod.Status.EphemeralContainerStatuses.Select(x =>
+                _containerStatuses.AddRange(pod.Status.EphemeralContainerStatuses.Select(x =>
                 {
                     var vm = new ViewModel()
                     {
@@ -170,7 +173,6 @@ public partial class PodContainerCell : UserControl, IInitializeCluster
                     return vm;
                 }));
             }
-            ContainerStatuses = coll;
         }
     }
 

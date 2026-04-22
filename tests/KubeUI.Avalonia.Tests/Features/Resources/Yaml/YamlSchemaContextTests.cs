@@ -322,6 +322,106 @@ public class YamlSchemaContextTests
     }
 
     [Fact]
+    public void Resolve_ReturnsDocumentationForImagePullPolicyInCalicoControllerManifest()
+    {
+        var document = new TextDocument(
+            """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              annotations:
+                cni.projectcalico.org/containerID: 32e3ced3c8334f980a2979d270e291671975b77f359837a46efb7de7ea80fbdf
+                cni.projectcalico.org/podIP: 10.1.43.214/32
+                cni.projectcalico.org/podIPs: 10.1.43.214/32
+              creationTimestamp: "2025-12-18T03:18:00Z"
+              generateName: calico-kube-controllers-6d7fffdff7-
+              generation: 1
+              labels:
+                k8s-app: calico-kube-controllers
+                pod-template-hash: 6d7fffdff7
+              name: calico-kube-controllers-6d7fffdff7-m67z2
+              namespace: kube-system
+              ownerReferences:
+              - apiVersion: apps/v1
+                blockOwnerDeletion: true
+                controller: true
+                kind: ReplicaSet
+                name: calico-kube-controllers-6d7fffdff7
+                uid: 09983864-0770-4948-ad18-81f9d9c2a408
+              resourceVersion: "801284056"
+              uid: a98d0cf5-ee3e-4107-814b-21a877a2f052
+            spec:
+              containers:
+              - env:
+                - name: ENABLED_CONTROLLERS
+                  value: node
+                - name: DATASTORE_TYPE
+                  value: kubernetes
+                image: docker.io/calico/kube-controllers:v3.29.3
+                imagePullPolicy: IfNotPresent
+            """);
+
+        var offset = document.Text.LastIndexOf("imagePullPolicy", StringComparison.Ordinal) + 2;
+        var context = YamlSchemaContext.Resolve(document, offset, typeof(V1Pod), s_modelCache);
+
+        context.ContainerType.ShouldBe(typeof(V1Container));
+        context.CurrentProperty.ShouldNotBeNull();
+        context.CurrentProperty.Name.ShouldBe(nameof(V1Container.ImagePullPolicy));
+        context.Documentation.ShouldNotBeNull();
+        context.Documentation.DisplayText.ShouldContain("Image pull policy");
+    }
+
+    [Fact]
+    public void Resolve_ReturnsDocumentationForImagePullPolicyInCalicoControllerManifestWithoutTrailingNewline()
+    {
+        var document = new TextDocument((
+            """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              annotations:
+                cni.projectcalico.org/containerID: 32e3ced3c8334f980a2979d270e291671975b77f359837a46efb7de7ea80fbdf
+                cni.projectcalico.org/podIP: 10.1.43.214/32
+                cni.projectcalico.org/podIPs: 10.1.43.214/32
+              creationTimestamp: "2025-12-18T03:18:00Z"
+              generateName: calico-kube-controllers-6d7fffdff7-
+              generation: 1
+              labels:
+                k8s-app: calico-kube-controllers
+                pod-template-hash: 6d7fffdff7
+              name: calico-kube-controllers-6d7fffdff7-m67z2
+              namespace: kube-system
+              ownerReferences:
+              - apiVersion: apps/v1
+                blockOwnerDeletion: true
+                controller: true
+                kind: ReplicaSet
+                name: calico-kube-controllers-6d7fffdff7
+                uid: 09983864-0770-4948-ad18-81f9d9c2a408
+              resourceVersion: "801284056"
+              uid: a98d0cf5-ee3e-4107-814b-21a877a2f052
+            spec:
+              containers:
+              - env:
+                - name: ENABLED_CONTROLLERS
+                  value: node
+                - name: DATASTORE_TYPE
+                  value: kubernetes
+                image: docker.io/calico/kube-controllers:v3.29.3
+                imagePullPolicy: IfNotPresent
+            """).TrimEnd('\r', '\n'));
+
+        var offset = document.Text.LastIndexOf("imagePullPolicy", StringComparison.Ordinal) + 2;
+        var context = YamlSchemaContext.Resolve(document, offset, typeof(V1Pod), s_modelCache);
+
+        context.ContainerType.ShouldBe(typeof(V1Container));
+        context.CurrentProperty.ShouldNotBeNull();
+        context.CurrentProperty.Name.ShouldBe(nameof(V1Container.ImagePullPolicy));
+        context.Documentation.ShouldNotBeNull();
+        context.Documentation.DisplayText.ShouldContain("Image pull policy");
+    }
+
+    [Fact]
     public void Resolve_KeepsCollectionItemScopeAfterScalarCollectionField()
     {
         var document = new TextDocument(
@@ -378,9 +478,9 @@ public class YamlSchemaContextTests
 
         context.ContainerType.ShouldBe(typeof(V1PodSpec));
         context.CompletionItems.Select(item => item.Text).ShouldContain("containers");
-        context.KeyStartColumn.ShouldBe(2);
-        context.KeyEndColumn.ShouldBe(2);
-        context.KeyPrefix.ShouldBe(string.Empty);
+        context.Key.StartOffset.ShouldBe(document.TextLength);
+        context.Key.EndOffset.ShouldBe(document.TextLength);
+        context.Key.Prefix.ShouldBe(string.Empty);
     }
 
     [Fact]
@@ -399,7 +499,9 @@ public class YamlSchemaContextTests
 
         context.ContainerType.ShouldBe(typeof(V1Container));
         context.CompletionItems.Select(item => item.Text).ShouldContain("name");
-        context.KeyPrefix.ShouldBe(string.Empty);
+        context.Key.StartOffset.ShouldBe(document.TextLength);
+        context.Key.EndOffset.ShouldBe(document.TextLength);
+        context.Key.Prefix.ShouldBe(string.Empty);
     }
 
     [Fact]

@@ -14,6 +14,8 @@ namespace KubeUI.Avalonia.Features.Resources.Properties.Controls;
 public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
 {
     private readonly DispatcherTimer _timer = new(DispatcherPriority.Background);
+    private readonly ObservableCollection<ResourceEventItem> _items = [];
+    private readonly ReadOnlyObservableCollection<ResourceEventItem> _readOnlyItems;
     private readonly ReadOnlyObservableCollection<Corev1Event> _emptyEvents = new([]);
 
     private ClusterWorkspaceViewModel? _cluster;
@@ -21,6 +23,7 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
     private IDisposable? _eventCacheSubscription;
     private ReadOnlyObservableCollection<Corev1Event> _matchedEvents;
     private bool _isDetached;
+    private bool _refreshPending;
 
     private IKubernetesObject<V1ObjectMeta>? _resource;
 
@@ -33,6 +36,8 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
     public ResourceEventsView()
     {
         InitializeComponent();
+        _readOnlyItems = new ReadOnlyObservableCollection<ResourceEventItem>(_items);
+        Items = _readOnlyItems;
         _matchedEvents = _emptyEvents;
         _timer.Interval = TimeSpan.FromSeconds(1);
         _timer.Tick += Timer_Tick;
@@ -43,7 +48,7 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
         base.OnDataContextChanged(e);
         _resource = DataContext as IKubernetesObject<V1ObjectMeta>;
         RebuildEventSubscription();
-        Refresh();
+        RequestRefresh();
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -54,6 +59,8 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
         {
             _timer.Start();
         }
+
+        RequestRefresh();
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
@@ -87,12 +94,27 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
         }
 
         RebuildEventSubscription();
-        Refresh();
+        RequestRefresh();
     }
 
     private void Timer_Tick(object? sender, EventArgs e)
     {
-        Refresh();
+        RequestRefresh();
+    }
+
+    private void RequestRefresh()
+    {
+        if (_isDetached || _refreshPending || VisualRoot == null)
+        {
+            return;
+        }
+
+        _refreshPending = true;
+        Dispatcher.UIThread.Post(() =>
+        {
+            _refreshPending = false;
+            Refresh();
+        }, DispatcherPriority.Background);
     }
 
     private void Refresh()
@@ -134,7 +156,7 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
             .SortAndBind(
                 out _matchedEvents,
                 SortExpressionComparer<Corev1Event>.Descending(@event => ResourceEventsSelector.GetSortTimestamp(@event)))
-            .Subscribe(_ => Refresh());
+            .Subscribe(_ => RequestRefresh());
     }
 
     private void DisposeEventSubscription()
@@ -142,17 +164,28 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
         _eventCacheSubscription?.Dispose();
         _eventCacheSubscription = null;
         _matchedEvents = _emptyEvents;
+        _refreshPending = false;
     }
 
     private void Clear()
     {
-        Items = [];
+        if (_items.Count > 0)
+        {
+            _items.Clear();
+        }
+
         HasItems = false;
     }
 
     private void UpdateItems(ResourceEventItem[] items)
     {
-        Items = items;
+        _items.Clear();
+
+        for (var index = 0; index < items.Length; index++)
+        {
+            _items.Add(items[index]);
+        }
+
         HasItems = items.Length > 0;
     }
 }

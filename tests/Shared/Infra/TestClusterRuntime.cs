@@ -31,6 +31,7 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     private readonly ObservableCollection<V1Namespace> _namespaces = [];
     private readonly ReadOnlyObservableCollection<V1Namespace> _readonlyNamespaces;
     private readonly ConcurrentDictionary<string, bool> _permissions = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, string> _customResourceDefinitionSignatures = new(StringComparer.Ordinal);
     private static readonly Lazy<IGenerator> s_sharedGenerator = new(() =>
     {
         var g = new Generator();
@@ -54,6 +55,8 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     private bool _connected;
     private bool _defaultPermissionAllowed = true;
     private bool _listNamespaces;
+    private bool _authorizationIndexReady;
+    private long _authorizationIndexVersion;
     private string? _lastError;
     private bool _requiresNamespaceSelectionPrompt;
     private ClusterStatus _status;
@@ -128,6 +131,18 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
 
     public bool IsMetricsAvailable => true;
 
+    public bool AuthorizationIndexReady
+    {
+        get => _authorizationIndexReady;
+        set => SetProperty(ref _authorizationIndexReady, value);
+    }
+
+    public long AuthorizationIndexVersion
+    {
+        get => _authorizationIndexVersion;
+        set => SetProperty(ref _authorizationIndexVersion, value);
+    }
+
     public IKubernetes? Client
     {
         get => _client;
@@ -197,6 +212,7 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
 
         Objects.Clear();
         _namespaces.Clear();
+        _customResourceDefinitionSignatures.Clear();
         NodeMetrics.Clear();
         PodMetrics.Clear();
         Client = null;
@@ -204,6 +220,7 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
         Status = ClusterStatus.None;
         LastError = null;
         RequiresNamespaceSelectionPrompt = false;
+        AuthorizationIndexReady = false;
 
         return Task.CompletedTask;
     }
@@ -337,6 +354,13 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     public Task<bool> UpdateCanIAnyNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         return Task.FromResult(CanIAnyNamespace<T>(verb, subresource));
+    }
+
+    public Task RefreshAuthorizationIndexAsync(IEnumerable<AuthorizationRequest> requests)
+    {
+        AuthorizationIndexReady = true;
+        AuthorizationIndexVersion++;
+        return Task.CompletedTask;
     }
 
     public Task UpdatePermissionsAllNamespaceAsync(Type type, Verb verb, string? subresource = null)
@@ -646,6 +670,13 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
 
     private async Task ProcessCustomResourceDefinitionAsync(V1CustomResourceDefinition crd)
     {
+        var signature = GetCustomResourceDefinitionSignature(crd);
+        if (_customResourceDefinitionSignatures.TryGetValue(crd.Name(), out var existingSignature)
+            && string.Equals(existingSignature, signature, StringComparison.Ordinal))
+        {
+            return;
+        }
+
         var result = _generator.GenerateAssembly(crd, "KubeUI.Models");
 
         if (!result.Success || result.Assembly == null || result.XmlDocumentation == null)
@@ -660,6 +691,8 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
             throw new InvalidOperationException($"Unable to resolve generated type for {crd.Name()}");
         }
 
+        _customResourceDefinitionSignatures[crd.Name()] = signature;
+
         await ReplaceCustomResourceDefinitionArtifactsAsync(previousType, currentType);
         await Task.Yield();
         OnCustomResourceDefinitionReady?.Invoke(crd);
@@ -667,6 +700,7 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
 
     private void RemoveCustomResourceDefinitionArtifacts(V1CustomResourceDefinition crd)
     {
+        _customResourceDefinitionSignatures.TryRemove(crd.Name(), out _);
         var removedType = ModelCache.RemoveCustomResourceDefinition(crd);
         if (removedType != null)
         {
@@ -730,6 +764,11 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     {
         var kind = GroupApiVersionKind.From(type);
         return $"{verb}:{kind.Group}:{kind.PluralName}:{@namespace}:{subresource}:{kind.ApiVersion}";
+    }
+
+    private static string GetCustomResourceDefinitionSignature(V1CustomResourceDefinition crd)
+    {
+        return System.Text.Json.JsonSerializer.Serialize(crd.Spec);
     }
 
     private static void ClearResourceContainer(IClearableResourceContainer container)

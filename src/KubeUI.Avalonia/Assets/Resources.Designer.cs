@@ -2507,6 +2507,15 @@ namespace KubeUI.Avalonia.Assets {
                 return ResourceManager.GetString("PodPropertiesView_Containers", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Ephemeral Containers.
+        /// </summary>
+        public static string PodPropertiesView_EphemeralContainers {
+            get {
+                return ResourceManager.GetString("PodPropertiesView_EphemeralContainers", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to Controlled By.

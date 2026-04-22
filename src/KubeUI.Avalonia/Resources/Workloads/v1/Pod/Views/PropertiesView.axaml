@@ -53,6 +53,45 @@
                 <c:CollectionItem Key="Limits" Value="{Binding Resources.Limits}" />
             </StackPanel>
         </DataTemplate>
+        <DataTemplate x:Key="V1EphemeralContainerTemplate" x:DataType="models:V1EphemeralContainer">
+            <StackPanel>
+                <c:PropertyItem Key="{x:Static assets:Resources.PodPropertiesView_Name}" Value="{Binding Name}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.PodPropertiesView_Image}" Value="{Binding Image}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.PodPropertiesView_PullPolicy}" Value="{Binding ImagePullPolicy}" />
+                <c:CollectionItem Key="Ports" Value="{Binding Ports}">
+                    <c:CollectionItem.ItemTemplate>
+                        <DataTemplate x:DataType="models:V1ContainerPort">
+                            <SelectableTextBlock Text="{Binding ContainerPort}" TextWrapping="Wrap" />
+                        </DataTemplate>
+                    </c:CollectionItem.ItemTemplate>
+                </c:CollectionItem>
+                <c:CollectionItem Key="Environment" Value="{Binding Env}">
+                    <c:CollectionItem.ItemTemplate>
+                        <DataTemplate x:DataType="models:V1EnvVar">
+                            <SelectableTextBlock>
+                                <SelectableTextBlock.Text>
+                                    <MultiBinding StringFormat="{}{0}={1}">
+                                        <Binding Path="Name" />
+                                        <Binding Path="Value" />
+                                    </MultiBinding>
+                                </SelectableTextBlock.Text>
+                            </SelectableTextBlock>
+                        </DataTemplate>
+                    </c:CollectionItem.ItemTemplate>
+                </c:CollectionItem>
+                <c:CollectionItem Key="Mounts" Value="{Binding VolumeMounts}">
+                    <c:CollectionItem.ItemTemplate>
+                        <DataTemplate x:DataType="models:V1VolumeMount">
+                            <SelectableTextBlock Text="{Binding MountPath}" />
+                        </DataTemplate>
+                    </c:CollectionItem.ItemTemplate>
+                </c:CollectionItem>
+                <c:CollectionItem Key="Command" Value="{Binding Command}" />
+                <c:CollectionItem Key="Arguments" Value="{Binding Args}" />
+                <c:CollectionItem Key="Requests" Value="{Binding Resources.Requests}" />
+                <c:CollectionItem Key="Limits" Value="{Binding Resources.Limits}" />
+            </StackPanel>
+        </DataTemplate>
     </UserControl.Resources>
     <StackPanel>
         <c:PropertyItem Key="{x:Static assets:Resources.PodPropertiesView_ControlledBy}" Value="{Binding ., Converter={x:Static converters:Converters.ObjectOwnerName}}" />
@@ -110,6 +149,13 @@
             IsExpanded="True"
             IsVisible="{Binding Spec.InitContainers, Converter={x:Static converters:NotEmptyCollectionConverter.Instance}}">
             <ItemsControl ItemTemplate="{StaticResource V1ContainerTemplate}" ItemsSource="{Binding Spec.InitContainers}" />
+        </c:ExpandableSection>
+
+        <c:ExpandableSection
+            Header="{x:Static assets:Resources.PodPropertiesView_EphemeralContainers}"
+            IsExpanded="True"
+            IsVisible="{Binding Spec.EphemeralContainers, Converter={x:Static converters:NotEmptyCollectionConverter.Instance}}">
+            <ItemsControl ItemTemplate="{StaticResource V1EphemeralContainerTemplate}" ItemsSource="{Binding Spec.EphemeralContainers}" />
         </c:ExpandableSection>
 
         <c:ExpandableSection Header="{x:Static assets:Resources.PodPropertiesView_Containers}" IsExpanded="True">
