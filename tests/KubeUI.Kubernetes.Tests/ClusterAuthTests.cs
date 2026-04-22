@@ -1,4 +1,7 @@
+using System.Collections.Concurrent;
+using System.Reflection;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubernetesCRDModelGen;
 using KubeUI.Kubernetes;
 using KubeUI.Testing;
@@ -39,6 +42,40 @@ public sealed class ClusterAuthTests
         });
 
         cluster.CanIAnyNamespace<V1Pod>(Verb.Create, "portforward").ShouldBeTrue();
+    }
+
+    [Fact]
+    public void removing_seeded_resource_container_also_clears_cached_seed_task()
+    {
+        using var loggerFactory = NullLoggerFactory.Instance;
+        var cluster = new Cluster(
+            NullLogger<Cluster>.Instance,
+            loggerFactory,
+            new ModelCache(),
+            new Generator(),
+            new TestClusterSettingsStore(),
+            new ServiceCollection().BuildServiceProvider());
+
+        var kind = GroupApiVersionKind.From<V1Pod>();
+        cluster.Objects[kind] = new ContainerClass<V1Pod>
+        {
+            Initialized = true,
+        };
+
+        var seedTasksField = typeof(Cluster).GetField("_seedTasks", BindingFlags.Instance | BindingFlags.NonPublic);
+        seedTasksField.ShouldNotBeNull();
+
+        var seedTasks = seedTasksField!.GetValue(cluster).ShouldBeOfType<ConcurrentDictionary<GroupApiVersionKind, Lazy<Task>>>();
+        seedTasks[kind] = new Lazy<Task>(() => Task.CompletedTask);
+
+        var invalidateSeededResourceMethod = typeof(Cluster).GetMethod("InvalidateSeededResource", BindingFlags.Instance | BindingFlags.NonPublic);
+        invalidateSeededResourceMethod.ShouldNotBeNull();
+
+        var invalidated = invalidateSeededResourceMethod!.Invoke(cluster, [typeof(V1Pod)]).ShouldBeOfType<bool>();
+
+        invalidated.ShouldBeTrue();
+        cluster.Objects.ContainsKey(kind).ShouldBeFalse();
+        seedTasks.ContainsKey(kind).ShouldBeFalse();
     }
 
     private sealed class TestClusterSettingsStore : IClusterSettingsStore

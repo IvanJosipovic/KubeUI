@@ -751,6 +751,9 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             return;
         }
 
+        var addedConfigList = addedConfigs as IReadOnlyList<PendingCustomResourceConfig> ?? addedConfigs.ToList();
+        ReloadOpenCustomResourceDocuments(cluster, addedConfigList);
+
         var root = GetOrCreateCustomResourceDefinitionsRoot(node, cluster);
         if (root == null)
         {
@@ -762,7 +765,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             RemoveCustomResourceDefinition(root, cluster, removedKind);
         }
 
-        foreach (var addedConfig in addedConfigs)
+        foreach (var addedConfig in addedConfigList)
         {
             ApplyCustomResourceNavigationUpdate(node, cluster, addedConfig.ResourceConfig, isVisible: true);
         }
@@ -1408,32 +1411,33 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private void OpenResourceNavigation(ResourceNavigationLink nav, bool forceNewTab = false)
     {
-        if (nav.ControlType == null)
+        var currentResourceConfig = ResolveCurrentResourceConfig(nav);
+        if (currentResourceConfig == null)
         {
             _logger.LogError("Unable to resolve resource navigation target for {Name}", nav.Name);
             return;
         }
 
-        var expectedId = $"{nav.Cluster.Name}-{GroupApiVersionKind.From(nav.ControlType)}";
+        var expectedId = $"{nav.Cluster.Name}-{currentResourceConfig.Kind}";
 
-        if (!forceNewTab && FindExistingResourceDocument(nav) is IDockable existingDocument)
+        if (!forceNewTab && FindExistingResourceDocument(nav.Cluster, currentResourceConfig.Kind) is IDockable existingDocument)
         {
+            if (existingDocument is IResourceListViewModel existingResourceList
+                && existingResourceList.ResourceConfig.Type != currentResourceConfig.Type)
+            {
+                existingDocument = ReplaceResourceDocument(existingResourceList, currentResourceConfig.Type) ?? existingDocument;
+            }
+
             ActivateDocument(existingDocument);
             return;
         }
 
-        var resourceListType = typeof(ResourceListViewModel<>).MakeGenericType(nav.ControlType);
-        var vm = _serviceProvider.GetRequiredService(resourceListType) as IDockable;
+        var vm = CreateResourceDocument(nav.Cluster, currentResourceConfig.Type);
 
         if (vm == null)
         {
             _logger.LogError("Unable to resolve resource list view model for {Name}", nav.Name);
             return;
-        }
-
-        if (vm is IInitializeCluster init)
-        {
-            init.Initialize(nav.Cluster);
         }
 
         if (forceNewTab)
@@ -1553,13 +1557,113 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         Factory.SetFocusedDockable(documents, dockable);
     }
 
-    private IDockable? FindExistingResourceDocument(ResourceNavigationLink nav)
+    private IResourceConfig? ResolveCurrentResourceConfig(ResourceNavigationLink nav)
     {
         if (nav.ControlType == null)
         {
             return null;
         }
 
+        var kind = GroupApiVersionKind.From(nav.ControlType);
+        return nav.Cluster.GetResourceConfigs().FirstOrDefault(config => config.Kind == kind);
+    }
+
+    private IDockable? CreateResourceDocument(ClusterWorkspaceViewModel cluster, Type resourceType)
+    {
+        var resourceListType = typeof(ResourceListViewModel<>).MakeGenericType(resourceType);
+        if (_serviceProvider.GetRequiredService(resourceListType) is not IDockable vm)
+        {
+            return null;
+        }
+
+        if (vm is IInitializeCluster init)
+        {
+            init.Initialize(cluster);
+        }
+
+        return vm;
+    }
+
+    private void ReloadOpenCustomResourceDocuments(ClusterWorkspaceViewModel cluster, IReadOnlyList<PendingCustomResourceConfig> addedConfigs)
+    {
+        var documents = Factory.GetDockable<IDocumentDock>("Documents");
+        var visibleDockables = documents?.VisibleDockables;
+        if (visibleDockables == null || visibleDockables.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var addedConfig in addedConfigs)
+        {
+            var staleDocuments = visibleDockables
+                .OfType<IResourceListViewModel>()
+                .Where(resourceList =>
+                    ReferenceEquals(resourceList.Cluster, cluster)
+                    && resourceList.Kind == addedConfig.Kind
+                    && resourceList.ResourceConfig.Type != addedConfig.ResourceConfig.Type)
+                .Cast<IDockable>()
+                .ToList();
+
+            foreach (var staleDocument in staleDocuments)
+            {
+                if (staleDocument is IResourceListViewModel staleResourceList)
+                {
+                    ReplaceResourceDocument(staleResourceList, addedConfig.ResourceConfig.Type);
+                }
+            }
+        }
+    }
+
+    private IDockable? ReplaceResourceDocument(IResourceListViewModel existingResourceList, Type resourceType)
+    {
+        if (existingResourceList is not IDockable existingDockable)
+        {
+            return null;
+        }
+
+        var documents = Factory.GetDockable<IDocumentDock>("Documents");
+        var visibleDockables = documents?.VisibleDockables;
+        if (documents == null || visibleDockables == null)
+        {
+            return null;
+        }
+
+        var replacement = CreateResourceDocument(existingResourceList.Cluster, resourceType);
+        if (replacement is not IResourceListViewModel replacementResourceList)
+        {
+            return null;
+        }
+
+        replacement.Id = existingDockable.Id;
+        replacementResourceList.IsNamespaceSelectionLinked = existingResourceList.IsNamespaceSelectionLinked;
+        replacementResourceList.SearchQuery = existingResourceList.SearchQuery;
+
+        if (!replacementResourceList.IsNamespaceSelectionLinked)
+        {
+            replacementResourceList.SelectedNamespaces.Clear();
+            foreach (var selectedNamespace in existingResourceList.SelectedNamespaces)
+            {
+                replacementResourceList.SelectedNamespaces.Add(selectedNamespace);
+            }
+        }
+
+        var insertIndex = visibleDockables.IndexOf(existingDockable);
+        var wasActive = ReferenceEquals(documents.ActiveDockable, existingDockable);
+
+        Factory.CloseDockable(existingDockable);
+        Factory.InsertDockable(documents, replacement, Math.Max(0, Math.Min(insertIndex, documents.VisibleDockables?.Count ?? 0)));
+
+        if (wasActive)
+        {
+            Factory.SetActiveDockable(replacement);
+            Factory.SetFocusedDockable(documents, replacement);
+        }
+
+        return replacement;
+    }
+
+    private IDockable? FindExistingResourceDocument(ClusterWorkspaceViewModel cluster, GroupApiVersionKind kind)
+    {
         var documents = Factory.GetDockable<IDocumentDock>("Documents");
         if (documents?.VisibleDockables == null)
         {
@@ -1569,8 +1673,8 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         return documents.VisibleDockables
             .OfType<IResourceListViewModel>()
             .FirstOrDefault(resourceList =>
-                ReferenceEquals(resourceList.Cluster, nav.Cluster)
-                && resourceList.ResourceConfig.Type == nav.ControlType) as IDockable;
+                ReferenceEquals(resourceList.Cluster, cluster)
+                && resourceList.Kind == kind) as IDockable;
     }
 
     private string CreateUniqueDockableId(string baseId)
@@ -1633,4 +1737,3 @@ internal sealed class PendingClusterNavigationUpdate
         }
     }
 }
-
