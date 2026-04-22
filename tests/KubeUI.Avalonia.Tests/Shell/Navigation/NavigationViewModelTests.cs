@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
@@ -16,10 +17,12 @@ using FluentAvalonia.UI.Controls;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.Features.Resources.List.ViewModels;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Kubernetes;
+using KubeUI.Testing;
 using Moq;
 using Shouldly;
 
@@ -166,6 +169,35 @@ public class NavigationViewModelTests : AvaloniaTestBase
         }
 
         return null;
+    }
+
+    private static Type? GetCustomResourceType(TestClusterRuntime runtime, V1CustomResourceDefinition crd)
+    {
+        var version = crd.Spec?.Versions?.FirstOrDefault(x => x.Served && x.Storage)?.Name;
+        return version == null ? null : runtime.ModelCache.GetResourceType(crd.Spec.Group, version, crd.Spec.Names.Kind);
+    }
+
+    private static async Task AddGeneratedCustomResourceAsync(ClusterWorkspaceViewModel cluster, Type resourceType, V1CustomResourceDefinition crd, string @namespace, string name)
+    {
+        var resource = Activator.CreateInstance(resourceType).ShouldNotBeNull();
+        var metadata = new V1ObjectMeta
+        {
+            NamespaceProperty = @namespace,
+            Name = name,
+            CreationTimestamp = DateTime.UtcNow,
+        };
+
+        resourceType.GetProperty(nameof(IKubernetesObject<V1ObjectMeta>.Metadata))?.SetValue(resource, metadata);
+        resourceType.GetProperty(nameof(IKubernetesObject.ApiVersion))?.SetValue(resource, $"{crd.Spec.Group}/{crd.Spec.Versions.First(x => x.Served && x.Storage).Name}");
+        resourceType.GetProperty(nameof(IKubernetesObject.Kind))?.SetValue(resource, crd.Spec.Names.Kind);
+
+        var addOrUpdateMethod = typeof(ClusterWorkspaceViewModel)
+            .GetMethods(BindingFlags.Instance | BindingFlags.Public)
+            .First(x => x.Name == nameof(ClusterWorkspaceViewModel.AddOrUpdateResource) && x.IsGenericMethodDefinition && x.GetParameters().Length == 1)
+            .MakeGenericMethod(resourceType);
+
+        await (Task)addOrUpdateMethod.Invoke(cluster, [resource])!;
+        Dispatcher.UIThread.RunJobs();
     }
 
     [AvaloniaFact]
@@ -1427,6 +1459,132 @@ public class NavigationViewModelTests : AvaloniaTestBase
 
         rebuiltResourceLink.ShouldNotBeNull();
         (rebuiltResourceLink.Count is not null).ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task updated_crd_reloads_open_resource_list_document_to_the_new_generated_type()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+
+        var workspace = CreateWorkspace(runtime);
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+        Dispatcher.UIThread.RunJobs();
+
+        var originalCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
+        await runtime.AddOrUpdateResource(originalCrd);
+
+        var originalType = await WaitForValueAsync(() => GetCustomResourceType(runtime, originalCrd));
+        originalType.ShouldNotBeNull();
+        await AddGeneratedCustomResourceAsync(workspace, originalType, originalCrd, "default", "old-item");
+
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        var originalLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, "Tests"));
+        originalLink.ShouldNotBeNull();
+
+        await vm.OpenResourceNavigationCommand.ExecuteAsync(originalLink);
+        Dispatcher.UIThread.RunJobs();
+
+        var documents = vm.Factory.GetDockable<IDocumentDock>("Documents");
+        documents.ShouldNotBeNull();
+
+        await WaitForAsync(() =>
+            documents.VisibleDockables?.OfType<IResourceListViewModel>().Any(x => ReferenceEquals(x.Cluster, workspace) && x.Kind == GroupApiVersionKind.From(originalType)) == true);
+
+        var originalDocument = documents.VisibleDockables!
+            .OfType<IResourceListViewModel>()
+            .Single(x => ReferenceEquals(x.Cluster, workspace) && x.Kind == GroupApiVersionKind.From(originalType));
+
+        var updatedCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "otherString");
+        await runtime.AddOrUpdateResource(updatedCrd);
+
+        var updatedType = await WaitForValueAsync(() => GetCustomResourceType(runtime, updatedCrd));
+        updatedType.ShouldNotBeNull();
+        updatedType.ShouldNotBe(originalType);
+        await AddGeneratedCustomResourceAsync(workspace, updatedType, updatedCrd, "default", "new-item");
+
+        await WaitForAsync(() =>
+            documents.VisibleDockables?.OfType<IResourceListViewModel>().Any(x =>
+                ReferenceEquals(x.Cluster, workspace)
+                && x.Kind == GroupApiVersionKind.From(updatedType)
+                && x.ResourceConfig.Type == updatedType
+                && x.ItemCount == 1) == true);
+
+        documents.VisibleDockables!
+            .OfType<IResourceListViewModel>()
+            .Any(x => ReferenceEquals(x, originalDocument))
+            .ShouldBeFalse();
+
+        var reloadedDocument = documents.VisibleDockables!
+            .OfType<IResourceListViewModel>()
+            .Single(x => ReferenceEquals(x.Cluster, workspace) && x.Kind == GroupApiVersionKind.From(updatedType));
+
+        reloadedDocument.ResourceConfig.Type.ShouldBe(updatedType);
+        reloadedDocument.ItemCount.ShouldBe(1);
+    }
+
+    [AvaloniaFact]
+    public async Task stale_crd_navigation_link_opens_the_current_generated_resource_type()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+
+        var workspace = CreateWorkspace(runtime);
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+        Dispatcher.UIThread.RunJobs();
+
+        var originalCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
+        await runtime.AddOrUpdateResource(originalCrd);
+
+        var originalType = await WaitForValueAsync(() => GetCustomResourceType(runtime, originalCrd));
+        originalType.ShouldNotBeNull();
+
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        var staleLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, "Tests"));
+        staleLink.ShouldNotBeNull();
+        staleLink.ControlType.ShouldBe(originalType);
+
+        var updatedCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "otherString");
+        await runtime.AddOrUpdateResource(updatedCrd);
+
+        var updatedType = await WaitForValueAsync(() => GetCustomResourceType(runtime, updatedCrd));
+        updatedType.ShouldNotBeNull();
+        updatedType.ShouldNotBe(originalType);
+        await AddGeneratedCustomResourceAsync(workspace, updatedType, updatedCrd, "default", "new-item");
+
+        await vm.OpenResourceNavigationCommand.ExecuteAsync(staleLink);
+        Dispatcher.UIThread.RunJobs();
+
+        var documents = vm.Factory.GetDockable<IDocumentDock>("Documents");
+        documents.ShouldNotBeNull();
+
+        await WaitForAsync(() =>
+            documents.VisibleDockables?.OfType<IResourceListViewModel>().Any(x =>
+                ReferenceEquals(x.Cluster, workspace)
+                && x.Kind == GroupApiVersionKind.From(updatedType)
+                && x.ResourceConfig.Type == updatedType
+                && x.ItemCount == 1) == true);
+
+        var openedDocument = documents.VisibleDockables!
+            .OfType<IResourceListViewModel>()
+            .Single(x => ReferenceEquals(x.Cluster, workspace) && x.Kind == GroupApiVersionKind.From(updatedType));
+
+        openedDocument.ResourceConfig.Type.ShouldBe(updatedType);
+        openedDocument.ItemCount.ShouldBe(1);
     }
 
     [AvaloniaFact]
