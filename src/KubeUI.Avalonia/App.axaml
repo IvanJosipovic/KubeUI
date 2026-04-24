@@ -79,7 +79,7 @@
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.v2.xaml" />
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
         <DockFluentTheme />
-        <StyleInclude Source="avares://AvaloniaTerminal/Styles/Colors.axaml" />
+        <StyleInclude Source="avares://SvcSystems.UI.Terminal/Styles/Colors.axaml" />
         <StyleInclude Source="avares://KubeUI.Avalonia/Styles/Fluent.axaml" />
     </Application.Styles>
 
