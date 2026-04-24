@@ -457,6 +457,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
 public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
+    private const string NullableValueMissingMessage = "Nullable object must have a value.";
     private Func<T, TValue>? _fieldAccessor;
     private IDataGridColumnValueAccessor? _valueAccessor;
     private string? _key;
@@ -495,7 +496,7 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
     public IDataGridColumnValueAccessor ValueAccessor => _valueAccessor ??= new LambdaColumnValueAccessor(GetFieldAccessor());
 
     public Func<object, IComparable?> SortKey =>
-        o => (IComparable?)(object?)GetFieldAccessor()((T)o);
+        o => GetFieldValue((T)o) as IComparable;
 
     public Func<object, string> DisplayValue =>
         o =>
@@ -503,7 +504,7 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
             var t = (T)o;
             if (Display != null)
                 return Display(t);
-            var v = GetFieldAccessor()(t);
+            var v = GetFieldValue(t);
             return v?.ToString() ?? "";
         };
 
@@ -511,6 +512,18 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
     {
         _fieldAccessor ??= Field;
         return _fieldAccessor;
+    }
+
+    private object? GetFieldValue(T item)
+    {
+        try
+        {
+            return GetFieldAccessor()(item);
+        }
+        catch (InvalidOperationException ex) when (ex.Message == NullableValueMissingMessage)
+        {
+            return null;
+        }
     }
 
     private static string NormalizeKey(string value)
@@ -560,7 +573,14 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
 
         public object GetValue(object item)
         {
-            return _getter((T)item)!;
+            try
+            {
+                return _getter((T)item)!;
+            }
+            catch (InvalidOperationException ex) when (ex.Message == NullableValueMissingMessage)
+            {
+                return null!;
+            }
         }
 
         public void SetValue(object item, object value)
@@ -569,7 +589,6 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
         }
     }
 }
-
 
 
 
