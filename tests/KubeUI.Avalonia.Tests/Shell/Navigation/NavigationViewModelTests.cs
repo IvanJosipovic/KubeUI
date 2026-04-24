@@ -312,6 +312,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
     {
         var runtime = new TestCluster
         {
+            Name = "settings-reuse-" + Guid.NewGuid().ToString("N"),
             Connected = false,
             Status = ClusterStatus.None,
             ListNamespaces = false,
@@ -382,20 +383,27 @@ public class NavigationViewModelTests : AvaloniaTestBase
             ?? throw new InvalidOperationException("Test services are not initialized.");
         existingSettings.Initialize(workspace);
         vm.Factory.AddToDocuments(existingSettings);
+        Dispatcher.UIThread.RunJobs();
 
         var documents = vm.Factory.GetDockable<IDocumentDock>("Documents");
         documents.ShouldNotBeNull();
+
+        await WaitForAsync(() =>
+            documents.VisibleDockables?.OfType<ClusterSettingsViewModel>().Count(x => x.Id == existingSettings.Id) == 1,
+            10000);
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         await vm.TreeViewSelectionChangedAsync(clusterNode);
 
         await WaitForAsync(() =>
-            documents.VisibleDockables?.OfType<ClusterSettingsViewModel>().Count(x => x.Id == existingSettings.Id) == 1);
+        {
+            var visibleSettings = documents.VisibleDockables?.OfType<ClusterSettingsViewModel>().ToList();
+            return visibleSettings?.Count(x => x.Id == existingSettings.Id) == 1;
+        }, 10000);
 
-        documents.VisibleDockables!
-            .OfType<ClusterSettingsViewModel>()
-            .Count(x => x.Id == existingSettings.Id)
-            .ShouldBe(1);
+        var visibleDockables = documents.VisibleDockables!.OfType<ClusterSettingsViewModel>().ToList();
+        var matchingDockables = visibleDockables.Where(x => x.Id == existingSettings.Id).ToList();
+        matchingDockables.Count.ShouldBe(1, $"visibleIds={string.Join(",", visibleDockables.Select(x => x.Id))}");
     }
 
     [AvaloniaFact]
@@ -463,6 +471,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         await connectCompleted.Task.WaitAsync(TimeSpan.FromSeconds(5));
         Dispatcher.UIThread.RunJobs();
 
+        runtime.LastError.ShouldBeNull();
         runtime.Status.ShouldBe(ClusterStatus.Connected);
         documents.VisibleDockables!
             .OfType<ClusterSettingsViewModel>()
@@ -756,8 +765,10 @@ public class NavigationViewModelTests : AvaloniaTestBase
         await vm.TreeViewSelectionChangedAsync(clusterNode);
 
         await WaitForAsync(() => workspace.Namespaces.Any(x => x.Name() == "my-app"));
-        await WaitForAsync(() => workspace.GetResourceConfig<V1Pod>().PermissionsLoaded);
-        workspace.GetResourceConfig<V1Pod>().CanListAndWatch.ShouldBeTrue();
+        await WaitForAsync(() => workspace.GetResourceConfigs().Any(x => x.Type == typeof(V1Pod) && x.PermissionsLoaded));
+
+        var podConfig = workspace.GetResourceConfig<V1Pod>();
+        podConfig.CanListAndWatch.ShouldBeTrue();
 
         await WaitForAsync(() => FindResourceLink(clusterNode, "Pods") != null);
 
