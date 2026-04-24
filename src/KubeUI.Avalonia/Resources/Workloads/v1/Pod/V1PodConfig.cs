@@ -153,6 +153,43 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
             },
             new()
             {
+                Header = "Attach",
+                FluentIcon = Icon.Link,
+                Items = selectedItem == null ? null : new AvaloniaList<MenuItemViewModel>([
+                    new()
+                    {
+                        Header = "Init",
+                        Items = [.. initContainers.Select(c => new MenuItemViewModel()
+                        {
+                            Header = c.Name,
+                            Command = AttachConsoleCommand,
+                            CommandParameter = new ArrayList { selectedItem, c },
+                        }).ToList()],
+                    },
+                    new()
+                    {
+                        Header = "Normal",
+                        Items = [.. containers.Select(c => new MenuItemViewModel()
+                        {
+                            Header = c.Name,
+                            Command = AttachConsoleCommand,
+                            CommandParameter = new ArrayList { selectedItem, c },
+                        }).ToList()],
+                    },
+                    new()
+                    {
+                        Header = "Ephemeral",
+                        Items = [.. ephemeralContainers.Select(c => new MenuItemViewModel()
+                        {
+                            Header = c.Name,
+                            Command = AttachConsoleCommand,
+                            CommandParameter = new ArrayList { selectedItem, c },
+                        }).ToList()],
+                    },
+                ]),
+            },
+            new()
+            {
                 Header = "View Logs",
                 FluentIcon = Icon.TextDescription,
                 Items = selectedItem == null ? null : new AvaloniaList<MenuItemViewModel>([
@@ -229,6 +266,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         (Verb.Get, "log"),
         (Verb.Create, "portforward"),
         (Verb.Create, "exec"),
+        (Verb.Create, "attach"),
         (Verb.Update, "ephemeralcontainers"),
     ];
 
@@ -326,6 +364,50 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 
     private bool CanViewConsole(IList? parameters)
     {
+        return CanOpenConsole(parameters, "exec");
+    }
+
+    [RelayCommand(CanExecute = nameof(CanAttachConsole))]
+    private void AttachConsole(IList parameters)
+    {
+        if (parameters?.Count != 2 || parameters[0] is not V1Pod pod)
+        {
+            return;
+        }
+
+        string? containerName = null;
+
+        if (parameters[1] is V1Container container)
+        {
+            containerName = container.Name;
+        }
+        else if (parameters[1] is k8s.Models.V1EphemeralContainer ephemeral)
+        {
+            containerName = ephemeral.Name;
+        }
+
+        if (containerName == null)
+        {
+            return;
+        }
+
+        var vm = ServiceProvider.GetRequiredService<PodConsoleViewModel>();
+        vm.Cluster = Cluster;
+        vm.Object = pod;
+        vm.ContainerName = containerName;
+        vm.UseAttach = true;
+        vm.Id = $"{nameof(AttachConsole)}-{Cluster.Name}-{pod.Namespace()}-{pod.Name()}-{containerName}";
+
+        _factory.AddToBottom(vm);
+    }
+
+    private bool CanAttachConsole(IList? parameters)
+    {
+        return CanOpenConsole(parameters, "attach");
+    }
+
+    private bool CanOpenConsole(IList? parameters, string subResource)
+    {
         if (parameters?.Count != 2)
         {
             return false;
@@ -333,7 +415,7 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 
         if (parameters?[0] is V1Pod pod && (parameters?[1] is V1Container || parameters?[1] is k8s.Models.V1EphemeralContainer))
         {
-            return Cluster.CanI<V1Pod>(Verb.Create, pod.Namespace(), "exec");
+            return Cluster.CanI<V1Pod>(Verb.Create, pod.Namespace(), subResource);
         }
 
         return false;
@@ -427,6 +509,5 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 
     public override Control[] Properties(V1Pod resource) => [new PropertiesView()];
 }
-
 
 

@@ -13,6 +13,13 @@ namespace KubeUI.Avalonia.Resources.Network.v1.Service;
 
 public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
 {
+    private static readonly AuthorizationRequest[] s_portForwardAuthorizationRequests =
+    [
+        new(typeof(V1Pod), Verb.Create, "portforward"),
+        new(typeof(V1EndpointSlice), Verb.List, null),
+        new(typeof(V1EndpointSlice), Verb.Watch, null),
+    ];
+
     public V1ServiceConfig(IServiceProvider serviceProvider)
         : base(serviceProvider)
     {
@@ -47,6 +54,11 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
             },
             AgeColumn(),
         ];
+    }
+
+    public override IEnumerable<AuthorizationRequest> AuthorizationRequests()
+    {
+        return base.AuthorizationRequests().Concat(s_portForwardAuthorizationRequests);
     }
 
     protected override IEnumerable<MenuItemViewModel> CreateCustomMenuItems(IEnumerable<V1Service>? selectedItems)
@@ -111,5 +123,4 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
 
     public override Control[] Properties(V1Service resource) => [new PropertiesView()];
 }
-
 
