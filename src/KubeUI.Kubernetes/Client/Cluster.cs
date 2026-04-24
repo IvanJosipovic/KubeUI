@@ -522,14 +522,14 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         var removedType = ModelCache.RemoveCustomResourceDefinition(crd);
         if (removedType != null)
         {
-            RemoveSeededResourceContainer(removedType);
+            InvalidateSeededResource(removedType);
         }
     }
 
     private async Task ReplaceCustomResourceDefinitionArtifactsAsync(Type? previousType, Type currentType)
     {
-        var hadExistingContainer = previousType != null && RemoveSeededResourceContainer(previousType);
-        if (!hadExistingContainer)
+        var invalidatedSeedState = previousType != null && InvalidateSeededResource(previousType);
+        if (!invalidatedSeedState)
         {
             return;
         }
@@ -537,20 +537,21 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
         await SeedResourceAsync(currentType).ConfigureAwait(false);
     }
 
-    private bool RemoveSeededResourceContainer(Type resourceType)
+    private bool InvalidateSeededResource(Type resourceType)
     {
         var kind = GroupApiVersionKind.From(resourceType);
+        var removedSeedTask = _seedTasks.TryRemove(kind, out _);
+
         if (!Objects.TryRemove(kind, out var existingContainer))
         {
-            return false;
+            return removedSeedTask;
         }
 
-        if (existingContainer is not IClearableResourceContainer resourceContainer)
+        if (existingContainer is IClearableResourceContainer resourceContainer)
         {
-            return false;
+            ClearResourceContainer(resourceContainer);
         }
 
-        ClearResourceContainer(resourceContainer);
         return true;
     }
 
