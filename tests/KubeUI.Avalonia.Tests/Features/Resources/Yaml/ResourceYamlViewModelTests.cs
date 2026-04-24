@@ -1,15 +1,18 @@
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Avalonia.Xaml.Interactivity;
+using AvaloniaEdit;
 using AvaloniaEdit.CodeCompletion;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Editing;
 using AvaloniaEdit.Folding;
+using AvaloniaEdit.Rendering;
 using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
@@ -185,6 +188,19 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
 
         var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
         foldings.Count.ShouldBe(0);
+    }
+
+    [AvaloniaFact]
+    public void YamlEditorScrollBehavior_TreatsNearlyEqualOffsetsAsEqual()
+    {
+        var method = typeof(YamlEditorScrollBehavior).GetMethod("AreOffsetsClose", BindingFlags.Static | BindingFlags.NonPublic);
+        method.ShouldNotBeNull();
+
+        var closeResult = (bool)method.Invoke(null, [new Vector(10, 20), new Vector(10.25, 20.25)])!;
+        closeResult.ShouldBeTrue();
+
+        var farResult = (bool)method.Invoke(null, [new Vector(10, 20), new Vector(11, 20)])!;
+        farResult.ShouldBeFalse();
     }
 
     [AvaloniaFact]
@@ -490,6 +506,1262 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         var completionWindow = GetCompletionWindow(behavior);
         completionWindow.ShouldNotBeNull();
         completionWindow!.IsOpen.ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public void ResourceYamlView_ShowsDocumentationPopupOnHoverOverFieldName()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            spec: value
+            metadata:
+              name: test
+              namespace: default
+            """.ReplaceLineEndings("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+
+        var fieldNameOffset = editor.Document!.Text.IndexOf("spec", StringComparison.Ordinal) + 1;
+        var shown = InvokeHoverTooltip(editor, fieldNameOffset);
+        shown.ShouldBeTrue();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var popup = GetDocumentationWindow(editor);
+        popup.ShouldNotBeNull();
+        popup!.ShouldBeOfType<StackPanel>();
+        ToolTip.GetIsOpen(editor).ShouldBeTrue();
+
+        var panel = (StackPanel)popup;
+        var title = panel.Children.OfType<TextBlock>().FirstOrDefault();
+        title.ShouldNotBeNull();
+        title!.Text.ShouldBe("spec");
+
+        var valueOffset = editor.Document!.Text.IndexOf("value", StringComparison.Ordinal) + 1;
+        shown = InvokeHoverTooltip(editor, valueOffset, onlyWhenOpen: true);
+        shown.ShouldBeFalse();
+        Dispatcher.UIThread.RunJobs();
+
+        ToolTip.GetIsOpen(editor).ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public void ResourceYamlView_ShowsDocumentationPopupOnNestedFieldName()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              ownerReferences:
+              - apiVersion: apps/v1
+                kind: ReplicaSet
+                name: cert-manager-566988c7b9
+            """.ReplaceLineEndings("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+
+        var fieldNameOffset = editor.Document!.Text.IndexOf("ownerReferences", StringComparison.Ordinal) + 1;
+        var shown = InvokeHoverTooltip(editor, fieldNameOffset);
+        shown.ShouldBeTrue();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var tip = GetDocumentationWindow(editor);
+        tip.ShouldNotBeNull();
+        var panel = tip.ShouldBeOfType<StackPanel>();
+        var title = panel.Children.OfType<TextBlock>().FirstOrDefault();
+        title.ShouldNotBeNull();
+        title!.Text.ShouldBe("ownerReferences");
+    }
+
+    [AvaloniaFact]
+    public void ResourceYamlView_ShowsDocumentationPopupOnFieldNamePastTenthLine()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+              namespace: default
+              annotations:
+                a: "1"
+                b: "2"
+                c: "3"
+                d: "4"
+                e: "5"
+            spec:
+              containers:
+                - name: one
+                  image: nginx
+            """.ReplaceLineEndings("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+
+        var fieldNameOffset = editor.Document.Text.IndexOf("containers", StringComparison.Ordinal) + 1;
+        editor.Document!.GetLineByOffset(fieldNameOffset).LineNumber.ShouldBeGreaterThan(10);
+        var shown = InvokeHoverTooltip(editor, fieldNameOffset);
+        shown.ShouldBeTrue();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var tip = GetDocumentationWindow(editor);
+        tip.ShouldNotBeNull();
+        var panel = tip.ShouldBeOfType<StackPanel>();
+        var title = panel.Children.OfType<TextBlock>().FirstOrDefault();
+        title.ShouldNotBeNull();
+        title!.Text.ShouldBe("containers");
+    }
+
+    [AvaloniaFact]
+    public void ResourceYamlView_ShowsDocumentationPopupOnNestedFieldPastTenthLine()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+              namespace: default
+              annotations:
+                a: "1"
+                b: "2"
+                c: "3"
+                d: "4"
+                e: "5"
+              ownerReferences:
+                - apiVersion: apps/v1
+                  kind: ReplicaSet
+                  name: cert-manager-566988c7b9
+            """.ReplaceLineEndings("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+
+        var lineNumber = editor.Document!.GetLineByOffset(editor.Document.Text.IndexOf("ownerReferences", StringComparison.Ordinal)).LineNumber;
+        lineNumber.ShouldBeGreaterThan(10);
+
+        var fieldNameOffset = editor.Document.Text.IndexOf("ownerReferences", StringComparison.Ordinal) + 1;
+        var shown = InvokeHoverTooltip(editor, fieldNameOffset);
+        shown.ShouldBeTrue();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var tip = GetDocumentationWindow(editor);
+        tip.ShouldNotBeNull();
+        var panel = tip.ShouldBeOfType<StackPanel>();
+        var title = panel.Children.OfType<TextBlock>().FirstOrDefault();
+        title.ShouldNotBeNull();
+        title!.Text.ShouldBe("ownerReferences");
+    }
+
+    [AvaloniaFact]
+    public void ResourceYamlView_ShowsDocumentationPopupOnKeyAtEndOfLine()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+              namespace: default
+              annotations:
+                a: "1"
+                b: "2"
+                c: "3"
+                d: "4"
+                e: "5"
+            spec:
+              containers:
+                - name: cert-manager
+                  imagePullPolicy: IfNotPresent
+                  image: nginx
+            """.ReplaceLineEndings("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+
+        var fieldNameOffset = editor.Document!.Text.IndexOf("imagePullPolicy", StringComparison.Ordinal) + 2;
+        editor.Document.GetLineByOffset(fieldNameOffset).LineNumber.ShouldBeGreaterThan(10);
+        var shown = InvokeHoverTooltip(editor, fieldNameOffset);
+        shown.ShouldBeTrue();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var tip = GetDocumentationWindow(editor);
+        tip.ShouldNotBeNull();
+        var panel = tip.ShouldBeOfType<StackPanel>();
+        var title = panel.Children.OfType<TextBlock>().FirstOrDefault();
+        title.ShouldNotBeNull();
+        title!.Text.ShouldBe("imagePullPolicy");
+    }
+
+    [AvaloniaFact]
+    public void ResourceYamlView_ShowsDocumentationPopupOnSequenceItemFieldName()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+              namespace: default
+              annotations:
+                a: "1"
+                b: "2"
+                c: "3"
+                d: "4"
+                e: "5"
+            spec:
+              containers:
+                - name: cert-manager
+                  image: nginx
+                  env:
+                    - name: FIRST
+                      value: one
+            """.ReplaceLineEndings("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+
+        var fieldNameOffset = editor.Document!.Text.IndexOf("name: FIRST", StringComparison.Ordinal) + 1;
+        editor.Document.GetLineByOffset(fieldNameOffset).LineNumber.ShouldBeGreaterThan(10);
+        var shown = InvokeHoverTooltip(editor, fieldNameOffset);
+        shown.ShouldBeTrue();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var tip = GetDocumentationWindow(editor);
+        tip.ShouldNotBeNull();
+        var panel = tip.ShouldBeOfType<StackPanel>();
+        var title = panel.Children.OfType<TextBlock>().FirstOrDefault();
+        title.ShouldNotBeNull();
+        title!.Text.ShouldBe("name");
+    }
+
+    [AvaloniaFact]
+    public void ResourceYamlView_UpdatesDocumentationPopupWhenHoverMovesBetweenFields()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+              namespace: default
+              annotations:
+                a: "1"
+                b: "2"
+                c: "3"
+                d: "4"
+                e: "5"
+            spec:
+              containers:
+                - name: cert-manager
+                  image: nginx
+            """.ReplaceLineEndings("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+
+        var nameOffset = editor.Document!.Text.IndexOf("name: cert-manager", StringComparison.Ordinal) + 1;
+        var shown = InvokeHoverTooltip(editor, nameOffset);
+        shown.ShouldBeTrue();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var tip = GetDocumentationWindow(editor);
+        tip.ShouldNotBeNull();
+        var panel = tip.ShouldBeOfType<StackPanel>();
+        var title = panel.Children.OfType<TextBlock>().FirstOrDefault();
+        title.ShouldNotBeNull();
+        title!.Text.ShouldBe("name");
+
+        var imageOffset = editor.Document.Text.IndexOf("image: nginx", StringComparison.Ordinal) + 1;
+        shown = InvokeHoverTooltip(editor, imageOffset, onlyWhenOpen: true);
+        shown.ShouldBeTrue();
+
+        Dispatcher.UIThread.RunJobs();
+
+        tip = GetDocumentationWindow(editor);
+        tip.ShouldNotBeNull();
+        panel = tip.ShouldBeOfType<StackPanel>();
+        title = panel.Children.OfType<TextBlock>().FirstOrDefault();
+        title.ShouldNotBeNull();
+        title!.Text.ShouldBe("image");
+    }
+
+    [AvaloniaFact]
+    public void ResourceYamlView_ShowsDocumentationPopupAfterBlankLinesAndComments()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            # lots of leading comments
+            # to force the target lower in the document
+
+            metadata:
+              name: test
+              namespace: default
+              annotations:
+                a: "1"
+                b: "2"
+                c: "3"
+                d: "4"
+                e: "5"
+            spec:
+              containers:
+                - name: cert-manager
+                  image: nginx
+            """.ReplaceLineEndings("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+
+        var fieldNameOffset = editor.Document!.Text.IndexOf("containers", StringComparison.Ordinal) + 1;
+        editor.Document.GetLineByOffset(fieldNameOffset).LineNumber.ShouldBeGreaterThan(10);
+        var shown = InvokeHoverTooltip(editor, fieldNameOffset);
+        shown.ShouldBeTrue();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var tip = GetDocumentationWindow(editor);
+        tip.ShouldNotBeNull();
+        var panel = tip.ShouldBeOfType<StackPanel>();
+        var title = panel.Children.OfType<TextBlock>().FirstOrDefault();
+        title.ShouldNotBeNull();
+        title!.Text.ShouldBe("containers");
+    }
+
+    [AvaloniaFact]
+    public void ResourceYamlView_DoesNotShowDocumentationPopupOnColonOrValueBoundary()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+              namespace: default
+              annotations:
+                a: "1"
+                b: "2"
+                c: "3"
+                d: "4"
+                e: "5"
+            spec:
+              imagePullPolicy: IfNotPresent
+            """.ReplaceLineEndings("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+
+        var colonOffset = editor.Document!.Text.IndexOf("imagePullPolicy:", StringComparison.Ordinal) + "imagePullPolicy".Length;
+        editor.Document.GetLineByOffset(colonOffset).LineNumber.ShouldBeGreaterThan(10);
+        var shown = InvokeHoverTooltip(editor, colonOffset);
+        shown.ShouldBeFalse();
+
+        var valueOffset = editor.Document.Text.IndexOf("IfNotPresent", StringComparison.Ordinal) + 1;
+        shown = InvokeHoverTooltip(editor, valueOffset);
+        shown.ShouldBeFalse();
+
+        Dispatcher.UIThread.RunJobs();
+
+        ToolTip.GetIsOpen(editor).ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public void ResourceYamlView_ClosesDocumentationPopupWhenScrolled()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              annotations:
+                cni.projectcalico.org/containerID: fa2328c666789a14eecd7a5ad558b972b510008d547a5d745bd10ccf00e16fb0
+                cni.projectcalico.org/podIP: 10.1.43.176/32
+                cni.projectcalico.org/podIPs: 10.1.43.176/32
+                kubectl.kubernetes.io/default-container: alertmanager
+                kubectl.kubernetes.io/restartedAt: 2024-12-21T11:27:54Z
+              creationTimestamp: "2025-12-18T03:18:16Z"
+              generateName: alertmanager-prometheus-kube-prometheus-alertmanager-
+              generation: 1
+              labels:
+                alertmanager: prometheus-kube-prometheus-alertmanager
+                app.kubernetes.io/instance: prometheus-kube-prometheus-alertmanager
+                app.kubernetes.io/managed-by: prometheus-operator
+                app.kubernetes.io/name: alertmanager
+                app.kubernetes.io/version: 0.27.0
+                apps.kubernetes.io/pod-index: "0"
+                controller-revision-hash: alertmanager-prometheus-kube-prometheus-alertmanager-7bfd55984
+                statefulset.kubernetes.io/pod-name: alertmanager-prometheus-kube-prometheus-alertmanager-0
+              name: alertmanager-prometheus-kube-prometheus-alertmanager-0
+              namespace: monitoring
+              ownerReferences:
+              - apiVersion: apps/v1
+                blockOwnerDeletion: true
+                controller: true
+                kind: StatefulSet
+                name: alertmanager-prometheus-kube-prometheus-alertmanager
+                uid: b8a36710-6e1d-4391-b059-e2cf435acc99
+              resourceVersion: "801283915"
+              uid: 2aeb93fe-692d-41e1-a62c-69fccb4fceef
+            spec:
+              containers:
+              - args:
+                - --config.file=/etc/alertmanager/config_out/alertmanager.env.yaml
+                - --storage.path=/alertmanager
+                - --data.retention=120h
+                - --cluster.listen-address=
+                - --web.listen-address=:9093
+                - --web.external-url=http://prometheus-kube-prometheus-alertmanager.monitoring:9093
+                - --web.route-prefix=/
+                - --cluster.label=monitoring/prometheus-kube-prometheus-alertmanager
+                - --cluster.peer=alertmanager-prometheus-kube-prometheus-alertmanager-0.alertmanager-operated:9094
+                - --cluster.reconnect-timeout=5m
+                - --web.config.file=/etc/alertmanager/web_config/web-config.yaml
+                env:
+                - name: POD_IP
+                  valueFrom:
+                    fieldRef:
+                      apiVersion: v1
+                      fieldPath: status.podIP
+                image: quay.io/prometheus/alertmanager:v0.27.0
+                imagePullPolicy: IfNotPresent
+                name: alertmanager
+            """.ReplaceLineEndings("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+
+        var fieldNameOffset = editor.Document!.Text.IndexOf("imagePullPolicy", StringComparison.Ordinal) + 2;
+        var shown = InvokeHoverTooltip(editor, fieldNameOffset);
+        shown.ShouldBeTrue();
+
+        Dispatcher.UIThread.RunJobs();
+
+        ToolTip.GetIsOpen(editor).ShouldBeTrue();
+
+        var scrollViewer = editor.GetScrollViewer();
+        scrollViewer.ShouldNotBeNull();
+        scrollViewer.Offset = new Vector(0, 80);
+        Dispatcher.UIThread.RunJobs();
+
+        ToolTip.GetIsOpen(editor).ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public void ResourceYamlView_ShowsDocumentationPopupFromRenderedPointOnRootField()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            spec:
+              containers:
+            """.ReplaceLineEndings("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+
+        var specOffset = editor.Document!.Text.IndexOf("spec", StringComparison.Ordinal) + 1;
+        var shown = InvokeHoverTooltipAtPoint(editor, GetPointForOffset(editor, specOffset));
+        shown.ShouldBeTrue();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var tip = GetDocumentationWindow(editor);
+        tip.ShouldNotBeNull();
+        tip.ShouldBeOfType<StackPanel>()
+            .Children.OfType<TextBlock>()
+            .First().Text.ShouldBe("spec");
+    }
+
+    [AvaloniaFact]
+    public void ResourceYamlView_ShowsDocumentationPopupFromRenderedPointOnNestedSequenceField()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+            spec:
+              containers:
+                - name: app
+                  env:
+                    - name: FIRST
+                      value: one
+            """.ReplaceLineEndings("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+
+        var nameOffset = editor.Document!.Text.IndexOf("name: FIRST", StringComparison.Ordinal) + 1;
+        var shown = InvokeHoverTooltipAtPoint(editor, GetPointForOffset(editor, nameOffset));
+        shown.ShouldBeTrue();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var tip = GetDocumentationWindow(editor);
+        tip.ShouldNotBeNull();
+        tip.ShouldBeOfType<StackPanel>()
+            .Children.OfType<TextBlock>()
+            .First().Text.ShouldBe("name");
+    }
+
+    [AvaloniaFact]
+    public void ResourceYamlView_ShowsDocumentationPopupFromRenderedPointPastTenthLine()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              annotations:
+                a: "1"
+                b: "2"
+                c: "3"
+                d: "4"
+                e: "5"
+                f: "6"
+                g: "7"
+                h: "8"
+            spec:
+              containers:
+                - name: app
+                  imagePullPolicy: IfNotPresent
+            """.ReplaceLineEndings("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+
+        var fieldOffset = editor.Document!.Text.IndexOf("imagePullPolicy", StringComparison.Ordinal) + 2;
+        editor.Document.GetLineByOffset(fieldOffset).LineNumber.ShouldBeGreaterThan(10);
+        var shown = InvokeHoverTooltipAtPoint(editor, GetViewportPointForOffset(editor, fieldOffset));
+        shown.ShouldBeTrue();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var tip = GetDocumentationWindow(editor);
+        tip.ShouldNotBeNull();
+        tip.ShouldBeOfType<StackPanel>()
+            .Children.OfType<TextBlock>()
+            .First().Text.ShouldBe("imagePullPolicy");
+    }
+
+    [AvaloniaFact]
+    public void ResourceYamlView_DoesNotShowDocumentationPopupFromRenderedPointOnValue()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            spec:
+              imagePullPolicy: IfNotPresent
+            """.ReplaceLineEndings("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+
+        var valueOffset = editor.Document!.Text.IndexOf("IfNotPresent", StringComparison.Ordinal) + 2;
+        var shown = InvokeHoverTooltipAtPoint(editor, GetPointForOffset(editor, valueOffset));
+        shown.ShouldBeFalse();
+
+        Dispatcher.UIThread.RunJobs();
+
+        ToolTip.GetIsOpen(editor).ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public void ResourceYamlView_ShowsDocumentationPopupForImagePullPolicyInCalicoControllerManifest()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              annotations:
+                cni.projectcalico.org/containerID: 32e3ced3c8334f980a2979d270e291671975b77f359837a46efb7de7ea80fbdf
+                cni.projectcalico.org/podIP: 10.1.43.214/32
+                cni.projectcalico.org/podIPs: 10.1.43.214/32
+              creationTimestamp: "2025-12-18T03:18:00Z"
+              generateName: calico-kube-controllers-6d7fffdff7-
+              generation: 1
+              labels:
+                k8s-app: calico-kube-controllers
+                pod-template-hash: 6d7fffdff7
+              name: calico-kube-controllers-6d7fffdff7-m67z2
+              namespace: kube-system
+              ownerReferences:
+              - apiVersion: apps/v1
+                blockOwnerDeletion: true
+                controller: true
+                kind: ReplicaSet
+                name: calico-kube-controllers-6d7fffdff7
+                uid: 09983864-0770-4948-ad18-81f9d9c2a408
+              resourceVersion: "801284056"
+              uid: a98d0cf5-ee3e-4107-814b-21a877a2f052
+            spec:
+              containers:
+              - env:
+                - name: ENABLED_CONTROLLERS
+                  value: node
+                - name: DATASTORE_TYPE
+                  value: kubernetes
+                image: docker.io/calico/kube-controllers:v3.29.3
+                imagePullPolicy: IfNotPresent
+            """.ReplaceLineEndings("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+
+        var fieldOffset = editor.Document!.Text.LastIndexOf("imagePullPolicy", StringComparison.Ordinal) + 2;
+        var shown = InvokeHoverTooltipAtPoint(editor, GetViewportPointForOffset(editor, fieldOffset));
+        shown.ShouldBeTrue();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var tip = GetDocumentationWindow(editor);
+        tip.ShouldNotBeNull();
+        tip.ShouldBeOfType<StackPanel>()
+            .Children.OfType<TextBlock>()
+            .First().Text.ShouldBe("imagePullPolicy");
+    }
+
+    [AvaloniaFact]
+    public void ResourceYamlView_ShowsDocumentationPopupForImagePullPolicyInCalicoControllerManifestWithoutTrailingNewline()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = (
+            """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              annotations:
+                cni.projectcalico.org/containerID: 32e3ced3c8334f980a2979d270e291671975b77f359837a46efb7de7ea80fbdf
+                cni.projectcalico.org/podIP: 10.1.43.214/32
+                cni.projectcalico.org/podIPs: 10.1.43.214/32
+              creationTimestamp: "2025-12-18T03:18:00Z"
+              generateName: calico-kube-controllers-6d7fffdff7-
+              generation: 1
+              labels:
+                k8s-app: calico-kube-controllers
+                pod-template-hash: 6d7fffdff7
+              name: calico-kube-controllers-6d7fffdff7-m67z2
+              namespace: kube-system
+              ownerReferences:
+              - apiVersion: apps/v1
+                blockOwnerDeletion: true
+                controller: true
+                kind: ReplicaSet
+                name: calico-kube-controllers-6d7fffdff7
+                uid: 09983864-0770-4948-ad18-81f9d9c2a408
+              resourceVersion: "801284056"
+              uid: a98d0cf5-ee3e-4107-814b-21a877a2f052
+            spec:
+              containers:
+              - env:
+                - name: ENABLED_CONTROLLERS
+                  value: node
+                - name: DATASTORE_TYPE
+                  value: kubernetes
+                image: docker.io/calico/kube-controllers:v3.29.3
+                imagePullPolicy: IfNotPresent
+            """)
+            .ReplaceLineEndings("\n")
+            .TrimEnd('\r', '\n');
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+
+        var fieldOffset = editor.Document!.Text.LastIndexOf("imagePullPolicy", StringComparison.Ordinal) + 2;
+        var shown = InvokeHoverTooltipAtPoint(editor, GetViewportPointForOffset(editor, fieldOffset));
+        shown.ShouldBeTrue();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var tip = GetDocumentationWindow(editor);
+        tip.ShouldNotBeNull();
+        tip.ShouldBeOfType<StackPanel>()
+            .Children.OfType<TextBlock>()
+            .First().Text.ShouldBe("imagePullPolicy");
+    }
+
+    [AvaloniaFact]
+    public void ResourceYamlView_ShowsDocumentationPopupForImagePullPolicyInCalicoControllerManifestAfterScroll()
+    {
+        var window = CreateWindow(width: 800, height: 250);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              annotations:
+                cni.projectcalico.org/containerID: 32e3ced3c8334f980a2979d270e291671975b77f359837a46efb7de7ea80fbdf
+                cni.projectcalico.org/podIP: 10.1.43.214/32
+                cni.projectcalico.org/podIPs: 10.1.43.214/32
+              creationTimestamp: "2025-12-18T03:18:00Z"
+              generateName: calico-kube-controllers-6d7fffdff7-
+              generation: 1
+              labels:
+                k8s-app: calico-kube-controllers
+                pod-template-hash: 6d7fffdff7
+              name: calico-kube-controllers-6d7fffdff7-m67z2
+              namespace: kube-system
+              ownerReferences:
+              - apiVersion: apps/v1
+                blockOwnerDeletion: true
+                controller: true
+                kind: ReplicaSet
+                name: calico-kube-controllers-6d7fffdff7
+                uid: 09983864-0770-4948-ad18-81f9d9c2a408
+              resourceVersion: "801284056"
+              uid: a98d0cf5-ee3e-4107-814b-21a877a2f052
+            spec:
+              containers:
+              - env:
+                - name: ENABLED_CONTROLLERS
+                  value: node
+                - name: DATASTORE_TYPE
+                  value: kubernetes
+                image: docker.io/calico/kube-controllers:v3.29.3
+                imagePullPolicy: IfNotPresent
+            """.ReplaceLineEndings("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+
+        var scrollViewer = editor.GetScrollViewer();
+        scrollViewer.ShouldNotBeNull();
+        WaitFor(() =>
+        {
+            Dispatcher.UIThread.RunJobs();
+            return scrollViewer.Extent.Height > scrollViewer.Viewport.Height;
+        }, 3000);
+
+        scrollViewer.Offset = new Vector(0, Math.Max(0, scrollViewer.Extent.Height - scrollViewer.Viewport.Height));
+        Dispatcher.UIThread.RunJobs();
+
+        var fieldOffset = editor.Document!.Text.LastIndexOf("imagePullPolicy", StringComparison.Ordinal) + 2;
+        var shown = InvokeHoverTooltipAtPoint(editor, GetViewportPointForOffset(editor, fieldOffset));
+        shown.ShouldBeTrue();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var tip = GetDocumentationWindow(editor);
+        tip.ShouldNotBeNull();
+        tip.ShouldBeOfType<StackPanel>()
+            .Children.OfType<TextBlock>()
+            .First().Text.ShouldBe("imagePullPolicy");
+    }
+
+    [AvaloniaFact]
+    public void ResourceYamlView_ResolvesViewportPointToImagePullPolicyOffsetAfterScroll()
+    {
+        var window = CreateWindow(width: 800, height: 250);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              annotations:
+                cni.projectcalico.org/containerID: 32e3ced3c8334f980a2979d270e291671975b77f359837a46efb7de7ea80fbdf
+                cni.projectcalico.org/podIP: 10.1.43.214/32
+                cni.projectcalico.org/podIPs: 10.1.43.214/32
+              creationTimestamp: "2025-12-18T03:18:00Z"
+              generateName: calico-kube-controllers-6d7fffdff7-
+              generation: 1
+              labels:
+                k8s-app: calico-kube-controllers
+                pod-template-hash: 6d7fffdff7
+              name: calico-kube-controllers-6d7fffdff7-m67z2
+              namespace: kube-system
+              ownerReferences:
+              - apiVersion: apps/v1
+                blockOwnerDeletion: true
+                controller: true
+                kind: ReplicaSet
+                name: calico-kube-controllers-6d7fffdff7
+                uid: 09983864-0770-4948-ad18-81f9d9c2a408
+              resourceVersion: "801284056"
+              uid: a98d0cf5-ee3e-4107-814b-21a877a2f052
+            spec:
+              containers:
+              - env:
+                - name: ENABLED_CONTROLLERS
+                  value: node
+                - name: DATASTORE_TYPE
+                  value: kubernetes
+                image: docker.io/calico/kube-controllers:v3.29.3
+                imagePullPolicy: IfNotPresent
+            """.ReplaceLineEndings("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+
+        var scrollViewer = editor.GetScrollViewer();
+        scrollViewer.ShouldNotBeNull();
+        WaitFor(() =>
+        {
+            Dispatcher.UIThread.RunJobs();
+            return scrollViewer.Extent.Height > scrollViewer.Viewport.Height;
+        }, 3000);
+
+        scrollViewer.Offset = new Vector(0, Math.Max(0, scrollViewer.Extent.Height - scrollViewer.Viewport.Height));
+        Dispatcher.UIThread.RunJobs();
+
+        var fieldOffset = editor.Document!.Text.LastIndexOf("imagePullPolicy", StringComparison.Ordinal) + 2;
+        var viewportPoint = GetViewportPointForOffset(editor, fieldOffset);
+        var resolvedOffset = TryGetHoverOffset(editor, viewportPoint);
+
+        resolvedOffset.ShouldBe(fieldOffset);
+    }
+
+    [AvaloniaFact]
+    public void ResourceYamlView_CreatesDocumentationTipForImagePullPolicyOffsetAfterScroll()
+    {
+        var window = CreateWindow(width: 800, height: 250);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        vm.YamlDocument.Text = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              annotations:
+                cni.projectcalico.org/containerID: 32e3ced3c8334f980a2979d270e291671975b77f359837a46efb7de7ea80fbdf
+                cni.projectcalico.org/podIP: 10.1.43.214/32
+                cni.projectcalico.org/podIPs: 10.1.43.214/32
+              creationTimestamp: "2025-12-18T03:18:00Z"
+              generateName: calico-kube-controllers-6d7fffdff7-
+              generation: 1
+              labels:
+                k8s-app: calico-kube-controllers
+                pod-template-hash: 6d7fffdff7
+              name: calico-kube-controllers-6d7fffdff7-m67z2
+              namespace: kube-system
+              ownerReferences:
+              - apiVersion: apps/v1
+                blockOwnerDeletion: true
+                controller: true
+                kind: ReplicaSet
+                name: calico-kube-controllers-6d7fffdff7
+                uid: 09983864-0770-4948-ad18-81f9d9c2a408
+              resourceVersion: "801284056"
+              uid: a98d0cf5-ee3e-4107-814b-21a877a2f052
+            spec:
+              containers:
+              - env:
+                - name: ENABLED_CONTROLLERS
+                  value: node
+                - name: DATASTORE_TYPE
+                  value: kubernetes
+                image: docker.io/calico/kube-controllers:v3.29.3
+                imagePullPolicy: IfNotPresent
+            """.ReplaceLineEndings("\n");
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+
+        var scrollViewer = editor.GetScrollViewer();
+        scrollViewer.ShouldNotBeNull();
+        WaitFor(() =>
+        {
+            Dispatcher.UIThread.RunJobs();
+            return scrollViewer.Extent.Height > scrollViewer.Viewport.Height;
+        }, 3000);
+
+        scrollViewer.Offset = new Vector(0, Math.Max(0, scrollViewer.Extent.Height - scrollViewer.Viewport.Height));
+        Dispatcher.UIThread.RunJobs();
+
+        var fieldOffset = editor.Document!.Text.LastIndexOf("imagePullPolicy", StringComparison.Ordinal) + 2;
+        var tip = TryCreateHoverDocumentationTip(editor, fieldOffset);
+
+        tip.ShouldNotBeNull();
     }
 
     [AvaloniaFact]
@@ -1131,15 +2403,14 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
-        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
-        GetDiagnosticMessages(behavior).ShouldContain(message => message.Contains("expected", StringComparison.OrdinalIgnoreCase));
+        GetDiagnosticMessages(editor).ShouldContain(message => message.Contains("expected", StringComparison.OrdinalIgnoreCase));
         vm.HasActionFailureResult.ShouldBeTrue();
         vm.ActionResultTitle.ShouldBe("Validation failed");
         vm.ActionResultMessage.ShouldContain("expected");
-        var actionBar = view.FindControl<FAInfoBar>("ActionResultBar");
+        var actionBar = view.FindControl<InfoBar>("ActionResultBar");
         actionBar.ShouldNotBeNull();
         actionBar.IsOpen.ShouldBeTrue();
-        actionBar.Severity.ShouldBe(FAInfoBarSeverity.Error);
+        actionBar.Severity.ShouldBe(InfoBarSeverity.Error);
     }
 
     [AvaloniaFact]
@@ -1186,8 +2457,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
-        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
-        GetDiagnosticMessages(behavior).ShouldContain(message => message.Contains("unknownField", StringComparison.OrdinalIgnoreCase));
+        GetDiagnosticMessages(editor).ShouldContain(message => message.Contains("unknownField", StringComparison.OrdinalIgnoreCase));
     }
 
     [AvaloniaFact]
@@ -1232,8 +2502,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
         editor.ShouldNotBeNull();
 
-        var behavior = Interaction.GetBehaviors(editor).OfType<YamlEditorBehavior>().Single();
-        GetDiagnosticMessages(behavior).ShouldContain(message => message.Contains("MadeUpKind", StringComparison.OrdinalIgnoreCase));
+        GetDiagnosticMessages(editor).ShouldContain(message => message.Contains("MadeUpKind", StringComparison.OrdinalIgnoreCase));
     }
 
     [AvaloniaFact]
@@ -1275,10 +2544,10 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         vm.ActionResultTitle.ShouldBe("Save failed");
         vm.ActionResultMessage.ShouldContain("line");
         vm.ActionResultMessage.ShouldContain("column");
-        var actionBar = view.FindControl<FAInfoBar>("ActionResultBar");
+        var actionBar = view.FindControl<InfoBar>("ActionResultBar");
         actionBar.ShouldNotBeNull();
         actionBar.IsOpen.ShouldBeTrue();
-        actionBar.Severity.ShouldBe(FAInfoBarSeverity.Error);
+        actionBar.Severity.ShouldBe(InfoBarSeverity.Error);
         TestApp.LastNotification.ShouldBeNull();
     }
 
@@ -1404,10 +2673,10 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         vm.HasActionSuccessResult.ShouldBeTrue();
         vm.ActionResultTitle.ShouldBe("Dry run succeeded");
         vm.ActionResultMessage.ShouldBe("The server accepted the manifest using dry-run.");
-        var actionBar = view.FindControl<FAInfoBar>("ActionResultBar");
+        var actionBar = view.FindControl<InfoBar>("ActionResultBar");
         actionBar.ShouldNotBeNull();
         actionBar.IsOpen.ShouldBeTrue();
-        actionBar.Severity.ShouldBe(FAInfoBarSeverity.Success);
+        actionBar.Severity.ShouldBe(InfoBarSeverity.Success);
     }
 
     [AvaloniaFact]
@@ -1460,10 +2729,10 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         vm.HasActionFailureResult.ShouldBeTrue();
         vm.ActionResultTitle.ShouldBe("Dry run failed");
         vm.ActionResultMessage.ShouldBe("Server-side validation failed.");
-        var actionBar = view.FindControl<FAInfoBar>("ActionResultBar");
+        var actionBar = view.FindControl<InfoBar>("ActionResultBar");
         actionBar.ShouldNotBeNull();
         actionBar.IsOpen.ShouldBeTrue();
-        actionBar.Severity.ShouldBe(FAInfoBarSeverity.Error);
+        actionBar.Severity.ShouldBe(InfoBarSeverity.Error);
     }
 
     [AvaloniaFact]
@@ -1513,7 +2782,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
 
         vm.HasActionResult.ShouldBeTrue();
         vm.ActionResultTitle.ShouldBe("Dry run succeeded");
-        var actionBar = view.FindControl<FAInfoBar>("ActionResultBar");
+        var actionBar = view.FindControl<InfoBar>("ActionResultBar");
         actionBar.ShouldNotBeNull();
         actionBar.IsOpen.ShouldBeTrue();
         actionBar.IsVisible.ShouldBeTrue();
@@ -1561,7 +2830,7 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
 
         vm.HasActionSuccessResult.ShouldBeTrue();
         vm.DismissActionResultCommand.CanExecute(null).ShouldBeTrue();
-        var actionBar = view.FindControl<FAInfoBar>("ActionResultBar");
+        var actionBar = view.FindControl<InfoBar>("ActionResultBar");
         actionBar.ShouldNotBeNull();
         actionBar.IsOpen.ShouldBeTrue();
         actionBar.IsClosable.ShouldBeTrue();
@@ -1582,10 +2851,29 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         var view = ResolveService<ResourceYamlView>();
         view.DataContext = vm;
 
-        var actionBar = view.FindControl<FAInfoBar>("ActionResultBar");
+        var actionBar = view.FindControl<InfoBar>("ActionResultBar");
         actionBar.ShouldNotBeNull();
         actionBar.IsOpen.ShouldBeFalse();
         actionBar.IsVisible.ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public void ResourceYamlView_HideNoisyFieldsToggle_BindsDirectlyToViewModel()
+    {
+        var vm = ResolveService<ResourceYamlViewModel>();
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+
+        var toggleButton = view.FindControl<ToggleButton>("HideNoisyFieldsToggle");
+        toggleButton.ShouldNotBeNull();
+        toggleButton.Command.ShouldBeNull();
+        toggleButton.IsChecked.ShouldBe(true);
+
+        toggleButton.IsChecked = false;
+        Dispatcher.UIThread.RunJobs();
+
+        vm.HideNoisyFields.ShouldBeFalse();
+        toggleButton.IsChecked.ShouldBe(false);
     }
 
     [AvaloniaFact]
@@ -1714,6 +3002,34 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task ResourceYamlView_LeavesScrollBelowDocumentEnabled()
+    {
+        var window = CreateWindow(width: 800, height: 600);
+
+        var cluster = CreateTestWorkspace();
+        var vm = ResolveService<ResourceYamlViewModel>();
+        vm.Initialize(cluster, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+        });
+
+        var view = ResolveService<ResourceYamlView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        Dispatcher.UIThread.RunJobs();
+
+        var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+        editor.ShouldNotBeNull();
+        editor.Options.AllowScrollBelowDocument.ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
     public async Task ResourceYamlView_PreservesParentFoldState_WhenResourceGrowsAboveFold()
     {
         var window = CreateWindow(width: 800, height: 600);
@@ -1833,9 +3149,66 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         return field?.GetValue(behavior) as CompletionWindow;
     }
 
-    private static IReadOnlyList<string> GetDiagnosticMessages(YamlEditorBehavior behavior)
+    private static bool InvokeHoverTooltip(AvaloniaEdit.TextEditor editor, int offset, bool onlyWhenOpen = false)
     {
-        var field = typeof(YamlEditorBehavior).GetField("_diagnosticRenderer", BindingFlags.Instance | BindingFlags.NonPublic);
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlHoverToolTipBehavior>().Single();
+        var method = typeof(YamlHoverToolTipBehavior).GetMethod("TryShowHoverTooltipAtOffset", BindingFlags.Instance | BindingFlags.NonPublic);
+        method.ShouldNotBeNull();
+        return (bool)method.Invoke(behavior, [offset, onlyWhenOpen])!;
+    }
+
+    private static bool InvokeHoverTooltipAtPoint(AvaloniaEdit.TextEditor editor, Point point, bool onlyWhenOpen = false)
+    {
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlHoverToolTipBehavior>().Single();
+        var method = typeof(YamlHoverToolTipBehavior).GetMethod("TryShowHoverTooltipAtPoint", BindingFlags.Instance | BindingFlags.NonPublic);
+        method.ShouldNotBeNull();
+        return (bool)method.Invoke(behavior, [point, onlyWhenOpen])!;
+    }
+
+    private static int? TryGetHoverOffset(AvaloniaEdit.TextEditor editor, Point point)
+    {
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlHoverToolTipBehavior>().Single();
+        var method = typeof(YamlHoverToolTipBehavior).GetMethod("TryGetPointerOffset", BindingFlags.Instance | BindingFlags.NonPublic);
+        method.ShouldNotBeNull();
+
+        object?[] args = [point, 0];
+        var resolved = (bool)method.Invoke(behavior, args)!;
+        return resolved ? (int)args[1] : null;
+    }
+
+    private static object? TryCreateHoverDocumentationTip(AvaloniaEdit.TextEditor editor, int offset)
+    {
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlHoverToolTipBehavior>().Single();
+        var method = typeof(YamlHoverToolTipBehavior).GetMethod("TryCreateDocumentationTip", BindingFlags.Instance | BindingFlags.NonPublic);
+        method.ShouldNotBeNull();
+
+        object?[] args = [offset, null!];
+        var created = (bool)method.Invoke(behavior, args)!;
+        return created ? args[1] : null;
+    }
+
+    private static Point GetPointForOffset(AvaloniaEdit.TextEditor editor, int offset)
+    {
+        var location = editor.Document!.GetLocation(offset);
+        var point = editor.TextArea.TextView.GetVisualPosition(new TextViewPosition(location.Line, location.Column), VisualYPosition.LineMiddle);
+        return new Point(point.X + 2, point.Y);
+    }
+
+    private static Point GetViewportPointForOffset(AvaloniaEdit.TextEditor editor, int offset)
+    {
+        var point = GetPointForOffset(editor, offset);
+        return point - editor.TextArea.TextView.ScrollOffset;
+    }
+
+    private static object? GetDocumentationWindow(AvaloniaEdit.TextEditor editor)
+    {
+        return global::Avalonia.Controls.ToolTip.GetTip(editor);
+    }
+
+    private static IReadOnlyList<string> GetDiagnosticMessages(AvaloniaEdit.TextEditor editor)
+    {
+        var behavior = Interaction.GetBehaviors(editor).OfType<YamlDiagnosticRenderingBehavior>().Single();
+        var field = typeof(YamlDiagnosticRenderingBehavior).GetField("_renderer", BindingFlags.Instance | BindingFlags.NonPublic);
         var renderer = field?.GetValue(behavior);
         var property = renderer?.GetType().GetProperty("Messages", BindingFlags.Instance | BindingFlags.Public);
         return property?.GetValue(renderer) as IReadOnlyList<string> ?? [];
@@ -1912,4 +3285,3 @@ public class ResourceYamlViewModelTests : AvaloniaTestBase
         predicate().ShouldBeTrue();
     }
 }
-
