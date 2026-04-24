@@ -122,17 +122,17 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
         return Cluster.Client!.WebSocketNamespacedPodExecAsync(Object.Name(), Object.Namespace(), command, ContainerName);
     }
 
-    public void Input(byte[] input)
+    private void Input(object? sender, TerminalUserInputEventArgs args)
     {
         if (_stream.CanWrite)
         {
-            _stream.Write(input);
+            _stream.Write(args.Data.Span);
         }
     }
 
-    private void Terminal_SizeChanged(int cols, int rows, double width, double height)
+    private void Terminal_SizeChanged(object? sender, TerminalSizeChangedEventArgs args)
     {
-        SendResize(cols, rows);
+        SendResize(args.Cols, args.Rows);
     }
 
     public void SendResize(int cols, int rows)
@@ -213,5 +213,4 @@ public struct TerminalSize
         return !(left == right);
     }
 }
-
 
