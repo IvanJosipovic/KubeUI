@@ -13,6 +13,7 @@ using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -25,7 +26,6 @@ using KubeUI.Avalonia.Features.Resources.List.ViewModels;
 using KubeUI.Avalonia.Features.Resources.Visualization.ViewModels;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
-using KubeUI.Avalonia.Infrastructure.Dialogs;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
@@ -65,7 +65,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     private readonly ILogger<NavigationViewModel> _logger;
     private readonly INotificationManager _notificationManager;
     private readonly IServiceProvider _serviceProvider;
-    private readonly IContentDialogService _dialogService;
+    private readonly IDialogService _dialogService;
     public new IFactory Factory => _serviceProvider.GetRequiredService<IFactory>();
     private readonly Dictionary<ClusterWorkspaceViewModel, ClusterNavigationNode> _clusterNodes = [];
     private readonly Dictionary<ClusterWorkspaceViewModel, PendingClusterNavigationUpdate> _clusterRebuildDelays = [];
@@ -79,7 +79,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     public NavigationViewModel(
         ILogger<NavigationViewModel> logger,
         INotificationManager notificationManager,
-        IContentDialogService dialogService,
+        IDialogService dialogService,
         ClusterWorkspaceCatalog clusterCatalog,
         IServiceProvider serviceProvider)
     {

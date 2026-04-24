@@ -7,6 +7,7 @@ using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using Humanizer;
 using k8s;
 using k8s.Models;
@@ -17,7 +18,6 @@ using KubeUI.Avalonia.Features.Resources.List.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
 using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
 using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Infrastructure.Dialogs;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,7 +28,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 {
     protected IServiceProvider ServiceProvider { get; }
     protected readonly ILogger<ResourceConfigBase<T>> _logger;
-    protected readonly IContentDialogService _dialogService;
+    protected readonly IDialogService _dialogService;
     protected readonly INotificationManager _notificationManager;
     protected readonly IFactory _factory;
 
@@ -36,7 +36,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     {
         ServiceProvider = serviceProvider;
         _logger = serviceProvider.GetRequiredService<ILogger<ResourceConfigBase<T>>>();
-        _dialogService = serviceProvider.GetRequiredService<IContentDialogService>();
+        _dialogService = serviceProvider.GetRequiredService<IDialogService>();
         _factory = serviceProvider.GetRequiredService<IFactory>();
         _notificationManager = serviceProvider.GetRequiredService<INotificationManager>();
     }

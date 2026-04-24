@@ -7,10 +7,11 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
+using HanumanInstitute.MvvmDialogs;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
-using KubeUI.Avalonia.Infrastructure.Dialogs;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
@@ -25,6 +26,7 @@ namespace KubeUI.Avalonia.Tests.Infra;
 public class TestApp : Application, IServiceProviderHost
 {
     public static IServiceProvider? CurrentServices { get; private set; }
+    public static Mock<IDialogManager>? DialogManagerMock { get; private set; }
     public static INotification? LastNotification { get; private set; }
     public static ContentDialogSettings? LastContentDialogSettings { get; private set; }
 
@@ -80,11 +82,17 @@ public class TestApp : Application, IServiceProviderHost
         LastContentDialogSettings = null;
         LastNotification = null;
 
-        var dialog = new Mock<IContentDialogService>();
-        dialog
-            .Setup(x => x.ShowContentDialogAsync(It.IsAny<System.ComponentModel.INotifyPropertyChanged?>(), It.IsAny<ContentDialogSettings>()))
-            .Callback<System.ComponentModel.INotifyPropertyChanged?, ContentDialogSettings>((_, settings) => LastContentDialogSettings = settings)
+        var dialogManager = new Mock<IDialogManager>();
+        dialogManager.SetupGet(x => x.Logger).Returns((ILogger<IDialogManager>?)null);
+        dialogManager.SetupProperty(x => x.AllowConcurrentDialogs);
+        dialogManager
+            .Setup(x => x.ShowFrameworkDialogAsync(It.IsAny<System.ComponentModel.INotifyPropertyChanged?>(), It.IsAny<ContentDialogSettings>(), It.IsAny<Func<object?, string>?>()))
+            .Callback<System.ComponentModel.INotifyPropertyChanged?, ContentDialogSettings, Func<object?, string>?>((_, settings, _) => LastContentDialogSettings = settings)
             .ReturnsAsync(FAContentDialogResult.Primary);
+        DialogManagerMock = dialogManager;
+
+        var dialog = new Mock<IDialogService>();
+        dialog.SetupGet(x => x.DialogManager).Returns(dialogManager.Object);
 
         var notifications = new Mock<INotificationManager>();
         notifications
@@ -96,7 +104,7 @@ public class TestApp : Application, IServiceProviderHost
             overrides.Replace(ServiceDescriptor.Singleton<ISettingsService, TestSettingsService>());
             overrides.RemoveAll<IClusterSettingsStore>();
             overrides.AddSingleton<IClusterSettingsStore>(sp => sp.GetRequiredService<ISettingsService>().Clusters);
-            overrides.Replace(ServiceDescriptor.Singleton<IContentDialogService>(dialog.Object));
+            overrides.Replace(ServiceDescriptor.Singleton<IDialogService>(dialog.Object));
             overrides.Replace(ServiceDescriptor.Singleton<INotificationManager>(notifications.Object));
             overrides.Replace(ServiceDescriptor.Singleton<IFactory>(sp => new DockFactory(sp, sp.GetRequiredService<ILogger<DockFactory>>())));
         });
@@ -161,6 +169,5 @@ public class TestApp : Application, IServiceProviderHost
         Dispatcher.UIThread.InvokeAsync(action).GetAwaiter().GetResult();
     }
 }
-
 
 

@@ -1,8 +1,8 @@
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Infrastructure.Dialogs;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
@@ -11,7 +11,7 @@ namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 
 public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitializeCluster
 {
-    private readonly IContentDialogService _dialogService;
+    private readonly IDialogService _dialogService;
 
     [ObservableProperty]
     public partial ISettingsService Settings { get; set; }
@@ -22,7 +22,7 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
     [ObservableProperty]
     public partial PortForwarder? SelectedItem { get; set; }
 
-    public PortForwarderListViewModel(ISettingsService settings, IContentDialogService dialogService)
+    public PortForwarderListViewModel(ISettingsService settings, IDialogService dialogService)
     {
         Settings = settings;
         _dialogService = dialogService;
