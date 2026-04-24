@@ -126,4 +126,55 @@ public sealed class ResourceEventsViewTests : AvaloniaTestBase
         window.Content = null;
         window.Close();
     }
+
+    [AvaloniaFact]
+    public async Task queued_update_during_teardown_does_not_throw()
+    {
+        var workspace = new TestCluster().CreateWorkspace();
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+        _ = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+
+        var view = new ResourceEventsView();
+        view.Initialize(workspace);
+        view.DataContext = new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "pod-1",
+                NamespaceProperty = "default",
+            }
+        };
+
+        var window = new Window
+        {
+            Content = view,
+        };
+
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        var updateItemsMethod = typeof(ResourceEventsView).GetMethod("UpdateItems", BindingFlags.Instance | BindingFlags.NonPublic);
+        updateItemsMethod.ShouldNotBeNull();
+
+        var pendingItems =
+            new[]
+            {
+                new ResourceEventItem(
+                    "Failed to pull image",
+                    "kubelet",
+                    3,
+                    "spec.containers{app}",
+                    "1 minute ago",
+                    true)
+            };
+
+        Dispatcher.UIThread.Post(
+            () => updateItemsMethod.Invoke(view, new object[] { pendingItems }),
+            DispatcherPriority.Background);
+
+        window.Content = null;
+        window.Close();
+
+        Dispatcher.UIThread.RunJobs();
+    }
 }

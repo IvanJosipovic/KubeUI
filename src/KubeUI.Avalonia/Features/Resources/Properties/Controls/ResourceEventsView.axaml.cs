@@ -14,13 +14,11 @@ namespace KubeUI.Avalonia.Features.Resources.Properties.Controls;
 public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
 {
     private readonly DispatcherTimer _timer = new(DispatcherPriority.Background);
-    private readonly ObservableCollection<ResourceEventItem> _items = [];
-    private readonly ReadOnlyObservableCollection<ResourceEventItem> _readOnlyItems;
-    private readonly ReadOnlyObservableCollection<Corev1Event> _emptyEvents = new([]);
-
+    private static readonly IReadOnlyList<ResourceEventItem> EmptyItems = Array.Empty<ResourceEventItem>();
     private ClusterWorkspaceViewModel? _cluster;
     private ISourceCache<Corev1Event, string>? _eventCache;
     private IDisposable? _eventCacheSubscription;
+    private readonly ReadOnlyObservableCollection<Corev1Event> _emptyEvents = new([]);
     private ReadOnlyObservableCollection<Corev1Event> _matchedEvents;
     private bool _isDetached;
     private bool _refreshPending;
@@ -36,8 +34,7 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
     public ResourceEventsView()
     {
         InitializeComponent();
-        _readOnlyItems = new ReadOnlyObservableCollection<ResourceEventItem>(_items);
-        Items = _readOnlyItems;
+        Items = EmptyItems;
         _matchedEvents = _emptyEvents;
         _timer.Interval = TimeSpan.FromSeconds(1);
         _timer.Tick += Timer_Tick;
@@ -119,7 +116,7 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
 
     private void Refresh()
     {
-        if (_isDetached)
+        if (_isDetached || VisualRoot == null)
         {
             return;
         }
@@ -169,9 +166,9 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
 
     private void Clear()
     {
-        if (_items.Count > 0)
+        if (Items.Count > 0)
         {
-            _items.Clear();
+            Items = EmptyItems;
         }
 
         HasItems = false;
@@ -179,13 +176,22 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
 
     private void UpdateItems(ResourceEventItem[] items)
     {
-        _items.Clear();
-
-        for (var index = 0; index < items.Length; index++)
+        if (_isDetached || VisualRoot == null)
         {
-            _items.Add(items[index]);
+            return;
         }
 
-        HasItems = items.Length > 0;
+        if (items.Length == 0)
+        {
+            Clear();
+            return;
+        }
+
+        if (!Items.SequenceEqual(items))
+        {
+            Items = items;
+        }
+
+        HasItems = true;
     }
 }
