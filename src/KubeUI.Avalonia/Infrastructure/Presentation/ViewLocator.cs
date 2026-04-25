@@ -34,7 +34,7 @@ public sealed class ViewLocator : IDataTemplate
         if (viewType is not null)
         {
             var instance = _serviceProvider.GetRequiredService(viewType);
-            _instrumentation.ViewOpened.Add(1, new TagList { { "view", GetPrettyName(instance.GetType()) } });
+            _instrumentation.ViewOpened.Add(1, new TagList { { "view", GetViewMetricName(instance.GetType(), modelType) } });
             return (Control)instance;
         }
 
@@ -117,6 +117,17 @@ public sealed class ViewLocator : IDataTemplate
         return $"{genericTypeName}<{string.Join(", ", argumentNames)}>";
     }
 
+    private static string GetViewMetricName(Type viewType, Type modelType)
+    {
+        if (viewType.IsGenericType || !modelType.IsGenericType)
+        {
+            return GetPrettyName(viewType);
+        }
+
+        var argumentNames = modelType.GetGenericArguments().Select(GetPrettyName);
+        return $"{viewType.Name}<{string.Join(", ", argumentNames)}>";
+    }
+
     private static string GetUnboundFullName(Type type)
     {
         var fullName = type.IsGenericType ? type.GetGenericTypeDefinition().FullName : type.FullName;
@@ -126,7 +137,6 @@ public sealed class ViewLocator : IDataTemplate
         return genericTypeIndex >= 0 ? fullName[..genericTypeIndex] : fullName;
     }
 }
-
 
 
 

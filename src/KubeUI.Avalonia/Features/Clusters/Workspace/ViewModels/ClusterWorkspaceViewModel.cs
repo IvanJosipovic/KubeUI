@@ -670,7 +670,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
         if (await CanSeedEventsAsync().ConfigureAwait(false))
         {
-            await SeedResource<Corev1Event>(waitForReady: true).ConfigureAwait(false);
+            await SeedResource<Corev1Event>().ConfigureAwait(false);
         }
     }
 
