@@ -1062,12 +1062,6 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private static void UpdateNavigationItem(NavigationItem current, NavigationItem desired)
     {
-        var replaceResourceCount = current is ResourceNavigationLink countCurrent
-            && desired is ResourceNavigationLink countDesired
-            && (countCurrent.Count == null
-                || !ReferenceEquals(countCurrent.Cluster, countDesired.Cluster)
-                || countCurrent.ControlType != countDesired.ControlType);
-
         current.Id = desired.Id;
         current.Name = desired.Name;
         current.Order = desired.Order;
@@ -1084,11 +1078,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
         if (current is ResourceNavigationLink currentResourceLink && desired is ResourceNavigationLink desiredResourceLink)
         {
-            if (replaceResourceCount)
-            {
-                currentResourceLink.Count = desiredResourceLink.Count;
-            }
-
+            currentResourceLink.Count = desiredResourceLink.Count;
             currentResourceLink.OpenCommand = desiredResourceLink.OpenCommand;
             currentResourceLink.OpenInNewTabCommand = desiredResourceLink.OpenInNewTabCommand;
         }

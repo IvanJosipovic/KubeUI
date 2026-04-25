@@ -1864,6 +1864,53 @@ public class NavigationViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task resource_navigation_count_is_replaced_when_existing_link_is_updated()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+
+        var workspace = CreateWorkspace(runtime);
+
+        var current = new ResourceNavigationLink
+        {
+            Cluster = workspace,
+            Id = "cluster-events",
+            Name = "Events",
+            ControlType = typeof(Corev1Event),
+            Order = 1,
+            Count = Observable.Return(1),
+            OpenCommand = new RelayCommand(() => { }),
+            OpenInNewTabCommand = new RelayCommand(() => { }),
+        };
+
+        var desiredCount = Observable.Return(2);
+        var desired = new ResourceNavigationLink
+        {
+            Cluster = workspace,
+            Id = "cluster-events",
+            Name = "Events",
+            ControlType = typeof(Corev1Event),
+            Order = 1,
+            Count = desiredCount,
+            OpenCommand = new RelayCommand(() => { }),
+            OpenInNewTabCommand = new RelayCommand(() => { }),
+        };
+
+        var method = typeof(NavigationViewModel).GetMethod("UpdateNavigationItem", BindingFlags.Static | BindingFlags.NonPublic);
+        method.ShouldNotBeNull();
+
+        method.Invoke(null, [current, desired]);
+
+        current.Count.ShouldBeSameAs(desiredCount);
+
+        var count = await WaitForCountAsync(current.Count, timeoutMs: 1000);
+        count.ShouldBe(2);
+    }
+
+    [AvaloniaFact]
     public async Task event_navigation_count_recovers_when_event_seed_happened_before_namespace_permission()
     {
         var runtime = new TestCluster
@@ -2104,7 +2151,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
             timeoutMs: 10000);
         updatedLink.ShouldNotBeNull();
         ReferenceEquals(originalLink, updatedLink).ShouldBeTrue();
-        ReferenceEquals(originalCount, updatedLink.Count).ShouldBeTrue();
+        ReferenceEquals(originalCount, updatedLink.Count).ShouldBeFalse();
     }
 
     [AvaloniaFact]
