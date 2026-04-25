@@ -535,7 +535,14 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
 
     public IObservable<int> GetResourceCount<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        return GetResourceSourceCache<T>().Connect().Count();
+        return Observable.Defer(() =>
+        {
+            var sourceCache = GetResourceSourceCache<T>();
+            return sourceCache.Connect()
+                .Select(_ => sourceCache.Items.Count)
+                .StartWith(sourceCache.Items.Count)
+                .DistinctUntilChanged();
+        });
     }
 
     public Task<bool> IsResourceReady<T>(CancellationToken? token = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -548,45 +555,49 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
         var type = typeof(T);
         var kind = GroupApiVersionKind.From<T>();
 
-        if (!Objects.TryGetValue(kind, out var existing) || existing is not ContainerClass<T> container)
+        if (Objects.GetOrAdd(kind, static _ => new ContainerClass<T>()) is not ContainerClass<T> container)
         {
-            container = new ContainerClass<T>();
-            if (!Objects.TryAdd(kind, container))
-            {
-                throw new InvalidOperationException($"Duplicate Object Set detected for: {kind}");
-            }
+            throw new InvalidOperationException($"Object set for {kind} is not compatible with {type}.");
         }
 
-        if (!container.Initialized)
+        lock (container)
         {
-            container.Initialized = true;
-
-            if (CanI(type, Verb.List) && CanI(type, Verb.Watch))
+            if (!container.Initialized)
             {
-                var informer = new TestResourceInformer();
-                container.Informers.Add(informer);
-                container.InformerRegistrations.Add(informer.Register(static (_, _) => { }));
-                return Task.CompletedTask;
-            }
+                container.Initialized = true;
 
-            if (!IsResourceNamespaced<T>())
-            {
-                return Task.CompletedTask;
-            }
-
-            foreach (var item in Namespaces)
-            {
-                var namespaceName = item.Name();
-                if (string.IsNullOrWhiteSpace(namespaceName))
+                if (CanI(type, Verb.List) && CanI(type, Verb.Watch))
                 {
-                    continue;
-                }
-
-                if (CanI(type, Verb.List, namespaceName) && CanI(type, Verb.Watch, namespaceName))
-                {
-                    var informer = new TestResourceInformer(namespaceName);
+                    var informer = new TestResourceInformer();
                     container.Informers.Add(informer);
                     container.InformerRegistrations.Add(informer.Register(static (_, _) => { }));
+                    return Task.CompletedTask;
+                }
+
+                if (!IsResourceNamespaced<T>())
+                {
+                    return Task.CompletedTask;
+                }
+
+                foreach (var item in Namespaces)
+                {
+                    var namespaceName = item.Name();
+                    if (string.IsNullOrWhiteSpace(namespaceName))
+                    {
+                        continue;
+                    }
+
+                    if (CanI(type, Verb.List, namespaceName) && CanI(type, Verb.Watch, namespaceName))
+                    {
+                        var informer = new TestResourceInformer(namespaceName);
+                        container.Informers.Add(informer);
+                        container.InformerRegistrations.Add(informer.Register(static (_, _) => { }));
+                    }
+                }
+
+                if (container.Informers.Count == 0)
+                {
+                    container.Initialized = false;
                 }
             }
         }

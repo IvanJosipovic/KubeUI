@@ -156,6 +156,25 @@ public class ClusterWorkspaceViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task initializing_workspace_seeds_custom_resource_definitions_when_allowed()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+
+        var workspace = CreateWorkspace(runtime);
+
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+
+        var kind = GroupApiVersionKind.From<V1CustomResourceDefinition>();
+        runtime.Objects.TryGetValue(kind, out var container).ShouldBeTrue();
+        container.ShouldBeOfType<ContainerClass<V1CustomResourceDefinition>>()
+            .Informers.Count.ShouldBe(1);
+    }
+
+    [AvaloniaFact]
     public async Task deleted_crd_removes_resource_config_model_cache_entry_and_seeded_informer()
     {
         var runtime = new TestCluster();
@@ -317,6 +336,20 @@ public class ClusterWorkspaceViewModelTests : AvaloniaTestBase
 
         await workspace.EnsureWorkspaceStateInitializedAsync();
         await WaitForAsync(() => runtime.EventSeedCalls == 1);
+        runtime.GetResourceSourceCache<Corev1Event>().AddOrUpdate(new Corev1Event
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "event-one",
+                NamespaceProperty = "default"
+            },
+            InvolvedObject = new V1ObjectReference
+            {
+                Name = "pod-one",
+                NamespaceProperty = "default",
+                Kind = "Pod"
+            }
+        });
 
         await runtime.AddOrUpdateResource(new V1Namespace
         {

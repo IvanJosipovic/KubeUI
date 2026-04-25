@@ -445,8 +445,8 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
             await EnsureBuiltInResourceConfigsAsync();
             await EnsureConfiguredNamespacesAvailableAsync().ConfigureAwait(false);
-            await EnsureDynamicResourceConfigsAsync().ConfigureAwait(false);
             await RefreshResourceConfigPermissionsAsync().ConfigureAwait(false);
+            await EnsureDynamicResourceConfigsAsync().ConfigureAwait(false);
             _workspaceStateInitialized = true;
             UpdateClusterColor();
             NotifyRuntimeStateChanged();
@@ -634,6 +634,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
         if (updateTasks.Length == 0)
         {
+            await EnsureCustomResourceDefinitionResourceSeededAsync().ConfigureAwait(false);
             await EnsureEventResourceSeededAsync().ConfigureAwait(false);
             NotifyResourcePermissionsChanged();
             return;
@@ -641,6 +642,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
         await RefreshAuthorizationIndexForConfigsAsync(configSnapshot).ConfigureAwait(false);
         await Task.WhenAll(updateTasks).ConfigureAwait(false);
+        await EnsureCustomResourceDefinitionResourceSeededAsync().ConfigureAwait(false);
         await EnsureEventResourceSeededAsync().ConfigureAwait(false);
     }
 
@@ -660,14 +662,32 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     private async Task EnsureEventResourceSeededAsync()
     {
-        if (Runtime.Objects.ContainsKey(GroupApiVersionKind.From<Corev1Event>()))
+        if (Runtime.Objects.TryGetValue(GroupApiVersionKind.From<Corev1Event>(), out var existing)
+            && existing is ContainerClass<Corev1Event> { Informers.Count: > 0, Items.Count: > 0 })
         {
             return;
         }
 
         if (await CanSeedEventsAsync().ConfigureAwait(false))
         {
-            await SeedResource<Corev1Event>().ConfigureAwait(false);
+            await SeedResource<Corev1Event>(waitForReady: true).ConfigureAwait(false);
+        }
+    }
+
+    private async Task EnsureCustomResourceDefinitionResourceSeededAsync()
+    {
+        var kind = GroupApiVersionKind.From<V1CustomResourceDefinition>();
+        if (Runtime.Objects.TryGetValue(kind, out var existing)
+            && existing is ContainerClass<V1CustomResourceDefinition> { Informers.Count: > 0 })
+        {
+            return;
+        }
+
+        if (_resourceConfigs.TryGetValue(kind, out var resourceConfig)
+            && resourceConfig.PermissionsLoaded
+            && resourceConfig.CanListAndWatch)
+        {
+            await SeedResource<V1CustomResourceDefinition>(waitForReady: true).ConfigureAwait(false);
         }
     }
 
