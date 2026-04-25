@@ -707,6 +707,7 @@ internal sealed class CountingClusterRuntime : IClusterRuntime, INotifyPropertyC
         if (typeof(T) == typeof(global::k8s.Models.Corev1Event))
         {
             EventSeedCalls++;
+            EventSeedWaitForReady = waitForReady;
         }
 
         return _inner.SeedResource<T>(waitForReady);

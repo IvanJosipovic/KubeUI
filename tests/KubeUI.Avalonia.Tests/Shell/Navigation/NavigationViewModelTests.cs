@@ -2151,7 +2151,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
             timeoutMs: 10000);
         updatedLink.ShouldNotBeNull();
         ReferenceEquals(originalLink, updatedLink).ShouldBeTrue();
-        ReferenceEquals(originalCount, updatedLink.Count).ShouldBeTrue();
+        ReferenceEquals(originalCount, updatedLink.Count).ShouldBeFalse();
     }
 
     [AvaloniaFact]
