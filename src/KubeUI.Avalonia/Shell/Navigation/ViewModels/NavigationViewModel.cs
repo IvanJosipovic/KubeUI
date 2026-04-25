@@ -1108,11 +1108,42 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
         return Observable.Create<int>(observer =>
         {
+            object gate = new();
+            bool attached = false;
+            bool disposed = false;
             IDisposable? liveSubscription = null;
 
             void AttachLiveStream()
             {
-                liveSubscription = CreateLiveResourceCountStream(cluster, resourceType).Subscribe(observer);
+                lock (gate)
+                {
+                    if (attached || disposed)
+                    {
+                        return;
+                    }
+
+                    attached = true;
+                }
+
+                var subscription = CreateLiveResourceCountStream(cluster, resourceType).Subscribe(observer);
+                var disposeSubscription = false;
+
+                lock (gate)
+                {
+                    if (disposed)
+                    {
+                        disposeSubscription = true;
+                    }
+                    else
+                    {
+                        liveSubscription = subscription;
+                    }
+                }
+
+                if (disposeSubscription)
+                {
+                    subscription.Dispose();
+                }
             }
 
             void OnResourceSeeded(ClusterWorkspaceViewModel seededCluster, Type seededType)
@@ -1137,7 +1168,15 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             return Disposable.Create(() =>
             {
                 cluster.ResourceSeeded -= OnResourceSeeded;
-                liveSubscription?.Dispose();
+                IDisposable? subscription;
+                lock (gate)
+                {
+                    disposed = true;
+                    subscription = liveSubscription;
+                    liveSubscription = null;
+                }
+
+                subscription?.Dispose();
             });
         });
     }

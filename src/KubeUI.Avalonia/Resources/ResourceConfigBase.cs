@@ -250,6 +250,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         if (exceptions.Count > 0)
         {
             _logger.LogDebug(new AggregateException(exceptions), "Unable to refresh non-list permissions for {Type}", typeof(T).FullName);
+            return;
         }
 
         PermissionsLoaded = true;
@@ -589,6 +590,5 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
         }
     }
 }
-
 
 

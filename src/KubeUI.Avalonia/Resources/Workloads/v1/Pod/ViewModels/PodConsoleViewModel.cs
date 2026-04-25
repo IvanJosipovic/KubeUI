@@ -124,7 +124,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
 
     private void Input(object? sender, TerminalUserInputEventArgs args)
     {
-        if (_stream.CanWrite)
+        if (_stream?.CanWrite == true)
         {
             _stream.Write(args.Data.Span);
         }
@@ -213,4 +213,3 @@ public struct TerminalSize
         return !(left == right);
     }
 }
-

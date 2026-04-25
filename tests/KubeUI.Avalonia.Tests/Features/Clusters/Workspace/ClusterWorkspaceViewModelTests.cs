@@ -336,20 +336,6 @@ public class ClusterWorkspaceViewModelTests : AvaloniaTestBase
 
         await workspace.EnsureWorkspaceStateInitializedAsync();
         await WaitForAsync(() => runtime.EventSeedCalls == 1);
-        runtime.GetResourceSourceCache<Corev1Event>().AddOrUpdate(new Corev1Event
-        {
-            Metadata = new V1ObjectMeta
-            {
-                Name = "event-one",
-                NamespaceProperty = "default"
-            },
-            InvolvedObject = new V1ObjectReference
-            {
-                Name = "pod-one",
-                NamespaceProperty = "default",
-                Kind = "Pod"
-            }
-        });
 
         await runtime.AddOrUpdateResource(new V1Namespace
         {

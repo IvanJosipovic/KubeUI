@@ -663,7 +663,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
     private async Task EnsureEventResourceSeededAsync()
     {
         if (Runtime.Objects.TryGetValue(GroupApiVersionKind.From<Corev1Event>(), out var existing)
-            && existing is ContainerClass<Corev1Event> { Informers.Count: > 0, Items.Count: > 0 })
+            && existing is ContainerClass<Corev1Event> { Informers.Count: > 0 })
         {
             return;
         }
