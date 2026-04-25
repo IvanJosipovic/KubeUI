@@ -80,6 +80,63 @@ public class V1CustomResourceDefinitionConfigTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public void crd_printer_column_returns_empty_value_for_missing_annotation_key()
+    {
+        var cluster = new TestCluster().CreateWorkspace();
+        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var config = ActivatorUtilities.CreateInstance<CRDResourceConfig<TestCustomResource>>(services);
+        config.Initialize(cluster);
+
+        var crd = new V1CustomResourceDefinition
+        {
+            Spec = new V1CustomResourceDefinitionSpec
+            {
+                Group = "example.com",
+                Scope = "Namespaced",
+                Names = new V1CustomResourceDefinitionNames
+                {
+                    Kind = "IngressClass",
+                    Plural = "ingressclasses",
+                },
+                Versions =
+                [
+                    new V1CustomResourceDefinitionVersion
+                    {
+                        Name = "v1",
+                        Storage = true,
+                        Served = true,
+                        AdditionalPrinterColumns =
+                        [
+                            new V1CustomResourceColumnDefinition
+                            {
+                                Name = "External Name",
+                                JsonPath = ".metadata.annotations['crossplane.io/external-name']",
+                                Type = "string",
+                            }
+                        ]
+                    }
+                ]
+            }
+        };
+
+        config.Generate(crd);
+
+        var column = config.Columns().Single(x => x.Name == "External Name");
+        var resource = new TestCustomResource
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Annotations = new Dictionary<string, string>(),
+            },
+        };
+
+        Should.NotThrow(() => column.ValueAccessor.GetValue(resource));
+        column.ValueAccessor.GetValue(resource).ShouldBeNull();
+        column.DisplayValue(resource).ShouldBeEmpty();
+        column.SortKey(resource).ShouldBeNull();
+    }
+
+    [AvaloniaFact]
     public void crd_generator_uses_nullable_value_types_for_optional_printer_columns()
     {
         var cluster = new TestCluster().CreateWorkspace();
