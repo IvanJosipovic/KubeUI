@@ -47,12 +47,12 @@ public sealed partial class ClusterListViewModel : ViewModelBase
             Content = string.Format(Assets.Resources.ClusterListViewModel_Delete_Content, cluster.Name),
             PrimaryButtonText = Assets.Resources.ClusterListViewModel_Delete_Primary,
             SecondaryButtonText = Assets.Resources.ClusterListViewModel_Delete_Secondary,
-            DefaultButton = ContentDialogButton.Secondary
+            DefaultButton = FAContentDialogButton.Secondary
         };
 
         var result = await _dialogService.ShowContentDialogAsync(this, settings);
 
-        if (result == ContentDialogResult.Primary)
+        if (result == FAContentDialogResult.Primary)
         {
             ClusterCatalog.RemoveCluster(cluster);
         }

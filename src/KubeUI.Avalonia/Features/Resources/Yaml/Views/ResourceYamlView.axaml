@@ -63,7 +63,7 @@
             </ToggleButton>
         </StackPanel>
 
-        <fa:InfoBar Name="ActionResultBar" Grid.Row="1"
+        <fa:FAInfoBar Name="ActionResultBar" Grid.Row="1"
             Title="{Binding ActionResultTitle}"
             Margin="4"
             CloseButtonCommand="{Binding DismissActionResultCommand}"

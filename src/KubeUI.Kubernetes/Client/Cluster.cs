@@ -276,6 +276,18 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
             await IsResourceReady<T>().ConfigureAwait(false);
             _logger.LogDebug("Resource readiness reached for {type}.", typeof(T));
         }
+
+        if (Objects.TryGetValue(kind, out var obj)
+            && obj is ContainerClass<T> container
+            && container.Informers.Count == 0)
+        {
+            container.Initialized = false;
+
+            if (_seedTasks.TryGetValue(kind, out var current) && ReferenceEquals(current, seedTask))
+            {
+                _seedTasks.TryRemove(kind, out _);
+            }
+        }
     }
 
     private async Task SeedResourceCoreAsync<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -601,7 +613,14 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
 
     public IObservable<int> GetResourceCount<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        return GetResourceSourceCache<T>().Connect().Count();
+        return Observable.Defer(() =>
+        {
+            var sourceCache = GetResourceSourceCache<T>();
+            return sourceCache.Connect()
+                .Select(_ => sourceCache.Items.Count)
+                .StartWith(sourceCache.Items.Count)
+                .DistinctUntilChanged();
+        });
     }
 
     // Find the generic definition of GetResourceCount<T>()

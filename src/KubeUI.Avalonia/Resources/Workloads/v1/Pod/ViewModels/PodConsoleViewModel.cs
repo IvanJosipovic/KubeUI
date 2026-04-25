@@ -2,7 +2,6 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using Avalonia.Input.Platform;
-using AvaloniaTerminal;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
@@ -10,6 +9,7 @@ using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
+using SvcSystems.UI.Terminal;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 
@@ -122,17 +122,17 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
         return Cluster.Client!.WebSocketNamespacedPodExecAsync(Object.Name(), Object.Namespace(), command, ContainerName);
     }
 
-    public void Input(byte[] input)
+    private void Input(object? sender, TerminalUserInputEventArgs args)
     {
-        if (_stream.CanWrite)
+        if (_stream?.CanWrite == true)
         {
-            _stream.Write(input);
+            _stream.Write(args.Data.Span);
         }
     }
 
-    private void Terminal_SizeChanged(int cols, int rows, double width, double height)
+    private void Terminal_SizeChanged(object? sender, TerminalSizeChangedEventArgs args)
     {
-        SendResize(cols, rows);
+        SendResize(args.Cols, args.Rows);
     }
 
     public void SendResize(int cols, int rows)
@@ -213,5 +213,3 @@ public struct TerminalSize
         return !(left == right);
     }
 }
-
-

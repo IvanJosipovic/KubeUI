@@ -105,6 +105,18 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         return Cluster.UpdatePermissionsAllNamespaceAsync<T>(verb, subResource);
     }
 
+    public IEnumerable<(Verb verb, string? subresource)> Permissions()
+    {
+        return DefaultPermissions()
+            .Concat(CustomPermissions())
+            .Distinct();
+    }
+
+    public virtual IEnumerable<AuthorizationRequest> AuthorizationRequests()
+    {
+        return Permissions().Select(permission => new AuthorizationRequest(Type, permission.verb, permission.subresource));
+    }
+
     public virtual Control[] Properties(T resource) => [];
 
     protected ResourceListColumn<T, string> NameColumn(SortDirection sort = SortDirection.None)
@@ -186,18 +198,6 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         (Verb.Watch, null),
     ];
 
-    public IEnumerable<(Verb verb, string? subresource)> Permissions()
-    {
-        return DefaultPermissions()
-            .Concat(CustomPermissions())
-            .Distinct();
-    }
-
-    public virtual IEnumerable<AuthorizationRequest> AuthorizationRequests()
-    {
-        return Permissions().Select(permission => new AuthorizationRequest(Type, permission.verb, permission.subresource));
-    }
-
     public async Task UpdatePermissions()
     {
         PermissionsLoaded = false;
@@ -218,6 +218,38 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         if (!CanListAndWatch)
         {
             PermissionsLoaded = true;
+            return;
+        }
+
+        var exceptions = new List<Exception>();
+
+        foreach (var (verb, subResource) in DefaultPermissions())
+        {
+            try
+            {
+                await RefreshPermissionAsync(verb, subResource).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                exceptions.Add(ex);
+            }
+        }
+
+        foreach (var (verb, subResource) in CustomPermissions())
+        {
+            try
+            {
+                await RefreshPermissionAsync(verb, subResource).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                exceptions.Add(ex);
+            }
+        }
+
+        if (exceptions.Count > 0)
+        {
+            _logger.LogDebug(new AggregateException(exceptions), "Unable to refresh non-list permissions for {Type}", typeof(T).FullName);
             return;
         }
 
@@ -263,12 +295,12 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             Content = string.Format(Assets.Resources.ResourceListViewModel_Delete_Content, items.Count),
             PrimaryButtonText = Assets.Resources.ResourceListViewModel_Delete_Primary,
             SecondaryButtonText = Assets.Resources.ResourceListViewModel_Delete_Secondary,
-            DefaultButton = ContentDialogButton.Secondary
+            DefaultButton = FAContentDialogButton.Secondary
         };
 
         var result = await _dialogService.ShowContentDialogAsync(this, settings);
 
-        if (result == ContentDialogResult.Primary)
+        if (result == FAContentDialogResult.Primary)
         {
             var exceptions = new List<Exception>();
 
@@ -353,7 +385,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             Content = string.Format(Assets.Resources.ResourceListViewModel_Restart_Content, items.Count),
             PrimaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Primary,
             SecondaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Secondary,
-            DefaultButton = ContentDialogButton.Secondary
+            DefaultButton = FAContentDialogButton.Secondary
         };
 
         var result = await _dialogService.ShowContentDialogAsync(this, settings);
@@ -372,7 +404,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
                 }
                 """;
 
-        if (result == ContentDialogResult.Primary)
+        if (result == FAContentDialogResult.Primary)
         {
             var exceptions = new List<Exception>();
 
@@ -558,3 +590,5 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
         }
     }
 }
+
+

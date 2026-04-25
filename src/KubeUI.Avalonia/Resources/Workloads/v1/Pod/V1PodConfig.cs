@@ -122,32 +122,32 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                     new()
                     {
                         Header = "Init",
-                        Items = [.. initContainers.Select(c => new MenuItemViewModel()
+                        Items = new AvaloniaList<MenuItemViewModel>(initContainers.Select(c => new MenuItemViewModel()
                         {
                             Header = c.Name,
                             Command = ViewConsoleCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
-                        }).ToList()],
+                        }).ToList()),
                     },
                     new()
                     {
                         Header = "Normal",
-                        Items = [.. containers.Select(c => new MenuItemViewModel()
+                        Items = new AvaloniaList<MenuItemViewModel>(containers.Select(c => new MenuItemViewModel()
                         {
                             Header = c.Name,
                             Command = ViewConsoleCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
-                        }).ToList()],
+                        }).ToList()),
                     },
                     new()
                     {
                         Header = "Ephemeral",
-                        Items = [.. ephemeralContainers.Select(c => new MenuItemViewModel()
+                        Items = new AvaloniaList<MenuItemViewModel>(ephemeralContainers.Select(c => new MenuItemViewModel()
                         {
                             Header = c.Name,
                             Command = ViewConsoleCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
-                        }).ToList()],
+                        }).ToList()),
                     },
                 ]),
             },
@@ -196,32 +196,32 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                     new()
                     {
                         Header = "Init",
-                        Items = [.. initContainers.Select(c => new MenuItemViewModel()
+                        Items = new AvaloniaList<MenuItemViewModel>(initContainers.Select(c => new MenuItemViewModel()
                         {
                             Header = c.Name,
                             Command = ViewLogsCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
-                        }).ToList()],
+                        }).ToList()),
                     },
                     new()
                     {
                         Header = "Normal",
-                        Items = [.. containers.Select(c => new MenuItemViewModel()
+                        Items = new AvaloniaList<MenuItemViewModel>(containers.Select(c => new MenuItemViewModel()
                         {
                             Header = c.Name,
                             Command = ViewLogsCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
-                        }).ToList()],
+                        }).ToList()),
                     },
                     new()
                     {
                         Header = "Ephemeral",
-                        Items = [.. ephemeralContainers.Select(c => new MenuItemViewModel()
+                        Items = new AvaloniaList<MenuItemViewModel>(ephemeralContainers.Select(c => new MenuItemViewModel()
                         {
                             Header = c.Name,
                             Command = ViewLogsCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
-                        }).ToList()],
+                        }).ToList()),
                     },
                 ]),
             },
@@ -415,10 +415,14 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         vm.Cluster = Cluster;
         vm.Object = pod;
         vm.ContainerName = containerName;
-        vm.UseAttach = false;
         vm.Id = $"{nameof(ViewConsole)}-{Cluster.Name}-{pod.Namespace()}-{pod.Name()}-{containerName}";
 
         _factory.AddToBottom(vm);
+    }
+
+    private bool CanViewConsole(IList? parameters)
+    {
+        return CanOpenConsole(parameters, "exec");
     }
 
     [RelayCommand(CanExecute = nameof(CanAttachConsole))]
@@ -453,11 +457,6 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         vm.Id = $"{nameof(AttachConsole)}-{Cluster.Name}-{pod.Namespace()}-{pod.Name()}-{containerName}";
 
         _factory.AddToBottom(vm);
-    }
-
-    private bool CanViewConsole(IList? parameters)
-    {
-        return CanOpenConsole(parameters, "exec");
     }
 
     private bool CanAttachConsole(IList? parameters)
@@ -542,15 +541,14 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 Content = string.Format(Assets.Resources.ResourceListViewModel_PortForward_Content, containerPort.ContainerPort, pf.LocalPort),
                 PrimaryButtonText = Assets.Resources.ResourceListViewModel_PortForward_Primary,
                 SecondaryButtonText = Assets.Resources.ResourceListViewModel_PortForward_Secondary,
-                DefaultButton = ContentDialogButton.Secondary
+                DefaultButton = FAContentDialogButton.Secondary
             };
 
             var result = await _dialogService.ShowContentDialogAsync(this, settings);
 
-            if (result == ContentDialogResult.Primary)
+            if (result == FAContentDialogResult.Primary)
             {
-                var window = (Window)_dialogService.DialogManager.GetMainWindow()!.RefObj;
-                await window!.Launcher.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
+                await App.TopLevel!.Launcher.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
             }
         }
     }
@@ -590,6 +588,4 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 
     public override Control[] Properties(V1Pod resource) => [new PropertiesView()];
 }
-
-
 

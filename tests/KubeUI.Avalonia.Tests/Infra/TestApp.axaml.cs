@@ -88,7 +88,7 @@ public class TestApp : Application, IServiceProviderHost
         dialogManager
             .Setup(x => x.ShowFrameworkDialogAsync(It.IsAny<System.ComponentModel.INotifyPropertyChanged?>(), It.IsAny<ContentDialogSettings>(), It.IsAny<Func<object?, string>?>()))
             .Callback<System.ComponentModel.INotifyPropertyChanged?, ContentDialogSettings, Func<object?, string>?>((_, settings, _) => LastContentDialogSettings = settings)
-            .ReturnsAsync(ContentDialogResult.Primary);
+            .ReturnsAsync(FAContentDialogResult.Primary);
         DialogManagerMock = dialogManager;
 
         var dialog = new Mock<IDialogService>();
@@ -166,26 +166,8 @@ public class TestApp : Application, IServiceProviderHost
             return;
         }
 
-        Exception? capturedException = null;
-        Dispatcher.UIThread.Post(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                capturedException = ex;
-            }
-        });
-        Dispatcher.UIThread.RunJobs();
-
-        if (capturedException != null)
-        {
-            ExceptionDispatchInfo.Capture(capturedException).Throw();
-        }
+        Dispatcher.UIThread.InvokeAsync(action).GetAwaiter().GetResult();
     }
 }
-
 
 

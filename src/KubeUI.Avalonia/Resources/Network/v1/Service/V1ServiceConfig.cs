@@ -95,15 +95,14 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
                 Content = string.Format(Assets.Resources.ResourceListViewModel_PortForward_Content, containerPort.Port, pf.LocalPort),
                 PrimaryButtonText = Assets.Resources.ResourceListViewModel_PortForward_Primary,
                 SecondaryButtonText = Assets.Resources.ResourceListViewModel_PortForward_Secondary,
-                DefaultButton = ContentDialogButton.Secondary
+                DefaultButton = FAContentDialogButton.Secondary
             };
 
             var result = await _dialogService.ShowContentDialogAsync(this, settings);
 
-            if (result == ContentDialogResult.Primary)
+            if (result == FAContentDialogResult.Primary)
             {
-                var window = (Window)_dialogService.DialogManager.GetMainWindow()!.RefObj;
-                await window!.Launcher.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
+                await App.TopLevel!.Launcher.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
             }
         }
     }

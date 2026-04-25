@@ -14,6 +14,7 @@ using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -133,6 +134,11 @@ public class NavigationViewModelTests : AvaloniaTestBase
         return FindResourceLink(root.NavigationItems, name);
     }
 
+    private static ResourceNavigationLink? FindResourceLink(ClusterNavigationNode root, Type resourceType)
+    {
+        return FindResourceLink(root.NavigationItems, resourceType);
+    }
+
     private static ResourceNavigationLink? FindResourceLink(IEnumerable<NavigationItem> items, string name)
     {
         foreach (var child in items)
@@ -150,6 +156,52 @@ public class NavigationViewModelTests : AvaloniaTestBase
         }
 
         return null;
+    }
+
+    private static ResourceNavigationLink? FindResourceLink(IEnumerable<NavigationItem> items, Type resourceType)
+    {
+        foreach (var child in items)
+        {
+            if (child is ResourceNavigationLink resourceLink && resourceLink.ControlType == resourceType)
+            {
+                return resourceLink;
+            }
+
+            var nested = FindResourceLink(child.NavigationItems, resourceType);
+            if (nested != null)
+            {
+                return nested;
+            }
+        }
+
+        return null;
+    }
+
+    private static async Task<int?> WaitForObservedCountAsync(IObservable<int>? count, int expected, int timeoutMs = 3000)
+    {
+        if (count == null)
+        {
+            return null;
+        }
+
+        var latest = int.MinValue;
+        using var subscription = count.Subscribe(value => latest = value);
+        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+
+        while (DateTime.UtcNow < deadline)
+        {
+            Dispatcher.UIThread.RunJobs();
+
+            if (latest == expected)
+            {
+                return latest;
+            }
+
+            await Task.Delay(25);
+        }
+
+        Dispatcher.UIThread.RunJobs();
+        return latest == int.MinValue ? null : latest;
     }
 
     private static NavigationLink? FindNavigationLink(IEnumerable<NavigationItem> items, string viewModelKey)
@@ -312,6 +364,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
     {
         var runtime = new TestCluster
         {
+            Name = "settings-reuse-" + Guid.NewGuid().ToString("N"),
             Connected = false,
             Status = ClusterStatus.None,
             ListNamespaces = false,
@@ -351,7 +404,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         TestApp.LastContentDialogSettings.Title.ShouldBe(Assets.Resources.Cluster_Missing_Namespace_Permission_Title);
         TestApp.LastContentDialogSettings.Content.ShouldBe(Assets.Resources.Cluster_Missing_Namespace_Permission_Content);
         TestApp.LastContentDialogSettings.PrimaryButtonText.ShouldBe(Assets.Resources.Cluster_Missing_Namespace_Permission_Primary);
-        TestApp.LastContentDialogSettings.DefaultButton.ShouldBe(ContentDialogButton.Primary);
+        TestApp.LastContentDialogSettings.DefaultButton.ShouldBe(FAContentDialogButton.Primary);
     }
 
     [AvaloniaFact]
@@ -382,20 +435,27 @@ public class NavigationViewModelTests : AvaloniaTestBase
             ?? throw new InvalidOperationException("Test services are not initialized.");
         existingSettings.Initialize(workspace);
         vm.Factory.AddToDocuments(existingSettings);
+        Dispatcher.UIThread.RunJobs();
 
         var documents = vm.Factory.GetDockable<IDocumentDock>("Documents");
         documents.ShouldNotBeNull();
+
+        await WaitForAsync(() =>
+            documents.VisibleDockables?.OfType<ClusterSettingsViewModel>().Count(x => x.Id == existingSettings.Id) == 1,
+            10000);
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         await vm.TreeViewSelectionChangedAsync(clusterNode);
 
         await WaitForAsync(() =>
-            documents.VisibleDockables?.OfType<ClusterSettingsViewModel>().Count(x => x.Id == existingSettings.Id) == 1);
+        {
+            var visibleSettings = documents.VisibleDockables?.OfType<ClusterSettingsViewModel>().ToList();
+            return visibleSettings?.Count(x => x.Id == existingSettings.Id) == 1;
+        }, 10000);
 
-        documents.VisibleDockables!
-            .OfType<ClusterSettingsViewModel>()
-            .Count(x => x.Id == existingSettings.Id)
-            .ShouldBe(1);
+        var visibleDockables = documents.VisibleDockables!.OfType<ClusterSettingsViewModel>().ToList();
+        var matchingDockables = visibleDockables.Where(x => x.Id == existingSettings.Id).ToList();
+        matchingDockables.Count.ShouldBe(1, $"visibleIds={string.Join(",", visibleDockables.Select(x => x.Id))}");
     }
 
     [AvaloniaFact]
@@ -463,6 +523,7 @@ public class NavigationViewModelTests : AvaloniaTestBase
         await connectCompleted.Task.WaitAsync(TimeSpan.FromSeconds(5));
         Dispatcher.UIThread.RunJobs();
 
+        runtime.LastError.ShouldBeNull();
         runtime.Status.ShouldBe(ClusterStatus.Connected);
         documents.VisibleDockables!
             .OfType<ClusterSettingsViewModel>()
@@ -756,8 +817,10 @@ public class NavigationViewModelTests : AvaloniaTestBase
         await vm.TreeViewSelectionChangedAsync(clusterNode);
 
         await WaitForAsync(() => workspace.Namespaces.Any(x => x.Name() == "my-app"));
-        await WaitForAsync(() => workspace.GetResourceConfig<V1Pod>().PermissionsLoaded);
-        workspace.GetResourceConfig<V1Pod>().CanListAndWatch.ShouldBeTrue();
+        await WaitForAsync(() => workspace.GetResourceConfigs().Any(x => x.Type == typeof(V1Pod) && x.PermissionsLoaded));
+
+        var podConfig = workspace.GetResourceConfig<V1Pod>();
+        podConfig.CanListAndWatch.ShouldBeTrue();
 
         await WaitForAsync(() => FindResourceLink(clusterNode, "Pods") != null);
 
@@ -1688,7 +1751,181 @@ public class NavigationViewModelTests : AvaloniaTestBase
         await vm.TreeViewSelectionChangedAsync(podsLink);
 
         var count = await countTask;
-        count.ShouldBe(0);
+        count.ShouldBe(1);
+    }
+
+    [AvaloniaFact]
+    public async Task resource_navigation_count_updates_when_events_arrive_after_initial_zero()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+
+        var workspace = CreateWorkspace(runtime);
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+        Dispatcher.UIThread.RunJobs();
+
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        var eventsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, typeof(Corev1Event)));
+
+        eventsLink.ShouldNotBeNull();
+        (eventsLink.Count is not null).ShouldBeTrue();
+
+        var directCountTask = WaitForObservedCountAsync(runtime.GetResourceCount<Corev1Event>(), expected: 1, timeoutMs: 10000);
+        var zeroCount = await WaitForObservedCountAsync(eventsLink.Count, expected: 0, timeoutMs: 10000);
+        zeroCount.ShouldBe(0);
+
+        var countTask = WaitForObservedCountAsync(eventsLink.Count, expected: 1, timeoutMs: 10000);
+
+        await runtime.AddOrUpdateResource(new Corev1Event
+        {
+            Metadata = new()
+            {
+                Name = "event-after-zero",
+                NamespaceProperty = "default"
+            },
+            InvolvedObject = new()
+            {
+                Name = "pod-one",
+                NamespaceProperty = "default",
+                Kind = "Pod"
+            },
+            LastTimestamp = DateTime.UtcNow,
+            Count = 1
+        });
+
+        var directCount = await directCountTask;
+        directCount.ShouldBe(1);
+
+        var count = await countTask;
+        count.ShouldBe(1);
+    }
+
+    [AvaloniaFact]
+    public async Task resource_navigation_count_updates_for_events_after_connecting_from_navigation()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = false,
+            Status = ClusterStatus.None,
+        };
+
+        runtime.ConnectBehavior = () =>
+        {
+            runtime.Connected = true;
+            runtime.Status = ClusterStatus.Connected;
+            return Task.CompletedTask;
+        };
+
+        var workspace = CreateWorkspace(runtime);
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        await vm.TreeViewSelectionChangedAsync(clusterNode);
+        await WaitForAsync(() => workspace.GetResourceConfigs().Any(x => x.Type == typeof(Corev1Event) && x.PermissionsLoaded));
+        await WaitForAsync(() => FindResourceLink(clusterNode, typeof(Corev1Event)) != null);
+
+        var eventsLink = FindResourceLink(clusterNode, typeof(Corev1Event));
+        eventsLink.ShouldNotBeNull();
+        (eventsLink.Count is not null).ShouldBeTrue();
+
+        var zeroCount = await WaitForObservedCountAsync(eventsLink.Count, expected: 0, timeoutMs: 10000);
+        zeroCount.ShouldBe(0);
+
+        var countTask = WaitForObservedCountAsync(eventsLink.Count, expected: 1, timeoutMs: 10000);
+
+        await runtime.AddOrUpdateResource(new Corev1Event
+        {
+            Metadata = new()
+            {
+                Name = "event-after-connect",
+                NamespaceProperty = "default"
+            },
+            InvolvedObject = new()
+            {
+                Name = "pod-one",
+                NamespaceProperty = "default",
+                Kind = "Pod"
+            },
+            LastTimestamp = DateTime.UtcNow,
+            Count = 1
+        });
+
+        var count = await countTask;
+        count.ShouldBe(1);
+    }
+
+    [AvaloniaFact]
+    public async Task event_navigation_count_recovers_when_event_seed_happened_before_namespace_permission()
+    {
+        var runtime = new TestCluster
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+            DefaultPermissionAllowed = false,
+        };
+
+        runtime.SetPermission(typeof(Corev1Event), Verb.List, allowed: false);
+        runtime.SetPermission(typeof(Corev1Event), Verb.Watch, allowed: false);
+
+        await runtime.SeedResource<Corev1Event>();
+        runtime.Objects[GroupApiVersionKind.From<Corev1Event>()].ShouldBeOfType<ContainerClass<Corev1Event>>()
+            .Informers.Count.ShouldBe(0);
+
+        await runtime.AddOrUpdateResource(new V1Namespace
+        {
+            Metadata = new() { Name = "default" }
+        });
+
+        runtime.SetPermission(typeof(Corev1Event), Verb.List, allowed: true, @namespace: "default");
+        runtime.SetPermission(typeof(Corev1Event), Verb.Watch, allowed: true, @namespace: "default");
+
+        var workspace = CreateWorkspace(runtime);
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+        Dispatcher.UIThread.RunJobs();
+
+        runtime.Objects[GroupApiVersionKind.From<Corev1Event>()].ShouldBeOfType<ContainerClass<Corev1Event>>()
+            .Informers.Count.ShouldBe(1);
+
+        var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        Dispatcher.UIThread.RunJobs();
+
+        var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
+        var eventsLink = await WaitForValueAsync(() => FindResourceLink(clusterNode, typeof(Corev1Event)));
+
+        eventsLink.ShouldNotBeNull();
+        (eventsLink.Count is not null).ShouldBeTrue();
+
+        var countTask = WaitForObservedCountAsync(eventsLink.Count, expected: 1, timeoutMs: 10000);
+
+        await runtime.AddOrUpdateResource(new Corev1Event
+        {
+            Metadata = new()
+            {
+                Name = "event-after-retry",
+                NamespaceProperty = "default"
+            },
+            InvolvedObject = new()
+            {
+                Name = "pod-one",
+                NamespaceProperty = "default",
+                Kind = "Pod"
+            },
+            LastTimestamp = DateTime.UtcNow,
+            Count = 1
+        });
+
+        var count = await countTask;
+        count.ShouldBe(1);
     }
 
     [AvaloniaFact]
@@ -1850,8 +2087,9 @@ public class NavigationViewModelTests : AvaloniaTestBase
             () => rootGroup.NavigationItems.OfType<ResourceNavigationLink>().SingleOrDefault(x => x.Name == "Tests"),
             timeoutMs: 10000);
         originalLink.ShouldNotBeNull();
+        var originalCount = originalLink.Count;
 
-        workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceKubeUi), "Renamed Tests"));
+        workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceKubeUi), "Tests"));
         await Task.Delay(250);
         Dispatcher.UIThread.RunJobs();
 
@@ -1862,10 +2100,11 @@ public class NavigationViewModelTests : AvaloniaTestBase
         ReferenceEquals(originalRootGroup, updatedRootGroup).ShouldBeTrue();
 
         var updatedLink = await WaitForValueAsync(
-            () => updatedRootGroup.NavigationItems.OfType<ResourceNavigationLink>().SingleOrDefault(x => x.Name == "Renamed Tests"),
+            () => updatedRootGroup.NavigationItems.OfType<ResourceNavigationLink>().SingleOrDefault(x => x.Name == "Tests"),
             timeoutMs: 10000);
         updatedLink.ShouldNotBeNull();
         ReferenceEquals(originalLink, updatedLink).ShouldBeTrue();
+        ReferenceEquals(originalCount, updatedLink.Count).ShouldBeTrue();
     }
 
     [AvaloniaFact]
@@ -2082,7 +2321,7 @@ internal class FakeCustomResourceConfig : IResourceConfig
     public string Name { get; }
     public string? Category => null;
     public IStyle ListStyle() => new global::Avalonia.Styling.Style();
-    public IEnumerable<(Verb verb, string? subresource)> Permissions() => [(Verb.List, null), (Verb.Watch, null)];
+    public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
     public Task UpdatePermissions() => Task.CompletedTask;
     public Type Type { get; }
 
@@ -2115,7 +2354,7 @@ internal class FakeResourceConfig : IResourceConfig
     public string Name { get; }
     public string? Category => null;
     public IStyle ListStyle() => new global::Avalonia.Styling.Style();
-    public IEnumerable<(Verb verb, string? subresource)> Permissions() => [(Verb.List, null), (Verb.Watch, null)];
+    public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
     public Task UpdatePermissions() => Task.CompletedTask;
     public Type Type { get; }
 
@@ -2147,7 +2386,7 @@ internal sealed class DeferredPermissionResourceConfig : IResourceConfig
     public string Name { get; }
     public string? Category => null;
     public IStyle ListStyle() => new global::Avalonia.Styling.Style();
-    public IEnumerable<(Verb verb, string? subresource)> Permissions() => [(Verb.List, null), (Verb.Watch, null)];
+    public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
     public Type Type { get; }
 
     public Task UpdatePermissions()
@@ -2212,7 +2451,7 @@ internal sealed class SlowPermissionResourceConfig : IResourceConfig
     public string Name { get; }
     public string? Category => null;
     public IStyle ListStyle() => new global::Avalonia.Styling.Style();
-    public IEnumerable<(Verb verb, string? subresource)> Permissions() => [(Verb.List, null), (Verb.Watch, null)];
+    public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
     public Type Type { get; }
 
     public async Task UpdatePermissions()

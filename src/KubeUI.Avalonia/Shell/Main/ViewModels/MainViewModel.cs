@@ -328,12 +328,12 @@ public sealed partial class MainViewModel : ViewModelBase
                     Content = Assets.Resources.MainViewModel_CheckForUpdates_Content + "\n\n" + Markdig.Markdown.ToPlainText(update.TargetFullRelease.NotesMarkdown),
                     PrimaryButtonText = Assets.Resources.MainViewModel_CheckForUpdates_Primary,
                     SecondaryButtonText = Assets.Resources.MainViewModel_CheckForUpdates_Secondary,
-                    DefaultButton = ContentDialogButton.Secondary
+                    DefaultButton = FAContentDialogButton.Secondary
                 };
 
                 var result = await _dialogService.ShowContentDialogAsync(this, settings).ConfigureAwait(true);
 
-                if (result == ContentDialogResult.Primary)
+                if (result == FAContentDialogResult.Primary)
                 {
                     ContentDialogSettings updatePrompt = new()
                     {

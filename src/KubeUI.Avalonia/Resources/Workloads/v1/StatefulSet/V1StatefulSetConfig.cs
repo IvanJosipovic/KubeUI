@@ -1,5 +1,4 @@
 using Avalonia.Controls;
-using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;

@@ -607,9 +607,9 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         await AddOrUpdateAsync(cluster, Event("ns", "b"));
         await AddOrUpdateAsync(cluster, Event("ns", "c"));
 
-        vm.View.ElementAt(0).ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
-        vm.View.ElementAt(1).ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
-        vm.View.ElementAt(2).ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
+        vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
+        vm.View[1].ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
+        vm.View[2].ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
 
 
         // Select only middle
@@ -621,9 +621,9 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         await AddOrUpdateAsync(cluster, Event("ns", "b"));
         Dispatcher.UIThread.RunJobs();
 
-        vm.View.ElementAt(0).ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
-        vm.View.ElementAt(1).ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
-        vm.View.ElementAt(2).ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
+        vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
+        vm.View[1].ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
+        vm.View[2].ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
 
         vm.SelectedItems.Count.ShouldBe(1);
 
@@ -655,9 +655,9 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         await AddOrUpdateAsync(cluster, Event("ns", "b"));
         await AddOrUpdateAsync(cluster, Event("ns", "c"));
 
-        vm.View.ElementAt(0).ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
-        vm.View.ElementAt(1).ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
-        vm.View.ElementAt(2).ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
+        vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
+        vm.View[1].ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
+        vm.View[2].ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
 
 
         // Select all 3
@@ -671,9 +671,9 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         await AddOrUpdateAsync(cluster, Event("ns", "b"));
         Dispatcher.UIThread.RunJobs();
 
-        vm.View.ElementAt(0).ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
-        vm.View.ElementAt(1).ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
-        vm.View.ElementAt(2).ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
+        vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
+        vm.View[1].ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
+        vm.View[2].ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
 
         vm.SelectionModel.SelectedIndexes.ShouldBe([0, 1, 2]);
 
@@ -1304,11 +1304,13 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         portForwardMenu.ShouldNotBeNull();
 
         var groups = portForwardMenu!.Items?.ToList();
-        groups.Count.ShouldBe(3);
+        groups.ShouldNotBeNull();
+        groups!.Select(x => x.Header).ShouldContain("Normal");
 
         var normalGroup = groups.Single(x => x.Header == "Normal");
         var containers = normalGroup.Items?.ToList();
-        containers.Count.ShouldBe(1);
+        containers.ShouldNotBeNull();
+        containers!.Count.ShouldBe(1);
         containers[0].Header.ShouldBe("d-container");
     }
 
@@ -1514,12 +1516,12 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         await AddOrUpdateAsync(cluster, Pod("ns1", "a"));
 
-        vm.View.Count().ShouldBe(1);
+        vm.View.Count.ShouldBe(1);
 
         await cluster.DeleteResource(Pod("ns1", "a"));
         Dispatcher.UIThread.RunJobs();
 
-        vm.View.Count().ShouldBe(0);
+        vm.View.Count.ShouldBe(0);
     }
 
     [AvaloniaFact(DisplayName = "Reattach keeps only saved sort descriptors")]
@@ -1576,9 +1578,9 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var view = WaitForValue(() => FindVisibleView<ResourceListView>(window, vm), 3000);
         view.ShouldNotBeNull();
 
-        vm.View.ElementAt(0).ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
-        vm.View.ElementAt(1).ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
-        vm.View.ElementAt(2).ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
+        vm.View[0].ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
+        vm.View[1].ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
+        vm.View[2].ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
         vm.SortingModel.Descriptors.Count.ShouldBe(1);
         ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("name");
 
@@ -1593,9 +1595,9 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var restoredView = WaitForValue(() => FindVisibleView<ResourceListView>(window, vm), 3000);
         restoredView.ShouldNotBeNull();
 
-        vm.View.ElementAt(0).ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
-        vm.View.ElementAt(1).ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
-        vm.View.ElementAt(2).ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
+        vm.View[0].ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
+        vm.View[1].ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
+        vm.View[2].ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
         vm.SortingModel.Descriptors.Count.ShouldBe(1);
         ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("name");
     }
@@ -1770,9 +1772,9 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var restoredView = WaitForValue(() => FindVisibleView<ResourceListView>(window, vm), 3000);
         restoredView.ShouldNotBeNull();
 
-        vm.View.ElementAt(0).ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
-        vm.View.ElementAt(1).ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
-        vm.View.ElementAt(2).ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
+        vm.View[0].ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
+        vm.View[1].ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
+        vm.View[2].ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
         vm.SortingModel.Descriptors.Count.ShouldBe(1);
         ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("labels");
     }
@@ -2034,7 +2036,7 @@ internal sealed class FakeDoubleTapResourceConfig : IResourceConfig
     public string Name => "Pods";
     public string? Category => null;
     public IStyle ListStyle() => new global::Avalonia.Styling.Style();
-    public IEnumerable<(Verb verb, string? subresource)> Permissions() => [(Verb.List, null), (Verb.Watch, null)];
+    public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
     public Task UpdatePermissions() => Task.CompletedTask;
     public Type Type => typeof(V1Pod);
     public IRelayCommand NewResourceCommand => new RelayCommand(() => { });

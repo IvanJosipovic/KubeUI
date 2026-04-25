@@ -279,7 +279,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             Title = Assets.Resources.Cluster_Missing_Namespace_Permission_Title,
             Content = Assets.Resources.Cluster_Missing_Namespace_Permission_Content,
             PrimaryButtonText = Assets.Resources.Cluster_Missing_Namespace_Permission_Primary,
-            DefaultButton = ContentDialogButton.Primary
+            DefaultButton = FAContentDialogButton.Primary
         };
 
         await _dialogService.ShowContentDialogAsync(this, settings);
@@ -380,11 +380,12 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             if (cluster.Connected)
             {
                 cluster.IsExpanded = true;
+                return;
             }
 
             Dispatcher.UIThread.Post(() =>
             {
-                SyncClusterNavigation(cluster, updatePortForwarders: cluster.Connected);
+                SyncClusterNavigation(cluster);
             });
             return;
         }
@@ -526,72 +527,6 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         UpsertNavigationItem(node.NavigationItems, CreateNavigationLink(node.Cluster, "load-folder", Assets.Resources.NavigationViewModel_LoadFolder, LoadFolderOrder));
     }
 
-    private IEnumerable<NavigationItem> BuildNavigationItems(ClusterWorkspaceViewModel cluster)
-    {
-        if (!ShouldPopulateClusterNavigation(cluster))
-        {
-            return [];
-        }
-
-        var items = new List<NavigationItem>
-        {
-            CreateNavigationLink(cluster, NavigationTargets.ClusterWorkspace, Assets.Resources.ClusterViewModel_Title, ClusterWorkspaceOrder),
-            CreateNavigationLink(cluster, NavigationTargets.Visualization, Assets.Resources.VisualizationViewModel_Title, VisualizationOrder),
-            CreateNavigationLink(cluster, NavigationTargets.ClusterSettings, Assets.Resources.ClusterSettingsViewModel_Title, ClusterSettingsOrder),
-            CreateNavigationLink(cluster, "load-yaml", Assets.Resources.NavigationViewModel_LoadYaml, LoadYamlOrder),
-            CreateNavigationLink(cluster, "load-folder", Assets.Resources.NavigationViewModel_LoadFolder, LoadFolderOrder),
-        };
-
-        var categories = new Dictionary<string, NavigationItem>(StringComparer.Ordinal);
-        var customResourceConfigs = new List<IResourceConfig>();
-        ResourceNavigationLink? definitionsLink = null;
-
-        foreach (var resourceConfig in cluster.GetResourceConfigs().OrderBy(config => config.Order).ThenBy(config => config.Name, StringComparer.Ordinal))
-        {
-            if (!CanListAndWatchResource(cluster, resourceConfig))
-            {
-                continue;
-            }
-
-            if (resourceConfig.IsCustomResource)
-            {
-                customResourceConfigs.Add(resourceConfig);
-                continue;
-            }
-
-            var link = CreateResourceNavigationLink(cluster, resourceConfig);
-
-            if (resourceConfig.Type == typeof(V1CustomResourceDefinition))
-            {
-                definitionsLink = link;
-                definitionsLink.Name = "Definitions";
-                definitionsLink.Order = -1;
-                continue;
-            }
-
-            if (string.IsNullOrWhiteSpace(resourceConfig.Category))
-            {
-                items.Add(link);
-                continue;
-            }
-
-            if (!categories.TryGetValue(resourceConfig.Category, out var category))
-            {
-                category = EnsureCategory(items, categories, cluster, resourceConfig.Category, resourceConfig.Order);
-            }
-
-            category.NavigationItems.Add(link);
-        }
-
-        var customResourceDefinitions = BuildCustomResourceDefinitionsNavigationItem(cluster, definitionsLink, customResourceConfigs);
-        if (customResourceDefinitions != null)
-        {
-            items.Add(customResourceDefinitions);
-        }
-
-        return items;
-    }
-
     private bool CanShowPortForwarders(ClusterWorkspaceViewModel cluster)
     {
         var podResourceConfig = cluster.GetResourceConfigs()
@@ -673,27 +608,6 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         }
 
         UpsertNavigationItem(networkCategory.NavigationItems, CreateNavigationLink(cluster, NavigationTargets.PortForwarders, Assets.Resources.PortForwarderListViewModel_Title, PortForwardersOrder));
-    }
-
-    private static NavigationItem EnsureCategory(List<NavigationItem> items, Dictionary<string, NavigationItem> categories, ClusterWorkspaceViewModel cluster, string categoryName, int order)
-    {
-        if (categories.TryGetValue(categoryName, out var category))
-        {
-            return category;
-        }
-
-        category = new NavigationItem
-        {
-            Id = $"{cluster.Name}-category-{categoryName}",
-            Name = categoryName,
-            // Keep uncategorized resources (e.g. Namespace/Node/Event) above category groups,
-            // while preserving alpha's deterministic category order.
-            Order = ResolveCategoryOrder(categoryName, order),
-        };
-
-        categories.Add(categoryName, category);
-        items.Add(category);
-        return category;
     }
 
     private static int ResolveCategoryOrder(string categoryName, int defaultOrder)
@@ -1068,7 +982,6 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             }
         }
     }
-
     private static ObservableCollection<NavigationItem>? FindNavigationParentCollection(ObservableCollection<NavigationItem> items, string id)
     {
         if (items.Any(item => item.Id == id))
@@ -1142,57 +1055,6 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         return fqdnList;
     }
 
-    private static void CaptureExpandedState(IEnumerable<NavigationItem> items, Dictionary<string, bool> expandedState)
-    {
-        foreach (var item in items)
-        {
-            expandedState[item.Id] = item.IsExpanded;
-            CaptureExpandedState(item.NavigationItems, expandedState);
-        }
-    }
-
-    private static void ReconcileNavigationItems(ObservableCollection<NavigationItem> currentItems, IReadOnlyList<NavigationItem> desiredItems)
-    {
-        var desiredById = desiredItems.ToDictionary(item => item.Id, StringComparer.Ordinal);
-
-        for (var i = currentItems.Count - 1; i >= 0; i--)
-        {
-            var current = currentItems[i];
-            if (!desiredById.ContainsKey(current.Id))
-            {
-                currentItems.RemoveAt(i);
-            }
-        }
-
-        foreach (var desired in desiredItems)
-        {
-            var current = FindNavigationItem(currentItems, desired.Id);
-            if (current == null)
-            {
-                currentItems.Add(desired);
-                continue;
-            }
-
-            if (!CanReuseNavigationItem(current, desired))
-            {
-                currentItems.Remove(current);
-                ApplyExpandedState(desired, CaptureExpandedState(current));
-                currentItems.Add(desired);
-                continue;
-            }
-
-            UpdateNavigationItem(current, desired);
-        }
-    }
-
-    private static Dictionary<string, bool> CaptureExpandedState(NavigationItem item)
-    {
-        var expandedState = new Dictionary<string, bool>(StringComparer.Ordinal);
-        expandedState[item.Id] = item.IsExpanded;
-        CaptureExpandedState(item.NavigationItems, expandedState);
-        return expandedState;
-    }
-
     private static bool CanReuseNavigationItem(NavigationItem current, NavigationItem desired)
     {
         return current.GetType() == desired.GetType();
@@ -1200,6 +1062,12 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private static void UpdateNavigationItem(NavigationItem current, NavigationItem desired)
     {
+        var replaceResourceCount = current is ResourceNavigationLink countCurrent
+            && desired is ResourceNavigationLink countDesired
+            && (countCurrent.Count == null
+                || !ReferenceEquals(countCurrent.Cluster, countDesired.Cluster)
+                || countCurrent.ControlType != countDesired.ControlType);
+
         current.Id = desired.Id;
         current.Name = desired.Name;
         current.Order = desired.Order;
@@ -1216,24 +1084,13 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
         if (current is ResourceNavigationLink currentResourceLink && desired is ResourceNavigationLink desiredResourceLink)
         {
-            currentResourceLink.Count ??= desiredResourceLink.Count;
+            if (replaceResourceCount)
+            {
+                currentResourceLink.Count = desiredResourceLink.Count;
+            }
+
             currentResourceLink.OpenCommand = desiredResourceLink.OpenCommand;
             currentResourceLink.OpenInNewTabCommand = desiredResourceLink.OpenInNewTabCommand;
-        }
-
-        ReconcileNavigationItems(current.NavigationItems, desired.NavigationItems.ToList());
-    }
-
-    private static void ApplyExpandedState(NavigationItem item, IReadOnlyDictionary<string, bool> expandedState)
-    {
-        if (expandedState.TryGetValue(item.Id, out var isExpanded))
-        {
-            item.IsExpanded = isExpanded;
-        }
-
-        foreach (var child in item.NavigationItems)
-        {
-            ApplyExpandedState(child, expandedState);
         }
     }
 
@@ -1251,16 +1108,42 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
         return Observable.Create<int>(observer =>
         {
+            object gate = new();
+            bool attached = false;
+            bool disposed = false;
             IDisposable? liveSubscription = null;
 
-            void AttachLiveStream(bool emitInitialCount)
+            void AttachLiveStream()
             {
-                if (emitInitialCount)
+                lock (gate)
                 {
-                    observer.OnNext(0);
+                    if (attached || disposed)
+                    {
+                        return;
+                    }
+
+                    attached = true;
                 }
 
-                liveSubscription = CreateLiveResourceCountStream(cluster, resourceType).Subscribe(observer);
+                var subscription = CreateLiveResourceCountStream(cluster, resourceType).Subscribe(observer);
+                var disposeSubscription = false;
+
+                lock (gate)
+                {
+                    if (disposed)
+                    {
+                        disposeSubscription = true;
+                    }
+                    else
+                    {
+                        liveSubscription = subscription;
+                    }
+                }
+
+                if (disposeSubscription)
+                {
+                    subscription.Dispose();
+                }
             }
 
             void OnResourceSeeded(ClusterWorkspaceViewModel seededCluster, Type seededType)
@@ -1271,7 +1154,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                 }
 
                 cluster.ResourceSeeded -= OnResourceSeeded;
-                AttachLiveStream(emitInitialCount: true);
+                AttachLiveStream();
             }
 
             cluster.ResourceSeeded += OnResourceSeeded;
@@ -1279,13 +1162,21 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             if (IsResourceSeeded(cluster, resourceType))
             {
                 cluster.ResourceSeeded -= OnResourceSeeded;
-                AttachLiveStream(emitInitialCount: false);
+                AttachLiveStream();
             }
 
             return Disposable.Create(() =>
             {
                 cluster.ResourceSeeded -= OnResourceSeeded;
-                liveSubscription?.Dispose();
+                IDisposable? subscription;
+                lock (gate)
+                {
+                    disposed = true;
+                    subscription = liveSubscription;
+                    liveSubscription = null;
+                }
+
+                subscription?.Dispose();
             });
         });
     }
@@ -1293,9 +1184,9 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     private static IObservable<int> CreateLiveResourceCountStream(ClusterWorkspaceViewModel cluster, Type resourceType)
     {
         return cluster.GetResourceCount(resourceType)
-            .Sample(TimeSpan.FromMilliseconds(100), AvaloniaScheduler.Instance)
-            .ObserveOn(AvaloniaScheduler.Instance)
             .DistinctUntilChanged()
+            .Publish(counts => counts.Take(1).Merge(counts.Skip(1).Sample(TimeSpan.FromMilliseconds(100), AvaloniaScheduler.Instance)))
+            .ObserveOn(AvaloniaScheduler.Instance)
             .Replay(1)
             .RefCount();
     }
