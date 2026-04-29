@@ -18,10 +18,15 @@
         VerticalAlignment="Stretch"
         RowDefinitions="Auto,*">
         <!--  Top bar  -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal">
+        <StackPanel x:Name="TopBar" Grid.Row="0"
+            Height="32"
+            ClipToBounds="True"
+            Orientation="Horizontal">
             <Label VerticalAlignment="Center" Content="{x:Static assets:Resources.PodLogsView_PodLabel}" />
-            <u:MultiComboBox
+            <u:MultiComboBox x:Name="PodSelectionComboBox"
                 Width="220"
+                Height="24"
+                MaxHeight="24"
                 Margin="0,0,8,0"
                 VerticalAlignment="Center"
                 ItemsSource="{Binding PodSelectionItems}"
@@ -41,8 +46,10 @@
             </u:MultiComboBox>
 
             <Label VerticalAlignment="Center" Content="{x:Static assets:Resources.PodLogsView_ContainerLabel}" />
-            <u:MultiComboBox
+            <u:MultiComboBox x:Name="ContainerSelectionComboBox"
                 Width="180"
+                Height="24"
+                MaxHeight="24"
                 Margin="0,0,8,0"
                 VerticalAlignment="Center"
                 ItemsSource="{Binding ContainerSelectionItems}"

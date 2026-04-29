@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Text;
 using Avalonia;
 using Avalonia.Controls;
@@ -12,6 +13,7 @@ using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shouldly;
@@ -53,6 +55,64 @@ public sealed class PodLogsViewTests : AvaloniaTestBase
 
         TextEditor editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
         editor.SearchPanel.ShouldNotBeNull();
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void selected_pods_and_containers_do_not_increase_the_toolbar_height()
+    {
+        IServiceProvider services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        PodLogsViewModel viewModel = new(
+            services.GetRequiredService<ILogger<PodLogsViewModel>>(),
+            services.GetRequiredService<ISettingsService>(),
+            new NoOpPodLogExportService(),
+            new PodLogSessionResolver(),
+            new NoOpPodLogStreamClient())
+        {
+            Cluster = new TestCluster().CreateWorkspace(),
+            Object = CreatePod(),
+            ContainerName = "app",
+            PodSelectionItems = CreatePodSelectionItems(12),
+            ContainerSelectionItems =
+            [
+                new PodLogContainerSelectionItem(string.Empty, "All Containers", false, true),
+                new PodLogContainerSelectionItem("app", "app", false, false),
+                new PodLogContainerSelectionItem("sidecar", "sidecar", false, false),
+                new PodLogContainerSelectionItem("metrics", "metrics", false, false),
+            ],
+            SelectedContainerItems = new ObservableCollection<PodLogContainerSelectionItem>(
+                [
+                    new PodLogContainerSelectionItem("app", "app", false, false),
+                    new PodLogContainerSelectionItem("sidecar", "sidecar", false, false),
+                    new PodLogContainerSelectionItem("metrics", "metrics", false, false),
+                ]),
+        };
+
+        viewModel.SelectedPodItems = new ObservableCollection<PodLogPodSelectionItem>(viewModel.PodSelectionItems.Skip(1));
+
+        PodLogsView view = new()
+        {
+            DataContext = viewModel,
+        };
+
+        Window window = new()
+        {
+            Content = view,
+            Width = 800,
+            Height = 300,
+        };
+
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        Control topBar = view.FindControl<Control>("TopBar") ?? throw new InvalidOperationException("Top bar was not found.");
+        Control podSelector = view.FindControl<Control>("PodSelectionComboBox") ?? throw new InvalidOperationException("Pod selector was not found.");
+        Control containerSelector = view.FindControl<Control>("ContainerSelectionComboBox") ?? throw new InvalidOperationException("Container selector was not found.");
+
+        topBar.Bounds.Height.ShouldBeLessThanOrEqualTo(32);
+        podSelector.Bounds.Height.ShouldBeLessThanOrEqualTo(32);
+        containerSelector.Bounds.Height.ShouldBeLessThanOrEqualTo(32);
 
         window.Close();
     }
@@ -220,6 +280,19 @@ public sealed class PodLogsViewTests : AvaloniaTestBase
                 ],
             },
         };
+    }
+
+    private static IReadOnlyList<PodLogPodSelectionItem> CreatePodSelectionItems(int count)
+    {
+        List<PodLogPodSelectionItem> items = [new PodLogPodSelectionItem(null, "All Pods", true)];
+        for (int i = 0; i < count; i++)
+        {
+            V1Pod pod = CreatePod();
+            pod.Metadata.Name = $"app-{i:00}";
+            items.Add(new PodLogPodSelectionItem(pod, pod.Name(), false));
+        }
+
+        return items;
     }
 
     private static async Task<ScrollViewer> WaitForScrollViewerAsync(TextEditor editor)

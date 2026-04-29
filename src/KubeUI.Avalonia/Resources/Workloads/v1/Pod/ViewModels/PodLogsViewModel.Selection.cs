@@ -408,9 +408,12 @@ public sealed partial class PodLogsViewModel
             return;
         }
 
-        if (SelectedPodItems.Count == 0 || SelectedPodItems.Count == PodSelectionItems.Count - 1 || ContainsAllSelection(SelectedPodItems))
+        PodLogSelectionNormalization normalization = GetPodSelectionNormalization(e);
+        if (normalization != PodLogSelectionNormalization.None)
         {
-            QueueNormalizeSelectedPodItems();
+            QueueNormalizeSelectedPodItems(normalization);
+            UpdateResourceNameToggleState();
+            return;
         }
 
         UpdateResourceNameToggleState();
@@ -424,9 +427,12 @@ public sealed partial class PodLogsViewModel
             return;
         }
 
-        if (SelectedContainerItems.Count == 0 || SelectedContainerItems.Count == ContainerSelectionItems.Count - 1 || ContainsAllSelection(SelectedContainerItems))
+        PodLogSelectionNormalization normalization = GetContainerSelectionNormalization(e);
+        if (normalization != PodLogSelectionNormalization.None)
         {
-            QueueNormalizeSelectedContainerItems();
+            QueueNormalizeSelectedContainerItems(normalization);
+            UpdateResourceNameToggleState();
+            return;
         }
 
         UpdateResourceNameToggleState();
@@ -443,8 +449,7 @@ public sealed partial class PodLogsViewModel
         _isNormalizingPodSelection = true;
         try
         {
-            SelectedPodItems.Clear();
-            SelectedPodItems.Add(PodSelectionItems[0]);
+            SelectAllPodItem();
         }
         finally
         {
@@ -452,6 +457,92 @@ public sealed partial class PodLogsViewModel
         }
 
         UpdateResourceNameToggleState();
+    }
+
+    private PodLogSelectionNormalization GetPodSelectionNormalization(NotifyCollectionChangedEventArgs e)
+    {
+        if (SelectedPodItems.Count == 0)
+        {
+            return PodLogSelectionNormalization.SelectAll;
+        }
+
+        if (ContainsAllPodSelection(e.NewItems))
+        {
+            return PodLogSelectionNormalization.SelectAll;
+        }
+
+        if (ContainsAllSelection(SelectedPodItems))
+        {
+            return PodLogSelectionNormalization.RemoveAll;
+        }
+
+        if (SelectedPodItems.Count == PodSelectionItems.Count - 1 && SelectedPodItems.Count > 1)
+        {
+            return PodLogSelectionNormalization.SelectAll;
+        }
+
+        return PodLogSelectionNormalization.None;
+    }
+
+    private static bool ContainsAllPodSelection(System.Collections.IList? items)
+    {
+        if (items is null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            if (items[i] is PodLogPodSelectionItem { IsAll: true })
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private PodLogSelectionNormalization GetContainerSelectionNormalization(NotifyCollectionChangedEventArgs e)
+    {
+        if (SelectedContainerItems.Count == 0)
+        {
+            return PodLogSelectionNormalization.SelectAll;
+        }
+
+        if (ContainsAllContainerSelection(e.NewItems))
+        {
+            return PodLogSelectionNormalization.SelectAll;
+        }
+
+        if (ContainsAllSelection(SelectedContainerItems))
+        {
+            return PodLogSelectionNormalization.RemoveAll;
+        }
+
+        if (SelectedContainerItems.Count == ContainerSelectionItems.Count - 1 && SelectedContainerItems.Count > 1)
+        {
+            return PodLogSelectionNormalization.SelectAll;
+        }
+
+        return PodLogSelectionNormalization.None;
+    }
+
+    private static bool ContainsAllContainerSelection(System.Collections.IList? items)
+    {
+        if (items is null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            if (items[i] is PodLogContainerSelectionItem { IsAll: true })
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void UpdateResourceNameToggleState()
@@ -463,24 +554,28 @@ public sealed partial class PodLogsViewModel
         }
     }
 
-    private void QueueNormalizeSelectedPodItems()
+    private void QueueNormalizeSelectedPodItems(PodLogSelectionNormalization normalization)
     {
         if (_pendingNormalizePodSelection || PodSelectionItems.Count == 0)
         {
+            _pendingPodSelectionNormalization = normalization;
             return;
         }
 
+        _pendingPodSelectionNormalization = normalization;
         _pendingNormalizePodSelection = true;
         Dispatcher.UIThread.Post(NormalizeSelectedPodItems, DispatcherPriority.Background);
     }
 
-    private void QueueNormalizeSelectedContainerItems()
+    private void QueueNormalizeSelectedContainerItems(PodLogSelectionNormalization normalization)
     {
         if (_pendingNormalizeContainerSelection || ContainerSelectionItems.Count == 0)
         {
+            _pendingContainerSelectionNormalization = normalization;
             return;
         }
 
+        _pendingContainerSelectionNormalization = normalization;
         _pendingNormalizeContainerSelection = true;
         Dispatcher.UIThread.Post(NormalizeSelectedContainerItems, DispatcherPriority.Background);
     }
@@ -488,36 +583,96 @@ public sealed partial class PodLogsViewModel
     private void NormalizeSelectedPodItems()
     {
         _pendingNormalizePodSelection = false;
+        PodLogSelectionNormalization normalization = _pendingPodSelectionNormalization;
+        _pendingPodSelectionNormalization = PodLogSelectionNormalization.None;
         _isNormalizingPodSelection = true;
         try
         {
-            if (PodSelectionItems.Count > 0)
+            if (normalization == PodLogSelectionNormalization.SelectAll && PodSelectionItems.Count > 0)
             {
-                SelectedPodItems.Clear();
-                SelectedPodItems.Add(PodSelectionItems[0]);
+                SelectAllPodItem();
+            }
+            else if (normalization == PodLogSelectionNormalization.RemoveAll)
+            {
+                RemoveAllPodItem();
             }
         }
         finally
         {
             _isNormalizingPodSelection = false;
         }
+
+        UpdateResourceNameToggleState();
+        RequestReconnect();
+    }
+
+    private void SelectAllPodItem()
+    {
+        SelectedPodItems.Clear();
+        SelectedPodItems.Add(PodSelectionItems[0]);
+    }
+
+    private void RemoveAllPodItem()
+    {
+        for (int i = SelectedPodItems.Count - 1; i >= 0; i--)
+        {
+            if (SelectedPodItems[i].IsAll)
+            {
+                SelectedPodItems.RemoveAt(i);
+            }
+        }
+
+        if (SelectedPodItems.Count == 0 && PodSelectionItems.Count > 0)
+        {
+            SelectedPodItems.Add(PodSelectionItems[0]);
+        }
     }
 
     private void NormalizeSelectedContainerItems()
     {
         _pendingNormalizeContainerSelection = false;
+        PodLogSelectionNormalization normalization = _pendingContainerSelectionNormalization;
+        _pendingContainerSelectionNormalization = PodLogSelectionNormalization.None;
         _isNormalizingContainerSelection = true;
         try
         {
-            if (ContainerSelectionItems.Count > 0)
+            if (normalization == PodLogSelectionNormalization.SelectAll && ContainerSelectionItems.Count > 0)
             {
-                SelectedContainerItems.Clear();
-                SelectedContainerItems.Add(ContainerSelectionItems[0]);
+                SelectAllContainerItem();
+            }
+            else if (normalization == PodLogSelectionNormalization.RemoveAll)
+            {
+                RemoveAllContainerItem();
             }
         }
         finally
         {
             _isNormalizingContainerSelection = false;
+        }
+
+        UpdateResourceNameToggleState();
+        RequestReconnect();
+    }
+
+    private void SelectAllContainerItem()
+    {
+        SelectedContainerItems.Clear();
+        SelectedContainerItems.Add(ContainerSelectionItems[0]);
+    }
+
+    private void RemoveAllContainerItem()
+    {
+        for (int i = SelectedContainerItems.Count - 1; i >= 0; i--)
+        {
+            if (SelectedContainerItems[i].IsAll)
+            {
+                SelectedContainerItems.RemoveAt(i);
+            }
+        }
+
+        if (SelectedContainerItems.Count == 0 && ContainerSelectionItems.Count > 0)
+        {
+            SelectedContainerItems.Add(ContainerSelectionItems[0]);
         }
     }
 

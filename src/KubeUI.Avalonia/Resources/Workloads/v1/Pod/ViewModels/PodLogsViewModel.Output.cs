@@ -1,7 +1,7 @@
 using System.IO;
 using System.Text;
 using Avalonia.Threading;
-using k8s.Models;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 
@@ -45,8 +45,9 @@ public sealed partial class PodLogsViewModel
         return fileName.ReplaceInvalidFileNameChars();
     }
 
-    private async Task ReadLogsAsync(StreamReader reader, string podName, string containerName, CancellationToken cancellationToken)
+    private async Task ReadLogsAsync(StreamReader reader, PodLogReadOptions option, CancellationToken cancellationToken)
     {
+        bool streamEnded = false;
         try
         {
             while (!cancellationToken.IsCancellationRequested)
@@ -54,10 +55,11 @@ public sealed partial class PodLogsViewModel
                 string? log = await reader.ReadLineAsync();
                 if (log is null)
                 {
+                    streamEnded = true;
                     break;
                 }
 
-                PodLogOutputEntry entry = new(podName, containerName, log);
+                PodLogOutputEntry entry = new(option.PodName, option.ContainerName, log);
                 lock (_outputEntriesGate)
                 {
                     _outputEntries.Add(entry);
@@ -73,8 +75,53 @@ public sealed partial class PodLogsViewModel
         }
         finally
         {
+            if (streamEnded && ShouldReconnectAfterStreamEnd(reader, option, cancellationToken))
+            {
+                ScheduleReconnectAfterStreamEnd(option, cancellationToken);
+            }
+
             DecrementActiveReaders();
         }
+    }
+
+    private static bool ShouldReconnectAfterStreamEnd(StreamReader reader, PodLogReadOptions option, CancellationToken cancellationToken)
+    {
+        return option.Follow
+            && !option.Previous
+            && !cancellationToken.IsCancellationRequested
+            && !reader.BaseStream.CanSeek;
+    }
+
+    private void ScheduleReconnectAfterStreamEnd(PodLogReadOptions option, CancellationToken cancellationToken)
+    {
+        if (Interlocked.Exchange(ref _streamEndedReconnectPending, 1) == 1)
+        {
+            return;
+        }
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            StatusMessage = $"Log stream ended for {option.PodName}/{option.ContainerName}. Reconnecting...";
+        }, DispatcherPriority.Background);
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
+            Dispatcher.UIThread.Post(RequestReconnect, DispatcherPriority.Background);
+        }, CancellationToken.None);
     }
 
     private void AppendOutputEntry(PodLogOutputEntry entry)

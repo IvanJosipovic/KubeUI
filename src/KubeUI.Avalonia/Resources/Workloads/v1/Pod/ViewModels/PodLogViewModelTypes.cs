@@ -21,6 +21,13 @@ internal enum PodLogDisplayMode
     PodAndContainer,
 }
 
+internal enum PodLogSelectionNormalization
+{
+    None,
+    SelectAll,
+    RemoveAll,
+}
+
 internal static class PodLogFileNameExtensions
 {
     public static string ReplaceInvalidFileNameChars(this string value)
@@ -56,4 +63,3 @@ internal static class PodLogFileNameExtensions
         return ownerReferences.Count > 0 ? ownerReferences[0] : null;
     }
 }
-

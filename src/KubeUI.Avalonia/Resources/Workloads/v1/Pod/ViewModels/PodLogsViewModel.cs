@@ -1,8 +1,5 @@
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.IO;
-using System.Text;
-using Avalonia.Threading;
 using AvaloniaEdit.Document;
 using Dock.Model.Core;
 using k8s.Models;
@@ -35,7 +32,10 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     private bool _isNormalizingContainerSelection;
     private bool _pendingNormalizePodSelection;
     private bool _pendingNormalizeContainerSelection;
+    private PodLogSelectionNormalization _pendingPodSelectionNormalization;
+    private PodLogSelectionNormalization _pendingContainerSelectionNormalization;
     private bool _pendingReconnect;
+    private int _streamEndedReconnectPending;
     private int _activeReaderCount;
 
     public PodLogsViewModel(
@@ -51,6 +51,8 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         _sessionResolver = sessionResolver;
         _streamClient = streamClient;
         Title = Assets.Resources.PodLogsViewModel_Title;
+        SelectedPodItems.CollectionChanged += SelectedPodItemsOnCollectionChanged;
+        SelectedContainerItems.CollectionChanged += SelectedContainerItemsOnCollectionChanged;
     }
 
     public ISettingsService SettingsService { get; }
@@ -233,7 +235,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
                     StreamReader reader = new(stream);
                     _streams.Add(stream);
                     _streamReaders.Add(reader);
-                    _ = Task.Run(() => ReadLogsAsync(reader, option.PodName, option.ContainerName, connectionCts.Token));
+                    _ = Task.Run(() => ReadLogsAsync(reader, option, connectionCts.Token));
                 }
                 catch (Exception ex)
                 {
@@ -361,6 +363,11 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
             return;
         }
 
+        if (SelectedPodItems.Count == 0)
+        {
+            QueueNormalizeSelectedPodItems(PodLogSelectionNormalization.SelectAll);
+        }
+
         UpdateResourceNameToggleState();
         RequestReconnect();
     }
@@ -371,6 +378,11 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         if (_isApplyingSession)
         {
             return;
+        }
+
+        if (SelectedContainerItems.Count == 0)
+        {
+            QueueNormalizeSelectedContainerItems(PodLogSelectionNormalization.SelectAll);
         }
 
         UpdateResourceNameToggleState();
@@ -441,6 +453,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         _connectionCts = null;
 
         _activeReaderCount = 0;
+        _streamEndedReconnectPending = 0;
         IsConnected = false;
     }
 
