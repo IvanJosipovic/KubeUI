@@ -38,12 +38,12 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
             Content = string.Format(Assets.Resources.PortForwarderListViewModel_Remove_Content, pf.Namespace, pf.Name, pf.Port),
             PrimaryButtonText = Assets.Resources.PortForwarderListViewModel_Remove_Primary,
             SecondaryButtonText = Assets.Resources.PortForwarderListViewModel_Remove_Secondary,
-            DefaultButton = ContentDialogButton.Secondary
+            DefaultButton = FAContentDialogButton.Secondary
         };
 
         var result = await _dialogService.ShowContentDialogAsync(this, settings);
 
-        if (result == ContentDialogResult.Primary)
+        if (result == FAContentDialogResult.Primary)
         {
             Cluster.RemovePortForward(pf);
         }
@@ -57,8 +57,7 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
     [RelayCommand(CanExecute = nameof(CanOpen))]
     private async Task Open(PortForwarder pf)
     {
-        var window = (Window)_dialogService.DialogManager.GetMainWindow()!.RefObj;
-        await window!.Launcher.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
+        await App.TopLevel!.Launcher.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
     }
 
     private bool CanOpen(PortForwarder pf)

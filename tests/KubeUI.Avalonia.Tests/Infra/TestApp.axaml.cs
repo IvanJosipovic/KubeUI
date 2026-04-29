@@ -1,3 +1,4 @@
+using System.Runtime.ExceptionServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -87,7 +88,7 @@ public class TestApp : Application, IServiceProviderHost
         dialogManager
             .Setup(x => x.ShowFrameworkDialogAsync(It.IsAny<System.ComponentModel.INotifyPropertyChanged?>(), It.IsAny<ContentDialogSettings>(), It.IsAny<Func<object?, string>?>()))
             .Callback<System.ComponentModel.INotifyPropertyChanged?, ContentDialogSettings, Func<object?, string>?>((_, settings, _) => LastContentDialogSettings = settings)
-            .ReturnsAsync(ContentDialogResult.Primary);
+            .ReturnsAsync(FAContentDialogResult.Primary);
         DialogManagerMock = dialogManager;
 
         var dialog = new Mock<IDialogService>();
@@ -105,7 +106,7 @@ public class TestApp : Application, IServiceProviderHost
             overrides.AddSingleton<IClusterSettingsStore>(sp => sp.GetRequiredService<ISettingsService>().Clusters);
             overrides.Replace(ServiceDescriptor.Singleton<IDialogService>(dialog.Object));
             overrides.Replace(ServiceDescriptor.Singleton<INotificationManager>(notifications.Object));
-            overrides.Replace(ServiceDescriptor.Singleton<IFactory>(sp => Dispatcher.UIThread.Invoke(() => (IFactory)new DockFactory(sp, sp.GetRequiredService<ILogger<DockFactory>>()))));
+            overrides.Replace(ServiceDescriptor.Singleton<IFactory>(sp => new DockFactory(sp, sp.GetRequiredService<ILogger<DockFactory>>())));
         });
 
         var provider = services.BuildServiceProvider();
@@ -165,9 +166,8 @@ public class TestApp : Application, IServiceProviderHost
             return;
         }
 
-        Dispatcher.UIThread.Invoke(action);
+        Dispatcher.UIThread.InvokeAsync(action).GetAwaiter().GetResult();
     }
 }
-
 
 

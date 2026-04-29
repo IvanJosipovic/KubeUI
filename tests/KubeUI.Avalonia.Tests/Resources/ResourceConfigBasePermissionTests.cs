@@ -12,17 +12,12 @@ namespace KubeUI.Avalonia.Tests.Resources;
 public sealed class ResourceConfigBasePermissionTests : AvaloniaTestBase
 {
     [AvaloniaFact]
-    public async Task update_permissions_refreshes_non_list_permissions_sequentially()
+    public void permissions_manifest_includes_default_and_custom_permissions()
     {
-        var runtime = new TestCluster();
         var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
         var config = new TrackingResourceConfig(services);
-        config.Initialize(runtime.CreateWorkspace());
 
-        await config.UpdatePermissions();
-
-        config.MaxConcurrency.ShouldBe(1);
-        config.RecordedPermissions.ShouldBe(
+        config.Permissions().ShouldBe(
         [
             (Verb.Create, null),
             (Verb.Delete, null),
@@ -32,22 +27,58 @@ public sealed class ResourceConfigBasePermissionTests : AvaloniaTestBase
             (Verb.Watch, null),
             (Verb.Get, "status")
         ]);
+    }
+
+    [AvaloniaFact]
+    public async Task update_permissions_does_not_refresh_additional_permissions_when_list_and_watch_are_unavailable()
+    {
+        var runtime = new TestCluster
+        {
+            DefaultPermissionAllowed = false,
+        };
+        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var config = new TrackingResourceConfig(services);
+        config.Initialize(runtime.CreateWorkspace());
+
+        await runtime.AddOrUpdateResource(new V1Namespace
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "team-a"
+            }
+        });
+        runtime.SetPermission<V1Pod>(Verb.List, true, "team-a");
+        runtime.SetPermission<V1Pod>(Verb.Watch, false, "team-a");
+
+        await config.UpdatePermissions();
+
         config.PermissionsLoaded.ShouldBeTrue();
+        config.CanListAndWatch.ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public async Task update_permissions_keeps_permissions_unloaded_when_additional_permission_refresh_fails()
+    {
+        var runtime = new TestCluster
+        {
+            DefaultPermissionAllowed = true,
+        };
+        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var config = new ThrowingResourceConfig(services);
+        config.Initialize(runtime.CreateWorkspace());
+
+        await config.UpdatePermissions();
+
         config.CanListAndWatch.ShouldBeTrue();
+        config.PermissionsLoaded.ShouldBeFalse();
     }
 
     private sealed class TrackingResourceConfig : ResourceConfigBase<V1Pod>
     {
-        private int _activeRefreshes;
-
         public TrackingResourceConfig(IServiceProvider serviceProvider)
             : base(serviceProvider)
         {
         }
-
-        public List<(Verb Verb, string? SubResource)> RecordedPermissions { get; } = [];
-
-        public int MaxConcurrency { get; private set; }
 
         public override bool IsNamespaced => true;
 
@@ -55,21 +86,25 @@ public sealed class ResourceConfigBasePermissionTests : AvaloniaTestBase
         [
             (Verb.Get, "status")
         ];
+    }
 
-        protected override async Task RefreshPermissionAsync(Verb verb, string? subResource)
+    private sealed class ThrowingResourceConfig : ResourceConfigBase<V1Pod>
+    {
+        public ThrowingResourceConfig(IServiceProvider serviceProvider)
+            : base(serviceProvider)
         {
-            RecordedPermissions.Add((verb, subResource));
-            var activeRefreshes = Interlocked.Increment(ref _activeRefreshes);
-            MaxConcurrency = Math.Max(MaxConcurrency, activeRefreshes);
+        }
 
-            try
+        public override bool IsNamespaced => true;
+
+        protected override Task RefreshPermissionAsync(Verb verb, string? subResource)
+        {
+            if (verb == Verb.Patch)
             {
-                await Task.Delay(10);
+                throw new InvalidOperationException("Permission refresh failed.");
             }
-            finally
-            {
-                Interlocked.Decrement(ref _activeRefreshes);
-            }
+
+            return base.RefreshPermissionAsync(verb, subResource);
         }
     }
 }

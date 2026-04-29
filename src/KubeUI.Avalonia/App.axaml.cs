@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
 using Dock.Model.Controls;
 using Dock.Model.Core;
@@ -60,8 +59,6 @@ public partial class App : Application, IServiceProviderHost
 
     public override void OnFrameworkInitializationCompleted()
     {
-        DisableAvaloniaDataAnnotationValidation();
-
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             MainWindow mainWindow = Services.GetRequiredService<MainWindow>();
@@ -151,13 +148,4 @@ public partial class App : Application, IServiceProviderHost
         _hostApplicationLifetime.StopApplication();
     }
 
-    private static void DisableAvaloniaDataAnnotationValidation()
-    {
-        var dataValidationPluginsToRemove = BindingPlugins.DataValidators.OfType<DataAnnotationsValidationPlugin>().ToArray();
-
-        foreach (var plugin in dataValidationPluginsToRemove)
-        {
-            BindingPlugins.DataValidators.Remove(plugin);
-        }
-    }
 }

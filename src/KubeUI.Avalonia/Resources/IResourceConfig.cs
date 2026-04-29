@@ -21,10 +21,14 @@ namespace KubeUI.Avalonia.Resources
         string Name { get; }
         string? Category { get; }
         IStyle ListStyle();
+        IEnumerable<(Verb verb, string? subresource)> Permissions();
+        IEnumerable<AuthorizationRequest> AuthorizationRequests()
+        {
+            return Permissions().Select(permission => new AuthorizationRequest(Type, permission.verb, permission.subresource));
+        }
         Task UpdatePermissions();
         Type Type { get; }
         IRelayCommand NewResourceCommand { get; }
         IRelayCommand<IList> ViewCommand { get; }
     }
 }
-

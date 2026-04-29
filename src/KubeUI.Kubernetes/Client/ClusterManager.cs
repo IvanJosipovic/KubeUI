@@ -20,6 +20,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
     private readonly IServiceProvider _serviceProvider;
     private readonly IClusterSettingsStore _settings;
     private readonly IThreadDispatcher _dispatcher;
+    private readonly IKubeConfigPathProvider _kubeConfigPathProvider;
     private readonly IDictionary<string, FileSystemWatcher> _fileWatchers = new Dictionary<string, FileSystemWatcher>(StringComparer.Ordinal);
     private readonly object _syncRoot = new();
 
@@ -27,12 +28,18 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
     IEnumerable<IClusterRuntime> IClusterRuntimeCatalog.Clusters => Clusters;
 
-    public ClusterManager(ILogger<ClusterManager> logger, IServiceProvider serviceProvider, IClusterSettingsStore settings, IThreadDispatcher dispatcher)
+    public ClusterManager(
+        ILogger<ClusterManager> logger,
+        IServiceProvider serviceProvider,
+        IClusterSettingsStore settings,
+        IThreadDispatcher dispatcher,
+        IKubeConfigPathProvider kubeConfigPathProvider)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
         _settings = settings;
         _dispatcher = dispatcher;
+        _kubeConfigPathProvider = kubeConfigPathProvider;
 
         KubernetesClientConfiguration.ExecStdError += KubernetesClientConfiguration_ExecStdError;
 
@@ -52,11 +59,11 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
     private void LoadClusters()
     {
-        if (!_settings.KubeConfigPaths.Contains(KubernetesClientConfiguration.KubeConfigDefaultLocation))
+        if (!_settings.KubeConfigPaths.Contains(_kubeConfigPathProvider.DefaultPath))
         {
             try
             {
-                LoadFromConfigFromPath(KubernetesClientConfiguration.KubeConfigDefaultLocation);
+                LoadFromConfigFromPath(_kubeConfigPathProvider.DefaultPath);
             }
             catch (Exception ex)
             {
@@ -148,6 +155,42 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
         }
     }
 
+    public void ImportIntoKubeConfig(K8SConfiguration kubeConfig)
+    {
+        ArgumentNullException.ThrowIfNull(kubeConfig);
+
+        string path = _kubeConfigPathProvider.DefaultPath;
+        K8SConfiguration existing = File.Exists(path)
+            ? Serialization.KubernetesYaml.Deserialize<K8SConfiguration>(File.ReadAllText(path))
+            : new K8SConfiguration();
+
+        K8SConfiguration merged = new()
+        {
+            ApiVersion = string.IsNullOrWhiteSpace(kubeConfig.ApiVersion) ? existing.ApiVersion ?? "v1" : kubeConfig.ApiVersion,
+            Kind = string.IsNullOrWhiteSpace(kubeConfig.Kind) ? existing.Kind ?? "Config" : kubeConfig.Kind,
+            CurrentContext = string.IsNullOrWhiteSpace(kubeConfig.CurrentContext)
+                ? existing.CurrentContext
+                : kubeConfig.CurrentContext,
+            Preferences = existing.Preferences ?? kubeConfig.Preferences,
+            Clusters = MergeNamedItems(existing.Clusters, kubeConfig.Clusters, cluster => cluster.Name),
+            Users = MergeNamedItems(existing.Users, kubeConfig.Users, user => user.Name),
+            Contexts = MergeNamedItems(existing.Contexts, kubeConfig.Contexts, context => context.Name),
+            Extensions = MergeNamedItems(existing.Extensions, kubeConfig.Extensions, extension => extension.Name),
+            FileName = path
+        };
+
+        string directory = Path.GetDirectoryName(path) ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        string yaml = KubernetesYaml.Serialize(merged);
+        File.WriteAllText(path, yaml);
+
+        LoadFromConfigFromPath(path);
+    }
+
     public IClusterRuntime? GetCluster(string name)
     {
         return Clusters.FirstOrDefault(c => c.Name == name);
@@ -157,9 +200,9 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
     {
         try
         {
-            if (File.Exists(KubernetesClientConfiguration.KubeConfigDefaultLocation))
+            if (File.Exists(_kubeConfigPathProvider.DefaultPath))
             {
-                var kubeConfig = KubernetesClientConfiguration.LoadKubeConfig();
+                var kubeConfig = KubernetesClientConfiguration.LoadKubeConfig(_kubeConfigPathProvider.DefaultPath);
                 return GetCluster(kubeConfig.CurrentContext);
             }
 
@@ -182,10 +225,29 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
         try
         {
             var config = KubernetesClientConfiguration.LoadKubeConfig(cluster.KubeConfigPath);
-            var context = config.Contexts.First(x => x.ContextDetails.Cluster == cluster.Name);
+            var context = config.Contexts.FirstOrDefault(x =>
+                string.Equals(x.Name, cluster.Name, StringComparison.Ordinal) ||
+                string.Equals(x.ContextDetails?.Cluster, cluster.Name, StringComparison.Ordinal));
 
-            ((List<k8s.KubeConfigModels.Cluster>)config.Clusters).RemoveAll(c => c.Name == context.ContextDetails.Cluster);
-            ((List<k8s.KubeConfigModels.User>)config.Users).RemoveAll(c => c.Name == context.ContextDetails.User);
+            if (context is null)
+            {
+                _logger.LogWarning(
+                    "Unable to remove cluster {Cluster} from kubeconfig {Path} because no matching context was found.",
+                    cluster.Name,
+                    cluster.KubeConfigPath);
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(context.ContextDetails?.Cluster))
+            {
+                ((List<k8s.KubeConfigModels.Cluster>)config.Clusters).RemoveAll(c => c.Name == context.ContextDetails.Cluster);
+            }
+
+            if (!string.IsNullOrWhiteSpace(context.ContextDetails?.User))
+            {
+                ((List<k8s.KubeConfigModels.User>)config.Users).RemoveAll(c => c.Name == context.ContextDetails.User);
+            }
+
             ((List<k8s.KubeConfigModels.Context>)config.Contexts).Remove(context);
 
             var yaml = KubernetesYaml.Serialize(config);
@@ -241,6 +303,40 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
     private bool ClusterExists(string name, string kubeConfigPath)
     {
         return Clusters.Any(x => x.Name == name && x.KubeConfigPath == kubeConfigPath);
+    }
+
+    private static List<T> MergeNamedItems<T>(
+        IEnumerable<T>? existing,
+        IEnumerable<T>? imported,
+        Func<T, string> getName)
+    {
+        Dictionary<string, T> merged = new(StringComparer.Ordinal);
+
+        if (existing is not null)
+        {
+            foreach (T item in existing)
+            {
+                string name = getName(item);
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    merged[name] = item;
+                }
+            }
+        }
+
+        if (imported is not null)
+        {
+            foreach (T item in imported)
+            {
+                string name = getName(item);
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    merged[name] = item;
+                }
+            }
+        }
+
+        return [.. merged.Values];
     }
 
     public void Dispose()

@@ -127,6 +127,21 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         LastTimestamp = DateTime.UtcNow,
     };
 
+    private static Corev1Event Event(string ns, string name, DateTime timestamp, int count)
+        => new()
+        {
+            ApiVersion = Corev1Event.KubeApiVersion,
+            Kind = Corev1Event.KubeKind,
+            Metadata = new V1ObjectMeta
+            {
+                NamespaceProperty = ns,
+                Name = name,
+                CreationTimestamp = timestamp,
+            },
+            LastTimestamp = timestamp,
+            Count = count,
+        };
+
     private static V1Namespace NamespaceResource(string name)
         => new()
         {
@@ -277,9 +292,9 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         await AddOrUpdateAsync(cluster, Event("ns", "b"));
         await AddOrUpdateAsync(cluster, Event("ns", "c"));
 
-        vm.View.ElementAt(0).ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
-        vm.View.ElementAt(1).ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
-        vm.View.ElementAt(2).ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
+        vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
+        vm.View[1].ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
+        vm.View[2].ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
 
 
         // Select only middle
@@ -291,9 +306,9 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         await AddOrUpdateAsync(cluster, Event("ns", "b"));
         Dispatcher.UIThread.RunJobs();
 
-        vm.View.ElementAt(0).ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
-        vm.View.ElementAt(1).ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
-        vm.View.ElementAt(2).ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
+        vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
+        vm.View[1].ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
+        vm.View[2].ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
 
         vm.SelectedItems.Count.ShouldBe(1);
 
@@ -325,9 +340,9 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         await AddOrUpdateAsync(cluster, Event("ns", "b"));
         await AddOrUpdateAsync(cluster, Event("ns", "c"));
 
-        vm.View.ElementAt(0).ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
-        vm.View.ElementAt(1).ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
-        vm.View.ElementAt(2).ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
+        vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
+        vm.View[1].ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
+        vm.View[2].ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
 
 
         // Select all 3
@@ -341,9 +356,9 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         await AddOrUpdateAsync(cluster, Event("ns", "b"));
         Dispatcher.UIThread.RunJobs();
 
-        vm.View.ElementAt(0).ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
-        vm.View.ElementAt(1).ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
-        vm.View.ElementAt(2).ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
+        vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
+        vm.View[1].ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
+        vm.View[2].ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
 
         vm.SelectionModel.SelectedIndexes.ShouldBe([0, 1, 2]);
 
@@ -436,6 +451,67 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var after = GetFirstRowFirstColumnText(grid, 0, 1);
         after.ShouldNotBeNull();
         after.ShouldContain("test=value");
+    }
+
+    [AvaloniaFact(DisplayName = "Mutable sort updates keep the resource list live")]
+    public async Task mutable_sort_updates_keep_the_resource_list_live()
+    {
+        var window = CreateWindow();
+        var cluster = await CreateClusterAsync();
+
+        var vm = GetRequiredService<ResourceListViewModel<Corev1Event>>();
+        vm.Initialize(cluster);
+
+        var view = GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+
+        window.Content = view;
+        window.Show();
+
+        var baseTimestamp = DateTime.UtcNow.AddHours(-2);
+        for (var i = 0; i < 200; i++)
+        {
+            await AddOrUpdateAsync(cluster, Event("ns", $"seed-{i}", baseTimestamp.AddMinutes(i), i));
+        }
+
+        Dispatcher.UIThread.RunJobs();
+        vm.View.Count.ShouldBe(200);
+        await WaitForAsync(() => vm.ItemCount == 200, 5000);
+
+        var left = Event("ns", "left", baseTimestamp.AddHours(5), 1);
+        var right = Event("ns", "right", baseTimestamp.AddHours(5).AddMinutes(1), 2);
+
+        await AddOrUpdateAsync(cluster, left);
+        await AddOrUpdateAsync(cluster, right);
+        Dispatcher.UIThread.RunJobs();
+
+        vm.View.Count.ShouldBe(202);
+        await WaitForAsync(() => vm.ItemCount == 202, 5000);
+        vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("right");
+
+        for (var i = 0; i < 50; i++)
+        {
+            left.LastTimestamp = baseTimestamp.AddHours(6 + (i * 2));
+            left.Count = i + 10;
+            await AddOrUpdateAsync(cluster, left);
+
+            right.LastTimestamp = baseTimestamp.AddHours(6 + (i * 2) + 1);
+            right.Count = i + 20;
+            await AddOrUpdateAsync(cluster, right);
+
+            Dispatcher.UIThread.RunJobs();
+
+            vm.View.Count.ShouldBe(202);
+            vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("right");
+            vm.View[1].ShouldBeOfType<Corev1Event>().Name().ShouldBe("left");
+        }
+
+        await AddOrUpdateAsync(cluster, Event("ns", "tail", baseTimestamp.AddHours(200), 999));
+        Dispatcher.UIThread.RunJobs();
+
+        vm.View.Count.ShouldBe(203);
+        await WaitForAsync(() => vm.ItemCount == 203, 5000);
+        vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("tail");
     }
 
     [AvaloniaFact(DisplayName = "Resource list columns expose filter buttons")]
@@ -846,7 +922,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         vm.SelectedItem!.Namespace().ShouldBe("ns4");
         vm.SelectedItem.Name().ShouldBe("d");
 
-        var menuItem = vm.ContextMenuItems.FirstOrDefault(x => x.Header == "View");
+        var menuItem = vm.GetContextMenuItems(vm.SelectedItems).FirstOrDefault(x => x.Header == "View");
         menuItem.ShouldNotBeNull();
 
         var parameters = menuItem!.CommandParameter as IList;
@@ -909,10 +985,13 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         cluster.SelectedNamespaces.Add(NamespaceResource("ns4"));
         Dispatcher.UIThread.RunJobs();
 
-        var portForwardMenu = vm.ContextMenuItems.FirstOrDefault(x => x.Header == "Port Forwarding");
+        var portForwardMenu = vm.GetContextMenuItems(vm.SelectedItems).FirstOrDefault(x => x.Header == "Port Forwarding");
         portForwardMenu.ShouldNotBeNull();
 
-        var containers = portForwardMenu!.Items?.ToList();
+        var groups = portForwardMenu!.Items?.ToList();
+        groups.Count.ShouldBe(3);
+        var normalGroup = groups.Single(x => x.Header == "Normal");
+        var containers = normalGroup.Items?.ToList();
         containers.Count.ShouldBe(1);
         containers[0].Header.ShouldBe("d-container");
     }
@@ -945,7 +1024,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         vm.SelectionModel.Select(0);
         Dispatcher.UIThread.RunJobs();
 
-        var firstMenu = vm.ContextMenuItems.FirstOrDefault(x => x.Header == "View Logs");
+        var firstMenu = vm.GetContextMenuItems(vm.SelectedItems).FirstOrDefault(x => x.Header == "View Logs");
         firstMenu.ShouldNotBeNull();
         firstMenu!.Items.ShouldNotBeNull();
         firstMenu.Items!.First(x => x.Header == "All Containers").CommandParameter.ShouldBe(podA);
@@ -954,7 +1033,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         selectionModel.Select(1);
         Dispatcher.UIThread.RunJobs();
 
-        var secondMenu = vm.ContextMenuItems.FirstOrDefault(x => x.Header == "View Logs");
+        var secondMenu = vm.GetContextMenuItems(vm.SelectedItems).FirstOrDefault(x => x.Header == "View Logs");
         secondMenu.ShouldNotBeNull();
         secondMenu!.Items.ShouldNotBeNull();
         secondMenu.Items!.First(x => x.Header == "All Containers").CommandParameter.ShouldBe(podB);
@@ -1003,7 +1082,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         vm.SelectedItem.ShouldNotBeNull();
         vm.SelectedItem.ShouldBe(firstRowPod);
-        vm.ContextMenuItems.First(x => x.Header == "View Logs").Items!.First(x => x.Header == "All Containers").CommandParameter.ShouldBe(firstRowPod);
+        vm.GetContextMenuItems(vm.SelectedItems).First(x => x.Header == "View Logs").Items!.First(x => x.Header == "All Containers").CommandParameter.ShouldBe(firstRowPod);
 
         Point? rowBPoint = rows[1].TranslatePoint(new Point(rows[1].Bounds.Width / 2, rows[1].Bounds.Height / 2), window);
         rowBPoint.ShouldNotBeNull();
@@ -1013,7 +1092,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         vm.SelectedItem.ShouldNotBeNull();
         vm.SelectedItem.ShouldBe(secondRowPod);
-        vm.ContextMenuItems.First(x => x.Header == "View Logs").Items!.First(x => x.Header == "All Containers").CommandParameter.ShouldBe(secondRowPod);
+        vm.GetContextMenuItems(vm.SelectedItems).First(x => x.Header == "View Logs").Items!.First(x => x.Header == "All Containers").CommandParameter.ShouldBe(secondRowPod);
     }
 
     [AvaloniaFact(DisplayName = "Pod View Logs command opens a dockable on the second click too")]
@@ -1279,7 +1358,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         vm.SelectionModel.Select(0);
         vm.SelectionModel.Select(1);
 
-        var headers = vm.ContextMenuItems.Select(x => x.Header).ToList();
+        var headers = vm.GetContextMenuItems(vm.SelectedItems).Select(x => x.Header).ToList();
 
         headers.ShouldNotContain("View Console");
         headers.ShouldNotContain("View Logs");
@@ -1304,12 +1383,12 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         await AddOrUpdateAsync(cluster, Pod("ns1", "a"));
 
-        vm.View.Count().ShouldBe(1);
+        vm.View.Count.ShouldBe(1);
 
         await cluster.DeleteResource(Pod("ns1", "a"));
         Dispatcher.UIThread.RunJobs();
 
-        vm.View.Count().ShouldBe(0);
+        vm.View.Count.ShouldBe(0);
     }
 
     [AvaloniaFact(DisplayName = "Reattach keeps only saved sort descriptors")]
@@ -1366,9 +1445,9 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var view = WaitForValue(() => FindVisibleView<ResourceListView>(window, vm), 3000);
         view.ShouldNotBeNull();
 
-        vm.View.ElementAt(0).ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
-        vm.View.ElementAt(1).ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
-        vm.View.ElementAt(2).ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
+        vm.View[0].ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
+        vm.View[1].ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
+        vm.View[2].ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
         vm.SortingModel.Descriptors.Count.ShouldBe(1);
         ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("name");
 
@@ -1383,9 +1462,9 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var restoredView = WaitForValue(() => FindVisibleView<ResourceListView>(window, vm), 3000);
         restoredView.ShouldNotBeNull();
 
-        vm.View.ElementAt(0).ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
-        vm.View.ElementAt(1).ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
-        vm.View.ElementAt(2).ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
+        vm.View[0].ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
+        vm.View[1].ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
+        vm.View[2].ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
         vm.SortingModel.Descriptors.Count.ShouldBe(1);
         ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("name");
     }
@@ -1560,9 +1639,9 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var restoredView = WaitForValue(() => FindVisibleView<ResourceListView>(window, vm), 3000);
         restoredView.ShouldNotBeNull();
 
-        vm.View.ElementAt(0).ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
-        vm.View.ElementAt(1).ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
-        vm.View.ElementAt(2).ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
+        vm.View[0].ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
+        vm.View[1].ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
+        vm.View[2].ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
         vm.SortingModel.Descriptors.Count.ShouldBe(1);
         ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("labels");
     }
@@ -1794,6 +1873,7 @@ internal sealed class FakeDoubleTapResourceListViewModel : IResourceListViewMode
     public Func<IList, object, int> ReferenceIndexResolver => (_, _) => -1;
     public IList View => Array.Empty<object>();
     public IEnumerable<MenuItemViewModel> ContextMenuItems => [];
+    public IEnumerable<MenuItemViewModel> GetContextMenuItems(IEnumerable? selectedItems) => ContextMenuItems;
     public ISearchModel SearchModel { get; set; } = new SearchModel();
     public IDataGridSearchAdapterFactory SearchAdapterFactory => throw new NotImplementedException();
     public global::Avalonia.Controls.DataGridState? DataGridRuntimeState { get; set; }
@@ -1824,6 +1904,7 @@ internal sealed class FakeDoubleTapResourceConfig : IResourceConfig
     public string Name => "Pods";
     public string? Category => null;
     public IStyle ListStyle() => new global::Avalonia.Styling.Style();
+    public IEnumerable<(KubeUI.Kubernetes.Verb verb, string? subresource)> Permissions() => [];
     public Task UpdatePermissions() => Task.CompletedTask;
     public Type Type => typeof(V1Pod);
     public IRelayCommand NewResourceCommand => new RelayCommand(() => { });

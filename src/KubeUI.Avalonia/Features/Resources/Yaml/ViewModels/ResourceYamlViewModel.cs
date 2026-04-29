@@ -32,8 +32,17 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     public partial ClusterWorkspaceViewModel? Cluster { get; set; }
 
-    [ObservableProperty]
-    public partial IKubernetesObject<V1ObjectMeta>? Object { get; set; }
+    private IKubernetesObject<V1ObjectMeta>? _object;
+
+    public IKubernetesObject<V1ObjectMeta>? Object
+    {
+        get => _object;
+        set
+        {
+            _object = value;
+            OnPropertyChanged();
+        }
+    }
 
     [ObservableProperty]
     public partial TextDocument YamlDocument { get; set; } = new();
@@ -78,7 +87,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
     public bool HasActionFailureResult => HasActionResult && !ActionResultSuccess;
 
-    public InfoBarSeverity ActionResultSeverity => ActionResultSuccess ? InfoBarSeverity.Success : InfoBarSeverity.Error;
+    public FAInfoBarSeverity ActionResultSeverity => ActionResultSuccess ? FAInfoBarSeverity.Success : FAInfoBarSeverity.Error;
 
     public ResourceYamlViewModel(
         ILogger<ResourceYamlViewModel> logger,
@@ -245,12 +254,6 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         return HasActionResult;
     }
 
-    [RelayCommand]
-    private void SetHideNoisyFields()
-    {
-        HideNoisyFields = !HideNoisyFields;
-    }
-
     [RelayCommand(CanExecute = nameof(CanSetEditMode))]
     private void SetEditMode()
     {
@@ -413,7 +416,6 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         ActionResultSuccess = false;
     }
 }
-
 
 
 

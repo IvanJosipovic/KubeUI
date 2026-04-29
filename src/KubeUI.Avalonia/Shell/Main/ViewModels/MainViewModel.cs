@@ -13,6 +13,7 @@ using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Options;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Shell.Documents.About.ViewModels;
+using KubeUI.Avalonia.Shell.Documents.CloudClusters.Aks.ViewModels;
 using KubeUI.Avalonia.Shell.Documents.Settings.ViewModels;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
@@ -255,6 +256,14 @@ public sealed partial class MainViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void ImportAksCluster()
+    {
+        var vm = _serviceProvider.GetRequiredService<ImportAksClusterViewModel>();
+
+        _factory.AddToDocuments(vm);
+    }
+
+    [RelayCommand]
     private void SwitchTheme()
     {
         SettingsService.Appearance.Theme = SettingsService.Appearance.Theme == LocalThemeVariant.Light ? LocalThemeVariant.Dark : LocalThemeVariant.Light;
@@ -319,12 +328,12 @@ public sealed partial class MainViewModel : ViewModelBase
                     Content = Assets.Resources.MainViewModel_CheckForUpdates_Content + "\n\n" + Markdig.Markdown.ToPlainText(update.TargetFullRelease.NotesMarkdown),
                     PrimaryButtonText = Assets.Resources.MainViewModel_CheckForUpdates_Primary,
                     SecondaryButtonText = Assets.Resources.MainViewModel_CheckForUpdates_Secondary,
-                    DefaultButton = ContentDialogButton.Secondary
+                    DefaultButton = FAContentDialogButton.Secondary
                 };
 
                 var result = await _dialogService.ShowContentDialogAsync(this, settings).ConfigureAwait(true);
 
-                if (result == ContentDialogResult.Primary)
+                if (result == FAContentDialogResult.Primary)
                 {
                     ContentDialogSettings updatePrompt = new()
                     {

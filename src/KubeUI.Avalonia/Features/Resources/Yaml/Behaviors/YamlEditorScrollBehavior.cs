@@ -15,6 +15,8 @@ namespace KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 
 public sealed class YamlEditorScrollBehavior : Behavior<TextEditor>
 {
+    private const double ScrollOffsetTolerance = 0.5;
+
     private IFactory? _factory;
     private ScrollViewer? _scrollViewer;
     private IDisposable? _visibilitySubscription;
@@ -288,6 +290,13 @@ public sealed class YamlEditorScrollBehavior : Behavior<TextEditor>
         }
 
         var targetOffset = _pendingRestoreOffset ?? vm.ScrollOffset;
+        var currentOffset = _scrollViewer.Offset;
+
+        if (AreOffsetsClose(currentOffset, targetOffset))
+        {
+            _pendingRestoreOffset = null;
+            return;
+        }
 
         // Wait until the scroll extent is ready before applying a non-zero restore.
         if (targetOffset != default
@@ -310,6 +319,12 @@ public sealed class YamlEditorScrollBehavior : Behavior<TextEditor>
         {
             _isRestoringScrollOffset = false;
         }
+    }
+
+    private static bool AreOffsetsClose(Vector left, Vector right)
+    {
+        return Math.Abs(left.X - right.X) <= ScrollOffsetTolerance
+            && Math.Abs(left.Y - right.Y) <= ScrollOffsetTolerance;
     }
 
     private void AttachScrollViewer()
@@ -355,7 +370,7 @@ public sealed class YamlEditorScrollBehavior : Behavior<TextEditor>
         if (_pendingRestoreOffset is Vector pendingRestoreOffset
             && pendingRestoreOffset != default
             && sender is ScrollViewer scrollViewer
-            && scrollViewer.Offset != pendingRestoreOffset)
+            && !AreOffsetsClose(scrollViewer.Offset, pendingRestoreOffset))
         {
             return;
         }

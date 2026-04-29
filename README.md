@@ -58,7 +58,6 @@ KubeUI provides a cluster workspace for exploring and operating Kubernetes resou
 - Validation while editing
 - Inline validation feedback in the editor
 - Server-side dry run from edit mode before saving
-- Save is disabled while validation errors exist
 
 ### Resource Operations
 

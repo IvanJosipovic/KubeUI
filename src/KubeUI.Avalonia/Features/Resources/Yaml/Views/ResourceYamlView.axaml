@@ -29,9 +29,8 @@
             <Button Command="{Binding SetEditModeCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Edit}">
                 <ic:FluentIcon Icon="DocumentEdit" />
             </Button>
-            <ToggleButton
-                Command="{Binding SetHideNoisyFieldsCommand}"
-                IsChecked="{Binding HideNoisyFields}"
+            <ToggleButton Name="HideNoisyFieldsToggle"
+                IsChecked="{Binding HideNoisyFields, Mode=TwoWay}"
                 ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_HideNoisyFields}">
                 <ic:FluentIcon Icon="EyeOff" />
             </ToggleButton>
@@ -64,7 +63,7 @@
             </ToggleButton>
         </StackPanel>
 
-        <fa:InfoBar Name="ActionResultBar" Grid.Row="1"
+        <fa:FAInfoBar Name="ActionResultBar" Grid.Row="1"
             Title="{Binding ActionResultTitle}"
             Margin="4"
             CloseButtonCommand="{Binding DismissActionResultCommand}"
@@ -87,7 +86,6 @@
             WordWrap="{Binding WordWrap}">
             <ae:TextEditor.Options>
                 <ae:TextEditorOptions
-                    AllowScrollBelowDocument="False"
                     ConvertTabsToSpaces="True"
                     EnableEmailHyperlinks="False"
                     EnableHyperlinks="False"
@@ -97,6 +95,8 @@
             </ae:TextEditor.Options>
             <Interaction.Behaviors>
                 <behaviors:YamlEditorBehavior />
+                <behaviors:YamlDiagnosticRenderingBehavior />
+                <behaviors:YamlHoverToolTipBehavior />
                 <behaviors:YamlEditorScrollBehavior />
             </Interaction.Behaviors>
             <ae:TextEditor.KeyBindings>
@@ -121,7 +121,7 @@
                     <MenuItem Header="{x:Static assets:Resources.Action_Copy}" HotKey="Ctrl+C">
                         <Interaction.Behaviors>
                             <ia:EventTriggerBehavior EventName="Click">
-                                <ia:CallMethodAction MethodName="Copy" TargetObject="{Binding PlacementTarget, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                <ia:CallMethodAction MethodName="Copy" TargetObject="{Binding #Editor}" />
                             </ia:EventTriggerBehavior>
                         </Interaction.Behaviors>
                         <MenuItem.Icon>

@@ -105,6 +105,18 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         return Cluster.UpdatePermissionsAllNamespaceAsync<T>(verb, subResource);
     }
 
+    public IEnumerable<(Verb verb, string? subresource)> Permissions()
+    {
+        return DefaultPermissions()
+            .Concat(CustomPermissions())
+            .Distinct();
+    }
+
+    public virtual IEnumerable<AuthorizationRequest> AuthorizationRequests()
+    {
+        return Permissions().Select(permission => new AuthorizationRequest(Type, permission.verb, permission.subresource));
+    }
+
     public virtual Control[] Properties(T resource) => [];
 
     protected ResourceListColumn<T, string> NameColumn(SortDirection sort = SortDirection.None)
@@ -238,6 +250,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         if (exceptions.Count > 0)
         {
             _logger.LogDebug(new AggregateException(exceptions), "Unable to refresh non-list permissions for {Type}", typeof(T).FullName);
+            return;
         }
 
         PermissionsLoaded = true;
@@ -282,12 +295,12 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             Content = string.Format(Assets.Resources.ResourceListViewModel_Delete_Content, items.Count),
             PrimaryButtonText = Assets.Resources.ResourceListViewModel_Delete_Primary,
             SecondaryButtonText = Assets.Resources.ResourceListViewModel_Delete_Secondary,
-            DefaultButton = ContentDialogButton.Secondary
+            DefaultButton = FAContentDialogButton.Secondary
         };
 
         var result = await _dialogService.ShowContentDialogAsync(this, settings);
 
-        if (result == ContentDialogResult.Primary)
+        if (result == FAContentDialogResult.Primary)
         {
             var exceptions = new List<Exception>();
 
@@ -372,7 +385,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             Content = string.Format(Assets.Resources.ResourceListViewModel_Restart_Content, items.Count),
             PrimaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Primary,
             SecondaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Secondary,
-            DefaultButton = ContentDialogButton.Secondary
+            DefaultButton = FAContentDialogButton.Secondary
         };
 
         var result = await _dialogService.ShowContentDialogAsync(this, settings);
@@ -391,7 +404,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
                 }
                 """;
 
-        if (result == ContentDialogResult.Primary)
+        if (result == FAContentDialogResult.Primary)
         {
             var exceptions = new List<Exception>();
 
@@ -445,6 +458,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
 public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
+    private const string NullableValueMissingMessage = "Nullable object must have a value.";
     private Func<T, TValue>? _fieldAccessor;
     private IDataGridColumnValueAccessor? _valueAccessor;
     private string? _key;
@@ -483,7 +497,7 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
     public IDataGridColumnValueAccessor ValueAccessor => _valueAccessor ??= new LambdaColumnValueAccessor(GetFieldAccessor());
 
     public Func<object, IComparable?> SortKey =>
-        o => (IComparable?)(object?)GetFieldAccessor()((T)o);
+        o => GetFieldValue((T)o) as IComparable;
 
     public Func<object, string> DisplayValue =>
         o =>
@@ -491,7 +505,7 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
             var t = (T)o;
             if (Display != null)
                 return Display(t);
-            var v = GetFieldAccessor()(t);
+            var v = GetFieldValue(t);
             return v?.ToString() ?? "";
         };
 
@@ -499,6 +513,18 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
     {
         _fieldAccessor ??= Field;
         return _fieldAccessor;
+    }
+
+    private object? GetFieldValue(T item)
+    {
+        try
+        {
+            return GetFieldAccessor()(item);
+        }
+        catch (InvalidOperationException ex) when (ex.Message == NullableValueMissingMessage)
+        {
+            return null;
+        }
     }
 
     private static string NormalizeKey(string value)
@@ -548,7 +574,14 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
 
         public object GetValue(object item)
         {
-            return _getter((T)item)!;
+            try
+            {
+                return _getter((T)item)!;
+            }
+            catch (InvalidOperationException ex) when (ex.Message == NullableValueMissingMessage)
+            {
+                return null!;
+            }
         }
 
         public void SetValue(object item, object value)
@@ -557,7 +590,5 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
         }
     }
 }
-
-
 
 

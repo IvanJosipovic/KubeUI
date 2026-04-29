@@ -110,7 +110,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
             Content = string.Format(Assets.Resources.ResourceListViewModel_CordonNode_Content, items.Count),
             PrimaryButtonText = Assets.Resources.ResourceListViewModel_CordonNode_Primary,
             SecondaryButtonText = Assets.Resources.ResourceListViewModel_CordonNode_Secondary,
-            DefaultButton = ContentDialogButton.Secondary
+            DefaultButton = FAContentDialogButton.Secondary
         };
 
         var result = await _dialogService.ShowContentDialogAsync(this, settings);
@@ -123,7 +123,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
         }
         """;
 
-        if (result == ContentDialogResult.Primary)
+        if (result == FAContentDialogResult.Primary)
         {
             foreach (var item in items.Cast<V1Node>().ToList())
             {
@@ -153,7 +153,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
             Content = string.Format(Assets.Resources.ResourceListViewModel_UnCordonNode_Content, items.Count),
             PrimaryButtonText = Assets.Resources.ResourceListViewModel_UnCordonNode_Primary,
             SecondaryButtonText = Assets.Resources.ResourceListViewModel_UnCordonNode_Secondary,
-            DefaultButton = ContentDialogButton.Secondary
+            DefaultButton = FAContentDialogButton.Secondary
         };
 
         var result = await _dialogService.ShowContentDialogAsync(this, settings);
@@ -166,7 +166,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
         }
         """;
 
-        if (result == ContentDialogResult.Primary)
+        if (result == FAContentDialogResult.Primary)
         {
             foreach (var item in items.Cast<V1Node>().ToList())
             {
@@ -196,7 +196,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
             Content = string.Format(Assets.Resources.ResourceListViewModel_DrainNode_Content, items.Count),
             PrimaryButtonText = Assets.Resources.ResourceListViewModel_DrainNode_Primary,
             SecondaryButtonText = Assets.Resources.ResourceListViewModel_DrainNode_Secondary,
-            DefaultButton = ContentDialogButton.Secondary
+            DefaultButton = FAContentDialogButton.Secondary
         };
 
         var result = await _dialogService.ShowContentDialogAsync(this, settings);
@@ -209,7 +209,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
         }
         """;
 
-        if (result == ContentDialogResult.Primary)
+        if (result == FAContentDialogResult.Primary)
         {
             foreach (var item in items.Cast<V1Node>().ToList())
             {

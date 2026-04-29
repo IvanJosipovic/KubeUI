@@ -14,12 +14,14 @@ namespace KubeUI.Avalonia.Features.Resources.Properties.Controls;
 public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
 {
     private readonly DispatcherTimer _timer = new(DispatcherPriority.Background);
-    private readonly ReadOnlyObservableCollection<Corev1Event> _emptyEvents = new([]);
-
+    private static readonly IReadOnlyList<ResourceEventItem> EmptyItems = Array.Empty<ResourceEventItem>();
     private ClusterWorkspaceViewModel? _cluster;
     private ISourceCache<Corev1Event, string>? _eventCache;
     private IDisposable? _eventCacheSubscription;
+    private readonly ReadOnlyObservableCollection<Corev1Event> _emptyEvents = new([]);
     private ReadOnlyObservableCollection<Corev1Event> _matchedEvents;
+    private bool _isDetached;
+    private bool _refreshPending;
 
     private IKubernetesObject<V1ObjectMeta>? _resource;
 
@@ -32,6 +34,7 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
     public ResourceEventsView()
     {
         InitializeComponent();
+        Items = EmptyItems;
         _matchedEvents = _emptyEvents;
         _timer.Interval = TimeSpan.FromSeconds(1);
         _timer.Tick += Timer_Tick;
@@ -42,25 +45,31 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
         base.OnDataContextChanged(e);
         _resource = DataContext as IKubernetesObject<V1ObjectMeta>;
         RebuildEventSubscription();
-        Refresh();
+        RequestRefresh();
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
+        _isDetached = false;
         if (!_timer.IsEnabled)
         {
             _timer.Start();
         }
+
+        RequestRefresh();
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
+        _isDetached = true;
         if (_timer.IsEnabled)
         {
             _timer.Stop();
         }
+
+        DisposeEventSubscription();
     }
 
     protected override void OnUnloaded(RoutedEventArgs e)
@@ -82,16 +91,36 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
         }
 
         RebuildEventSubscription();
-        Refresh();
+        RequestRefresh();
     }
 
     private void Timer_Tick(object? sender, EventArgs e)
     {
-        Refresh();
+        RequestRefresh();
+    }
+
+    private void RequestRefresh()
+    {
+        if (_isDetached || _refreshPending || VisualRoot == null)
+        {
+            return;
+        }
+
+        _refreshPending = true;
+        Dispatcher.UIThread.Post(() =>
+        {
+            _refreshPending = false;
+            Refresh();
+        }, DispatcherPriority.Background);
     }
 
     private void Refresh()
     {
+        if (_isDetached || VisualRoot == null)
+        {
+            return;
+        }
+
         if (_resource == null)
         {
             Clear();
@@ -124,7 +153,7 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
             .SortAndBind(
                 out _matchedEvents,
                 SortExpressionComparer<Corev1Event>.Descending(@event => ResourceEventsSelector.GetSortTimestamp(@event)))
-            .Subscribe(_ => Refresh());
+            .Subscribe(_ => RequestRefresh());
     }
 
     private void DisposeEventSubscription()
@@ -132,17 +161,37 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
         _eventCacheSubscription?.Dispose();
         _eventCacheSubscription = null;
         _matchedEvents = _emptyEvents;
+        _refreshPending = false;
     }
 
     private void Clear()
     {
-        Items = [];
+        if (Items.Count > 0)
+        {
+            Items = EmptyItems;
+        }
+
         HasItems = false;
     }
 
     private void UpdateItems(ResourceEventItem[] items)
     {
-        Items = items;
-        HasItems = items.Length > 0;
+        if (_isDetached || VisualRoot == null)
+        {
+            return;
+        }
+
+        if (items.Length == 0)
+        {
+            Clear();
+            return;
+        }
+
+        if (!Items.SequenceEqual(items))
+        {
+            Items = items;
+        }
+
+        HasItems = true;
     }
 }

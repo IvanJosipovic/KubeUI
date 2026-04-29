@@ -13,6 +13,13 @@ namespace KubeUI.Avalonia.Resources.Network.v1.Service;
 
 public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
 {
+    private static readonly AuthorizationRequest[] s_portForwardAuthorizationRequests =
+    [
+        new(typeof(V1Pod), Verb.Create, "portforward"),
+        new(typeof(V1EndpointSlice), Verb.List, null),
+        new(typeof(V1EndpointSlice), Verb.Watch, null),
+    ];
+
     public V1ServiceConfig(IServiceProvider serviceProvider)
         : base(serviceProvider)
     {
@@ -49,6 +56,11 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
         ];
     }
 
+    public override IEnumerable<AuthorizationRequest> AuthorizationRequests()
+    {
+        return base.AuthorizationRequests().Concat(s_portForwardAuthorizationRequests);
+    }
+
     protected override IEnumerable<MenuItemViewModel> CreateCustomMenuItems(IEnumerable<V1Service>? selectedItems)
     {
         var selectedItem = selectedItems?.FirstOrDefault();
@@ -83,15 +95,14 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
                 Content = string.Format(Assets.Resources.ResourceListViewModel_PortForward_Content, containerPort.Port, pf.LocalPort),
                 PrimaryButtonText = Assets.Resources.ResourceListViewModel_PortForward_Primary,
                 SecondaryButtonText = Assets.Resources.ResourceListViewModel_PortForward_Secondary,
-                DefaultButton = ContentDialogButton.Secondary
+                DefaultButton = FAContentDialogButton.Secondary
             };
 
             var result = await _dialogService.ShowContentDialogAsync(this, settings);
 
-            if (result == ContentDialogResult.Primary)
+            if (result == FAContentDialogResult.Primary)
             {
-                var window = (Window)_dialogService.DialogManager.GetMainWindow()!.RefObj;
-                await window!.Launcher.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
+                await App.TopLevel!.Launcher.LaunchUriAsync(new Uri($"http://localhost:{pf.LocalPort}"));
             }
         }
     }
@@ -112,5 +123,4 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
 
     public override Control[] Properties(V1Service resource) => [new PropertiesView()];
 }
-
 

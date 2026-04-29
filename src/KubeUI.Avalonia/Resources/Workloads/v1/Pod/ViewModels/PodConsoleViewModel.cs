@@ -2,7 +2,6 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using Avalonia.Input.Platform;
-using AvaloniaTerminal;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
@@ -10,6 +9,7 @@ using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
+using SvcSystems.UI.Terminal;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 
@@ -39,6 +39,9 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
     public partial string ContainerName { get; set; }
 
     [ObservableProperty]
+    internal partial bool UseAttach { get; set; }
+
+    [ObservableProperty]
     public partial double Width { get; set; }
 
     [ObservableProperty]
@@ -63,14 +66,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        var command = new string[]
-        {
-            "sh",
-            "-c",
-            "clear; (bash || ash || sh || echo 'No Shell Found!')",
-        };
-
-        _webSocket = await Cluster.Client.WebSocketNamespacedPodExecAsync(Object.Name(), Object.Namespace(), command, ContainerName);
+        _webSocket = await OpenConnectionAsync().ConfigureAwait(false);
 
         _streamDemuxer = new StreamDemuxer(_webSocket);
         _streamDemuxer.Start();
@@ -102,17 +98,41 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
         });
     }
 
-    public void Input(byte[] input)
+    internal Task<WebSocket> OpenConnectionAsync()
     {
-        if (_stream.CanWrite)
+        if (UseAttach)
         {
-            _stream.Write(input);
+            return Cluster.Client!.WebSocketNamespacedPodAttachAsync(
+                Object.Name(),
+                Object.Namespace(),
+                ContainerName,
+                stderr: true,
+                stdin: true,
+                stdout: true,
+                tty: true);
+        }
+
+        string[] command =
+        [
+            "sh",
+            "-c",
+            "clear; (bash || ash || sh || echo 'No Shell Found!')",
+        ];
+
+        return Cluster.Client!.WebSocketNamespacedPodExecAsync(Object.Name(), Object.Namespace(), command, ContainerName);
+    }
+
+    private void Input(object? sender, TerminalUserInputEventArgs args)
+    {
+        if (_stream?.CanWrite == true)
+        {
+            _stream.Write(args.Data.Span);
         }
     }
 
-    private void Terminal_SizeChanged(int cols, int rows, double width, double height)
+    private void Terminal_SizeChanged(object? sender, TerminalSizeChangedEventArgs args)
     {
-        SendResize(cols, rows);
+        SendResize(args.Cols, args.Rows);
     }
 
     public void SendResize(int cols, int rows)
@@ -193,5 +213,3 @@ public struct TerminalSize
         return !(left == right);
     }
 }
-
-

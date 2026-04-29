@@ -1,0 +1,99 @@
+﻿<UserControl
+    x:Class="KubeUI.Avalonia.Shell.Documents.CloudClusters.Aks.Views.ImportAksClusterView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="clr-namespace:KubeUI.Avalonia.Assets;assembly=KubeUI.Avalonia"
+    xmlns:core="clr-namespace:KubeUI.Kubernetes;assembly=KubeUI.Kubernetes"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="clr-namespace:KubeUI.Avalonia.Shell.Documents.CloudClusters.Aks.ViewModels"
+    d:DesignHeight="500"
+    d:DesignWidth="800"
+    x:DataType="vm:ImportAksClusterViewModel"
+    mc:Ignorable="d">
+
+    <StackPanel Spacing="12">
+        <TextBlock FontSize="24" Text="{Binding Title}" />
+        <TextBlock Text="{x:Static assets:Resources.ImportAksClusterView_Description}" TextWrapping="Wrap" />
+        <TextBlock
+            FontStyle="Italic"
+            Opacity="0.8"
+            Text="{x:Static assets:Resources.ImportAksClusterView_Prerequisites}"
+            TextWrapping="Wrap" />
+
+        <Border
+            Padding="12"
+            Background="{DynamicResource ThemeBackgroundBrush}"
+            CornerRadius="8">
+            <StackPanel Spacing="8">
+                <TextBlock Text="{Binding AuthenticationStatusMessage}" TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <Grid
+            ColumnDefinitions="Auto,*"
+            ColumnSpacing="12"
+            RowDefinitions="Auto,Auto,Auto,Auto"
+            RowSpacing="8">
+            <TextBlock Grid.Row="0"
+                Grid.Column="0"
+                VerticalAlignment="Center"
+                Text="{x:Static assets:Resources.ImportAksClusterView_Subscription}" />
+            <ComboBox Grid.Row="0"
+                Grid.Column="1"
+                Width="420"
+                ItemsSource="{Binding Subscriptions}"
+                SelectedItem="{Binding SelectedSubscription}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="core:AksSubscriptionInfo">
+                        <StackPanel>
+                            <TextBlock Text="{Binding DisplayName}" />
+                            <TextBlock
+                                FontSize="11"
+                                Opacity="0.65"
+                                Text="{Binding SubscriptionId}" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <TextBlock Grid.Row="1"
+                Grid.Column="0"
+                VerticalAlignment="Center"
+                Text="{x:Static assets:Resources.ImportAksClusterView_Cluster}" />
+            <ListBox Grid.Row="1"
+                Grid.Column="1"
+                Height="220"
+                ItemsSource="{Binding Clusters}"
+                SelectedItem="{Binding SelectedCluster}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="core:AksClusterInfo">
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="{Binding Name}" />
+                            <TextBlock
+                                FontSize="11"
+                                Opacity="0.65"
+                                Text="{Binding ResourceGroupName, StringFormat={x:Static assets:Resources.ImportAksClusterView_ResourceGroupFormat}}" />
+                            <TextBlock
+                                FontSize="11"
+                                Opacity="0.65"
+                                Text="{Binding KubernetesVersion, StringFormat={x:Static assets:Resources.ImportAksClusterView_VersionFormat}}" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <StackPanel Grid.Row="2"
+                Grid.Column="1"
+                Orientation="Horizontal"
+                Spacing="8">
+                <Button Command="{Binding RefreshCommand}" Content="{x:Static assets:Resources.ImportAksClusterView_Refresh}" />
+                <Button Command="{Binding ImportCommand}" Content="{x:Static assets:Resources.ImportAksClusterView_Import}" />
+            </StackPanel>
+        </Grid>
+
+        <ScrollViewer MaxHeight="140" VerticalScrollBarVisibility="Auto">
+            <SelectableTextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" />
+        </ScrollViewer>
+    </StackPanel>
+</UserControl>
