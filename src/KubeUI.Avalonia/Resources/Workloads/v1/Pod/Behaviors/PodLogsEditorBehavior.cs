@@ -1,11 +1,10 @@
-using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Data;
 using Avalonia.Styling;
 using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using AvaloniaEdit.Search;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
@@ -14,16 +13,73 @@ namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Behaviors;
 
 public sealed class PodLogsEditorBehavior : Behavior<TextEditor>
 {
+    public static readonly DirectProperty<PodLogsEditorBehavior, bool> AutoScrollToBottomProperty =
+        AvaloniaProperty.RegisterDirect<PodLogsEditorBehavior, bool>(
+            nameof(AutoScrollToBottom),
+            behavior => behavior.AutoScrollToBottom,
+            (behavior, value) => behavior.AutoScrollToBottom = value,
+            true,
+            BindingMode.TwoWay);
+
+    public static readonly DirectProperty<PodLogsEditorBehavior, bool> JumpToPresentRequestedProperty =
+        AvaloniaProperty.RegisterDirect<PodLogsEditorBehavior, bool>(
+            nameof(JumpToPresentRequested),
+            behavior => behavior.JumpToPresentRequested,
+            (behavior, value) => behavior.JumpToPresentRequested = value,
+            false,
+            BindingMode.TwoWay);
+
+    public static readonly DirectProperty<PodLogsEditorBehavior, Vector> ScrollOffsetProperty =
+        AvaloniaProperty.RegisterDirect<PodLogsEditorBehavior, Vector>(
+            nameof(ScrollOffset),
+            behavior => behavior.ScrollOffset,
+            (behavior, value) => behavior.ScrollOffset = value,
+            default,
+            BindingMode.TwoWay);
+
     private Installation? _textMateInstallation;
     private RegistryOptions? _registryOptions;
     private ScrollViewer? _scrollViewer;
-    private INotifyPropertyChanged? _currentViewModel;
     private Vector? _pendingRestoreOffset;
+    private bool _autoScrollToBottom = true;
+    private bool _jumpToPresentRequested;
+    private Vector _scrollOffset;
     private bool _isRestoringScrollOffset;
     private bool _suppressScrollSync;
     private bool _isStuckToBottom = true;
     private bool _stickToBottomQueued;
     private bool _jumpToPresentQueued;
+
+    public bool AutoScrollToBottom
+    {
+        get => _autoScrollToBottom;
+        set => SetAndRaise(AutoScrollToBottomProperty, ref _autoScrollToBottom, value);
+    }
+
+    public bool JumpToPresentRequested
+    {
+        get => _jumpToPresentRequested;
+        set
+        {
+            if (_jumpToPresentRequested == value)
+            {
+                return;
+            }
+
+            SetAndRaise(JumpToPresentRequestedProperty, ref _jumpToPresentRequested, value);
+            if (value)
+            {
+                _jumpToPresentQueued = true;
+                Dispatcher.UIThread.Post(JumpToPresent, DispatcherPriority.Loaded);
+            }
+        }
+    }
+
+    public Vector ScrollOffset
+    {
+        get => _scrollOffset;
+        set => SetAndRaise(ScrollOffsetProperty, ref _scrollOffset, value);
+    }
 
     protected override void OnAttached()
     {
@@ -51,7 +107,6 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>
 
         ApplyTheme();
         AttachScrollViewer();
-        AttachViewModelListener();
         RestoreScrollOffset();
     }
 
@@ -73,7 +128,6 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>
 
         PersistScrollOffset();
         DetachScrollViewer();
-        DetachViewModelListener();
 
         _textMateInstallation = null;
         _registryOptions = null;
@@ -83,7 +137,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>
 
     private void AssociatedObjectOnTextChanged(object? sender, EventArgs e)
     {
-        if (AssociatedObject?.DataContext is not PodLogsViewModel viewModel || !viewModel.AutoScrollToBottom || !_isStuckToBottom)
+        if (!AutoScrollToBottom || !_isStuckToBottom)
         {
             return;
         }
@@ -98,7 +152,6 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>
         _stickToBottomQueued = false;
         _jumpToPresentQueued = false;
         AttachScrollViewer();
-        AttachViewModelListener();
         RequestRestoreScrollOffset();
     }
 
@@ -155,12 +208,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>
             return;
         }
 
-        if (AssociatedObject.DataContext is not PodLogsViewModel viewModel)
-        {
-            return;
-        }
-
-        Vector targetOffset = _pendingRestoreOffset ?? viewModel.ScrollOffset;
+        Vector targetOffset = _pendingRestoreOffset ?? ScrollOffset;
         if (targetOffset == default)
         {
             _isStuckToBottom = true;
@@ -190,55 +238,8 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>
 
     private void RequestRestoreScrollOffset()
     {
-        if (AssociatedObject?.DataContext is not PodLogsViewModel viewModel)
-        {
-            return;
-        }
-
-        _pendingRestoreOffset = viewModel.ScrollOffset;
+        _pendingRestoreOffset = ScrollOffset;
         Dispatcher.UIThread.Post(RestoreScrollOffset, DispatcherPriority.Loaded);
-    }
-
-    private void AttachViewModelListener()
-    {
-        if (_currentViewModel is not null)
-        {
-            _currentViewModel.PropertyChanged -= ViewModelOnPropertyChanged;
-            _currentViewModel = null;
-        }
-
-        if (AssociatedObject?.DataContext is not INotifyPropertyChanged viewModel)
-        {
-            return;
-        }
-
-        _currentViewModel = viewModel;
-        _currentViewModel.PropertyChanged += ViewModelOnPropertyChanged;
-    }
-
-    private void DetachViewModelListener()
-    {
-        if (_currentViewModel is null)
-        {
-            return;
-        }
-
-        _currentViewModel.PropertyChanged -= ViewModelOnPropertyChanged;
-        _currentViewModel = null;
-    }
-
-    private void ViewModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (sender is not PodLogsViewModel viewModel)
-        {
-            return;
-        }
-
-        if (e.PropertyName == nameof(PodLogsViewModel.JumpToPresentRequested) && viewModel.JumpToPresentRequested)
-        {
-            _jumpToPresentQueued = true;
-            Dispatcher.UIThread.Post(JumpToPresent, DispatcherPriority.Loaded);
-        }
     }
 
     private void PersistScrollOffset()
@@ -248,17 +249,12 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>
             return;
         }
 
-        if (AssociatedObject.DataContext is not PodLogsViewModel viewModel)
-        {
-            return;
-        }
-
         if (_isRestoringScrollOffset)
         {
             return;
         }
 
-        viewModel.ScrollOffset = new Vector(_scrollViewer.Offset.X, _scrollViewer.Offset.Y);
+        ScrollOffset = new Vector(_scrollViewer.Offset.X, _scrollViewer.Offset.Y);
         _isStuckToBottom = IsAtBottom(_scrollViewer);
     }
 
@@ -321,7 +317,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>
     {
         _stickToBottomQueued = false;
 
-        if (AssociatedObject?.DataContext is not PodLogsViewModel viewModel || !viewModel.AutoScrollToBottom || _scrollViewer is null)
+        if (!AutoScrollToBottom || _scrollViewer is null)
         {
             return;
         }
@@ -346,17 +342,12 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>
     {
         _jumpToPresentQueued = false;
 
-        if (AssociatedObject?.DataContext is not PodLogsViewModel viewModel)
+        if (!AutoScrollToBottom)
         {
-            return;
+            AutoScrollToBottom = true;
         }
 
-        if (!viewModel.AutoScrollToBottom)
-        {
-            viewModel.AutoScrollToBottom = true;
-        }
-
-        viewModel.JumpToPresentRequested = false;
+        JumpToPresentRequested = false;
         StickToBottom();
     }
 

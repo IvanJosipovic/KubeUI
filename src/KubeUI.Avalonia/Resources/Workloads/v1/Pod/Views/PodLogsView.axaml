@@ -125,7 +125,10 @@
             VerticalScrollBarVisibility="Visible"
             WordWrap="{Binding WordWrap}">
             <Interaction.Behaviors>
-                <behaviors:PodLogsEditorBehavior />
+                <behaviors:PodLogsEditorBehavior
+                    AutoScrollToBottom="{Binding AutoScrollToBottom, Mode=TwoWay}"
+                    JumpToPresentRequested="{Binding JumpToPresentRequested, Mode=TwoWay}"
+                    ScrollOffset="{Binding ScrollOffset, Mode=TwoWay}" />
             </Interaction.Behaviors>
             <edit:TextEditor.Options>
                 <edit:TextEditorOptions
