@@ -31,7 +31,7 @@
     <PackageReference Include="KubernetesClient" Version="19.0.2" />
     <PackageReference Include="KubernetesClient.Informer" Version="1.0.0" />
     <PackageReference Include="KubernetesCRDModelGen" Version="1.6.0" />
-    <PackageReference Include="Mapster" Version="7.4.0" />
+    <PackageReference Include="Mapster" Version="10.0.7" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.7" />
     <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.5.0" />
     <PackageReference Include="Swordfish.NET.CollectionsV3" Version="3.3.16" />
