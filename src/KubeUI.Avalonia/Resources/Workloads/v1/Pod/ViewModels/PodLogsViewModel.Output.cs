@@ -99,11 +99,6 @@ public sealed partial class PodLogsViewModel
             return;
         }
 
-        Dispatcher.UIThread.Post(() =>
-        {
-            StatusMessage = $"Log stream ended for {option.PodName}/{option.ContainerName}. Reconnecting...";
-        }, DispatcherPriority.Background);
-
         _ = Task.Run(async () =>
         {
             try

@@ -713,7 +713,7 @@ public sealed class PodLogsViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public async Task Connect_should_report_when_no_log_session_can_be_resolved()
+    public async Task Connect_should_leave_session_unresolved_when_no_log_session_can_be_resolved()
     {
         TestCluster runtime = new();
         ClusterWorkspaceViewModel workspace = runtime.CreateWorkspace();
@@ -733,7 +733,6 @@ public sealed class PodLogsViewModelTests : AvaloniaTestBase
         streamClient.Requests.ShouldBeEmpty();
         viewModel.SessionResolution.ShouldBeNull();
         viewModel.PreviousLogsAvailable.ShouldBeFalse();
-        viewModel.StatusMessage.ShouldNotBeNull();
     }
 
     private static PodLogsViewModel CreateViewModel(

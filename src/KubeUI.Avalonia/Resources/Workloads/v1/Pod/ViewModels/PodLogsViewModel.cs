@@ -146,9 +146,6 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     public partial bool IsConnected { get; set; }
 
-    [ObservableProperty]
-    public partial string? StatusMessage { get; set; }
-
     public async Task Connect()
     {
         await _connectionGate.WaitAsync();
@@ -157,7 +154,6 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
             ResetConnection();
 
             IsConnecting = true;
-            StatusMessage = null;
 
             PodLogSessionState state = _sessionResolver.CreateState(
                 Object ?? throw new InvalidOperationException("The pod log view model is not initialized."),
@@ -179,7 +175,6 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
                 ReplaceSelectedContainerItems([ContainerSelectionItems[0]]);
                 PreviousLogsAvailable = false;
                 UpdateResourceNameToggleState();
-                StatusMessage = "Unable to resolve a pod log session.";
                 return;
             }
 
@@ -209,7 +204,6 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
             List<PodLogReadOptions> options = BuildReadTargets(state, resolution);
             if (options.Count == 0)
             {
-                StatusMessage = "Unable to resolve a pod log target.";
                 return;
             }
 
@@ -247,14 +241,12 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
             if (_activeReaderCount == 0)
             {
-                StatusMessage = "Unable to open any pod log streams.";
                 IsConnected = false;
                 return;
             }
         }
         catch (Exception ex)
         {
-            StatusMessage = ex.Message;
             _logger.LogError(ex, "Unable to view pod logs.");
         }
         finally
@@ -307,7 +299,6 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         V1OwnerReference? controller = PodLogFileNameExtensions.GetControllerReference(pod);
         if (controller is null)
         {
-            StatusMessage = "This pod does not have a controlling workload.";
             return Task.CompletedTask;
         }
 
