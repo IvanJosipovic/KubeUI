@@ -186,30 +186,30 @@ internal static class Program
         if (!OperatingSystem.IsMacOS())
             return;
     
-        var existingPath = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
-    
-        var extraPaths = new[]
+        var macOsDefaultPaths = new[]
         {
-            "/usr/local/bin",
             "/opt/homebrew/bin",
             "/opt/homebrew/sbin",
+            "/usr/local/bin",
             "/usr/bin",
             "/bin",
             "/usr/sbin",
             "/sbin"
         };
     
-        var pathParts = existingPath
-            .Split(':', StringSplitOptions.RemoveEmptyEntries)
-            .ToHashSet(StringComparer.Ordinal);
+        var existingPath = Environment.GetEnvironmentVariable("PATH");
     
-        foreach (var path in extraPaths)
+        var paths = existingPath?
+            .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToList()
+            ?? [];
+    
+        foreach (var path in macOsDefaultPaths)
         {
-            pathParts.Add(path);
+            if (!paths.Contains(path, StringComparer.Ordinal))
+                paths.Add(path);
         }
     
-        Environment.SetEnvironmentVariable("PATH", string.Join(":", pathParts));
+        Environment.SetEnvironmentVariable("PATH", string.Join(Path.PathSeparator, paths));
     }
 }
-
-
