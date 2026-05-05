@@ -115,11 +115,11 @@ jobs:
           - rid: osx-x64
             fileName: KubeUI.Desktop
             runs-on: macos-latest
-            packParam: '--icon src/KubeUI.Avalonia/Assets/icon.icns --plist src/KubeUI.Desktop/info.plist --signAppIdentity "Developer ID Application: Ivan Josipovic" --signInstallIdentity "Developer ID Installer: Ivan Josipovic" --notaryProfile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db'
+            packParam: '--icon src/KubeUI.Avalonia/Assets/icon.icns --plist src/KubeUI.Desktop/info.plist --signAppIdentity "Developer ID Application: Ivan Josipovic" --signInstallIdentity "Developer ID Installer: Ivan Josipovic" --notaryProfile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db --entitlements src/KubeUI.Desktop/entitlements.plist'
           - rid: osx-arm64
             fileName: KubeUI.Desktop
             runs-on: macos-latest
-            packParam: '--icon src/KubeUI.Avalonia/Assets/icon.icns --plist src/KubeUI.Desktop/info.plist --signAppIdentity "Developer ID Application: Ivan Josipovic" --signInstallIdentity "Developer ID Installer: Ivan Josipovic" --notaryProfile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db'
+            packParam: '--icon src/KubeUI.Avalonia/Assets/icon.icns --plist src/KubeUI.Desktop/info.plist --signAppIdentity "Developer ID Application: Ivan Josipovic" --signInstallIdentity "Developer ID Installer: Ivan Josipovic" --notaryProfile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db --entitlements src/KubeUI.Desktop/entitlements.plist'
     steps:
       - uses: actions/checkout@v6
         with:
@@ -265,4 +265,3 @@ jobs:
       uses: cycjimmy/semantic-release-action@v6.0.0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
