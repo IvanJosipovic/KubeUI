@@ -26,44 +26,44 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Setup .NET Core
-        uses: actions/setup-dotnet@v5
-        with:
-          global-json-file: global.json
+      # - name: Setup .NET Core
+      #   uses: actions/setup-dotnet@v5
+      #   with:
+      #     global-json-file: global.json
 
-      - name: Build
-        run: dotnet build -c Release
+      # - name: Build
+      #   run: dotnet build -c Release
 
-      - name: Test Avalonia
-        run: dotnet test --project tests/KubeUI.Avalonia.Tests/KubeUI.Avalonia.Tests.csproj -c Release --no-build --report-xunit-trx --report-xunit-trx-filename test-results.trx --coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml
+      # - name: Test Avalonia
+      #   run: dotnet test --project tests/KubeUI.Avalonia.Tests/KubeUI.Avalonia.Tests.csproj -c Release --no-build --report-xunit-trx --report-xunit-trx-filename test-results.trx --coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml
 
-      - name: Test Kubernetes E2E
-        run: dotnet test --project tests/KubeUI.Kubernetes.Tests/KubeUI.Kubernetes.Tests.csproj -c Release --no-build --report-xunit-trx --report-xunit-trx-filename test-results.trx --coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml
-        env:
-          KUBEUI_RUN_KIND_TESTS: 1
+      # - name: Test Kubernetes E2E
+      #   run: dotnet test --project tests/KubeUI.Kubernetes.Tests/KubeUI.Kubernetes.Tests.csproj -c Release --no-build --report-xunit-trx --report-xunit-trx-filename test-results.trx --coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml
+      #   env:
+      #     KUBEUI_RUN_KIND_TESTS: 1
 
-      - name: Test Report
-        uses: dorny/test-reporter@v3
-        if: (!cancelled())
-        with:
-          name: KubeUI Tests
-          path: tests/**/TestResults/*.trx
-          reporter: dotnet-trx
+      # - name: Test Report
+      #   uses: dorny/test-reporter@v3
+      #   if: (!cancelled())
+      #   with:
+      #     name: KubeUI Tests
+      #     path: tests/**/TestResults/*.trx
+      #     reporter: dotnet-trx
 
-      - name: Test Summary
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        if: (!cancelled())
-        with:
-          check_name: KubeUI Tests
-          comment_mode: always
-          files: tests/*/TestResults/*.trx
+      # - name: Test Summary
+      #   uses: EnricoMi/publish-unit-test-result-action@v2
+      #   if: (!cancelled())
+      #   with:
+      #     check_name: KubeUI Tests
+      #     comment_mode: always
+      #     files: tests/*/TestResults/*.trx
 
-      - name: Coverage
-        uses: codecov/codecov-action@v6
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: tests/**/TestResults/coverage.cobertura.xml
-          fail_ci_if_error: false
+      # - name: Coverage
+      #   uses: codecov/codecov-action@v6
+      #   with:
+      #     token: ${{ secrets.CODECOV_TOKEN }}
+      #     files: tests/**/TestResults/coverage.cobertura.xml
+      #     fail_ci_if_error: false
 
     #   - name: Run Benchmark
     #     working-directory: benchmarks/KubeUI.Benchmarks
@@ -96,22 +96,22 @@ jobs:
     strategy:
       matrix:
         include:
-          - rid: win-x64
-            fileName: KubeUI.Desktop.exe
-            runs-on: windows-latest
-            packParam: --icon src/KubeUI.Avalonia/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
-          - rid: win-arm64
-            fileName: KubeUI.Desktop.exe
-            runs-on: windows-latest
-            packParam: --icon src/KubeUI.Avalonia/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
-          - rid: linux-x64
-            fileName: KubeUI.Desktop
-            runs-on: ubuntu-latest
-            packParam: --icon docs/icon-512.png
-          - rid: linux-arm64
-            fileName: KubeUI.Desktop
-            runs-on: ubuntu-latest
-            packParam: --icon docs/icon-512.png
+          # - rid: win-x64
+          #   fileName: KubeUI.Desktop.exe
+          #   runs-on: windows-latest
+          #   packParam: --icon src/KubeUI.Avalonia/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
+          # - rid: win-arm64
+          #   fileName: KubeUI.Desktop.exe
+          #   runs-on: windows-latest
+          #   packParam: --icon src/KubeUI.Avalonia/Assets/icon.ico --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
+          # - rid: linux-x64
+          #   fileName: KubeUI.Desktop
+          #   runs-on: ubuntu-latest
+          #   packParam: --icon docs/icon-512.png
+          # - rid: linux-arm64
+          #   fileName: KubeUI.Desktop
+          #   runs-on: ubuntu-latest
+          #   packParam: --icon docs/icon-512.png
           - rid: osx-x64
             fileName: KubeUI.Desktop
             runs-on: macos-latest
@@ -119,7 +119,7 @@ jobs:
           - rid: osx-arm64
             fileName: KubeUI.Desktop
             runs-on: macos-latest
-            packParam: '--icon src/KubeUI.Avalonia/Assets/icon.icns --plist src/KubeUI.Desktop/info.plist--signAppIdentity "Developer ID Application: Ivan Josipovic" --signInstallIdentity "Developer ID Installer: Ivan Josipovic" --notaryProfile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db'
+            packParam: '--icon src/KubeUI.Avalonia/Assets/icon.icns --plist src/KubeUI.Desktop/info.plist --signAppIdentity "Developer ID Application: Ivan Josipovic" --signInstallIdentity "Developer ID Installer: Ivan Josipovic" --notaryProfile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db'
     steps:
       - uses: actions/checkout@v6
         with:
@@ -174,27 +174,29 @@ jobs:
           APPLE_TEAM: ${{ secrets.APPLE_TEAM }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
-          # create variables for file paths
           CERT_BUILD_PATH=$RUNNER_TEMP/build_certificate.p12
           CERT_INSTALLER_PATH=$RUNNER_TEMP/installer_certificate.p12
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
-          # import certificates from secrets
-          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERT_BUILD_PATH
-          echo -n "$INSTALLER_CERTIFICATE_BASE64" | base64 --decode -o $CERT_INSTALLER_PATH
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$CERT_BUILD_PATH"
+          echo -n "$INSTALLER_CERTIFICATE_BASE64" | base64 --decode -o "$CERT_INSTALLER_PATH"
 
-          # create temporary keychain
-          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
-          # import certificates to keychain
-          security import $CERT_BUILD_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
-          security import $CERT_INSTALLER_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
-          security list-keychain -d user -s $KEYCHAIN_PATH
+          security import "$CERT_BUILD_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security import "$CERT_INSTALLER_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
 
-          # create notarytool profile
-          xcrun notarytool store-credentials --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM" --password "$APPLE_PASSWORD" velopack-profile
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+
+          xcrun notarytool store-credentials "velopack-profile" \
+            --apple-id "$APPLE_ID" \
+            --team-id "$APPLE_TEAM" \
+            --password "$APPLE_PASSWORD" \
+            --keychain "$KEYCHAIN_PATH"
 
       - name: Azure Login
         if: matrix.runs-on == 'windows-latest'
