@@ -115,11 +115,11 @@ jobs:
           - rid: osx-x64
             fileName: KubeUI.Desktop
             runs-on: macos-latest
-            packParam: --icon src/KubeUI.Avalonia/Assets/icon.icns --plist src/KubeUI.Desktop/info.plist
+            packParam: --icon src/KubeUI.Avalonia/Assets/icon.icns --plist src/KubeUI.Desktop/info.plist --signAppIdentity "Developer ID Application: Ivan Josipovic" --signInstallIdentity "Developer ID Installer: Ivan Josipovic" --notaryProfile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db
           - rid: osx-arm64
             fileName: KubeUI.Desktop
             runs-on: macos-latest
-            packParam: --icon src/KubeUI.Avalonia/Assets/icon.icns --plist src/KubeUI.Desktop/info.plist
+            packParam: --icon src/KubeUI.Avalonia/Assets/icon.icns --plist src/KubeUI.Desktop/info.plist--signAppIdentity "Developer ID Application: Ivan Josipovic" --signInstallIdentity "Developer ID Installer: Ivan Josipovic" --notaryProfile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db
     steps:
       - uses: actions/checkout@v6
         with:
@@ -162,6 +162,39 @@ jobs:
           files: 'src/KubeUI.Desktop/info.plist'
           search-text: '{{version}}'
           replacement-text: ${{ needs.semantic-release.outputs.new_release_version }}
+
+      - name: Install Apple certificates and notary profile
+        if: matrix.runs-on == 'macos-latest'
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          INSTALLER_CERTIFICATE_BASE64: ${{ secrets.INSTALLER_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM: ${{ secrets.APPLE_TEAM }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          # create variables for file paths
+          CERT_BUILD_PATH=$RUNNER_TEMP/build_certificate.p12
+          CERT_INSTALLER_PATH=$RUNNER_TEMP/installer_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+          # import certificates from secrets
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERT_BUILD_PATH
+          echo -n "$INSTALLER_CERTIFICATE_BASE64" | base64 --decode -o $CERT_INSTALLER_PATH
+
+          # create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # import certificates to keychain
+          security import $CERT_BUILD_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security import $CERT_INSTALLER_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+          # create notarytool profile
+          xcrun notarytool store-credentials --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM" --password "$APPLE_PASSWORD" velopack-profile
 
       - name: Azure Login
         if: matrix.runs-on == 'windows-latest'
