@@ -178,7 +178,7 @@ jobs:
           VPK_PACK_AUTHORS: Ivan Josipovic
           VPK_RELEASE_NOTES: CHANGELOG.md
         run: |
-          vpk pack ${{ inputs.enable_code_signing && matrix.signingParams || '' }}
+          vpk pack ${{ matrix.packParams }} ${{ inputs.enable_code_signing && matrix.signingParams || '' }}
 
       - name: Remove unnecessary assets
         shell: pwsh
