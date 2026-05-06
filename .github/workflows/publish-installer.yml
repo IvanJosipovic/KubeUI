@@ -30,31 +30,37 @@ jobs:
           - rid: win-x64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
-            packParams: --icon src/KubeUI.Avalonia/Assets/icon.ico
+            packParams: ''
             signingParams: --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
+            icon: src/KubeUI.Avalonia/Assets/icon.ico
           - rid: win-arm64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
-            packParams: --icon src/KubeUI.Avalonia/Assets/icon.ico
+            packParams: ''
             signingParams: --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
+            icon: src/KubeUI.Avalonia/Assets/icon.ico
           - rid: linux-x64
             fileName: KubeUI.Desktop
             runs-on: ubuntu-latest
             packParams: --icon docs/icon-512.png
+            icon: docs/icon-512.png
           - rid: linux-arm64
             fileName: KubeUI.Desktop
             runs-on: ubuntu-latest
-            packParams: --icon docs/icon-512.png
+            packParams: ''
+            icon: docs/icon-512.png
           - rid: osx-x64
             fileName: KubeUI.Desktop
             runs-on: macos-latest
-            packParams: --icon src/KubeUI.Avalonia/Assets/icon.icns --plist src/KubeUI.Desktop/info.plist
+            packParams: --plist src/KubeUI.Desktop/info.plist
             signingParams: '--signAppIdentity "Developer ID Application: Ivan Josipovic" --signInstallIdentity "Developer ID Installer: Ivan Josipovic" --notaryProfile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db --signEntitlements src/KubeUI.Desktop/entitlements.entitlements'
+            icon: src/KubeUI.Avalonia/Assets/icon.icns
           - rid: osx-arm64
             fileName: KubeUI.Desktop
             runs-on: macos-latest
-            packParams: --icon src/KubeUI.Avalonia/Assets/icon.icns --plist src/KubeUI.Desktop/info.plist
+            packParams: --plist src/KubeUI.Desktop/info.plist
             signingParams: '--signAppIdentity "Developer ID Application: Ivan Josipovic" --signInstallIdentity "Developer ID Installer: Ivan Josipovic" --notaryProfile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db --signEntitlements src/KubeUI.Desktop/entitlements.entitlements'
+            icon: src/KubeUI.Avalonia/Assets/icon.icns
     steps:
       - uses: actions/checkout@v6
 
@@ -177,6 +183,7 @@ jobs:
           VPK_MAIN_EXE: ${{ matrix.fileName }}
           VPK_PACK_AUTHORS: Ivan Josipovic
           VPK_RELEASE_NOTES: CHANGELOG.md
+          VPK_ICON: ${{ matrix.icon }}
         run: |
           vpk pack ${{ matrix.packParams }} ${{ inputs.enable_code_signing && matrix.signingParams || '' }}
 
