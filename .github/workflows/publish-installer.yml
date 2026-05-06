@@ -57,8 +57,6 @@ jobs:
             signingParams: '--signAppIdentity "Developer ID Application: Ivan Josipovic" --signInstallIdentity "Developer ID Installer: Ivan Josipovic" --notaryProfile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db --signEntitlements src/KubeUI.Desktop/entitlements.entitlements'
     steps:
       - uses: actions/checkout@v6
-        with:
-          submodules: 'true'
 
       - uses: actions/setup-dotnet@v5
         with:
@@ -81,10 +79,6 @@ jobs:
              Select-Object -ExpandProperty Version
 
           dotnet tool install -g vpk --version $velopackVersion
-
-      - name: Install Velopack Deps
-        if: matrix.runs-on == 'ubuntu-latest'
-        run: sudo apt-get update && sudo apt-get install -y libfuse2
 
       - name: Publish
         working-directory: src/KubeUI.Desktop
@@ -163,12 +157,28 @@ jobs:
 
       - name: Download Releases
         if: inputs.download_releases
+        env:
+          VPK_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VPK_REPO_URL: https://github.com/${{ github.repository }}
+          VPK_CHANNEL: ${{ matrix.rid }}
+          VPK_OUTPUT_DIR: packed
+          VPK_PRE: true
         run: |
-          vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} -c ${{ matrix.rid }} --pre -o packed
+          vpk download github
 
       - name: Create Package
+        env:
+          VPK_CHANNEL: ${{ matrix.rid }}
+          VPK_PACK_DIR: src/KubeUI.Desktop/bin/publish
+          VPK_OUTPUT_DIR: packed
+          VPK_PACK_TITLE: KubeUI
+          VPK_PACK_ID: KubeUI
+          VPK_PACK_VERSION: ${{ inputs.package_version }}
+          VPK_MAIN_EXE: ${{ matrix.fileName }}
+          VPK_PACK_AUTHORS: Ivan Josipovic
+          VPK_RELEASE_NOTES: CHANGELOG.md
         run: |
-          vpk pack --packTitle KubeUI -u KubeUI -v ${{ inputs.package_version }} -p src/KubeUI.Desktop/bin/publish -c ${{ matrix.rid }} -e ${{ matrix.fileName }} -o packed ${{ matrix.packParams }} ${{ inputs.enable_code_signing && matrix.signingParams || '' }} --packAuthors "Ivan Josipovic" --releaseNotes CHANGELOG.md
+          vpk pack ${{ inputs.enable_code_signing && matrix.signingParams || '' }}
 
       - name: Remove unnecessary assets
         shell: pwsh
