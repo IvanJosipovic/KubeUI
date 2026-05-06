@@ -29,7 +29,7 @@ internal static class Program
         VelopackApp.Build().Run();
 
         EnsureMacOsPath();
-        
+
         EnsureHostInitialized();
 
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
@@ -185,7 +185,7 @@ internal static class Program
     {
         if (!OperatingSystem.IsMacOS())
             return;
-    
+
         var macOsDefaultPaths = new[]
         {
             "/opt/homebrew/bin",
@@ -196,20 +196,20 @@ internal static class Program
             "/usr/sbin",
             "/sbin"
         };
-    
+
         var existingPath = Environment.GetEnvironmentVariable("PATH");
-    
+
         var paths = existingPath?
             .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .ToList()
             ?? [];
-    
+
         foreach (var path in macOsDefaultPaths)
         {
             if (!paths.Contains(path, StringComparer.Ordinal))
                 paths.Add(path);
         }
-    
+
         Environment.SetEnvironmentVariable("PATH", string.Join(Path.PathSeparator, paths));
     }
 }
