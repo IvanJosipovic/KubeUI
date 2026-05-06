@@ -1,0 +1,182 @@
+name: Publish Installer
+
+on:
+  workflow_call:
+    inputs:
+      package_version:
+        type: string
+        required: true
+      release_notes:
+        type: string
+        required: false
+        default: N/A
+      download_releases:
+        type: boolean
+        required: false
+        default: false
+      enable_code_signing:
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  publish-matrix:
+    name: Publish Installer ${{ matrix.rid }}
+    runs-on: ${{ matrix.runs-on }}
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        include:
+          - rid: win-x64
+            fileName: KubeUI.Desktop.exe
+            runs-on: windows-latest
+            packParams: ''
+            signingParams: --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
+            icon: src/KubeUI.Avalonia/Assets/icon.ico
+          - rid: win-arm64
+            fileName: KubeUI.Desktop.exe
+            runs-on: windows-latest
+            packParams: ''
+            signingParams: --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
+            icon: src/KubeUI.Avalonia/Assets/icon.ico
+          - rid: linux-x64
+            fileName: KubeUI.Desktop
+            runs-on: ubuntu-latest
+            packParams: --icon docs/icon-512.png
+            icon: docs/icon-512.png
+          - rid: linux-arm64
+            fileName: KubeUI.Desktop
+            runs-on: ubuntu-latest
+            packParams: ''
+            icon: docs/icon-512.png
+          - rid: osx-x64
+            fileName: KubeUI.Desktop
+            runs-on: macos-latest
+            packParams: --plist src/KubeUI.Desktop/info.plist
+            signingParams: '--signAppIdentity "Developer ID Application: Ivan Josipovic" --signInstallIdentity "Developer ID Installer: Ivan Josipovic" --notaryProfile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db --signEntitlements src/KubeUI.Desktop/entitlements.entitlements'
+            icon: src/KubeUI.Avalonia/Assets/icon.icns
+          - rid: osx-arm64
+            fileName: KubeUI.Desktop
+            runs-on: macos-latest
+            packParams: --plist src/KubeUI.Desktop/info.plist
+            signingParams: '--signAppIdentity "Developer ID Application: Ivan Josipovic" --signInstallIdentity "Developer ID Installer: Ivan Josipovic" --notaryProfile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db --signEntitlements src/KubeUI.Desktop/entitlements.entitlements'
+            icon: src/KubeUI.Avalonia/Assets/icon.icns
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '9.x.x'
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Install Velopack
+        shell: pwsh
+        run: |
+          $csprojPath = "src/KubeUI.Avalonia/KubeUI.Avalonia.csproj"
+
+          [xml]$csprojXml = Get-Content -Path $csprojPath
+
+          $velopackVersion = $csprojXml.Project.ItemGroup.PackageReference |
+             Where-Object { $_.Include -eq "Velopack" } |
+             Select-Object -ExpandProperty Version
+
+          dotnet tool install -g vpk --version $velopackVersion
+
+      - name: Publish
+        working-directory: src/KubeUI.Desktop
+        run: dotnet publish -c Release -r ${{ matrix.rid }} -o bin/publish -p:Version=${{ inputs.package_version }}
+
+      - name: Replace single file
+        if: matrix.runs-on == 'macos-latest'
+        uses: richardrigutins/replace-in-files@v3
+        with:
+          files: 'src/KubeUI.Desktop/info.plist'
+          search-text: '{{version}}'
+          replacement-text: ${{ inputs.package_version }}
+
+      - name: Install Apple certificates and notary profile
+        if: matrix.runs-on == 'macos-latest' && inputs.enable_code_signing
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          INSTALLER_CERTIFICATE_BASE64: ${{ secrets.INSTALLER_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM: ${{ secrets.APPLE_TEAM }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          CERT_BUILD_PATH=$RUNNER_TEMP/build_certificate.p12
+          CERT_INSTALLER_PATH=$RUNNER_TEMP/installer_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$CERT_BUILD_PATH"
+          echo -n "$INSTALLER_CERTIFICATE_BASE64" | base64 --decode -o "$CERT_INSTALLER_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          security import "$CERT_BUILD_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security import "$CERT_INSTALLER_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          security list-keychains -d user -s "$KEYCHAIN_PATH"
+
+          xcrun notarytool store-credentials "velopack-profile" \
+            --apple-id "$APPLE_ID" \
+            --team-id "$APPLE_TEAM" \
+            --password "$APPLE_PASSWORD" \
+            --keychain "$KEYCHAIN_PATH"
+
+      - name: Azure Login
+        if: matrix.runs-on == 'windows-latest' && inputs.enable_code_signing
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Write metadata.json
+        if: matrix.runs-on == 'windows-latest' && inputs.enable_code_signing
+        shell: pwsh
+        run: |
+          [System.Text.Encoding]::UTF8.GetBytes($env:SECRET) | Set-Content -Path metadata.json -AsByteStream
+        env:
+          SECRET: ${{ secrets.AZURETRUSTEDSIGNFILE }}
+
+      - name: Write CHANGELOG.md
+        shell: pwsh
+        run: |
+          if([string]::IsNullOrEmpty($env:CHANGELOG)){
+            "N/A" | Out-File -FilePath CHANGELOG.md
+          } else {
+            $env:CHANGELOG | Out-File -FilePath CHANGELOG.md
+            (Get-Content -Path CHANGELOG.md -Raw) -replace '&', 'and' | Set-Content -Path CHANGELOG.md -NoNewline -Encoding utf8
+          }
+        env:
+          CHANGELOG: ${{ inputs.release_notes }}
+
+      - name: Download Releases
+        if: inputs.download_releases
+        run: vpk download github --outputDir "packed" --channel ${{ matrix.rid }} --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} --pre
+
+      - name: Create Package
+        run: vpk pack --outputDir "packed" --channel ${{ matrix.rid }} --packId "KubeUI" --packVersion "${{ inputs.package_version }}" --packDir "src/KubeUI.Desktop/bin/publish" --packAuthors "Ivan Josipovic" --packTitle "KubeUI" --releaseNotes "CHANGELOG.md" --mainExe "${{ matrix.fileName }}" ${{ matrix.packParams }} ${{ inputs.enable_code_signing && matrix.signingParams || '' }}
+
+      - name: Remove unnecessary assets
+        shell: pwsh
+        run: |
+          Remove-Item -Path packed/assets.*
+          Remove-Item -Path packed/RELEASES-*
+          Get-ChildItem -Path packed -Filter "*.nupkg" -File | Where-Object { $_.Name -notlike "*${{ inputs.package_version }}*" } | Remove-Item
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.rid }}-artifacts
+          path: packed

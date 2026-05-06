@@ -91,7 +91,7 @@ KubeUI provides a cluster workspace for exploring and operating Kubernetes resou
 Releases are available for AMD64 and ARM64 on:
 
 - Linux
-- macOS ([known issue note](https://github.com/IvanJosipovic/KubeUI/issues/688))
+- macOS
 - Windows
   - `winget install KubeUI`
   - [![Microsoft Store](https://get.microsoft.com/images/en-us%20dark.svg)](https://apps.microsoft.com/detail/XP9MRWDV3N310N?mode=direct)
