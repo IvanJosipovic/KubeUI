@@ -83,8 +83,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         SingleSelect = false
     };
 
-    private readonly List<T> _selectionSnapshot = [];
-
     public IList View => _view ?? throw new InvalidOperationException("Resource list view has not been initialized.");
 
     private ReadOnlyObservableCollection<T>? _view;
@@ -137,8 +135,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     public partial bool IsNamespaceSelectionLinked { get; set; } = true;
 
     public ISelectionModel SelectionModel => _selectionModel;
-
-    public Func<IList, object, int> ReferenceIndexResolver => ResolveReferenceIndex;
 
     [ObservableProperty]
     public partial ObservableCollection<DataGridColumnDefinition> ColumnDefinitions { get; private set; } = [];
@@ -380,10 +376,11 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         BehaviorSubject<IComparer<T>> sortSubject = _sortSubject ?? throw new InvalidOperationException("Sort subject has not been initialized.");
         BehaviorSubject<Func<T, bool>> filterSubject = _filterSubject ?? throw new InvalidOperationException("Filter subject has not been initialized.");
         BehaviorSubject<Func<T, bool>> searchSubject = _searchSubject ?? throw new InvalidOperationException("Search subject has not been initialized.");
+        string[]? selectedKeys = null;
 
         _subscription = Objects.Connect()
             .ObserveOn(AvaloniaScheduler.Instance)
-            .Do(_ => CaptureSelectionSnapshot())
+            .Do(_ => selectedKeys = CaptureSelectedKeys())
             .Filter(filterSubject)
             .Filter(searchSubject)
             .SortAndBind(out var view, sortSubject, new()
@@ -393,7 +390,11 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 InitialCapacity = Objects.Count
             })
             .Subscribe(
-                _ => SynchronizeSelectionWithView(),
+                _ =>
+                {
+                    RestoreSelection(view, selectedKeys);
+                    selectedKeys = null;
+                },
                 ex => _logger.LogError(ex, "Error Setting Resource List Filter: {ns} ", typeof(T))
             );
 
@@ -589,72 +590,62 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         searchSubject.OnNext(_searchAdapterFactory.SearchPredicate);
     }
 
-    private int ResolveReferenceIndex(IList list, object item)
+    private string[]? CaptureSelectedKeys()
     {
-        if (list == null || item is not T resource)
+        if (_selectionModel.SelectedItems.Count == 0)
         {
-            return -1;
+            return null;
         }
 
-        for (var i = 0; i < list.Count; i++)
-        {
-            if (ReferenceEquals(list[i], resource))
-            {
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
-    private void CaptureSelectionSnapshot()
-    {
-        _selectionSnapshot.Clear();
+        string[] selectedKeys = new string[_selectionModel.SelectedItems.Count];
+        var count = 0;
 
         foreach (var item in _selectionModel.SelectedItems)
         {
             if (item is T resource)
             {
-                _selectionSnapshot.Add(resource);
+                selectedKeys[count++] = ResourceKey(resource);
             }
         }
+
+        if (count == 0)
+        {
+            return null;
+        }
+
+        if (count == selectedKeys.Length)
+        {
+            return selectedKeys;
+        }
+
+        Array.Resize(ref selectedKeys, count);
+        return selectedKeys;
     }
 
-    private void SynchronizeSelectionWithView()
+    private void RestoreSelection(ReadOnlyObservableCollection<T> view, string[]? selectedKeys)
     {
-        ReadOnlyObservableCollection<T>? view = _view;
-        if (view is null)
+        if (selectedKeys == null || selectedKeys.Length == 0 || view.Count == 0)
         {
             return;
         }
 
-        if (_selectionSnapshot.Count == 0 || view.Count == 0)
+        if (SelectionMatches(selectedKeys))
         {
             return;
         }
 
-        var desiredIndexes = new List<int>(_selectionSnapshot.Count);
+        HashSet<string> selectedKeySet = new(selectedKeys, StringComparer.Ordinal);
+        List<int> desiredIndexes = [];
 
         for (var i = 0; i < view.Count; i++)
         {
-            if (view[i] is not T resource)
+            if (selectedKeySet.Contains(ResourceKey(view[i])))
             {
-                continue;
-            }
-
-            for (var j = 0; j < _selectionSnapshot.Count; j++)
-            {
-                if (ReferenceEquals(resource, _selectionSnapshot[j]))
-                {
-                    desiredIndexes.Add(i);
-                    break;
-                }
+                desiredIndexes.Add(i);
             }
         }
 
-        _selectionSnapshot.Clear();
-
-        if (desiredIndexes.Count == 0 || SelectionMatches(desiredIndexes))
+        if (desiredIndexes.Count == 0)
         {
             return;
         }
@@ -676,16 +667,24 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         }
     }
 
-    private bool SelectionMatches(IReadOnlyList<int> desiredIndexes)
+    private bool SelectionMatches(string[] expectedKeys)
     {
-        if (_selectionModel.SelectedIndexes.Count != desiredIndexes.Count)
+        if (_selectionModel.SelectedItems.Count != expectedKeys.Length)
         {
             return false;
         }
 
-        for (var i = 0; i < desiredIndexes.Count; i++)
+        if (expectedKeys.Length == 1)
         {
-            if (_selectionModel.SelectedIndexes[i] != desiredIndexes[i])
+            return _selectionModel.SelectedItem is T selectedResource
+                && string.Equals(ResourceKey(selectedResource), expectedKeys[0], StringComparison.Ordinal);
+        }
+
+        HashSet<string> expectedKeySet = new(expectedKeys, StringComparer.Ordinal);
+
+        foreach (var item in _selectionModel.SelectedItems)
+        {
+            if (item is not T resource || !expectedKeySet.Contains(ResourceKey(resource)))
             {
                 return false;
             }
@@ -694,6 +693,10 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         return true;
     }
 
+    private static string ResourceKey(T resource)
+    {
+        return resource.Namespace() + "/" + resource.Name();
+    }
 }
 
 public sealed class DynamicDataSortingAdapterFactory<T> : IDataGridSortingAdapterFactory where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -1787,7 +1790,3 @@ public sealed class DynamicDataSearchAdapterFactory<T> : IDataGridSearchAdapterF
         }
     }
 }
-
-
-
-

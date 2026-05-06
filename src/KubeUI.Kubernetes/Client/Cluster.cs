@@ -13,7 +13,6 @@ using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubernetesCRDModelGen;
 using KubeUI.Kubernetes;
-using Mapster;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http.Resilience;
 using Polly;
@@ -354,35 +353,12 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
                 switch (eventType)
                 {
                     case WatchEventType.Added:
+                    case WatchEventType.Modified:
+                        items.AddOrUpdate(item);
+
                         if (item is V1CustomResourceDefinition crd)
                         {
-                            items.AddOrUpdate(item);
                             QueueCustomResourceDefinition(crd);
-                        }
-                        else
-                        {
-                            items.AddOrUpdate(item);
-                        }
-                        break;
-                    case WatchEventType.Modified:
-                        items.Edit(o =>
-                        {
-                            var key = o.GetKey(item);
-                            var original = o.Lookup(key);
-                            if (original.HasValue)
-                            {
-                                item.Adapt(original.Value);
-                                o.Refresh(key);
-                            }
-                            else
-                            {
-                                o.AddOrUpdate(item);
-                            }
-                        });
-
-                        if (item is V1CustomResourceDefinition modifiedCrd)
-                        {
-                            QueueCustomResourceDefinition(modifiedCrd);
                         }
                         break;
                     case WatchEventType.Deleted:
