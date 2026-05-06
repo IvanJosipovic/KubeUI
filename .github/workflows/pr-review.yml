@@ -23,7 +23,7 @@ jobs:
     uses: ./.github/workflows/publish-installer.yml
     secrets: inherit
     with:
-      package_version: 0.0.1-pr.${{ github.run_number }}
+      package_version: 0.0.1-pr.${{ github.run_id }}
       release_notes: PR validation build
       download_releases: false
       enable_code_signing: false

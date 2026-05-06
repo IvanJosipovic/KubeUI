@@ -17,7 +17,7 @@ on:
       enable_code_signing:
         type: boolean
         required: false
-        default: true
+        default: false
 
 jobs:
   publish-matrix:
@@ -163,29 +163,28 @@ jobs:
 
       - name: Download Releases
         if: inputs.download_releases
-        env:
-          VPK_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VPK_REPO_URL: https://github.com/${{ github.repository }}
-          VPK_CHANNEL: ${{ matrix.rid }}
-          VPK_OUTPUT_DIR: packed
-          VPK_PRE: true
         run: |
-          vpk download github
+          vpk download github \
+            --outputDir "packed" \
+            --channel ${{ matrix.rid }} \
+            --repoUrl https://github.com/${{ github.repository }} \
+            --token ${{ secrets.GITHUB_TOKEN }} \
+            --pre
 
       - name: Create Package
-        env:
-          VPK_CHANNEL: ${{ matrix.rid }}
-          VPK_PACK_DIR: src/KubeUI.Desktop/bin/publish
-          VPK_OUTPUT_DIR: packed
-          VPK_PACK_TITLE: KubeUI
-          VPK_PACK_ID: KubeUI
-          VPK_PACK_VERSION: ${{ inputs.package_version }}
-          VPK_MAIN_EXE: ${{ matrix.fileName }}
-          VPK_PACK_AUTHORS: Ivan Josipovic
-          VPK_RELEASE_NOTES: CHANGELOG.md
-          VPK_ICON: ${{ matrix.icon }}
         run: |
-          vpk pack ${{ matrix.packParams }} ${{ inputs.enable_code_signing && matrix.signingParams || '' }}
+          vpk pack \
+            --outputDir "packed" \
+            --channel ${{ matrix.rid }} \
+            --packId "KubeUI" \
+            --packVersion "${{ inputs.package_version }}" \
+            --packDir "src/KubeUI.Desktop/bin/publish" \
+            --packAuthors "Ivan Josipovic" \
+            --packTitle "KubeUI" \
+            --releaseNotes "CHANGELOG.md" \
+            --mainExe "${{ matrix.fileName }}" \
+            ${{ matrix.packParams }} \
+            ${{ inputs.enable_code_signing && matrix.signingParams || '' }}
 
       - name: Remove unnecessary assets
         shell: pwsh
