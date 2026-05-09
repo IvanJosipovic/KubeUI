@@ -50,6 +50,7 @@ Docker
 - All production code must be covered by unit tests; xUnit is required for unit testing.
 - Use integration tests for parsing, IO, and docking layout persistence.
 - Avalonia UI tests and headless UI guidance live in `src/KubeUI.Avalonia/AGENTS.md`.
+- For Avalonia UI bugs, write the failing headless regression test first, confirm the failure reproduces, then implement the fix and rerun the same test before widening scope.
 
 ## 7) Code conventions
 
@@ -57,28 +58,3 @@ Docker
 - Prefer explicit types where clarity is improved; avoid `var` in public APIs.
 - All public APIs must be documented and unit-tested.
 - No hacks or weird workarounds; if you think you need one, ask for guidance.
-
-## 8) File conventions
-
-Use CRLF line endings for KubeUI source and project files.
-
-Treat these as CRLF:
-- .cs
-- .axaml
-- .axaml.cs
-- .xaml
-- .csproj
-- .props
-- .targets
-- .sln
-- .json
-- .md
-- .yml
-- .yaml
-- .xml
-
-Treat shell scripts as LF:
-- .sh
-
-Respect `.editorconfig` and `.gitattributes`.
-Do not rewrite line endings unless required by those files or explicitly requested.

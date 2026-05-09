@@ -23,14 +23,17 @@
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Azure.Identity" Version="1.21.0" />
+    <PackageReference Include="Azure.ResourceManager" Version="1.14.0" />
+    <PackageReference Include="Azure.ResourceManager.ContainerService" Version="1.4.0" />
     <PackageReference Include="DynamicData" Version="9.4.31" />
     <PackageReference Include="Humanizer.Core" Version="3.0.10" />
     <PackageReference Include="KubernetesClient" Version="19.0.2" />
-    <PackageReference Include="KubernetesClient.Informer" Version="1.0.0-alpha.4" />
-    <PackageReference Include="KubernetesCRDModelGen" Version="1.5.0" />
+    <PackageReference Include="KubernetesClient.Informer" Version="1.0.0" />
+    <PackageReference Include="KubernetesCRDModelGen" Version="1.6.0" />
     <PackageReference Include="Mapster" Version="7.4.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.5" />
-    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.4.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.5.0" />
     <PackageReference Include="Swordfish.NET.CollectionsV3" Version="3.3.16" />
     <PackageReference Include="YamlDotNet.System.Text.Json" Version="1.7.1" />
   </ItemGroup>

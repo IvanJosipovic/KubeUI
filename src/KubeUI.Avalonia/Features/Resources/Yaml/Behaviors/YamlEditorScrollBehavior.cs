@@ -1,26 +1,45 @@
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
 using Avalonia;
-using Dock.Model.Core;
-using Dock.Model.Controls;
-using Dock.Model.Core.Events;
 using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using AvaloniaEdit.Document;
+using Dock.Model.Controls;
+using Dock.Model.Core;
+using Dock.Model.Core.Events;
 using KubeUI.Avalonia;
+using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 
 public sealed class YamlEditorScrollBehavior : Behavior<TextEditor>
 {
-    private readonly IFactory _factory = Application.Current.GetRequiredService<IFactory>();
+    private const double ScrollOffsetTolerance = 0.5;
+
+    private IFactory? _factory;
     private ScrollViewer? _scrollViewer;
     private IDisposable? _visibilitySubscription;
     private ResourceYamlViewModel? _currentViewModel;
     private bool _isCurrentViewModelActive;
     private Vector? _pendingRestoreOffset;
     private bool _isRestoringScrollOffset;
+
+    private bool TryEnsureFactory()
+    {
+        if (_factory is not null)
+        {
+            return true;
+        }
+
+        if (!TryGetServices(out IServiceProvider services))
+        {
+            return false;
+        }
+
+        _factory = services.GetRequiredService<IFactory>();
+        return true;
+    }
 
     protected override void OnAttached()
     {
@@ -31,7 +50,8 @@ public sealed class YamlEditorScrollBehavior : Behavior<TextEditor>
             return;
         }
 
-        _factory.ActiveDockableChanged += FactoryActiveDockableChanged;
+        TryEnsureFactory();
+        _factory?.ActiveDockableChanged += FactoryActiveDockableChanged;
         AssociatedObject.DataContextChanged += AssociatedObjectOnDataContextChanged;
         AssociatedObject.DocumentChanged += AssociatedObjectOnDocumentChanged;
         AssociatedObject.AttachedToVisualTree += AssociatedObjectOnAttachedToVisualTree;
@@ -61,7 +81,7 @@ public sealed class YamlEditorScrollBehavior : Behavior<TextEditor>
     {
         PersistScrollOffset(force: true);
 
-        _factory.ActiveDockableChanged -= FactoryActiveDockableChanged;
+        _factory?.ActiveDockableChanged -= FactoryActiveDockableChanged;
         _currentViewModel = null;
         _isCurrentViewModelActive = false;
 
@@ -84,6 +104,10 @@ public sealed class YamlEditorScrollBehavior : Behavior<TextEditor>
     private void AssociatedObjectOnDataContextChanged(object? sender, EventArgs e)
     {
         UpdateCurrentViewModel(AssociatedObject?.DataContext as ResourceYamlViewModel);
+        if (_factory is null && TryEnsureFactory())
+        {
+            _factory!.ActiveDockableChanged += FactoryActiveDockableChanged;
+        }
     }
 
     private void FactoryActiveDockableChanged(object? sender, ActiveDockableChangedEventArgs e)
@@ -170,6 +194,11 @@ public sealed class YamlEditorScrollBehavior : Behavior<TextEditor>
             return false;
         }
 
+        if (_factory == null)
+        {
+            return false;
+        }
+
         foreach (var dock in _factory.Find(_ => true).OfType<IDock>())
         {
             if (ReferenceEquals(dock.ActiveDockable, _currentViewModel))
@@ -178,6 +207,18 @@ public sealed class YamlEditorScrollBehavior : Behavior<TextEditor>
             }
         }
 
+        return false;
+    }
+
+    private bool TryGetServices(out IServiceProvider services)
+    {
+        if (Application.Current is IServiceProviderHost host)
+        {
+            services = host.Services;
+            return true;
+        }
+
+        services = null!;
         return false;
     }
 
@@ -249,6 +290,13 @@ public sealed class YamlEditorScrollBehavior : Behavior<TextEditor>
         }
 
         var targetOffset = _pendingRestoreOffset ?? vm.ScrollOffset;
+        var currentOffset = _scrollViewer.Offset;
+
+        if (AreOffsetsClose(currentOffset, targetOffset))
+        {
+            _pendingRestoreOffset = null;
+            return;
+        }
 
         // Wait until the scroll extent is ready before applying a non-zero restore.
         if (targetOffset != default
@@ -271,6 +319,12 @@ public sealed class YamlEditorScrollBehavior : Behavior<TextEditor>
         {
             _isRestoringScrollOffset = false;
         }
+    }
+
+    private static bool AreOffsetsClose(Vector left, Vector right)
+    {
+        return Math.Abs(left.X - right.X) <= ScrollOffsetTolerance
+            && Math.Abs(left.Y - right.Y) <= ScrollOffsetTolerance;
     }
 
     private void AttachScrollViewer()
@@ -316,7 +370,7 @@ public sealed class YamlEditorScrollBehavior : Behavior<TextEditor>
         if (_pendingRestoreOffset is Vector pendingRestoreOffset
             && pendingRestoreOffset != default
             && sender is ScrollViewer scrollViewer
-            && scrollViewer.Offset != pendingRestoreOffset)
+            && !AreOffsetsClose(scrollViewer.Offset, pendingRestoreOffset))
         {
             return;
         }

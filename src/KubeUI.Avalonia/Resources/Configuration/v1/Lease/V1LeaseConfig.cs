@@ -1,11 +1,15 @@
-using k8s.Models;
 using Avalonia.Controls;
+using k8s.Models;
 using KubeUI.Avalonia.Resources.Configuration.v1.Lease.Views;
 
 namespace KubeUI.Avalonia.Resources.Configuration.v1.Lease;
 
 public sealed partial class V1LeaseConfig : ResourceConfigBase<V1Lease>
 {
+    public V1LeaseConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
     public override bool IsNamespaced => true;
     public override string Category => CategoryString("ResourceConfig_Category_Configuration", "Configuration");
     public override int Order => 8;

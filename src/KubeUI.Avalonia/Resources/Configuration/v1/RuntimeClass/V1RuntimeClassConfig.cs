@@ -1,11 +1,15 @@
-using k8s.Models;
 using Avalonia.Controls;
+using k8s.Models;
 using KubeUI.Avalonia.Resources.Configuration.v1.RuntimeClass.Views;
 
 namespace KubeUI.Avalonia.Resources.Configuration.v1.RuntimeClass;
 
 public sealed partial class V1RuntimeClassConfig : ResourceConfigBase<V1RuntimeClass>
 {
+    public V1RuntimeClassConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
     public override string Category => CategoryString("ResourceConfig_Category_Configuration", "Configuration");
     public override int Order => 7;
 

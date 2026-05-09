@@ -56,7 +56,7 @@ public partial class CertificateItemView : UserControl
             var cert = X509CertificateLoader.LoadCertificate(bytes);
             Certificates.Add(cert);
         }
-        catch (Exception) {}
+        catch (Exception) { }
 
         try
         {
@@ -64,7 +64,7 @@ public partial class CertificateItemView : UserControl
             key.ImportRSAPrivateKey(bytes, out _);
             Rsa.Add(key);
         }
-        catch (Exception) {}
+        catch (Exception) { }
 
         try
         {

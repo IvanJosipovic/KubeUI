@@ -1,159 +1,176 @@
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Kubernetes;
-using Avalonia.Threading;
-using k8s;
+using Avalonia.Styling;
 using k8s.Models;
-using System.Collections.Specialized;
-using System.ComponentModel;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Resources.List.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Kubernetes;
+using LiveChartsCore.Defaults;
+using LiveChartsCore.Kernel;
 
 namespace KubeUI.Avalonia.Features.Clusters.Overview.ViewModels;
 
-public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster, IDisposable
+public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster, INotifyPropertyChanged
 {
-    private ClusterWorkspaceViewModel? _cluster;
-    private bool _disposed;
-
-    public ClusterViewModel()
-    {
-        Title = Assets.Resources.ClusterViewModel_Title;
-        WarningsGrid = new ClusterOverviewEventGridViewModel("Warnings", "No warning events found.", static @event => string.Equals(@event.Type, "Warning", StringComparison.Ordinal), 15);
-    }
+    [ObservableProperty]
+    public partial ISettingsService Settings { get; set; }
 
     [ObservableProperty]
     public partial ClusterWorkspaceViewModel? Cluster { get; set; }
 
     [ObservableProperty]
-    public partial ClusterOverviewEventGridViewModel WarningsGrid { get; set; }
+    public partial ResourceListViewModel<Corev1Event> EventsVM { get; set; }
+
+    public ClusterViewModel(
+        ResourceListViewModel<Corev1Event> eventsVm,
+        ISettingsService settings)
+    {
+        Title = Assets.Resources.ClusterViewModel_Title;
+        EventsVM = eventsVm;
+        Settings = settings;
+    }
 
     [ObservableProperty]
-    public partial string BackendText { get; set; } = "Metrics backend unavailable";
+    public partial CPUGaugeData CPUGaugeData { get; set; } = new();
 
     [ObservableProperty]
-    public partial string LastUpdatedText { get; set; } = "Not loaded";
+    public partial MemoryGaugeData MemoryGaugeData { get; set; } = new();
 
     [ObservableProperty]
-    public partial string StatusText { get; set; } = "Cluster overview metrics are loading.";
-
-    [ObservableProperty]
-    public partial bool ShowStatus { get; set; } = true;
+    public partial PodGaugeData PodGaugeData { get; set; } = new();
 
     public async Task RefreshData()
     {
-        if (_cluster == null)
+        if (Cluster == null)
         {
             return;
         }
 
-        await _cluster.SeedResource<V1Pod>(true).ConfigureAwait(false);
-        await _cluster.SeedResource<V1Node>(true).ConfigureAwait(false);
-        await _cluster.SeedResource<V1Namespace>(true).ConfigureAwait(false);
-        await _cluster.SeedResource<V1Deployment>().ConfigureAwait(false);
-        await _cluster.SeedResource<V1StatefulSet>().ConfigureAwait(false);
-        await _cluster.SeedResource<V1DaemonSet>().ConfigureAwait(false);
-        await _cluster.SeedResource<V1Job>().ConfigureAwait(false);
+        await Cluster.SeedResource<V1Pod>(true);
+        await Cluster.SeedResource<V1Node>(true);
+        var pods = Cluster.GetResourceList<V1Pod>();
+        var nodes = Cluster.GetResourceList<V1Node>();
 
-        await Dispatcher.UIThread.InvokeAsync(() =>
-        {
-            BackendText = FormatBackendText(_cluster);
-            LastUpdatedText = DateTime.Now.ToString("g");
-            ShowStatus = true;
-            StatusText = _cluster.MetricsServiceType switch
-            {
-                MetricsServiceType.Prometheus => "Cluster overview metrics and live event grids are active.",
-                MetricsServiceType.KubernetesMetricsServer => "Cluster overview is using live resource summaries and event grids. Historical charting is still limited on Metrics Server.",
-                _ => "Metrics are not available for this cluster yet.",
-            };
-        });
+        var allPodContainers = pods.SelectMany(p => p.Spec?.Containers ?? []).ToArray();
+        var allMetricContainers = (Cluster.PodMetrics ?? []).SelectMany(m => m.Containers ?? []).ToArray();
+
+        PodGaugeData.TotalPods.Value = pods.Count;
+        PodGaugeData.MaxPods.Value = nodes.Sum(x => x.Status.Capacity?.TryGetValue("pods", out var value) == true ? value.ToDouble() : 0);
+
+        CPUGaugeData.CpuAllocatable.Value = nodes.Sum(x => x.Status.Allocatable?.TryGetValue("cpu", out var value) == true ? value.ToDouble() : 0);
+        CPUGaugeData.CpuCapacity.Value = nodes.Sum(x => x.Status.Capacity?.TryGetValue("cpu", out var value) == true ? value.ToDouble() : 0);
+
+        CPUGaugeData.CpuRequests.Value = allPodContainers.Sum(c =>
+            c.Resources?.Requests?.TryGetValue("cpu", out var q) == true
+                ? q.ToDouble()
+                : 0d);
+
+        CPUGaugeData.CpuLimits.Value = allPodContainers.Sum(c =>
+            c.Resources?.Limits?.TryGetValue("cpu", out var q) == true
+                ? q.ToDouble()
+                : 0d);
+
+        CPUGaugeData.CpuUsage.Value = allMetricContainers.Sum(c =>
+            c.Usage?.TryGetValue("cpu", out var q) == true
+                ? q.ToDouble()
+                : 0d);
+
+        MemoryGaugeData.MemoryAllocatable.Value = nodes.Sum(x => x.Status.Allocatable?.TryGetValue("memory", out var value) == true ? value.ToDouble() : 0) / 1048576 / 1024;
+        MemoryGaugeData.MemoryCapacity.Value = nodes.Sum(x => x.Status.Capacity?.TryGetValue("memory", out var value) == true ? value.ToDouble() : 0) / 1048576 / 1024;
+        MemoryGaugeData.MemoryRequests.Value = allPodContainers.Sum(c =>
+            c.Resources?.Requests?.TryGetValue("memory", out var q) == true
+                ? q.ToDouble()
+                : 0d) / 1048576 / 1024;
+
+        MemoryGaugeData.MemoryLimits.Value = allPodContainers.Sum(c =>
+            c.Resources?.Limits?.TryGetValue("memory", out var q) == true
+                ? q.ToDouble()
+                : 0d) / 1048576 / 1024;
+
+        MemoryGaugeData.MemoryUsage.Value = allMetricContainers.Sum(c =>
+            c.Usage?.TryGetValue("memory", out var q) == true
+                ? q.ToDouble()
+                : 0d) / 1048576 / 1024;
     }
 
     public void Initialize(ClusterWorkspaceViewModel cluster)
     {
-        UnsubscribeCluster();
-
-        _cluster = cluster;
         Cluster = cluster;
-        Id = nameof(ClusterViewModel) + "-" + cluster.Name + "-" + Title;
 
-        WarningsGrid.Initialize(cluster);
+        Id = nameof(ClusterViewModel) + "-" + Cluster.Name + "-" + Title;
 
-        SubscribeCluster();
-        _ = RefreshData();
-    }
-
-    public void Dispose()
-    {
-        if (_disposed)
+        if (EventsVM is IInitializeCluster init)
         {
-            return;
-        }
-
-        _disposed = true;
-        UnsubscribeCluster();
-        WarningsGrid.Dispose();
-    }
-
-    private void SubscribeCluster()
-    {
-        if (_cluster is INotifyPropertyChanged propertyChanged)
-        {
-            propertyChanged.PropertyChanged += OnClusterPropertyChanged;
-        }
-
-        if (_cluster?.NodeMetrics is INotifyCollectionChanged nodeMetrics)
-        {
-            nodeMetrics.CollectionChanged += OnMetricsCollectionChanged;
-        }
-
-        if (_cluster?.PodMetrics is INotifyCollectionChanged podMetrics)
-        {
-            podMetrics.CollectionChanged += OnMetricsCollectionChanged;
+            init.Initialize(Cluster);
         }
     }
 
-    private void UnsubscribeCluster()
+    public static string TextColor
     {
-        if (_cluster is INotifyPropertyChanged propertyChanged)
+        get
         {
-            propertyChanged.PropertyChanged -= OnClusterPropertyChanged;
+            if (Application.Current.ActualThemeVariant == ThemeVariant.Dark)
+            {
+                return "#FFFFFF";
+            }
+
+            return "#000000";
         }
-
-        if (_cluster?.NodeMetrics is INotifyCollectionChanged nodeMetrics)
-        {
-            nodeMetrics.CollectionChanged -= OnMetricsCollectionChanged;
-        }
-
-        if (_cluster?.PodMetrics is INotifyCollectionChanged podMetrics)
-        {
-            podMetrics.CollectionChanged -= OnMetricsCollectionChanged;
-        }
-    }
-
-    private void OnClusterPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName is nameof(ClusterWorkspaceViewModel.ActiveMetricsBackend)
-            or nameof(ClusterWorkspaceViewModel.MetricsServiceType)
-            or nameof(ClusterWorkspaceViewModel.ActivePrometheusProviderKind)
-            or nameof(ClusterWorkspaceViewModel.IsMetricsAvailable))
-        {
-            _ = RefreshData();
-        }
-    }
-
-    private void OnMetricsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-    {
-        _ = RefreshData();
-    }
-
-    private static string FormatBackendText(ClusterWorkspaceViewModel cluster)
-    {
-        return cluster.MetricsServiceType switch
-        {
-            MetricsServiceType.Prometheus => cluster.ActivePrometheusProviderKind is { } provider
-                ? $"Prometheus ({provider})"
-                : "Prometheus",
-            MetricsServiceType.KubernetesMetricsServer => "Kubernetes Metrics Server",
-            _ => "No metrics backend",
-        };
     }
 }
+
+public partial class CPUGaugeData : ObservableObject
+{
+    [ObservableProperty]
+    public partial ObservableValue CpuCapacity { get; set; } = new();
+
+    [ObservableProperty]
+    public partial ObservableValue CpuAllocatable { get; set; } = new();
+
+    [ObservableProperty]
+    public partial ObservableValue CpuLimits { get; set; } = new();
+
+    [ObservableProperty]
+    public partial ObservableValue CpuRequests { get; set; } = new();
+
+    [ObservableProperty]
+    public partial ObservableValue CpuUsage { get; set; } = new();
+
+    public static Func<ChartPoint, string> DataLabelsFormatter { get; } = p => $"{p.Coordinate.PrimaryValue:F2}c";
+}
+
+public partial class MemoryGaugeData : ObservableObject
+{
+    [ObservableProperty]
+    public partial ObservableValue MemoryCapacity { get; set; } = new();
+
+    [ObservableProperty]
+    public partial ObservableValue MemoryAllocatable { get; set; } = new();
+
+    [ObservableProperty]
+    public partial ObservableValue MemoryRequests { get; set; } = new();
+
+    [ObservableProperty]
+    public partial ObservableValue MemoryLimits { get; set; } = new();
+
+    [ObservableProperty]
+    public partial ObservableValue MemoryUsage { get; set; } = new();
+
+    public static Func<ChartPoint, string> DataLabelsFormatter { get; } = p => $"{p.Coordinate.PrimaryValue:F2}Gi";
+
+}
+
+public partial class PodGaugeData : ObservableObject
+{
+    [ObservableProperty]
+    public partial ObservableValue MaxPods { get; set; } = new();
+
+    [ObservableProperty]
+    public partial ObservableValue TotalPods { get; set; } = new();
+
+    public static Func<ChartPoint, string> DataLabelsFormatter { get; } = p => $"{p.Coordinate.PrimaryValue:F0}";
+}
+
+
+

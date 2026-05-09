@@ -11,6 +11,7 @@ using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Controls;
 using KubeUI.Avalonia.Tests.Infra;
@@ -120,8 +121,13 @@ public sealed class PodMetricCellTests : AvaloniaTestBase
 
     private static ClusterWorkspaceViewModel CreateWorkspace(IClusterRuntime runtime)
     {
+        if (Application.Current is not IServiceProviderHost host)
+        {
+            throw new InvalidOperationException("Avalonia Application.Current is not initialized.");
+        }
+
         var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspaceViewModel>(
-            Application.Current?.GetRequiredService<IServiceProvider>() ?? throw new InvalidOperationException("Avalonia Application.Current is not initialized."),
+            host.Services.GetRequiredService<IServiceProvider>(),
             runtime);
         return workspace;
     }
@@ -224,6 +230,7 @@ internal sealed class PrometheusMetricsClusterRuntime : IClusterRuntime, INotify
     public bool IsResourceNamespaced(Type type) => _inner.IsResourceNamespaced(type);
     public bool IsResourceNamespaced<T>() => _inner.IsResourceNamespaced<T>();
     public PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort) => _inner.AddPodPortForward(@namespace, podName, containerPort);
+    public Task AddPodEphemeralDebugContainer(V1Pod pod, string? targetContainerName, string image) => _inner.AddPodEphemeralDebugContainer(pod, targetContainerName, image);
     public PortForwarder AddServicePortForward(string @namespace, string serviceName, int servicePort) => _inner.AddServicePortForward(@namespace, serviceName, servicePort);
     public void RemovePortForward(PortForwarder pf) => _inner.RemovePortForward(pf);
     public Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.AddOrUpdateResource(item);

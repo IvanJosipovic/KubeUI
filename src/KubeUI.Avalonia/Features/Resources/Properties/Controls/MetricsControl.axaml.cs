@@ -1,4 +1,5 @@
 using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Features.Clusters.Overview.ViewModels;
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Avalonia.Infrastructure.Presentation;
@@ -213,7 +214,9 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster
     public MetricsControl()
     {
         InitializeComponent();
-        _logger = Application.Current.GetRequiredService<ILogger<MetricsControl>>();
+        _logger = Application.Current is IServiceProviderHost host
+            ? host.Services.GetRequiredService<ILogger<MetricsControl>>()
+            : Microsoft.Extensions.Logging.Abstractions.NullLogger<MetricsControl>.Instance;
         SelectedTimeRange = s_defaultTimeRange;
 
         if (!s_timer.IsEnabled)

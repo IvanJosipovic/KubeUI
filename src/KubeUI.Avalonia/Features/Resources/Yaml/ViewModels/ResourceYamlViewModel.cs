@@ -1,18 +1,18 @@
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Yaml;
-using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Avalonia.Services.Settings;
 using System.Text;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Folding;
 using FluentAvalonia.UI.Controls;
 using k8s;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Yaml;
+using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Serialization;
-using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
 
@@ -32,8 +32,17 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     public partial ClusterWorkspaceViewModel? Cluster { get; set; }
 
-    [ObservableProperty]
-    public partial IKubernetesObject<V1ObjectMeta>? Object { get; set; }
+    private IKubernetesObject<V1ObjectMeta>? _object;
+
+    public IKubernetesObject<V1ObjectMeta>? Object
+    {
+        get => _object;
+        set
+        {
+            _object = value;
+            OnPropertyChanged();
+        }
+    }
 
     [ObservableProperty]
     public partial TextDocument YamlDocument { get; set; } = new();
@@ -78,15 +87,19 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
     public bool HasActionFailureResult => HasActionResult && !ActionResultSuccess;
 
-    public InfoBarSeverity ActionResultSeverity => ActionResultSuccess ? InfoBarSeverity.Success : InfoBarSeverity.Error;
+    public FAInfoBarSeverity ActionResultSeverity => ActionResultSuccess ? FAInfoBarSeverity.Success : FAInfoBarSeverity.Error;
 
-    public ResourceYamlViewModel()
+    public ResourceYamlViewModel(
+        ILogger<ResourceYamlViewModel> logger,
+        IKubernetesYamlSerializer yamlSerializer,
+        IYamlValidationService yamlValidationService,
+        ISettingsService settings)
     {
         Title = Assets.Resources.ResourceYamlViewModel_Title;
-        _logger = Application.Current.GetRequiredService<ILogger<ResourceYamlViewModel>>();
-        _yamlSerializer = Application.Current.GetRequiredService<IKubernetesYamlSerializer>();
-        _yamlValidationService = Application.Current.GetRequiredService<IYamlValidationService>();
-        Settings = Application.Current.GetRequiredService<ISettingsService>();
+        _logger = logger;
+        _yamlSerializer = yamlSerializer;
+        _yamlValidationService = yamlValidationService;
+        Settings = settings;
         AttachValidationDocument(YamlDocument);
     }
 
@@ -239,12 +252,6 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
     private bool CanDismissActionResult()
     {
         return HasActionResult;
-    }
-
-    [RelayCommand]
-    private void SetHideNoisyFields()
-    {
-        HideNoisyFields = !HideNoisyFields;
     }
 
     [RelayCommand(CanExecute = nameof(CanSetEditMode))]
@@ -409,7 +416,6 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         ActionResultSuccess = false;
     }
 }
-
 
 
 

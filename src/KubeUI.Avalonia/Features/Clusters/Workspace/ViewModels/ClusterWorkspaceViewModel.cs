@@ -78,6 +78,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     public IReadOnlyDictionary<GroupApiVersionKind, object> Objects => Runtime.Objects;
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
+    public event Action<ClusterWorkspaceViewModel, Type>? ResourceSeeded;
     public event Action<V1CustomResourceDefinition>? OnCustomResourceDefinitionReady
     {
         add => Runtime.OnCustomResourceDefinitionReady += value;
@@ -114,6 +115,10 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
     public bool IsMetricsAvailable => Runtime.IsMetricsAvailable;
 
     public ActiveMetricsBackend ActiveMetricsBackend => Runtime.ActiveMetricsBackend;
+
+    public bool AuthorizationIndexReady => TryGetRuntimeProperty<bool>(nameof(AuthorizationIndexReady));
+
+    public long AuthorizationIndexVersion => TryGetRuntimeProperty<long>(nameof(AuthorizationIndexVersion));
 
     public MetricsServiceType MetricsServiceType => ActiveMetricsBackend.Type;
 
@@ -316,6 +321,11 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
     public PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort)
     {
         return Runtime.AddPodPortForward(@namespace, podName, containerPort);
+    }
+
+    public Task AddPodEphemeralDebugContainer(V1Pod pod, string? targetContainerName, string image)
+    {
+        return Runtime.AddPodEphemeralDebugContainer(pod, targetContainerName, image);
     }
 
     public PortForwarder AddServicePortForward(string @namespace, string serviceName, int servicePort)
@@ -528,6 +538,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         }
 
         await Runtime.SeedResource<T>(waitForReady).ConfigureAwait(false);
+        ResourceSeeded?.Invoke(this, typeof(T));
     }
 
     private void QueueResourceConfigPermissionsRefresh()
@@ -1093,6 +1104,18 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
             .ToArray();
 
         return (IBrush)properties[Random.Shared.Next(properties.Length)].GetValue(null)!;
+    }
+
+    private T TryGetRuntimeProperty<T>(string propertyName)
+    {
+        var propertyInfo = Runtime.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
+        if (propertyInfo is null)
+        {
+            return default!;
+        }
+
+        var value = propertyInfo.GetValue(Runtime);
+        return value is T typedValue ? typedValue : default!;
     }
 }
 

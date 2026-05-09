@@ -15,16 +15,13 @@ public static class KubeUIKubernetesServiceCollectionExtensions
 
     public static IServiceCollection AddKubeUIKubernetesServices(this IServiceCollection services)
     {
+        MapsterConfiguration.Configure();
         ConfigureKubeUIKubernetesJson();
         services.AddSingleton<IThreadDispatcher, ImmediateThreadDispatcher>();
+        services.AddSingleton<IKubeConfigPathProvider, DefaultKubeConfigPathProvider>();
         services.AddTransient<ModelCache>();
         services.AddSingleton<IKubernetesYamlSerializer, KubernetesYamlSerializer>();
-        services.AddTransient<IPrometheusProvider, OperatorPrometheusProvider>();
-        services.AddTransient<IPrometheusProvider, OpenShiftPrometheusProvider>();
-        services.AddTransient<IPrometheusProvider, ManualPrometheusProvider>();
-        services.AddTransient<IPrometheusProvider, ExternalPrometheusProvider>();
-        services.AddTransient<IPrometheusQueryClient, PrometheusQueryClient>();
-        services.AddTransient<IMetricsService, MetricsService>();
+        services.AddSingleton<IAksClusterService, AksClusterService>();
         services.AddTransient<Cluster>();
         services.AddTransient<IClusterRuntime>(sp => sp.GetRequiredService<Cluster>());
         services.AddSingleton<ClusterManager>();

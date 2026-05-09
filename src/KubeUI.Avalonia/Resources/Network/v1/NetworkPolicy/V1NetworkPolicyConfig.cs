@@ -6,6 +6,10 @@ namespace KubeUI.Avalonia.Resources.Network.v1.NetworkPolicy;
 
 public sealed partial class V1NetworkPolicyConfig : ResourceConfigBase<V1NetworkPolicy>
 {
+    public V1NetworkPolicyConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
     public override bool IsNamespaced => true;
     public override string Category => CategoryString("ResourceConfig_Category_Network", "Network");
     public override int Order => 5;

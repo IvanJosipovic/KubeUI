@@ -5,8 +5,6 @@
     xmlns:assets="clr-namespace:KubeUI.Avalonia.Assets"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:metrics="using:KubeUI.Kubernetes"
-    xmlns:u="https://irihi.tech/ursa"
     xmlns:utils="clr-namespace:KubeUI.Avalonia.Utilities"
     xmlns:views="clr-namespace:KubeUI.Avalonia.Features.Clusters.Settings.Views"
     xmlns:vm="clr-namespace:KubeUI.Avalonia.Features.Clusters.Settings.ViewModels"
@@ -22,7 +20,7 @@
 
         <Grid
             ColumnDefinitions="*,2*"
-            IsVisible="{Binding !Cluster.ListNamespaces}"
+            IsEnabled="{Binding !Cluster.ListNamespaces}"
             ToolTip.Tip="{x:Static assets:Resources.ClusterSettingsView_ManualNamespacesTooltip}">
             <Label Grid.Column="0" Content="{x:Static assets:Resources.ClusterSettingsView_NamespacesLabel}" />
 
@@ -55,93 +53,10 @@
             </StackPanel>
         </Grid>
 
-        <Grid ColumnDefinitions="*,2*" ToolTip.Tip="Metrics backend">
-            <Label Grid.Column="0" Content="Metrics Backend" />
-            <u:EnumSelector
-                Grid.Column="1"
-                Width="250"
-                DisplayDescription="True"
-                EnumType="{x:Type metrics:MetricsServiceType}"
-                Value="{Binding ClusterSettings.MetricsServiceType}" />
+        <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{x:Static assets:Resources.ClusterSettingsView_DebugContainerImageTooltip}">
+            <Label Grid.Column="0" Content="{x:Static assets:Resources.ClusterSettingsView_DebugContainerImageLabel}" />
+            <TextBox Grid.Column="1" Text="{Binding ClusterSettings.DebugContainerImage, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
         </Grid>
-
-        <TextBlock
-            IsVisible="{Binding ShowDetectedMetricsBackend}"
-            Margin="0,4,0,8"
-            Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-            Text="{Binding DetectedMetricsBackendText}" />
-
-        <Grid
-            ColumnDefinitions="*,2*"
-            IsVisible="{Binding ShowPrometheusProviderSettings}"
-            ToolTip.Tip="Prometheus provider">
-            <Label Grid.Column="0" Content="Prometheus Provider" />
-            <ComboBox
-                Grid.Column="1"
-                ItemsSource="{Binding PrometheusProviders}"
-                SelectedValue="{Binding ClusterSettings.PrometheusProviderKind}"
-                SelectedValueBinding="{Binding Id}">
-                <ComboBox.ItemTemplate>
-                    <DataTemplate x:DataType="vm:MetricProviderOption">
-                        <TextBlock Text="{Binding Name}" />
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
-        </Grid>
-
-        <Grid
-            ColumnDefinitions="*,2*"
-            IsVisible="{Binding ShowPrometheusServiceSettings}"
-            ToolTip.Tip="Prometheus service namespace">
-            <Label Grid.Column="0" Content="Prometheus Service Namespace" />
-            <TextBox Grid.Column="1" Text="{Binding ClusterSettings.PrometheusServiceNamespace}" />
-        </Grid>
-
-        <Grid
-            ColumnDefinitions="*,2*"
-            IsVisible="{Binding ShowPrometheusServiceSettings}"
-            ToolTip.Tip="Prometheus service port">
-            <Label Grid.Column="0" Content="Prometheus Service Port" />
-            <TextBox Grid.Column="1" Text="{Binding ClusterSettings.PrometheusServicePort}" />
-        </Grid>
-
-        <Grid
-            ColumnDefinitions="*,2*"
-            IsVisible="{Binding ShowPrometheusDirectUrlSettings}"
-            ToolTip.Tip="External Prometheus base URL">
-            <Label Grid.Column="0" Content="Prometheus Direct Url" />
-            <TextBox Grid.Column="1" Text="{Binding ClusterSettings.PrometheusDirectUrl}" />
-        </Grid>
-
-        <Grid
-            ColumnDefinitions="*,2*"
-            IsVisible="{Binding ShowPrometheusSettings}"
-            ToolTip.Tip="Optional Prometheus request path prefix">
-            <Label Grid.Column="0" Content="Prometheus Path Prefix" />
-            <TextBox Grid.Column="1" Text="{Binding ClusterSettings.PrometheusPathPrefix}" />
-        </Grid>
-
-        <Grid
-            ColumnDefinitions="*,2*"
-            IsVisible="{Binding ShowPrometheusSettings}"
-            ToolTip.Tip="Use HTTPS when connecting to Prometheus">
-            <Label Grid.Column="0" Content="Use HTTPS" />
-            <CheckBox Grid.Column="1" IsChecked="{Binding ClusterSettings.PrometheusUseHttps}" />
-        </Grid>
-
-        <Grid
-            ColumnDefinitions="*,2*"
-            IsVisible="{Binding ShowPrometheusBearerTokenSettings}"
-            ToolTip.Tip="Bearer token used for Prometheus authentication">
-            <Label Grid.Column="0" Content="Prometheus Bearer Token" />
-            <TextBox Grid.Column="1" Text="{Binding ClusterSettings.PrometheusBearerToken}" />
-        </Grid>
-
-        <TextBlock
-            IsVisible="{Binding !ShowPrometheusSettings}"
-            Margin="0,8,0,0"
-            Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-            Text="{x:Static assets:Resources.ClusterSettingsView_AutoMetricsBackend_AutoModeHelp}" />
     </StackPanel>
 </UserControl>
 

@@ -15,10 +15,6 @@
     UseLayoutRounding="True"
     mc:Ignorable="d">
 
-    <Window.DataContext>
-        <vm:MainViewModel />
-    </Window.DataContext>
-
     <NativeMenu.Menu>
         <NativeMenu>
             <NativeMenuItem Header="{x:Static assets:Resources.MainView_Menu_File}">

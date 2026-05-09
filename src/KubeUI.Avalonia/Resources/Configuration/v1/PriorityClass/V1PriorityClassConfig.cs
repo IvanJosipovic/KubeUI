@@ -6,6 +6,10 @@ namespace KubeUI.Avalonia.Resources.Configuration.v1.PriorityClass;
 
 public sealed partial class V1PriorityClassConfig : ResourceConfigBase<V1PriorityClass>
 {
+    public V1PriorityClassConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
     public override string Category => CategoryString("ResourceConfig_Category_Configuration", "Configuration");
     public override int Order => 6;
 

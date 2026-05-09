@@ -12,7 +12,7 @@ public static partial class KubeUIAvaloniaResourceServiceCollectionExtensions
         return services.AddKubeUIAvaloniaResourceGeneratedServices();
     }
 
-    [GenerateServiceRegistrations(AssignableTo = typeof(ResourceConfigBase<>), Lifetime = ServiceLifetime.Transient, AsSelf = false, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI.Avalonia")]
+    [GenerateServiceRegistrations(AssignableTo = typeof(ResourceConfigBase<>), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI.Avalonia")]
     [GenerateServiceRegistrations(AssignableTo = typeof(CRDResourceConfig<>), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI.Avalonia")]
     private static partial IServiceCollection AddKubeUIAvaloniaResourceGeneratedServices(this IServiceCollection services);
 }

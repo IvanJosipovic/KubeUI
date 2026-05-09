@@ -9,6 +9,20 @@
     <StackPanel Classes="filter-flyout-root">
         <TextBlock Classes="filter-flyout-title" Text="{Binding Title}" />
         <Grid Classes="filter-flyout-row" ColumnDefinitions="72,*">
+            <TextBlock Classes="filter-flyout-label" Text="{x:Static assets:Resources.DataGridFilterFlyout_Condition}" />
+            <ComboBox
+                Grid.Column="1"
+                Classes="filter-flyout-editor"
+                ItemsSource="{Binding Operators}"
+                SelectedItem="{Binding SelectedOperator, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="filters:FilterOperatorChoice">
+                        <TextBlock Text="{Binding Label}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </Grid>
+        <Grid Classes="filter-flyout-row" ColumnDefinitions="72,*">
             <TextBlock Classes="filter-flyout-label" Text="{x:Static assets:Resources.DataGridFilterFlyout_Value}" />
             <ComboBox
                 Grid.Column="1"

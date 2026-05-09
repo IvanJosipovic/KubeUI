@@ -5,7 +5,56 @@ using Avalonia.Controls.DataGridFiltering;
 
 namespace KubeUI.Avalonia.Controls.DataGridFilters;
 
-internal sealed record FilterOperatorChoice(FilteringOperator Operator, string Label);
+internal sealed record FilterOperatorChoice(FilteringOperator Operator, string Label, FilterOperatorId? CustomId = null)
+{
+    public string? CustomKey => CustomId is null ? null : FilterOperatorIdCatalog.GetDescriptorKey(CustomId.Value);
+
+    public bool Matches(FilteringDescriptor? descriptor)
+    {
+        if (descriptor == null)
+        {
+            return false;
+        }
+
+        if (CustomId is null || !FilterOperatorIdCatalog.UsesCustomDescriptor(CustomId.Value))
+        {
+            return descriptor.Operator == Operator;
+        }
+
+        return descriptor.Operator == FilteringOperator.Custom &&
+               string.Equals(descriptor.PropertyPath, CustomKey, StringComparison.Ordinal);
+    }
+}
+
+internal enum FilterOperatorId
+{
+    TextContains,
+    TextNotContains,
+    TextEquals,
+    TextNotEquals,
+    TextStartsWith,
+    TextNotStartsWith,
+    TextEndsWith,
+    TextNotEndsWith,
+    NumericBetween,
+    NumericNotBetween,
+    NumericEquals,
+    NumericNotEquals,
+    NumericGreaterThan,
+    NumericNotGreaterThan,
+    NumericGreaterThanOrEqual,
+    NumericNotGreaterThanOrEqual,
+    NumericLessThan,
+    NumericNotLessThan,
+    NumericLessThanOrEqual,
+    NumericNotLessThanOrEqual,
+    DateNewerThan,
+    DateNotNewerThan,
+    DateOlderThan,
+    DateNotOlderThan,
+    EnumEquals,
+    EnumNotEquals,
+}
 
 internal enum DateRelativeUnit
 {
@@ -52,23 +101,21 @@ internal abstract class ColumnFilterFlyoutContextBase : ObservableObject
         }
     }
 
-    public bool IsRangeVisible => SelectedOperator.Operator == FilteringOperator.Between;
+    public bool IsRangeVisible =>
+        SelectedOperator.Operator == FilteringOperator.Between ||
+        SelectedOperator.CustomId == FilterOperatorId.NumericNotBetween;
 }
 
-internal sealed class EnumFilterFlyoutContext : ObservableObject
+internal sealed class EnumFilterFlyoutContext : ColumnFilterFlyoutContextBase
 {
     private EnumFilterChoice? _selectedValue;
 
     public EnumFilterFlyoutContext(string title, Type enumType, Action apply, Action clear)
+        : base(title, ResourceListFilterFlyoutOptions.EnumOperators, apply, clear)
     {
-        Title = title;
         Options = CreateOptions(enumType);
-        ApplyCommand = new RelayCommand(apply);
-        ClearCommand = new RelayCommand(clear);
         _selectedValue = Options[0];
     }
-
-    public string Title { get; }
 
     public ObservableCollection<EnumFilterChoice> Options { get; }
 
@@ -78,10 +125,6 @@ internal sealed class EnumFilterFlyoutContext : ObservableObject
         set => SetProperty(ref _selectedValue, value);
     }
 
-    public ICommand ApplyCommand { get; }
-
-    public ICommand ClearCommand { get; }
-
     public void LoadFromDescriptor(FilteringDescriptor? descriptor)
     {
         if (descriptor == null)
@@ -90,12 +133,14 @@ internal sealed class EnumFilterFlyoutContext : ObservableObject
             return;
         }
 
+        SelectedOperator = Operators.FirstOrDefault(option => option.Matches(descriptor)) ?? Operators[0];
         var selected = Options.FirstOrDefault(option => Equals(option.Value, descriptor.Value));
         SelectedValue = selected ?? Options[0];
     }
 
     public void ClearState()
     {
+        SelectedOperator = Operators[0];
         SelectedValue = Options[0];
     }
 
@@ -139,7 +184,7 @@ internal sealed class TextFilterFlyoutContext : ColumnFilterFlyoutContextBase
             return;
         }
 
-        SelectedOperator = Operators.FirstOrDefault(x => x.Operator == descriptor.Operator) ?? Operators[0];
+        SelectedOperator = Operators.FirstOrDefault(x => x.Matches(descriptor)) ?? Operators[0];
         Query = descriptor.Value?.ToString() ?? string.Empty;
     }
 
@@ -180,9 +225,11 @@ internal sealed class NumericFilterFlyoutContext : ColumnFilterFlyoutContextBase
             return;
         }
 
-        SelectedOperator = Operators.FirstOrDefault(x => x.Operator == descriptor.Operator) ?? Operators[0];
+        SelectedOperator = Operators.FirstOrDefault(x => x.Matches(descriptor)) ?? Operators[0];
 
-        if (descriptor.Operator == FilteringOperator.Between && descriptor.Values is { Count: >= 2 })
+        if ((descriptor.Operator == FilteringOperator.Between ||
+             SelectedOperator.CustomId == FilterOperatorId.NumericNotBetween) &&
+            descriptor.Values is { Count: >= 2 })
         {
             Value = ToDouble(descriptor.Values[0]);
             SecondValue = ToDouble(descriptor.Values[1]);
@@ -256,7 +303,7 @@ internal sealed class DateFilterFlyoutContext : ColumnFilterFlyoutContextBase
         }
 
         var normalizedOperator = NormalizeDateOperator(descriptor.Operator);
-        SelectedOperator = Operators.FirstOrDefault(x => x.Operator == normalizedOperator) ?? Operators[0];
+        SelectedOperator = Operators.FirstOrDefault(x => x.Matches(descriptor) || x.Operator == normalizedOperator) ?? Operators[0];
 
         var threshold = ToDateTimeOffset(descriptor.Value);
         if (threshold == null)
@@ -331,26 +378,44 @@ internal static class ResourceListFilterFlyoutOptions
 {
     public static IReadOnlyList<FilterOperatorChoice> TextOperators { get; } =
     [
-        new(FilteringOperator.Contains, Assets.Resources.DataGridFilterFlyout_Contains),
-        new(FilteringOperator.Equals, Assets.Resources.DataGridFilterFlyout_Equals),
-        new(FilteringOperator.StartsWith, Assets.Resources.DataGridFilterFlyout_StartsWith),
-        new(FilteringOperator.EndsWith, Assets.Resources.DataGridFilterFlyout_EndsWith),
+        new(FilteringOperator.Contains, Assets.Resources.DataGridFilterFlyout_Contains, FilterOperatorId.TextContains),
+        new(FilteringOperator.Custom, Assets.Resources.DataGridFilterFlyout_NotContains, FilterOperatorId.TextNotContains),
+        new(FilteringOperator.Equals, Assets.Resources.DataGridFilterFlyout_Equals, FilterOperatorId.TextEquals),
+        new(FilteringOperator.NotEquals, Assets.Resources.DataGridFilterFlyout_NotEquals, FilterOperatorId.TextNotEquals),
+        new(FilteringOperator.StartsWith, Assets.Resources.DataGridFilterFlyout_StartsWith, FilterOperatorId.TextStartsWith),
+        new(FilteringOperator.Custom, Assets.Resources.DataGridFilterFlyout_NotStartsWith, FilterOperatorId.TextNotStartsWith),
+        new(FilteringOperator.EndsWith, Assets.Resources.DataGridFilterFlyout_EndsWith, FilterOperatorId.TextEndsWith),
+        new(FilteringOperator.Custom, Assets.Resources.DataGridFilterFlyout_NotEndsWith, FilterOperatorId.TextNotEndsWith),
     ];
 
     public static IReadOnlyList<FilterOperatorChoice> NumericOperators { get; } =
     [
-        new(FilteringOperator.Between, Assets.Resources.DataGridFilterFlyout_Between),
-        new(FilteringOperator.Equals, Assets.Resources.DataGridFilterFlyout_Equals),
-        new(FilteringOperator.GreaterThan, Assets.Resources.DataGridFilterFlyout_GreaterThan),
-        new(FilteringOperator.GreaterThanOrEqual, Assets.Resources.DataGridFilterFlyout_GreaterThanOrEqual),
-        new(FilteringOperator.LessThan, Assets.Resources.DataGridFilterFlyout_LessThan),
-        new(FilteringOperator.LessThanOrEqual, Assets.Resources.DataGridFilterFlyout_LessThanOrEqual),
+        new(FilteringOperator.Between, Assets.Resources.DataGridFilterFlyout_Between, FilterOperatorId.NumericBetween),
+        new(FilteringOperator.Custom, Assets.Resources.DataGridFilterFlyout_NotBetween, FilterOperatorId.NumericNotBetween),
+        new(FilteringOperator.Equals, Assets.Resources.DataGridFilterFlyout_Equals, FilterOperatorId.NumericEquals),
+        new(FilteringOperator.NotEquals, Assets.Resources.DataGridFilterFlyout_NotEquals, FilterOperatorId.NumericNotEquals),
+        new(FilteringOperator.GreaterThan, Assets.Resources.DataGridFilterFlyout_GreaterThan, FilterOperatorId.NumericGreaterThan),
+        new(FilteringOperator.Custom, Assets.Resources.DataGridFilterFlyout_NotGreaterThan, FilterOperatorId.NumericNotGreaterThan),
+        new(FilteringOperator.GreaterThanOrEqual, Assets.Resources.DataGridFilterFlyout_GreaterThanOrEqual, FilterOperatorId.NumericGreaterThanOrEqual),
+        new(FilteringOperator.Custom, Assets.Resources.DataGridFilterFlyout_NotGreaterThanOrEqual, FilterOperatorId.NumericNotGreaterThanOrEqual),
+        new(FilteringOperator.LessThan, Assets.Resources.DataGridFilterFlyout_LessThan, FilterOperatorId.NumericLessThan),
+        new(FilteringOperator.Custom, Assets.Resources.DataGridFilterFlyout_NotLessThan, FilterOperatorId.NumericNotLessThan),
+        new(FilteringOperator.LessThanOrEqual, Assets.Resources.DataGridFilterFlyout_LessThanOrEqual, FilterOperatorId.NumericLessThanOrEqual),
+        new(FilteringOperator.Custom, Assets.Resources.DataGridFilterFlyout_NotLessThanOrEqual, FilterOperatorId.NumericNotLessThanOrEqual),
     ];
 
     public static IReadOnlyList<FilterOperatorChoice> DateOperators { get; } =
     [
-        new(FilteringOperator.GreaterThan, Assets.Resources.DataGridFilterFlyout_NewerThan),
-        new(FilteringOperator.LessThan, Assets.Resources.DataGridFilterFlyout_OlderThan),
+        new(FilteringOperator.GreaterThan, Assets.Resources.DataGridFilterFlyout_NewerThan, FilterOperatorId.DateNewerThan),
+        new(FilteringOperator.Custom, Assets.Resources.DataGridFilterFlyout_NotNewerThan, FilterOperatorId.DateNotNewerThan),
+        new(FilteringOperator.LessThan, Assets.Resources.DataGridFilterFlyout_OlderThan, FilterOperatorId.DateOlderThan),
+        new(FilteringOperator.Custom, Assets.Resources.DataGridFilterFlyout_NotOlderThan, FilterOperatorId.DateNotOlderThan),
+    ];
+
+    public static IReadOnlyList<FilterOperatorChoice> EnumOperators { get; } =
+    [
+        new(FilteringOperator.Equals, Assets.Resources.DataGridFilterFlyout_Equals, FilterOperatorId.EnumEquals),
+        new(FilteringOperator.NotEquals, Assets.Resources.DataGridFilterFlyout_NotEquals, FilterOperatorId.EnumNotEquals),
     ];
 
     public static IReadOnlyList<DateRelativeUnitChoice> DateRelativeUnits { get; } =
@@ -360,4 +425,59 @@ internal static class ResourceListFilterFlyoutOptions
         new(DateRelativeUnit.Days, Assets.Resources.DataGridFilterFlyout_Days),
         new(DateRelativeUnit.Months, Assets.Resources.DataGridFilterFlyout_Months),
     ];
+}
+
+internal static class FilterOperatorIdCatalog
+{
+    public static bool UsesCustomDescriptor(FilterOperatorId id)
+    {
+        return id switch
+        {
+            FilterOperatorId.TextNotContains => true,
+            FilterOperatorId.TextNotStartsWith => true,
+            FilterOperatorId.TextNotEndsWith => true,
+            FilterOperatorId.NumericNotBetween => true,
+            FilterOperatorId.NumericNotGreaterThan => true,
+            FilterOperatorId.NumericNotGreaterThanOrEqual => true,
+            FilterOperatorId.NumericNotLessThan => true,
+            FilterOperatorId.NumericNotLessThanOrEqual => true,
+            FilterOperatorId.DateNotNewerThan => true,
+            FilterOperatorId.DateNotOlderThan => true,
+            _ => false
+        };
+    }
+
+    public static string GetDescriptorKey(FilterOperatorId id)
+    {
+        return id switch
+        {
+            FilterOperatorId.TextContains => "__text_contains__",
+            FilterOperatorId.TextNotContains => "__text_not_contains__",
+            FilterOperatorId.TextEquals => "__text_equals__",
+            FilterOperatorId.TextNotEquals => "__text_not_equals__",
+            FilterOperatorId.TextStartsWith => "__text_starts_with__",
+            FilterOperatorId.TextNotStartsWith => "__text_not_starts_with__",
+            FilterOperatorId.TextEndsWith => "__text_ends_with__",
+            FilterOperatorId.TextNotEndsWith => "__text_not_ends_with__",
+            FilterOperatorId.NumericBetween => "__numeric_between__",
+            FilterOperatorId.NumericNotBetween => "__numeric_not_between__",
+            FilterOperatorId.NumericEquals => "__numeric_equals__",
+            FilterOperatorId.NumericNotEquals => "__numeric_not_equals__",
+            FilterOperatorId.NumericGreaterThan => "__numeric_greater_than__",
+            FilterOperatorId.NumericNotGreaterThan => "__numeric_not_greater_than__",
+            FilterOperatorId.NumericGreaterThanOrEqual => "__numeric_greater_than_or_equal__",
+            FilterOperatorId.NumericNotGreaterThanOrEqual => "__numeric_not_greater_than_or_equal__",
+            FilterOperatorId.NumericLessThan => "__numeric_less_than__",
+            FilterOperatorId.NumericNotLessThan => "__numeric_not_less_than__",
+            FilterOperatorId.NumericLessThanOrEqual => "__numeric_less_than_or_equal__",
+            FilterOperatorId.NumericNotLessThanOrEqual => "__numeric_not_less_than_or_equal__",
+            FilterOperatorId.DateNewerThan => "__date_newer_than__",
+            FilterOperatorId.DateNotNewerThan => "__date_not_newer_than__",
+            FilterOperatorId.DateOlderThan => "__date_older_than__",
+            FilterOperatorId.DateNotOlderThan => "__date_not_older_than__",
+            FilterOperatorId.EnumEquals => "__enum_equals__",
+            FilterOperatorId.EnumNotEquals => "__enum_not_equals__",
+            _ => throw new ArgumentOutOfRangeException(nameof(id), id, null)
+        };
+    }
 }

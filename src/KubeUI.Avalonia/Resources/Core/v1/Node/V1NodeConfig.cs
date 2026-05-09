@@ -1,6 +1,3 @@
-using KubeUI.Avalonia.Features.Resources.Common;
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Kubernetes;
 using Avalonia.Controls;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
@@ -9,12 +6,19 @@ using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.Features.Resources.Common;
+using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Resources.Core.v1.Node.Views;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Core.v1.Node;
 
 public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 {
+    public V1NodeConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
     public override int Order => 5;
 
     public override IList<IResourceListColumn> Columns()
@@ -106,7 +110,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
             Content = string.Format(Assets.Resources.ResourceListViewModel_CordonNode_Content, items.Count),
             PrimaryButtonText = Assets.Resources.ResourceListViewModel_CordonNode_Primary,
             SecondaryButtonText = Assets.Resources.ResourceListViewModel_CordonNode_Secondary,
-            DefaultButton = ContentDialogButton.Secondary
+            DefaultButton = FAContentDialogButton.Secondary
         };
 
         var result = await _dialogService.ShowContentDialogAsync(this, settings);
@@ -119,7 +123,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
         }
         """;
 
-        if (result == ContentDialogResult.Primary)
+        if (result == FAContentDialogResult.Primary)
         {
             foreach (var item in items.Cast<V1Node>().ToList())
             {
@@ -149,7 +153,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
             Content = string.Format(Assets.Resources.ResourceListViewModel_UnCordonNode_Content, items.Count),
             PrimaryButtonText = Assets.Resources.ResourceListViewModel_UnCordonNode_Primary,
             SecondaryButtonText = Assets.Resources.ResourceListViewModel_UnCordonNode_Secondary,
-            DefaultButton = ContentDialogButton.Secondary
+            DefaultButton = FAContentDialogButton.Secondary
         };
 
         var result = await _dialogService.ShowContentDialogAsync(this, settings);
@@ -162,7 +166,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
         }
         """;
 
-        if (result == ContentDialogResult.Primary)
+        if (result == FAContentDialogResult.Primary)
         {
             foreach (var item in items.Cast<V1Node>().ToList())
             {
@@ -192,7 +196,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
             Content = string.Format(Assets.Resources.ResourceListViewModel_DrainNode_Content, items.Count),
             PrimaryButtonText = Assets.Resources.ResourceListViewModel_DrainNode_Primary,
             SecondaryButtonText = Assets.Resources.ResourceListViewModel_DrainNode_Secondary,
-            DefaultButton = ContentDialogButton.Secondary
+            DefaultButton = FAContentDialogButton.Secondary
         };
 
         var result = await _dialogService.ShowContentDialogAsync(this, settings);
@@ -205,7 +209,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
         }
         """;
 
-        if (result == ContentDialogResult.Primary)
+        if (result == FAContentDialogResult.Primary)
         {
             foreach (var item in items.Cast<V1Node>().ToList())
             {

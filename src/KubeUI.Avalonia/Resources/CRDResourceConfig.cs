@@ -13,6 +13,11 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : clas
     private bool _showNamespaces = true;
     private string? _generatedName;
 
+    public CRDResourceConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
+
     public override bool IsNamespaced => _showNamespaces;
 
     public override bool IsCustomResource => true;
@@ -24,14 +29,15 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : clas
     public void Generate(V1CustomResourceDefinition crd)
     {
         _generatedName = crd.Spec?.Names?.Kind.Humanize(LetterCasing.Title).Pluralize() ?? base.Name;
+        var spec = crd.Spec ?? throw new InvalidOperationException("CRD spec is missing.");
 
         // Add Name Column
         _columns.Add(NameColumn(SortDirection.Ascending));
 
-        var version = crd.Spec.Versions.First(x => x.Storage);
+        var version = spec.Versions.First(x => x.Storage);
 
         //Check if its a namespaced crd
-        if (crd.Spec.Scope == "Namespaced")
+        if (spec.Scope == "Namespaced")
         {
             // Add Namespace Column
             _columns.Add(NamespaceColumn());
@@ -58,81 +64,47 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : clas
                     {
                         var exp = JsonPathLINQ.JsonPath.GetExpression<T, string>(item.JsonPath, true);
 
-                        var colDef = new ResourceListColumn<T, string>()
-                        {
-                            Name = item.Name,
-                            Field = exp.Compile(),
-                            //Width = "*"
-                        };
+                        var colDef = CreateColumn(item.Name, exp);
 
                         _columns.Add(colDef);
                     }
                     else if (item.Type == "number")
                     {
-                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, double>(item.JsonPath, true);
+                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, double?>(item.JsonPath, true);
 
-                        var colDef = new ResourceListColumn<T, double>()
-                        {
-                            Name = item.Name,
-                            Display = TransformToFuncOfString(exp.Body, exp.Parameters).Compile(),
-                            Field = exp.Compile(),
-                            //Width = "*"
-                        };
+                        var colDef = CreateColumn(item.Name, exp, TransformToFuncOfString(exp.Body, exp.Parameters).Compile());
 
                         _columns.Add(colDef);
                     }
                     else if (item.Type == "integer" && item.Format == "int64")
                     {
-                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, long>(item.JsonPath, true);
+                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, long?>(item.JsonPath, true);
 
-                        var colDef = new ResourceListColumn<T, long>()
-                        {
-                            Name = item.Name,
-                            Display = TransformToFuncOfString(exp.Body, exp.Parameters).Compile(),
-                            Field = exp.Compile(),
-                            //Width = "*"
-                        };
+                        var colDef = CreateColumn(item.Name, exp, TransformToFuncOfString(exp.Body, exp.Parameters).Compile());
 
                         _columns.Add(colDef);
                     }
                     else if (item.Type == "integer")
                     {
-                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, int>(item.JsonPath, true);
+                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, int?>(item.JsonPath, true);
 
-                        var colDef = new ResourceListColumn<T, int>()
-                        {
-                            Name = item.Name,
-                            Display = TransformToFuncOfString(exp.Body, exp.Parameters).Compile(),
-                            Field = exp.Compile(),
-                            //Width = "*"
-                        };
+                        var colDef = CreateColumn(item.Name, exp, TransformToFuncOfString(exp.Body, exp.Parameters).Compile());
 
                         _columns.Add(colDef);
                     }
                     else if (item.Type == "date")
                     {
-                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, DateTime>(item.JsonPath, true);
+                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, DateTime?>(item.JsonPath, true);
 
-                        var colDef = new ResourceListColumn<T, DateTime>()
-                        {
-                            Name = item.Name,
-                            Field = exp.Compile(),
-                            //Width = "*"
-                        };
+                        var colDef = CreateColumn(item.Name, exp);
 
                         _columns.Add(colDef);
                     }
                     else if (item.Type == "boolean")
                     {
-                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, bool>(item.JsonPath, true);
+                        var exp = JsonPathLINQ.JsonPath.GetExpression<T, bool?>(item.JsonPath, true);
 
-                        var colDef = new ResourceListColumn<T, bool>()
-                        {
-                            Name = item.Name,
-                            Display = TransformToFuncOfString(exp.Body, exp.Parameters).Compile(),
-                            Field = exp.Compile(),
-                            //Width = "*"
-                        };
+                        var colDef = CreateColumn(item.Name, exp, TransformToFuncOfString(exp.Body, exp.Parameters).Compile());
 
                         _columns.Add(colDef);
                     }
@@ -140,12 +112,7 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : clas
                     {
                         var exp = JsonPathLINQ.JsonPath.GetExpression<T, Enum>(item.JsonPath, true);
 
-                        var colDef = new ResourceListColumn<T, string>()
-                        {
-                            Name = item.Name,
-                            Field = TransformToFuncOfString(exp.Body, exp.Parameters).Compile(),
-                            //Width = "*"
-                        };
+                        var colDef = CreateColumn<string>(item.Name, TransformToFuncOfString(exp.Body, exp.Parameters).Compile());
 
                         _columns.Add(colDef);
                     }
@@ -248,7 +215,7 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : clas
         {
             // Create a method to get the enum member name from the JsonStringEnumMemberNameAttribute
             var getEnumMemberNameMethod = typeof(CRDResourceConfig<>).GetMethod(nameof(GetEnumMemberName), BindingFlags.NonPublic | BindingFlags.Static)
-                .MakeGenericMethod(expression.Type);
+                ?.MakeGenericMethod(expression.Type) ?? throw new InvalidOperationException("Unable to resolve enum member formatter.");
 
             // Call the method to get the enum member name
             var bodyAsString = Expression.Call(getEnumMemberNameMethod, expression);
@@ -277,6 +244,26 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : clas
             // Create a new lambda expression
             return Expression.Lambda<Func<T, string>>(bodyAsString, parameters);
         }
+    }
+
+    private static ResourceListColumn<T, TValue> CreateColumn<TValue>(string name, Expression<Func<T, TValue>> expression, Func<T, string>? display = null)
+    {
+        return new ResourceListColumn<T, TValue>()
+        {
+            Name = name,
+            Display = display,
+            Field = expression.Compile(),
+        };
+    }
+
+    private static ResourceListColumn<T, TValue> CreateColumn<TValue>(string name, Func<T, TValue> field, Func<T, string>? display = null)
+    {
+        return new ResourceListColumn<T, TValue>()
+        {
+            Name = name,
+            Display = display,
+            Field = field,
+        };
     }
 
     private static string GetEnumMemberName<TEnum>(TEnum enumValue) where TEnum : Enum

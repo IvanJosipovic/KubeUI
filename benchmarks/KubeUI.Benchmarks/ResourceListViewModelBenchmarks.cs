@@ -12,8 +12,8 @@ using Avalonia.Controls.DataGridSorting;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
 using k8s.Models;
-using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Features.Resources.List.ViewModels;
+using KubeUI.Avalonia.Resources;
 
 namespace KubeUI.Benchmarks;
 

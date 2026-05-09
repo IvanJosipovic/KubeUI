@@ -1,10 +1,10 @@
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Avalonia.Infrastructure.Presentation;
 using k8s;
 using k8s.Models;
-using KubeUI.Kubernetes;
-using KubeUI.Avalonia.Resources;
 using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Resources;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
 
@@ -15,8 +15,17 @@ public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable
 
     public GroupApiVersionKind Kind { get; } = GroupApiVersionKind.From<T>();
 
-    [ObservableProperty]
-    public partial T? Object { get; set; }
+    private T? _object;
+
+    public T? Object
+    {
+        get => _object;
+        set
+        {
+            _object = value;
+            OnPropertyChanged();
+        }
+    }
 
     [ObservableProperty]
     public partial ResourceConfigBase<T> ResourceConfig { get; set; }
@@ -33,7 +42,6 @@ public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable
         Object = resource;
         ResourceConfig = (ResourceConfigBase<T>)Cluster.GetResourceConfig(Kind);
         Cluster.OnChange += Cluster_OnChange;
-
     }
 
     public void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)

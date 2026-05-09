@@ -1,5 +1,4 @@
-﻿using KubeUI.Avalonia.Infrastructure;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.Json;
 using Avalonia.Controls.Notifications;
@@ -7,33 +6,12 @@ using k8s;
 using k8s.Autorest;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.Infrastructure;
 
 namespace KubeUI.Avalonia.Infrastructure;
 
 public static class Utilities
 {
-    public static T GetRequiredService<T>(this Application? app)
-    {
-        var resourceHost = app ?? Application.Current;
-        if (resourceHost is IServiceProviderAccessor serviceProviderAccessor && serviceProviderAccessor.Services != null)
-        {
-            return serviceProviderAccessor.Services.GetRequiredService<T>();
-        }
-
-        throw new Exception($"Cant find {typeof(IServiceProvider).Name}");
-    }
-
-    public static object GetRequiredService(this Application? app, Type type)
-    {
-        var resourceHost = app ?? Application.Current;
-        if (resourceHost is IServiceProviderAccessor serviceProviderAccessor && serviceProviderAccessor.Services != null)
-        {
-            return serviceProviderAccessor.Services.GetRequiredService(type);
-        }
-
-        throw new Exception($"Cant find {typeof(IServiceProvider).Name}");
-    }
-
     public static string GetKubeAssetPath(Type type)
     {
         const string infrastructure_componentsBasePath = "/Assets/kube/infrastructure_components/unlabeled/";

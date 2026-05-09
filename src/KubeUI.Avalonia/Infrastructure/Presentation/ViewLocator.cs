@@ -1,22 +1,25 @@
-using KubeUI.Avalonia.Infrastructure;
 using System.Diagnostics;
 using System.Reflection;
 using Avalonia.Controls.Templates;
 using Dock.Model.Core;
 using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
 using KubeUI.Avalonia.Features.Resources.Properties.Views;
+using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Kubernetes;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Avalonia.Infrastructure.Presentation;
 
 public sealed class ViewLocator : IDataTemplate
 {
+    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ViewLocator> _logger;
     private readonly Instrumentation _instrumentation;
     private Type[]? _types;
 
-    public ViewLocator(ILogger<ViewLocator> logger, Instrumentation instrumentation)
+    public ViewLocator(IServiceProvider serviceProvider, ILogger<ViewLocator> logger, Instrumentation instrumentation)
     {
+        _serviceProvider = serviceProvider;
         _logger = logger;
         _instrumentation = instrumentation;
     }
@@ -30,8 +33,8 @@ public sealed class ViewLocator : IDataTemplate
 
         if (viewType is not null)
         {
-            var instance = Application.Current.GetRequiredService(viewType);
-            _instrumentation.ViewOpened.Add(1, new TagList { { "view", GetPrettyName(instance.GetType()) } });
+            var instance = _serviceProvider.GetRequiredService(viewType);
+            _instrumentation.ViewOpened.Add(1, new TagList { { "view", GetViewMetricName(instance.GetType(), modelType) } });
             return (Control)instance;
         }
 
@@ -114,6 +117,17 @@ public sealed class ViewLocator : IDataTemplate
         return $"{genericTypeName}<{string.Join(", ", argumentNames)}>";
     }
 
+    private static string GetViewMetricName(Type viewType, Type modelType)
+    {
+        if (viewType.IsGenericType || !modelType.IsGenericType)
+        {
+            return GetPrettyName(viewType);
+        }
+
+        var argumentNames = modelType.GetGenericArguments().Select(GetPrettyName);
+        return $"{viewType.Name}<{string.Join(", ", argumentNames)}>";
+    }
+
     private static string GetUnboundFullName(Type type)
     {
         var fullName = type.IsGenericType ? type.GetGenericTypeDefinition().FullName : type.FullName;
@@ -123,7 +137,6 @@ public sealed class ViewLocator : IDataTemplate
         return genericTypeIndex >= 0 ? fullName[..genericTypeIndex] : fullName;
     }
 }
-
 
 
 

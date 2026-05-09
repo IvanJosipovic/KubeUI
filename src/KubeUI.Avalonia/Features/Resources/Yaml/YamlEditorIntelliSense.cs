@@ -1,9 +1,9 @@
+using System.Collections;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Collections;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
-using Avalonia;
 using AvaloniaEdit.CodeCompletion;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Editing;

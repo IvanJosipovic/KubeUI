@@ -1,17 +1,10 @@
 using Avalonia.Controls;
-using Avalonia.Threading;
-using Avalonia.VisualTree;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Properties.Controls;
-using KubeUI.Avalonia.Infrastructure.Presentation;
 using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
 
-public partial class PropertiesView : UserControl, IInitializeCluster
+public partial class PropertiesView : UserControl
 {
-    private ClusterWorkspaceViewModel? _cluster;
-
     public PropertiesView()
     {
         InitializeComponent();
@@ -40,8 +33,8 @@ public partial class PropertiesView : UserControl, IInitializeCluster
                 {
                     NodeName = "r720",
                     ServiceAccountName = "actions-runner-controller",
-                    Tolerations = [ new() { Key = "example", Value = "true" } ],
-                    ImagePullSecrets = [ new() { Name = "controller-manager" }, new() { Name = "actions-runner-controller-serving-cert" } ],
+                    Tolerations = [new() { Key = "example", Value = "true" }],
+                    ImagePullSecrets = [new() { Name = "controller-manager" }, new() { Name = "actions-runner-controller-serving-cert" }],
                     Volumes = [
                         new() { Name = "secret-vol", Secret = new() { SecretName = "controller-manager" } },
                         new() { Name = "empty-dir-vol", EmptyDir = new() { } },
@@ -110,7 +103,7 @@ public partial class PropertiesView : UserControl, IInitializeCluster
                 {
                     Phase = "Running",
                     PodIP = "10.1.43.156",
-                    PodIPs = [ new() { Ip = "10.1.43.156" } ],
+                    PodIPs = [new() { Ip = "10.1.43.156" }],
                     QosClass = "BestEffort",
                     Conditions = [
                         new() { Type = "PodReady", Status = "True" },
@@ -121,47 +114,6 @@ public partial class PropertiesView : UserControl, IInitializeCluster
             };
         }
 #endif
-    }
-
-    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
-    {
-        base.OnAttachedToVisualTree(e);
-        ScheduleContainerMetricsInitialization();
-    }
-
-    protected override void OnDataContextChanged(EventArgs e)
-    {
-        base.OnDataContextChanged(e);
-        ScheduleContainerMetricsInitialization();
-    }
-
-    public void Initialize(ClusterWorkspaceViewModel cluster)
-    {
-        _cluster = cluster;
-        ScheduleContainerMetricsInitialization();
-    }
-
-    private void ScheduleContainerMetricsInitialization()
-    {
-        if (_cluster == null || VisualRoot == null)
-        {
-            return;
-        }
-
-        Dispatcher.UIThread.Post(InitializeContainerMetricsControls, DispatcherPriority.Background);
-    }
-
-    private void InitializeContainerMetricsControls()
-    {
-        if (_cluster == null)
-        {
-            return;
-        }
-
-        foreach (var control in this.GetVisualDescendants().OfType<MetricsControl>())
-        {
-            control.Initialize(_cluster);
-        }
     }
 }
 

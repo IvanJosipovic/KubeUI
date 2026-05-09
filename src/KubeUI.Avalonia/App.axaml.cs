@@ -1,29 +1,29 @@
-using KubeUI.Avalonia.Features.Clusters.Error.ViewModels;
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Infrastructure.Docking;
-using KubeUI.Avalonia.Services.Settings;
 using System.Diagnostics;
-using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using k8s;
+using KubeUI.Avalonia.Features.Clusters.Error.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Avalonia.Shell.Main.ViewModels;
 using KubeUI.Avalonia.Shell.Main.Views;
 using KubeUI.Kubernetes;
-using KubeUI.Avalonia.Infrastructure.Presentation;
+using Microsoft.Extensions.Hosting;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
-using Microsoft.Extensions.Hosting;
 
 namespace KubeUI.Avalonia;
 
-public partial class App : Application, IServiceProviderAccessor
+public partial class App : Application, IServiceProviderHost
 {
-    public IServiceProvider Services { get; set; }
+    public static TopLevel? TopLevel { get; private set; }
 
-    public static TopLevel TopLevel { get; private set; }
-
+    public IServiceProvider Services { get; }
     private readonly ILogger<App> _logger;
     private readonly IHostApplicationLifetime _hostApplicationLifetime;
     private int _shutdownRequested;
@@ -59,11 +59,11 @@ public partial class App : Application, IServiceProviderAccessor
 
     public override void OnFrameworkInitializationCompleted()
     {
-        DisableAvaloniaDataAnnotationValidation();
-
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = Services.GetRequiredService<MainWindow>();
+            MainWindow mainWindow = Services.GetRequiredService<MainWindow>();
+            mainWindow.DataContext = Services.GetRequiredService<MainViewModel>();
+            desktop.MainWindow = mainWindow;
             TopLevel = TopLevel.GetTopLevel(desktop.MainWindow)!;
             desktop.ShutdownRequested += (_, _) => GracefulShutdown();
         }
@@ -148,13 +148,4 @@ public partial class App : Application, IServiceProviderAccessor
         _hostApplicationLifetime.StopApplication();
     }
 
-    private static void DisableAvaloniaDataAnnotationValidation()
-    {
-        var dataValidationPluginsToRemove = BindingPlugins.DataValidators.OfType<DataAnnotationsValidationPlugin>().ToArray();
-
-        foreach (var plugin in dataValidationPluginsToRemove)
-        {
-            BindingPlugins.DataValidators.Remove(plugin);
-        }
-    }
 }

@@ -1,11 +1,15 @@
-using k8s.Models;
 using Avalonia.Controls;
+using k8s.Models;
 using KubeUI.Avalonia.Resources.Configuration.v1.ValidatingWebhookConfiguration.Views;
 
 namespace KubeUI.Avalonia.Resources.Configuration.v1.ValidatingWebhookConfiguration;
 
 public sealed partial class V1ValidatingWebhookConfigurationConfig : ResourceConfigBase<V1ValidatingWebhookConfiguration>
 {
+    public V1ValidatingWebhookConfigurationConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
     public override string Category => CategoryString("ResourceConfig_Category_Configuration", "Configuration");
 
     public override int Order => 10;

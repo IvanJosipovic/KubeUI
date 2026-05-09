@@ -6,6 +6,10 @@ namespace KubeUI.Avalonia.Resources.Configuration.v2.HorizontalPodAutoscaler;
 
 public sealed partial class V2HorizontalPodAutoscalerConfig : ResourceConfigBase<V2HorizontalPodAutoscaler>
 {
+    public V2HorizontalPodAutoscalerConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
     public override bool IsNamespaced => true;
     public override string Category => CategoryString("ResourceConfig_Category_Configuration", "Configuration");
     public override int Order => 4;

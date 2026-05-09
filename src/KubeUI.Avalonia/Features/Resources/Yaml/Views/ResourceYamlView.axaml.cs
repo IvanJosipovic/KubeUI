@@ -1,8 +1,7 @@
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
 using k8s.Models;
-using KubeUI.Kubernetes;
+using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml.Views;
 
@@ -12,41 +11,37 @@ public sealed partial class ResourceYamlView : UserControl
     {
         InitializeComponent();
 
-#if DEBUG
-        if (Design.IsDesignMode)
+        DesignTimePreview.Run(InitializeDesignTimeDataAsync);
+    }
+
+    private async Task InitializeDesignTimeDataAsync()
+    {
+        var cluster = await DesignTimePreview.CreateClusterAsync<V1Pod>();
+        var vm = DesignTimePreview.Get<ResourceYamlViewModel>();
+
+        var obj = new V1Pod()
         {
-            Dispatcher.UIThread.Post(async () =>
+            ApiVersion = V1Pod.KubeApiVersion,
+            Kind = V1Pod.KubeKind,
+            Metadata = new()
             {
-                var cluster = Application.Current.GetRequiredService<ClusterWorkspaceCatalog>().GetDefault();
-                await cluster.Connect();
-                var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
-
-                var obj = new V1Pod()
-                {
-                    ApiVersion = V1Pod.KubeApiVersion,
-                    Kind = V1Pod.KubeKind,
-                    Metadata = new()
-                    {
-                        Name = "test",
-                        NamespaceProperty = "default",
-                    },
-                    Spec = new()
-                    {
-                        Containers = [
-                            new(){
-                                Image = "nginx",
-                                ImagePullPolicy = "Always"
-                            }
-                        ]
+                Name = "test",
+                NamespaceProperty = "default",
+            },
+            Spec = new()
+            {
+                Containers = [
+                    new(){
+                        Image = "nginx",
+                        ImagePullPolicy = "Always"
                     }
-                };
+                ]
+            }
+        };
 
-                vm.Initialize(cluster, obj);
+        vm.Initialize(cluster, obj);
 
-                DataContext = vm;
-            });
-        }
-#endif
+        DataContext = vm;
     }
 
 }

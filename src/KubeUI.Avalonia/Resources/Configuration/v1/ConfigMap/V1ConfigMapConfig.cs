@@ -6,6 +6,10 @@ namespace KubeUI.Avalonia.Resources.Configuration.v1.ConfigMap;
 
 public sealed partial class V1ConfigMapConfig : ResourceConfigBase<V1ConfigMap>
 {
+    public V1ConfigMapConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
     public override bool IsNamespaced => true;
     public override string Category => CategoryString("ResourceConfig_Category_Configuration", "Configuration");
     public override int Order => 0;

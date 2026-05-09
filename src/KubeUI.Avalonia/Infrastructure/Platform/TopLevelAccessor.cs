@@ -1,5 +1,5 @@
-using KubeUI.Avalonia.Infrastructure.Platform;
 using Avalonia.Controls.ApplicationLifetimes;
+using KubeUI.Avalonia.Infrastructure.Platform;
 
 namespace KubeUI.Avalonia.Infrastructure.Platform;
 

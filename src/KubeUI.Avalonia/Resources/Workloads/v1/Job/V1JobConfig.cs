@@ -6,6 +6,10 @@ namespace KubeUI.Avalonia.Resources.Workloads.v1.Job;
 
 public sealed partial class V1JobConfig : ResourceConfigBase<V1Job>
 {
+    public V1JobConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
     public override bool IsNamespaced => true;
     public override string Category => CategoryString("ResourceConfig_Category_Workloads", "Workloads");
     public override int Order => 5;

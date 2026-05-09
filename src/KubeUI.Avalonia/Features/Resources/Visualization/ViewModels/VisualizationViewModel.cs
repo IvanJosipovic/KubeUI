@@ -1,23 +1,27 @@
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Visualization.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Infrastructure.Docking;
-using KubeUI.Avalonia.Infrastructure.Presentation;
 using System.Collections.Specialized;
 using System.Reactive.Subjects;
 using AvaloniaGraphControl;
 using Dock.Model.Core;
 using k8s;
 using k8s.Models;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Visualization.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
+using Microsoft.Extensions.DependencyInjection;
 using static AvaloniaGraphControl.GraphPanel;
 
 namespace KubeUI.Avalonia.Features.Resources.Visualization.ViewModels;
 
 public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeCluster, IDisposable
 {
+    private readonly IServiceProvider _serviceProvider;
+
     [ObservableProperty]
     public partial ClusterWorkspaceViewModel? Cluster { get; set; }
 
@@ -33,8 +37,9 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     [ObservableProperty]
     public partial LayoutMethods LayoutMethod { get; set; } = LayoutMethods.SugiyamaScheme;
 
-    public VisualizationViewModel()
+    public VisualizationViewModel(IServiceProvider serviceProvider)
     {
+        _serviceProvider = serviceProvider;
         Title = Assets.Resources.VisualizationViewModel_Title;
     }
 
@@ -150,13 +155,26 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     private void PopulateAllResources()
     {
+        if (Cluster?.Objects == null)
+        {
+            return;
+        }
+
         foreach (var kvp in Cluster.Objects)
         {
             var container = kvp.Value;
 
-            var items = container.GetType().GetProperty("Items").GetValue(container);
+            var itemsProperty = container.GetType().GetProperty("Items");
+            var items = itemsProperty?.GetValue(container);
+            var nestedItemsProperty = items?.GetType().GetProperty("Items");
+            var nestedItems = nestedItemsProperty?.GetValue(items) as IList;
 
-            foreach (object item in (IList)items.GetType().GetProperty("Items").GetValue(items))
+            if (nestedItems == null)
+            {
+                continue;
+            }
+
+            foreach (object item in nestedItems)
             {
                 var value = (IKubernetesObject<V1ObjectMeta>)item;
 
@@ -175,7 +193,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     continue;
                 }
 
-                var node = new ResourceNodeViewModel
+                var node = new ResourceNodeViewModel(_serviceProvider)
                 {
                     Cluster = Cluster,
                     Resource = value,
@@ -386,9 +404,9 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     }
                 }
 
-                if (ingress.Spec.DefaultBackend != null)
+                if (ingress?.Spec?.DefaultBackend != null)
                 {
-                    if (ingress?.Spec?.DefaultBackend?.Service != null)
+                    if (ingress.Spec.DefaultBackend.Service != null)
                     {
                         foreach (var end in resources)
                         {
@@ -2023,8 +2041,11 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         catch { }
     }
 
-    public sealed partial class ResourceNodeViewModel: ViewModelBase
+    public sealed partial class ResourceNodeViewModel : ViewModelBase
     {
+        private readonly IServiceProvider _serviceProvider;
+        private IFactory Factory => _serviceProvider.GetRequiredService<IFactory>();
+
         [ObservableProperty]
         public partial ClusterWorkspaceViewModel Cluster { get; set; }
 
@@ -2034,10 +2055,15 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         [ObservableProperty]
         public partial string IconPath { get; set; }
 
+        public ResourceNodeViewModel(IServiceProvider serviceProvider)
+        {
+            _serviceProvider = serviceProvider;
+        }
+
         [RelayCommand]
         private void ViewYaml(IKubernetesObject<V1ObjectMeta> resource)
         {
-            var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
+            var vm = _serviceProvider.GetRequiredService<ResourceYamlViewModel>();
 
             vm.Initialize(Cluster, resource);
 
@@ -2049,7 +2075,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         {
             var propType = typeof(ResourcePropertiesViewModel<>).MakeGenericType(resource.GetType());
 
-            var instance = Application.Current.GetRequiredService(propType) as IDockable;
+            var instance = _serviceProvider.GetRequiredService(propType) as IDockable;
             instance.CanFloat = false;
 
             propType.GetMethod(nameof(ResourcePropertiesViewModel<V1Pod>.Initialize)).Invoke(instance, [Cluster, resource]);

@@ -9,27 +9,29 @@ using Avalonia.Controls.DataGridSearching;
 using Avalonia.Controls.DataGridSorting;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Selection;
+using Avalonia.Headless;
+using Avalonia.Headless.XUnit;
+using Avalonia.Input;
+using Avalonia.Layout;
 using Avalonia.Styling;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
+using CommunityToolkit.Mvvm.Input;
 using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
-using Avalonia.Headless.XUnit;
-using Avalonia.Layout;
-using Avalonia.Threading;
-using Avalonia.VisualTree;
-using Shouldly;
-using CommunityToolkit.Mvvm.Input;
 using FluentAvalonia.Core;
-using KubeUI.Avalonia;
-using KubeUI.Avalonia.Features.Resources.List.Behaviors;
-using KubeUI.Avalonia.Controls.DataGridFilters;
-using KubeUI.Avalonia.Resources;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia;
+using KubeUI.Avalonia.Controls.DataGridFilters;
+using KubeUI.Avalonia.Features.Resources.List.Behaviors;
+using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Tests.Infra;
+using Shouldly;
 
-namespace KubeUI.Avalonia.Tests;
+namespace KubeUI.Avalonia.Tests.Features.Resources.List;
 
 public class ResourceListViewModelTests : AvaloniaTestBase
 {
@@ -74,9 +76,10 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         return cluster;
     }
 
-    private T GetRequiredService<T>()
+    private T GetRequiredService<T>() where T : class
     {
-        var service = Application.Current.GetRequiredService<T>();
+        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
+        var service = services.GetRequiredService<T>();
         if (service is IDisposable disposable)
         {
             _disposables.Add(disposable);
@@ -98,19 +101,24 @@ public class ResourceListViewModelTests : AvaloniaTestBase
             }
         };
 
-    private static Corev1Event Event(string ns, string name)
-    => new()
+    private static Corev1Event Event(string ns, string name, DateTime? timestamp = null, int? count = null)
     {
-        ApiVersion = Corev1Event.KubeApiVersion,
-        Kind = Corev1Event.KubeKind,
-        Metadata = new V1ObjectMeta
+        var actualTimestamp = timestamp ?? DateTime.UtcNow;
+
+        return new()
         {
-            NamespaceProperty = ns,
-            Name = name,
-            CreationTimestamp = DateTime.UtcNow,
-        },
-        LastTimestamp = DateTime.UtcNow,
-    };
+            ApiVersion = Corev1Event.KubeApiVersion,
+            Kind = Corev1Event.KubeKind,
+            Metadata = new V1ObjectMeta
+            {
+                NamespaceProperty = ns,
+                Name = name,
+                CreationTimestamp = actualTimestamp,
+            },
+            LastTimestamp = actualTimestamp,
+            Count = count,
+        };
+    }
 
     private static V1Namespace NamespaceResource(string name)
         => new()
@@ -158,6 +166,13 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         dataGridRow.ShouldNotBeNull();
 
         return GetCellText(grid, dataGridRow!, column);
+    }
+
+    private static Point GetRowCenterOnWindow(DataGridRow row, Window window)
+    {
+        var point = row.TranslatePoint(new Point(row.Bounds.Width / 2, row.Bounds.Height / 2), window);
+        point.ShouldNotBeNull();
+        return point!.Value;
     }
 
 
@@ -242,6 +257,336 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         vm.SelectedItem.Name().ShouldBe("b");
     }
 
+    [AvaloniaFact(DisplayName = "Selected item right click populates context menu")]
+    public async Task selected_item_right_click_populates_context_menu()
+    {
+        var window = CreateWindow();
+        var cluster = await CreateClusterAsync();
+
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+
+        window.Content = view;
+        window.Show();
+
+        var grid = view.FindControl<DataGrid>("PART_Grid");
+        grid.ShouldNotBeNull();
+
+        var pod = Pod("ns", "a");
+        pod.Spec = new V1PodSpec
+        {
+            Containers = [new V1Container { Name = "container-a" }]
+        };
+
+        await AddOrUpdateAsync(cluster, pod);
+
+        vm.SelectionModel.Select(0);
+
+        var contextMenu = grid!.ContextMenu;
+        contextMenu.ShouldNotBeNull();
+
+        var row = GetAllRows(grid).First(x => x.IsVisible);
+        var clickPoint = GetRowCenterOnWindow(row, window);
+        window.MouseDown(clickPoint, MouseButton.Right);
+        window.MouseUp(clickPoint, MouseButton.Right);
+        Dispatcher.UIThread.RunJobs();
+
+        var items = contextMenu.ItemsSource as IEnumerable<MenuItemViewModel>;
+        items.ShouldNotBeNull();
+
+        var headers = items!.Select(item => item.Header).ToList();
+        headers.ShouldContain("View");
+    }
+
+    [AvaloniaFact(DisplayName = "First right click enables context menu actions for the clicked row")]
+    public async Task first_right_click_enables_context_menu_actions_for_the_clicked_row()
+    {
+        var window = CreateWindow();
+        var cluster = await CreateClusterAsync();
+
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+
+        window.Content = view;
+        window.Show();
+
+        var grid = view.FindControl<DataGrid>("PART_Grid");
+        grid.ShouldNotBeNull();
+
+        var pod = Pod("ns", "a");
+        pod.Spec = new V1PodSpec
+        {
+            Containers = [new V1Container { Name = "container-a" }]
+        };
+
+        await AddOrUpdateAsync(cluster, pod);
+
+        var contextMenu = grid!.ContextMenu;
+        contextMenu.ShouldNotBeNull();
+
+        var row = GetAllRows(grid).First(x => x.IsVisible);
+        var clickPoint = GetRowCenterOnWindow(row, window);
+
+        window.MouseDown(clickPoint, MouseButton.Right);
+        window.MouseUp(clickPoint, MouseButton.Right);
+
+        await WaitForAsync(() => vm.SelectionModel.SelectedItems.Count == 1);
+
+        var items = contextMenu.ItemsSource as IEnumerable<MenuItemViewModel>;
+        items.ShouldNotBeNull();
+
+        var viewItem = items!.First(item => item.Header == "View");
+        var commandParameter = viewItem.CommandParameter as IList;
+
+        commandParameter.ShouldNotBeNull();
+        commandParameter!.Count.ShouldBe(1);
+        viewItem.Command.ShouldNotBeNull();
+        viewItem.Command!.CanExecute(commandParameter).ShouldBeTrue();
+    }
+
+    [AvaloniaFact(DisplayName = "Right click context menu targets the clicked row")]
+    public void right_click_context_menu_targets_the_clicked_row()
+    {
+        var podA = Pod("ns", "a");
+        var podB = Pod("ns", "b");
+
+        var selectionModel = new SelectionModel<object>
+        {
+            Source = new object[] { podA, podB }
+        };
+
+        selectionModel.Select(0);
+
+        var viewModel = new FakeContextMenuResourceListViewModel(selectionModel);
+
+        var selectedA = ResourceListContextMenuBehavior.ResolveContextMenuItemsSource(viewModel, 0, podA)
+            .Cast<V1Pod>()
+            .Single();
+        selectedA.Name().ShouldBe("a");
+
+        var selectedB = ResourceListContextMenuBehavior.ResolveContextMenuItemsSource(viewModel, 1, podB)
+            .Cast<V1Pod>()
+            .Single();
+        selectedB.Name().ShouldBe("b");
+    }
+
+    [AvaloniaFact(DisplayName = "Right click context menu follows the clicked row in the grid")]
+    public async Task right_click_context_menu_follows_the_clicked_row_in_the_grid()
+    {
+        var window = CreateWindow();
+        var cluster = await CreateClusterAsync();
+
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+
+        window.Content = view;
+        window.Show();
+
+        var grid = view.FindControl<DataGrid>("PART_Grid");
+        grid.ShouldNotBeNull();
+
+        var podA = Pod("ns", "a");
+        podA.Spec = new V1PodSpec
+        {
+            Containers = [new V1Container { Name = "container-a" }]
+        };
+
+        var podB = Pod("ns", "b");
+        podB.Spec = new V1PodSpec
+        {
+            Containers = [new V1Container { Name = "container-b" }]
+        };
+
+        await AddOrUpdateAsync(cluster, podA);
+        await AddOrUpdateAsync(cluster, podB);
+
+        var contextMenu = grid!.ContextMenu;
+        contextMenu.ShouldNotBeNull();
+
+        var rows = GetAllRows(grid).Where(x => x.IsVisible).ToList();
+        rows.Count.ShouldBeGreaterThanOrEqualTo(2);
+
+        var rowA = rows.First(row => (row.DataContext as V1Pod)?.Name() == "a");
+        var rowB = rows.First(row => (row.DataContext as V1Pod)?.Name() == "b");
+
+        async Task AssertMenuTargetsRowAsync(DataGridRow row, string expectedName)
+        {
+            var clickPoint = GetRowCenterOnWindow(row, window);
+            window.MouseDown(clickPoint, MouseButton.Right);
+            window.MouseUp(clickPoint, MouseButton.Right);
+
+            await WaitForAsync(() =>
+            {
+                var items = contextMenu.ItemsSource as IEnumerable<MenuItemViewModel>;
+                if (items is null)
+                {
+                    return false;
+                }
+
+                var viewItem = items.FirstOrDefault(item => item.Header == "View");
+                var commandParameter = viewItem?.CommandParameter as IList;
+                if (commandParameter is null || commandParameter.Count != 1)
+                {
+                    return false;
+                }
+
+                return commandParameter[0] is V1Pod pod && pod.Name() == expectedName;
+            });
+
+            var menuItems = (contextMenu.ItemsSource as IEnumerable<MenuItemViewModel>)!.ToList();
+            var viewMenuItem = menuItems.First(item => item.Header == "View");
+            var commandItems = (viewMenuItem.CommandParameter as IList)!;
+
+            commandItems.Count.ShouldBe(1);
+            ((V1Pod)commandItems[0]!).Name().ShouldBe(expectedName);
+
+            contextMenu.Close();
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        await AssertMenuTargetsRowAsync(rowA, "a");
+        await AssertMenuTargetsRowAsync(rowB, "b");
+    }
+
+    [AvaloniaFact(DisplayName = "Multi select right click populates context menu")]
+    public async Task multi_select_right_click_populates_context_menu()
+    {
+        var window = CreateWindow();
+        var cluster = await CreateClusterAsync();
+
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+
+        window.Content = view;
+        window.Show();
+
+        var grid = view.FindControl<DataGrid>("PART_Grid");
+        grid.ShouldNotBeNull();
+
+        await AddOrUpdateAsync(cluster, Pod("ns", "a"));
+        await AddOrUpdateAsync(cluster, Pod("ns", "b"));
+
+        vm.SelectionModel.Select(0);
+        vm.SelectionModel.Select(1);
+
+        var contextMenu = grid!.ContextMenu;
+        contextMenu.ShouldNotBeNull();
+
+        var row = GetAllRows(grid).First(x => x.IsVisible);
+        var clickPoint = GetRowCenterOnWindow(row, window);
+        window.MouseDown(clickPoint, MouseButton.Right);
+        window.MouseUp(clickPoint, MouseButton.Right);
+        Dispatcher.UIThread.RunJobs();
+
+        var items = contextMenu.ItemsSource as IEnumerable<MenuItemViewModel>;
+        items.ShouldNotBeNull();
+
+        var headers = items!.Select(item => item.Header).ToList();
+        headers.ShouldContain("View");
+        headers.ShouldContain("Delete");
+    }
+
+    [AvaloniaFact(DisplayName = "Multi select right click uses the full selection")]
+    public async Task multi_select_right_click_uses_the_full_selection()
+    {
+        var window = CreateWindow();
+        var cluster = await CreateClusterAsync();
+
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+
+        window.Content = view;
+        window.Show();
+
+        var grid = view.FindControl<DataGrid>("PART_Grid");
+        grid.ShouldNotBeNull();
+
+        var podA = Pod("ns", "a");
+        podA.Spec = new V1PodSpec
+        {
+            Containers = [new V1Container { Name = "container-a" }]
+        };
+
+        var podB = Pod("ns", "b");
+        podB.Spec = new V1PodSpec
+        {
+            Containers = [new V1Container { Name = "container-b" }]
+        };
+
+        await AddOrUpdateAsync(cluster, podA);
+        await AddOrUpdateAsync(cluster, podB);
+
+        vm.SelectionModel.Select(0);
+        vm.SelectionModel.Select(1);
+
+        var contextMenu = grid!.ContextMenu;
+        contextMenu.ShouldNotBeNull();
+
+        var row = GetAllRows(grid).First(x => x.IsVisible && ReferenceEquals(x.DataContext, podA));
+        var clickPoint = GetRowCenterOnWindow(row, window);
+        window.MouseDown(clickPoint, MouseButton.Right);
+        window.MouseUp(clickPoint, MouseButton.Right);
+        Dispatcher.UIThread.RunJobs();
+
+        var items = contextMenu.ItemsSource as IEnumerable<MenuItemViewModel>;
+        items.ShouldNotBeNull();
+
+        var deleteItem = items!.First(item => item.Header == "Delete");
+        var commandParameter = deleteItem.CommandParameter as IList;
+
+        commandParameter.ShouldNotBeNull();
+        commandParameter!.Count.ShouldBe(2);
+        ((V1Pod)commandParameter[0]!).Name().ShouldBe("a");
+        ((V1Pod)commandParameter[1]!).Name().ShouldBe("b");
+        deleteItem.Command.ShouldNotBeNull();
+        deleteItem.Command!.CanExecute(commandParameter).ShouldBeTrue();
+
+        var viewItem = items.First(item => item.Header == "View");
+        viewItem.Command.ShouldNotBeNull();
+        viewItem.Command!.CanExecute(commandParameter).ShouldBeFalse();
+
+        contextMenu.Close();
+        Dispatcher.UIThread.RunJobs();
+
+        row = GetAllRows(grid).First(x => x.IsVisible && ReferenceEquals(x.DataContext, podB));
+        clickPoint = GetRowCenterOnWindow(row, window);
+        window.MouseDown(clickPoint, MouseButton.Right);
+        window.MouseUp(clickPoint, MouseButton.Right);
+        Dispatcher.UIThread.RunJobs();
+
+        items = contextMenu.ItemsSource as IEnumerable<MenuItemViewModel>;
+        items.ShouldNotBeNull();
+
+        deleteItem = items!.First(item => item.Header == "Delete");
+        commandParameter = deleteItem.CommandParameter as IList;
+
+        commandParameter.ShouldNotBeNull();
+        commandParameter!.Count.ShouldBe(2);
+        ((V1Pod)commandParameter[0]!).Name().ShouldBe("a");
+        ((V1Pod)commandParameter[1]!).Name().ShouldBe("b");
+        deleteItem.Command.ShouldNotBeNull();
+        deleteItem.Command!.CanExecute(commandParameter).ShouldBeTrue();
+
+        viewItem = items.First(item => item.Header == "View");
+        viewItem.Command.ShouldNotBeNull();
+        viewItem.Command!.CanExecute(commandParameter).ShouldBeFalse();
+    }
+
     [AvaloniaFact(DisplayName = "Single select with sort due to update")]
     public async Task single_select_with_sort_preserves_only_selected()
     {
@@ -262,9 +607,9 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         await AddOrUpdateAsync(cluster, Event("ns", "b"));
         await AddOrUpdateAsync(cluster, Event("ns", "c"));
 
-        vm.View.ElementAt(0).ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
-        vm.View.ElementAt(1).ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
-        vm.View.ElementAt(2).ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
+        vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
+        vm.View[1].ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
+        vm.View[2].ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
 
 
         // Select only middle
@@ -276,9 +621,9 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         await AddOrUpdateAsync(cluster, Event("ns", "b"));
         Dispatcher.UIThread.RunJobs();
 
-        vm.View.ElementAt(0).ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
-        vm.View.ElementAt(1).ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
-        vm.View.ElementAt(2).ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
+        vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
+        vm.View[1].ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
+        vm.View[2].ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
 
         vm.SelectedItems.Count.ShouldBe(1);
 
@@ -310,9 +655,9 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         await AddOrUpdateAsync(cluster, Event("ns", "b"));
         await AddOrUpdateAsync(cluster, Event("ns", "c"));
 
-        vm.View.ElementAt(0).ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
-        vm.View.ElementAt(1).ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
-        vm.View.ElementAt(2).ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
+        vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
+        vm.View[1].ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
+        vm.View[2].ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
 
 
         // Select all 3
@@ -326,9 +671,9 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         await AddOrUpdateAsync(cluster, Event("ns", "b"));
         Dispatcher.UIThread.RunJobs();
 
-        vm.View.ElementAt(0).ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
-        vm.View.ElementAt(1).ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
-        vm.View.ElementAt(2).ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
+        vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("b");
+        vm.View[1].ShouldBeOfType<Corev1Event>().Name().ShouldBe("c");
+        vm.View[2].ShouldBeOfType<Corev1Event>().Name().ShouldBe("a");
 
         vm.SelectionModel.SelectedIndexes.ShouldBe([0, 1, 2]);
 
@@ -423,6 +768,67 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         after.ShouldContain("test=value");
     }
 
+    [AvaloniaFact(DisplayName = "Mutable sort updates keep the resource list live")]
+    public async Task mutable_sort_updates_keep_the_resource_list_live()
+    {
+        var window = CreateWindow();
+        var cluster = await CreateClusterAsync();
+
+        var vm = GetRequiredService<ResourceListViewModel<Corev1Event>>();
+        vm.Initialize(cluster);
+
+        var view = GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+
+        window.Content = view;
+        window.Show();
+
+        var baseTimestamp = DateTime.UtcNow.AddHours(-2);
+        for (var i = 0; i < 200; i++)
+        {
+            await AddOrUpdateAsync(cluster, Event("ns", $"seed-{i}", baseTimestamp.AddMinutes(i), i));
+        }
+
+        Dispatcher.UIThread.RunJobs();
+        vm.View.Count.ShouldBe(200);
+        await WaitForAsync(() => vm.ItemCount == 200, 5000);
+
+        var left = Event("ns", "left", baseTimestamp.AddHours(5), 1);
+        var right = Event("ns", "right", baseTimestamp.AddHours(5).AddMinutes(1), 2);
+
+        await AddOrUpdateAsync(cluster, left);
+        await AddOrUpdateAsync(cluster, right);
+        Dispatcher.UIThread.RunJobs();
+
+        vm.View.Count.ShouldBe(202);
+        await WaitForAsync(() => vm.ItemCount == 202, 5000);
+        vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("right");
+
+        for (var i = 0; i < 50; i++)
+        {
+            left.LastTimestamp = baseTimestamp.AddHours(6 + (i * 2));
+            left.Count = i + 10;
+            await AddOrUpdateAsync(cluster, left);
+
+            right.LastTimestamp = baseTimestamp.AddHours(6 + (i * 2) + 1);
+            right.Count = i + 20;
+            await AddOrUpdateAsync(cluster, right);
+
+            Dispatcher.UIThread.RunJobs();
+
+            vm.View.Count.ShouldBe(202);
+            vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("right");
+            vm.View[1].ShouldBeOfType<Corev1Event>().Name().ShouldBe("left");
+        }
+
+        await AddOrUpdateAsync(cluster, Event("ns", "tail", baseTimestamp.AddHours(200), 999));
+        Dispatcher.UIThread.RunJobs();
+
+        vm.View.Count.ShouldBe(203);
+        await WaitForAsync(() => vm.ItemCount == 203, 5000);
+        vm.View[0].ShouldBeOfType<Corev1Event>().Name().ShouldBe("tail");
+    }
+
     [AvaloniaFact(DisplayName = "Resource list columns expose filter buttons")]
     public async Task resource_list_columns_expose_filter_buttons()
     {
@@ -449,6 +855,8 @@ public class ResourceListViewModelTests : AvaloniaTestBase
     [AvaloniaFact(DisplayName = "Resource list filter flyout rows align editors")]
     public async Task resource_list_filter_flyout_rows_align_editors()
     {
+        var flyoutFactory = GetRequiredService<DataGridColumnFilterFlyoutFactory>();
+
         var textCluster = await CreateClusterAsync();
         var textVm = GetRequiredService<ResourceListViewModel<V1Pod>>();
         textVm.Initialize(textCluster);
@@ -459,6 +867,8 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         var textColumn = textVm.ColumnDefinitions.First(column => column.ValueType == typeof(string));
         var textFlyout = textColumn.FilterFlyout.ShouldBeOfType<Flyout>();
+        textFlyout.ShowAt(textView);
+        Dispatcher.UIThread.RunJobs();
         var textContent = textFlyout.Content.ShouldBeOfType<TextFilterFlyoutView>();
         var textPanel = textContent.Content.ShouldBeOfType<StackPanel>();
         var textRows = textPanel.Children.OfType<Grid>().ToList();
@@ -466,7 +876,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         textRows[0].Children.OfType<TextBlock>().Single().Text.ShouldBe(KubeUI.Avalonia.Assets.Resources.DataGridFilterFlyout_Condition);
         textRows[1].Children.OfType<TextBlock>().Single().Text.ShouldBe(KubeUI.Avalonia.Assets.Resources.DataGridFilterFlyout_Value);
         textPanel.GetVisualDescendants().OfType<ComboBox>().First().HorizontalAlignment.ShouldBe(HorizontalAlignment.Stretch);
-        textPanel.GetVisualDescendants().OfType<TextBox>().Single().HorizontalAlignment.ShouldBe(HorizontalAlignment.Stretch);
+        textRows[1].Children.OfType<TextBox>().Single().HorizontalAlignment.ShouldBe(HorizontalAlignment.Stretch);
 
         var numericCluster = await CreateClusterAsync();
         var numericVm = GetRequiredService<ResourceListViewModel<Corev1Event>>();
@@ -478,6 +888,8 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         var numericColumn = numericVm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Count", StringComparison.Ordinal));
         var numericFlyout = numericColumn.FilterFlyout.ShouldBeOfType<Flyout>();
+        numericFlyout.ShowAt(numericView);
+        Dispatcher.UIThread.RunJobs();
         var numericContent = numericFlyout.Content.ShouldBeOfType<NumericFilterFlyoutView>();
         var numericRows = numericContent.Content.ShouldBeOfType<StackPanel>().Children.OfType<Grid>().ToList();
 
@@ -505,6 +917,8 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         var dateColumn = dateVm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Last Seen", StringComparison.Ordinal));
         var dateFlyout = dateColumn.FilterFlyout.ShouldBeOfType<Flyout>();
+        dateFlyout.ShowAt(dateView);
+        Dispatcher.UIThread.RunJobs();
         var dateContent = dateFlyout.Content.ShouldBeOfType<DateFilterFlyoutView>();
         var datePanel = dateContent.Content.ShouldBeOfType<StackPanel>();
         var dateRows = datePanel.Children.OfType<Grid>().ToList();
@@ -513,6 +927,23 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         datePanel.GetVisualDescendants().OfType<NumericUpDown>().Count().ShouldBe(1);
         datePanel.GetVisualDescendants().OfType<ComboBox>().Count().ShouldBeGreaterThanOrEqualTo(2);
         datePanel.GetVisualDescendants().OfType<ComboBox>().All(combo => combo.HorizontalAlignment == HorizontalAlignment.Stretch).ShouldBeTrue();
+
+        var enumColumnDefinition = new TestEnumColumnDefinition();
+        var enumDataGridColumn = new DataGridControlTemplateColumnDefinition();
+        var enumFlyout = flyoutFactory.Create(enumColumnDefinition, enumDataGridColumn, new FilteringModel()).ShouldBeOfType<Flyout>();
+        var enumHost = new Button();
+        var enumWindow = CreateWindow(content: enumHost);
+        enumWindow.Show();
+        enumFlyout.ShowAt(enumHost);
+        Dispatcher.UIThread.RunJobs();
+        var enumContent = enumFlyout.Content.ShouldBeOfType<EnumFilterFlyoutView>();
+        var enumPanel = enumContent.Content.ShouldBeOfType<StackPanel>();
+        var enumRows = enumPanel.Children.OfType<Grid>().ToList();
+        enumRows.Count.ShouldBe(2);
+        enumRows[0].Children.OfType<TextBlock>().Single().Text.ShouldBe(KubeUI.Avalonia.Assets.Resources.DataGridFilterFlyout_Condition);
+        enumRows[1].Children.OfType<TextBlock>().Single().Text.ShouldBe(KubeUI.Avalonia.Assets.Resources.DataGridFilterFlyout_Value);
+        enumPanel.GetVisualDescendants().OfType<ComboBox>().Count().ShouldBe(2);
+        enumPanel.GetVisualDescendants().OfType<ComboBox>().All(combo => combo.HorizontalAlignment == HorizontalAlignment.Stretch).ShouldBeTrue();
     }
 
     [AvaloniaFact(DisplayName = "Resource list numeric and date filters support comparison operators")]
@@ -538,13 +969,13 @@ public class ResourceListViewModelTests : AvaloniaTestBase
             => vm.FilteringModel.Descriptors.First(descriptor =>
                 ReferenceEquals(descriptor.ColumnId, column) || Equals(descriptor.ColumnId, column));
 
-        filterService.ApplyNumericFilter(vm.FilteringModel, countColumn, FilteringOperator.GreaterThan, 5d, null);
+        filterService.ApplyNumericFilter(vm.FilteringModel, countColumn, GetNumericOperator(FilteringOperator.GreaterThan), 5d, null);
         vm.FilteringModel.Descriptors.Count(descriptor => ReferenceEquals(descriptor.ColumnId, countColumn) || Equals(descriptor.ColumnId, countColumn)).ShouldBe(1);
         var numericDescriptor = GetDescriptorForColumn(countColumn);
         numericDescriptor.Operator.ShouldBe(FilteringOperator.GreaterThan);
         numericDescriptor.Value.ShouldBe(5d);
 
-        filterService.ApplyNumericFilter(vm.FilteringModel, countColumn, FilteringOperator.Between, 2d, 8d);
+        filterService.ApplyNumericFilter(vm.FilteringModel, countColumn, GetNumericOperator(FilteringOperator.Between), 2d, 8d);
         vm.FilteringModel.Descriptors.Count(descriptor => ReferenceEquals(descriptor.ColumnId, countColumn) || Equals(descriptor.ColumnId, countColumn)).ShouldBe(1);
         numericDescriptor = GetDescriptorForColumn(countColumn);
         numericDescriptor.Operator.ShouldBe(FilteringOperator.Between);
@@ -553,9 +984,23 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         numericDescriptor.Values[0].ShouldBe(2d);
         numericDescriptor.Values[1].ShouldBe(8d);
 
+        filterService.ApplyNumericFilter(
+            vm.FilteringModel,
+            countColumn,
+            ResourceListFilterFlyoutOptions.NumericOperators.First(option => option.CustomId == FilterOperatorId.NumericNotBetween),
+            2d,
+            8d);
+        vm.FilteringModel.Descriptors.Count(descriptor => ReferenceEquals(descriptor.ColumnId, countColumn) || Equals(descriptor.ColumnId, countColumn)).ShouldBe(1);
+        numericDescriptor = GetDescriptorForColumn(countColumn);
+        numericDescriptor.Operator.ShouldBe(FilteringOperator.Custom);
+        numericDescriptor.PropertyPath.ShouldBe(FilterOperatorIdCatalog.GetDescriptorKey(FilterOperatorId.NumericNotBetween));
+        numericDescriptor.Predicate.ShouldNotBeNull();
+        numericDescriptor.Values.ShouldNotBeNull();
+        numericDescriptor.Values.Count.ShouldBe(2);
+
         var beforeDateFilter = DateTimeOffset.UtcNow;
         var days = GetDateRelativeUnit(vm, 2);
-        filterService.ApplyDateFilter(vm.FilteringModel, lastSeenColumn, lastSeenColumn.ValueType, FilteringOperator.GreaterThan, 5d, days);
+        filterService.ApplyDateFilter(vm.FilteringModel, lastSeenColumn, lastSeenColumn.ValueType, GetDateOperator(FilteringOperator.GreaterThan), 5d, days);
         vm.FilteringModel.Descriptors.Count(descriptor => ReferenceEquals(descriptor.ColumnId, lastSeenColumn) || Equals(descriptor.ColumnId, lastSeenColumn)).ShouldBe(1);
         var dateDescriptor = GetDescriptorForColumn(lastSeenColumn);
         dateDescriptor.Operator.ShouldBe(FilteringOperator.GreaterThan);
@@ -565,7 +1010,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         Math.Abs((actualThreshold - expectedThreshold).TotalSeconds).ShouldBeLessThan(10);
 
         var hours = GetDateRelativeUnit(vm, 1);
-        filterService.ApplyDateFilter(vm.FilteringModel, lastSeenColumn, lastSeenColumn.ValueType, FilteringOperator.LessThan, 12d, hours);
+        filterService.ApplyDateFilter(vm.FilteringModel, lastSeenColumn, lastSeenColumn.ValueType, GetDateOperator(FilteringOperator.LessThan), 12d, hours);
         vm.FilteringModel.Descriptors.Count(descriptor => ReferenceEquals(descriptor.ColumnId, lastSeenColumn) || Equals(descriptor.ColumnId, lastSeenColumn)).ShouldBe(1);
         dateDescriptor = GetDescriptorForColumn(lastSeenColumn);
         dateDescriptor.Operator.ShouldBe(FilteringOperator.LessThan);
@@ -573,6 +1018,19 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         expectedThreshold = beforeDateFilter.AddHours(-12);
         actualThreshold = ToDateTimeOffset(dateDescriptor.Value!);
         Math.Abs((actualThreshold - expectedThreshold).TotalSeconds).ShouldBeLessThan(10);
+
+        filterService.ApplyDateFilter(
+            vm.FilteringModel,
+            lastSeenColumn,
+            lastSeenColumn.ValueType,
+            ResourceListFilterFlyoutOptions.DateOperators.First(option => option.CustomId == FilterOperatorId.DateNotNewerThan),
+            5d,
+            days);
+        vm.FilteringModel.Descriptors.Count(descriptor => ReferenceEquals(descriptor.ColumnId, lastSeenColumn) || Equals(descriptor.ColumnId, lastSeenColumn)).ShouldBe(1);
+        dateDescriptor = GetDescriptorForColumn(lastSeenColumn);
+        dateDescriptor.Operator.ShouldBe(FilteringOperator.Custom);
+        dateDescriptor.PropertyPath.ShouldBe(FilterOperatorIdCatalog.GetDescriptorKey(FilterOperatorId.DateNotNewerThan));
+        dateDescriptor.Predicate.ShouldNotBeNull();
     }
 
     [AvaloniaFact(DisplayName = "Resource list filters update the live view")]
@@ -607,11 +1065,21 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         vm.View.Count.ShouldBe(3);
 
         var nameColumn = vm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Name", StringComparison.Ordinal));
-        filterService.ApplyTextFilter(vm.FilteringModel, nameColumn, FilteringOperator.Contains, "alp");
+        filterService.ApplyTextFilter(vm.FilteringModel, nameColumn, GetTextOperator(FilteringOperator.Contains), "alp");
         Dispatcher.UIThread.RunJobs();
 
         vm.View.Count.ShouldBe(1);
         ((V1Pod)vm.View[0]).Name().ShouldBe("alpha");
+
+        filterService.ApplyTextFilter(
+            vm.FilteringModel,
+            nameColumn,
+            ResourceListFilterFlyoutOptions.TextOperators.First(option => option.CustomId == FilterOperatorId.TextNotContains),
+            "alp");
+        Dispatcher.UIThread.RunJobs();
+
+        vm.View.Count.ShouldBe(2);
+        vm.View.OfType<V1Pod>().Select(pod => pod.Name()).ShouldBe(["beta", "gamma"]);
 
         var countCluster = await CreateClusterAsync();
         var countVm = GetRequiredService<ResourceListViewModel<Corev1Event>>();
@@ -653,17 +1121,59 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         countVm.View.Count.ShouldBe(2);
 
         var countColumn = countVm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Count", StringComparison.Ordinal));
-        filterService.ApplyNumericFilter(countVm.FilteringModel, countColumn, FilteringOperator.GreaterThan, 0d, null);
+        filterService.ApplyNumericFilter(countVm.FilteringModel, countColumn, GetNumericOperator(FilteringOperator.GreaterThan), 0d, null);
         Dispatcher.UIThread.RunJobs();
         countVm.View.Count.ShouldBe(2);
 
         var lastSeenColumn = countVm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Last Seen", StringComparison.Ordinal));
         var hours = GetDateRelativeUnit(countVm, 1);
-        filterService.ApplyDateFilter(countVm.FilteringModel, lastSeenColumn, lastSeenColumn.ValueType, FilteringOperator.GreaterThan, 1d, hours);
+        filterService.ApplyDateFilter(countVm.FilteringModel, lastSeenColumn, lastSeenColumn.ValueType, GetDateOperator(FilteringOperator.GreaterThan), 1d, hours);
         Dispatcher.UIThread.RunJobs();
 
         countVm.View.Count.ShouldBe(1);
         ((Corev1Event)countVm.View[0]).Name().ShouldBe("newer");
+    }
+
+    [AvaloniaFact(DisplayName = "Text filter flyout apply command updates the live view")]
+    public async Task text_filter_flyout_apply_command_updates_the_live_view()
+    {
+        var window = CreateWindow();
+        var cluster = await CreateClusterAsync();
+
+        var vm = GetRequiredService<ResourceListViewModel<V1Pod>>();
+        vm.Initialize(cluster);
+
+        var view = GetRequiredService<ResourceListView>();
+        view.DataContext = vm;
+        window.Content = view;
+        window.Show();
+
+        await AddOrUpdateAsync(cluster, Pod("ns", "alpha"));
+        await AddOrUpdateAsync(cluster, Pod("ns", "beta"));
+        await AddOrUpdateAsync(cluster, Pod("ns", "gamma"));
+        Dispatcher.UIThread.RunJobs();
+
+        var nameColumn = vm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Name", StringComparison.Ordinal));
+        var flyout = (Flyout)nameColumn.FilterFlyout!;
+        flyout.ShowAt(view);
+        Dispatcher.UIThread.RunJobs();
+        var flyoutContext = flyout.Content.ShouldBeOfType<TextFilterFlyoutView>().DataContext.ShouldBeOfType<TextFilterFlyoutContext>();
+
+        flyoutContext.SelectedOperator = ResourceListFilterFlyoutOptions.TextOperators.First(option => option.Operator == FilteringOperator.Contains && (option.CustomId is null || !FilterOperatorIdCatalog.UsesCustomDescriptor(option.CustomId.Value)));
+        flyoutContext.Query = "alp";
+        flyoutContext.ApplyCommand.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+
+        vm.View.Count.ShouldBe(1);
+        ((V1Pod)vm.View[0]).Name().ShouldBe("alpha");
+
+        flyoutContext.SelectedOperator = ResourceListFilterFlyoutOptions.TextOperators.First(option => option.CustomId == FilterOperatorId.TextNotContains);
+        flyoutContext.Query = "alp";
+        flyoutContext.ApplyCommand.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+
+        vm.View.Count.ShouldBe(2);
+        vm.View.OfType<V1Pod>().Select(pod => pod.Name()).ShouldBe(["beta", "gamma"]);
     }
 
     [AvaloniaFact(DisplayName = "Namespace filter preserves selection when included")]
@@ -727,7 +1237,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         vm.SelectedItem!.Namespace().ShouldBe("ns4");
         vm.SelectedItem.Name().ShouldBe("d");
 
-        var menuItem = vm.ContextMenuItems.FirstOrDefault(x => x.Header == "View");
+        var menuItem = vm.GetContextMenuItems(vm.SelectionModel.SelectedItems).FirstOrDefault(x => x.Header == "View");
         menuItem.ShouldNotBeNull();
 
         var parameters = menuItem!.CommandParameter as IList;
@@ -790,11 +1300,17 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         cluster.SelectedNamespaces.Add(NamespaceResource("ns4"));
         Dispatcher.UIThread.RunJobs();
 
-        var portForwardMenu = vm.ContextMenuItems.FirstOrDefault(x => x.Header == "Port Forwarding");
+        var portForwardMenu = vm.GetContextMenuItems(vm.SelectionModel.SelectedItems).FirstOrDefault(x => x.Header == "Port Forwarding");
         portForwardMenu.ShouldNotBeNull();
 
-        var containers = portForwardMenu!.Items?.ToList();
-        containers.Count.ShouldBe(1);
+        var groups = portForwardMenu!.Items?.ToList();
+        groups.ShouldNotBeNull();
+        groups!.Select(x => x.Header).ShouldContain("Normal");
+
+        var normalGroup = groups.Single(x => x.Header == "Normal");
+        var containers = normalGroup.Items?.ToList();
+        containers.ShouldNotBeNull();
+        containers!.Count.ShouldBe(1);
         containers[0].Header.ShouldBe("d-container");
     }
 
@@ -811,19 +1327,33 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var dataGridColumn = new DataGridControlTemplateColumnDefinition();
 
         var flyout = flyoutFactory.Create(column, dataGridColumn, vm.FilteringModel).ShouldBeOfType<Flyout>();
+        var host = new Button();
+        var window = CreateWindow(content: host);
+        window.Show();
+        flyout.ShowAt(host);
+        Dispatcher.UIThread.RunJobs();
         var content = flyout.Content.ShouldBeOfType<EnumFilterFlyoutView>();
 
-        var enumComboBox = content.Content.ShouldBeOfType<StackPanel>().GetVisualDescendants().OfType<ComboBox>().Single();
-        enumComboBox.ItemsSource.ShouldNotBeNull();
-        enumComboBox.ItemsSource.OfType<object>().Count().ShouldBe(4);
+        var enumComboBoxes = content.Content.ShouldBeOfType<StackPanel>().GetVisualDescendants().OfType<ComboBox>().ToList();
+        enumComboBoxes.Count.ShouldBe(2);
+        enumComboBoxes[0].ItemsSource.ShouldNotBeNull();
+        enumComboBoxes[0].ItemsSource.OfType<object>().Count().ShouldBe(2);
+        enumComboBoxes[1].ItemsSource.ShouldNotBeNull();
+        enumComboBoxes[1].ItemsSource.OfType<object>().Count().ShouldBe(4);
 
-        filterService.ApplyEnumFilter(vm.FilteringModel, dataGridColumn, TestFilterStatus.Running);
+        filterService.ApplyEnumFilter(vm.FilteringModel, dataGridColumn, GetEnumOperator(FilteringOperator.Equals), TestFilterStatus.Running);
 
         vm.FilteringModel.Descriptors.Count.ShouldBe(1);
         var descriptor = vm.FilteringModel.Descriptors[0];
         descriptor.Operator.ShouldBe(FilteringOperator.Equals);
         descriptor.Value.ShouldBe(TestFilterStatus.Running);
         ReferenceEquals(descriptor.ColumnId, dataGridColumn).ShouldBeTrue();
+
+        filterService.ApplyEnumFilter(vm.FilteringModel, dataGridColumn, GetEnumOperator(FilteringOperator.NotEquals), TestFilterStatus.Failed);
+        vm.FilteringModel.Descriptors.Count.ShouldBe(1);
+        descriptor = vm.FilteringModel.Descriptors[0];
+        descriptor.Operator.ShouldBe(FilteringOperator.NotEquals);
+        descriptor.Value.ShouldBe(TestFilterStatus.Failed);
     }
 
     [AvaloniaFact(DisplayName = "Namespace filter is linked to cluster by default")]
@@ -921,7 +1451,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         GetNamespaceFilterValues(vm).ShouldBe(["ns1", "ns2"]);
 
         var namespaceColumn = vm.ColumnDefinitions.First(column => string.Equals(column.ColumnKey?.ToString(), "namespace", StringComparison.OrdinalIgnoreCase));
-        filterService.ApplyTextFilter(vm.FilteringModel, namespaceColumn, FilteringOperator.Contains, "ns1");
+        filterService.ApplyTextFilter(vm.FilteringModel, namespaceColumn, GetTextOperator(FilteringOperator.Contains), "ns1");
         Dispatcher.UIThread.RunJobs();
 
         vm.FilteringModel.Descriptors.Count.ShouldBe(2);
@@ -961,7 +1491,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         vm.SelectionModel.Select(0);
         vm.SelectionModel.Select(1);
 
-        var headers = vm.ContextMenuItems.Select(x => x.Header).ToList();
+        var headers = vm.GetContextMenuItems(vm.SelectionModel.SelectedItems).Select(x => x.Header).ToList();
 
         headers.ShouldNotContain("View Console");
         headers.ShouldNotContain("View Logs");
@@ -986,12 +1516,12 @@ public class ResourceListViewModelTests : AvaloniaTestBase
 
         await AddOrUpdateAsync(cluster, Pod("ns1", "a"));
 
-        vm.View.Count().ShouldBe(1);
+        vm.View.Count.ShouldBe(1);
 
         await cluster.DeleteResource(Pod("ns1", "a"));
         Dispatcher.UIThread.RunJobs();
 
-        vm.View.Count().ShouldBe(0);
+        vm.View.Count.ShouldBe(0);
     }
 
     [AvaloniaFact(DisplayName = "Reattach keeps only saved sort descriptors")]
@@ -1048,9 +1578,9 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var view = WaitForValue(() => FindVisibleView<ResourceListView>(window, vm), 3000);
         view.ShouldNotBeNull();
 
-        vm.View.ElementAt(0).ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
-        vm.View.ElementAt(1).ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
-        vm.View.ElementAt(2).ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
+        vm.View[0].ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
+        vm.View[1].ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
+        vm.View[2].ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
         vm.SortingModel.Descriptors.Count.ShouldBe(1);
         ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("name");
 
@@ -1065,9 +1595,9 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var restoredView = WaitForValue(() => FindVisibleView<ResourceListView>(window, vm), 3000);
         restoredView.ShouldNotBeNull();
 
-        vm.View.ElementAt(0).ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
-        vm.View.ElementAt(1).ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
-        vm.View.ElementAt(2).ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
+        vm.View[0].ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
+        vm.View[1].ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
+        vm.View[2].ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
         vm.SortingModel.Descriptors.Count.ShouldBe(1);
         ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("name");
     }
@@ -1126,7 +1656,8 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         while (sw.ElapsedMilliseconds < 3000)
         {
             Dispatcher.UIThread.RunJobs();
-            if (scrollViewer.Extent.Height > scrollViewer.Viewport.Height) break;
+            if (scrollViewer.Extent.Height > scrollViewer.Viewport.Height)
+                break;
             System.Threading.Thread.Sleep(10);
         }
 
@@ -1162,7 +1693,8 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         while (sw.ElapsedMilliseconds < 3000)
         {
             Dispatcher.UIThread.RunJobs();
-            if (restoredScrollViewer.Extent.Height > restoredScrollViewer.Viewport.Height) break;
+            if (restoredScrollViewer.Extent.Height > restoredScrollViewer.Viewport.Height)
+                break;
             System.Threading.Thread.Sleep(10);
         }
 
@@ -1240,9 +1772,9 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var restoredView = WaitForValue(() => FindVisibleView<ResourceListView>(window, vm), 3000);
         restoredView.ShouldNotBeNull();
 
-        vm.View.ElementAt(0).ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
-        vm.View.ElementAt(1).ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
-        vm.View.ElementAt(2).ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
+        vm.View[0].ShouldBeOfType<V1Namespace>().Name().ShouldBe("a");
+        vm.View[1].ShouldBeOfType<V1Namespace>().Name().ShouldBe("b");
+        vm.View[2].ShouldBeOfType<V1Namespace>().Name().ShouldBe("c");
         vm.SortingModel.Descriptors.Count.ShouldBe(1);
         ((DataGridControlTemplateColumnDefinition)(vm.SortingModel.Descriptors[0].ColumnId)).ColumnKey.ShouldBe("labels");
     }
@@ -1391,6 +1923,26 @@ public class ResourceListViewModelTests : AvaloniaTestBase
             _ => throw new InvalidOperationException($"Unsupported date value type: {value.GetType().FullName}")
         };
     }
+
+    private static FilterOperatorChoice GetTextOperator(FilteringOperator filterOperator)
+    {
+        return ResourceListFilterFlyoutOptions.TextOperators.First(option => option.Operator == filterOperator && (option.CustomId is null || !FilterOperatorIdCatalog.UsesCustomDescriptor(option.CustomId.Value)));
+    }
+
+    private static FilterOperatorChoice GetNumericOperator(FilteringOperator filterOperator)
+    {
+        return ResourceListFilterFlyoutOptions.NumericOperators.First(option => option.Operator == filterOperator && (option.CustomId is null || !FilterOperatorIdCatalog.UsesCustomDescriptor(option.CustomId.Value)));
+    }
+
+    private static FilterOperatorChoice GetDateOperator(FilteringOperator filterOperator)
+    {
+        return ResourceListFilterFlyoutOptions.DateOperators.First(option => option.Operator == filterOperator && (option.CustomId is null || !FilterOperatorIdCatalog.UsesCustomDescriptor(option.CustomId.Value)));
+    }
+
+    private static FilterOperatorChoice GetEnumOperator(FilteringOperator filterOperator)
+    {
+        return ResourceListFilterFlyoutOptions.EnumOperators.First(option => option.Operator == filterOperator && (option.CustomId is null || !FilterOperatorIdCatalog.UsesCustomDescriptor(option.CustomId.Value)));
+    }
 }
 
 internal enum TestFilterStatus
@@ -1442,7 +1994,8 @@ internal sealed class FakeDoubleTapResourceListViewModel : IResourceListViewMode
     public GroupApiVersionKind Kind => GroupApiVersionKind.From<V1Pod>();
     public int ItemCount => View.Count;
     public string SearchQuery { get; set; } = string.Empty;
-    public ISettingsService SettingsService => Application.Current.GetRequiredService<ISettingsService>();
+    public ISettingsService SettingsService => TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
+        ?? throw new InvalidOperationException("Test services are not initialized.");
     public IResourceConfig ResourceConfig { get; }
     public ObservableCollection<DataGridColumnDefinition> ColumnDefinitions { get; } = [];
     public IDataGridSortingAdapterFactory SortingAdapterFactory => throw new NotImplementedException();
@@ -1452,7 +2005,7 @@ internal sealed class FakeDoubleTapResourceListViewModel : IResourceListViewMode
     public ISelectionModel SelectionModel { get; }
     public Func<IList, object, int> ReferenceIndexResolver => (_, _) => -1;
     public IList View => Array.Empty<object>();
-    public IEnumerable<MenuItemViewModel> ContextMenuItems => [];
+    public IEnumerable<MenuItemViewModel> GetContextMenuItems(IEnumerable? selectedItems) => [];
     public ISearchModel SearchModel { get; set; } = new SearchModel();
     public IDataGridSearchAdapterFactory SearchAdapterFactory => throw new NotImplementedException();
     public global::Avalonia.Controls.DataGridState? DataGridRuntimeState { get; set; }
@@ -1483,6 +2036,7 @@ internal sealed class FakeDoubleTapResourceConfig : IResourceConfig
     public string Name => "Pods";
     public string? Category => null;
     public IStyle ListStyle() => new global::Avalonia.Styling.Style();
+    public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
     public Task UpdatePermissions() => Task.CompletedTask;
     public Type Type => typeof(V1Pod);
     public IRelayCommand NewResourceCommand => new RelayCommand(() => { });
@@ -1493,3 +2047,33 @@ internal sealed class FakeDoubleTapResourceConfig : IResourceConfig
     }
 }
 
+internal sealed class FakeContextMenuResourceListViewModel : IResourceListViewModel
+{
+    public FakeContextMenuResourceListViewModel(ISelectionModel selectionModel)
+    {
+        SelectionModel = selectionModel;
+        ResourceConfig = new FakeDoubleTapResourceConfig(() => { });
+    }
+
+    public ClusterWorkspaceViewModel Cluster { get; set; } = null!;
+    public ObservableCollection<V1Namespace> SelectedNamespaces { get; } = [];
+    public bool IsNamespaceSelectionLinked { get; set; } = true;
+    public GroupApiVersionKind Kind => GroupApiVersionKind.From<V1Pod>();
+    public int ItemCount => 0;
+    public string SearchQuery { get; set; } = string.Empty;
+    public ISettingsService SettingsService => TestApp.CurrentServices?.GetRequiredService<ISettingsService>()
+        ?? throw new InvalidOperationException("Test services are not initialized.");
+    public IResourceConfig ResourceConfig { get; }
+    public ObservableCollection<DataGridColumnDefinition> ColumnDefinitions { get; } = [];
+    public IDataGridSortingAdapterFactory SortingAdapterFactory => throw new NotImplementedException();
+    public ISortingModel SortingModel { get; set; } = new SortingModel();
+    public IDataGridFilteringAdapterFactory FilteringAdapterFactory => throw new NotImplementedException();
+    public IFilteringModel FilteringModel { get; set; } = new FilteringModel();
+    public ISelectionModel SelectionModel { get; }
+    public Func<IList, object, int> ReferenceIndexResolver => (_, _) => -1;
+    public IList View => Array.Empty<object>();
+    public IEnumerable<MenuItemViewModel> GetContextMenuItems(IEnumerable? selectedItems) => [];
+    public ISearchModel SearchModel { get; set; } = new SearchModel();
+    public IDataGridSearchAdapterFactory SearchAdapterFactory => throw new NotImplementedException();
+    public global::Avalonia.Controls.DataGridState? DataGridRuntimeState { get; set; }
+}

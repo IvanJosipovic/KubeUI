@@ -1,8 +1,8 @@
+using Avalonia.Styling;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure.Presentation;
-using Avalonia.Styling;
 using KubeUI.Kubernetes;
-using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Avalonia.Resources
 {
@@ -21,10 +21,14 @@ namespace KubeUI.Avalonia.Resources
         string Name { get; }
         string? Category { get; }
         IStyle ListStyle();
+        IEnumerable<(Verb verb, string? subresource)> Permissions();
+        IEnumerable<AuthorizationRequest> AuthorizationRequests()
+        {
+            return Permissions().Select(permission => new AuthorizationRequest(Type, permission.verb, permission.subresource));
+        }
         Task UpdatePermissions();
         Type Type { get; }
         IRelayCommand NewResourceCommand { get; }
         IRelayCommand<IList> ViewCommand { get; }
     }
 }
-

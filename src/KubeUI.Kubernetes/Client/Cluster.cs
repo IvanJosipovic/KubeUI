@@ -97,6 +97,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
     {
         _loggerFactory = loggerFactory;
         _logger = logger;
+        _portForwardSessionFactory = new KubernetesPortForwardSessionFactory(this);
         ModelCache = modelCache;
         _generator = generator;
         _generator.SetEnumSupport(false);

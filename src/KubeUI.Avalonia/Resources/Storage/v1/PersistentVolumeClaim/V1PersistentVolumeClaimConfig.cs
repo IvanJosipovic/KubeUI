@@ -6,6 +6,10 @@ namespace KubeUI.Avalonia.Resources.Storage.v1.PersistentVolumeClaim;
 
 public sealed partial class V1PersistentVolumeClaimConfig : ResourceConfigBase<V1PersistentVolumeClaim>
 {
+    public V1PersistentVolumeClaimConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
     public override bool IsNamespaced => true;
     public override string Category => CategoryString("ResourceConfig_Category_Storage", "Storage");
     public override int Order => 0;
