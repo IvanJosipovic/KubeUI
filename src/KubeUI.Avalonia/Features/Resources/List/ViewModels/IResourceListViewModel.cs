@@ -32,7 +32,6 @@ namespace KubeUI.Avalonia.Features.Resources.List.ViewModels
         IDataGridFilteringAdapterFactory FilteringAdapterFactory { get; }
         IFilteringModel FilteringModel { get; set; }
         ISelectionModel SelectionModel { get; }
-        Func<IList, object, int> ReferenceIndexResolver { get; }
         IList View { get; }
         IEnumerable<MenuItemViewModel> GetContextMenuItems(IEnumerable? selectedItems);
         ISearchModel SearchModel { get; set; }
@@ -41,6 +40,5 @@ namespace KubeUI.Avalonia.Features.Resources.List.ViewModels
         DataGridState? DataGridRuntimeState { get; set; }
     }
 }
-
 
 

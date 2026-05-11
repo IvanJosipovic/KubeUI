@@ -13,7 +13,6 @@ using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubernetesCRDModelGen;
 using KubeUI.Kubernetes;
-using Mapster;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using YamlDotNet.Core;
@@ -23,11 +22,6 @@ namespace KubeUI.Testing;
 
 public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
 {
-    static TestClusterRuntime()
-    {
-        MapsterConfiguration.Configure();
-    }
-
     private readonly ObservableCollection<V1Namespace> _namespaces = [];
     private readonly ReadOnlyObservableCollection<V1Namespace> _readonlyNamespaces;
     private readonly ConcurrentDictionary<string, bool> _permissions = new(StringComparer.Ordinal);
@@ -445,9 +439,8 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
             {
                 ResourceInformerCallbackGuard.Execute(_logger, WatchEventType.Modified, kind, item, () =>
                 {
-                    item.Adapt(original.Value);
-                    list.Refresh(key);
-                    OnChange?.Invoke(WatchEventType.Modified, kind, original.Value);
+                    list.AddOrUpdate(item);
+                    OnChange?.Invoke(WatchEventType.Modified, kind, item);
                 });
             }
             else

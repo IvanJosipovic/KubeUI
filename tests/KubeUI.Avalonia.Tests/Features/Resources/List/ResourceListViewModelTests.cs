@@ -2003,7 +2003,6 @@ internal sealed class FakeDoubleTapResourceListViewModel : IResourceListViewMode
     public IDataGridFilteringAdapterFactory FilteringAdapterFactory => throw new NotImplementedException();
     public IFilteringModel FilteringModel { get; set; } = new FilteringModel();
     public ISelectionModel SelectionModel { get; }
-    public Func<IList, object, int> ReferenceIndexResolver => (_, _) => -1;
     public IList View => Array.Empty<object>();
     public IEnumerable<MenuItemViewModel> GetContextMenuItems(IEnumerable? selectedItems) => [];
     public ISearchModel SearchModel { get; set; } = new SearchModel();
@@ -2070,7 +2069,6 @@ internal sealed class FakeContextMenuResourceListViewModel : IResourceListViewMo
     public IDataGridFilteringAdapterFactory FilteringAdapterFactory => throw new NotImplementedException();
     public IFilteringModel FilteringModel { get; set; } = new FilteringModel();
     public ISelectionModel SelectionModel { get; }
-    public Func<IList, object, int> ReferenceIndexResolver => (_, _) => -1;
     public IList View => Array.Empty<object>();
     public IEnumerable<MenuItemViewModel> GetContextMenuItems(IEnumerable? selectedItems) => [];
     public ISearchModel SearchModel { get; set; } = new SearchModel();
