@@ -1,6 +1,7 @@
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using Avalonia.Input.Platform;
 using k8s;
 using k8s.Models;
@@ -58,6 +59,9 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
     private Stream? _stream;
     private Stream? _refreshStream;
     private Task? _runner;
+    private int _disconnected;
+
+    internal bool IsDisconnected => Volatile.Read(ref _disconnected) != 0;
 
     public async Task Connect()
     {
@@ -85,15 +89,24 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
                     const int bufferSize = 4096; // 4KB buffer size
                     byte[] buffer = new byte[bufferSize];
 
-                    if (await _stream.ReadAsync(buffer.AsMemory(0, bufferSize)) > 0)
+                    int bytesRead = await _stream.ReadAsync(buffer.AsMemory(0, bufferSize)).ConfigureAwait(false);
+
+                    if (bytesRead <= 0)
                     {
-                        await Dispatcher.UIThread.InvokeAsync(() =>
-                        {
-                            Model.Feed(buffer, bufferSize);
-                        });
+                        MarkDisconnected();
+                        break;
                     }
+
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        Model.Feed(buffer, bytesRead);
+                    });
                 }
-                catch (Exception) { break; }
+                catch (Exception ex)
+                {
+                    MarkDisconnected(ex, "reading console output");
+                    break;
+                }
             }
         });
     }
@@ -124,10 +137,12 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
 
     private void Input(object? sender, TerminalUserInputEventArgs args)
     {
-        if (_stream?.CanWrite == true)
-        {
-            _stream.Write(args.Data.Span);
-        }
+        WriteInput(args.Data);
+    }
+
+    internal void WriteInput(ReadOnlyMemory<byte> data)
+    {
+        TryWrite(_stream, data.Span, "sending terminal input");
     }
 
     private void Terminal_SizeChanged(object? sender, TerminalSizeChangedEventArgs args)
@@ -143,48 +158,71 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
             Height = (ushort)rows,
         };
 
-        if (_refreshStream?.CanWrite == true)
-        {
-            try
-            {
-                _refreshStream?.Write(JsonSerializer.SerializeToUtf8Bytes(size));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error Sending Resize to console");
-            }
-        }
+        TryWrite(_refreshStream, JsonSerializer.SerializeToUtf8Bytes(size), "sending terminal resize");
     }
 
     [RelayCommand]
     public async Task Paste()
     {
-        if (_stream?.CanWrite == true)
+        var clipboard = TopLevelAccessor.GetRequired().Clipboard;
+
+        var text = await clipboard.TryGetTextAsync();
+
+        if (!string.IsNullOrEmpty(text))
         {
-            try
-            {
-                var clipboard = TopLevelAccessor.GetRequired().Clipboard;
-
-                var text = await clipboard.TryGetTextAsync();
-
-                if (!string.IsNullOrEmpty(text))
-                {
-                    _stream.Write(Encoding.UTF8.GetBytes(text));
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error pasting text to console: ");
-            }
+            TryWrite(_stream, Encoding.UTF8.GetBytes(text), "pasting text to console");
         }
+    }
+
+    private void TryWrite(Stream? stream, ReadOnlySpan<byte> data, string operation)
+    {
+        if (Volatile.Read(ref _disconnected) != 0 || stream?.CanWrite != true)
+        {
+            return;
+        }
+
+        try
+        {
+            stream.Write(data);
+        }
+        catch (Exception ex) when (ex is WebSocketException or IOException or ObjectDisposedException)
+        {
+            MarkDisconnected(ex, operation);
+        }
+    }
+
+    private void MarkDisconnected(Exception? ex = null, string? operation = null)
+    {
+        if (Interlocked.Exchange(ref _disconnected, 1) != 0)
+        {
+            return;
+        }
+
+        Model.UserInput -= Input;
+        Model.SizeChanged -= Terminal_SizeChanged;
+
+        Stream? stream = Interlocked.Exchange(ref _stream, null);
+        Stream? refreshStream = Interlocked.Exchange(ref _refreshStream, null);
+        StreamDemuxer? streamDemuxer = Interlocked.Exchange(ref _streamDemuxer, null);
+        WebSocket? webSocket = Interlocked.Exchange(ref _webSocket, null);
+
+        stream?.Dispose();
+        refreshStream?.Dispose();
+        streamDemuxer?.Dispose();
+        webSocket?.Dispose();
+
+        if (ex == null)
+        {
+            _logger.LogInformation("Pod console disconnected.");
+            return;
+        }
+
+        _logger.LogWarning(ex, "Pod console disconnected while {Operation}.", operation ?? "processing console IO");
     }
 
     public void Dispose()
     {
-        _webSocket?.Dispose();
-        _streamDemuxer?.Dispose();
-        _stream?.Dispose();
-        _refreshStream?.Dispose();
+        MarkDisconnected();
     }
 }
 
