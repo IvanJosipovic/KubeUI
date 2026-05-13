@@ -1,4 +1,4 @@
-﻿<UserControl
+<UserControl
     x:Class="KubeUI.Avalonia.Features.Resources.Yaml.Views.ResourceYamlView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -143,7 +143,6 @@
                     </MenuItem>
                     <MenuItem
                         Header="{x:Static assets:Resources.Action_Delete}"
-                        HotKey="Back"
                         IsVisible="{Binding EditMode}">
                         <Interaction.Behaviors>
                             <ia:EventTriggerBehavior EventName="Click">
@@ -188,3 +187,4 @@
         </ae:TextEditor>
     </Grid>
 </UserControl>
+
