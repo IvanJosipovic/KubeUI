@@ -1,11 +1,9 @@
-using System.ComponentModel;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Avalonia.Styling;
-using Avalonia.Threading;
 using KubeUI.Avalonia.Options;
-using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Kubernetes;
-using Microsoft.Extensions.Configuration;
+using static KubeUI.Avalonia.Services.Settings.SettingsService;
 using AppAppearanceSettings = KubeUI.Avalonia.Options.AppearanceSettings;
 using AppSettings = KubeUI.Avalonia.Options.Settings;
 
@@ -132,10 +130,7 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
                 {
                     Settings = Settings,
                     Appearance = Appearance,
-                }, new JsonSerializerOptions(JsonSerializerDefaults.General)
-                {
-                    WriteIndented = true,
-                }));
+                }, PersistedSettingsSourceGenerationContext.Default.PersistedSettings));
             }
             else
             {
@@ -190,27 +185,19 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
 
             if (File.Exists(path))
             {
-                var json = File.ReadAllText(path);
-                var persisted = JsonSerializer.Deserialize<PersistedSettings>(json);
+                using var json = File.OpenRead(path);
 
-                if (json.Contains("\"Settings\"", StringComparison.Ordinal) || json.Contains("\"Appearance\"", StringComparison.Ordinal))
-                {
-                    return persisted ?? new PersistedSettings();
-                }
+                var settings = JsonSerializer.Deserialize(json, PersistedSettingsSourceGenerationContext.Default.PersistedSettings);
 
-                var legacy = JsonSerializer.Deserialize<AppSettings>(json);
-                if (legacy is not null)
+                if (settings != null)
                 {
-                    return new PersistedSettings
-                    {
-                        Settings = legacy,
-                        Appearance = new AppAppearanceSettings(),
-                    };
+                    return settings;
                 }
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            System.Diagnostics.Trace.WriteLine($"Failed to load persisted settings: {ex}");
         }
 
         return new PersistedSettings();
@@ -238,10 +225,14 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
         SaveSettings();
     }
 
-    private sealed class PersistedSettings
+    internal sealed class PersistedSettings
     {
         public AppSettings Settings { get; set; } = new();
 
         public AppAppearanceSettings Appearance { get; set; } = new();
     }
 }
+
+[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSerializable(typeof(PersistedSettings))]
+internal partial class PersistedSettingsSourceGenerationContext : JsonSerializerContext { }
