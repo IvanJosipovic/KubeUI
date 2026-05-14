@@ -43,5 +43,4 @@ public sealed partial class ResourceYamlView : UserControl
 
         DataContext = vm;
     }
-
 }

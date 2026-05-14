@@ -1,6 +1,7 @@
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using Avalonia.Input.Platform;
 using k8s;
 using k8s.Models;
@@ -58,10 +59,16 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
     private Stream? _stream;
     private Stream? _refreshStream;
     private Task? _runner;
+    private CancellationTokenSource? _readerCancellation;
+    private bool _disconnected;
 
-    public async Task Connect()
+    internal bool IsDisconnected => _disconnected;
+
+    public Task Connect() => ConnectAsync();
+
+    public async Task ConnectAsync()
     {
-        if (_webSocket != null)
+        if (_webSocket != null || _disconnected)
         {
             return;
         }
@@ -76,26 +83,49 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
 
         SendResize(Model.Terminal.Cols, Model.Terminal.Rows);
 
-        _runner = Task.Run(async () =>
-        {
-            while (_stream.CanRead)
-            {
-                try
-                {
-                    const int bufferSize = 4096; // 4KB buffer size
-                    byte[] buffer = new byte[bufferSize];
+        _readerCancellation = new CancellationTokenSource();
+        _runner = Task.Run(() => ReadConsoleOutputAsync(_stream, _readerCancellation.Token));
+    }
 
-                    if (await _stream.ReadAsync(buffer.AsMemory(0, bufferSize)) > 0)
-                    {
-                        await Dispatcher.UIThread.InvokeAsync(() =>
-                        {
-                            Model.Feed(buffer, bufferSize);
-                        });
-                    }
+    internal void SetStreamsForTesting(Stream? stream = null, Stream? refreshStream = null)
+    {
+        _stream = stream;
+        _refreshStream = refreshStream;
+    }
+
+    private async Task ReadConsoleOutputAsync(Stream consoleOutput, CancellationToken cancellationToken)
+    {
+        const int bufferSize = 4096;
+        byte[] buffer = new byte[bufferSize];
+
+        while (!cancellationToken.IsCancellationRequested && consoleOutput.CanRead)
+        {
+            try
+            {
+                int bytesRead = await consoleOutput.ReadAsync(buffer.AsMemory(0, bufferSize), cancellationToken).ConfigureAwait(false);
+
+                if (bytesRead <= 0)
+                {
+                    Disconnect();
+                    return;
                 }
-                catch (Exception) { break; }
+
+                cancellationToken.ThrowIfCancellationRequested();
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    Model.Feed(buffer, bytesRead);
+                });
             }
-        });
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+            catch (Exception ex)
+            {
+                Disconnect(ex, "reading console output");
+                return;
+            }
+        }
     }
 
     internal Task<WebSocket> OpenConnectionAsync()
@@ -124,10 +154,12 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
 
     private void Input(object? sender, TerminalUserInputEventArgs args)
     {
-        if (_stream?.CanWrite == true)
-        {
-            _stream.Write(args.Data.Span);
-        }
+        WriteInput(args.Data);
+    }
+
+    internal void WriteInput(ReadOnlyMemory<byte> data)
+    {
+        TryWrite(_stream, data.Span, "sending terminal input");
     }
 
     private void Terminal_SizeChanged(object? sender, TerminalSizeChangedEventArgs args)
@@ -137,79 +169,112 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
 
     public void SendResize(int cols, int rows)
     {
-        var size = new TerminalSize
-        {
-            Width = (ushort)cols,
-            Height = (ushort)rows,
-        };
+        var size = new TerminalSize((ushort)cols, (ushort)rows);
 
-        if (_refreshStream?.CanWrite == true)
-        {
-            try
-            {
-                _refreshStream?.Write(JsonSerializer.SerializeToUtf8Bytes(size));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error Sending Resize to console");
-            }
-        }
+        TryWrite(_refreshStream, JsonSerializer.SerializeToUtf8Bytes(size), "sending terminal resize");
     }
 
     [RelayCommand]
     public async Task Paste()
     {
-        if (_stream?.CanWrite == true)
+        var clipboard = TopLevelAccessor.GetRequired().Clipboard;
+
+        var text = await clipboard.TryGetTextAsync();
+
+        if (!string.IsNullOrEmpty(text))
         {
-            try
-            {
-                var clipboard = TopLevelAccessor.GetRequired().Clipboard;
-
-                var text = await clipboard.TryGetTextAsync();
-
-                if (!string.IsNullOrEmpty(text))
-                {
-                    _stream.Write(Encoding.UTF8.GetBytes(text));
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error pasting text to console: ");
-            }
+            TryWrite(_stream, Encoding.UTF8.GetBytes(text), "pasting text to console");
         }
+    }
+
+    private void TryWrite(Stream? stream, ReadOnlySpan<byte> data, string operation)
+    {
+        if (_disconnected || stream?.CanWrite != true)
+        {
+            return;
+        }
+
+        try
+        {
+            stream.Write(data);
+        }
+        catch (Exception ex) when (IsTerminalStreamClosed(ex))
+        {
+            Disconnect(ex, operation);
+        }
+    }
+
+    private void Disconnect(Exception? ex = null, string? operation = null)
+    {
+        if (_disconnected)
+        {
+            return;
+        }
+
+        _disconnected = true;
+        _readerCancellation?.Cancel();
+        Model.UserInput -= Input;
+        Model.SizeChanged -= Terminal_SizeChanged;
+
+        var stream = _stream;
+        var refreshStream = _refreshStream;
+        var streamDemuxer = _streamDemuxer;
+        var webSocket = _webSocket;
+        var readerCancellation = _readerCancellation;
+        var runner = _runner;
+
+        _stream = null;
+        _refreshStream = null;
+        _streamDemuxer = null;
+        _webSocket = null;
+        _readerCancellation = null;
+        _runner = null;
+
+        stream?.Dispose();
+        refreshStream?.Dispose();
+        streamDemuxer?.Dispose();
+        webSocket?.Dispose();
+        DisposeWhenReaderCompletes(readerCancellation, runner);
+
+        if (ex == null)
+        {
+            _logger.LogInformation("Pod console disconnected.");
+            return;
+        }
+
+        _logger.LogWarning(ex, "Pod console disconnected while {Operation}.", operation ?? "processing console IO");
+    }
+
+    private static bool IsTerminalStreamClosed(Exception ex)
+    {
+        return ex is WebSocketException or IOException or ObjectDisposedException;
+    }
+
+    private static void DisposeWhenReaderCompletes(CancellationTokenSource? readerCancellation, Task? runner)
+    {
+        if (readerCancellation == null)
+        {
+            return;
+        }
+
+        if (runner?.IsCompleted != false)
+        {
+            readerCancellation.Dispose();
+            return;
+        }
+
+        _ = runner.ContinueWith(
+            static (_, state) => ((CancellationTokenSource)state!).Dispose(),
+            readerCancellation,
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
     }
 
     public void Dispose()
     {
-        _webSocket?.Dispose();
-        _streamDemuxer?.Dispose();
-        _stream?.Dispose();
-        _refreshStream?.Dispose();
+        Disconnect();
     }
 }
 
-public struct TerminalSize
-{
-    public ushort Width { get; set; }
-    public ushort Height { get; set; }
-
-    public override bool Equals(object? obj)
-    {
-        throw new NotImplementedException();
-    }
-
-    public override int GetHashCode()
-    {
-        throw new NotImplementedException();
-    }
-
-    public static bool operator ==(TerminalSize left, TerminalSize right)
-    {
-        return left.Equals(right);
-    }
-
-    public static bool operator !=(TerminalSize left, TerminalSize right)
-    {
-        return !(left == right);
-    }
-}
+public readonly record struct TerminalSize(ushort Width, ushort Height);

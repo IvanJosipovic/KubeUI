@@ -210,6 +210,8 @@ internal sealed class PrometheusMetricsClusterRuntime : IClusterRuntime, INotify
     public ClusterStatus Status { get => _inner.Status; set => _inner.Status = value; }
     public string? LastError { get => _inner.LastError; set => _inner.LastError = value; }
     public bool RequiresNamespaceSelectionPrompt { get => _inner.RequiresNamespaceSelectionPrompt; set => _inner.RequiresNamespaceSelectionPrompt = value; }
+    public bool AuthorizationIndexReady => _inner.AuthorizationIndexReady;
+    public long AuthorizationIndexVersion => _inner.AuthorizationIndexVersion;
     public bool IsMetricsAvailable => true;
     public ActiveMetricsBackend ActiveMetricsBackend => ActiveMetricsBackend.Prometheus(PrometheusProviderKind.External);
     public bool ListNamespaces { get => _inner.ListNamespaces; set => _inner.ListNamespaces = value; }
@@ -249,6 +251,7 @@ internal sealed class PrometheusMetricsClusterRuntime : IClusterRuntime, INotify
     public ISourceCache<T, string> GetResourceSourceCache<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.GetResourceSourceCache<T>();
     public IObservable<int> GetResourceCount(Type type) => _inner.GetResourceCount(type);
     public IObservable<int> GetResourceCount<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.GetResourceCount<T>();
+    public Task RefreshAuthorizationIndexAsync(IEnumerable<AuthorizationRequest> requests) => _inner.RefreshAuthorizationIndexAsync(requests);
     public Task UpdatePermissionsAllNamespaceAsync(Type type, Verb verb, string? subresource = null) => _inner.UpdatePermissionsAllNamespaceAsync(type, verb, subresource);
     public Task UpdatePermissionsAllNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new() => _inner.UpdatePermissionsAllNamespaceAsync<T>(verb, subresource);
     public Task<bool> UpdateCanI(Type type, Verb verb, string? @namespace = null, string? subresource = null) => _inner.UpdateCanI(type, verb, @namespace, subresource);

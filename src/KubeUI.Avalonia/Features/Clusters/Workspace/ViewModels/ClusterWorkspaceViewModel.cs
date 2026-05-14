@@ -27,6 +27,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
     private readonly ILogger<ClusterWorkspaceViewModel> _logger;
     private readonly ConcurrentDictionary<GroupApiVersionKind, IResourceConfig> _resourceConfigs = new();
     private readonly ConcurrentDictionary<string, PendingCustomResourceDefinitionChange> _pendingCustomResourceDefinitions = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, string> _customResourceDefinitionSignatures = new(StringComparer.Ordinal);
     private readonly SemaphoreSlim _pendingCustomResourceDefinitionSignal = new(0);
     private readonly SemaphoreSlim _workspaceStateRefreshGate = new(1, 1);
     private readonly SemaphoreSlim _resourcePermissionRefreshGate = new(1, 1);
@@ -71,6 +72,12 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
     public partial ObservableCollection<V1Namespace> SelectedNamespaces { get; set; } = [];
 
     [ObservableProperty]
+    public partial ObservableCollection<NodeMetrics> NodeMetrics { get; set; } = [];
+
+    [ObservableProperty]
+    public partial ObservableCollection<PodMetrics> PodMetrics { get; set; } = [];
+
+    [ObservableProperty]
     public partial ObservableCollection<PortForwarder> PortForwarders { get; set; } = [];
 
     [ObservableProperty]
@@ -78,6 +85,9 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     public IReadOnlyDictionary<GroupApiVersionKind, object> Objects => Runtime.Objects;
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
+    /// <summary>
+    /// Raised after a resource type has been seeded into the runtime cache.
+    /// </summary>
     public event Action<ClusterWorkspaceViewModel, Type>? ResourceSeeded;
     public event Action<V1CustomResourceDefinition>? OnCustomResourceDefinitionReady
     {
@@ -112,13 +122,13 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         set => Runtime.RequiresNamespaceSelectionPrompt = value;
     }
 
+    public bool AuthorizationIndexReady => Runtime.AuthorizationIndexReady;
+
+    public long AuthorizationIndexVersion => Runtime.AuthorizationIndexVersion;
+
     public bool IsMetricsAvailable => Runtime.IsMetricsAvailable;
 
     public ActiveMetricsBackend ActiveMetricsBackend => Runtime.ActiveMetricsBackend;
-
-    public bool AuthorizationIndexReady => TryGetRuntimeProperty<bool>(nameof(AuthorizationIndexReady));
-
-    public long AuthorizationIndexVersion => TryGetRuntimeProperty<long>(nameof(AuthorizationIndexVersion));
 
     public MetricsServiceType MetricsServiceType => ActiveMetricsBackend.Type;
 
@@ -165,10 +175,6 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
     }
 
     public ReadOnlyObservableCollection<V1Namespace> Namespaces => Runtime.Namespaces;
-
-    public ObservableCollection<NodeMetrics> NodeMetrics => Runtime.NodeMetrics;
-
-    public ObservableCollection<PodMetrics> PodMetrics => Runtime.PodMetrics;
 
     ObservableCollection<NodeMetrics> IClusterRuntime.NodeMetrics => Runtime.NodeMetrics;
     ObservableCollection<PodMetrics> IClusterRuntime.PodMetrics => Runtime.PodMetrics;
@@ -226,13 +232,19 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         return Runtime.ImportYaml(stream);
     }
 
-    public Task<MetricResultSet> RequestMetricsAsync(MetricRequest request, CancellationToken cancellationToken = default) => Runtime.RequestMetricsAsync(request, cancellationToken);
-
-    public Task<IReadOnlyList<MetricProviderInfo>> GetAvailablePrometheusProvidersAsync() => Runtime.GetAvailablePrometheusProvidersAsync();
-
     public Task DryRunYaml(Stream stream)
     {
         return Runtime.DryRunYaml(stream);
+    }
+
+    public Task<MetricResultSet> RequestMetricsAsync(MetricRequest request, CancellationToken cancellationToken = default)
+    {
+        return Runtime.RequestMetricsAsync(request, cancellationToken);
+    }
+
+    public Task<IReadOnlyList<MetricProviderInfo>> GetAvailablePrometheusProvidersAsync()
+    {
+        return Runtime.GetAvailablePrometheusProvidersAsync();
     }
 
     public Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -268,6 +280,11 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
     public IObservable<int> GetResourceCount<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         return Runtime.GetResourceCount<T>();
+    }
+
+    public Task RefreshAuthorizationIndexAsync(IEnumerable<AuthorizationRequest> requests)
+    {
+        return Runtime.RefreshAuthorizationIndexAsync(requests);
     }
 
     public bool CanI(Type type, Verb verb, string? @namespace = null, string? subresource = null)
@@ -385,7 +402,9 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     internal void AddResourceConfigForTest(IResourceConfig resourceConfig)
     {
+        resourceConfig.Initialize(this);
         _resourceConfigs[resourceConfig.Kind] = resourceConfig;
+
         if (resourceConfig.IsCustomResource)
         {
             NotifyCustomResourceDefinitionsChanged([new PendingCustomResourceConfig(resourceConfig.Kind, resourceConfig)], []);
@@ -442,8 +461,8 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
             await EnsureBuiltInResourceConfigsAsync();
             await EnsureConfiguredNamespacesAvailableAsync().ConfigureAwait(false);
-            await EnsureDynamicResourceConfigsAsync().ConfigureAwait(false);
             await RefreshResourceConfigPermissionsAsync().ConfigureAwait(false);
+            await EnsureDynamicResourceConfigsAsync().ConfigureAwait(false);
             _workspaceStateInitialized = true;
             UpdateClusterColor();
             NotifyRuntimeStateChanged();
@@ -465,10 +484,14 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         OnPropertyChanged(nameof(ActiveMetricsBackend));
         OnPropertyChanged(nameof(MetricsServiceType));
         OnPropertyChanged(nameof(ActivePrometheusProviderKind));
+        OnPropertyChanged(nameof(AuthorizationIndexReady));
+        OnPropertyChanged(nameof(AuthorizationIndexVersion));
     }
 
     private void BindRuntimeCollections()
     {
+        NodeMetrics = Runtime.NodeMetrics;
+        PodMetrics = Runtime.PodMetrics;
         PortForwarders = Runtime.PortForwarders;
     }
 
@@ -478,10 +501,10 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         {
             var serviceDescriptors = _serviceProvider.GetRequiredService<ServiceDescriptor[]>();
             var types = serviceDescriptors
-                .Where(t => t.ServiceType.IsGenericType
-                    && t.ServiceType.GetGenericTypeDefinition() == typeof(ResourceConfigBase<>)
-                    && t.ServiceType.GenericTypeArguments.Length == 1)
                 .Select(x => x.ServiceType)
+                .Where(t => !t.IsAbstract
+                    && !t.ContainsGenericParameters
+                    && typeof(IResourceConfig).IsAssignableFrom(t))
                 .Distinct()
                 .ToList();
 
@@ -541,23 +564,23 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         ResourceSeeded?.Invoke(this, typeof(T));
     }
 
-    private void QueueResourceConfigPermissionsRefresh()
+    private void QueueResourceConfigPermissionsRefresh(IReadOnlyCollection<IResourceConfig>? resourceConfigs = null)
     {
         if (_suppressPermissionRefresh || _disposed)
         {
             return;
         }
 
-        _ = Task.Run(RefreshResourceConfigPermissionsQueuedAsync);
+        _ = Task.Run(() => RefreshResourceConfigPermissionsQueuedAsync(resourceConfigs));
     }
 
-    private async Task RefreshResourceConfigPermissionsQueuedAsync()
+    private async Task RefreshResourceConfigPermissionsQueuedAsync(IReadOnlyCollection<IResourceConfig>? resourceConfigs)
     {
         await _resourcePermissionRefreshGate.WaitAsync().ConfigureAwait(false);
 
         try
         {
-            await RefreshResourceConfigPermissionsAsync().ConfigureAwait(false);
+            await RefreshResourceConfigPermissionsAsync(resourceConfigs).ConfigureAwait(false);
         }
         finally
         {
@@ -592,38 +615,62 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
             return null;
         }
 
-        if (!await Runtime.UpdateCanIAnyNamespaceAsync(resourceType, Verb.List).ConfigureAwait(false)
-            || !await Runtime.UpdateCanIAnyNamespaceAsync(resourceType, Verb.Watch).ConfigureAwait(false))
-        {
-            return null;
-        }
-
         var api = GroupApiVersionKind.From(resourceType);
         var resourceConfigType = typeof(CRDResourceConfig<>).MakeGenericType(resourceType);
         var resourceConfig = (IResourceConfig)_serviceProvider.GetRequiredService(resourceConfigType);
 
         resourceConfig.Initialize(this);
+        await RefreshAuthorizationIndexForConfigsAsync([resourceConfig]).ConfigureAwait(false);
         await resourceConfig.UpdatePermissions().ConfigureAwait(false);
+
+        if (!resourceConfig.CanListAndWatch)
+        {
+            return null;
+        }
+
         ((dynamic)resourceConfig).Generate(crd);
 
         return new PendingCustomResourceConfig(api, resourceConfig);
     }
 
-    private async Task RefreshResourceConfigPermissionsAsync()
+    private async Task RefreshAuthorizationIndexForConfigsAsync(IEnumerable<IResourceConfig> resourceConfigs)
     {
-        var updateTasks = _resourceConfigs.Values
+        var requests = BuildAuthorizationRequests(resourceConfigs);
+        if (requests.Length == 0)
+        {
+            return;
+        }
+
+        await Runtime.RefreshAuthorizationIndexAsync(requests).ConfigureAwait(false);
+    }
+
+    private async Task RefreshResourceConfigPermissionsAsync(IReadOnlyCollection<IResourceConfig>? resourceConfigs = null)
+    {
+        var configSnapshot = resourceConfigs?.ToArray() ?? _resourceConfigs.Values.ToArray();
+        var updateTasks = configSnapshot
             .Select(RefreshResourceConfigPermissionAsync)
             .ToArray();
 
         if (updateTasks.Length == 0)
         {
+            await EnsureCustomResourceDefinitionResourceSeededAsync().ConfigureAwait(false);
             await EnsureEventResourceSeededAsync().ConfigureAwait(false);
             NotifyResourcePermissionsChanged();
             return;
         }
 
+        await RefreshAuthorizationIndexForConfigsAsync(configSnapshot).ConfigureAwait(false);
         await Task.WhenAll(updateTasks).ConfigureAwait(false);
+        await EnsureCustomResourceDefinitionResourceSeededAsync().ConfigureAwait(false);
         await EnsureEventResourceSeededAsync().ConfigureAwait(false);
+    }
+
+    private static AuthorizationRequest[] BuildAuthorizationRequests(IEnumerable<IResourceConfig> resourceConfigs)
+    {
+        return resourceConfigs
+            .SelectMany(static config => config.AuthorizationRequests())
+            .Distinct()
+            .ToArray();
     }
 
     private bool CanReadEventsInNamespace(string? @namespace)
@@ -634,7 +681,8 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     private async Task EnsureEventResourceSeededAsync()
     {
-        if (Runtime.Objects.ContainsKey(GroupApiVersionKind.From<Corev1Event>()))
+        if (Runtime.Objects.TryGetValue(GroupApiVersionKind.From<Corev1Event>(), out var existing)
+            && existing is ContainerClass<Corev1Event> { Informers.Count: > 0 })
         {
             return;
         }
@@ -642,6 +690,23 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         if (await CanSeedEventsAsync().ConfigureAwait(false))
         {
             await SeedResource<Corev1Event>().ConfigureAwait(false);
+        }
+    }
+
+    private async Task EnsureCustomResourceDefinitionResourceSeededAsync()
+    {
+        var kind = GroupApiVersionKind.From<V1CustomResourceDefinition>();
+        if (Runtime.Objects.TryGetValue(kind, out var existing)
+            && existing is ContainerClass<V1CustomResourceDefinition> { Informers.Count: > 0 })
+        {
+            return;
+        }
+
+        if (_resourceConfigs.TryGetValue(kind, out var resourceConfig)
+            && resourceConfig.PermissionsLoaded
+            && resourceConfig.CanListAndWatch)
+        {
+            await SeedResource<V1CustomResourceDefinition>(waitForReady: true).ConfigureAwait(false);
         }
     }
 
@@ -701,7 +766,11 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     private void OnRuntimeNamespacesCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        QueueResourceConfigPermissionsRefresh();
+        var namespacedResourceConfigs = _resourceConfigs.Values
+            .Where(static resourceConfig => resourceConfig.IsNamespaced)
+            .ToArray();
+
+        QueueResourceConfigPermissionsRefresh(namespacedResourceConfigs);
     }
 
     private async Task RefreshResourceConfigPermissionAsync(IResourceConfig resourceConfig)
@@ -787,6 +856,12 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
                     OnPropertyChanged(nameof(Name));
                 });
                 break;
+            case nameof(IClusterRuntime.AuthorizationIndexReady):
+                PostToUiThread(() => OnPropertyChanged(nameof(AuthorizationIndexReady)));
+                break;
+            case nameof(IClusterRuntime.AuthorizationIndexVersion):
+                PostToUiThread(() => OnPropertyChanged(nameof(AuthorizationIndexVersion)));
+                break;
             case nameof(IClusterRuntime.ListNamespaces):
                 PostToUiThread(() => OnPropertyChanged(nameof(ListNamespaces)));
                 break;
@@ -827,6 +902,8 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         {
             _resourceConfigs.TryRemove(removedKind, out _);
         }
+
+        _customResourceDefinitionSignatures.Clear();
 
         NotifyCustomResourceDefinitionsChanged([], removedCustomResourceKinds);
     }
@@ -923,6 +1000,7 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
                     {
                         if (change.Kind == CustomResourceDefinitionChangeKind.Delete)
                         {
+                            _customResourceDefinitionSignatures.TryRemove(change.Crd.Name(), out _);
                             var removedKind = TryResolveCustomResourceKind(change.Crd);
                             if (removedKind != null)
                             {
@@ -932,9 +1010,17 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
                             continue;
                         }
 
+                        var signature = GetCustomResourceDefinitionSignature(change.Crd);
+                        if (_customResourceDefinitionSignatures.TryGetValue(change.Crd.Name(), out var existingSignature)
+                            && string.Equals(existingSignature, signature, StringComparison.Ordinal))
+                        {
+                            continue;
+                        }
+
                         var builtConfig = await BuildCustomResourceConfigAsync(change.Crd).ConfigureAwait(false);
                         if (builtConfig != null)
                         {
+                            _customResourceDefinitionSignatures[change.Crd.Name()] = signature;
                             builtConfigs.Add(builtConfig);
                             continue;
                         }
@@ -1045,6 +1131,11 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         return null;
     }
 
+    private static string GetCustomResourceDefinitionSignature(V1CustomResourceDefinition crd)
+    {
+        return System.Text.Json.JsonSerializer.Serialize(crd.Spec);
+    }
+
     private void NotifyResourcePermissionsChanged()
     {
         if (!Dispatcher.UIThread.CheckAccess())
@@ -1105,18 +1196,6 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
         return (IBrush)properties[Random.Shared.Next(properties.Length)].GetValue(null)!;
     }
-
-    private T TryGetRuntimeProperty<T>(string propertyName)
-    {
-        var propertyInfo = Runtime.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
-        if (propertyInfo is null)
-        {
-            return default!;
-        }
-
-        var value = propertyInfo.GetValue(Runtime);
-        return value is T typedValue ? typedValue : default!;
-    }
 }
 
 internal enum CustomResourceDefinitionChangeKind
@@ -1128,4 +1207,3 @@ internal enum CustomResourceDefinitionChangeKind
 internal sealed record PendingCustomResourceDefinitionChange(CustomResourceDefinitionChangeKind Kind, V1CustomResourceDefinition Crd);
 
 public sealed record PendingCustomResourceConfig(GroupApiVersionKind Kind, IResourceConfig ResourceConfig);
-

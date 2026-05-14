@@ -141,10 +141,7 @@
                             <ic:FluentIcon Icon="ClipboardPaste" />
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem
-                        Header="{x:Static assets:Resources.Action_Delete}"
-                        HotKey="Back"
-                        IsVisible="{Binding EditMode}">
+                    <MenuItem Header="{x:Static assets:Resources.Action_Delete}" IsVisible="{Binding EditMode}">
                         <Interaction.Behaviors>
                             <ia:EventTriggerBehavior EventName="Click">
                                 <ia:CallMethodAction MethodName="Delete" TargetObject="{Binding #Editor}" />
@@ -188,3 +185,4 @@
         </ae:TextEditor>
     </Grid>
 </UserControl>
+

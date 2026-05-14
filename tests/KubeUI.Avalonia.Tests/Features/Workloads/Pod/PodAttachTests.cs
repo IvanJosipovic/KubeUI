@@ -150,6 +150,42 @@ public sealed class PodAttachTests : AvaloniaTestBase
         await AssertConnectionModeAsync(useAttach: true, expectedMethod: ConnectionMethod.Attach);
     }
 
+    [AvaloniaFact]
+    public void console_input_stops_after_stream_write_aborts()
+    {
+        var settings = TestApp.CurrentServices!.GetRequiredService<KubeUI.Avalonia.Services.Settings.ISettingsService>();
+        var logger = TestApp.CurrentServices.GetRequiredService<ILogger<PodConsoleViewModel>>();
+        var stream = new ThrowingWriteStream(new WebSocketException(WebSocketError.InvalidState));
+
+        PodConsoleViewModel viewModel = new(logger, settings);
+        viewModel.SetStreamsForTesting(stream: stream);
+
+        viewModel.WriteInput("ls"u8.ToArray());
+        viewModel.IsDisconnected.ShouldBeTrue();
+        stream.WriteCallCount.ShouldBe(1);
+
+        viewModel.WriteInput("pwd"u8.ToArray());
+        stream.WriteCallCount.ShouldBe(1);
+    }
+
+    [AvaloniaFact]
+    public void console_resize_stops_after_stream_write_aborts()
+    {
+        var settings = TestApp.CurrentServices!.GetRequiredService<KubeUI.Avalonia.Services.Settings.ISettingsService>();
+        var logger = TestApp.CurrentServices.GetRequiredService<ILogger<PodConsoleViewModel>>();
+        var stream = new ThrowingWriteStream(new IOException());
+
+        PodConsoleViewModel viewModel = new(logger, settings);
+        viewModel.SetStreamsForTesting(refreshStream: stream);
+
+        viewModel.SendResize(80, 24);
+        viewModel.IsDisconnected.ShouldBeTrue();
+        stream.WriteCallCount.ShouldBe(1);
+
+        viewModel.SendResize(120, 32);
+        stream.WriteCallCount.ShouldBe(1);
+    }
+
     private static async Task AssertConnectionModeAsync(bool useAttach, ConnectionMethod expectedMethod)
     {
         var runtime = new TestCluster();
@@ -288,5 +324,58 @@ public sealed class PodAttachTests : AvaloniaTestBase
     {
         Exec,
         Attach,
+    }
+
+    private sealed class ThrowingWriteStream(Exception exception)
+        : Stream
+    {
+        private readonly Exception _exception = exception;
+
+        public int WriteCallCount { get; private set; }
+
+        public override bool CanRead => false;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => true;
+
+        public override long Length => 0;
+
+        public override long Position
+        {
+            get => 0;
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush()
+        {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override void SetLength(long value)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            WriteCallCount++;
+            throw _exception;
+        }
+
+        public override void Write(ReadOnlySpan<byte> buffer)
+        {
+            WriteCallCount++;
+            throw _exception;
+        }
     }
 }
