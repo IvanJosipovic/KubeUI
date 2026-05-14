@@ -1,11 +1,8 @@
-using KubeUI.Avalonia.Features.Clusters.Overview.ViewModels;
-using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Properties.Controls;
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Infrastructure.Presentation;
 using System.ComponentModel;
-using System.Linq;
+using k8s.Models;
+using KubeUI.Avalonia.Features.Clusters.Overview.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 
 namespace KubeUI.Avalonia.Features.Clusters.Overview.Views;
 
@@ -21,15 +18,15 @@ public sealed partial class ClusterView : UserControl
     {
         InitializeComponent();
 
-#if DEBUG
-        if (Design.IsDesignMode)
-        {
-            _ = InitializeDesignTimeDataContextAsync();
-        }
-#endif
+        DesignTimePreview.Run(InitializeDesignTimeDataAsync);
 
         _timer.Interval = TimeSpan.FromSeconds(30);
         _timer.Tick += TimerOnTick;
+    }
+
+    private async Task InitializeDesignTimeDataAsync()
+    {
+        DataContext = await DesignTimePreview.CreateClusterBoundViewModelAsync<ClusterViewModel, V1Pod>();
     }
 
     protected override async void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -48,7 +45,6 @@ public sealed partial class ClusterView : UserControl
             await ViewModel.RefreshData();
         }
     }
-
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
@@ -73,51 +69,6 @@ public sealed partial class ClusterView : UserControl
         if (ViewModel != null)
         {
             await ViewModel.RefreshData();
-        }
-    }
-
-    private async Task InitializeDesignTimeDataContextAsync()
-    {
-        if (Application.Current == null)
-        {
-            return;
-        }
-
-        var catalog = Application.Current.GetRequiredService<ClusterWorkspaceCatalog>();
-        var cluster = catalog.GetDefault() ?? catalog.Clusters.FirstOrDefault();
-        if (cluster == null)
-        {
-            return;
-        }
-
-        try
-        {
-            var vm = Application.Current.GetRequiredService<ClusterViewModel>();
-            await Dispatcher.UIThread.InvokeAsync(() => DataContext = vm);
-
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await cluster.Connect().ConfigureAwait(false);
-
-                    await Dispatcher.UIThread.InvokeAsync(() =>
-                    {
-                        if (vm is IInitializeCluster init)
-                        {
-                            init.Initialize(cluster);
-                        }
-                    });
-                }
-                catch
-                {
-                    // Design-time preview should fail closed; runtime still uses the normal app path.
-                }
-            });
-        }
-        catch
-        {
-            // Design-time preview should fail closed; runtime still uses the normal app path.
         }
     }
 

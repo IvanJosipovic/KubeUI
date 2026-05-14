@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using Avalonia;
 using Avalonia.Styling;
 using KubeUI.Avalonia.Infrastructure;
@@ -10,7 +11,6 @@ using LiveChartsCore.SkiaSharpView.Avalonia;
 using LiveChartsCore.SkiaSharpView.Painting;
 using LiveChartsCore.SkiaSharpView.VisualElements;
 using SkiaSharp;
-using System.Collections.ObjectModel;
 
 namespace KubeUI.Avalonia.Features.Clusters.Overview.ViewModels;
 

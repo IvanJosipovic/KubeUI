@@ -1,12 +1,12 @@
+using System.Collections.ObjectModel;
+using System.Reactive.Linq;
 using Avalonia.Threading;
 using DynamicData;
 using DynamicData.Binding;
+using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Infrastructure.Threading;
-using k8s.Models;
-using System.Collections.ObjectModel;
-using System.Reactive.Linq;
 
 namespace KubeUI.Avalonia.Features.Clusters.Overview.ViewModels;
 

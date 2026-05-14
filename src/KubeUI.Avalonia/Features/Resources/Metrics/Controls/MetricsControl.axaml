@@ -1,20 +1,25 @@
-<UserControl
+﻿<UserControl
     x:Class="KubeUI.Avalonia.Features.Resources.Metrics.Controls.MetricsControl"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:Interaction="using:Avalonia.Xaml.Interactivity"
     xmlns:behaviors="using:KubeUI.Avalonia.Features.Resources.Properties.Behaviors"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:ic="using:FluentIcons.Avalonia"
     xmlns:ia="using:Avalonia.Xaml.Interactions.Core"
+    xmlns:ic="using:FluentIcons.Avalonia"
     xmlns:local="using:KubeUI.Avalonia.Features.Resources.Metrics.Controls"
-    xmlns:Interaction="using:Avalonia.Xaml.Interactivity"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="using:KubeUI.Avalonia.Features.Clusters.Overview.ViewModels"
     d:DesignHeight="360"
     d:DesignWidth="760"
     mc:Ignorable="d">
-    <Grid RowDefinitions="Auto,*" HorizontalAlignment="Stretch" RowSpacing="8">
-        <Grid Grid.Row="0" ColumnDefinitions="Auto,*" ColumnSpacing="10">
+    <Grid
+        HorizontalAlignment="Stretch"
+        RowDefinitions="Auto,*"
+        RowSpacing="8">
+        <Grid Grid.Row="0"
+            ColumnDefinitions="Auto,*"
+            ColumnSpacing="10">
             <ComboBox
                 Width="132"
                 IsVisible="{Binding ShowTimeRangeSelector, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}"
@@ -55,16 +60,15 @@
             </ItemsControl>
         </Grid>
 
-        <Border
-            Grid.Row="1"
-            Classes="overview-card"
-            IsVisible="{Binding ShowTabs, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}"
+        <Border Grid.Row="1"
             Padding="12"
-            VerticalAlignment="Stretch">
+            VerticalAlignment="Stretch"
+            Classes="overview-card"
+            IsVisible="{Binding ShowTabs, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}">
             <local:ResponsiveCartesianChart
+                Title="{Binding SelectedPanel.ChartTitle, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
-                Title="{Binding SelectedPanel.ChartTitle, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}"
                 Series="{Binding SelectedPanel.Series, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}"
                 XAxes="{Binding SelectedPanel.XAxes, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}"
                 YAxes="{Binding SelectedPanel.YAxes, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}">

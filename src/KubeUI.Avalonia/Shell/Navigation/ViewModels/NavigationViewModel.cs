@@ -1,14 +1,3 @@
-using KubeUI.Avalonia.Features.Clusters.Error.ViewModels;
-using KubeUI.Avalonia.Features.Clusters.Settings.ViewModels;
-using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Avalonia.Features.Resources.List.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Visualization.ViewModels;
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Infrastructure.Docking;
-using KubeUI.Avalonia.Infrastructure.Platform;
-using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Avalonia.Infrastructure.Threading;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
@@ -21,17 +10,30 @@ using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Dock.Model.Controls;
 using Dock.Model.Core;
-using FluentIcons.Common;
 using FluentAvalonia.UI.Controls;
+using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.Features.Clusters.Error.ViewModels;
 using KubeUI.Avalonia.Features.Clusters.Overview.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Settings.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Workspace;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Resources.List.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Visualization.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Avalonia.Infrastructure.Platform;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Infrastructure.Threading;
+using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Kubernetes;
-using KubeUI.Avalonia.Resources;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Avalonia.Shell.Navigation.ViewModels;
 
@@ -61,9 +63,12 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     };
 
     private readonly ILogger<NavigationViewModel> _logger;
+    private readonly INotificationManager _notificationManager;
+    private readonly IServiceProvider _serviceProvider;
+    private readonly IDialogService _dialogService;
+    public new IFactory Factory => _serviceProvider.GetRequiredService<IFactory>();
     private readonly Dictionary<ClusterWorkspaceViewModel, ClusterNavigationNode> _clusterNodes = [];
     private readonly Dictionary<ClusterWorkspaceViewModel, PendingClusterNavigationUpdate> _clusterRebuildDelays = [];
-    private INotificationManager _notificationManager => Application.Current.GetRequiredService<INotificationManager>();
 
     [ObservableProperty]
     public partial ClusterWorkspaceCatalog ClusterCatalog { get; set; }
@@ -71,12 +76,20 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     public partial ObservableCollection<ClusterNavigationNode> Clusters { get; set; } = [];
 
-    public NavigationViewModel()
+    public NavigationViewModel(
+        ILogger<NavigationViewModel> logger,
+        INotificationManager notificationManager,
+        IDialogService dialogService,
+        ClusterWorkspaceCatalog clusterCatalog,
+        IServiceProvider serviceProvider)
     {
-        ClusterCatalog = Application.Current.GetRequiredService<ClusterWorkspaceCatalog>();
+        _logger = logger;
+        _notificationManager = notificationManager;
+        _serviceProvider = serviceProvider;
+        _dialogService = dialogService;
+        ClusterCatalog = clusterCatalog;
         Title = Assets.Resources.NavigationViewModel_Title;
         Id = nameof(NavigationViewModel);
-        _logger = Application.Current.GetRequiredService<ILogger<NavigationViewModel>>();
 
         if (ClusterCatalog.Clusters is INotifyCollectionChanged collection)
         {
@@ -257,20 +270,19 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private async Task ShowMissingNamespacePermissionPromptAsync(ClusterWorkspaceViewModel cluster)
     {
-        var settingsVm = Application.Current.GetRequiredService<ClusterSettingsViewModel>();
+        var settingsVm = _serviceProvider.GetRequiredService<ClusterSettingsViewModel>();
         settingsVm.Initialize(cluster);
         Factory.AddToDocuments(settingsVm);
 
-        var dialogService = Application.Current.GetRequiredService<IDialogService>();
         var settings = new ContentDialogSettings
         {
             Title = Assets.Resources.Cluster_Missing_Namespace_Permission_Title,
             Content = Assets.Resources.Cluster_Missing_Namespace_Permission_Content,
             PrimaryButtonText = Assets.Resources.Cluster_Missing_Namespace_Permission_Primary,
-            DefaultButton = ContentDialogButton.Primary
+            DefaultButton = FAContentDialogButton.Primary
         };
 
-        await dialogService.ShowContentDialogAsync(this, settings);
+        await _dialogService.ShowContentDialogAsync(this, settings);
     }
 
     private void ShowClusterError(string? error)
@@ -289,7 +301,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        var vm = Application.Current.GetRequiredService<ClusterErrorViewModel>();
+        var vm = _serviceProvider.GetRequiredService<ClusterErrorViewModel>();
         vm.Id = id;
         vm.Error = error;
         Factory.AddToDocuments(vm);
@@ -368,11 +380,12 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             if (cluster.Connected)
             {
                 cluster.IsExpanded = true;
+                return;
             }
 
             Dispatcher.UIThread.Post(() =>
             {
-                SyncClusterNavigation(cluster, updatePortForwarders: cluster.Connected);
+                SyncClusterNavigation(cluster);
             });
             return;
         }
@@ -514,72 +527,6 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         UpsertNavigationItem(node.NavigationItems, CreateNavigationLink(node.Cluster, "load-folder", Assets.Resources.NavigationViewModel_LoadFolder, LoadFolderOrder));
     }
 
-    private IEnumerable<NavigationItem> BuildNavigationItems(ClusterWorkspaceViewModel cluster)
-    {
-        if (!ShouldPopulateClusterNavigation(cluster))
-        {
-            return [];
-        }
-
-        var items = new List<NavigationItem>
-        {
-            CreateNavigationLink(cluster, NavigationTargets.ClusterWorkspace, Assets.Resources.ClusterViewModel_Title, ClusterWorkspaceOrder),
-            CreateNavigationLink(cluster, NavigationTargets.Visualization, Assets.Resources.VisualizationViewModel_Title, VisualizationOrder),
-            CreateNavigationLink(cluster, NavigationTargets.ClusterSettings, Assets.Resources.ClusterSettingsViewModel_Title, ClusterSettingsOrder),
-            CreateNavigationLink(cluster, "load-yaml", Assets.Resources.NavigationViewModel_LoadYaml, LoadYamlOrder),
-            CreateNavigationLink(cluster, "load-folder", Assets.Resources.NavigationViewModel_LoadFolder, LoadFolderOrder),
-        };
-
-        var categories = new Dictionary<string, NavigationItem>(StringComparer.Ordinal);
-        var customResourceConfigs = new List<IResourceConfig>();
-        ResourceNavigationLink? definitionsLink = null;
-
-        foreach (var resourceConfig in cluster.GetResourceConfigs().OrderBy(config => config.Order).ThenBy(config => config.Name, StringComparer.Ordinal))
-        {
-            if (!CanListAndWatchResource(cluster, resourceConfig))
-            {
-                continue;
-            }
-
-            if (resourceConfig.IsCustomResource)
-            {
-                customResourceConfigs.Add(resourceConfig);
-                continue;
-            }
-
-            var link = CreateResourceNavigationLink(cluster, resourceConfig);
-
-            if (resourceConfig.Type == typeof(V1CustomResourceDefinition))
-            {
-                definitionsLink = link;
-                definitionsLink.Name = "Definitions";
-                definitionsLink.Order = -1;
-                continue;
-            }
-
-            if (string.IsNullOrWhiteSpace(resourceConfig.Category))
-            {
-                items.Add(link);
-                continue;
-            }
-
-            if (!categories.TryGetValue(resourceConfig.Category, out var category))
-            {
-                category = EnsureCategory(items, categories, cluster, resourceConfig.Category, resourceConfig.Order);
-            }
-
-            category.NavigationItems.Add(link);
-        }
-
-        var customResourceDefinitions = BuildCustomResourceDefinitionsNavigationItem(cluster, definitionsLink, customResourceConfigs);
-        if (customResourceDefinitions != null)
-        {
-            items.Add(customResourceDefinitions);
-        }
-
-        return items;
-    }
-
     private bool CanShowPortForwarders(ClusterWorkspaceViewModel cluster)
     {
         var podResourceConfig = cluster.GetResourceConfigs()
@@ -663,27 +610,6 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         UpsertNavigationItem(networkCategory.NavigationItems, CreateNavigationLink(cluster, NavigationTargets.PortForwarders, Assets.Resources.PortForwarderListViewModel_Title, PortForwardersOrder));
     }
 
-    private static NavigationItem EnsureCategory(List<NavigationItem> items, Dictionary<string, NavigationItem> categories, ClusterWorkspaceViewModel cluster, string categoryName, int order)
-    {
-        if (categories.TryGetValue(categoryName, out var category))
-        {
-            return category;
-        }
-
-        category = new NavigationItem
-        {
-            Id = $"{cluster.Name}-category-{categoryName}",
-            Name = categoryName,
-            // Keep uncategorized resources (e.g. Namespace/Node/Event) above category groups,
-            // while preserving alpha's deterministic category order.
-            Order = ResolveCategoryOrder(categoryName, order),
-        };
-
-        categories.Add(categoryName, category);
-        items.Add(category);
-        return category;
-    }
-
     private static int ResolveCategoryOrder(string categoryName, int defaultOrder)
     {
         if (CategoryOrderOverrides.TryGetValue(categoryName, out var fixedOrder))
@@ -739,6 +665,9 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             return;
         }
 
+        var addedConfigList = addedConfigs as IReadOnlyList<PendingCustomResourceConfig> ?? addedConfigs.ToList();
+        ReloadOpenCustomResourceDocuments(cluster, addedConfigList);
+
         var root = GetOrCreateCustomResourceDefinitionsRoot(node, cluster);
         if (root == null)
         {
@@ -750,7 +679,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             RemoveCustomResourceDefinition(root, cluster, removedKind);
         }
 
-        foreach (var addedConfig in addedConfigs)
+        foreach (var addedConfig in addedConfigList)
         {
             ApplyCustomResourceNavigationUpdate(node, cluster, addedConfig.ResourceConfig, isVisible: true);
         }
@@ -1053,7 +982,6 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             }
         }
     }
-
     private static ObservableCollection<NavigationItem>? FindNavigationParentCollection(ObservableCollection<NavigationItem> items, string id)
     {
         if (items.Any(item => item.Id == id))
@@ -1127,57 +1055,6 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         return fqdnList;
     }
 
-    private static void CaptureExpandedState(IEnumerable<NavigationItem> items, Dictionary<string, bool> expandedState)
-    {
-        foreach (var item in items)
-        {
-            expandedState[item.Id] = item.IsExpanded;
-            CaptureExpandedState(item.NavigationItems, expandedState);
-        }
-    }
-
-    private static void ReconcileNavigationItems(ObservableCollection<NavigationItem> currentItems, IReadOnlyList<NavigationItem> desiredItems)
-    {
-        var desiredById = desiredItems.ToDictionary(item => item.Id, StringComparer.Ordinal);
-
-        for (var i = currentItems.Count - 1; i >= 0; i--)
-        {
-            var current = currentItems[i];
-            if (!desiredById.ContainsKey(current.Id))
-            {
-                currentItems.RemoveAt(i);
-            }
-        }
-
-        foreach (var desired in desiredItems)
-        {
-            var current = FindNavigationItem(currentItems, desired.Id);
-            if (current == null)
-            {
-                currentItems.Add(desired);
-                continue;
-            }
-
-            if (!CanReuseNavigationItem(current, desired))
-            {
-                currentItems.Remove(current);
-                ApplyExpandedState(desired, CaptureExpandedState(current));
-                currentItems.Add(desired);
-                continue;
-            }
-
-            UpdateNavigationItem(current, desired);
-        }
-    }
-
-    private static Dictionary<string, bool> CaptureExpandedState(NavigationItem item)
-    {
-        var expandedState = new Dictionary<string, bool>(StringComparer.Ordinal);
-        expandedState[item.Id] = item.IsExpanded;
-        CaptureExpandedState(item.NavigationItems, expandedState);
-        return expandedState;
-    }
-
     private static bool CanReuseNavigationItem(NavigationItem current, NavigationItem desired)
     {
         return current.GetType() == desired.GetType();
@@ -1201,24 +1078,9 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
         if (current is ResourceNavigationLink currentResourceLink && desired is ResourceNavigationLink desiredResourceLink)
         {
-            currentResourceLink.Count ??= desiredResourceLink.Count;
+            currentResourceLink.Count = desiredResourceLink.Count;
             currentResourceLink.OpenCommand = desiredResourceLink.OpenCommand;
             currentResourceLink.OpenInNewTabCommand = desiredResourceLink.OpenInNewTabCommand;
-        }
-
-        ReconcileNavigationItems(current.NavigationItems, desired.NavigationItems.ToList());
-    }
-
-    private static void ApplyExpandedState(NavigationItem item, IReadOnlyDictionary<string, bool> expandedState)
-    {
-        if (expandedState.TryGetValue(item.Id, out var isExpanded))
-        {
-            item.IsExpanded = isExpanded;
-        }
-
-        foreach (var child in item.NavigationItems)
-        {
-            ApplyExpandedState(child, expandedState);
         }
     }
 
@@ -1227,16 +1089,108 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         return cluster.Status == ClusterStatus.Connected;
     }
 
-    private static IObservable<int> TryGetResourceCount(ClusterWorkspaceViewModel cluster, Type resourceType)
+    private static IObservable<int> CreateResourceCountStream(ClusterWorkspaceViewModel cluster, Type resourceType)
+    {
+        if (IsResourceSeeded(cluster, resourceType))
+        {
+            return CreateLiveResourceCountStream(cluster, resourceType);
+        }
+
+        return Observable.Create<int>(observer =>
+        {
+            object gate = new();
+            bool attached = false;
+            bool disposed = false;
+            IDisposable? liveSubscription = null;
+
+            void AttachLiveStream()
+            {
+                lock (gate)
+                {
+                    if (attached || disposed)
+                    {
+                        return;
+                    }
+
+                    attached = true;
+                }
+
+                var subscription = CreateLiveResourceCountStream(cluster, resourceType).Subscribe(observer);
+                var disposeSubscription = false;
+
+                lock (gate)
+                {
+                    if (disposed)
+                    {
+                        disposeSubscription = true;
+                    }
+                    else
+                    {
+                        liveSubscription = subscription;
+                    }
+                }
+
+                if (disposeSubscription)
+                {
+                    subscription.Dispose();
+                }
+            }
+
+            void OnResourceSeeded(ClusterWorkspaceViewModel seededCluster, Type seededType)
+            {
+                if (!ReferenceEquals(seededCluster, cluster) || seededType != resourceType)
+                {
+                    return;
+                }
+
+                cluster.ResourceSeeded -= OnResourceSeeded;
+                AttachLiveStream();
+            }
+
+            cluster.ResourceSeeded += OnResourceSeeded;
+
+            if (IsResourceSeeded(cluster, resourceType))
+            {
+                cluster.ResourceSeeded -= OnResourceSeeded;
+                AttachLiveStream();
+            }
+
+            return Disposable.Create(() =>
+            {
+                cluster.ResourceSeeded -= OnResourceSeeded;
+                IDisposable? subscription;
+                lock (gate)
+                {
+                    disposed = true;
+                    subscription = liveSubscription;
+                    liveSubscription = null;
+                }
+
+                subscription?.Dispose();
+            });
+        });
+    }
+
+    private static IObservable<int> CreateLiveResourceCountStream(ClusterWorkspaceViewModel cluster, Type resourceType)
+    {
+        return cluster.GetResourceCount(resourceType)
+            .DistinctUntilChanged()
+            .Publish(counts => counts.Take(1).Merge(counts.Skip(1).Sample(TimeSpan.FromMilliseconds(100), AvaloniaScheduler.Instance)))
+            .ObserveOn(AvaloniaScheduler.Instance)
+            .Replay(1)
+            .RefCount();
+    }
+
+    private static bool IsResourceSeeded(ClusterWorkspaceViewModel cluster, Type resourceType)
     {
         try
         {
             var kind = GroupApiVersionKind.From(resourceType);
-            return cluster.Objects.ContainsKey(kind) ? cluster.GetResourceCount(resourceType) : Observable.Empty<int>();
+            return cluster.Objects.ContainsKey(kind);
         }
         catch
         {
-            return Observable.Empty<int>();
+            return false;
         }
     }
 
@@ -1323,13 +1277,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             Order = resourceConfig.Order,
             OpenCommand = OpenResourceNavigationCommand,
             OpenInNewTabCommand = OpenResourceNavigationInNewTabCommand,
-            // Throttle rapid updates to the resource count to reduce UI churn.
-            // Sample emits the latest value at most once per 100ms and ensures
-            // updates are observed on the Avalonia UI scheduler. Also avoid
-            // emitting duplicate consecutive values.
-            Count = TryGetResourceCount(cluster, resourceConfig.Type)
-                .Sample(TimeSpan.FromMilliseconds(100), AvaloniaScheduler.Instance)
-                .DistinctUntilChanged(),
+            Count = CreateResourceCountStream(cluster, resourceConfig.Type),
         };
         return link;
     }
@@ -1344,27 +1292,28 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private void OpenResourceNavigation(ResourceNavigationLink nav, bool forceNewTab = false)
     {
-        if (nav.ControlType == null)
+        var currentResourceConfig = ResolveCurrentResourceConfig(nav);
+        if (currentResourceConfig == null)
         {
             _logger.LogError("Unable to resolve resource navigation target for {Name}", nav.Name);
             return;
         }
 
-        var expectedId = $"{nav.Cluster.Name}-{GroupApiVersionKind.From(nav.ControlType)}";
+        var expectedId = $"{nav.Cluster.Name}-{currentResourceConfig.Kind}";
 
-        if (!forceNewTab && FindExistingResourceDocument(nav) is IDockable existingDocument)
+        if (!forceNewTab && FindExistingResourceDocument(nav.Cluster, currentResourceConfig.Kind) is IDockable existingDocument)
         {
-            ActivateDocument(existingDocument);
-            if (existingDocument is IResourceListViewModel existingResourceList)
+            if (existingDocument is IResourceListViewModel existingResourceList
+                && existingResourceList.ResourceConfig.Type != currentResourceConfig.Type)
             {
-                nav.Count = ObserveResourceListItemCount(existingResourceList);
+                existingDocument = ReplaceResourceDocument(existingResourceList, currentResourceConfig.Type) ?? existingDocument;
             }
 
+            ActivateDocument(existingDocument);
             return;
         }
 
-        var resourceListType = typeof(ResourceListViewModel<>).MakeGenericType(nav.ControlType);
-        var vm = Application.Current.GetRequiredService(resourceListType) as IDockable;
+        var vm = CreateResourceDocument(nav.Cluster, currentResourceConfig.Type);
 
         if (vm == null)
         {
@@ -1372,19 +1321,9 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        if (vm is IInitializeCluster init)
-        {
-            init.Initialize(nav.Cluster);
-        }
-
         if (forceNewTab)
         {
             vm.Id = CreateUniqueDockableId(expectedId);
-        }
-
-        if (vm is IResourceListViewModel resourceList)
-        {
-            nav.Count = ObserveResourceListItemCount(resourceList);
         }
 
         Factory.AddToDocuments(vm);
@@ -1457,7 +1396,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                 return;
             }
 
-            var vm = Application.Current.GetRequiredService(vmType) as IDockable;
+            var vm = _serviceProvider.GetRequiredService(vmType) as IDockable;
 
             if (vm == null)
             {
@@ -1499,38 +1438,113 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         Factory.SetFocusedDockable(documents, dockable);
     }
 
-    private static IObservable<int> ObserveResourceListItemCount(IResourceListViewModel resourceList)
-    {
-        return Observable.Create<int>(observer =>
-        {
-            observer.OnNext(resourceList.ItemCount);
-
-            if (resourceList is not INotifyPropertyChanged propertyChanged)
-            {
-                observer.OnCompleted();
-                return Disposable.Empty;
-            }
-
-            PropertyChangedEventHandler handler = (_, args) =>
-            {
-                if (string.IsNullOrEmpty(args.PropertyName) || args.PropertyName == nameof(IResourceListViewModel.ItemCount))
-                {
-                    observer.OnNext(resourceList.ItemCount);
-                }
-            };
-
-            propertyChanged.PropertyChanged += handler;
-            return Disposable.Create(() => propertyChanged.PropertyChanged -= handler);
-        }).DistinctUntilChanged();
-    }
-
-    private IDockable? FindExistingResourceDocument(ResourceNavigationLink nav)
+    private IResourceConfig? ResolveCurrentResourceConfig(ResourceNavigationLink nav)
     {
         if (nav.ControlType == null)
         {
             return null;
         }
 
+        var kind = GroupApiVersionKind.From(nav.ControlType);
+        return nav.Cluster.GetResourceConfigs().FirstOrDefault(config => config.Kind == kind);
+    }
+
+    private IDockable? CreateResourceDocument(ClusterWorkspaceViewModel cluster, Type resourceType)
+    {
+        var resourceListType = typeof(ResourceListViewModel<>).MakeGenericType(resourceType);
+        if (_serviceProvider.GetRequiredService(resourceListType) is not IDockable vm)
+        {
+            return null;
+        }
+
+        if (vm is IInitializeCluster init)
+        {
+            init.Initialize(cluster);
+        }
+
+        return vm;
+    }
+
+    private void ReloadOpenCustomResourceDocuments(ClusterWorkspaceViewModel cluster, IReadOnlyList<PendingCustomResourceConfig> addedConfigs)
+    {
+        var documents = Factory.GetDockable<IDocumentDock>("Documents");
+        var visibleDockables = documents?.VisibleDockables;
+        if (visibleDockables == null || visibleDockables.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var addedConfig in addedConfigs)
+        {
+            var staleDocuments = visibleDockables
+                .OfType<IResourceListViewModel>()
+                .Where(resourceList =>
+                    ReferenceEquals(resourceList.Cluster, cluster)
+                    && resourceList.Kind == addedConfig.Kind
+                    && resourceList.ResourceConfig.Type != addedConfig.ResourceConfig.Type)
+                .Cast<IDockable>()
+                .ToList();
+
+            foreach (var staleDocument in staleDocuments)
+            {
+                if (staleDocument is IResourceListViewModel staleResourceList)
+                {
+                    ReplaceResourceDocument(staleResourceList, addedConfig.ResourceConfig.Type);
+                }
+            }
+        }
+    }
+
+    private IDockable? ReplaceResourceDocument(IResourceListViewModel existingResourceList, Type resourceType)
+    {
+        if (existingResourceList is not IDockable existingDockable)
+        {
+            return null;
+        }
+
+        var documents = Factory.GetDockable<IDocumentDock>("Documents");
+        var visibleDockables = documents?.VisibleDockables;
+        if (documents == null || visibleDockables == null)
+        {
+            return null;
+        }
+
+        var replacement = CreateResourceDocument(existingResourceList.Cluster, resourceType);
+        if (replacement is not IResourceListViewModel replacementResourceList)
+        {
+            return null;
+        }
+
+        replacement.Id = existingDockable.Id;
+        replacementResourceList.IsNamespaceSelectionLinked = existingResourceList.IsNamespaceSelectionLinked;
+        replacementResourceList.SearchQuery = existingResourceList.SearchQuery;
+
+        if (!replacementResourceList.IsNamespaceSelectionLinked)
+        {
+            replacementResourceList.SelectedNamespaces.Clear();
+            foreach (var selectedNamespace in existingResourceList.SelectedNamespaces)
+            {
+                replacementResourceList.SelectedNamespaces.Add(selectedNamespace);
+            }
+        }
+
+        var insertIndex = visibleDockables.IndexOf(existingDockable);
+        var wasActive = ReferenceEquals(documents.ActiveDockable, existingDockable);
+
+        Factory.CloseDockable(existingDockable);
+        Factory.InsertDockable(documents, replacement, Math.Max(0, Math.Min(insertIndex, documents.VisibleDockables?.Count ?? 0)));
+
+        if (wasActive)
+        {
+            Factory.SetActiveDockable(replacement);
+            Factory.SetFocusedDockable(documents, replacement);
+        }
+
+        return replacement;
+    }
+
+    private IDockable? FindExistingResourceDocument(ClusterWorkspaceViewModel cluster, GroupApiVersionKind kind)
+    {
         var documents = Factory.GetDockable<IDocumentDock>("Documents");
         if (documents?.VisibleDockables == null)
         {
@@ -1540,8 +1554,8 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         return documents.VisibleDockables
             .OfType<IResourceListViewModel>()
             .FirstOrDefault(resourceList =>
-                ReferenceEquals(resourceList.Cluster, nav.Cluster)
-                && resourceList.ResourceConfig.Type == nav.ControlType) as IDockable;
+                ReferenceEquals(resourceList.Cluster, cluster)
+                && resourceList.Kind == kind) as IDockable;
     }
 
     private string CreateUniqueDockableId(string baseId)
@@ -1604,6 +1618,3 @@ internal sealed class PendingClusterNavigationUpdate
         }
     }
 }
-
-
-

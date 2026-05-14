@@ -1,49 +1,30 @@
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Features.Resources.List.ViewModels;
-using KubeUI.Avalonia.Infrastructure.Presentation;
 using System.Reflection;
+using Avalonia;
 using Dock.Model.Core;
 using k8s;
 using k8s.Models;
 using KubeUI.Avalonia.Controls.DataGridFilters;
-using KubeUI.Kubernetes;
+using KubeUI.Avalonia.Features.Resources.List.ViewModels;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Resources;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Avalonia.Features.Resources.List.Views;
 
 public partial class ResourceListView : UserControl
 {
-    private readonly DataGridColumnFilterFlyoutFactory _filterFlyoutFactory;
-    private readonly ILogger<ResourceListView> _logger;
+    private DataGridColumnFilterFlyoutFactory? _filterFlyoutFactory;
 
     public ResourceListView()
     {
         InitializeComponent();
 
-        _filterFlyoutFactory = Application.Current.GetRequiredService<DataGridColumnFilterFlyoutFactory>();
-        _logger = Application.Current.GetRequiredService<ILogger<ResourceListView>>();
+        DesignTimePreview.Run(InitializePreviewDataAsync);
+    }
 
-#if DEBUG
-        if (Design.IsDesignMode)
-        {
-            Dispatcher.UIThread.Post(async () =>
-            {
-                var cluster = Application.Current.GetRequiredService<ClusterWorkspaceCatalog>().GetDefault();
-                await cluster.Connect();
-                await cluster.SeedResource<V1Pod>();
-
-                var vm = Application.Current.GetRequiredService<ResourceListViewModel<V1Pod>>() as IDockable;
-
-                if (vm is IInitializeCluster init)
-                {
-                    init.Initialize(cluster);
-                }
-
-                DataContext = vm;
-            });
-        }
-#endif
+    private async Task InitializePreviewDataAsync()
+    {
+        DataContext = await DesignTimePreview.CreateClusterBoundViewModelAsync<ResourceListViewModel<V1Pod>, V1Pod>();
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -74,6 +55,8 @@ public partial class ResourceListView : UserControl
 
     private void AttachFilterFlyouts(IResourceListViewModel vm)
     {
+        _filterFlyoutFactory ??= GetServiceProvider().GetRequiredService<DataGridColumnFilterFlyoutFactory>();
+
         foreach (var column in vm.ColumnDefinitions)
         {
             if (GetResourceListColumn(column) is not IResourceListColumn resourceColumn)
@@ -83,6 +66,16 @@ public partial class ResourceListView : UserControl
 
             column.FilterFlyout = _filterFlyoutFactory.Create(resourceColumn, column, vm.FilteringModel);
         }
+    }
+
+    private static IServiceProvider GetServiceProvider()
+    {
+        if (Application.Current is IServiceProviderHost host)
+        {
+            return host.Services;
+        }
+
+        throw new InvalidOperationException("Unable to resolve services from the current application host.");
     }
 
     private MethodInfo? GetGenericMethod(string name)

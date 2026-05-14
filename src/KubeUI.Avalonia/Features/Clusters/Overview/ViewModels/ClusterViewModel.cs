@@ -1,11 +1,11 @@
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Kubernetes;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using Avalonia.Threading;
 using k8s;
 using k8s.Models;
-using System.Collections.Specialized;
-using System.ComponentModel;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Clusters.Overview.ViewModels;
 

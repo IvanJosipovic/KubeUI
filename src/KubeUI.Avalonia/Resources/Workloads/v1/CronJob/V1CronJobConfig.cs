@@ -6,6 +6,10 @@ namespace KubeUI.Avalonia.Resources.Workloads.v1.CronJob;
 
 public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
 {
+    public V1CronJobConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
     public override bool IsNamespaced => true;
     public override string Category => CategoryString("ResourceConfig_Category_Workloads", "Workloads");
     public override int Order => 6;

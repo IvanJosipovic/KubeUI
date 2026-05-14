@@ -1,8 +1,8 @@
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Kubernetes;
+using System.Text.RegularExpressions;
 using FluentIcons.Common;
 using k8s.Models;
-using System.Text.RegularExpressions;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Resources.Properties.Controls;
 

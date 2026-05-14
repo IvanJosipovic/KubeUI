@@ -219,7 +219,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService
             }
         }
 
-AwaitInflight:
+    AwaitInflight:
         return await inflightTask.ConfigureAwait(false);
     }
 

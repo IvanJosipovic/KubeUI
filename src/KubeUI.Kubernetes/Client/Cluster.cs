@@ -44,7 +44,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
     public event Action<V1CustomResourceDefinition>? OnCustomResourceDefinitionReady;
 
-    private readonly SemaphoreSlim _connectionLimiter = new(1,1);
+    private readonly SemaphoreSlim _connectionLimiter = new(1, 1);
 
     private readonly ConcurrentDictionary<GroupApiVersionKind, Lazy<Task>> _seedTasks = new();
     private readonly SemaphoreSlim _customResourceDefinitionSignal = new(0);
@@ -97,6 +97,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime
     {
         _loggerFactory = loggerFactory;
         _logger = logger;
+        _portForwardSessionFactory = new KubernetesPortForwardSessionFactory(this);
         ModelCache = modelCache;
         _generator = generator;
         _generator.SetEnumSupport(false);

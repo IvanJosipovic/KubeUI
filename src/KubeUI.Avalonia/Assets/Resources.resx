@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
+  <!--
+    Microsoft ResX Schema
+
     Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
     associated with the data types.
-    
+
     Example:
-    
+
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-                
-    There are any number of "resheader" rows that contain simple 
+
+    There are any number of "resheader" rows that contain simple
     name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
     mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
     extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-    
+
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-    
+
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
+    value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -382,32 +382,23 @@ Are you sure?</value>
   <data name="ClusterSettingsView_Remove" xml:space="preserve">
     <value>Remove</value>
   </data>
-  <data name="ClusterSettingsView_AutoMetricsBackend_Prometheus" xml:space="preserve">
-    <value>Currently using Prometheus</value>
+  <data name="ClusterSettingsView_DebugContainerImageLabel" xml:space="preserve">
+    <value>Ephemeral Debug Image</value>
   </data>
-  <data name="ClusterSettingsView_AutoMetricsBackend_PrometheusWithProvider" xml:space="preserve">
-    <value>Currently using Prometheus ({0})</value>
+  <data name="ClusterSettingsView_DebugContainerImageTooltip" xml:space="preserve">
+    <value>Image used when starting an ephemeral debug container</value>
   </data>
-  <data name="ClusterSettingsView_AutoMetricsBackend_KubernetesMetricsServer" xml:space="preserve">
-    <value>Currently using Kubernetes Metrics Server</value>
+  <data name="PodContainerCell_TypeFormat" xml:space="preserve">
+    <value>Type: {0}</value>
   </data>
-  <data name="ClusterSettingsView_AutoMetricsBackend_None" xml:space="preserve">
-    <value>No metrics backend is currently available</value>
+  <data name="PodContainerCell_StatusFormat" xml:space="preserve">
+    <value>Status: {0}</value>
   </data>
-  <data name="ClusterSettingsView_AutoMetricsBackend_AutoModeHelp" xml:space="preserve">
-    <value>Auto mode will try Prometheus first and fall back to Kubernetes Metrics Server.</value>
+  <data name="PodContainerCell_RestartsFormat" xml:space="preserve">
+    <value>Restarts: {0}</value>
   </data>
-  <data name="ClusterSettingsView_PrometheusProvider_Operator" xml:space="preserve">
-    <value>Prometheus Operator</value>
-  </data>
-  <data name="ClusterSettingsView_PrometheusProvider_OpenShift" xml:space="preserve">
-    <value>OpenShift</value>
-  </data>
-  <data name="ClusterSettingsView_PrometheusProvider_Manual" xml:space="preserve">
-    <value>Manual Service</value>
-  </data>
-  <data name="ClusterSettingsView_PrometheusProvider_External" xml:space="preserve">
-    <value>External URL</value>
+  <data name="PodContainerCell_ImageFormat" xml:space="preserve">
+    <value>Image: {0}</value>
   </data>
   <data name="ClusterView_Cpu" xml:space="preserve">
     <value>CPU</value>
@@ -483,6 +474,9 @@ Are you sure?</value>
   </data>
   <data name="PodPropertiesView_InitContainers" xml:space="preserve">
     <value>Init Containers</value>
+  </data>
+  <data name="PodPropertiesView_EphemeralContainers" xml:space="preserve">
+    <value>Ephemeral Containers</value>
   </data>
   <data name="PodPropertiesView_Containers" xml:space="preserve">
     <value>Containers</value>
@@ -1212,8 +1206,68 @@ Are you sure?</value>
   <data name="MainView_Menu_File_LoadKubeConfig_Open" xml:space="preserve">
     <value>Select Kube Config</value>
   </data>
+  <data name="MainView_Menu_File_ImportAksCluster" xml:space="preserve">
+    <value>_Load AKS Cluster</value>
+  </data>
+  <data name="ImportAksClusterViewModel_Title" xml:space="preserve">
+    <value>Import AKS Cluster</value>
+  </data>
+  <data name="ImportAksClusterView_Description" xml:space="preserve">
+    <value>Select a subscription, choose an AKS cluster, and import its kubeconfig into KubeUI.</value>
+  </data>
+  <data name="ImportAksClusterView_Prerequisites" xml:space="preserve">
+    <value>Azure CLI must be installed and signed in and run az aks install-cli to install the Kubernetes tools.</value>
+  </data>
+  <data name="ImportAksClusterView_Subscription" xml:space="preserve">
+    <value>Subscription</value>
+  </data>
+  <data name="ImportAksClusterView_Tenant" xml:space="preserve">
+    <value>Tenant</value>
+  </data>
+  <data name="ImportAksClusterView_TenantId" xml:space="preserve">
+    <value>Tenant Id</value>
+  </data>
+  <data name="ImportAksClusterView_Cluster" xml:space="preserve">
+    <value>Cluster</value>
+  </data>
+  <data name="ImportAksClusterView_Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="ImportAksClusterView_Import" xml:space="preserve">
+    <value>Import</value>
+  </data>
+  <data name="ImportAksClusterView_Importing" xml:space="preserve">
+    <value>Importing AKS cluster...</value>
+  </data>
+  <data name="ImportAksClusterView_Imported" xml:space="preserve">
+    <value>Imported {0}.</value>
+  </data>
+  <data name="ImportAksClusterView_ResourceGroupFormat" xml:space="preserve">
+    <value>Resource group: {0}</value>
+  </data>
+  <data name="ImportAksClusterView_VersionFormat" xml:space="preserve">
+    <value>Kubernetes version: {0}</value>
+  </data>
+  <data name="CloudClusterConnectView_Description" xml:space="preserve">
+    <value>Choose a subscription first, then discover and connect to a managed cluster.</value>
+  </data>
+  <data name="CloudClusterConnectView_SubscriptionFirst" xml:space="preserve">
+    <value>Subscription-first discovery is the first implementation step.</value>
+  </data>
+  <data name="CloudClusterConnectView_AksOnly" xml:space="preserve">
+    <value>AKS support will be wired up here first.</value>
+  </data>
   <data name="PodLogsView_Clear" xml:space="preserve">
     <value>Clear Logs</value>
+  </data>
+  <data name="V1PodConfig_DebugContainer" xml:space="preserve">
+    <value>Debug Container</value>
+  </data>
+  <data name="V1PodConfig_DebugContainer_Pod" xml:space="preserve">
+    <value>Pod</value>
+  </data>
+  <data name="V1PodConfig_DebugContainer_Error" xml:space="preserve">
+    <value>Error adding debug container</value>
   </data>
   <data name="DataGridFilterFlyout_Apply" xml:space="preserve">
     <value>Apply</value>
@@ -1236,32 +1290,65 @@ Are you sure?</value>
   <data name="DataGridFilterFlyout_Contains" xml:space="preserve">
     <value>Contains</value>
   </data>
+  <data name="DataGridFilterFlyout_NotContains" xml:space="preserve">
+    <value>Not contains</value>
+  </data>
   <data name="DataGridFilterFlyout_EndsWith" xml:space="preserve">
     <value>Ends with</value>
+  </data>
+  <data name="DataGridFilterFlyout_NotEndsWith" xml:space="preserve">
+    <value>Not ends with</value>
   </data>
   <data name="DataGridFilterFlyout_Equals" xml:space="preserve">
     <value>Equals</value>
   </data>
+  <data name="DataGridFilterFlyout_NotEquals" xml:space="preserve">
+    <value>Not equals</value>
+  </data>
   <data name="DataGridFilterFlyout_GreaterThan" xml:space="preserve">
     <value>Greater than</value>
+  </data>
+  <data name="DataGridFilterFlyout_NotGreaterThan" xml:space="preserve">
+    <value>Not greater than</value>
   </data>
   <data name="DataGridFilterFlyout_GreaterThanOrEqual" xml:space="preserve">
     <value>Greater than or equal</value>
   </data>
+  <data name="DataGridFilterFlyout_NotGreaterThanOrEqual" xml:space="preserve">
+    <value>Not greater than or equal</value>
+  </data>
   <data name="DataGridFilterFlyout_LessThan" xml:space="preserve">
     <value>Less than</value>
+  </data>
+  <data name="DataGridFilterFlyout_NotLessThan" xml:space="preserve">
+    <value>Not less than</value>
   </data>
   <data name="DataGridFilterFlyout_LessThanOrEqual" xml:space="preserve">
     <value>Less than or equal</value>
   </data>
+  <data name="DataGridFilterFlyout_NotLessThanOrEqual" xml:space="preserve">
+    <value>Not less than or equal</value>
+  </data>
+  <data name="DataGridFilterFlyout_NotBetween" xml:space="preserve">
+    <value>Not between</value>
+  </data>
   <data name="DataGridFilterFlyout_NewerThan" xml:space="preserve">
     <value>Newer than</value>
+  </data>
+  <data name="DataGridFilterFlyout_NotNewerThan" xml:space="preserve">
+    <value>Not newer than</value>
   </data>
   <data name="DataGridFilterFlyout_OlderThan" xml:space="preserve">
     <value>Older than</value>
   </data>
+  <data name="DataGridFilterFlyout_NotOlderThan" xml:space="preserve">
+    <value>Not older than</value>
+  </data>
   <data name="DataGridFilterFlyout_StartsWith" xml:space="preserve">
     <value>Starts with</value>
+  </data>
+  <data name="DataGridFilterFlyout_NotStartsWith" xml:space="preserve">
+    <value>Not starts with</value>
   </data>
   <data name="DataGridFilterFlyout_Value" xml:space="preserve">
     <value>Value</value>
@@ -1364,5 +1451,17 @@ Are you sure?</value>
   </data>
   <data name="Volume Mode" xml:space="preserve">
     <value>Volume Mode</value>
+  </data>
+  <data name="ImportAksClusterView_NoSubscriptions" xml:space="preserve">
+    <value>No Azure subscriptions were found. Sign in to Azure and refresh.</value>
+  </data>
+  <data name="ImportAksClusterView_AzureCliSignedIn" xml:space="preserve">
+    <value>Azure CLI is signed in.</value>
+  </data>
+  <data name="ImportAksClusterView_AzureCliNotSignedIn" xml:space="preserve">
+    <value>Azure CLI is not signed in.</value>
+  </data>
+  <data name="ImportAksClusterView_AccountFormat" xml:space="preserve">
+    <value>Account: {0} ({1})</value>
   </data>
 </root>

@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Reactive.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Xml;
@@ -9,12 +10,12 @@ using DynamicData.Kernel;
 using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
-using KubeUI.Kubernetes;
 using KubernetesClient.Informer.Client;
 using KubernetesCRDModelGen;
+using KubeUI.Kubernetes;
 using Mapster;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using System.Reactive.Linq;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 
@@ -22,9 +23,15 @@ namespace KubeUI.Testing;
 
 public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
 {
+    static TestClusterRuntime()
+    {
+        MapsterConfiguration.Configure();
+    }
+
     private readonly ObservableCollection<V1Namespace> _namespaces = [];
     private readonly ReadOnlyObservableCollection<V1Namespace> _readonlyNamespaces;
     private readonly ConcurrentDictionary<string, bool> _permissions = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, string> _customResourceDefinitionSignatures = new(StringComparer.Ordinal);
     private static readonly Lazy<IGenerator> s_sharedGenerator = new(() =>
     {
         var g = new Generator();
@@ -44,9 +51,12 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     });
 
     private readonly IGenerator _generator = s_sharedGenerator.Value;
+    private readonly ILogger _logger = NullLogger.Instance;
     private bool _connected;
     private bool _defaultPermissionAllowed = true;
     private bool _listNamespaces;
+    private bool _authorizationIndexReady;
+    private long _authorizationIndexVersion;
     private string? _lastError;
     private MetricsServiceType _metricsServiceType;
     private bool _requiresNamespaceSelectionPrompt;
@@ -147,6 +157,18 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
         _ => ActiveMetricsBackend.None,
     };
 
+    public bool AuthorizationIndexReady
+    {
+        get => _authorizationIndexReady;
+        set => SetProperty(ref _authorizationIndexReady, value);
+    }
+
+    public long AuthorizationIndexVersion
+    {
+        get => _authorizationIndexVersion;
+        set => SetProperty(ref _authorizationIndexVersion, value);
+    }
+
     public IKubernetes? Client
     {
         get => _client;
@@ -216,6 +238,7 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
 
         Objects.Clear();
         _namespaces.Clear();
+        _customResourceDefinitionSignatures.Clear();
         NodeMetrics.Clear();
         PodMetrics.Clear();
         Client = null;
@@ -223,6 +246,7 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
         Status = ClusterStatus.None;
         LastError = null;
         RequiresNamespaceSelectionPrompt = false;
+        AuthorizationIndexReady = false;
 
         return Task.CompletedTask;
     }
@@ -358,6 +382,13 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
         return Task.FromResult(CanIAnyNamespace<T>(verb, subresource));
     }
 
+    public Task RefreshAuthorizationIndexAsync(IEnumerable<AuthorizationRequest> requests)
+    {
+        AuthorizationIndexReady = true;
+        AuthorizationIndexVersion++;
+        return Task.CompletedTask;
+    }
+
     public Task UpdatePermissionsAllNamespaceAsync(Type type, Verb verb, string? subresource = null)
     {
         return Task.CompletedTask;
@@ -372,21 +403,56 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     {
         var pf = new PortForwarder(this, @namespace);
         pf.SetPod(podName, containerPort);
+
+        var existing = FindPortForwarder(pf);
+        if (existing != null)
+        {
+            return existing;
+        }
+
         PortForwarders.Add(pf);
+        pf.Start();
         return pf;
+    }
+
+    public Task AddPodEphemeralDebugContainer(V1Pod pod, string? targetContainerName, string image)
+    {
+        var updatedPod = PodEphemeralContainerBuilder.WithDebugContainer(pod, targetContainerName, image);
+        return AddOrUpdateResource(updatedPod);
     }
 
     public PortForwarder AddServicePortForward(string @namespace, string serviceName, int servicePort)
     {
         var pf = new PortForwarder(this, @namespace);
         pf.SetService(serviceName, servicePort);
+
+        var existing = FindPortForwarder(pf);
+        if (existing != null)
+        {
+            return existing;
+        }
+
         PortForwarders.Add(pf);
+        pf.Start();
         return pf;
     }
 
     public void RemovePortForward(PortForwarder pf)
     {
         PortForwarders.Remove(pf);
+    }
+
+    private PortForwarder? FindPortForwarder(PortForwarder candidate)
+    {
+        foreach (var portForwarder in PortForwarders)
+        {
+            if (portForwarder.Equals(candidate))
+            {
+                return portForwarder;
+            }
+        }
+
+        return null;
     }
 
     public async Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -403,14 +469,20 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
 
             if (original.HasValue)
             {
-                item.Adapt(original.Value);
-                list.Refresh(key);
-                OnChange?.Invoke(WatchEventType.Modified, kind, original.Value);
+                ResourceInformerCallbackGuard.Execute(_logger, WatchEventType.Modified, kind, item, () =>
+                {
+                    item.Adapt(original.Value);
+                    list.Refresh(key);
+                    OnChange?.Invoke(WatchEventType.Modified, kind, original.Value);
+                });
             }
             else
             {
-                list.AddOrUpdate(item);
-                OnChange?.Invoke(WatchEventType.Added, kind, item);
+                ResourceInformerCallbackGuard.Execute(_logger, WatchEventType.Added, kind, item, () =>
+                {
+                    list.AddOrUpdate(item);
+                    OnChange?.Invoke(WatchEventType.Added, kind, item);
+                });
             }
         });
 
@@ -432,7 +504,10 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
         if (Objects.TryGetValue(kind, out var obj) && obj is ContainerClass<T> container)
         {
             container.Items.Remove(item);
-            OnChange?.Invoke(WatchEventType.Deleted, kind, item);
+            ResourceInformerCallbackGuard.Execute(_logger, WatchEventType.Deleted, kind, item, () =>
+            {
+                OnChange?.Invoke(WatchEventType.Deleted, kind, item);
+            });
         }
 
         if (item is V1CustomResourceDefinition crd)
@@ -486,7 +561,14 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
 
     public IObservable<int> GetResourceCount<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        return GetResourceSourceCache<T>().Connect().Count();
+        return Observable.Defer(() =>
+        {
+            var sourceCache = GetResourceSourceCache<T>();
+            return sourceCache.Connect()
+                .Select(_ => sourceCache.Items.Count)
+                .StartWith(sourceCache.Items.Count)
+                .DistinctUntilChanged();
+        });
     }
 
     public Task<bool> IsResourceReady<T>(CancellationToken? token = null) where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -499,45 +581,49 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
         var type = typeof(T);
         var kind = GroupApiVersionKind.From<T>();
 
-        if (!Objects.TryGetValue(kind, out var existing) || existing is not ContainerClass<T> container)
+        if (Objects.GetOrAdd(kind, static _ => new ContainerClass<T>()) is not ContainerClass<T> container)
         {
-            container = new ContainerClass<T>();
-            if (!Objects.TryAdd(kind, container))
-            {
-                throw new InvalidOperationException($"Duplicate Object Set detected for: {kind}");
-            }
+            throw new InvalidOperationException($"Object set for {kind} is not compatible with {type}.");
         }
 
-        if (!container.Initialized)
+        lock (container)
         {
-            container.Initialized = true;
-
-            if (CanI(type, Verb.List) && CanI(type, Verb.Watch))
+            if (!container.Initialized)
             {
-                var informer = new TestResourceInformer();
-                container.Informers.Add(informer);
-                container.InformerRegistrations.Add(informer.Register(static (_, _) => { }));
-                return Task.CompletedTask;
-            }
+                container.Initialized = true;
 
-            if (!IsResourceNamespaced<T>())
-            {
-                return Task.CompletedTask;
-            }
-
-            foreach (var item in Namespaces)
-            {
-                var namespaceName = item.Name();
-                if (string.IsNullOrWhiteSpace(namespaceName))
+                if (CanI(type, Verb.List) && CanI(type, Verb.Watch))
                 {
-                    continue;
-                }
-
-                if (CanI(type, Verb.List, namespaceName) && CanI(type, Verb.Watch, namespaceName))
-                {
-                    var informer = new TestResourceInformer(namespaceName);
+                    var informer = new TestResourceInformer();
                     container.Informers.Add(informer);
                     container.InformerRegistrations.Add(informer.Register(static (_, _) => { }));
+                    return Task.CompletedTask;
+                }
+
+                if (!IsResourceNamespaced<T>())
+                {
+                    return Task.CompletedTask;
+                }
+
+                foreach (var item in Namespaces)
+                {
+                    var namespaceName = item.Name();
+                    if (string.IsNullOrWhiteSpace(namespaceName))
+                    {
+                        continue;
+                    }
+
+                    if (CanI(type, Verb.List, namespaceName) && CanI(type, Verb.Watch, namespaceName))
+                    {
+                        var informer = new TestResourceInformer(namespaceName);
+                        container.Informers.Add(informer);
+                        container.InformerRegistrations.Add(informer.Register(static (_, _) => { }));
+                    }
+                }
+
+                if (container.Informers.Count == 0)
+                {
+                    container.Initialized = false;
                 }
             }
         }
@@ -636,6 +722,13 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
 
     private async Task ProcessCustomResourceDefinitionAsync(V1CustomResourceDefinition crd)
     {
+        var signature = GetCustomResourceDefinitionSignature(crd);
+        if (_customResourceDefinitionSignatures.TryGetValue(crd.Name(), out var existingSignature)
+            && string.Equals(existingSignature, signature, StringComparison.Ordinal))
+        {
+            return;
+        }
+
         var result = _generator.GenerateAssembly(crd, "KubeUI.Models");
 
         if (!result.Success || result.Assembly == null || result.XmlDocumentation == null)
@@ -650,6 +743,8 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
             throw new InvalidOperationException($"Unable to resolve generated type for {crd.Name()}");
         }
 
+        _customResourceDefinitionSignatures[crd.Name()] = signature;
+
         await ReplaceCustomResourceDefinitionArtifactsAsync(previousType, currentType);
         await Task.Yield();
         OnCustomResourceDefinitionReady?.Invoke(crd);
@@ -657,6 +752,7 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
 
     private void RemoveCustomResourceDefinitionArtifacts(V1CustomResourceDefinition crd)
     {
+        _customResourceDefinitionSignatures.TryRemove(crd.Name(), out _);
         var removedType = ModelCache.RemoveCustomResourceDefinition(crd);
         if (removedType != null)
         {
@@ -720,6 +816,11 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     {
         var kind = GroupApiVersionKind.From(type);
         return $"{verb}:{kind.Group}:{kind.PluralName}:{@namespace}:{subresource}:{kind.ApiVersion}";
+    }
+
+    private static string GetCustomResourceDefinitionSignature(V1CustomResourceDefinition crd)
+    {
+        return System.Text.Json.JsonSerializer.Serialize(crd.Spec);
     }
 
     private static void ClearResourceContainer(IClearableResourceContainer container)

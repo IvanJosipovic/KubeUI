@@ -1,0 +1,29 @@
+name: PR Review
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+  actions: write
+  checks: write
+  pull-requests: write
+
+jobs:
+  build-test:
+    name: Build & Test
+    uses: ./.github/workflows/build-test.yml
+    secrets: inherit
+
+  publish-matrix:
+    name: Publish Installers (Unsigned)
+    needs: [build-test]
+    uses: ./.github/workflows/publish-installer.yml
+    secrets: inherit
+    with:
+      package_version: 0.0.1-pr.${{ github.run_id }}
+      release_notes: PR validation build
+      download_releases: false
+      enable_code_signing: false

@@ -400,3 +400,7 @@ FodyWeavers.xsd
 *.mono
 .DS_Store
 packed
+
+*.lscache
+
+.dotnet

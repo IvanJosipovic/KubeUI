@@ -1,6 +1,5 @@
-<UserControl
+﻿<UserControl x:Name="Root"
     x:Class="KubeUI.Avalonia.Features.Clusters.Overview.Controls.ClusterOverviewRingControl"
-    x:Name="Root"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -13,19 +12,28 @@
             Height="160"
             InitialRotation="270"
             MaxValue="{Binding ViewModel.MaxValue, ElementName=Root}"
-            VisualElements="{Binding ViewModel.VisualElements, ElementName=Root}"
+            Series="{Binding ViewModel.Series, ElementName=Root}"
             TooltipPosition="Auto"
-            Series="{Binding ViewModel.Series, ElementName=Root}" />
+            VisualElements="{Binding ViewModel.VisualElements, ElementName=Root}" />
 
         <ItemsControl Grid.Row="1" ItemsSource="{Binding ViewModel.LegendItems, ElementName=Root}">
             <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:ClusterOverviewRingChartLegendItemViewModel">
-                    <StackPanel Margin="0,0,0,6" Orientation="Vertical" Spacing="1">
+                    <StackPanel
+                        Margin="0,0,0,6"
+                        Orientation="Vertical"
+                        Spacing="1">
                         <StackPanel Orientation="Horizontal" Spacing="6">
-                            <Border Width="10" Height="10" Background="{Binding Color}" />
+                            <Border
+                                Width="10"
+                                Height="10"
+                                Background="{Binding Color}" />
                             <TextBlock FontWeight="SemiBold" Text="{Binding Name}" />
                         </StackPanel>
-                        <TextBlock Classes="overview-muted" Margin="16,0,0,0" Text="{Binding Value}" />
+                        <TextBlock
+                            Margin="16,0,0,0"
+                            Classes="overview-muted"
+                            Text="{Binding Value}" />
                     </StackPanel>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>

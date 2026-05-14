@@ -1,11 +1,6 @@
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Common;
-using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Infrastructure.Docking;
-using System.Text.Json;
-using System.Text;
 using System.Globalization;
+using System.Text;
+using System.Text.Json;
 using Avalonia.Controls.Notifications;
 using Avalonia.Styling;
 using Dock.Model.Core;
@@ -17,25 +12,33 @@ using Humanizer;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Kubernetes;
-using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Features.Resources.List.Controls;
+using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Docking;
+using KubeUI.Kubernetes;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Avalonia.Resources;
 
 public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourceConfig where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
+    protected IServiceProvider ServiceProvider { get; }
     protected readonly ILogger<ResourceConfigBase<T>> _logger;
     protected readonly IDialogService _dialogService;
     protected readonly INotificationManager _notificationManager;
     protected readonly IFactory _factory;
 
-    public ResourceConfigBase()
+    protected ResourceConfigBase(IServiceProvider serviceProvider)
     {
-        _logger = Application.Current.GetRequiredService<ILogger<ResourceConfigBase<T>>>();
-        _dialogService = Application.Current.GetRequiredService<IDialogService>();
-        _factory = Application.Current.GetRequiredService<IFactory>();
-        _notificationManager = Application.Current.GetRequiredService<INotificationManager>();
+        ServiceProvider = serviceProvider;
+        _logger = serviceProvider.GetRequiredService<ILogger<ResourceConfigBase<T>>>();
+        _dialogService = serviceProvider.GetRequiredService<IDialogService>();
+        _factory = serviceProvider.GetRequiredService<IFactory>();
+        _notificationManager = serviceProvider.GetRequiredService<INotificationManager>();
     }
 
     public Type Type { get; } = typeof(T);
@@ -100,6 +103,18 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     protected virtual Task RefreshPermissionAsync(Verb verb, string? subResource)
     {
         return Cluster.UpdatePermissionsAllNamespaceAsync<T>(verb, subResource);
+    }
+
+    public IEnumerable<(Verb verb, string? subresource)> Permissions()
+    {
+        return DefaultPermissions()
+            .Concat(CustomPermissions())
+            .Distinct();
+    }
+
+    public virtual IEnumerable<AuthorizationRequest> AuthorizationRequests()
+    {
+        return Permissions().Select(permission => new AuthorizationRequest(Type, permission.verb, permission.subresource));
     }
 
     public virtual Control[] Properties(T resource) => [];
@@ -235,6 +250,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         if (exceptions.Count > 0)
         {
             _logger.LogDebug(new AggregateException(exceptions), "Unable to refresh non-list permissions for {Type}", typeof(T).FullName);
+            return;
         }
 
         PermissionsLoaded = true;
@@ -258,7 +274,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             resource.Metadata.NamespaceProperty = "default";
         }
 
-        var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
+        var vm = ServiceProvider.GetRequiredService<ResourceYamlViewModel>();
         vm.Initialize(Cluster, resource);
         vm.EditMode = true;
 
@@ -279,12 +295,12 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             Content = string.Format(Assets.Resources.ResourceListViewModel_Delete_Content, items.Count),
             PrimaryButtonText = Assets.Resources.ResourceListViewModel_Delete_Primary,
             SecondaryButtonText = Assets.Resources.ResourceListViewModel_Delete_Secondary,
-            DefaultButton = ContentDialogButton.Secondary
+            DefaultButton = FAContentDialogButton.Secondary
         };
 
         var result = await _dialogService.ShowContentDialogAsync(this, settings);
 
-        if (result == ContentDialogResult.Primary)
+        if (result == FAContentDialogResult.Primary)
         {
             var exceptions = new List<Exception>();
 
@@ -333,7 +349,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     [RelayCommand(CanExecute = nameof(CanView))]
     public void View(IList items)
     {
-        var instance = Application.Current.GetRequiredService<ResourcePropertiesViewModel<T>>();
+        var instance = ServiceProvider.GetRequiredService<ResourcePropertiesViewModel<T>>();
         instance.Initialize(Cluster, (T)items[0]!);
         instance.CanFloat = false;
 
@@ -348,7 +364,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     [RelayCommand(CanExecute = nameof(CanViewYaml))]
     public void ViewYaml(IList items)
     {
-        var vm = Application.Current.GetRequiredService<ResourceYamlViewModel>();
+        var vm = ServiceProvider.GetRequiredService<ResourceYamlViewModel>();
 
         vm.Initialize(Cluster, (T)items[0]!);
 
@@ -369,7 +385,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             Content = string.Format(Assets.Resources.ResourceListViewModel_Restart_Content, items.Count),
             PrimaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Primary,
             SecondaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Secondary,
-            DefaultButton = ContentDialogButton.Secondary
+            DefaultButton = FAContentDialogButton.Secondary
         };
 
         var result = await _dialogService.ShowContentDialogAsync(this, settings);
@@ -388,7 +404,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
                 }
                 """;
 
-        if (result == ContentDialogResult.Primary)
+        if (result == FAContentDialogResult.Primary)
         {
             var exceptions = new List<Exception>();
 
@@ -442,6 +458,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
 public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
+    private const string NullableValueMissingMessage = "Nullable object must have a value.";
     private Func<T, TValue>? _fieldAccessor;
     private IDataGridColumnValueAccessor? _valueAccessor;
     private string? _key;
@@ -480,7 +497,7 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
     public IDataGridColumnValueAccessor ValueAccessor => _valueAccessor ??= new LambdaColumnValueAccessor(GetFieldAccessor());
 
     public Func<object, IComparable?> SortKey =>
-        o => (IComparable?)(object?)GetFieldAccessor()((T)o);
+        o => GetFieldValue((T)o) as IComparable;
 
     public Func<object, string> DisplayValue =>
         o =>
@@ -488,7 +505,7 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
             var t = (T)o;
             if (Display != null)
                 return Display(t);
-            var v = GetFieldAccessor()(t);
+            var v = GetFieldValue(t);
             return v?.ToString() ?? "";
         };
 
@@ -496,6 +513,18 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
     {
         _fieldAccessor ??= Field;
         return _fieldAccessor;
+    }
+
+    private object? GetFieldValue(T item)
+    {
+        try
+        {
+            return GetFieldAccessor()(item);
+        }
+        catch (InvalidOperationException ex) when (ex.Message == NullableValueMissingMessage)
+        {
+            return null;
+        }
     }
 
     private static string NormalizeKey(string value)
@@ -545,7 +574,14 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
 
         public object GetValue(object item)
         {
-            return _getter((T)item)!;
+            try
+            {
+                return _getter((T)item)!;
+            }
+            catch (InvalidOperationException ex) when (ex.Message == NullableValueMissingMessage)
+            {
+                return null!;
+            }
         }
 
         public void SetValue(object item, object value)
@@ -554,7 +590,5 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
         }
     }
 }
-
-
 
 

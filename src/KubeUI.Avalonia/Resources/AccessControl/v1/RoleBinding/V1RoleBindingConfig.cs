@@ -6,6 +6,11 @@ namespace KubeUI.Avalonia.Resources.AccessControl.v1.RoleBinding;
 
 public sealed partial class V1RoleBindingConfig : ResourceConfigBase<V1RoleBinding>
 {
+    public V1RoleBindingConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
+
     public override bool IsNamespaced => true;
     public override string Category => CategoryString("ResourceConfig_Category_AccessControl", "Access Control");
     public override int Order => 4;

@@ -1,11 +1,6 @@
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
-using KubeUI.Kubernetes;
 using System.ComponentModel;
 using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
@@ -14,9 +9,12 @@ using AvaloniaEdit.Document;
 using AvaloniaEdit.Editing;
 using AvaloniaEdit.Folding;
 using AvaloniaEdit.Indentation;
-using AvaloniaEdit.Rendering;
 using AvaloniaEdit.TextMate;
 using KubeUI.Avalonia;
+using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using TextMateSharp.Grammars;
@@ -28,114 +26,6 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
 {
     private const int IndentationSize = 2;
     private static readonly IIndentationStrategy s_yamlIndentationStrategy = new YamlIndentationStrategy();
-    private static readonly IPen s_diagnosticPen = new Pen(Brushes.IndianRed, 1);
-    private static readonly IBrush s_diagnosticBackground = new SolidColorBrush(Color.FromArgb(32, 205, 92, 92));
-
-    private sealed class YamlDiagnosticRenderer : IBackgroundRenderer, ITextViewConnect
-    {
-        private readonly record struct DiagnosticSpan(int Offset, int Length, string Message);
-
-        private IReadOnlyList<DiagnosticSpan> _spans = [];
-        private TextView? _textView;
-
-        public KnownLayer Layer => KnownLayer.Caret;
-
-        public IReadOnlyList<string> Messages => _spans.Select(x => x.Message).ToArray();
-
-        public void AddToTextView(TextView textView)
-        {
-            _textView = textView;
-        }
-
-        public void RemoveFromTextView(TextView textView)
-        {
-            if (ReferenceEquals(_textView, textView))
-            {
-                _textView = null;
-            }
-        }
-
-        public void Update(TextDocument? document, IReadOnlyList<YamlDiagnostic> diagnostics)
-        {
-            _spans = document == null ? [] : BuildSpans(document, diagnostics);
-            _textView?.Redraw();
-        }
-
-        public void Draw(TextView textView, DrawingContext drawingContext)
-        {
-            foreach (var span in _spans)
-            {
-                var segment = new TextSegment
-                {
-                    StartOffset = span.Offset,
-                    Length = span.Length,
-                };
-
-                foreach (var rect in BackgroundGeometryBuilder.GetRectsForSegment(textView, segment))
-                {
-                    drawingContext.FillRectangle(s_diagnosticBackground, rect);
-
-                    var y = rect.Bottom - 1;
-                    for (var x = rect.Left; x < rect.Right; x += 4)
-                    {
-                        var peak = Math.Min(x + 2, rect.Right);
-                        var nextX = Math.Min(x + 4, rect.Right);
-                        drawingContext.DrawLine(s_diagnosticPen, new Point(x, y), new Point(peak, y - 2));
-                        drawingContext.DrawLine(s_diagnosticPen, new Point(peak, y - 2), new Point(nextX, y));
-                    }
-                }
-            }
-        }
-
-        public string? TryGetMessageAt(int offset)
-        {
-            foreach (var span in _spans)
-            {
-                if (offset >= span.Offset && offset <= span.Offset + span.Length)
-                {
-                    return span.Message;
-                }
-            }
-
-            return null;
-        }
-
-        private static IReadOnlyList<DiagnosticSpan> BuildSpans(TextDocument document, IReadOnlyList<YamlDiagnostic> diagnostics)
-        {
-            var spans = new List<DiagnosticSpan>(diagnostics.Count);
-            foreach (var diagnostic in diagnostics)
-            {
-                var startOffset = GetOffset(document, diagnostic.StartLine, diagnostic.StartColumn);
-                var endOffset = GetOffset(document, diagnostic.EndLine, diagnostic.EndColumn);
-                if (endOffset < startOffset)
-                {
-                    (startOffset, endOffset) = (endOffset, startOffset);
-                }
-
-                if (startOffset >= document.TextLength && document.TextLength > 0)
-                {
-                    startOffset = document.TextLength - 1;
-                }
-
-                spans.Add(new DiagnosticSpan(startOffset, Math.Max(1, endOffset - startOffset), diagnostic.Message));
-            }
-
-            return spans;
-        }
-
-        private static int GetOffset(TextDocument document, int lineNumber, int columnNumber)
-        {
-            if (document.LineCount == 0)
-            {
-                return 0;
-            }
-
-            var safeLineNumber = Math.Clamp(lineNumber, 1, document.LineCount);
-            var line = document.GetLineByNumber(safeLineNumber);
-            var safeColumn = Math.Clamp(columnNumber - 1, 0, line.Length);
-            return line.Offset + safeColumn;
-        }
-    }
 
     private sealed class EditorInputHandler(
         TextArea textArea,
@@ -184,9 +74,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
     private readonly Dictionary<string, Queue<bool>> _savedFoldStates = new(StringComparer.Ordinal);
     private bool _isRefreshingFromViewModel;
     private CompletionWindow? _completionWindow;
-    private OverloadInsightWindow? _insightWindow;
     private EditorInputHandler? _editorInputHandler;
-    private readonly YamlDiagnosticRenderer _diagnosticRenderer = new();
 
     protected override void OnAttached()
     {
@@ -209,14 +97,8 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         AssociatedObject.DataContextChanged += OnDataContextChanged;
         AssociatedObject.AttachedToVisualTree += AttachedToVisualTree;
         AssociatedObject.DetachedFromVisualTree += DetachedFromVisualTree;
-        AssociatedObject.TextArea.TextView.PointerReleased += TextView_PointerReleased;
-        AssociatedObject.TextArea.TextView.PointerHover += TextView_PointerHover;
-        AssociatedObject.TextArea.TextView.PointerHoverStopped += TextView_PointerHoverStopped;
-        AssociatedObject.TextArea.TextView.BackgroundRenderers.Add(_diagnosticRenderer);
         AssociatedObject.TextArea.TextEntering += TextArea_TextEntering;
         AssociatedObject.TextArea.TextEntered += TextArea_TextEntered;
-        AssociatedObject.TextArea.SelectionChanged += TextArea_SelectionChanged;
-        AssociatedObject.TextArea.Caret.PositionChanged += Caret_PositionChanged;
         _editorInputHandler = new EditorInputHandler(
             AssociatedObject.TextArea,
             ShowCompletionWindow,
@@ -295,7 +177,6 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         }
 
         UpdateFoldings();
-        UpdateValidationDiagnostics();
     }
 
     private void AttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
@@ -320,15 +201,9 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
             AssociatedObject.DataContextChanged -= OnDataContextChanged;
             AssociatedObject.AttachedToVisualTree -= AttachedToVisualTree;
             AssociatedObject.DetachedFromVisualTree -= DetachedFromVisualTree;
-            AssociatedObject.TextArea.TextView.PointerReleased -= TextView_PointerReleased;
-            AssociatedObject.TextArea.TextView.PointerHover -= TextView_PointerHover;
-            AssociatedObject.TextArea.TextView.PointerHoverStopped -= TextView_PointerHoverStopped;
-            AssociatedObject.TextArea.TextView.BackgroundRenderers.Remove(_diagnosticRenderer);
             AssociatedObject.TextChanged -= Editor_TextChanged;
             AssociatedObject.TextArea.TextEntering -= TextArea_TextEntering;
             AssociatedObject.TextArea.TextEntered -= TextArea_TextEntered;
-            AssociatedObject.TextArea.SelectionChanged -= TextArea_SelectionChanged;
-            AssociatedObject.TextArea.Caret.PositionChanged -= Caret_PositionChanged;
 
             if (_editorInputHandler != null)
             {
@@ -339,8 +214,6 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
 
         Application.Current!.ActualThemeVariantChanged -= ThemeChanged;
         CloseCompletionWindow();
-        CloseInsightWindow();
-        CloseDiagnosticToolTip();
 
         _textMateInstallation?.Dispose();
         _textMateInstallation = null;
@@ -382,9 +255,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         }
 
         UpdateFoldings();
-        UpdateDocumentationForCaret();
         _isRefreshingFromViewModel = false;
-        UpdateDocumentationForCaret();
     }
 
     private void PersistFoldingState(ResourceYamlViewModel? vm, bool persistToViewModel = false)
@@ -446,11 +317,6 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
             PersistFoldingState(_currentViewModel);
             _isRefreshingFromViewModel = true;
         }
-
-        if (e.PropertyName == nameof(ResourceYamlViewModel.ValidationDiagnostics))
-        {
-            UpdateValidationDiagnostics();
-        }
     }
 
     private void TextArea_TextEntered(object? sender, TextInputEventArgs e)
@@ -494,7 +360,6 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
             _completionWindow.CompletionList.RequestInsertion(e);
         }
 
-        _insightWindow?.Hide();
     }
 
     private bool TryExitListOnNewLine(TextInputEventArgs e)
@@ -782,67 +647,6 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         return document.Text.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
     }
 
-    private void TextArea_SelectionChanged(object? sender, EventArgs e)
-    {
-        UpdateDocumentationForCaret();
-    }
-
-    private void Caret_PositionChanged(object? sender, EventArgs e)
-    {
-        UpdateDocumentationForCaret();
-    }
-
-    private void TextView_PointerReleased(object? sender, PointerReleasedEventArgs e)
-    {
-        if (AssociatedObject?.Document == null || _currentViewModel?.Object == null)
-        {
-            return;
-        }
-
-        AssociatedObject.Focus();
-        AssociatedObject.TextArea.Focus();
-
-        var position = AssociatedObject.TextArea.TextView.GetPosition(e.GetPosition(AssociatedObject.TextArea.TextView));
-        if (!position.HasValue)
-        {
-            CloseInsightWindow();
-            return;
-        }
-
-        ShowDocumentation(position.Value.Location);
-    }
-
-    private void TextView_PointerHover(object? sender, PointerEventArgs e)
-    {
-        if (AssociatedObject?.Document == null)
-        {
-            return;
-        }
-
-        var position = AssociatedObject.TextArea.TextView.GetPosition(e.GetPosition(AssociatedObject.TextArea.TextView));
-        if (!position.HasValue)
-        {
-            CloseDiagnosticToolTip();
-            return;
-        }
-
-        var offset = AssociatedObject.Document.GetOffset(position.Value.Location);
-        var message = _diagnosticRenderer.TryGetMessageAt(offset);
-        if (string.IsNullOrEmpty(message))
-        {
-            CloseDiagnosticToolTip();
-            return;
-        }
-
-        ToolTip.SetTip(AssociatedObject, message);
-        ToolTip.SetIsOpen(AssociatedObject, true);
-    }
-
-    private void TextView_PointerHoverStopped(object? sender, PointerEventArgs e)
-    {
-        CloseDiagnosticToolTip();
-    }
-
     private void ShowCompletionWindow()
     {
         if (AssociatedObject?.Document == null
@@ -876,19 +680,15 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
             _completionWindow.CompletionList.CompletionData.Clear();
         }
 
-        var currentLine = AssociatedObject.Document.GetLineByOffset(AssociatedObject.CaretOffset);
-        var completionStartOffset = currentLine.Offset + context.KeyStartColumn;
-        var completionEndOffset = currentLine.Offset + Math.Max(context.KeyStartColumn, context.KeyEndColumn);
-
-        _completionWindow.StartOffset = completionStartOffset;
-        _completionWindow.EndOffset = completionEndOffset;
+        _completionWindow.StartOffset = context.Key.StartOffset;
+        _completionWindow.EndOffset = Math.Max(context.Key.StartOffset, context.Key.EndOffset);
 
         foreach (var item in context.CompletionItems)
         {
             _completionWindow.CompletionList.CompletionData.Add(new YamlCompletionData(item));
         }
 
-        _completionWindow.CompletionList.SelectItem(context.KeyPrefix);
+        _completionWindow.CompletionList.SelectItem(context.Key.Prefix);
 
         if (_completionWindow.IsOpen)
         {
@@ -901,11 +701,6 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
     private void ViewModelOnCompletionRequested(object? sender, EventArgs e)
     {
         ShowCompletionWindow();
-    }
-
-    private void UpdateValidationDiagnostics()
-    {
-        _diagnosticRenderer.Update(AssociatedObject?.Document, _currentViewModel?.ValidationDiagnostics ?? []);
     }
 
     private void CompletionWindow_Closed(object? sender, EventArgs e)
@@ -927,102 +722,6 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         }
 
         _completionWindow = null;
-    }
-
-    private void CloseDiagnosticToolTip()
-    {
-        if (AssociatedObject != null)
-        {
-            ToolTip.SetIsOpen(AssociatedObject, false);
-        }
-    }
-
-    private void UpdateDocumentationForCaret()
-    {
-        if (AssociatedObject?.Document == null || _currentViewModel?.Object == null)
-        {
-            return;
-        }
-
-        var location = AssociatedObject.TextArea.Selection.IsEmpty
-            ? AssociatedObject.Document.GetLocation(AssociatedObject.CaretOffset)
-            : AssociatedObject.Document.GetLocation(AssociatedObject.TextArea.Selection.SurroundingSegment.Offset);
-
-        ShowDocumentation(location);
-    }
-
-    private void ShowDocumentation(TextLocation location)
-    {
-        if (AssociatedObject?.Document == null || _currentViewModel?.Object == null || _currentViewModel.Cluster == null)
-        {
-            return;
-        }
-
-        var context = ResolveDocumentationContext(location);
-        if (context.Documentation == null || context.CurrentProperty == null || !IsWithinFieldName(location, context))
-        {
-            CloseInsightWindow();
-            return;
-        }
-
-        var currentLine = AssociatedObject.Document.GetLineByNumber(location.Line);
-        var startOffset = currentLine.Offset + context.KeyStartColumn;
-        var endOffset = currentLine.Offset + context.KeyEndColumn;
-
-        CloseInsightWindow();
-
-        _insightWindow = new OverloadInsightWindow(AssociatedObject.TextArea)
-        {
-            CloseAutomatically = true,
-            Provider = new YamlDocumentationOverloadProvider(context.Documentation)
-        };
-        _insightWindow.Closed += InsightWindow_Closed;
-        _insightWindow.StartOffset = startOffset;
-        _insightWindow.EndOffset = endOffset;
-        _insightWindow.Show();
-    }
-
-    private YamlContextResult ResolveDocumentationContext(TextLocation location)
-    {
-        var offset = AssociatedObject!.Document!.GetOffset(location);
-        return YamlSchemaContext.Resolve(
-            AssociatedObject.Document,
-            offset,
-            _currentViewModel!.Object!.GetType(),
-            _currentViewModel.Cluster!.ModelCache);
-    }
-
-    private bool IsWithinFieldName(TextLocation location, YamlContextResult context)
-    {
-        var currentLine = AssociatedObject!.Document!.GetLineByNumber(location.Line);
-        var offset = AssociatedObject.Document.GetOffset(location);
-        var startOffset = currentLine.Offset + context.KeyStartColumn;
-        var endOffset = currentLine.Offset + context.KeyEndColumn;
-        return offset >= startOffset && offset <= endOffset;
-    }
-
-    private void InsightWindow_Closed(object? sender, EventArgs e)
-    {
-        if (ReferenceEquals(sender, _insightWindow))
-        {
-            _insightWindow = null;
-        }
-    }
-
-    private void CloseInsightWindow()
-    {
-        if (_insightWindow == null)
-        {
-            return;
-        }
-
-        _insightWindow.Closed -= InsightWindow_Closed;
-        if (_insightWindow.IsOpen)
-        {
-            _insightWindow.Hide();
-        }
-
-        _insightWindow = null;
     }
 
     private void UpdateFoldings()
@@ -1049,7 +748,12 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
             }
             catch (Exception ex)
             {
-                var logger = Application.Current?.GetRequiredService<ILogger<YamlEditorBehavior>>();
+                if (Application.Current is not IServiceProviderHost host)
+                {
+                    return;
+                }
+
+                var logger = host.Services.GetRequiredService<ILogger<YamlEditorBehavior>>();
                 logger?.LogWarning(ex, "Error loading foldings");
             }
         }

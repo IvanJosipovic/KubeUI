@@ -1,13 +1,13 @@
+using System.Collections.ObjectModel;
+using System.Linq;
 using Avalonia.Threading;
 using Humanizer;
+using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Kubernetes;
 using LiveChartsCore.Defaults;
-using k8s.Models;
 using Microsoft.Extensions.Logging.Abstractions;
-using System.Collections.ObjectModel;
-using System.Linq;
 
 namespace KubeUI.Avalonia.Features.Clusters.Overview.ViewModels;
 

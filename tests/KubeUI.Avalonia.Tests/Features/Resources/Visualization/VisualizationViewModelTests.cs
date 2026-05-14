@@ -6,7 +6,7 @@ using KubeUI.Avalonia.Tests.Infra;
 using Shouldly;
 using static KubeUI.Avalonia.Features.Resources.Visualization.ViewModels.VisualizationViewModel;
 
-namespace KubeUI.Avalonia.Tests;
+namespace KubeUI.Avalonia.Tests.Features.Resources.Visualization;
 
 public class VisualizationViewModelTests : AvaloniaTestBase
 {
@@ -31,7 +31,8 @@ public class VisualizationViewModelTests : AvaloniaTestBase
 
     private VisualizationViewModel CreateViewModel()
     {
-        var vm = Application.Current.GetRequiredService<VisualizationViewModel>();
+        var vm = TestApp.CurrentServices?.GetRequiredService<VisualizationViewModel>()
+            ?? throw new InvalidOperationException("Test services are not initialized.");
         _disposables.Add(vm);
         return vm;
     }

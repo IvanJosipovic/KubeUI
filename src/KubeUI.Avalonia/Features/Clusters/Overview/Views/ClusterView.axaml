@@ -1,13 +1,13 @@
-<UserControl
+﻿<UserControl
     x:Class="KubeUI.Avalonia.Features.Clusters.Overview.Views.ClusterView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:controls="using:KubeUI.Avalonia.Features.Clusters.Overview.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
-    xmlns:overview="using:KubeUI.Avalonia.Features.Clusters.Overview.Controls"
     xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:overview="using:KubeUI.Avalonia.Features.Clusters.Overview.Controls"
     xmlns:vm="using:KubeUI.Avalonia.Features.Clusters.Overview.ViewModels"
     d:DesignHeight="900"
     d:DesignWidth="1400"
@@ -15,19 +15,26 @@
     mc:Ignorable="d">
 
     <Grid RowDefinitions="360,Auto" RowSpacing="12">
-        <Grid Grid.Row="0" ColumnDefinitions="*,*" ColumnSpacing="12">
+        <Grid Grid.Row="0"
+            ColumnDefinitions="*,*"
+            ColumnSpacing="12">
             <Border Padding="0">
                 <controls:ClusterOverviewControl x:Name="ClusterOverviewControl" />
             </Border>
 
-            <Grid Grid.Column="1" ColumnDefinitions="*,*,*" ColumnSpacing="12">
+            <Grid
+                Grid.Column="1"
+                ColumnDefinitions="*,*,*"
+                ColumnSpacing="12">
                 <overview:ClusterOverviewRingControl ViewModel="{Binding ClusterCpuChart}" />
                 <overview:ClusterOverviewRingControl Grid.Column="1" ViewModel="{Binding ClusterMemoryChart}" />
                 <overview:ClusterOverviewRingControl Grid.Column="2" ViewModel="{Binding ClusterPodChart}" />
             </Grid>
         </Grid>
 
-        <local:ExpandableSection Grid.Row="1" Header="{Binding WarningsGrid.Title}" IsExpanded="True">
+        <local:ExpandableSection Grid.Row="1"
+            Header="{Binding WarningsGrid.Title}"
+            IsExpanded="True">
             <Grid RowDefinitions="Auto,*">
                 <DataGrid
                     AutoGenerateColumns="False"
@@ -37,16 +44,31 @@
                     IsVisible="{Binding WarningsGrid.HasRows}"
                     ItemsSource="{Binding WarningsGrid.Rows}">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Binding="{Binding Message}" Header="Message" Width="3*" />
-                        <DataGridTextColumn Binding="{Binding InvolvedObject}" Header="Object" Width="*" />
-                        <DataGridTextColumn Binding="{Binding Namespace}" Header="Namespace" Width="*" />
-                        <DataGridTextColumn Binding="{Binding Reason}" Header="Type" Width="*" />
-                        <DataGridTextColumn Binding="{Binding LastSeen}" Header="Age" Width="90" />
+                        <DataGridTextColumn
+                            Width="3*"
+                            Binding="{Binding Message}"
+                            Header="Message" />
+                        <DataGridTextColumn
+                            Width="*"
+                            Binding="{Binding InvolvedObject}"
+                            Header="Object" />
+                        <DataGridTextColumn
+                            Width="*"
+                            Binding="{Binding Namespace}"
+                            Header="Namespace" />
+                        <DataGridTextColumn
+                            Width="*"
+                            Binding="{Binding Reason}"
+                            Header="Type" />
+                        <DataGridTextColumn
+                            Width="90"
+                            Binding="{Binding LastSeen}"
+                            Header="Age" />
                     </DataGrid.Columns>
                 </DataGrid>
                 <TextBlock
-                    Classes="overview-muted"
                     HorizontalAlignment="Center"
+                    Classes="overview-muted"
                     IsVisible="{Binding WarningsGrid.HasNoRows}"
                     Text="{Binding WarningsGrid.EmptyText}" />
             </Grid>

@@ -6,7 +6,7 @@ using KubeUI.Kubernetes.Tests.Infra;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
-namespace KubeUI.Avalonia.Tests;
+namespace KubeUI.Avalonia.Tests.Shell.Navigation;
 
 public sealed class LimitedAccessNavigationTests : AvaloniaTestBase
 {
@@ -17,7 +17,7 @@ public sealed class LimitedAccessNavigationTests : AvaloniaTestBase
         await harness.InitializeAsync();
 
         var runtime = await harness.CreateLimitedAccessClusterAsync(includeNamespaceFallback: true);
-        var services = Application.Current!.GetRequiredService<IServiceProvider>();
+        var services = TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
         var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspaceViewModel>(services, runtime);
         var navigation = services.GetRequiredService<NavigationViewModel>();
 
@@ -39,8 +39,14 @@ public sealed class LimitedAccessNavigationTests : AvaloniaTestBase
         workspace.GetResourceConfig<k8s.Models.V1Pod>().CanListAndWatch.ShouldBeTrue();
         workspace.GetResourceConfig<k8s.Models.V1Deployment>().PermissionsLoaded.ShouldBeTrue();
         workspace.GetResourceConfig<k8s.Models.V1Deployment>().CanListAndWatch.ShouldBeTrue();
-        FindResourceLink(clusterNode, "Pods").ShouldNotBeNull();
-        FindResourceLink(clusterNode, "Deployments").ShouldNotBeNull();
+
+        var podsLink = FindResourceLink(clusterNode, "Pods");
+        var deploymentsLink = FindResourceLink(clusterNode, "Deployments");
+        podsLink.ShouldNotBeNull();
+        deploymentsLink.ShouldNotBeNull();
+
+        await navigation.TreeViewSelectionChangedAsync(podsLink);
+        await navigation.TreeViewSelectionChangedAsync(deploymentsLink);
     }
 
     private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs)

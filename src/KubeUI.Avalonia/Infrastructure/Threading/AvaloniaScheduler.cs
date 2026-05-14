@@ -1,6 +1,6 @@
-using KubeUI.Avalonia.Infrastructure.Threading;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
+using KubeUI.Avalonia.Infrastructure.Threading;
 
 namespace KubeUI.Avalonia.Infrastructure.Threading;
 

@@ -1,6 +1,5 @@
-using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Avalonia.Shell.Documents.About.ViewModels;
 using System.Reflection;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 
 namespace KubeUI.Avalonia.Shell.Documents.About.ViewModels;
 

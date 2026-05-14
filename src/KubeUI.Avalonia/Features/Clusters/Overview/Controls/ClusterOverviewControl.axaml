@@ -1,21 +1,26 @@
-<UserControl
+﻿<UserControl
     x:Class="KubeUI.Avalonia.Features.Clusters.Overview.Controls.ClusterOverviewControl"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:Interaction="using:Avalonia.Xaml.Interactivity"
     xmlns:behaviors="using:KubeUI.Avalonia.Features.Resources.Properties.Behaviors"
+    xmlns:controls="using:KubeUI.Avalonia.Features.Clusters.Overview.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:ic="using:FluentIcons.Avalonia"
-    xmlns:controls="using:KubeUI.Avalonia.Features.Clusters.Overview.Controls"
-    xmlns:rc="using:KubeUI.Avalonia.Features.Resources.Metrics.Controls"
-    xmlns:Interaction="using:Avalonia.Xaml.Interactivity"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:rc="using:KubeUI.Avalonia.Features.Resources.Metrics.Controls"
     xmlns:vm="using:KubeUI.Avalonia.Features.Clusters.Overview.ViewModels"
     d:DesignHeight="360"
     d:DesignWidth="760"
     x:DataType="vm:ClusterViewModel"
     mc:Ignorable="d">
-    <Grid RowDefinitions="Auto,*" HorizontalAlignment="Stretch" RowSpacing="8">
-        <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="10">
+    <Grid
+        HorizontalAlignment="Stretch"
+        RowDefinitions="Auto,*"
+        RowSpacing="8">
+        <Grid Grid.Row="0"
+            ColumnDefinitions="Auto,Auto,Auto,*"
+            ColumnSpacing="10">
             <ComboBox
                 Width="132"
                 ItemsSource="{Binding ClusterOverviewScopeOptions}"
@@ -39,35 +44,38 @@
                     </DataTemplate>
                 </ComboBox.ItemTemplate>
             </ComboBox>
-            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+            <StackPanel
+                Grid.Column="2"
+                VerticalAlignment="Center"
+                Orientation="Horizontal"
+                Spacing="6">
                 <ToggleButton
                     Padding="8,6"
-                    Tag="CPU"
                     IsChecked="{Binding ClusterOverviewModes[0].IsSelected, Mode=TwoWay}"
                     IsCheckedChanged="ClusterOverviewMode_Checked"
+                    Tag="CPU"
                     ToolTip.Tip="CPU">
                     <ic:FluentIcon Icon="Pulse" />
                 </ToggleButton>
                 <ToggleButton
                     Padding="8,6"
-                    Tag="Memory"
                     IsChecked="{Binding ClusterOverviewModes[1].IsSelected, Mode=TwoWay}"
                     IsCheckedChanged="ClusterOverviewMode_Checked"
+                    Tag="Memory"
                     ToolTip.Tip="Memory">
                     <ic:FluentIcon Icon="Storage" />
                 </ToggleButton>
             </StackPanel>
         </Grid>
 
-        <Border
-            Grid.Row="1"
-            Classes="overview-card"
+        <Border Grid.Row="1"
             Padding="12"
-            VerticalAlignment="Stretch">
+            VerticalAlignment="Stretch"
+            Classes="overview-card">
             <rc:ResponsiveCartesianChart
+                Title="{Binding ClusterTrendChart.ChartTitle}"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
-                Title="{Binding ClusterTrendChart.ChartTitle}"
                 Series="{Binding ClusterTrendChart.Series}"
                 XAxes="{Binding ClusterTrendChart.XAxes}"
                 YAxes="{Binding ClusterTrendChart.YAxes}" />

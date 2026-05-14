@@ -1,14 +1,14 @@
-using KubeUI.Avalonia.Features.Clusters.Overview.ViewModels;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Properties.Controls;
-using Humanizer;
-using k8s;
-using k8s.Models;
-using LiveChartsCore.Defaults;
-using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Humanizer;
+using k8s;
+using k8s.Models;
+using KubeUI.Avalonia.Features.Clusters.Overview.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Properties.Controls;
+using LiveChartsCore.Defaults;
+using Microsoft.Extensions.Logging;
 
 namespace KubeUI.Avalonia.Features.Clusters.Overview.ViewModels;
 

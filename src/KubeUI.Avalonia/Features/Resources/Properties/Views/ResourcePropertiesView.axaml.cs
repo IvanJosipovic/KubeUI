@@ -1,23 +1,24 @@
-using KubeUI.Avalonia.Infrastructure.Presentation;
-using System.Reflection;
 using System.ComponentModel;
-using k8s;
-using k8s.Models;
-using KubeUI.Avalonia.Features.Resources.Properties.Controls;
-using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using AppResources = KubeUI.Avalonia.Assets.Resources;
+using System.Reflection;
+using Avalonia;
+using Avalonia.Controls.Primitives;
+using Avalonia.Layout;
 using Avalonia.LogicalTree;
 using Avalonia.Threading;
-using Avalonia;
-using Avalonia.Layout;
-using Avalonia.Controls.Primitives;
+using k8s;
+using k8s.Models;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Properties.Controls;
+using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using AppResources = KubeUI.Avalonia.Assets.Resources;
 
 namespace KubeUI.Avalonia.Features.Resources.Properties.Views;
 
 public partial class ResourcePropertiesView : UserControl
 {
     private INotifyPropertyChanged? _viewModel;
+    private bool _isDetached;
 
     public ResourcePropertiesView()
     {
@@ -31,9 +32,17 @@ public partial class ResourcePropertiesView : UserControl
         ReloadNowOrLater();
     }
 
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        _isDetached = false;
+        ReloadNowOrLater();
+    }
+
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
+        _isDetached = true;
         UnsubscribeFromViewModel();
     }
 
@@ -103,13 +112,45 @@ public partial class ResourcePropertiesView : UserControl
         }
     }
 
-    private void ClearItems() => PART_Items.Children.Clear();
+    protected virtual void ClearItems()
+    {
+        void action()
+        {
+            try
+            {
+                if (_isDetached)
+                {
+                    return;
+                }
+
+                PART_Items.Children.Clear();
+            }
+            catch
+            {
+                // Swallow any exceptions here to avoid crashing the UI thread during detach/race conditions.
+                // The state will be reconciled on the next valid reload.
+            }
+        }
+
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            action();
+        }
+        else
+        {
+            Dispatcher.UIThread.Post(action, DispatcherPriority.Background);
+        }
+    }
 
     private void ReloadNowOrLater()
     {
+        if (_isDetached)
+        {
+            return;
+        }
+
         if (VisualRoot == null)
         {
-            AttachAndReload();
             return;
         }
 
@@ -118,6 +159,11 @@ public partial class ResourcePropertiesView : UserControl
 
     private void Reload<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
+        if (_isDetached)
+        {
+            return;
+        }
+
         ClearItems();
 
         if (DataContext is not ResourcePropertiesViewModel<T> viewModel)
@@ -155,7 +201,6 @@ public partial class ResourcePropertiesView : UserControl
                 if (viewModel.Cluster != null)
                 {
                     InitializeClusterControls(c, viewModel.Cluster);
-                    Dispatcher.UIThread.Post(() => InitializeClusterControls(c, viewModel.Cluster), DispatcherPriority.Background);
                 }
             }
         }

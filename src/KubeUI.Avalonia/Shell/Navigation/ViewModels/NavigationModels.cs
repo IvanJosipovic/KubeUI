@@ -1,8 +1,8 @@
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Avalonia.Infrastructure;
 using System.ComponentModel;
 using System.Windows.Input;
 using FluentIcons.Common;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
 using Swordfish.NET.Collections;
 
 namespace KubeUI.Avalonia.Shell.Navigation.ViewModels;

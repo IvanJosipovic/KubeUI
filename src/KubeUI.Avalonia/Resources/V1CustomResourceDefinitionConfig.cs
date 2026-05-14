@@ -1,17 +1,24 @@
+using Dock.Model.Core;
+using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Features.Resources.List.ViewModels;
 using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Kubernetes;
-using Dock.Model.Core;
-using k8s.Models;
 using KubeUI.Avalonia.Resources.CustomResourceDefinition.Views;
+using KubeUI.Kubernetes;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Avalonia.Resources;
 
 public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBase<V1CustomResourceDefinition>
 {
+    public V1CustomResourceDefinitionConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
+
     public override int Order => 13;
 
     public override IList<IResourceListColumn> Columns()
@@ -85,7 +92,7 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
 
         var resourceListType = typeof(ResourceListViewModel<>).MakeGenericType(type);
 
-        var vm = Application.Current.GetRequiredService(resourceListType) as IDockable;
+        var vm = ServiceProvider.GetRequiredService(resourceListType) as IDockable;
 
         if (vm is IInitializeCluster init)
         {
@@ -115,8 +122,7 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
             return false;
         }
 
-        return Cluster.CanIAnyNamespace(type, Verb.List) && Cluster.CanIAnyNamespace(type, Verb.Watch);
+        var resourceConfig = Cluster.GetResourceConfigs().FirstOrDefault(config => config.Type == type);
+        return resourceConfig?.PermissionsLoaded == true && resourceConfig.CanListAndWatch;
     }
 }
-
-

@@ -1,3 +1,4 @@
+using System.Runtime.ExceptionServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -9,6 +10,7 @@ using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.Avalonia;
+using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Presentation;
@@ -21,14 +23,16 @@ using Moq;
 
 namespace KubeUI.Avalonia.Tests.Infra;
 
-public class TestApp : Application, KubeUI.Avalonia.Infrastructure.IServiceProviderAccessor
+public class TestApp : Application, IServiceProviderHost
 {
-    public IServiceProvider? Services { get; private set; }
+    public static IServiceProvider? CurrentServices { get; private set; }
     public static Mock<IDialogManager>? DialogManagerMock { get; private set; }
     public static INotification? LastNotification { get; private set; }
     public static ContentDialogSettings? LastContentDialogSettings { get; private set; }
 
     public static TopLevel TopLevel { get; private set; }
+
+    public IServiceProvider Services => CurrentServices ?? throw new InvalidOperationException("Test services are not initialized.");
 
     public override void Initialize()
     {
@@ -65,7 +69,7 @@ public class TestApp : Application, KubeUI.Avalonia.Infrastructure.IServiceProvi
         DisposeServices();
 
         var provider = BuildServiceProvider();
-        Services = provider;
+        CurrentServices = provider;
         ApplyResources(provider);
         InitializeDockFactory(provider);
     }
@@ -84,7 +88,7 @@ public class TestApp : Application, KubeUI.Avalonia.Infrastructure.IServiceProvi
         dialogManager
             .Setup(x => x.ShowFrameworkDialogAsync(It.IsAny<System.ComponentModel.INotifyPropertyChanged?>(), It.IsAny<ContentDialogSettings>(), It.IsAny<Func<object?, string>?>()))
             .Callback<System.ComponentModel.INotifyPropertyChanged?, ContentDialogSettings, Func<object?, string>?>((_, settings, _) => LastContentDialogSettings = settings)
-            .ReturnsAsync(ContentDialogResult.Primary);
+            .ReturnsAsync(FAContentDialogResult.Primary);
         DialogManagerMock = dialogManager;
 
         var dialog = new Mock<IDialogService>();
@@ -102,7 +106,7 @@ public class TestApp : Application, KubeUI.Avalonia.Infrastructure.IServiceProvi
             overrides.AddSingleton<IClusterSettingsStore>(sp => sp.GetRequiredService<ISettingsService>().Clusters);
             overrides.Replace(ServiceDescriptor.Singleton<IDialogService>(dialog.Object));
             overrides.Replace(ServiceDescriptor.Singleton<INotificationManager>(notifications.Object));
-            overrides.Replace(ServiceDescriptor.Singleton<IFactory>(sp => Dispatcher.UIThread.Invoke(() => (IFactory)new DockFactory(sp.GetRequiredService<ILogger<DockFactory>>()))));
+            overrides.Replace(ServiceDescriptor.Singleton<IFactory>(sp => new DockFactory(sp, sp.GetRequiredService<ILogger<DockFactory>>())));
         });
 
         var provider = services.BuildServiceProvider();
@@ -134,12 +138,11 @@ public class TestApp : Application, KubeUI.Avalonia.Infrastructure.IServiceProvi
 
     private void DisposeServices()
     {
-        if (Services is IDisposable disposable)
+        if (CurrentServices is IDisposable disposable)
         {
             disposable.Dispose();
         }
-
-        Services = null;
+        CurrentServices = null;
     }
 
     private void CloseOpenWindows()
@@ -163,9 +166,8 @@ public class TestApp : Application, KubeUI.Avalonia.Infrastructure.IServiceProvi
             return;
         }
 
-        Dispatcher.UIThread.Invoke(action);
+        Dispatcher.UIThread.InvokeAsync(action).GetAwaiter().GetResult();
     }
 }
-
 
 

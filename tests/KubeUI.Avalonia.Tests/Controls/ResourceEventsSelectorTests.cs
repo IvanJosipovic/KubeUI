@@ -1,12 +1,11 @@
-using Avalonia.Headless.XUnit;
+using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Tests.Infra;
-using k8s.Models;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Controls;
 
-public sealed class ResourceEventsSelectorTests : AvaloniaTestBase
+public sealed class ResourceEventsSelectorTests
 {
     [Fact]
     public void FormatPrettyAge_UsesExpectedUnits()
@@ -18,12 +17,11 @@ public sealed class ResourceEventsSelectorTests : AvaloniaTestBase
         EventTimeFormatter.FormatPrettyAge(now.AddHours(-2), now).ShouldBe("2h");
     }
 
-    [AvaloniaFact]
+    [Fact]
     public async Task SelectRecentEvents_sorts_and_limits_to_five()
     {
-        var cluster = new TestCluster().CreateWorkspace();
-        await cluster.EnsureWorkspaceStateInitializedAsync();
-        await cluster.SeedResource<Corev1Event>();
+        var runtime = new TestCluster();
+        await runtime.SeedResource<Corev1Event>();
 
         var resource = new V1Deployment
         {
@@ -39,7 +37,7 @@ public sealed class ResourceEventsSelectorTests : AvaloniaTestBase
 
         for (var i = 0; i < 6; i++)
         {
-            await cluster.AddOrUpdateResource(new Corev1Event
+            await runtime.AddOrUpdateResource(new Corev1Event
             {
                 Metadata = new()
                 {
@@ -64,7 +62,7 @@ public sealed class ResourceEventsSelectorTests : AvaloniaTestBase
             });
         }
 
-        await cluster.AddOrUpdateResource(new Corev1Event
+        await runtime.AddOrUpdateResource(new Corev1Event
         {
             Metadata = new()
             {
@@ -80,7 +78,7 @@ public sealed class ResourceEventsSelectorTests : AvaloniaTestBase
         });
 
         var results = ResourceEventsSelector.SelectRecentEvents(
-            cluster.GetResourceSourceCache<Corev1Event>().Items,
+            runtime.GetResourceSourceCache<Corev1Event>().Items,
             resource,
             now);
 

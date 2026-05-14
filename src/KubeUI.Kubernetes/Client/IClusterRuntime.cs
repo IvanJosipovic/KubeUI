@@ -6,6 +6,8 @@ using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Kubernetes;
 
+public readonly record struct AuthorizationRequest(Type ResourceType, Verb Verb, string? Subresource);
+
 public interface IClusterRuntime
 {
     IReadOnlyDictionary<GroupApiVersionKind, object> Objects { get; }
@@ -34,6 +36,7 @@ public interface IClusterRuntime
     bool IsResourceNamespaced(Type type);
     bool IsResourceNamespaced<T>();
     PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort);
+    Task AddPodEphemeralDebugContainer(V1Pod pod, string? targetContainerName, string image);
     PortForwarder AddServicePortForward(string @namespace, string serviceName, int servicePort);
     void RemovePortForward(PortForwarder pf);
     Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();

@@ -1,8 +1,7 @@
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Features.Clusters.Overview.ViewModels;
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Kubernetes;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Text.RegularExpressions;
+using System.Threading;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
@@ -13,23 +12,25 @@ using FluentIcons.Common;
 using Humanizer;
 using k8s;
 using k8s.Models;
-using LiveChartsCore.Drawing;
+using KubeUI.Avalonia.Features.Clusters.Overview.ViewModels;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Properties.Controls;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Kubernetes;
 using LiveChartsCore;
 using LiveChartsCore.Defaults;
+using LiveChartsCore.Drawing;
 using LiveChartsCore.Kernel;
 using LiveChartsCore.Kernel.Sketches;
-using LiveChartsCore.SkiaSharpView.Avalonia;
 using LiveChartsCore.SkiaSharpView;
+using LiveChartsCore.SkiaSharpView.Avalonia;
 using LiveChartsCore.SkiaSharpView.Painting;
 using LiveChartsCore.SkiaSharpView.VisualElements;
 using LiveChartsCore.Themes;
 using Microsoft.Extensions.Logging;
 using SkiaSharp;
-using System.Collections.Specialized;
-using System.ComponentModel;
-using System.Text.RegularExpressions;
-using System.Threading;
-using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Avalonia.Features.Resources.Metrics.Controls;
 
@@ -137,7 +138,9 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster
     public MetricsControl()
     {
         InitializeComponent();
-        _logger = Application.Current.GetRequiredService<ILogger<MetricsControl>>();
+        _logger = Application.Current is IServiceProviderHost host
+            ? host.Services.GetRequiredService<ILogger<MetricsControl>>()
+            : Microsoft.Extensions.Logging.Abstractions.NullLogger<MetricsControl>.Instance;
         SelectedTimeRange = s_defaultTimeRange;
 
         if (!s_timer.IsEnabled)
@@ -362,16 +365,16 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster
             throw new InvalidOperationException("MetricsControl refresh must run on the UI thread.");
         }
 
-if (Pod != null && Container != null)
-{
-    await RefreshPodContainerCoreAsync().ConfigureAwait(false);
-    return;
-}
+        if (Pod != null && Container != null)
+        {
+            await RefreshPodContainerCoreAsync().ConfigureAwait(false);
+            return;
+        }
 
-if (_cluster == null || DataContext is not IKubernetesObject<V1ObjectMeta> resource)
-{
-IsVisible = false;
-DisposeTabs();
+        if (_cluster == null || DataContext is not IKubernetesObject<V1ObjectMeta> resource)
+        {
+            IsVisible = false;
+            DisposeTabs();
             CurrentMetrics.Clear();
             SelectedTab = null;
             ShowTimeRangeSelector = false;
@@ -576,8 +579,8 @@ DisposeTabs();
         return MetricsControlPrometheusBackend.LoadPrometheusPanelSnapshotAsync(_cluster!, tabTitle, panel, SelectedTimeRange, _logger);
     }
 
-private async Task RefreshPodContainerCoreAsync()
-{
+    private async Task RefreshPodContainerCoreAsync()
+    {
         if (_cluster == null || Pod == null || Container == null || string.IsNullOrWhiteSpace(Container.Name))
         {
             IsVisible = false;
@@ -1376,7 +1379,3 @@ internal sealed class MetricsServerHistoryState(string resourceKey)
 internal readonly record struct MetricsServerSample(decimal Cpu, double Memory);
 
 internal readonly record struct MetricsServerSamplePoint(DateTimeOffset Timestamp, decimal Cpu, double Memory);
-
-
-
-

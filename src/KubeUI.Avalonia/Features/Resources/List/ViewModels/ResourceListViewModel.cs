@@ -1,24 +1,18 @@
-using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
-using KubeUI.Avalonia.Features.Resources.Common;
-using KubeUI.Avalonia.Features.Resources.List.ViewModels;
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Avalonia.Infrastructure.Threading;
-using KubeUI.Avalonia.Services.Settings;
-using Avalonia;
-using System.Collections.Specialized;
 using System.Collections;
+using System.Collections.Specialized;
 using System.Globalization;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Windows.Input;
+using Avalonia;
 using Avalonia.Controls.DataGridFiltering;
 using Avalonia.Controls.DataGridSearching;
 using Avalonia.Controls.DataGridSorting;
-using Avalonia.Data;
 using Avalonia.Controls.Selection;
 using Avalonia.Controls.Templates;
+using Avalonia.Data;
 using AvaloniaEdit.Utils;
 using DynamicData;
 using DynamicData.Binding;
@@ -27,10 +21,16 @@ using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Controls.DataGridFilters;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Features.Resources.List.Controls;
-using KubeUI.Kubernetes;
+using KubeUI.Avalonia.Features.Resources.List.ViewModels;
+using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Resources;
-using System.Windows.Input;
+using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Kubernetes;
 using SortDirection = KubeUI.Avalonia.Resources.SortDirection;
 
 namespace KubeUI.Avalonia.Features.Resources.List.ViewModels;
@@ -40,6 +40,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     private static readonly TimeSpan SearchDebounceDelay = TimeSpan.FromMilliseconds(250);
     internal const string NamespaceScopeFilterId = "__namespace_scope__";
     internal const string NamespaceScopePropertyPath = "namespace_scope";
+    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ResourceListViewModel<T>> _logger;
 
     private static readonly IComparer s_noopSortComparer = Comparer<object>.Create(static (_, _) => 0);
@@ -57,8 +58,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     public T? SelectedItem => ((SelectionModel<T>)SelectionModel).SelectedItem;
 
     public IReadOnlyList<T?> SelectedItems => ((SelectionModel<T>)SelectionModel).SelectedItems;
-
-    public IEnumerable<MenuItemViewModel> ContextMenuItems => BuildContextMenuItems();
 
     [ObservableProperty]
     public partial string SearchQuery { get; set; }
@@ -152,10 +151,11 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     public ObservableCollection<V1Namespace> SelectedNamespaces
         => IsNamespaceSelectionLinked && Cluster != null ? Cluster.SelectedNamespaces : _localSelectedNamespaces;
 
-    public ResourceListViewModel()
+    public ResourceListViewModel(IServiceProvider serviceProvider, ILogger<ResourceListViewModel<T>> logger, ISettingsService settingsService)
     {
-        _logger = Application.Current.GetRequiredService<ILogger<ResourceListViewModel<T>>>();
-        SettingsService = Application.Current.GetRequiredService<ISettingsService>();
+        _serviceProvider = serviceProvider;
+        _logger = logger;
+        SettingsService = settingsService;
 
         _searchQuerySubscription = _searchQueryChanges
             .Throttle(SearchDebounceDelay)
@@ -183,8 +183,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
                 _resourceColumnsByKey[column.Key] = column;
             }
         }
-
-        OnPropertyChanged(nameof(ContextMenuItems));
 
         _sortingAdapterFactory = new DynamicDataSortingAdapterFactory<T>(_resourceColumnsByKey);
         _sortSubject = new(_sortingAdapterFactory.SortComparer);
@@ -221,7 +219,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         }
     }
 
-    private IEnumerable<MenuItemViewModel> BuildContextMenuItems()
+    public IEnumerable<MenuItemViewModel> GetContextMenuItems(IEnumerable? selectedItems)
     {
         if (ResourceConfig == null)
         {
@@ -229,9 +227,9 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         }
 
         var items = new List<MenuItemViewModel>();
-        items.AddRange(ResourceConfig.GetDefaultMenuItems(SelectedItems));
+        items.AddRange(ResourceConfig.GetDefaultMenuItems(selectedItems));
 
-        var custom = ResourceConfig.GetCustomMenuItems(SelectedItems).ToList();
+        var custom = ResourceConfig.GetCustomMenuItems(selectedItems).ToList();
         if (custom.Count > 0)
         {
             items.Add(new MenuItemViewModel
@@ -392,7 +390,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
             {
                 ResetOnFirstTimeLoad = true,
                 UseReplaceForUpdates = true,
-                UseBinarySearch = true,
                 InitialCapacity = Objects.Count
             })
             .Subscribe(
@@ -512,7 +509,7 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
         {
             try
             {
-                var control = Application.Current.GetRequiredService(columnDefinition.CustomControl) as Control;
+                var control = _serviceProvider.GetRequiredService(columnDefinition.CustomControl) as Control;
 
                 if (control == null)
                 {
@@ -579,7 +576,6 @@ public partial class ResourceListViewModel<T> : ViewModelBase, IInitializeCluste
     {
         OnPropertyChanged(nameof(SelectedItem));
         OnPropertyChanged(nameof(SelectedItems));
-        OnPropertyChanged(nameof(ContextMenuItems));
     }
 
     // Runtime DataGrid state captured from ProDataGrid (in-memory snapshot)
@@ -869,7 +865,7 @@ public sealed class DynamicDataSortingAdapterFactory<T> : IDataGridSortingAdapte
     }
 }
 
-public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAdapterFactory where T : class, IKubernetesObject<V1ObjectMeta>, new ()
+public sealed class DynamicDataFilteringAdapterFactory<T> : IDataGridFilteringAdapterFactory where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     private static readonly Func<T, bool> s_alwaysTrue = static _ => true;
 

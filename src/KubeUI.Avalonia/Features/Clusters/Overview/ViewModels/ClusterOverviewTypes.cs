@@ -1,8 +1,8 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using FluentIcons.Common;
-using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 using KubeUI.Avalonia.Features.Resources.Metrics.Controls;
-using System.Collections.ObjectModel;
+using KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Avalonia.Features.Clusters.Overview.ViewModels;
 
