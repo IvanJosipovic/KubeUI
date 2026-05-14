@@ -126,6 +126,8 @@ namespace KubeUI.Kubernetes;
 [JsonSerializable(typeof(V1ServerAddressByClientCIDR))]
 [JsonSerializable(typeof(IList<V1GroupVersionForDiscovery>))]
 
+[JsonSerializable(typeof(V2beta1APIGroupDiscoveryList))]
+
 [JsonSourceGenerationOptions(
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
@@ -135,5 +137,3 @@ namespace KubeUI.Kubernetes;
 public partial class CustomSourceGenerationContext : JsonSerializerContext
 {
 }
-
-

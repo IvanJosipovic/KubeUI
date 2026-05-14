@@ -4,6 +4,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>preview</LangVersion>
+    <DebugType>embedded</DebugType>
     <AssemblyName>KubeUI.Kubernetes</AssemblyName>
   </PropertyGroup>
 
