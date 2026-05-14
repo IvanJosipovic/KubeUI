@@ -59,13 +59,14 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
     private Stream? _stream;
     private Stream? _refreshStream;
     private Task? _runner;
-    private int _disconnected;
+    private CancellationTokenSource? _readerCancellation;
+    private bool _disconnected;
 
-    internal bool IsDisconnected => Volatile.Read(ref _disconnected) != 0;
+    internal bool IsDisconnected => _disconnected;
 
-    public async Task Connect()
+    public async Task ConnectAsync()
     {
-        if (_webSocket != null)
+        if (_webSocket != null || _disconnected)
         {
             return;
         }
@@ -80,35 +81,49 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
 
         SendResize(Model.Terminal.Cols, Model.Terminal.Rows);
 
-        _runner = Task.Run(async () =>
+        _readerCancellation = new CancellationTokenSource();
+        _runner = Task.Run(() => ReadConsoleOutputAsync(_stream, _readerCancellation.Token));
+    }
+
+    internal void SetStreamsForTesting(Stream? stream = null, Stream? refreshStream = null)
+    {
+        _stream = stream;
+        _refreshStream = refreshStream;
+    }
+
+    private async Task ReadConsoleOutputAsync(Stream consoleOutput, CancellationToken cancellationToken)
+    {
+        const int bufferSize = 4096;
+        byte[] buffer = new byte[bufferSize];
+
+        while (!cancellationToken.IsCancellationRequested && consoleOutput.CanRead)
         {
-            while (_stream.CanRead)
+            try
             {
-                try
+                int bytesRead = await consoleOutput.ReadAsync(buffer.AsMemory(0, bufferSize), cancellationToken).ConfigureAwait(false);
+
+                if (bytesRead <= 0)
                 {
-                    const int bufferSize = 4096; // 4KB buffer size
-                    byte[] buffer = new byte[bufferSize];
-
-                    int bytesRead = await _stream.ReadAsync(buffer.AsMemory(0, bufferSize)).ConfigureAwait(false);
-
-                    if (bytesRead <= 0)
-                    {
-                        MarkDisconnected();
-                        break;
-                    }
-
-                    await Dispatcher.UIThread.InvokeAsync(() =>
-                    {
-                        Model.Feed(buffer, bytesRead);
-                    });
+                    Disconnect();
+                    return;
                 }
-                catch (Exception ex)
+
+                cancellationToken.ThrowIfCancellationRequested();
+                await Dispatcher.UIThread.InvokeAsync(() =>
                 {
-                    MarkDisconnected(ex, "reading console output");
-                    break;
-                }
+                    Model.Feed(buffer, bytesRead);
+                });
             }
-        });
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+            catch (Exception ex)
+            {
+                Disconnect(ex, "reading console output");
+                return;
+            }
+        }
     }
 
     internal Task<WebSocket> OpenConnectionAsync()
@@ -152,11 +167,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
 
     public void SendResize(int cols, int rows)
     {
-        var size = new TerminalSize
-        {
-            Width = (ushort)cols,
-            Height = (ushort)rows,
-        };
+        var size = new TerminalSize((ushort)cols, (ushort)rows);
 
         TryWrite(_refreshStream, JsonSerializer.SerializeToUtf8Bytes(size), "sending terminal resize");
     }
@@ -176,7 +187,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
 
     private void TryWrite(Stream? stream, ReadOnlySpan<byte> data, string operation)
     {
-        if (Volatile.Read(ref _disconnected) != 0 || stream?.CanWrite != true)
+        if (_disconnected || stream?.CanWrite != true)
         {
             return;
         }
@@ -185,31 +196,43 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
         {
             stream.Write(data);
         }
-        catch (Exception ex) when (ex is WebSocketException or IOException or ObjectDisposedException)
+        catch (Exception ex) when (IsTerminalStreamClosed(ex))
         {
-            MarkDisconnected(ex, operation);
+            Disconnect(ex, operation);
         }
     }
 
-    private void MarkDisconnected(Exception? ex = null, string? operation = null)
+    private void Disconnect(Exception? ex = null, string? operation = null)
     {
-        if (Interlocked.Exchange(ref _disconnected, 1) != 0)
+        if (_disconnected)
         {
             return;
         }
 
+        _disconnected = true;
+        _readerCancellation?.Cancel();
         Model.UserInput -= Input;
         Model.SizeChanged -= Terminal_SizeChanged;
 
-        Stream? stream = Interlocked.Exchange(ref _stream, null);
-        Stream? refreshStream = Interlocked.Exchange(ref _refreshStream, null);
-        StreamDemuxer? streamDemuxer = Interlocked.Exchange(ref _streamDemuxer, null);
-        WebSocket? webSocket = Interlocked.Exchange(ref _webSocket, null);
+        var stream = _stream;
+        var refreshStream = _refreshStream;
+        var streamDemuxer = _streamDemuxer;
+        var webSocket = _webSocket;
+        var readerCancellation = _readerCancellation;
+        var runner = _runner;
+
+        _stream = null;
+        _refreshStream = null;
+        _streamDemuxer = null;
+        _webSocket = null;
+        _readerCancellation = null;
+        _runner = null;
 
         stream?.Dispose();
         refreshStream?.Dispose();
         streamDemuxer?.Dispose();
         webSocket?.Dispose();
+        DisposeWhenReaderCompletes(readerCancellation, runner);
 
         if (ex == null)
         {
@@ -220,34 +243,36 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
         _logger.LogWarning(ex, "Pod console disconnected while {Operation}.", operation ?? "processing console IO");
     }
 
+    private static bool IsTerminalStreamClosed(Exception ex)
+    {
+        return ex is WebSocketException or IOException or ObjectDisposedException;
+    }
+
+    private static void DisposeWhenReaderCompletes(CancellationTokenSource? readerCancellation, Task? runner)
+    {
+        if (readerCancellation == null)
+        {
+            return;
+        }
+
+        if (runner?.IsCompleted != false)
+        {
+            readerCancellation.Dispose();
+            return;
+        }
+
+        _ = runner.ContinueWith(
+            static (_, state) => ((CancellationTokenSource)state!).Dispose(),
+            readerCancellation,
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
+    }
+
     public void Dispose()
     {
-        MarkDisconnected();
+        Disconnect();
     }
 }
 
-public struct TerminalSize
-{
-    public ushort Width { get; set; }
-    public ushort Height { get; set; }
-
-    public override bool Equals(object? obj)
-    {
-        throw new NotImplementedException();
-    }
-
-    public override int GetHashCode()
-    {
-        throw new NotImplementedException();
-    }
-
-    public static bool operator ==(TerminalSize left, TerminalSize right)
-    {
-        return left.Equals(right);
-    }
-
-    public static bool operator !=(TerminalSize left, TerminalSize right)
-    {
-        return !(left == right);
-    }
-}
+public readonly record struct TerminalSize(ushort Width, ushort Height);

@@ -1,5 +1,4 @@
 using System.Net.WebSockets;
-using System.Reflection;
 using Avalonia.Headless.XUnit;
 using FluentAvalonia.UI.Controls;
 using k8s;
@@ -152,20 +151,38 @@ public sealed class PodAttachTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
-    public void console_input_disconnects_when_stream_write_aborts()
+    public void console_input_stops_after_stream_write_aborts()
     {
         var settings = TestApp.CurrentServices!.GetRequiredService<KubeUI.Avalonia.Services.Settings.ISettingsService>();
         var logger = TestApp.CurrentServices.GetRequiredService<ILogger<PodConsoleViewModel>>();
         var stream = new ThrowingWriteStream(new WebSocketException(WebSocketError.InvalidState));
 
         PodConsoleViewModel viewModel = new(logger, settings);
-        SetPrivateField(viewModel, "_stream", stream);
+        viewModel.SetStreamsForTesting(stream: stream);
 
         viewModel.WriteInput("ls"u8.ToArray());
         viewModel.IsDisconnected.ShouldBeTrue();
         stream.WriteCallCount.ShouldBe(1);
 
         viewModel.WriteInput("pwd"u8.ToArray());
+        stream.WriteCallCount.ShouldBe(1);
+    }
+
+    [AvaloniaFact]
+    public void console_resize_stops_after_stream_write_aborts()
+    {
+        var settings = TestApp.CurrentServices!.GetRequiredService<KubeUI.Avalonia.Services.Settings.ISettingsService>();
+        var logger = TestApp.CurrentServices.GetRequiredService<ILogger<PodConsoleViewModel>>();
+        var stream = new ThrowingWriteStream(new IOException());
+
+        PodConsoleViewModel viewModel = new(logger, settings);
+        viewModel.SetStreamsForTesting(refreshStream: stream);
+
+        viewModel.SendResize(80, 24);
+        viewModel.IsDisconnected.ShouldBeTrue();
+        stream.WriteCallCount.ShouldBe(1);
+
+        viewModel.SendResize(120, 32);
         stream.WriteCallCount.ShouldBe(1);
     }
 
@@ -307,13 +324,6 @@ public sealed class PodAttachTests : AvaloniaTestBase
     {
         Exec,
         Attach,
-    }
-
-    private static void SetPrivateField<T>(object target, string fieldName, T value)
-    {
-        FieldInfo? field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
-        field.ShouldNotBeNull();
-        field!.SetValue(target, value);
     }
 
     private sealed class ThrowingWriteStream(Exception exception)

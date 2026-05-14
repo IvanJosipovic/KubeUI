@@ -3,6 +3,7 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:assets="using:KubeUI.Avalonia.Assets"
+    xmlns:behaviors="using:KubeUI.Avalonia.Resources.Workloads.v1.Pod.Behaviors"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:ic="using:FluentIcons.Avalonia"
     xmlns:term="clr-namespace:SvcSystems.UI.Terminal;assembly=SvcSystems.UI.Terminal"
@@ -10,6 +11,10 @@
     d:DesignHeight="400"
     d:DesignWidth="800"
     x:DataType="vm:PodConsoleViewModel">
+    <Interaction.Behaviors>
+        <behaviors:PodConsoleConnectionBehavior />
+    </Interaction.Behaviors>
+
     <Grid
         HorizontalAlignment="Stretch"
         VerticalAlignment="Stretch"
