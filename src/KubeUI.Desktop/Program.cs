@@ -135,9 +135,8 @@ internal static class Program
 #if DEBUG
                     e.Endpoint = new Uri("http://localhost:4317");
 #else
-                    e.Endpoint = new Uri("https://otel.kubeui.com/v1/logs");
-                    e.Headers = $"key={key}";
-                    e.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+                    e.Endpoint = new Uri("https://otel-grpc.kubeui.com");
+                    e.Headers = $"x-otlp-api-key={key}";
 #endif
                 });
             },
@@ -154,14 +153,11 @@ internal static class Program
                     .AddMeter(Instrumentation.MeterName)
                     .AddOtlpExporter((e, readerOptions) =>
                     {
-                        readerOptions.PeriodicExportingMetricReaderOptions.ExportIntervalMilliseconds = 5000;
-                        readerOptions.PeriodicExportingMetricReaderOptions.ExportTimeoutMilliseconds = 30000;
 #if DEBUG
                         e.Endpoint = new Uri("http://localhost:4317");
 #else
-                        e.Endpoint = new Uri("https://otel.kubeui.com/v1/metrics");
-                        e.Headers = $"key={key}";
-                        e.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+                        e.Endpoint = new Uri("https://otel-grpc.kubeui.com");
+                        e.Headers = $"x-otlp-api-key={key}";
 #endif
                     });
             })
