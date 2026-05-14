@@ -20,7 +20,6 @@ jobs:
   build-test:
     name: Build & Test
     uses: ./.github/workflows/build-test.yml
-    secrets: inherit
 
   semantic-release:
     name: Bump Version
