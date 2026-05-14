@@ -197,6 +197,7 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
         }
         catch (Exception ex)
         {
+            System.Diagnostics.Trace.WriteLine($"Failed to load persisted settings: {ex}");
         }
 
         return new PersistedSettings();
