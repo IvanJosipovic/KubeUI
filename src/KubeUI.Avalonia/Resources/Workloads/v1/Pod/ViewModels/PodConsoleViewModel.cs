@@ -64,8 +64,6 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IDisposable
 
     internal bool IsDisconnected => _disconnected;
 
-    public Task Connect() => ConnectAsync();
-
     public async Task ConnectAsync()
     {
         if (_webSocket != null || _disconnected)
