@@ -153,8 +153,6 @@ internal static class Program
                     .AddMeter(Instrumentation.MeterName)
                     .AddOtlpExporter((e, readerOptions) =>
                     {
-                        readerOptions.PeriodicExportingMetricReaderOptions.ExportIntervalMilliseconds = 5000;
-                        readerOptions.PeriodicExportingMetricReaderOptions.ExportTimeoutMilliseconds = 30000;
 #if DEBUG
                         e.Endpoint = new Uri("http://localhost:4317");
 #else
