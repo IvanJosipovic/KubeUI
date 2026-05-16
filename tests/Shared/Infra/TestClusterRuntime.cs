@@ -58,6 +58,7 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
     private bool _authorizationIndexReady;
     private long _authorizationIndexVersion;
     private string? _lastError;
+    private MetricsServiceType _metricsServiceType;
     private bool _requiresNamespaceSelectionPrompt;
     private ClusterStatus _status;
     private IKubernetes? _client;
@@ -75,6 +76,7 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
         Status = ClusterStatus.Connected;
         Connected = true;
         ListNamespaces = true;
+        MetricsServiceType = MetricsServiceType.KubernetesMetricsServer;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -129,7 +131,31 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
         set => SetProperty(ref _requiresNamespaceSelectionPrompt, value);
     }
 
-    public bool IsMetricsAvailable => true;
+    public bool IsMetricsAvailable => MetricsServiceType is MetricsServiceType.KubernetesMetricsServer or MetricsServiceType.Prometheus;
+
+    public MetricsServiceType MetricsServiceType
+    {
+        get => _metricsServiceType;
+        set
+        {
+            if (EqualityComparer<MetricsServiceType>.Default.Equals(_metricsServiceType, value))
+            {
+                return;
+            }
+
+            _metricsServiceType = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(MetricsServiceType)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ActiveMetricsBackend)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsMetricsAvailable)));
+        }
+    }
+
+    public ActiveMetricsBackend ActiveMetricsBackend => MetricsServiceType switch
+    {
+        MetricsServiceType.Prometheus => ActiveMetricsBackend.Prometheus(PrometheusProviderKind.Operator),
+        MetricsServiceType.KubernetesMetricsServer => ActiveMetricsBackend.KubernetesMetricsServer,
+        _ => ActiveMetricsBackend.None,
+    };
 
     public bool AuthorizationIndexReady
     {
@@ -677,6 +703,21 @@ public class TestClusterRuntime : IClusterRuntime, INotifyPropertyChanged
         }
 
         await ImportYaml(stream);
+    }
+
+    public Task<MetricResultSet> RequestMetricsAsync(MetricRequest request, CancellationToken cancellationToken = default) => Task.FromResult(MetricResultSet.Empty);
+
+    public Task<IReadOnlyList<MetricProviderInfo>> GetAvailablePrometheusProvidersAsync()
+    {
+        IReadOnlyList<MetricProviderInfo> providers =
+        [
+            new(PrometheusProviderKind.Operator, "Prometheus Operator", true),
+            new(PrometheusProviderKind.OpenShift, "OpenShift", true),
+            new(PrometheusProviderKind.Manual, "Manual Service", true),
+            new(PrometheusProviderKind.External, "External URL", true),
+        ];
+
+        return Task.FromResult(providers);
     }
 
     private async Task ProcessCustomResourceDefinitionAsync(V1CustomResourceDefinition crd)

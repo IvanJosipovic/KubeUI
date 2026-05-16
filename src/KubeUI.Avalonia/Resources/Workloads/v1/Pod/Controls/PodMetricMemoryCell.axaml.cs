@@ -9,6 +9,8 @@ namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Controls;
 public partial class PodMetricMemoryCell : UserControl, IInitializeCluster
 {
     private ClusterWorkspaceViewModel? _cluster;
+    private Task? _prometheusRefreshTask;
+    private string? _prometheusResourceKey;
 
     private static readonly DispatcherTimer s_timer = new(DispatcherPriority.Default);
 
@@ -41,6 +43,12 @@ public partial class PodMetricMemoryCell : UserControl, IInitializeCluster
             return;
         }
 
+        if (_cluster.MetricsServiceType == MetricsServiceType.Prometheus)
+        {
+            QueuePrometheusUpdate(pod);
+            return;
+        }
+
         var metric = _cluster.PodMetrics.FirstOrDefault(m =>
             m.Name() == pod.Name() && m.Namespace() == pod.Namespace());
 
@@ -58,6 +66,49 @@ public partial class PodMetricMemoryCell : UserControl, IInitializeCluster
         {
             PrettyString = string.Empty;
         }
+    }
+
+    private void QueuePrometheusUpdate(V1Pod pod)
+    {
+        var resourceKey = $"{pod.Namespace()}/{pod.Name()}";
+        if (_prometheusRefreshTask?.IsCompleted == false && string.Equals(_prometheusResourceKey, resourceKey, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _prometheusResourceKey = resourceKey;
+        _prometheusRefreshTask = UpdatePrometheusAsync(pod);
+    }
+
+    private async Task UpdatePrometheusAsync(V1Pod pod)
+    {
+        if (_cluster == null)
+        {
+            return;
+        }
+
+        var result = await _cluster.RequestMetricsAsync(new MetricRequest
+        {
+            Category = MetricCategory.Pods,
+            Queries =
+            [
+                new MetricQueryDefinition
+                {
+                    Name = "memoryUsage",
+                    Options = new Dictionary<string, string>(StringComparer.Ordinal)
+                    {
+                        ["namespace"] = pod.Namespace(),
+                        ["pods"] = pod.Name(),
+                    },
+                },
+            ],
+        }).ConfigureAwait(false);
+
+        var value = result.Metrics.TryGetValue("memoryUsage", out var series)
+            ? series.SelectMany(static x => x.Points).LastOrDefault().Value
+            : 0d;
+
+        await Dispatcher.UIThread.InvokeAsync(() => PrettyString = ((long)value).Bytes().Humanize());
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)

@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:c="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:m="using:KubeUI.Avalonia.Features.Resources.Metrics.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="using:k8s.Models"
     d:DesignHeight="400"
@@ -15,6 +16,7 @@
         <c:PropertyItem Key="Current Replicas" Value="{Binding Status.Replicas}" />
         <c:PropertyItem Key="Ready Replicas" Value="{Binding Status.ReadyReplicas}" />
         <c:PropertyItem Key="Available Replicas" Value="{Binding Status.AvailableReplicas}" />
+        <m:MetricsControl />
         <c:ExpandableSection Header="Status">
             <StackPanel>
                 <c:PropertyItem Key="Fully Labeled Replicas" Value="{Binding Status.FullyLabeledReplicas}" />

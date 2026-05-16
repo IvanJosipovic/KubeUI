@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Clusters.Overview.ViewModels;
 using KubeUI.Avalonia.Infrastructure;
@@ -7,7 +8,10 @@ namespace KubeUI.Avalonia.Features.Clusters.Overview.Views;
 
 public sealed partial class ClusterView : UserControl
 {
-    private readonly DispatcherTimer _timer = new();
+    private readonly DispatcherTimer _timer = new(DispatcherPriority.Background);
+    private INotifyPropertyChanged? _viewModelNotifications;
+    private bool _isAttachedToVisualTree;
+
     public ClusterViewModel? ViewModel => DataContext as ClusterViewModel;
 
     public ClusterView()
@@ -15,6 +19,9 @@ public sealed partial class ClusterView : UserControl
         InitializeComponent();
 
         DesignTimePreview.Run(InitializeDesignTimeDataAsync);
+
+        _timer.Interval = TimeSpan.FromSeconds(30);
+        _timer.Tick += TimerOnTick;
     }
 
     private async Task InitializeDesignTimeDataAsync()
@@ -22,40 +29,81 @@ public sealed partial class ClusterView : UserControl
         DataContext = await DesignTimePreview.CreateClusterBoundViewModelAsync<ClusterViewModel, V1Pod>();
     }
 
-    private async void TimerOnTick(object? sender, EventArgs e)
+    protected override async void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
+        base.OnAttachedToVisualTree(e);
+        _isAttachedToVisualTree = true;
+
+        if (!_timer.IsEnabled)
+        {
+            _timer.Start();
+        }
+
+        AttachViewModelNotifications();
         if (ViewModel != null)
         {
-            try
-            {
-                await ViewModel.RefreshData();
-            }
-            catch
-            {
-                // Swallow refresh exceptions to keep timer going.
-            }
+            await ViewModel.RefreshData();
         }
+    }
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        _isAttachedToVisualTree = false;
+        _timer.Stop();
+        DetachViewModelNotifications();
     }
 
     protected override void OnDataContextChanged(EventArgs e)
     {
         base.OnDataContextChanged(e);
+        AttachViewModelNotifications();
 
-        if (!_timer.IsEnabled)
+        if (_isAttachedToVisualTree && ViewModel != null)
         {
-            _timer.Interval = TimeSpan.FromSeconds(1);
-            _timer.Tick += TimerOnTick;
-            _timer.Start();
+            _ = ViewModel.RefreshData();
         }
     }
 
-    protected override void OnUnloaded(RoutedEventArgs e)
+    private async void TimerOnTick(object? sender, EventArgs e)
     {
-        base.OnUnloaded(e);
-        _timer.Stop();
-        _timer.Tick -= TimerOnTick;
+        if (ViewModel != null)
+        {
+            await ViewModel.RefreshData();
+        }
+    }
+
+    private void AttachViewModelNotifications()
+    {
+        if (_viewModelNotifications == ViewModel)
+        {
+            return;
+        }
+
+        DetachViewModelNotifications();
+        if (ViewModel is INotifyPropertyChanged propertyChanged)
+        {
+            _viewModelNotifications = propertyChanged;
+            _viewModelNotifications.PropertyChanged += ViewModelOnPropertyChanged;
+        }
+    }
+
+    private void DetachViewModelNotifications()
+    {
+        if (_viewModelNotifications != null)
+        {
+            _viewModelNotifications.PropertyChanged -= ViewModelOnPropertyChanged;
+            _viewModelNotifications = null;
+        }
+    }
+
+    private void ViewModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ClusterViewModel.Cluster))
+        {
+            if (_isAttachedToVisualTree && ViewModel != null)
+            {
+                _ = ViewModel.RefreshData();
+            }
+        }
     }
 }
-
-
-

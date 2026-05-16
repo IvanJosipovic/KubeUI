@@ -1,10 +1,18 @@
 using Avalonia.Controls;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 using k8s.Models;
+using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Metrics.Controls;
+using KubeUI.Avalonia.Features.Resources.Properties.Controls;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
 
-public partial class PropertiesView : UserControl
+public partial class PropertiesView : UserControl, IInitializeCluster
 {
+    private ClusterWorkspaceViewModel? _cluster;
+
     public PropertiesView()
     {
         InitializeComponent();
@@ -114,6 +122,47 @@ public partial class PropertiesView : UserControl
             };
         }
 #endif
+    }
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        ScheduleContainerMetricsInitialization();
+    }
+
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+        ScheduleContainerMetricsInitialization();
+    }
+
+    public void Initialize(ClusterWorkspaceViewModel cluster)
+    {
+        _cluster = cluster;
+        ScheduleContainerMetricsInitialization();
+    }
+
+    private void ScheduleContainerMetricsInitialization()
+    {
+        if (_cluster == null || VisualRoot == null)
+        {
+            return;
+        }
+
+        Dispatcher.UIThread.Post(InitializeContainerMetricsControls, DispatcherPriority.Background);
+    }
+
+    private void InitializeContainerMetricsControls()
+    {
+        if (_cluster == null)
+        {
+            return;
+        }
+
+        foreach (var control in this.GetVisualDescendants().OfType<MetricsControl>())
+        {
+            control.Initialize(_cluster);
+        }
     }
 }
 

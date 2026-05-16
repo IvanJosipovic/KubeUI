@@ -18,6 +18,7 @@ public interface IClusterRuntime
     bool AuthorizationIndexReady { get; }
     long AuthorizationIndexVersion { get; }
     bool IsMetricsAvailable { get; }
+    ActiveMetricsBackend ActiveMetricsBackend { get; }
     bool ListNamespaces { get; set; }
     event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
     event Action<V1CustomResourceDefinition>? OnCustomResourceDefinitionReady;
@@ -47,6 +48,8 @@ public interface IClusterRuntime
     Task DryRunYaml(Stream stream);
     Task ImportFolder(string path);
     Task ImportYaml(Stream stream);
+    Task<MetricResultSet> RequestMetricsAsync(MetricRequest request, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<MetricProviderInfo>> GetAvailablePrometheusProvidersAsync();
     Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task<bool> IsResourceReady<T>(CancellationToken? token = null) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     T? GetResource<T>(string? @namespace, string name) where T : class, IKubernetesObject<V1ObjectMeta>, new();

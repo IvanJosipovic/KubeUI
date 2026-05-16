@@ -30,5 +30,14 @@ public sealed class TestSettingsService : ISettingsService, IClusterSettingsStor
     {
         return Settings.GetClusterSettings(cluster).Namespaces ?? [];
     }
+
+    public ClusterMetricsSettings GetClusterMetricsSettings(IClusterRuntime cluster)
+    {
+        return Settings.GetClusterSettings(cluster);
+    }
+
+    public void Persist()
+    {
+    }
 }
 

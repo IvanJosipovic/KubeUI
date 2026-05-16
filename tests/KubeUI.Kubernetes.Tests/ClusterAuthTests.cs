@@ -23,7 +23,17 @@ public sealed class ClusterAuthTests
             new ModelCache(),
             new Generator(),
             new TestClusterSettingsStore(),
-            new ServiceCollection().BuildServiceProvider());
+            new ServiceCollection().BuildServiceProvider(),
+            new MetricsService(
+                NullLogger<MetricsService>.Instance,
+                new TestClusterSettingsStore(),
+                [
+                    new OperatorPrometheusProvider(),
+                    new OpenShiftPrometheusProvider(),
+                    new ManualPrometheusProvider(),
+                    new ExternalPrometheusProvider(),
+                ],
+                new PrometheusQueryClient(NullLogger<PrometheusQueryClient>.Instance)));
 
         cluster.CanI(typeof(V1Pod), Verb.Create, subresource: "portforward").ShouldBeFalse();
     }
@@ -54,7 +64,17 @@ public sealed class ClusterAuthTests
             new ModelCache(),
             new Generator(),
             new TestClusterSettingsStore(),
-            new ServiceCollection().BuildServiceProvider());
+            new ServiceCollection().BuildServiceProvider(),
+            new MetricsService(
+                NullLogger<MetricsService>.Instance,
+                new TestClusterSettingsStore(),
+                [
+                    new OperatorPrometheusProvider(),
+                    new OpenShiftPrometheusProvider(),
+                    new ManualPrometheusProvider(),
+                    new ExternalPrometheusProvider(),
+                ],
+                new PrometheusQueryClient(NullLogger<PrometheusQueryClient>.Instance)));
 
         var kind = GroupApiVersionKind.From<V1Pod>();
         cluster.Objects[kind] = new ContainerClass<V1Pod>
@@ -89,6 +109,15 @@ public sealed class ClusterAuthTests
         public IReadOnlyCollection<string> GetClusterNamespaces(IClusterRuntime cluster)
         {
             return [];
+        }
+
+        public ClusterMetricsSettings GetClusterMetricsSettings(IClusterRuntime cluster)
+        {
+            return new ClusterMetricsSettings();
+        }
+
+        public void Persist()
+        {
         }
     }
 }

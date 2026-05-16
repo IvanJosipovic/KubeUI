@@ -1,0 +1,42 @@
+﻿<UserControl x:Name="Root"
+    x:Class="KubeUI.Avalonia.Features.Clusters.Overview.Controls.ClusterOverviewRingControl"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
+    xmlns:vm="using:KubeUI.Avalonia.Features.Clusters.Overview.ViewModels"
+    d:DesignHeight="200"
+    d:DesignWidth="200">
+    <Grid RowDefinitions="Auto,Auto" RowSpacing="8">
+        <lvc:PieChart
+            Height="160"
+            InitialRotation="270"
+            MaxValue="{Binding ViewModel.MaxValue, ElementName=Root}"
+            Series="{Binding ViewModel.Series, ElementName=Root}"
+            TooltipPosition="Auto"
+            VisualElements="{Binding ViewModel.VisualElements, ElementName=Root}" />
+
+        <ItemsControl Grid.Row="1" ItemsSource="{Binding ViewModel.LegendItems, ElementName=Root}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:ClusterOverviewRingChartLegendItemViewModel">
+                    <StackPanel
+                        Margin="0,0,0,6"
+                        Orientation="Vertical"
+                        Spacing="1">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Border
+                                Width="10"
+                                Height="10"
+                                Background="{Binding Color}" />
+                            <TextBlock FontWeight="SemiBold" Text="{Binding Name}" />
+                        </StackPanel>
+                        <TextBlock
+                            Margin="16,0,0,0"
+                            Classes="overview-muted"
+                            Text="{Binding Value}" />
+                    </StackPanel>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </Grid>
+</UserControl>

@@ -44,7 +44,7 @@ public sealed partial class Settings : ObservableObject
     }
 }
 
-public sealed partial class ClusterSettings : ObservableObject
+public sealed partial class ClusterSettings : ClusterMetricsSettings
 {
     public const string DefaultDebugContainerImage = "docker.io/library/busybox:latest";
 

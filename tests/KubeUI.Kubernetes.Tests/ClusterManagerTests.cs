@@ -202,6 +202,15 @@ public class ClusterManagerTests
         {
             return [];
         }
+
+        public ClusterMetricsSettings GetClusterMetricsSettings(IClusterRuntime cluster)
+        {
+            return new ClusterMetricsSettings();
+        }
+
+        public void Persist()
+        {
+        }
     }
 
     private sealed class TestKubeConfigPathProvider : IKubeConfigPathProvider
@@ -260,4 +269,5 @@ public class ClusterManagerTests
             ]
         };
     }
+
 }

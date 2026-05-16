@@ -9,5 +9,3 @@ public sealed partial class PodConsoleView : UserControl
         InitializeComponent();
     }
 }
-
-

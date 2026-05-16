@@ -1,0 +1,81 @@
+﻿<UserControl
+    x:Class="KubeUI.Avalonia.Features.Resources.Metrics.Controls.MetricsControl"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:Interaction="using:Avalonia.Xaml.Interactivity"
+    xmlns:behaviors="using:KubeUI.Avalonia.Features.Resources.Properties.Behaviors"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:ia="using:Avalonia.Xaml.Interactions.Core"
+    xmlns:ic="using:FluentIcons.Avalonia"
+    xmlns:local="using:KubeUI.Avalonia.Features.Resources.Metrics.Controls"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:KubeUI.Avalonia.Features.Clusters.Overview.ViewModels"
+    d:DesignHeight="360"
+    d:DesignWidth="760"
+    mc:Ignorable="d">
+    <Grid
+        HorizontalAlignment="Stretch"
+        RowDefinitions="Auto,*"
+        RowSpacing="8">
+        <Grid Grid.Row="0"
+            ColumnDefinitions="Auto,*"
+            ColumnSpacing="10">
+            <ComboBox
+                Width="132"
+                IsVisible="{Binding ShowTimeRangeSelector, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}"
+                ItemsSource="{Binding TimeRangeOptions, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}"
+                SelectedItem="{Binding SelectedTimeRange, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}"
+                ToolTip.Tip="Select the time range used for Prometheus queries.">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:MetricTimeRangeOption">
+                        <TextBlock Text="{Binding Label}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <ItemsControl
+                Grid.Column="1"
+                HorizontalAlignment="Left"
+                ItemsSource="{Binding Tabs, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" Spacing="6" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:MetricTabViewModel">
+                        <ToggleButton
+                            Padding="8,6"
+                            IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                            IsCheckedChanged="MetricTab_Checked"
+                            Tag="{Binding}"
+                            ToolTip.Tip="{Binding Title}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ic:FluentIcon FontSize="14" Icon="{Binding Icon}" />
+                                <TextBlock Text="{Binding Title}" />
+                            </StackPanel>
+                        </ToggleButton>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Grid>
+
+        <Border Grid.Row="1"
+            Padding="12"
+            VerticalAlignment="Stretch"
+            Classes="overview-card"
+            IsVisible="{Binding ShowTabs, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}">
+            <local:ResponsiveCartesianChart
+                Title="{Binding SelectedPanel.ChartTitle, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                Series="{Binding SelectedPanel.Series, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}"
+                XAxes="{Binding SelectedPanel.XAxes, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}"
+                YAxes="{Binding SelectedPanel.YAxes, RelativeSource={RelativeSource AncestorType=local:MetricsControl}}">
+                <Interaction.Behaviors>
+                    <behaviors:ChartWheelScrollBehavior />
+                </Interaction.Behaviors>
+            </local:ResponsiveCartesianChart>
+        </Border>
+    </Grid>
+</UserControl>

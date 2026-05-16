@@ -128,6 +128,12 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
 
     public bool IsMetricsAvailable => Runtime.IsMetricsAvailable;
 
+    public ActiveMetricsBackend ActiveMetricsBackend => Runtime.ActiveMetricsBackend;
+
+    public MetricsServiceType MetricsServiceType => ActiveMetricsBackend.Type;
+
+    public PrometheusProviderKind? ActivePrometheusProviderKind => ActiveMetricsBackend.PrometheusProviderKind;
+
     public bool ListNamespaces
     {
         get => Runtime.ListNamespaces;
@@ -229,6 +235,16 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
     public Task DryRunYaml(Stream stream)
     {
         return Runtime.DryRunYaml(stream);
+    }
+
+    public Task<MetricResultSet> RequestMetricsAsync(MetricRequest request, CancellationToken cancellationToken = default)
+    {
+        return Runtime.RequestMetricsAsync(request, cancellationToken);
+    }
+
+    public Task<IReadOnlyList<MetricProviderInfo>> GetAvailablePrometheusProvidersAsync()
+    {
+        return Runtime.GetAvailablePrometheusProvidersAsync();
     }
 
     public Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -465,6 +481,9 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
         OnPropertyChanged(nameof(ListNamespaces));
         OnPropertyChanged(nameof(Namespaces));
         OnPropertyChanged(nameof(IsMetricsAvailable));
+        OnPropertyChanged(nameof(ActiveMetricsBackend));
+        OnPropertyChanged(nameof(MetricsServiceType));
+        OnPropertyChanged(nameof(ActivePrometheusProviderKind));
         OnPropertyChanged(nameof(AuthorizationIndexReady));
         OnPropertyChanged(nameof(AuthorizationIndexVersion));
     }
@@ -819,6 +838,9 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
                     OnPropertyChanged(nameof(LastError));
                     OnPropertyChanged(nameof(RequiresNamespaceSelectionPrompt));
                     OnPropertyChanged(nameof(IsMetricsAvailable));
+                    OnPropertyChanged(nameof(ActiveMetricsBackend));
+                    OnPropertyChanged(nameof(MetricsServiceType));
+                    OnPropertyChanged(nameof(ActivePrometheusProviderKind));
                 });
                 break;
             case nameof(IClusterRuntime.LastError):
@@ -848,6 +870,17 @@ public sealed partial class ClusterWorkspaceViewModel : ViewModelBase, IClusterR
                 {
                     SubscribeNamespaceCollection(Runtime.Namespaces);
                     OnPropertyChanged(nameof(Namespaces));
+                });
+                break;
+            case nameof(IClusterRuntime.IsMetricsAvailable):
+                PostToUiThread(() => OnPropertyChanged(nameof(IsMetricsAvailable)));
+                break;
+            case nameof(IClusterRuntime.ActiveMetricsBackend):
+                PostToUiThread(() =>
+                {
+                    OnPropertyChanged(nameof(ActiveMetricsBackend));
+                    OnPropertyChanged(nameof(MetricsServiceType));
+                    OnPropertyChanged(nameof(ActivePrometheusProviderKind));
                 });
                 break;
         }

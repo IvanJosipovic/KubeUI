@@ -7,14 +7,16 @@
     xmlns:converters="using:KubeUI.Avalonia.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:generic="using:System.Collections.Generic"
+    xmlns:m="using:KubeUI.Avalonia.Features.Resources.Metrics.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="using:k8s.Models"
+    xmlns:views="using:KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views"
     d:DesignHeight="3000"
     d:DesignWidth="400"
     x:DataType="models:V1Pod"
     mc:Ignorable="d">
     <UserControl.Resources>
-        <DataTemplate x:Key="V1ContainerTemplate" x:DataType="models:V1Container">
+        <DataTemplate x:Key="V1InitContainerTemplate" x:DataType="models:V1Container">
             <StackPanel>
                 <c:PropertyItem Key="{x:Static assets:Resources.PodPropertiesView_Name}" Value="{Binding Name}" />
                 <c:PropertyItem Key="{x:Static assets:Resources.PodPropertiesView_Image}" Value="{Binding Image}" />
@@ -92,6 +94,17 @@
                 <c:CollectionItem Key="Limits" Value="{Binding Resources.Limits}" />
             </StackPanel>
         </DataTemplate>
+        <DataTemplate x:Key="V1ContainerTemplate" x:DataType="models:V1Container">
+            <Grid HorizontalAlignment="Stretch" RowDefinitions="Auto,*">
+                <m:MetricsControl Grid.Row="0"
+                    HorizontalAlignment="Stretch"
+                    Container="{Binding .}"
+                    Pod="{Binding DataContext, RelativeSource={RelativeSource AncestorType=views:PropertiesView}}" />
+                <ContentControl Grid.Row="1"
+                    Content="{Binding .}"
+                    ContentTemplate="{StaticResource V1InitContainerTemplate}" />
+            </Grid>
+        </DataTemplate>
     </UserControl.Resources>
     <StackPanel>
         <c:PropertyItem Key="{x:Static assets:Resources.PodPropertiesView_ControlledBy}" Value="{Binding ., Converter={x:Static converters:Converters.ObjectOwnerName}}" />
@@ -99,6 +112,7 @@
         <c:PropertyItem Key="{x:Static assets:Resources.PodPropertiesView_Node}" Value="{Binding Spec.NodeName}" />
         <c:PropertyItem Key="{x:Static assets:Resources.PodPropertiesView_PodIp}" Value="{Binding Status.PodIP}" />
         <c:PropertyItem Key="Service Account" Value="{Binding Spec.ServiceAccountName}" />
+        <m:MetricsControl />
 
         <c:ExpandableSection Header="Metadata">
             <StackPanel>
@@ -148,7 +162,16 @@
             Header="{x:Static assets:Resources.PodPropertiesView_InitContainers}"
             IsExpanded="True"
             IsVisible="{Binding Spec.InitContainers, Converter={x:Static converters:NotEmptyCollectionConverter.Instance}}">
-            <ItemsControl ItemTemplate="{StaticResource V1ContainerTemplate}" ItemsSource="{Binding Spec.InitContainers}" />
+            <ItemsControl
+                HorizontalAlignment="Stretch"
+                ItemTemplate="{StaticResource V1InitContainerTemplate}"
+                ItemsSource="{Binding Spec.InitContainers}">
+                <ItemsControl.Styles>
+                    <Style Selector="ItemsControl &gt; ContentPresenter">
+                        <Setter Property="HorizontalAlignment" Value="Stretch" />
+                    </Style>
+                </ItemsControl.Styles>
+            </ItemsControl>
         </c:ExpandableSection>
 
         <c:ExpandableSection
@@ -159,12 +182,16 @@
         </c:ExpandableSection>
 
         <c:ExpandableSection Header="{x:Static assets:Resources.PodPropertiesView_Containers}" IsExpanded="True">
-            <ItemsControl ItemTemplate="{StaticResource V1ContainerTemplate}" ItemsSource="{Binding Spec.Containers}" />
+            <ItemsControl
+                HorizontalAlignment="Stretch"
+                ItemTemplate="{StaticResource V1ContainerTemplate}"
+                ItemsSource="{Binding Spec.Containers}">
+                <ItemsControl.Styles>
+                    <Style Selector="ItemsControl &gt; ContentPresenter">
+                        <Setter Property="HorizontalAlignment" Value="Stretch" />
+                    </Style>
+                </ItemsControl.Styles>
+            </ItemsControl>
         </c:ExpandableSection>
-
     </StackPanel>
 </UserControl>
-
-
-
-
