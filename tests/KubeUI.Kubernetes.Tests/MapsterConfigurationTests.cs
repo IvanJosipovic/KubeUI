@@ -10,6 +10,21 @@ namespace KubeUI.Kubernetes.Tests;
 public class MapsterConfigurationTests
 {
     [Fact]
+    public void AddKubeUIKubernetesServices_RegistersMetricsAndPrometheusServices()
+    {
+        ServiceCollection services = new();
+
+        services.AddKubeUIKubernetesServices();
+
+        services.ShouldContain(static x => x.ServiceType == typeof(IMetricsService) && x.ImplementationType == typeof(MetricsService));
+        services.ShouldContain(static x => x.ServiceType == typeof(IPrometheusQueryClient) && x.ImplementationType == typeof(PrometheusQueryClient));
+        services.ShouldContain(static x => x.ServiceType == typeof(IPrometheusProvider) && x.ImplementationType == typeof(OperatorPrometheusProvider));
+        services.ShouldContain(static x => x.ServiceType == typeof(IPrometheusProvider) && x.ImplementationType == typeof(OpenShiftPrometheusProvider));
+        services.ShouldContain(static x => x.ServiceType == typeof(IPrometheusProvider) && x.ImplementationType == typeof(ManualPrometheusProvider));
+        services.ShouldContain(static x => x.ServiceType == typeof(IPrometheusProvider) && x.ImplementationType == typeof(ExternalPrometheusProvider));
+    }
+
+    [Fact]
     public void SameTypeAdapter_HandlesNestedResourceQuantityWithoutThrowing()
     {
         new ServiceCollection().AddKubeUIKubernetesServices();

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using k8s;
 using KubernetesCRDModelGen;
 using Microsoft.Extensions.DependencyInjection;
@@ -58,6 +59,35 @@ public sealed class PrometheusQueryClientTests
 
         logger.Messages.Count(message => message.Contains("Prepared Prometheus transport", StringComparison.Ordinal))
             .ShouldBe(2);
+    }
+
+    [Fact]
+    public void QueryRangeResponse_deserializes_fractional_prometheus_timestamps()
+    {
+        const string json =
+            """
+            {
+              "status": "success",
+              "data": {
+                "resultType": "matrix",
+                "result": [
+                  {
+                    "metric": { "pod": "pod-a" },
+                    "values": [
+                      [ 1735689600.25, "1.5" ]
+                    ]
+                  }
+                ]
+              }
+            }
+            """;
+
+        PrometheusClientQueryRangeResponse? response = JsonSerializer.Deserialize<PrometheusClientQueryRangeResponse>(json);
+
+        response.ShouldNotBeNull();
+        var value = response.Data.Result[0].Values[0];
+        value.Timestamp.ShouldBe(DateTimeOffset.FromUnixTimeMilliseconds(1735689600250));
+        value.Value.ShouldBe(1.5d);
     }
 
     private static Cluster CreateCluster(string name)

@@ -61,7 +61,7 @@ public sealed class PrometheusClientQueryRangeResponse
                 }
 
                 reader.Read();
-                var timestamp = DateTimeOffset.FromUnixTimeSeconds(reader.GetInt64());
+                var timestamp = ReadTimestamp(ref reader);
 
                 reader.Read();
                 var rawValue = reader.GetString();
@@ -81,6 +81,22 @@ public sealed class PrometheusClientQueryRangeResponse
         public override void Write(Utf8JsonWriter writer, IList<(DateTimeOffset Timestamp, double Value)> value, JsonSerializerOptions options)
         {
             throw new NotSupportedException();
+        }
+
+        private static DateTimeOffset ReadTimestamp(ref Utf8JsonReader reader)
+        {
+            if (reader.TokenType != JsonTokenType.Number)
+            {
+                throw new JsonException("Prometheus value timestamp must be a number.");
+            }
+
+            if (reader.TryGetInt64(out var seconds))
+            {
+                return DateTimeOffset.FromUnixTimeSeconds(seconds);
+            }
+
+            var milliseconds = checked((long)Math.Round(reader.GetDouble() * 1000, MidpointRounding.AwayFromZero));
+            return DateTimeOffset.FromUnixTimeMilliseconds(milliseconds);
         }
     }
 }
