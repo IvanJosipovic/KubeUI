@@ -57,4 +57,5 @@ Docker
 - Avoid static state except truly immutable constants.
 - Prefer explicit types where clarity is improved; avoid `var` in public APIs.
 - All public APIs must be documented and unit-tested.
+- Resource keys in `Resources.resx` must use `{ViewOrControlName}_{Name}` for view/control-owned UI text, or `Shared_{Name}` for labels shared across multiple views or controls.
 - No hacks or weird workarounds; if you think you need one, ask for guidance.

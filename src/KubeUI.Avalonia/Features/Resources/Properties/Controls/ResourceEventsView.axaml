@@ -1,4 +1,4 @@
-﻿<UserControl
+<UserControl
     x:Class="KubeUI.Avalonia.Features.Resources.Properties.Controls.ResourceEventsView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -32,8 +32,8 @@
                                     Text="{Binding Message}"
                                     TextWrapping="Wrap" />
                                 <StackPanel Spacing="0">
-                                    <c:PropertyItem Key="{x:Static assets:Resources.ResourceEventsView_Source}" Value="{Binding Source}" />
-                                    <c:PropertyItem Key="{x:Static assets:Resources.ResourceEventsView_Count}" Value="{Binding Count}" />
+                                    <c:PropertyItem Key="{x:Static assets:Resources.Shared_Source}" Value="{Binding Source}" />
+                                    <c:PropertyItem Key="{x:Static assets:Resources.Shared_Count}" Value="{Binding Count}" />
                                     <c:PropertyItem Key="{x:Static assets:Resources.ResourceEventsView_SubObject}" Value="{Binding SubObject}" />
                                     <c:PropertyItem Key="{x:Static assets:Resources.ResourceEventsView_LastSeen}" Value="{Binding LastSeen}" />
                                 </StackPanel>
@@ -42,7 +42,7 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
-            <c:PropertyItem IsVisible="{Binding !HasItems, RelativeSource={RelativeSource AncestorType=local:ResourceEventsView}}" Value="{x:Static assets:Resources.NoEventsFound}" />
+            <c:PropertyItem IsVisible="{Binding !HasItems, RelativeSource={RelativeSource AncestorType=local:ResourceEventsView}}" Value="{x:Static assets:Resources.ResourceEventsView_NoEventsFound}" />
         </StackPanel>
     </c:ExpandableSection>
 </UserControl>

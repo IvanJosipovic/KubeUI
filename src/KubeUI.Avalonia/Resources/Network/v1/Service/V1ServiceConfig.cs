@@ -41,7 +41,7 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
             },
             new ResourceListColumn<V1Service, string>()
             {
-                Name = "Cluster IP",
+                Name = "Cluster_IP",
                 Field = x => x.Spec.ClusterIP,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
@@ -91,10 +91,10 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
 
             ContentDialogSettings settings = new()
             {
-                Title = Assets.Resources.ResourceListViewModel_PortForward_Title,
-                Content = string.Format(Assets.Resources.ResourceListViewModel_PortForward_Content, containerPort.Port, pf.LocalPort),
-                PrimaryButtonText = Assets.Resources.ResourceListViewModel_PortForward_Primary,
-                SecondaryButtonText = Assets.Resources.ResourceListViewModel_PortForward_Secondary,
+                Title = Assets.Resources.ResourceListView_PortForward_Title,
+                Content = string.Format(Assets.Resources.ResourceListView_PortForward_Content, containerPort.Port, pf.LocalPort),
+                PrimaryButtonText = Assets.Resources.ResourceListView_PortForward_Primary,
+                SecondaryButtonText = Assets.Resources.ResourceListView_PortForward_Secondary,
                 DefaultButton = FAContentDialogButton.Secondary
             };
 

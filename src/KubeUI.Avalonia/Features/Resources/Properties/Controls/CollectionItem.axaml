@@ -2,7 +2,6 @@
     x:Class="KubeUI.Avalonia.Features.Resources.Properties.Controls.CollectionItem"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:converters="using:KubeUI.Avalonia.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
     HorizontalAlignment="Stretch"
@@ -22,16 +21,15 @@
         <DataTemplate x:Key="CollectionItemItemTemplate">
             <SelectableTextBlock Text="{Binding}" />
         </DataTemplate>
-        <converters:ResourceLabelConverter x:Key="ResourceLabelConverter" />
     </UserControl.Resources>
     <Border BorderBrush="{DynamicResource SystemAltHighColor}" BorderThickness="0,0,0,1">
         <Grid VerticalAlignment="Top" ColumnDefinitions="*,2*">
             <SelectableTextBlock Grid.Row="0"
                 Grid.Column="0"
                 Padding="5"
-                Text="{Binding Key, RelativeSource={RelativeSource AncestorType=local:CollectionItem}, Converter={StaticResource ResourceLabelConverter}}"
+                Text="{Binding Key, RelativeSource={RelativeSource AncestorType=local:CollectionItem}}"
                 TextWrapping="NoWrap"
-                ToolTip.Tip="{Binding Key, RelativeSource={RelativeSource AncestorType=local:CollectionItem}, Converter={StaticResource ResourceLabelConverter}}" />
+                ToolTip.Tip="{Binding Key, RelativeSource={RelativeSource AncestorType=local:CollectionItem}}" />
             <ScrollViewer Grid.Row="0"
                 Grid.Column="1"
                 MaxHeight="200"

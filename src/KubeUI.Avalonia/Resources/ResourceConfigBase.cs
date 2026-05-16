@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using Avalonia.Controls.Notifications;
@@ -53,7 +52,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     protected static string CategoryString(string resourceKey, string fallback)
     {
-        return Assets.Resources.ResourceManager.GetString(resourceKey, CultureInfo.CurrentUICulture) ?? fallback;
+        return ResourceStrings.GetString(resourceKey) ?? fallback;
     }
 
     public virtual bool ShowNewResource { get; } = true;
@@ -291,10 +290,10 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     {
         ContentDialogSettings settings = new()
         {
-            Title = Assets.Resources.ResourceListViewModel_Delete_Title,
-            Content = string.Format(Assets.Resources.ResourceListViewModel_Delete_Content, items.Count),
-            PrimaryButtonText = Assets.Resources.ResourceListViewModel_Delete_Primary,
-            SecondaryButtonText = Assets.Resources.ResourceListViewModel_Delete_Secondary,
+            Title = Assets.Resources.ResourceListView_Delete_Title,
+            Content = string.Format(Assets.Resources.ResourceListView_Delete_Content, items.Count),
+            PrimaryButtonText = Assets.Resources.ResourceListView_Delete_Primary,
+            SecondaryButtonText = Assets.Resources.ResourceListView_Delete_Secondary,
             DefaultButton = FAContentDialogButton.Secondary
         };
 
@@ -381,10 +380,10 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     {
         ContentDialogSettings settings = new()
         {
-            Title = Assets.Resources.ResourceListViewModel_Restart_Title,
-            Content = string.Format(Assets.Resources.ResourceListViewModel_Restart_Content, items.Count),
-            PrimaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Primary,
-            SecondaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Secondary,
+            Title = Assets.Resources.ResourceListView_Restart_Title,
+            Content = string.Format(Assets.Resources.ResourceListView_Restart_Content, items.Count),
+            PrimaryButtonText = Assets.Resources.ResourceListView_Restart_Primary,
+            SecondaryButtonText = Assets.Resources.ResourceListView_Restart_Secondary,
             DefaultButton = FAContentDialogButton.Secondary
         };
 

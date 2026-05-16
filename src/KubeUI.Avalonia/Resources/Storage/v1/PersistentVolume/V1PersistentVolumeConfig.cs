@@ -19,7 +19,7 @@ public sealed partial class V1PersistentVolumeConfig : ResourceConfigBase<V1Pers
             NameColumn(SortDirection.Ascending),
             new ResourceListColumn<V1PersistentVolume, string>()
             {
-                Name = "Storage Class",
+                Name = "Storage_Class",
                 Field = x => x.Spec.StorageClassName,
                 Width = "*",
             },

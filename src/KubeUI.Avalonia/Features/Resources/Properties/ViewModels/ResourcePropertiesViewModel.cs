@@ -32,7 +32,7 @@ public partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable
 
     public ResourcePropertiesViewModel()
     {
-        Title = Assets.Resources.ResourcePropertiesViewModel_Title;
+        Title = Assets.Resources.ResourcePropertiesView_Title;
         Id = nameof(ResourcePropertiesViewModel<>);
     }
 

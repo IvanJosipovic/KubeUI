@@ -1,17 +1,17 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!--
-    Microsoft ResX Schema
-
+  <!-- 
+    Microsoft ResX Schema 
+    
     Version 2.0
-
-    The primary goals of this format is to allow a simple XML format
-    that is mostly human readable. The generation and parsing of the
-    various data types are done through the TypeConverter classes
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
     associated with the data types.
-
+    
     Example:
-
+    
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-
-    There are any number of "resheader" rows that contain simple
+                
+    There are any number of "resheader" rows that contain simple 
     name/value pairs.
-
-    Each data row contains a name, and value. The row also contains a
-    type or mimetype. Type corresponds to a .NET class that support
-    text/value conversion through the TypeConverter architecture.
-    Classes that don't support this are serialized and stored with the
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
     mimetype set.
-
-    The mimetype is used for serialized objects, and tells the
-    ResXResourceReader how to depersist the object. This is currently not
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
     extensible. For a given mimetype the value must be set accordingly:
-
-    Note - application/x-microsoft.net.object.binary.base64 is the format
-    that the ResXResourceWriter will generate, however the reader can
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
     read any of the formats listed below.
-
+    
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with
+    value   : The object must be serialized with 
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-
+    
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with
+    value   : The object must be serialized with 
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array
+    value   : The object must be serialized into a byte array 
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -150,22 +150,22 @@
   <data name="AboutView_WebsiteUri" xml:space="preserve">
     <value>https://KubeUI.com</value>
   </data>
-  <data name="MainViewModel_CheckForUpdates_Content" xml:space="preserve">
+  <data name="MainView_CheckForUpdates_Content" xml:space="preserve">
     <value>Update and restart now?</value>
   </data>
-  <data name="MainViewModel_CheckForUpdates_Secondary" xml:space="preserve">
+  <data name="MainView_CheckForUpdates_Secondary" xml:space="preserve">
     <value>No</value>
   </data>
-  <data name="MainViewModel_CheckForUpdates_Title" xml:space="preserve">
+  <data name="MainView_CheckForUpdates_Title" xml:space="preserve">
     <value>New Update Available</value>
   </data>
-  <data name="MainViewModel_CheckForUpdates_Updating_Content" xml:space="preserve">
+  <data name="MainView_CheckForUpdates_Updating_Content" xml:space="preserve">
     <value>Please wait...</value>
   </data>
-  <data name="MainViewModel_CheckForUpdates_Updating_Title" xml:space="preserve">
+  <data name="MainView_CheckForUpdates_Updating_Title" xml:space="preserve">
     <value>Updating</value>
   </data>
-  <data name="MainViewModel_CheckForUpdates_Primary" xml:space="preserve">
+  <data name="MainView_CheckForUpdates_Primary" xml:space="preserve">
     <value>Yes</value>
   </data>
   <data name="MainView_Menu_File" xml:space="preserve">
@@ -186,16 +186,16 @@
   <data name="MainView_Menu_Window_ResetLayout" xml:space="preserve">
     <value>_Reset Layout</value>
   </data>
-  <data name="NavigationViewModel_LoadFolder" xml:space="preserve">
+  <data name="NavigationView_LoadFolder" xml:space="preserve">
     <value>Load Yamls in Folder</value>
   </data>
-  <data name="NavigationViewModel_LoadYaml" xml:space="preserve">
+  <data name="NavigationView_LoadYaml" xml:space="preserve">
     <value>Load Yaml</value>
   </data>
-  <data name="PodConsoleViewModel_Title" xml:space="preserve">
+  <data name="PodConsoleView_Title" xml:space="preserve">
     <value>Pod Console</value>
   </data>
-  <data name="PodLogsViewModel_Title" xml:space="preserve">
+  <data name="PodLogsView_Title" xml:space="preserve">
     <value>Pod Logs</value>
   </data>
   <data name="PodLogsView_AutoScrollToBottom" xml:space="preserve">
@@ -207,89 +207,74 @@
   <data name="PodLogsView_Timestamps" xml:space="preserve">
     <value>Show timestamps</value>
   </data>
-  <data name="ResourcePropertiesViewModel_Title" xml:space="preserve">
+  <data name="ResourcePropertiesView_Title" xml:space="preserve">
     <value>Properties</value>
   </data>
-  <data name="ResourceYamlViewer_Cancel" xml:space="preserve">
-    <value>Cancel</value>
-  </data>
-  <data name="ResourceYamlViewer_DryRun" xml:space="preserve">
-    <value>Dry Run</value>
-  </data>
-  <data name="ResourceYamlViewer_DryRunFailed" xml:space="preserve">
+  <data name="ResourceYamlView_DryRunFailed" xml:space="preserve">
     <value>Dry run failed</value>
   </data>
-  <data name="ResourceYamlViewer_DryRunSucceeded" xml:space="preserve">
+  <data name="ResourceYamlView_DryRunSucceeded" xml:space="preserve">
     <value>Dry run succeeded</value>
   </data>
-  <data name="ResourceYamlViewer_DryRunSucceededMessage" xml:space="preserve">
+  <data name="ResourceYamlView_DryRunSucceededMessage" xml:space="preserve">
     <value>The server accepted the manifest using dry-run.</value>
   </data>
-  <data name="ResourceYamlViewer_SaveFailed" xml:space="preserve">
+  <data name="ResourceYamlView_SaveFailed" xml:space="preserve">
     <value>Save failed</value>
   </data>
-  <data name="ResourceYamlViewer_SaveSucceeded" xml:space="preserve">
+  <data name="ResourceYamlView_SaveSucceeded" xml:space="preserve">
     <value>Save succeeded</value>
   </data>
-  <data name="ResourceYamlViewer_SaveSucceededMessage" xml:space="preserve">
+  <data name="ResourceYamlView_SaveSucceededMessage" xml:space="preserve">
     <value>The manifest was saved successfully.</value>
   </data>
-  <data name="ResourceYamlViewer_Edit" xml:space="preserve">
-    <value>Edit</value>
-  </data>
-  <data name="ResourceYamlViewer_HideNoisyFields" xml:space="preserve">
-    <value>Hide noisy fields</value>
-  </data>
-  <data name="ResourceYamlViewer_Save" xml:space="preserve">
-    <value>Save</value>
-  </data>
-  <data name="ResourceYamlViewer_ValidationFailed" xml:space="preserve">
+  <data name="ResourceYamlView_ValidationFailed" xml:space="preserve">
     <value>Validation failed</value>
   </data>
-  <data name="ResourceYamlViewer_Undo" xml:space="preserve">
+  <data name="ResourceYamlView_Undo" xml:space="preserve">
     <value>Undo</value>
   </data>
-  <data name="ResourceYamlViewModel_Title" xml:space="preserve">
+  <data name="ResourceYamlView_Title" xml:space="preserve">
     <value>Yaml</value>
   </data>
-  <data name="ResourceListViewModel_Delete_Content" xml:space="preserve">
+  <data name="ResourceListView_Delete_Content" xml:space="preserve">
     <value>This will delete {0} items.
 Are you sure?</value>
   </data>
-  <data name="ResourceListViewModel_Delete_Primary" xml:space="preserve">
+  <data name="ResourceListView_Delete_Primary" xml:space="preserve">
     <value>Yes</value>
   </data>
-  <data name="ResourceListViewModel_Delete_Secondary" xml:space="preserve">
+  <data name="ResourceListView_Delete_Secondary" xml:space="preserve">
     <value>No</value>
   </data>
-  <data name="ResourceListViewModel_Delete_Title" xml:space="preserve">
+  <data name="ResourceListView_Delete_Title" xml:space="preserve">
     <value>Warning</value>
   </data>
-  <data name="ResourceListViewModel_PortForward_Content" xml:space="preserve">
+  <data name="ResourceListView_PortForward_Content" xml:space="preserve">
     <value>Port {0} was forwarded to {1}.</value>
   </data>
-  <data name="ResourceListViewModel_PortForward_Primary" xml:space="preserve">
+  <data name="ResourceListView_PortForward_Primary" xml:space="preserve">
     <value>Open in Browser</value>
   </data>
-  <data name="ResourceListViewModel_PortForward_Secondary" xml:space="preserve">
+  <data name="ResourceListView_PortForward_Secondary" xml:space="preserve">
     <value>Ok</value>
   </data>
-  <data name="ResourceListViewModel_PortForward_Title" xml:space="preserve">
+  <data name="ResourceListView_PortForward_Title" xml:space="preserve">
     <value>Port Forward</value>
   </data>
-  <data name="ClusterErrorViewModel_Title" xml:space="preserve">
+  <data name="ClusterErrorView_Title" xml:space="preserve">
     <value>Cluster Error</value>
   </data>
-  <data name="ClusterListViewModel_Title" xml:space="preserve">
+  <data name="ClusterListView_Title" xml:space="preserve">
     <value>Clusters</value>
   </data>
-  <data name="ClusterViewModel_Title" xml:space="preserve">
+  <data name="ClusterView_Title" xml:space="preserve">
     <value>Cluster</value>
   </data>
-  <data name="HomeViewModel_Title" xml:space="preserve">
+  <data name="HomeView_Title" xml:space="preserve">
     <value>Home</value>
   </data>
-  <data name="NavigationViewModel_Title" xml:space="preserve">
+  <data name="NavigationView_Title" xml:space="preserve">
     <value>Navigation</value>
   </data>
   <data name="NavigationView_ToolTip_ClickToConnect" xml:space="preserve">
@@ -454,9 +439,6 @@ Are you sure?</value>
   <data name="PodPropertiesView_ControlledBy" xml:space="preserve">
     <value>Controlled By</value>
   </data>
-  <data name="PodPropertiesView_Name" xml:space="preserve">
-    <value>Name</value>
-  </data>
   <data name="PodPropertiesView_Image" xml:space="preserve">
     <value>Image</value>
   </data>
@@ -514,9 +496,6 @@ Are you sure?</value>
   <data name="PodStatusCell_Unknown" xml:space="preserve">
     <value>Unknown</value>
   </data>
-  <data name="SecretPropertiesView_Data" xml:space="preserve">
-    <value>Data</value>
-  </data>
   <data name="SecretPropertiesView_Certificates" xml:space="preserve">
     <value>Certificates</value>
   </data>
@@ -547,53 +526,35 @@ Are you sure?</value>
   <data name="PortForwarderListView_Remove" xml:space="preserve">
     <value>Remove</value>
   </data>
-  <data name="PortForwarderListViewModel_Remove_Content" xml:space="preserve">
+  <data name="PortForwarderListView_Remove_Content" xml:space="preserve">
     <value>Remove the Port Forward for {0}/{1}:{2}?
 Are you sure?</value>
   </data>
-  <data name="PortForwarderListViewModel_Remove_Primary" xml:space="preserve">
+  <data name="PortForwarderListView_Remove_Primary" xml:space="preserve">
     <value>Yes</value>
   </data>
-  <data name="PortForwarderListViewModel_Remove_Secondary" xml:space="preserve">
+  <data name="PortForwarderListView_Remove_Secondary" xml:space="preserve">
     <value>No</value>
   </data>
-  <data name="PortForwarderListViewModel_Remove_Title" xml:space="preserve">
+  <data name="PortForwarderListView_Remove_Title" xml:space="preserve">
     <value>Warning</value>
   </data>
-  <data name="Action_Copy" xml:space="preserve">
-    <value>Copy</value>
-  </data>
-  <data name="Action_Cut" xml:space="preserve">
-    <value>Cut</value>
-  </data>
-  <data name="Action_Delete" xml:space="preserve">
-    <value>Delete</value>
-  </data>
-  <data name="Action_Paste" xml:space="preserve">
-    <value>Paste</value>
-  </data>
-  <data name="Action_Redo" xml:space="preserve">
-    <value>Redo</value>
-  </data>
-  <data name="Action_Undo" xml:space="preserve">
-    <value>Undo</value>
-  </data>
-  <data name="PortForwarderListViewModel_Title" xml:space="preserve">
+  <data name="PortForwarderListView_Title" xml:space="preserve">
     <value>Port Forwarding</value>
   </data>
   <data name="MainView_Menu_File_Clusters" xml:space="preserve">
     <value>Clusters</value>
   </data>
-  <data name="ClusterListViewModel_Delete_Content" xml:space="preserve">
+  <data name="ClusterListView_Delete_Content" xml:space="preserve">
     <value>Remove Cluster from Kube Config: {0}</value>
   </data>
-  <data name="ClusterListViewModel_Delete_Primary" xml:space="preserve">
+  <data name="ClusterListView_Delete_Primary" xml:space="preserve">
     <value>Yes</value>
   </data>
-  <data name="ClusterListViewModel_Delete_Secondary" xml:space="preserve">
+  <data name="ClusterListView_Delete_Secondary" xml:space="preserve">
     <value>No</value>
   </data>
-  <data name="ClusterListViewModel_Delete_Title" xml:space="preserve">
+  <data name="ClusterListView_Delete_Title" xml:space="preserve">
     <value>Warning</value>
   </data>
   <data name="MainView_Menu_Window_SwitchTheme" xml:space="preserve">
@@ -653,7 +614,7 @@ Are you sure?</value>
   <data name="SettingsView_ListRowHeight_ToolTip" xml:space="preserve">
     <value>List Row Height</value>
   </data>
-  <data name="VisualizationViewModel_Title" xml:space="preserve">
+  <data name="VisualizationView_Title" xml:space="preserve">
     <value>Visualization</value>
   </data>
   <data name="ResourcePropertiesView_Name" xml:space="preserve">
@@ -664,456 +625,6 @@ Are you sure?</value>
   </data>
   <data name="ResourcePropertiesView_Created" xml:space="preserve">
     <value>Created</value>
-  </data>
-  <data name="Address Type" xml:space="preserve">
-    <value>Address Type</value>
-  </data>
-  <data name="Addresses" xml:space="preserve">
-    <value>Addresses</value>
-  </data>
-  <data name="Active Deadline Seconds" xml:space="preserve">
-    <value>Active Deadline Seconds</value>
-  </data>
-  <data name="Active Jobs" xml:space="preserve">
-    <value>Active Jobs</value>
-  </data>
-  <data name="Active Pods" xml:space="preserve">
-    <value>Active Pods</value>
-  </data>
-  <data name="Acquire Time" xml:space="preserve">
-    <value>Acquire Time</value>
-  </data>
-  <data name="Accepted Kind" xml:space="preserve">
-    <value>Accepted Kind</value>
-  </data>
-  <data name="Aggregation Selectors" xml:space="preserve">
-    <value>Aggregation Selectors</value>
-  </data>
-  <data name="Allow Volume Expansion" xml:space="preserve">
-    <value>Allow Volume Expansion</value>
-  </data>
-  <data name="Allocatable Entries" xml:space="preserve">
-    <value>Allocatable Entries</value>
-  </data>
-  <data name="Architecture" xml:space="preserve">
-    <value>Architecture</value>
-  </data>
-  <data name="Arguments" xml:space="preserve">
-    <value>Arguments</value>
-  </data>
-  <data name="Available" xml:space="preserve">
-    <value>Available</value>
-  </data>
-  <data name="Available Replicas" xml:space="preserve">
-    <value>Available Replicas</value>
-  </data>
-  <data name="Automount Token" xml:space="preserve">
-    <value>Automount Token</value>
-  </data>
-  <data name="Backoff Limit" xml:space="preserve">
-    <value>Backoff Limit</value>
-  </data>
-  <data name="Binary Data" xml:space="preserve">
-    <value>Binary Data</value>
-  </data>
-  <data name="Capacity Entries" xml:space="preserve">
-    <value>Capacity Entries</value>
-  </data>
-  <data name="Claim Name" xml:space="preserve">
-    <value>Claim Name</value>
-  </data>
-  <data name="Cluster IP" xml:space="preserve">
-    <value>Cluster IP</value>
-  </data>
-  <data name="Cluster IPs" xml:space="preserve">
-    <value>Cluster IPs</value>
-  </data>
-  <data name="Completions" xml:space="preserve">
-    <value>Completions</value>
-  </data>
-  <data name="Concurrency Policy" xml:space="preserve">
-    <value>Concurrency Policy</value>
-  </data>
-  <data name="Conditions" xml:space="preserve">
-    <value>Conditions</value>
-  </data>
-  <data name="Container Runtime" xml:space="preserve">
-    <value>Container Runtime</value>
-  </data>
-  <data name="Controller" xml:space="preserve">
-    <value>Controller</value>
-  </data>
-  <data name="Count" xml:space="preserve">
-    <value>Count</value>
-  </data>
-  <data name="Current Healthy" xml:space="preserve">
-    <value>Current Healthy</value>
-  </data>
-  <data name="Current Replicas" xml:space="preserve">
-    <value>Current Replicas</value>
-  </data>
-  <data name="Current Revision" xml:space="preserve">
-    <value>Current Revision</value>
-  </data>
-  <data name="Current Scheduled" xml:space="preserve">
-    <value>Current Scheduled</value>
-  </data>
-  <data name="Current NumberScheduled" xml:space="preserve">
-    <value>Current Scheduled</value>
-  </data>
-  <data name="Current" xml:space="preserve">
-    <value>Current</value>
-  </data>
-  <data name="Data" xml:space="preserve">
-    <value>Data</value>
-  </data>
-  <data name="Desired Healthy" xml:space="preserve">
-    <value>Desired Healthy</value>
-  </data>
-  <data name="Desired Replicas" xml:space="preserve">
-    <value>Desired Replicas</value>
-  </data>
-  <data name="Desired Scheduled" xml:space="preserve">
-    <value>Desired Scheduled</value>
-  </data>
-  <data name="Description" xml:space="preserve">
-    <value>Description</value>
-  </data>
-  <data name="Disruptions Allowed" xml:space="preserve">
-    <value>Disruptions Allowed</value>
-  </data>
-  <data name="Egress Rules" xml:space="preserve">
-    <value>Egress Rules</value>
-  </data>
-  <data name="Endpoints" xml:space="preserve">
-    <value>Endpoints</value>
-  </data>
-  <data name="Expected Pods" xml:space="preserve">
-    <value>Expected Pods</value>
-  </data>
-  <data name="External IPs" xml:space="preserve">
-    <value>External IPs</value>
-  </data>
-  <data name="External Name" xml:space="preserve">
-    <value>External Name</value>
-  </data>
-  <data name="External Traffic Policy" xml:space="preserve">
-    <value>External Traffic Policy</value>
-  </data>
-  <data name="Failed" xml:space="preserve">
-    <value>Failed</value>
-  </data>
-  <data name="Failed History Limit" xml:space="preserve">
-    <value>Failed History Limit</value>
-  </data>
-  <data name="Field Path" xml:space="preserve">
-    <value>Field Path</value>
-  </data>
-  <data name="First Seen" xml:space="preserve">
-    <value>First Seen</value>
-  </data>
-  <data name="Fully Labeled Replicas" xml:space="preserve">
-    <value>Fully Labeled Replicas</value>
-  </data>
-  <data name="Global Default" xml:space="preserve">
-    <value>Global Default</value>
-  </data>
-  <data name="Group" xml:space="preserve">
-    <value>Group</value>
-  </data>
-  <data name="Handler" xml:space="preserve">
-    <value>Handler</value>
-  </data>
-  <data name="Health Check Node Port" xml:space="preserve">
-    <value>Health Check Node Port</value>
-  </data>
-  <data name="Holder Identity" xml:space="preserve">
-    <value>Holder Identity</value>
-  </data>
-  <data name="Image Pull Secrets" xml:space="preserve">
-    <value>Image Pull Secrets</value>
-  </data>
-  <data name="Immutable" xml:space="preserve">
-    <value>Immutable</value>
-  </data>
-  <data name="Ingress Class" xml:space="preserve">
-    <value>Ingress Class</value>
-  </data>
-  <data name="Ingress Rules" xml:space="preserve">
-    <value>Ingress Rules</value>
-  </data>
-  <data name="InvolvedObject" xml:space="preserve">
-    <value>Involved Object</value>
-  </data>
-  <data name="Internal Traffic Policy" xml:space="preserve">
-    <value>Internal Traffic Policy</value>
-  </data>
-  <data name="Kernel Version" xml:space="preserve">
-    <value>Kernel Version</value>
-  </data>
-  <data name="Kind" xml:space="preserve">
-    <value>Kind</value>
-  </data>
-  <data name="Kubelet Version" xml:space="preserve">
-    <value>Kubelet Version</value>
-  </data>
-  <data name="Last Phase Transition" xml:space="preserve">
-    <value>Last Phase Transition</value>
-  </data>
-  <data name="Last Schedule Time" xml:space="preserve">
-    <value>Last Schedule Time</value>
-  </data>
-  <data name="Last Seen" xml:space="preserve">
-    <value>Last Seen</value>
-  </data>
-  <data name="Last Successful Time" xml:space="preserve">
-    <value>Last Successful Time</value>
-  </data>
-  <data name="Lease Duration Seconds" xml:space="preserve">
-    <value>Lease Duration Seconds</value>
-  </data>
-  <data name="Lease Transitions" xml:space="preserve">
-    <value>Lease Transitions</value>
-  </data>
-  <data name="Load Balancer Class" xml:space="preserve">
-    <value>Load Balancer Class</value>
-  </data>
-  <data name="Load Balancer Ingress" xml:space="preserve">
-    <value>Load Balancer Ingress</value>
-  </data>
-  <data name="Load Balancer IP" xml:space="preserve">
-    <value>Load Balancer IP</value>
-  </data>
-  <data name="Message" xml:space="preserve">
-    <value>Message</value>
-  </data>
-  <data name="Max Replicas" xml:space="preserve">
-    <value>Max Replicas</value>
-  </data>
-  <data name="Max Unavailable" xml:space="preserve">
-    <value>Max Unavailable</value>
-  </data>
-  <data name="Min Available" xml:space="preserve">
-    <value>Min Available</value>
-  </data>
-  <data name="Min Ready Seconds" xml:space="preserve">
-    <value>Min Ready Seconds</value>
-  </data>
-  <data name="Metrics" xml:space="preserve">
-    <value>Metrics</value>
-  </data>
-  <data name="Misscheduled" xml:space="preserve">
-    <value>Misscheduled</value>
-  </data>
-  <data name="Mount Options" xml:space="preserve">
-    <value>Mount Options</value>
-  </data>
-  <data name="Name" xml:space="preserve">
-    <value>Name</value>
-  </data>
-  <data name="Namespace" xml:space="preserve">
-    <value>Namespace</value>
-  </data>
-  <data name="Node Selector Entries" xml:space="preserve">
-    <value>Node Selector Entries</value>
-  </data>
-  <data name="NoEventsFound" xml:space="preserve">
-    <value>No events found</value>
-  </data>
-  <data name="Observed Generation" xml:space="preserve">
-    <value>Observed Generation</value>
-  </data>
-  <data name="Operating System" xml:space="preserve">
-    <value>Operating System</value>
-  </data>
-  <data name="Parallelism" xml:space="preserve">
-    <value>Parallelism</value>
-  </data>
-  <data name="Parameters" xml:space="preserve">
-    <value>Parameters</value>
-  </data>
-  <data name="Parameters Kind" xml:space="preserve">
-    <value>Parameters Kind</value>
-  </data>
-  <data name="Parameters Name" xml:space="preserve">
-    <value>Parameters Name</value>
-  </data>
-  <data name="Parameters Namespace" xml:space="preserve">
-    <value>Parameters Namespace</value>
-  </data>
-  <data name="Parameters Scope" xml:space="preserve">
-    <value>Parameters Scope</value>
-  </data>
-  <data name="Phase" xml:space="preserve">
-    <value>Phase</value>
-  </data>
-  <data name="Policy Types" xml:space="preserve">
-    <value>Policy Types</value>
-  </data>
-  <data name="Pod IPs" xml:space="preserve">
-    <value>Pod IPs</value>
-  </data>
-  <data name="Pod Management Policy" xml:space="preserve">
-    <value>Pod Management Policy</value>
-  </data>
-  <data name="Pod Selector Labels" xml:space="preserve">
-    <value>Pod Selector Labels</value>
-  </data>
-  <data name="Ports" xml:space="preserve">
-    <value>Ports</value>
-  </data>
-  <data name="Preemption Policy" xml:space="preserve">
-    <value>Preemption Policy</value>
-  </data>
-  <data name="Progress Deadline Seconds" xml:space="preserve">
-    <value>Progress Deadline Seconds</value>
-  </data>
-  <data name="Provisioner" xml:space="preserve">
-    <value>Provisioner</value>
-  </data>
-  <data name="Publish Not Ready Addresses" xml:space="preserve">
-    <value>Publish Not Ready Addresses</value>
-  </data>
-  <data name="QoS Class" xml:space="preserve">
-    <value>QoS Class</value>
-  </data>
-  <data name="Ready" xml:space="preserve">
-    <value>Ready</value>
-  </data>
-  <data name="Ready Replicas" xml:space="preserve">
-    <value>Ready Replicas</value>
-  </data>
-  <data name="Reclaim Policy" xml:space="preserve">
-    <value>Reclaim Policy</value>
-  </data>
-  <data name="Reason" xml:space="preserve">
-    <value>Reason</value>
-  </data>
-  <data name="Requested Storage" xml:space="preserve">
-    <value>Requested Storage</value>
-  </data>
-  <data name="Replicas" xml:space="preserve">
-    <value>Replicas</value>
-  </data>
-  <data name="Revision History Limit" xml:space="preserve">
-    <value>Revision History Limit</value>
-  </data>
-  <data name="Role Kind" xml:space="preserve">
-    <value>Role Kind</value>
-  </data>
-  <data name="Role Name" xml:space="preserve">
-    <value>Role Name</value>
-  </data>
-  <data name="Rules" xml:space="preserve">
-    <value>Rules</value>
-  </data>
-  <data name="Schedule" xml:space="preserve">
-    <value>Schedule</value>
-  </data>
-  <data name="Secrets" xml:space="preserve">
-    <value>Secrets</value>
-  </data>
-  <data name="Selector" xml:space="preserve">
-    <value>Selector</value>
-  </data>
-  <data name="Selector Labels" xml:space="preserve">
-    <value>Selector Labels</value>
-  </data>
-  <data name="Session Affinity" xml:space="preserve">
-    <value>Session Affinity</value>
-  </data>
-  <data name="Service Account" xml:space="preserve">
-    <value>Service Account</value>
-  </data>
-  <data name="Service Name" xml:space="preserve">
-    <value>Service Name</value>
-  </data>
-  <data name="Start Time" xml:space="preserve">
-    <value>Start Time</value>
-  </data>
-  <data name="Starting Deadline Seconds" xml:space="preserve">
-    <value>Starting Deadline Seconds</value>
-  </data>
-  <data name="Storage Class" xml:space="preserve">
-    <value>Storage Class</value>
-  </data>
-  <data name="Strategy Type" xml:space="preserve">
-    <value>Strategy Type</value>
-  </data>
-  <data name="Sub-object" xml:space="preserve">
-    <value>Sub-object</value>
-  </data>
-  <data name="Succeeded" xml:space="preserve">
-    <value>Succeeded</value>
-  </data>
-  <data name="Successful History Limit" xml:space="preserve">
-    <value>Successful History Limit</value>
-  </data>
-  <data name="Suspend" xml:space="preserve">
-    <value>Suspend</value>
-  </data>
-  <data name="Taints" xml:space="preserve">
-    <value>Taints</value>
-  </data>
-  <data name="Time Zone" xml:space="preserve">
-    <value>Time Zone</value>
-  </data>
-  <data name="Tolerations" xml:space="preserve">
-    <value>Tolerations</value>
-  </data>
-  <data name="Type" xml:space="preserve">
-    <value>Type</value>
-  </data>
-  <data name="Unavailable" xml:space="preserve">
-    <value>Unavailable</value>
-  </data>
-  <data name="Unavailable Replicas" xml:space="preserve">
-    <value>Unavailable Replicas</value>
-  </data>
-  <data name="Update Revision" xml:space="preserve">
-    <value>Update Revision</value>
-  </data>
-  <data name="Update Strategy" xml:space="preserve">
-    <value>Update Strategy</value>
-  </data>
-  <data name="Updated" xml:space="preserve">
-    <value>Updated</value>
-  </data>
-  <data name="Updated Replicas" xml:space="preserve">
-    <value>Updated Replicas</value>
-  </data>
-  <data name="Value" xml:space="preserve">
-    <value>Value</value>
-  </data>
-  <data name="Version" xml:space="preserve">
-    <value>Version</value>
-  </data>
-  <data name="Volumes" xml:space="preserve">
-    <value>Volumes</value>
-  </data>
-  <data name="Volume Binding Mode" xml:space="preserve">
-    <value>Volume Binding Mode</value>
-  </data>
-  <data name="Volume Name" xml:space="preserve">
-    <value>Volume Name</value>
-  </data>
-  <data name="Webhooks" xml:space="preserve">
-    <value>Webhooks</value>
-  </data>
-  <data name="Windows" xml:space="preserve">
-    <value>Windows</value>
-  </data>
-  <data name="Load Balancer Entries" xml:space="preserve">
-    <value>Load Balancer Entries</value>
-  </data>
-  <data name="NamespaceProperty" xml:space="preserve">
-    <value>Namespace</value>
-  </data>
-  <data name="Overhead Entries" xml:space="preserve">
-    <value>Overhead Entries</value>
-  </data>
-  <data name="Pod Volumes" xml:space="preserve">
-    <value>Pod Volumes</value>
   </data>
   <data name="ResourceEventsView_Title" xml:space="preserve">
     <value>Events</value>
@@ -1133,7 +644,7 @@ Are you sure?</value>
   <data name="ResourceListView_SelectNamespace" xml:space="preserve">
     <value>Filter Namespace(s)</value>
   </data>
-  <data name="ClusterSettingsViewModel_Title" xml:space="preserve">
+  <data name="ClusterSettingsView_Title" xml:space="preserve">
     <value>Cluster Settings</value>
   </data>
   <data name="Cluster_Missing_Namespace_Permission_Title" xml:space="preserve">
@@ -1151,53 +662,59 @@ Are you sure?</value>
   <data name="PodLogsView_WordWrap" xml:space="preserve">
     <value>Word Wrap</value>
   </data>
-  <data name="ResourceListViewModel_Restart_Title" xml:space="preserve">
+  <data name="ResourceListView_Restart_Title" xml:space="preserve">
     <value>Restart Workload?</value>
   </data>
-  <data name="ResourceListViewModel_Restart_Content" xml:space="preserve">
+  <data name="ResourceListView_Restart_Content" xml:space="preserve">
     <value>This will restart {0} Resources.
 Are you sure?</value>
   </data>
-  <data name="ResourceListViewModel_Restart_Primary" xml:space="preserve">
+  <data name="ResourceListView_Restart_Primary" xml:space="preserve">
     <value>Yes</value>
   </data>
-  <data name="ResourceListViewModel_Restart_Secondary" xml:space="preserve">
+  <data name="ResourceListView_Restart_Secondary" xml:space="preserve">
     <value>No</value>
   </data>
-  <data name="ResourceListViewModel_CordonNode_Title" xml:space="preserve">
+  <data name="V1CronJobConfig_Start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="V1CronJobConfig_Start_Error" xml:space="preserve">
+    <value>Error Starting CronJob</value>
+  </data>
+  <data name="ResourceListView_CordonNode_Title" xml:space="preserve">
     <value>Warning</value>
   </data>
-  <data name="ResourceListViewModel_CordonNode_Content" xml:space="preserve">
+  <data name="ResourceListView_CordonNode_Content" xml:space="preserve">
     <value>Cordon Nodes {0}</value>
   </data>
-  <data name="ResourceListViewModel_CordonNode_Primary" xml:space="preserve">
+  <data name="ResourceListView_CordonNode_Primary" xml:space="preserve">
     <value>Yes</value>
   </data>
-  <data name="ResourceListViewModel_CordonNode_Secondary" xml:space="preserve">
+  <data name="ResourceListView_CordonNode_Secondary" xml:space="preserve">
     <value>No</value>
   </data>
-  <data name="ResourceListViewModel_UnCordonNode_Content" xml:space="preserve">
+  <data name="ResourceListView_UnCordonNode_Content" xml:space="preserve">
     <value>UnCordon Nodes {0}</value>
   </data>
-  <data name="ResourceListViewModel_UnCordonNode_Primary" xml:space="preserve">
+  <data name="ResourceListView_UnCordonNode_Primary" xml:space="preserve">
     <value>Yes</value>
   </data>
-  <data name="ResourceListViewModel_UnCordonNode_Secondary" xml:space="preserve">
+  <data name="ResourceListView_UnCordonNode_Secondary" xml:space="preserve">
     <value>No</value>
   </data>
-  <data name="ResourceListViewModel_UnCordonNode_Title" xml:space="preserve">
+  <data name="ResourceListView_UnCordonNode_Title" xml:space="preserve">
     <value>Warning</value>
   </data>
-  <data name="ResourceListViewModel_DrainNode_Content" xml:space="preserve">
+  <data name="ResourceListView_DrainNode_Content" xml:space="preserve">
     <value>Drain Nodes {0}</value>
   </data>
-  <data name="ResourceListViewModel_DrainNode_Title" xml:space="preserve">
+  <data name="ResourceListView_DrainNode_Title" xml:space="preserve">
     <value>Warning</value>
   </data>
-  <data name="ResourceListViewModel_DrainNode_Secondary" xml:space="preserve">
+  <data name="ResourceListView_DrainNode_Secondary" xml:space="preserve">
     <value>No</value>
   </data>
-  <data name="ResourceListViewModel_DrainNode_Primary" xml:space="preserve">
+  <data name="ResourceListView_DrainNode_Primary" xml:space="preserve">
     <value>Yes</value>
   </data>
   <data name="MainView_Menu_File_LoadKubeConfig" xml:space="preserve">
@@ -1209,7 +726,7 @@ Are you sure?</value>
   <data name="MainView_Menu_File_ImportAksCluster" xml:space="preserve">
     <value>_Load AKS Cluster</value>
   </data>
-  <data name="ImportAksClusterViewModel_Title" xml:space="preserve">
+  <data name="ImportAksClusterView_Title" xml:space="preserve">
     <value>Import AKS Cluster</value>
   </data>
   <data name="ImportAksClusterView_Description" xml:space="preserve">
@@ -1377,81 +894,6 @@ Are you sure?</value>
   <data name="UpdateView_Header" xml:space="preserve">
     <value>An update is available!</value>
   </data>
-  <data name="Access Modes" xml:space="preserve">
-    <value>Access Modes</value>
-  </data>
-  <data name="Allowed Topologies" xml:space="preserve">
-    <value>Allowed Topologies</value>
-  </data>
-  <data name="Annotations" xml:space="preserve">
-    <value>Annotations</value>
-  </data>
-  <data name="Command" xml:space="preserve">
-    <value>Command</value>
-  </data>
-  <data name="Completion Mode" xml:space="preserve">
-    <value>Completion Mode</value>
-  </data>
-  <data name="Completion Time" xml:space="preserve">
-    <value>Completion Time</value>
-  </data>
-  <data name="Environment" xml:space="preserve">
-    <value>Environment</value>
-  </data>
-  <data name="Finalizers" xml:space="preserve">
-    <value>Finalizers</value>
-  </data>
-  <data name="Labels" xml:space="preserve">
-    <value>Labels</value>
-  </data>
-  <data name="Limits" xml:space="preserve">
-    <value>Limits</value>
-  </data>
-  <data name="Min Replicas" xml:space="preserve">
-    <value>Min Replicas</value>
-  </data>
-  <data name="Mounts" xml:space="preserve">
-    <value>Mounts</value>
-  </data>
-  <data name="Renew Time" xml:space="preserve">
-    <value>Renew Time</value>
-  </data>
-  <data name="Requests" xml:space="preserve">
-    <value>Requests</value>
-  </data>
-  <data name="Scope" xml:space="preserve">
-    <value>Scope</value>
-  </data>
-  <data name="Source" xml:space="preserve">
-    <value>Source</value>
-  </data>
-  <data name="Spec Hard" xml:space="preserve">
-    <value>Spec Hard</value>
-  </data>
-  <data name="Spec Scopes" xml:space="preserve">
-    <value>Spec Scopes</value>
-  </data>
-  <data name="Status Hard" xml:space="preserve">
-    <value>Status Hard</value>
-  </data>
-  <data name="Status Used" xml:space="preserve">
-    <value>Status Used</value>
-  </data>
-  <data name="Stored Versions" xml:space="preserve">
-    <value>Stored Versions</value>
-  </data>
-  <data name="Subjects" xml:space="preserve">
-    <value>Subjects</value>
-  </data>
-  <data name="TLS Entries" xml:space="preserve">
-    <value>TLS Entries</value>
-  </data>
-  <data name="Versions" xml:space="preserve">
-    <value>Versions</value>
-  </data>
-  <data name="Volume Mode" xml:space="preserve">
-    <value>Volume Mode</value>
-  </data>
   <data name="ImportAksClusterView_NoSubscriptions" xml:space="preserve">
     <value>No Azure subscriptions were found. Sign in to Azure and refresh.</value>
   </data>
@@ -1463,5 +905,572 @@ Are you sure?</value>
   </data>
   <data name="ImportAksClusterView_AccountFormat" xml:space="preserve">
     <value>Account: {0} ({1})</value>
+  </data>
+  <data name="CertificateItemView_Issuer" xml:space="preserve">
+    <value>Issuer</value>
+  </data>
+  <data name="CertificateItemView_Subject" xml:space="preserve">
+    <value>Subject</value>
+  </data>
+  <data name="CertificateItemView_NotBefore" xml:space="preserve">
+    <value>Not Before</value>
+  </data>
+  <data name="CertificateItemView_Expires" xml:space="preserve">
+    <value>Expires</value>
+  </data>
+  <data name="CertificateItemView_Dns" xml:space="preserve">
+    <value>DNS</value>
+  </data>
+  <data name="CertificateItemView_Ip" xml:space="preserve">
+    <value>IP</value>
+  </data>
+  <data name="CertificateItemView_KeyExchangeAlgorithm" xml:space="preserve">
+    <value>Key Exchange Algorithm</value>
+  </data>
+  <data name="CertificateItemView_SignatureAlgorithm" xml:space="preserve">
+    <value>Signature Algorithm</value>
+  </data>
+  <data name="CertificateItemView_KeySize" xml:space="preserve">
+    <value>Key Size</value>
+  </data>
+  <data name="ResourceEventsView_NoEventsFound" xml:space="preserve">
+    <value>No events found</value>
+  </data>
+  <data name="ResourceYamlView_Edit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="ResourceYamlView_HideNoisyFields" xml:space="preserve">
+    <value>Hide noisy fields</value>
+  </data>
+  <data name="ResourceYamlView_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="ResourceYamlView_DryRun" xml:space="preserve">
+    <value>Dry Run</value>
+  </data>
+  <data name="ResourceYamlView_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="ResourceYamlView_Action_Cut" xml:space="preserve">
+    <value>Cut</value>
+  </data>
+  <data name="ResourceYamlView_Action_Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="ResourceYamlView_Action_Paste" xml:space="preserve">
+    <value>Paste</value>
+  </data>
+  <data name="ResourceYamlView_Action_Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="ResourceYamlView_Action_Undo" xml:space="preserve">
+    <value>Undo</value>
+  </data>
+  <data name="ResourceYamlView_Action_Redo" xml:space="preserve">
+    <value>Redo</value>
+  </data>
+  <data name="Shared_Source" xml:space="preserve">
+    <value>Source</value>
+  </data>
+  <data name="Shared_Count" xml:space="preserve">
+    <value>Count</value>
+  </data>
+  <data name="Shared_Action_Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="Shared_Rules" xml:space="preserve">
+    <value>Rules</value>
+  </data>
+  <data name="Shared_Role_Kind" xml:space="preserve">
+    <value>Role Kind</value>
+  </data>
+  <data name="Shared_Role_Name" xml:space="preserve">
+    <value>Role Name</value>
+  </data>
+  <data name="Shared_Subjects" xml:space="preserve">
+    <value>Subjects</value>
+  </data>
+  <data name="Shared_Secrets" xml:space="preserve">
+    <value>Secrets</value>
+  </data>
+  <data name="Shared_Data" xml:space="preserve">
+    <value>Data</value>
+  </data>
+  <data name="Shared_Limits" xml:space="preserve">
+    <value>Limits</value>
+  </data>
+  <data name="Shared_Webhooks" xml:space="preserve">
+    <value>Webhooks</value>
+  </data>
+  <data name="Shared_Selector_Labels" xml:space="preserve">
+    <value>Selector Labels</value>
+  </data>
+  <data name="Shared_Tolerations" xml:space="preserve">
+    <value>Tolerations</value>
+  </data>
+  <data name="Shared_Current_Replicas" xml:space="preserve">
+    <value>Current Replicas</value>
+  </data>
+  <data name="Shared_Desired_Replicas" xml:space="preserve">
+    <value>Desired Replicas</value>
+  </data>
+  <data name="Shared_Observed_Generation" xml:space="preserve">
+    <value>Observed Generation</value>
+  </data>
+  <data name="Shared_Reason" xml:space="preserve">
+    <value>Reason</value>
+  </data>
+  <data name="Shared_Type" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="Shared_Kind" xml:space="preserve">
+    <value>Kind</value>
+  </data>
+  <data name="Shared_Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Shared_Phase" xml:space="preserve">
+    <value>Phase</value>
+  </data>
+  <data name="Shared_Conditions" xml:space="preserve">
+    <value>Conditions</value>
+  </data>
+  <data name="Shared_Capacity_Entries" xml:space="preserve">
+    <value>Capacity Entries</value>
+  </data>
+  <data name="Shared_Ports" xml:space="preserve">
+    <value>Ports</value>
+  </data>
+  <data name="Shared_Storage_Class" xml:space="preserve">
+    <value>Storage Class</value>
+  </data>
+  <data name="Shared_Reclaim_Policy" xml:space="preserve">
+    <value>Reclaim Policy</value>
+  </data>
+  <data name="Shared_Volume_Mode" xml:space="preserve">
+    <value>Volume Mode</value>
+  </data>
+  <data name="Shared_Access_Modes" xml:space="preserve">
+    <value>Access Modes</value>
+  </data>
+  <data name="Shared_Mount_Options" xml:space="preserve">
+    <value>Mount Options</value>
+  </data>
+  <data name="Shared_Suspend" xml:space="preserve">
+    <value>Suspend</value>
+  </data>
+  <data name="Shared_Min_Ready_Seconds" xml:space="preserve">
+    <value>Min Ready Seconds</value>
+  </data>
+  <data name="Shared_Revision_History_Limit" xml:space="preserve">
+    <value>Revision History Limit</value>
+  </data>
+  <data name="Shared_Replicas" xml:space="preserve">
+    <value>Replicas</value>
+  </data>
+  <data name="Shared_Available_Replicas" xml:space="preserve">
+    <value>Available Replicas</value>
+  </data>
+  <data name="Shared_Ready_Replicas" xml:space="preserve">
+    <value>Ready Replicas</value>
+  </data>
+  <data name="Shared_Updated_Replicas" xml:space="preserve">
+    <value>Updated Replicas</value>
+  </data>
+  <data name="ServicePropertiesView_Cluster_IPs" xml:space="preserve">
+    <value>Cluster IPs</value>
+  </data>
+  <data name="JobPropertiesView_Succeeded" xml:space="preserve">
+    <value>Succeeded</value>
+  </data>
+  <data name="PriorityClassPropertiesView_Value" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="ConfigMapPropertiesView_Binary_Data" xml:space="preserve">
+    <value>Binary Data</value>
+  </data>
+  <data name="StatefulSetPropertiesView_Update_Strategy" xml:space="preserve">
+    <value>Update Strategy</value>
+  </data>
+  <data name="StorageClassPropertiesView_Volume_Binding_Mode" xml:space="preserve">
+    <value>Volume Binding Mode</value>
+  </data>
+  <data name="CustomResourceDefinitionPropertiesView_Scope" xml:space="preserve">
+    <value>Scope</value>
+  </data>
+  <data name="ServicePropertiesView_Load_Balancer_IP" xml:space="preserve">
+    <value>Load Balancer IP</value>
+  </data>
+  <data name="CronJobPropertiesView_Time_Zone" xml:space="preserve">
+    <value>Time Zone</value>
+  </data>
+  <data name="DaemonSetPropertiesView_Current_Scheduled" xml:space="preserve">
+    <value>Current Scheduled</value>
+  </data>
+  <data name="NodePropertiesView_Kubelet_Version" xml:space="preserve">
+    <value>Kubelet Version</value>
+  </data>
+  <data name="NetworkPolicyPropertiesView_Egress_Rules" xml:space="preserve">
+    <value>Egress Rules</value>
+  </data>
+  <data name="PodDisruptionBudgetPropertiesView_Min_Available" xml:space="preserve">
+    <value>Min Available</value>
+  </data>
+  <data name="IngressClassPropertiesView_Parameters_Name" xml:space="preserve">
+    <value>Parameters Name</value>
+  </data>
+  <data name="ServicePropertiesView_Session_Affinity" xml:space="preserve">
+    <value>Session Affinity</value>
+  </data>
+  <data name="CustomResourceDefinitionPropertiesView_Group" xml:space="preserve">
+    <value>Group</value>
+  </data>
+  <data name="ServicePropertiesView_Internal_Traffic_Policy" xml:space="preserve">
+    <value>Internal Traffic Policy</value>
+  </data>
+  <data name="EndpointSlicePropertiesView_Endpoints" xml:space="preserve">
+    <value>Endpoints</value>
+  </data>
+  <data name="PodPropertiesView_Pod_Volumes" xml:space="preserve">
+    <value>Pod Volumes</value>
+  </data>
+  <data name="StorageClassPropertiesView_Parameters" xml:space="preserve">
+    <value>Parameters</value>
+  </data>
+  <data name="PodPropertiesView_Labels" xml:space="preserve">
+    <value>Labels</value>
+  </data>
+  <data name="StatefulSetPropertiesView_Pod_Management_Policy" xml:space="preserve">
+    <value>Pod Management Policy</value>
+  </data>
+  <data name="CronJobPropertiesView_Concurrency_Policy" xml:space="preserve">
+    <value>Concurrency Policy</value>
+  </data>
+  <data name="NetworkPolicyPropertiesView_Ingress_Rules" xml:space="preserve">
+    <value>Ingress Rules</value>
+  </data>
+  <data name="PersistentVolumePropertiesView_Claim_Name" xml:space="preserve">
+    <value>Claim Name</value>
+  </data>
+  <data name="ClusterRolePropertiesView_Aggregation_Selectors" xml:space="preserve">
+    <value>Aggregation Selectors</value>
+  </data>
+  <data name="IngressPropertiesView_Ingress_Class" xml:space="preserve">
+    <value>Ingress Class</value>
+  </data>
+  <data name="JobPropertiesView_Completion_Mode" xml:space="preserve">
+    <value>Completion Mode</value>
+  </data>
+  <data name="NodePropertiesView_Architecture" xml:space="preserve">
+    <value>Architecture</value>
+  </data>
+  <data name="RuntimeClassPropertiesView_Node_Selector_Entries" xml:space="preserve">
+    <value>Node Selector Entries</value>
+  </data>
+  <data name="LeasePropertiesView_Acquire_Time" xml:space="preserve">
+    <value>Acquire Time</value>
+  </data>
+  <data name="LeasePropertiesView_Lease_Duration_Seconds" xml:space="preserve">
+    <value>Lease Duration Seconds</value>
+  </data>
+  <data name="EventPropertiesView_Namespace" xml:space="preserve">
+    <value>Namespace</value>
+  </data>
+  <data name="StorageClassPropertiesView_Provisioner" xml:space="preserve">
+    <value>Provisioner</value>
+  </data>
+  <data name="ReplicaSetPropertiesView_Fully_Labeled_Replicas" xml:space="preserve">
+    <value>Fully Labeled Replicas</value>
+  </data>
+  <data name="ResourceQuotaPropertiesView_Spec_Scopes" xml:space="preserve">
+    <value>Spec Scopes</value>
+  </data>
+  <data name="PodPropertiesView_Arguments" xml:space="preserve">
+    <value>Arguments</value>
+  </data>
+  <data name="PriorityClassPropertiesView_Global_Default" xml:space="preserve">
+    <value>Global Default</value>
+  </data>
+  <data name="RuntimeClassPropertiesView_Handler" xml:space="preserve">
+    <value>Handler</value>
+  </data>
+  <data name="StatefulSetPropertiesView_Current_Revision" xml:space="preserve">
+    <value>Current Revision</value>
+  </data>
+  <data name="DaemonSetPropertiesView_Available" xml:space="preserve">
+    <value>Available</value>
+  </data>
+  <data name="PodDisruptionBudgetPropertiesView_Desired_Healthy" xml:space="preserve">
+    <value>Desired Healthy</value>
+  </data>
+  <data name="CronJobPropertiesView_Starting_Deadline_Seconds" xml:space="preserve">
+    <value>Starting Deadline Seconds</value>
+  </data>
+  <data name="EventPropertiesView_Last_Seen" xml:space="preserve">
+    <value>Last Seen</value>
+  </data>
+  <data name="PriorityClassPropertiesView_Description" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="JobPropertiesView_Active_Pods" xml:space="preserve">
+    <value>Active Pods</value>
+  </data>
+  <data name="PersistentVolumePropertiesView_Last_Phase_Transition" xml:space="preserve">
+    <value>Last Phase Transition</value>
+  </data>
+  <data name="CronJobPropertiesView_Schedule" xml:space="preserve">
+    <value>Schedule</value>
+  </data>
+  <data name="IngressClassPropertiesView_Parameters_Namespace" xml:space="preserve">
+    <value>Parameters Namespace</value>
+  </data>
+  <data name="DaemonSetPropertiesView_Ready" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="StatefulSetPropertiesView_Update_Revision" xml:space="preserve">
+    <value>Update Revision</value>
+  </data>
+  <data name="ServiceAccountPropertiesView_Image_Pull_Secrets" xml:space="preserve">
+    <value>Image Pull Secrets</value>
+  </data>
+  <data name="IngressPropertiesView_TLS_Entries" xml:space="preserve">
+    <value>TLS Entries</value>
+  </data>
+  <data name="PodDisruptionBudgetPropertiesView_Max_Unavailable" xml:space="preserve">
+    <value>Max Unavailable</value>
+  </data>
+  <data name="HorizontalPodAutoscalerPropertiesView_Max_Replicas" xml:space="preserve">
+    <value>Max Replicas</value>
+  </data>
+  <data name="EventPropertiesView_First_Seen" xml:space="preserve">
+    <value>First Seen</value>
+  </data>
+  <data name="DaemonSetPropertiesView_Misscheduled" xml:space="preserve">
+    <value>Misscheduled</value>
+  </data>
+  <data name="ResourceQuotaPropertiesView_Status_Hard" xml:space="preserve">
+    <value>Status Hard</value>
+  </data>
+  <data name="JobPropertiesView_Failed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="PersistentVolumeClaimPropertiesView_Requested_Storage" xml:space="preserve">
+    <value>Requested Storage</value>
+  </data>
+  <data name="DeploymentPropertiesView_Strategy_Type" xml:space="preserve">
+    <value>Strategy Type</value>
+  </data>
+  <data name="PodPropertiesView_Pod_IPs" xml:space="preserve">
+    <value>Pod IPs</value>
+  </data>
+  <data name="PodPropertiesView_QoS_Class" xml:space="preserve">
+    <value>QoS Class</value>
+  </data>
+  <data name="ResourceQuotaPropertiesView_Status_Used" xml:space="preserve">
+    <value>Status Used</value>
+  </data>
+  <data name="ResourceQuotaPropertiesView_Spec_Hard" xml:space="preserve">
+    <value>Spec Hard</value>
+  </data>
+  <data name="ServicePropertiesView_External_Name" xml:space="preserve">
+    <value>External Name</value>
+  </data>
+  <data name="ServicePropertiesView_Health_Check_Node_Port" xml:space="preserve">
+    <value>Health Check Node Port</value>
+  </data>
+  <data name="NetworkPolicyPropertiesView_Policy_Types" xml:space="preserve">
+    <value>Policy Types</value>
+  </data>
+  <data name="CustomResourceDefinitionPropertiesView_Versions" xml:space="preserve">
+    <value>Versions</value>
+  </data>
+  <data name="ServicePropertiesView_Selector" xml:space="preserve">
+    <value>Selector</value>
+  </data>
+  <data name="EventPropertiesView_Message" xml:space="preserve">
+    <value>Message</value>
+  </data>
+  <data name="PriorityClassPropertiesView_Preemption_Policy" xml:space="preserve">
+    <value>Preemption Policy</value>
+  </data>
+  <data name="DaemonSetPropertiesView_Unavailable" xml:space="preserve">
+    <value>Unavailable</value>
+  </data>
+  <data name="JobPropertiesView_Parallelism" xml:space="preserve">
+    <value>Parallelism</value>
+  </data>
+  <data name="PodPropertiesView_Requests" xml:space="preserve">
+    <value>Requests</value>
+  </data>
+  <data name="EndpointSlicePropertiesView_Address_Type" xml:space="preserve">
+    <value>Address Type</value>
+  </data>
+  <data name="ServicePropertiesView_Publish_Not_Ready_Addresses" xml:space="preserve">
+    <value>Publish Not Ready Addresses</value>
+  </data>
+  <data name="LeasePropertiesView_Renew_Time" xml:space="preserve">
+    <value>Renew Time</value>
+  </data>
+  <data name="ServicePropertiesView_Load_Balancer_Class" xml:space="preserve">
+    <value>Load Balancer Class</value>
+  </data>
+  <data name="DaemonSetPropertiesView_Desired_Scheduled" xml:space="preserve">
+    <value>Desired Scheduled</value>
+  </data>
+  <data name="CronJobPropertiesView_Last_Successful_Time" xml:space="preserve">
+    <value>Last Successful Time</value>
+  </data>
+  <data name="NodePropertiesView_Addresses" xml:space="preserve">
+    <value>Addresses</value>
+  </data>
+  <data name="NetworkPolicyPropertiesView_Pod_Selector_Labels" xml:space="preserve">
+    <value>Pod Selector Labels</value>
+  </data>
+  <data name="PodDisruptionBudgetPropertiesView_Disruptions_Allowed" xml:space="preserve">
+    <value>Disruptions Allowed</value>
+  </data>
+  <data name="LeasePropertiesView_Lease_Transitions" xml:space="preserve">
+    <value>Lease Transitions</value>
+  </data>
+  <data name="NodePropertiesView_Container_Runtime" xml:space="preserve">
+    <value>Container Runtime</value>
+  </data>
+  <data name="JobPropertiesView_Backoff_Limit" xml:space="preserve">
+    <value>Backoff Limit</value>
+  </data>
+  <data name="CronJobPropertiesView_Successful_History_Limit" xml:space="preserve">
+    <value>Successful History Limit</value>
+  </data>
+  <data name="IngressPropertiesView_Load_Balancer_Entries" xml:space="preserve">
+    <value>Load Balancer Entries</value>
+  </data>
+  <data name="CustomResourceDefinitionPropertiesView_Accepted_Kind" xml:space="preserve">
+    <value>Accepted Kind</value>
+  </data>
+  <data name="PodPropertiesView_Command" xml:space="preserve">
+    <value>Command</value>
+  </data>
+  <data name="NodePropertiesView_Allocatable_Entries" xml:space="preserve">
+    <value>Allocatable Entries</value>
+  </data>
+  <data name="NodePropertiesView_Operating_System" xml:space="preserve">
+    <value>Operating System</value>
+  </data>
+  <data name="PodPropertiesView_Annotations" xml:space="preserve">
+    <value>Annotations</value>
+  </data>
+  <data name="StorageClassPropertiesView_Allowed_Topologies" xml:space="preserve">
+    <value>Allowed Topologies</value>
+  </data>
+  <data name="JobPropertiesView_Completion_Time" xml:space="preserve">
+    <value>Completion Time</value>
+  </data>
+  <data name="HorizontalPodAutoscalerPropertiesView_Metrics" xml:space="preserve">
+    <value>Metrics</value>
+  </data>
+  <data name="IngressClassPropertiesView_Parameters_Kind" xml:space="preserve">
+    <value>Parameters Kind</value>
+  </data>
+  <data name="RuntimeClassPropertiesView_Overhead_Entries" xml:space="preserve">
+    <value>Overhead Entries</value>
+  </data>
+  <data name="ServicePropertiesView_Load_Balancer_Ingress" xml:space="preserve">
+    <value>Load Balancer Ingress</value>
+  </data>
+  <data name="JobPropertiesView_Start_Time" xml:space="preserve">
+    <value>Start Time</value>
+  </data>
+  <data name="NodePropertiesView_Kernel_Version" xml:space="preserve">
+    <value>Kernel Version</value>
+  </data>
+  <data name="PodPropertiesView_Mounts" xml:space="preserve">
+    <value>Mounts</value>
+  </data>
+  <data name="CustomResourceDefinitionPropertiesView_Stored_Versions" xml:space="preserve">
+    <value>Stored Versions</value>
+  </data>
+  <data name="StatefulSetPropertiesView_Service_Name" xml:space="preserve">
+    <value>Service Name</value>
+  </data>
+  <data name="CronJobPropertiesView_Failed_History_Limit" xml:space="preserve">
+    <value>Failed History Limit</value>
+  </data>
+  <data name="DeploymentPropertiesView_Progress_Deadline_Seconds" xml:space="preserve">
+    <value>Progress Deadline Seconds</value>
+  </data>
+  <data name="ServiceAccountPropertiesView_Automount_Token" xml:space="preserve">
+    <value>Automount Token</value>
+  </data>
+  <data name="EventPropertiesView_Field_Path" xml:space="preserve">
+    <value>Field Path</value>
+  </data>
+  <data name="PodDisruptionBudgetPropertiesView_Current_Healthy" xml:space="preserve">
+    <value>Current Healthy</value>
+  </data>
+  <data name="IngressClassPropertiesView_Parameters_Scope" xml:space="preserve">
+    <value>Parameters Scope</value>
+  </data>
+  <data name="PodPropertiesView_Service_Account" xml:space="preserve">
+    <value>Service Account</value>
+  </data>
+  <data name="PersistentVolumeClaimPropertiesView_Volume_Name" xml:space="preserve">
+    <value>Volume Name</value>
+  </data>
+  <data name="CronJobPropertiesView_Last_Schedule_Time" xml:space="preserve">
+    <value>Last Schedule Time</value>
+  </data>
+  <data name="CronJobPropertiesView_Active_Jobs" xml:space="preserve">
+    <value>Active Jobs</value>
+  </data>
+  <data name="JobPropertiesView_Completions" xml:space="preserve">
+    <value>Completions</value>
+  </data>
+  <data name="PodPropertiesView_Environment" xml:space="preserve">
+    <value>Environment</value>
+  </data>
+  <data name="DeploymentPropertiesView_Unavailable_Replicas" xml:space="preserve">
+    <value>Unavailable Replicas</value>
+  </data>
+  <data name="JobPropertiesView_Active_Deadline_Seconds" xml:space="preserve">
+    <value>Active Deadline Seconds</value>
+  </data>
+  <data name="StorageClassPropertiesView_Allow_Volume_Expansion" xml:space="preserve">
+    <value>Allow Volume Expansion</value>
+  </data>
+  <data name="HorizontalPodAutoscalerPropertiesView_Min_Replicas" xml:space="preserve">
+    <value>Min Replicas</value>
+  </data>
+  <data name="NamespacePropertiesView_Finalizers" xml:space="preserve">
+    <value>Finalizers</value>
+  </data>
+  <data name="ServicePropertiesView_Cluster_IP" xml:space="preserve">
+    <value>Cluster IP</value>
+  </data>
+  <data name="IngressClassPropertiesView_Controller" xml:space="preserve">
+    <value>Controller</value>
+  </data>
+  <data name="ConfigMapPropertiesView_Immutable" xml:space="preserve">
+    <value>Immutable</value>
+  </data>
+  <data name="LeasePropertiesView_Holder_Identity" xml:space="preserve">
+    <value>Holder Identity</value>
+  </data>
+  <data name="DaemonSetPropertiesView_Updated" xml:space="preserve">
+    <value>Updated</value>
+  </data>
+  <data name="PodDisruptionBudgetPropertiesView_Expected_Pods" xml:space="preserve">
+    <value>Expected Pods</value>
+  </data>
+  <data name="ServicePropertiesView_External_Traffic_Policy" xml:space="preserve">
+    <value>External Traffic Policy</value>
+  </data>
+  <data name="ServicePropertiesView_External_IPs" xml:space="preserve">
+    <value>External IPs</value>
+  </data>
+  <data name="NodePropertiesView_Taints" xml:space="preserve">
+    <value>Taints</value>
+  </data>
+  <data name="EventPropertiesView_InvolvedObject" xml:space="preserve">
+    <value>Involved Object</value>
   </data>
 </root>

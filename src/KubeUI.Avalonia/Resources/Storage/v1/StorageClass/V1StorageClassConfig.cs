@@ -25,7 +25,7 @@ public sealed partial class V1StorageClassConfig : ResourceConfigBase<V1StorageC
             },
             new ResourceListColumn<V1StorageClass, string>()
             {
-                Name = "Reclaim Policy",
+                Name = "Reclaim_Policy",
                 Field = x => x.ReclaimPolicy,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },

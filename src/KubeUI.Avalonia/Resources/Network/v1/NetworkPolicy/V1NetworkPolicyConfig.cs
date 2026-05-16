@@ -21,7 +21,7 @@ public sealed partial class V1NetworkPolicyConfig : ResourceConfigBase<V1Network
             NamespaceColumn(),
             new ResourceListColumn<V1NetworkPolicy, string>()
             {
-                Name = "Policy Types",
+                Name = "Policy_Types",
                 Display = x => x.Spec.PolicyTypes.Aggregate((a,b) => a + ", " + b),
                 Field = x => x.Spec.PolicyTypes.Count > 0 ? x.Spec.PolicyTypes[0] : "",
                 Width = "*",

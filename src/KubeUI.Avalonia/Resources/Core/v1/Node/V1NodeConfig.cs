@@ -106,10 +106,10 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
     {
         ContentDialogSettings settings = new()
         {
-            Title = Assets.Resources.ResourceListViewModel_CordonNode_Title,
-            Content = string.Format(Assets.Resources.ResourceListViewModel_CordonNode_Content, items.Count),
-            PrimaryButtonText = Assets.Resources.ResourceListViewModel_CordonNode_Primary,
-            SecondaryButtonText = Assets.Resources.ResourceListViewModel_CordonNode_Secondary,
+            Title = Assets.Resources.ResourceListView_CordonNode_Title,
+            Content = string.Format(Assets.Resources.ResourceListView_CordonNode_Content, items.Count),
+            PrimaryButtonText = Assets.Resources.ResourceListView_CordonNode_Primary,
+            SecondaryButtonText = Assets.Resources.ResourceListView_CordonNode_Secondary,
             DefaultButton = FAContentDialogButton.Secondary
         };
 
@@ -149,10 +149,10 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
     {
         ContentDialogSettings settings = new()
         {
-            Title = Assets.Resources.ResourceListViewModel_UnCordonNode_Title,
-            Content = string.Format(Assets.Resources.ResourceListViewModel_UnCordonNode_Content, items.Count),
-            PrimaryButtonText = Assets.Resources.ResourceListViewModel_UnCordonNode_Primary,
-            SecondaryButtonText = Assets.Resources.ResourceListViewModel_UnCordonNode_Secondary,
+            Title = Assets.Resources.ResourceListView_UnCordonNode_Title,
+            Content = string.Format(Assets.Resources.ResourceListView_UnCordonNode_Content, items.Count),
+            PrimaryButtonText = Assets.Resources.ResourceListView_UnCordonNode_Primary,
+            SecondaryButtonText = Assets.Resources.ResourceListView_UnCordonNode_Secondary,
             DefaultButton = FAContentDialogButton.Secondary
         };
 
@@ -192,10 +192,10 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
     {
         ContentDialogSettings settings = new()
         {
-            Title = Assets.Resources.ResourceListViewModel_DrainNode_Title,
-            Content = string.Format(Assets.Resources.ResourceListViewModel_DrainNode_Content, items.Count),
-            PrimaryButtonText = Assets.Resources.ResourceListViewModel_DrainNode_Primary,
-            SecondaryButtonText = Assets.Resources.ResourceListViewModel_DrainNode_Secondary,
+            Title = Assets.Resources.ResourceListView_DrainNode_Title,
+            Content = string.Format(Assets.Resources.ResourceListView_DrainNode_Content, items.Count),
+            PrimaryButtonText = Assets.Resources.ResourceListView_DrainNode_Primary,
+            SecondaryButtonText = Assets.Resources.ResourceListView_DrainNode_Secondary,
             DefaultButton = FAContentDialogButton.Secondary
         };
 

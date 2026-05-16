@@ -53,7 +53,7 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
             },
             new ResourceListColumn<Corev1Event, DateTime?>()
             {
-                Name = "Last Seen",
+                Name = "Last_Seen",
                 CustomControl = typeof(EventLastSeenCell),
                 Field = x => EventTimeFormatter.ResolveTimestamp(x),
                 Sort = SortDirection.Descending,

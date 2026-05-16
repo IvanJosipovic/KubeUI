@@ -52,7 +52,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     {
         _logger = logger;
         SettingsService = settingsService;
-        Title = Assets.Resources.PodLogsViewModel_Title;
+        Title = Assets.Resources.PodLogsView_Title;
     }
 
     public async Task Connect()

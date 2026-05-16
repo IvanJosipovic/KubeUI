@@ -537,10 +537,10 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 
             ContentDialogSettings settings = new()
             {
-                Title = Assets.Resources.ResourceListViewModel_PortForward_Title,
-                Content = string.Format(Assets.Resources.ResourceListViewModel_PortForward_Content, containerPort.ContainerPort, pf.LocalPort),
-                PrimaryButtonText = Assets.Resources.ResourceListViewModel_PortForward_Primary,
-                SecondaryButtonText = Assets.Resources.ResourceListViewModel_PortForward_Secondary,
+                Title = Assets.Resources.ResourceListView_PortForward_Title,
+                Content = string.Format(Assets.Resources.ResourceListView_PortForward_Content, containerPort.ContainerPort, pf.LocalPort),
+                PrimaryButtonText = Assets.Resources.ResourceListView_PortForward_Primary,
+                SecondaryButtonText = Assets.Resources.ResourceListView_PortForward_Secondary,
                 DefaultButton = FAContentDialogButton.Secondary
             };
 

@@ -2,6 +2,7 @@
     x:Class="KubeUI.Avalonia.Resources.Workloads.v1.Job.Views.PropertiesView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="using:KubeUI.Avalonia.Assets"
     xmlns:c="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -11,24 +12,24 @@
     x:DataType="models:V1Job"
     mc:Ignorable="d">
     <StackPanel>
-        <c:PropertyItem Key="Completions" Value="{Binding Spec.Completions}" />
-        <c:PropertyItem Key="Parallelism" Value="{Binding Spec.Parallelism}" />
-        <c:PropertyItem Key="Succeeded" Value="{Binding Status.Succeeded}" />
-        <c:PropertyItem Key="Failed" Value="{Binding Status.Failed}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.JobPropertiesView_Completions}" Value="{Binding Spec.Completions}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.JobPropertiesView_Parallelism}" Value="{Binding Spec.Parallelism}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.JobPropertiesView_Succeeded}" Value="{Binding Status.Succeeded}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.JobPropertiesView_Failed}" Value="{Binding Status.Failed}" />
         <c:ExpandableSection Header="Configuration">
             <StackPanel>
-                <c:PropertyItem Key="Backoff Limit" Value="{Binding Spec.BackoffLimit}" />
-                <c:PropertyItem Key="Active Deadline Seconds" Value="{Binding Spec.ActiveDeadlineSeconds}" />
-                <c:PropertyItem Key="Completion Mode" Value="{Binding Spec.CompletionMode}" />
-                <c:PropertyItem Key="Suspend" Value="{Binding Spec.Suspend}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.JobPropertiesView_Backoff_Limit}" Value="{Binding Spec.BackoffLimit}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.JobPropertiesView_Active_Deadline_Seconds}" Value="{Binding Spec.ActiveDeadlineSeconds}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.JobPropertiesView_Completion_Mode}" Value="{Binding Spec.CompletionMode}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.Shared_Suspend}" Value="{Binding Spec.Suspend}" />
             </StackPanel>
         </c:ExpandableSection>
         <c:ExpandableSection Header="Status">
             <StackPanel>
-                <c:PropertyItem Key="Active Pods" Value="{Binding Status.Active}" />
-                <c:PropertyItem Key="Start Time" Value="{Binding Status.StartTime}" />
-                <c:PropertyItem Key="Completion Time" Value="{Binding Status.CompletionTime}" />
-                <c:PropertyItem Key="Conditions" Value="{Binding Status.Conditions.Count}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.JobPropertiesView_Active_Pods}" Value="{Binding Status.Active}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.JobPropertiesView_Start_Time}" Value="{Binding Status.StartTime}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.JobPropertiesView_Completion_Time}" Value="{Binding Status.CompletionTime}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.Shared_Conditions}" Value="{Binding Status.Conditions.Count}" />
             </StackPanel>
         </c:ExpandableSection>
     </StackPanel>

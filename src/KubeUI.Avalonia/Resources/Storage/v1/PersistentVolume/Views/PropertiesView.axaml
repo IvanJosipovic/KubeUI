@@ -2,6 +2,7 @@
     x:Class="KubeUI.Avalonia.Resources.Storage.v1.PersistentVolume.Views.PropertiesView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="using:KubeUI.Avalonia.Assets"
     xmlns:c="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -11,15 +12,15 @@
     x:DataType="models:V1PersistentVolume"
     mc:Ignorable="d">
     <StackPanel>
-        <c:PropertyItem Key="Phase" Value="{Binding Status.Phase}" />
-        <c:PropertyItem Key="Reason" Value="{Binding Status.Reason}" />
-        <c:PropertyItem Key="Storage Class" Value="{Binding Spec.StorageClassName}" />
-        <c:PropertyItem Key="Reclaim Policy" Value="{Binding Spec.PersistentVolumeReclaimPolicy}" />
-        <c:PropertyItem Key="Volume Mode" Value="{Binding Spec.VolumeMode}" />
-        <c:PropertyItem Key="Access Modes" Value="{Binding Spec.AccessModes.Count}" />
-        <c:PropertyItem Key="Capacity Entries" Value="{Binding Spec.Capacity.Count}" />
-        <c:PropertyItem Key="Mount Options" Value="{Binding Spec.MountOptions.Count}" />
-        <c:PropertyItem Key="Claim Name" Value="{Binding Spec.ClaimRef.Name}" />
-        <c:PropertyItem Key="Last Phase Transition" Value="{Binding Status.LastPhaseTransitionTime}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Phase}" Value="{Binding Status.Phase}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Reason}" Value="{Binding Status.Reason}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Storage_Class}" Value="{Binding Spec.StorageClassName}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Reclaim_Policy}" Value="{Binding Spec.PersistentVolumeReclaimPolicy}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Volume_Mode}" Value="{Binding Spec.VolumeMode}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Access_Modes}" Value="{Binding Spec.AccessModes.Count}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Capacity_Entries}" Value="{Binding Spec.Capacity.Count}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Mount_Options}" Value="{Binding Spec.MountOptions.Count}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.PersistentVolumePropertiesView_Claim_Name}" Value="{Binding Spec.ClaimRef.Name}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.PersistentVolumePropertiesView_Last_Phase_Transition}" Value="{Binding Status.LastPhaseTransitionTime}" />
     </StackPanel>
 </UserControl>

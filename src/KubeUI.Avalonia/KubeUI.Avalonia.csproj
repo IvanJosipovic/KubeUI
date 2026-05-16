@@ -42,23 +42,15 @@
     <AvaloniaResource Include="Assets\**" Exclude="Assets\Resources.resx" />
   </ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Update="Assets\Resources.resx">
-      <Generator>PublicResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-      <LogicalName>KubeUI.Avalonia.Assets.Resources.resources</LogicalName>
-    </EmbeddedResource>
-  </ItemGroup>
+<PropertyGroup>
+	<ResXGenerator_GenerationType>CodeGeneration</ResXGenerator_GenerationType>
+</PropertyGroup>
 
   <ItemGroup>
-    <Compile Update="Assets\Resources.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
-  </ItemGroup>
-
-  <ItemGroup>
+    <PackageReference Include="Aigamo.ResXGenerator" Version="4.3.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Avalonia" Version="12.0.3" />
     <PackageReference Include="Avalonia.AvaloniaEdit" Version="12.0.0" />
     <PackageReference Include="Avalonia.Controls.DataGrid" Version="12.0.0">

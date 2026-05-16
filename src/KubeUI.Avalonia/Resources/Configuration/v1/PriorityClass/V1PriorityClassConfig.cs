@@ -25,7 +25,7 @@ public sealed partial class V1PriorityClassConfig : ResourceConfigBase<V1Priorit
             },
             new ResourceListColumn<V1PriorityClass, bool?>()
             {
-                Name = "Global Default",
+                Name = "Global_Default",
                 Field = x => x.GlobalDefault ?? false,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },

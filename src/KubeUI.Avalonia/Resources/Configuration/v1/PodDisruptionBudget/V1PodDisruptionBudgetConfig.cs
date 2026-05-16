@@ -21,27 +21,27 @@ public sealed partial class V1PodDisruptionBudgetConfig : ResourceConfigBase<V1P
             NamespaceColumn(),
             new ResourceListColumn<V1PodDisruptionBudget, IntOrString>()
             {
-                Name = "Min Available",
+                Name = "Min_Available",
                 Display = x => x.Spec.MinAvailable != null ? x.Spec.MinAvailable.Value : "",
                 Field = x => x.Spec.MinAvailable,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<V1PodDisruptionBudget, IntOrString>()
             {
-                Name = "Max Unavailable",
+                Name = "Max_Unavailable",
                 Display = x => x.Spec.MaxUnavailable != null ? x.Spec.MaxUnavailable.Value : "",
                 Field = x => x.Spec.MaxUnavailable,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<V1PodDisruptionBudget, int>()
             {
-                Name = "Current Healthy",
+                Name = "Current_Healthy",
                 Field = x => x.Status.CurrentHealthy,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<V1PodDisruptionBudget, int>()
             {
-                Name = "Desired Healthy",
+                Name = "Desired_Healthy",
                 Field = x => x.Status.DesiredHealthy,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },

@@ -21,7 +21,7 @@ public sealed partial class V1PersistentVolumeClaimConfig : ResourceConfigBase<V
             NamespaceColumn(),
             new ResourceListColumn<V1PersistentVolumeClaim, string>()
             {
-                Name = "Storage Class",
+                Name = "Storage_Class",
                 Field = x => x.Spec.StorageClassName,
                 Width = "*",
             },

@@ -2,20 +2,16 @@
     x:Class="KubeUI.Avalonia.Features.Resources.Properties.Controls.HeaderItem"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:converters="using:KubeUI.Avalonia.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
     d:DesignHeight="30"
     d:DesignWidth="200">
-    <UserControl.Resources>
-        <converters:ResourceLabelConverter x:Key="ResourceLabelConverter" />
-    </UserControl.Resources>
     <Border
         MinHeight="28"
         Padding="10,0,10,0"
         Background="{DynamicResource SystemAltHighColor}"
         BorderBrush="{DynamicResource SystemAltHighColor}"
         BorderThickness="0,0,0,1">
-        <SelectableTextBlock VerticalAlignment="Center" Text="{Binding Text, RelativeSource={RelativeSource AncestorType=local:HeaderItem}, Converter={StaticResource ResourceLabelConverter}}" />
+        <SelectableTextBlock VerticalAlignment="Center" Text="{Binding Text, RelativeSource={RelativeSource AncestorType=local:HeaderItem}}" />
     </Border>
 </UserControl>

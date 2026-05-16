@@ -10,7 +10,7 @@ public partial class DateFilterFlyoutView : UserControl
         if (Design.IsDesignMode && DataContext == null)
         {
             var context = new DateFilterFlyoutContext(
-                title: "Last Seen",
+                title: "Last_Seen",
                 apply: static () => { },
                 clear: static () => { })
             {
