@@ -25,7 +25,7 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
     {
     }
     public override bool IsNamespaced => true;
-    public override string Category => CategoryString("ResourceConfig_Category_Network", "Network");
+    public override string Category => Assets.Resources.ResourceConfig_Category_Network!;
     public override int Order => 0;
 
     public override IList<IResourceListColumn> Columns()
@@ -35,21 +35,24 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
             NamespaceColumn(),
             new ResourceListColumn<V1Service, string>()
             {
-                Name = "Type",
+                Key = "type",
+                Name = Assets.Resources.V1ServiceConfig_Type!,
                 Field = x => x.Spec.Type,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             new ResourceListColumn<V1Service, string>()
             {
-                Name = "Cluster IP",
+                Key = "cluster-ip",
+                Name = Assets.Resources.V1ServiceConfig_Cluster_IP!,
                 Field = x => x.Spec.ClusterIP,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             new ResourceListColumn<V1Service, int>()
             {
-                Name = "Ports",
-                Display = x => x.Spec?.Ports?.Select((a) => $"{a.Port}{(string.IsNullOrEmpty(a.Name) ? "" : ":" + a.Name)}/{a.Protocol}").Aggregate((a,b) => a + ", " + b) ?? "",
-                Field = x => x.Spec.Ports?.FirstOrDefault()?.Port ?? 0,
+                Key = "ports",
+                Name = Assets.Resources.V1ServiceConfig_Ports!,
+                Display = x => x.Spec?.Ports is { Count: > 0 } ports ? string.Join(", ", ports.Select(x => $"{x.Port}{(string.IsNullOrEmpty(x.Name) ? "" : ":" + x.Name)}/{x.Protocol}")) : "",
+                Field = x => x.Spec?.Ports?.FirstOrDefault()?.Port ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             AgeColumn(),
@@ -91,10 +94,10 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
 
             ContentDialogSettings settings = new()
             {
-                Title = Assets.Resources.ResourceListViewModel_PortForward_Title,
-                Content = string.Format(Assets.Resources.ResourceListViewModel_PortForward_Content, containerPort.Port, pf.LocalPort),
-                PrimaryButtonText = Assets.Resources.ResourceListViewModel_PortForward_Primary,
-                SecondaryButtonText = Assets.Resources.ResourceListViewModel_PortForward_Secondary,
+                Title = Assets.Resources.ResourceListView_PortForward_Title,
+                Content = string.Format(Assets.Resources.ResourceListView_PortForward_Content, containerPort.Port, pf.LocalPort),
+                PrimaryButtonText = Assets.Resources.ResourceListView_PortForward_Primary,
+                SecondaryButtonText = Assets.Resources.ResourceListView_PortForward_Secondary,
                 DefaultButton = FAContentDialogButton.Secondary
             };
 
@@ -123,4 +126,3 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
 
     public override Control[] Properties(V1Service resource) => [new PropertiesView()];
 }
-

@@ -22,38 +22,44 @@ public sealed partial class V1EventConfig : ResourceConfigBase<Corev1Event>
         return [
             new ResourceListColumn<Corev1Event, string>()
             {
-                Name = "Type",
+                Key = "type",
+                Name = Assets.Resources.V1EventConfig_Type!,
                 Field = x => x?.Type ?? "",
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             new ResourceListColumn<Corev1Event, string>()
             {
-                Name = "Message",
+                Key = "message",
+                Name = Assets.Resources.V1EventConfig_Message!,
                 Field = x => x?.Message ?? "",
                 Width = "4*"
             },
             NamespaceColumn(),
             new ResourceListColumn<Corev1Event, string>()
             {
-                Name = "Involved Object",
+                Key = "involved-object",
+                Name = Assets.Resources.V1EventConfig_Involved_Object!,
                 Field = x => x?.InvolvedObject?.Name ?? "",
                 Width = "*"
             },
             new ResourceListColumn<Corev1Event, string>()
             {
-                Name = "Source",
+                Key = "source",
+                Name = Assets.Resources.V1EventConfig_Source!,
                 Field = x => x?.Source?.Component ?? (x?.ReportingComponent) ?? "",
                 Width = "*"
             },
             new ResourceListColumn<Corev1Event, int>()
             {
-                Name = "Count",
+                Key = "count",
+                Name = Assets.Resources.V1EventConfig_Count!,
                 Field = x => x.Count ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<Corev1Event, DateTime?>()
             {
-                Name = "Last Seen",
+                Key = "last-seen",
+                Name = Assets.Resources.V1EventConfig_Last_Seen!,
                 CustomControl = typeof(EventLastSeenCell),
                 Field = x => EventTimeFormatter.ResolveTimestamp(x),
                 Sort = SortDirection.Descending,

@@ -26,26 +26,30 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
         return [
             new ResourceListColumn<V1CustomResourceDefinition, string>()
             {
-                Name = "Name",
+                Key = "name",
+                Name = Assets.Resources.V1CustomResourceDefinitionConfig_Name!,
                 Field = x => x.Spec.Names.Kind,
                 Sort = SortDirection.Ascending,
                 Width = "2*",
             },
             new ResourceListColumn<V1CustomResourceDefinition, string>()
             {
-                Name = "Group",
+                Key = "group",
+                Name = Assets.Resources.V1CustomResourceDefinitionConfig_Group!,
                 Field = x => x.Spec.Group,
                 Width = "*",
             },
             new ResourceListColumn<V1CustomResourceDefinition, string>()
             {
-                Name = "Version",
+                Key = "version",
+                Name = Assets.Resources.V1CustomResourceDefinitionConfig_Version!,
                 Field = x => x.Spec.Versions.First(x => x.Storage).Name,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             new ResourceListColumn<V1CustomResourceDefinition, string>()
             {
-                Name = "Scope",
+                Key = "scope",
+                Name = Assets.Resources.V1CustomResourceDefinitionConfig_Scope!,
                 Field = x => x.Spec.Scope,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },

@@ -1,4 +1,4 @@
-﻿<UserControl
+<UserControl
     x:Class="KubeUI.Avalonia.Features.Resources.Yaml.Views.ResourceYamlView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -26,12 +26,12 @@
         <StackPanel Grid.Row="0"
             IsVisible="{Binding !EditMode}"
             Orientation="Horizontal">
-            <Button Command="{Binding SetEditModeCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Edit}">
+            <Button Command="{Binding SetEditModeCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlView_Edit}">
                 <ic:FluentIcon Icon="DocumentEdit" />
             </Button>
             <ToggleButton Name="HideNoisyFieldsToggle"
                 IsChecked="{Binding HideNoisyFields, Mode=TwoWay}"
-                ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_HideNoisyFields}">
+                ToolTip.Tip="{x:Static assets:Resources.ResourceYamlView_HideNoisyFields}">
                 <ic:FluentIcon Icon="EyeOff" />
             </ToggleButton>
             <ToggleButton IsChecked="{Binding WordWrap}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlView_WordWrap}">
@@ -46,16 +46,16 @@
             <Button
                 Command="{Binding SaveCommand}"
                 IsEnabled="{Binding CanSaveAction}"
-                ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Save}">
+                ToolTip.Tip="{x:Static assets:Resources.ResourceYamlView_Save}">
                 <ic:FluentIcon Icon="Save" />
             </Button>
             <Button
                 Command="{Binding DryRunCommand}"
                 IsEnabled="{Binding CanDryRunAction}"
-                ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_DryRun}">
+                ToolTip.Tip="{x:Static assets:Resources.ResourceYamlView_DryRun}">
                 <ic:FluentIcon Icon="CheckmarkCircle" />
             </Button>
-            <Button Command="{Binding SetEditModeCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlViewer_Cancel}">
+            <Button Command="{Binding SetEditModeCommand}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlView_Cancel}">
                 <ic:FluentIcon Icon="Dismiss" />
             </Button>
             <ToggleButton IsChecked="{Binding WordWrap}" ToolTip.Tip="{x:Static assets:Resources.ResourceYamlView_WordWrap}">
@@ -106,7 +106,7 @@
             <ae:TextEditor.ContextMenu>
                 <ContextMenu>
                     <MenuItem
-                        Header="{x:Static assets:Resources.Action_Cut}"
+                        Header="{x:Static assets:Resources.ResourceYamlView_Action_Cut}"
                         HotKey="Ctrl+X"
                         IsVisible="{Binding EditMode}">
                         <Interaction.Behaviors>
@@ -118,7 +118,7 @@
                             <ic:FluentIcon Icon="Cut" />
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="{x:Static assets:Resources.Action_Copy}" HotKey="Ctrl+C">
+                    <MenuItem Header="{x:Static assets:Resources.Shared_Action_Copy}" HotKey="Ctrl+C">
                         <Interaction.Behaviors>
                             <ia:EventTriggerBehavior EventName="Click">
                                 <ia:CallMethodAction MethodName="Copy" TargetObject="{Binding #Editor}" />
@@ -129,7 +129,7 @@
                         </MenuItem.Icon>
                     </MenuItem>
                     <MenuItem
-                        Header="{x:Static assets:Resources.Action_Paste}"
+                        Header="{x:Static assets:Resources.ResourceYamlView_Action_Paste}"
                         HotKey="Ctrl+V"
                         IsVisible="{Binding EditMode}">
                         <Interaction.Behaviors>
@@ -141,7 +141,7 @@
                             <ic:FluentIcon Icon="ClipboardPaste" />
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Header="{x:Static assets:Resources.Action_Delete}" IsVisible="{Binding EditMode}">
+                    <MenuItem Header="{x:Static assets:Resources.ResourceYamlView_Action_Delete}" IsVisible="{Binding EditMode}">
                         <Interaction.Behaviors>
                             <ia:EventTriggerBehavior EventName="Click">
                                 <ia:CallMethodAction MethodName="Delete" TargetObject="{Binding #Editor}" />
@@ -155,7 +155,7 @@
                     <Separator IsVisible="{Binding EditMode}" />
 
                     <MenuItem
-                        Header="{x:Static assets:Resources.Action_Undo}"
+                        Header="{x:Static assets:Resources.ResourceYamlView_Action_Undo}"
                         HotKey="Ctrl+Z"
                         IsVisible="{Binding EditMode}">
                         <Interaction.Behaviors>
@@ -168,7 +168,7 @@
                         </MenuItem.Icon>
                     </MenuItem>
                     <MenuItem
-                        Header="{x:Static assets:Resources.Action_Redo}"
+                        Header="{x:Static assets:Resources.ResourceYamlView_Action_Redo}"
                         HotKey="Ctrl+Y"
                         IsVisible="{Binding EditMode}">
                         <Interaction.Behaviors>

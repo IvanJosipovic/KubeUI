@@ -1,4 +1,4 @@
-﻿<UserControl
+<UserControl
     x:Class="KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views.PodLogsView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -81,7 +81,7 @@
                 <ContextMenu>
                     <MenuItem
                         Click="CopyMenuItem_Click"
-                        Header="{x:Static assets:Resources.Action_Copy}"
+                        Header="{x:Static assets:Resources.Shared_Action_Copy}"
                         HotKey="Ctrl+C">
                         <MenuItem.Icon>
                             <ic:FluentIcon Icon="Copy" />

@@ -12,8 +12,8 @@
     x:DataType="models:Corev1Event"
     mc:Ignorable="d">
     <StackPanel>
-        <c:PropertyItem Key="Message" Value="{Binding Message}" />
-        <c:PropertyItem Key="Source">
+        <c:PropertyItem Key="{x:Static assets:Resources.EventPropertiesView_Message}" Value="{Binding Message}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Source}">
             <c:PropertyItem.Value>
                 <MultiBinding StringFormat="{}{0} {1}">
                     <Binding Path="Source.Component" />
@@ -21,14 +21,14 @@
                 </MultiBinding>
             </c:PropertyItem.Value>
         </c:PropertyItem>
-        <c:PropertyItem Key="Reason" Value="{Binding Reason}" />
-        <c:PropertyItem Key="First Seen" Value="{Binding FirstTimestamp}" />
-        <c:PropertyItem Key="Last Seen" Value="{Binding LastTimestamp}" />
-        <c:PropertyItem Key="Count" Value="{Binding Count}" />
-        <c:PropertyItem Key="Type" Value="{Binding Type}" />
-        <c:ExpandableSection Header="{x:Static assets:Resources.InvolvedObject}">
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Reason}" Value="{Binding Reason}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.EventPropertiesView_First_Seen}" Value="{Binding FirstTimestamp}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.EventPropertiesView_Last_Seen}" Value="{Binding LastTimestamp}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Count}" Value="{Binding Count}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Type}" Value="{Binding Type}" />
+        <c:ExpandableSection Header="{x:Static assets:Resources.EventPropertiesView_InvolvedObject}">
             <StackPanel>
-                <c:PropertyItem Key="Kind">
+                <c:PropertyItem Key="{x:Static assets:Resources.Shared_Kind}">
                     <c:PropertyItem.Value>
                         <MultiBinding StringFormat="{}{0}/{1}">
                             <Binding Path="InvolvedObject.ApiVersion" />
@@ -36,9 +36,9 @@
                         </MultiBinding>
                     </c:PropertyItem.Value>
                 </c:PropertyItem>
-                <c:PropertyItem Key="Name" Value="{Binding InvolvedObject.Name}" />
-                <c:PropertyItem Key="Namespace" Value="{Binding InvolvedObject.NamespaceProperty}" />
-                <c:PropertyItem Key="Field Path" Value="{Binding InvolvedObject.FieldPath}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.Shared_Name}" Value="{Binding InvolvedObject.Name}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.EventPropertiesView_Namespace}" Value="{Binding InvolvedObject.NamespaceProperty}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.EventPropertiesView_Field_Path}" Value="{Binding InvolvedObject.FieldPath}" />
             </StackPanel>
         </c:ExpandableSection>
     </StackPanel>

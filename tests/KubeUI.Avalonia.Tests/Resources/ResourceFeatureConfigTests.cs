@@ -1,5 +1,7 @@
+using System.Collections;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using CommunityToolkit.Mvvm.Input;
 using k8s.Models;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Resources.AccessControl;
@@ -100,7 +102,7 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     {
         var config = ResolveConfig<V1EventConfig>();
 
-        var lastSeenColumn = config.Columns().Single(x => x.Name == "Last Seen");
+        var lastSeenColumn = config.Columns().Single(x => x.Name == KubeUI.Avalonia.Assets.Resources.V1EventConfig_Last_Seen);
 
         lastSeenColumn.CustomControl.Name.ShouldBe("EventLastSeenCell");
     }
@@ -141,6 +143,14 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
         config.AuthorizationRequests().ShouldContain(new AuthorizationRequest(typeof(V1Pod), Verb.Create, "portforward"));
         config.AuthorizationRequests().ShouldContain(new AuthorizationRequest(typeof(V1EndpointSlice), Verb.List, null));
         config.AuthorizationRequests().ShouldContain(new AuthorizationRequest(typeof(V1EndpointSlice), Verb.Watch, null));
+    }
+
+    [AvaloniaFact]
+    public void cronjob_config_authorization_requests_include_start_dependency()
+    {
+        var config = ResolveConfig<V1CronJobConfig>();
+
+        config.AuthorizationRequests().ShouldContain(new AuthorizationRequest(typeof(V1Job), Verb.Create, null));
     }
 
     [AvaloniaFact]
@@ -211,6 +221,115 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public void cronjob_config_start_menu_creates_job_from_cronjob_template()
+    {
+        V1CronJob cronJob = CreateCronJob("volsync", "immich-rclone-backup");
+        V1Job job = V1CronJobConfig.CreateJobFromCronJob(cronJob, new DateTimeOffset(2026, 5, 15, 13, 14, 15, TimeSpan.Zero));
+
+        job.ApiVersion.ShouldBe("batch/v1");
+        job.Kind.ShouldBe("Job");
+        job.Name().ShouldBe("immich-rclone-backup-manual-202605151314150000000");
+        job.Namespace().ShouldBe("volsync");
+        job.Spec.ShouldBeSameAs(cronJob.Spec.JobTemplate.Spec);
+        job.Metadata.Labels.ShouldContainKeyAndValue("app", "immich");
+        job.Metadata.Annotations.ShouldContainKeyAndValue("template", "backup");
+        job.Metadata.Annotations.ShouldContainKeyAndValue("cronjob.kubernetes.io/instantiate", "manual");
+
+        V1OwnerReference ownerReference = job.Metadata.OwnerReferences.Single();
+        ownerReference.ApiVersion.ShouldBe("batch/v1");
+        ownerReference.Kind.ShouldBe("CronJob");
+        ownerReference.Name.ShouldBe("immich-rclone-backup");
+        ownerReference.Uid.ShouldBe("cronjob-uid");
+        ownerReference.Controller.ShouldBe(true);
+        ownerReference.BlockOwnerDeletion.ShouldBeNull();
+    }
+
+    [AvaloniaFact]
+    public void cronjob_config_start_menu_matches_kubectl_annotation_precedence()
+    {
+        V1CronJob cronJob = CreateCronJob("volsync", "immich-rclone-backup");
+        cronJob.Spec.JobTemplate.Metadata.Annotations["cronjob.kubernetes.io/instantiate"] = "template";
+
+        V1Job job = V1CronJobConfig.CreateJobFromCronJob(cronJob, new DateTimeOffset(2026, 5, 15, 13, 14, 15, TimeSpan.Zero));
+
+        job.Metadata.Annotations.ShouldContainKeyAndValue("cronjob.kubernetes.io/instantiate", "template");
+    }
+
+    [AvaloniaFact]
+    public async Task cronjob_start_context_menu_creates_job_resource()
+    {
+        var runtime = new TestCluster();
+        await runtime.AddOrUpdateResource(new V1Namespace
+        {
+            Metadata = new() { Name = "volsync" },
+        });
+
+        var workspace = runtime.CreateWorkspace();
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+        var config = (V1CronJobConfig)workspace.GetResourceConfig<V1CronJob>();
+        V1CronJob cronJob = CreateCronJob("volsync", "immich-rclone-backup");
+
+        MenuItemViewModel startItem = config.GetCustomMenuItems(new[] { cronJob }).Single(item => item.Header == "Start");
+        var command = startItem.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
+        var commandParameter = startItem.CommandParameter.ShouldBeAssignableTo<IList>();
+
+        command.CanExecute(commandParameter).ShouldBeTrue();
+
+        await command.ExecuteAsync(commandParameter);
+
+        V1Job job = runtime.GetResourceList<V1Job>().Single();
+        job.Namespace().ShouldBe("volsync");
+        job.Name().ShouldStartWith("immich-rclone-backup-manual-");
+        job.Spec.ShouldBeSameAs(cronJob.Spec.JobTemplate.Spec);
+        job.Metadata.Annotations.ShouldContainKeyAndValue("cronjob.kubernetes.io/instantiate", "manual");
+    }
+
+    [AvaloniaFact]
+    public async Task cronjob_start_context_menu_requires_job_create_permission()
+    {
+        var runtime = new TestCluster();
+        runtime.SetPermission<V1Job>(Verb.Create, false, "volsync");
+        await runtime.AddOrUpdateResource(new V1Namespace
+        {
+            Metadata = new() { Name = "volsync" },
+        });
+
+        var workspace = runtime.CreateWorkspace();
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+        var config = (V1CronJobConfig)workspace.GetResourceConfig<V1CronJob>();
+        V1CronJob cronJob = CreateCronJob("volsync", "immich-rclone-backup");
+
+        MenuItemViewModel startItem = config.GetCustomMenuItems(new[] { cronJob }).Single(item => item.Header == "Start");
+        var command = startItem.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
+        var commandParameter = startItem.CommandParameter.ShouldBeAssignableTo<IList>();
+
+        command.CanExecute(commandParameter).ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public async Task cronjob_start_context_menu_allows_namespace_scoped_job_create_permission()
+    {
+        var runtime = new TestCluster();
+        runtime.SetPermission<V1Job>(Verb.Create, false);
+        runtime.SetPermission<V1Job>(Verb.Create, true, "volsync");
+        await runtime.AddOrUpdateResource(new V1Namespace
+        {
+            Metadata = new() { Name = "volsync" },
+        });
+
+        var workspace = runtime.CreateWorkspace();
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+        var config = (V1CronJobConfig)workspace.GetResourceConfig<V1CronJob>();
+        V1CronJob cronJob = CreateCronJob("volsync", "immich-rclone-backup");
+
+        MenuItemViewModel startItem = config.GetCustomMenuItems(new[] { cronJob }).Single(item => item.Header == "Start");
+        var command = startItem.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
+        var commandParameter = startItem.CommandParameter.ShouldBeAssignableTo<IList>();
+
+        command.CanExecute(commandParameter).ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
     public void job_config_uses_job_properties_view()
     {
         var config = ResolveConfig<V1JobConfig>();
@@ -219,6 +338,55 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
 
         controls.Length.ShouldBe(1);
         controls[0].ShouldBeOfType<JobPropertiesView>();
+    }
+
+    private static V1CronJob CreateCronJob(string @namespace, string name)
+    {
+        return new V1CronJob
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = name,
+                NamespaceProperty = @namespace,
+                Uid = "cronjob-uid",
+            },
+            Spec = new V1CronJobSpec
+            {
+                Schedule = "0 1 * * *",
+                JobTemplate = new V1JobTemplateSpec
+                {
+                    Metadata = new V1ObjectMeta
+                    {
+                        Labels = new Dictionary<string, string>
+                        {
+                            ["app"] = "immich",
+                        },
+                        Annotations = new Dictionary<string, string>
+                        {
+                            ["template"] = "backup",
+                        },
+                    },
+                    Spec = new V1JobSpec
+                    {
+                        Template = new V1PodTemplateSpec
+                        {
+                            Spec = new V1PodSpec
+                            {
+                                RestartPolicy = "Never",
+                                Containers =
+                                [
+                                    new V1Container
+                                    {
+                                        Name = "backup",
+                                        Image = "busybox",
+                                    },
+                                ],
+                            },
+                        },
+                    },
+                },
+            },
+        };
     }
 
     [AvaloniaFact] public void storage_class_config_uses_storage_class_properties_view() => AssertProperties<V1StorageClassConfig, V1StorageClass, StorageClassPropertiesView>(new V1StorageClass());

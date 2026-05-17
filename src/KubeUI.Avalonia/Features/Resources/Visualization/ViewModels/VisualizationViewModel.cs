@@ -40,7 +40,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     public VisualizationViewModel(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
-        Title = Assets.Resources.VisualizationViewModel_Title;
+        Title = Assets.Resources.VisualizationView_Title;
     }
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)

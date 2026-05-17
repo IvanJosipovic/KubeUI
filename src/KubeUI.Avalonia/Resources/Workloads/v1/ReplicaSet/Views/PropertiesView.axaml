@@ -1,7 +1,8 @@
-﻿<UserControl
+<UserControl
     x:Class="KubeUI.Avalonia.Resources.Workloads.v1.ReplicaSet.Views.PropertiesView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="using:KubeUI.Avalonia.Assets"
     xmlns:c="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -11,21 +12,21 @@
     x:DataType="models:V1ReplicaSet"
     mc:Ignorable="d">
     <StackPanel>
-        <c:PropertyItem Key="Desired Replicas" Value="{Binding Spec.Replicas}" />
-        <c:PropertyItem Key="Current Replicas" Value="{Binding Status.Replicas}" />
-        <c:PropertyItem Key="Ready Replicas" Value="{Binding Status.ReadyReplicas}" />
-        <c:PropertyItem Key="Available Replicas" Value="{Binding Status.AvailableReplicas}" />
-        <c:ExpandableSection Header="Status">
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Desired_Replicas}" Value="{Binding Spec.Replicas}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Current_Replicas}" Value="{Binding Status.Replicas}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Ready_Replicas}" Value="{Binding Status.ReadyReplicas}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Available_Replicas}" Value="{Binding Status.AvailableReplicas}" />
+        <c:ExpandableSection Header="{x:Static assets:Resources.Shared_Status}">
             <StackPanel>
-                <c:PropertyItem Key="Fully Labeled Replicas" Value="{Binding Status.FullyLabeledReplicas}" />
-                <c:PropertyItem Key="Observed Generation" Value="{Binding Status.ObservedGeneration}" />
-                <c:PropertyItem Key="Conditions" Value="{Binding Status.Conditions.Count}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.ReplicaSetPropertiesView_Fully_Labeled_Replicas}" Value="{Binding Status.FullyLabeledReplicas}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.Shared_Observed_Generation}" Value="{Binding Status.ObservedGeneration}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.Shared_Conditions}" Value="{Binding Status.Conditions.Count}" />
             </StackPanel>
         </c:ExpandableSection>
-        <c:ExpandableSection Header="Configuration">
+        <c:ExpandableSection Header="{x:Static assets:Resources.Shared_Configuration}">
             <StackPanel>
-                <c:PropertyItem Key="Min Ready Seconds" Value="{Binding Spec.MinReadySeconds}" />
-                <c:PropertyItem Key="Selector Labels" Value="{Binding Spec.Selector.MatchLabels.Count}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.Shared_Min_Ready_Seconds}" Value="{Binding Spec.MinReadySeconds}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.Shared_Selector_Labels}" Value="{Binding Spec.Selector.MatchLabels.Count}" />
             </StackPanel>
         </c:ExpandableSection>
     </StackPanel>

@@ -3,6 +3,7 @@ using Avalonia.Data.Converters;
 using Avalonia.Media;
 using k8s;
 using k8s.Models;
+using KubeUI.Avalonia.Infrastructure;
 
 namespace KubeUI.Avalonia.Converters;
 
@@ -70,26 +71,3 @@ public sealed class EventWarningForegroundConverter : IValueConverter
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();
 }
-
-public sealed class ResourceLabelConverter : IValueConverter
-{
-    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-    {
-        if (value is null || value == AvaloniaProperty.UnsetValue)
-        {
-            return string.Empty;
-        }
-
-        string key = value.ToString() ?? string.Empty;
-        if (string.IsNullOrWhiteSpace(key))
-        {
-            return string.Empty;
-        }
-
-        return Assets.Resources.ResourceManager.GetString(key, CultureInfo.CurrentUICulture) ?? key;
-    }
-
-    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => throw new NotSupportedException();
-}
-

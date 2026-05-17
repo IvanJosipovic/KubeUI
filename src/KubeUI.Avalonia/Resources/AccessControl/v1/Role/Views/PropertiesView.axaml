@@ -2,6 +2,7 @@
     x:Class="KubeUI.Avalonia.Resources.AccessControl.v1.Role.Views.PropertiesView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="using:KubeUI.Avalonia.Assets"
     xmlns:c="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -11,6 +12,6 @@
     x:DataType="models:V1Role"
     mc:Ignorable="d">
     <StackPanel>
-        <c:PropertyItem Key="Rules" Value="{Binding Rules.Count}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Rules}" Value="{Binding Rules.Count}" />
     </StackPanel>
 </UserControl>

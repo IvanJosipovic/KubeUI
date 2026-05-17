@@ -12,7 +12,7 @@ public sealed partial class V1SecretConfig : ResourceConfigBase<k8s.Models.V1Sec
     {
     }
     public override bool IsNamespaced => true;
-    public override string Category => CategoryString("ResourceConfig_Category_Configuration", "Configuration");
+    public override string Category => Assets.Resources.ResourceConfig_Category_Configuration!;
     public override int Order => 1;
 
     public override IList<IResourceListColumn> Columns()
@@ -22,21 +22,22 @@ public sealed partial class V1SecretConfig : ResourceConfigBase<k8s.Models.V1Sec
             NamespaceColumn(),
             new ResourceListColumn<k8s.Models.V1Secret, string>()
             {
-                Name = "Labels",
-                Display = x => x.Metadata?.Labels != null ? x.Metadata.Labels.Keys.Aggregate((a,b) => a + ", " + b) : "",
-                Field = x => x.Metadata?.Labels?.Keys.FirstOrDefault() ?? "",
+                Key = "labels",
+                Name = Assets.Resources.V1SecretConfig_Labels!,
+                Field = x => x.Metadata?.Labels is { Count: > 0 } labels ? string.Join(", ", labels.Keys) : "",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<k8s.Models.V1Secret, string>()
             {
-                Name = "Keys",
-                Display = x => x.Data != null ? x.Data.Keys.Aggregate((a,b) => a + ", " + b) : "",
-                Field = x => x.Data?.Keys.FirstOrDefault() ?? "",
+                Key = "keys",
+                Name = Assets.Resources.V1SecretConfig_Keys!,
+                Field = x => x.Data is { Count: > 0 } data ? string.Join(", ", data.Keys) : "",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<k8s.Models.V1Secret, string>()
             {
-                Name = "Type",
+                Key = "type",
+                Name = Assets.Resources.V1SecretConfig_Type!,
                 Field = x => x.Type,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
@@ -46,7 +47,6 @@ public sealed partial class V1SecretConfig : ResourceConfigBase<k8s.Models.V1Sec
 
     public override Control[] Properties(k8s.Models.V1Secret resource) => [new PropertiesView()];
 }
-
 
 
 

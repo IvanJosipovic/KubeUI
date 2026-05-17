@@ -12,7 +12,6 @@
     x:DataType="local:PropertyItem">
     <UserControl.Resources>
         <converters:PropertyItemValueConverter x:Key="PropertyItemValueConverter" />
-        <converters:ResourceLabelConverter x:Key="ResourceLabelConverter" />
         <converters:StringNotNullOrEmptyConverter x:Key="StringNotNullOrEmptyConverter" />
         <converters:StringNullOrWhiteSpaceConverter x:Key="StringNullOrWhiteSpaceConverter" />
     </UserControl.Resources>
@@ -26,9 +25,9 @@
             <SelectableTextBlock Grid.Row="0"
                 Grid.Column="0"
                 IsVisible="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource StringNotNullOrEmptyConverter}}"
-                Text="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource ResourceLabelConverter}}"
+                Text="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}}"
                 TextWrapping="NoWrap"
-                ToolTip.Tip="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}, Converter={StaticResource ResourceLabelConverter}}" />
+                ToolTip.Tip="{Binding Key, RelativeSource={RelativeSource AncestorType=local:PropertyItem}}" />
 
             <!--  When Key exists, render value in the right column  -->
             <ScrollViewer Grid.Row="0"
