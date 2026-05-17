@@ -75,7 +75,7 @@ public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
         return [
             new()
             {
-                Header = GetResourceString("V1CronJobConfig_Start", "Start"),
+                Header = Assets.Resources.V1CronJobConfig_Start!,
                 FluentIcon = Icon.Play,
                 Command = StartCommand,
                 CommandParameter = selectedItems?.ToList(),
@@ -99,7 +99,7 @@ public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
             catch (Exception ex)
             {
                 exceptions.Add(ex);
-                Utilities.HandleException(_logger, _notificationManager, ex, GetResourceString("V1CronJobConfig_Start_Error", "Error Starting CronJob"), sendNotification: true);
+                Utilities.HandleException(_logger, _notificationManager, ex, Assets.Resources.V1CronJobConfig_Start_Error!, sendNotification: true);
             }
         }
 
@@ -203,11 +203,5 @@ public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
             : new Dictionary<string, string>(source, StringComparer.Ordinal);
     }
 
-    private static string GetResourceString(string resourceKey, string fallback)
-    {
-        return ResourceStrings.GetString(resourceKey) ?? fallback;
-    }
-
     public override Control[] Properties(V1CronJob resource) => [new PropertiesView()];
 }
-
