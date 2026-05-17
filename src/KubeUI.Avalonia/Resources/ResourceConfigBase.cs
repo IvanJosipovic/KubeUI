@@ -14,6 +14,7 @@ using KubeUI.Avalonia.Features.Clusters.Workspace.ViewModels;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Features.Resources.List.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties.ViewModels;
+using KubeUI.Avalonia.Features.Resources.Visualization.ViewModels;
 using KubeUI.Avalonia.Features.Resources.Yaml.ViewModels;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Docking;
@@ -171,6 +172,13 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             Command = ViewYamlCommand,
             CommandParameter = selectedItems?.ToList(),
             FluentIcon = Icon.Code,
+        },
+        new()
+        {
+            Header = Assets.Resources.Shared_Visualize,
+            Command = VisualizeCommand,
+            CommandParameter = selectedItems?.ToList(),
+            FluentIcon = Icon.DataUsage,
         },
         new()
         {
@@ -365,6 +373,22 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     }
 
     public bool CanViewYaml(IList? items)
+    {
+        return items?.Count == 1;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanVisualize))]
+    public void Visualize(IList items)
+    {
+        var selectedItem = items.Cast<T>().Single();
+        var vm = ServiceProvider.GetRequiredService<VisualizationViewModel>();
+
+        vm.Initialize(Cluster, selectedItem);
+
+        _factory.AddToBottom(vm);
+    }
+
+    public bool CanVisualize(IList? items)
     {
         return items?.Count == 1;
     }

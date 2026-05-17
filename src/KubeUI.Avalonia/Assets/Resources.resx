@@ -322,6 +322,9 @@ Are you sure?</value>
   <data name="ResourceListView_NewResource" xml:space="preserve">
     <value>Create a new Resource</value>
   </data>
+  <data name="Shared_Visualize" xml:space="preserve">
+    <value>Visualize</value>
+  </data>
   <data name="ResourceListView_NamespaceLink" xml:space="preserve">
     <value>Linked namespace selection</value>
   </data>
@@ -615,7 +618,7 @@ Are you sure?</value>
     <value>List Row Height</value>
   </data>
   <data name="VisualizationView_Title" xml:space="preserve">
-    <value>Visualization</value>
+    <value>Visualize</value>
   </data>
   <data name="ResourcePropertiesView_Name" xml:space="preserve">
     <value>Name</value>

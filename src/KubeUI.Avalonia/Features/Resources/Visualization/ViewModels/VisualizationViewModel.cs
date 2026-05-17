@@ -26,6 +26,9 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     public partial ClusterWorkspaceViewModel? Cluster { get; set; }
 
     [ObservableProperty]
+    public partial IKubernetesObject<V1ObjectMeta>? RootResource { get; set; }
+
+    [ObservableProperty]
     public partial Graph Graph { get; set; }
 
     [ObservableProperty]
@@ -55,6 +58,11 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     public void Initialize(ClusterWorkspaceViewModel cluster)
     {
+        Initialize(cluster, null);
+    }
+
+    public void Initialize(ClusterWorkspaceViewModel cluster, IKubernetesObject<V1ObjectMeta>? rootResource)
+    {
         // Detach from any previous cluster to avoid duplicate event subscriptions
         if (Cluster != null && Cluster.SelectedNamespaces != null)
         {
@@ -62,6 +70,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
 
         Cluster = cluster;
+        RootResource = rootResource;
 
         if (Cluster?.SelectedNamespaces != null)
         {
@@ -70,7 +79,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             Cluster.SelectedNamespaces.CollectionChanged += SelectedNamespaces_CollectionChanged;
         }
 
-        Id = nameof(VisualizationViewModel) + "-" + cluster;
+        Id = CreateId(cluster, rootResource);
 
         _ = cluster.SeedResource<V1Node>();
 
@@ -111,7 +120,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
     private void Run()
     {
-        if (Cluster == null || Cluster.SelectedNamespaces.Count == 0)
+        if (Cluster == null)
         {
             Graph = new Graph();
             Resources.Clear();
@@ -120,7 +129,8 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         var graph = new Graph();
         Resources.Clear();
-        PopulateAllResources();
+        PopulateAllResources(RootResource != null);
+        UpdateRootHighlight();
 
         LinkOwners(Resources, graph);
         LinkEvent(Resources, graph);
@@ -132,6 +142,8 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         LinkSecret(Resources, graph);
 
         LinkArgoCDTracking(Resources, graph);
+        LinkFluxCDKustomizationTracking(Resources, graph);
+        LinkFluxCDHelmReleaseTracking(Resources, graph);
 
         LinkServiceAccount(Resources, graph);
 
@@ -143,7 +155,21 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
         RemoveDuplicateConnections(graph);
 
-        RemoveNonRelatedToNamespace(graph);
+        if (RootResource != null)
+        {
+            FilterToRootResource(graph, RootResource);
+        }
+        else
+        {
+            if (Cluster.SelectedNamespaces.Count == 0)
+            {
+                Graph = new Graph();
+                Resources.Clear();
+                return;
+            }
+
+            RemoveNonRelatedToNamespace(graph);
+        }
 
         Graph = graph;
     }
@@ -153,7 +179,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         Run();
     }
 
-    private void PopulateAllResources()
+    private void PopulateAllResources(bool includeAllNamespaces)
     {
         if (Cluster?.Objects == null)
         {
@@ -178,7 +204,9 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             {
                 var value = (IKubernetesObject<V1ObjectMeta>)item;
 
-                if (!string.IsNullOrEmpty(value.Namespace()) && !Cluster.SelectedNamespaces.Any(x => x.Name() == value.Namespace()))
+                if (!includeAllNamespaces
+                    && !string.IsNullOrEmpty(value.Namespace())
+                    && !Cluster.SelectedNamespaces.Any(x => x.Name() == value.Namespace()))
                 {
                     continue;
                 }
@@ -186,7 +214,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 // HideNoise
                 if (HideNoise
                     && (
-                           (value is V1ReplicaSet replicaSet && replicaSet.Status.Replicas == 0)
+                           (value is V1ReplicaSet replicaSet && replicaSet.Status?.Replicas == 0)
                         || (value is Corev1Event)
                     ))
                 {
@@ -203,6 +231,26 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 Resources.Add(node);
             }
         }
+    }
+
+    private void UpdateRootHighlight()
+    {
+        var rootNode = RootResource == null ? null : FindResourceNode(RootResource);
+
+        foreach (var node in Resources)
+        {
+            node.IsRoot = ReferenceEquals(node, rootNode);
+        }
+    }
+
+    private static string CreateId(ClusterWorkspaceViewModel cluster, IKubernetesObject<V1ObjectMeta>? rootResource)
+    {
+        if (rootResource == null)
+        {
+            return $"{nameof(VisualizationViewModel)}-{cluster.Name}";
+        }
+
+        return $"{nameof(VisualizationViewModel)}-{cluster.Name}-{rootResource.ApiVersion}/{rootResource.Kind}/{rootResource.Metadata?.NamespaceProperty}/{rootResource.Metadata?.Name}";
     }
 
     private static void RemoveDuplicateConnections(Graph graph)
@@ -226,6 +274,106 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 graph.Edges.Remove(edge);
             }
         }
+    }
+
+    private void FilterToRootResource(Graph graph, IKubernetesObject<V1ObjectMeta> rootResource)
+    {
+        var root = FindResourceNode(rootResource);
+        if (root == null)
+        {
+            Resources.Clear();
+            Graph = new Graph();
+            return;
+        }
+
+        var adjacency = new Dictionary<ResourceNodeViewModel, List<ResourceNodeViewModel>>();
+
+        foreach (var edge in graph.Edges)
+        {
+            if (edge.Head is not ResourceNodeViewModel head || edge.Tail is not ResourceNodeViewModel tail)
+            {
+                continue;
+            }
+
+            if (!adjacency.TryGetValue(head, out var headNeighbors))
+            {
+                headNeighbors = [];
+                adjacency[head] = headNeighbors;
+            }
+
+            if (!adjacency.TryGetValue(tail, out var tailNeighbors))
+            {
+                tailNeighbors = [];
+                adjacency[tail] = tailNeighbors;
+            }
+
+            headNeighbors.Add(tail);
+            tailNeighbors.Add(head);
+        }
+
+        var reachable = new HashSet<ResourceNodeViewModel>();
+        var queue = new Queue<ResourceNodeViewModel>();
+        reachable.Add(root);
+        queue.Enqueue(root);
+
+        while (queue.Count > 0)
+        {
+            var current = queue.Dequeue();
+            if (!adjacency.TryGetValue(current, out var neighbors))
+            {
+                continue;
+            }
+
+            foreach (var neighbor in neighbors)
+            {
+                if (reachable.Add(neighbor))
+                {
+                    queue.Enqueue(neighbor);
+                }
+            }
+        }
+
+        foreach (var edge in graph.Edges.ToList())
+        {
+            if (edge.Head is not ResourceNodeViewModel head || edge.Tail is not ResourceNodeViewModel tail)
+            {
+                graph.Edges.Remove(edge);
+                continue;
+            }
+
+            if (!reachable.Contains(head) || !reachable.Contains(tail))
+            {
+                graph.Edges.Remove(edge);
+            }
+        }
+
+        for (var i = Resources.Count - 1; i >= 0; i--)
+        {
+            if (!reachable.Contains(Resources[i]))
+            {
+                Resources.RemoveAt(i);
+            }
+        }
+    }
+
+    private ResourceNodeViewModel? FindResourceNode(IKubernetesObject<V1ObjectMeta> resource)
+    {
+        var uid = resource.Uid();
+        if (!string.IsNullOrWhiteSpace(uid))
+        {
+            var byUid = Resources.FirstOrDefault(node => node.Resource.Uid() == uid);
+            if (byUid != null)
+            {
+                return byUid;
+            }
+        }
+
+        var namespaceName = resource.Namespace();
+        var name = resource.Name();
+        return Resources.FirstOrDefault(node =>
+            node.Resource.GetType() == resource.GetType()
+            && node.Resource.Namespace() == namespaceName
+            && node.Resource.Name() == name);
     }
 
     private void RemoveNonRelatedToNamespace(Graph graph)
@@ -1666,10 +1814,16 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         {
             if (start.Resource is V1Deployment deployment)
             {
+                var templateSpec = deployment.Spec?.Template?.Spec;
+                if (templateSpec == null)
+                {
+                    continue;
+                }
+
                 foreach (var end in resources)
                 {
                     if (end.Resource is V1ServiceAccount serviceAccount &&
-                        serviceAccount.Name() == deployment.Spec.Template.Spec.ServiceAccountName &&
+                        serviceAccount.Name() == templateSpec.ServiceAccountName &&
                         end.Resource.Namespace() == deployment.Namespace())
                     {
                         graph.Edges.Add(new Edge(start, end));
@@ -1679,11 +1833,17 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
             if (start.Resource is V1ReplicaSet replicaSet)
             {
+                var templateSpec = replicaSet.Spec?.Template?.Spec;
+                if (templateSpec == null)
+                {
+                    continue;
+                }
+
                 foreach (var end in resources)
                 {
                     if (end.Resource is V1ServiceAccount serviceAccount)
                     {
-                        if (serviceAccount.Name() == replicaSet.Spec.Template.Spec.ServiceAccountName && end.Resource.Namespace() == replicaSet.Namespace())
+                        if (serviceAccount.Name() == templateSpec.ServiceAccountName && end.Resource.Namespace() == replicaSet.Namespace())
                         {
                             graph.Edges.Add(new Edge(start, end));
                         }
@@ -1693,11 +1853,17 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
             if (start.Resource is V1DaemonSet daemonSet)
             {
+                var templateSpec = daemonSet.Spec?.Template?.Spec;
+                if (templateSpec == null)
+                {
+                    continue;
+                }
+
                 foreach (var end in resources)
                 {
                     if (end.Resource is V1ServiceAccount serviceAccount)
                     {
-                        if (serviceAccount.Name() == daemonSet.Spec.Template.Spec.ServiceAccountName && end.Resource.Namespace() == daemonSet.Namespace())
+                        if (serviceAccount.Name() == templateSpec.ServiceAccountName && end.Resource.Namespace() == daemonSet.Namespace())
                         {
                             graph.Edges.Add(new Edge(start, end));
                         }
@@ -1707,11 +1873,17 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
             if (start.Resource is V1StatefulSet statefulSet)
             {
+                var templateSpec = statefulSet.Spec?.Template?.Spec;
+                if (templateSpec == null)
+                {
+                    continue;
+                }
+
                 foreach (var end in resources)
                 {
                     if (end.Resource is V1ServiceAccount serviceAccount)
                     {
-                        if (serviceAccount.Name() == statefulSet.Spec.Template.Spec.ServiceAccountName && end.Resource.Namespace() == statefulSet.Namespace())
+                        if (serviceAccount.Name() == templateSpec.ServiceAccountName && end.Resource.Namespace() == statefulSet.Namespace())
                         {
                             graph.Edges.Add(new Edge(start, end));
                         }
@@ -1721,11 +1893,17 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
             if (start.Resource is V1Pod pod)
             {
+                var podSpec = pod.Spec;
+                if (podSpec == null)
+                {
+                    continue;
+                }
+
                 foreach (var end in resources)
                 {
                     if (end.Resource is V1ServiceAccount serviceAccount)
                     {
-                        if (serviceAccount.Name() == pod.Spec.ServiceAccountName && end.Resource.Namespace() == pod.Namespace())
+                        if (serviceAccount.Name() == podSpec.ServiceAccountName && end.Resource.Namespace() == pod.Namespace())
                         {
                             graph.Edges.Add(new Edge(start, end));
                         }
@@ -2018,6 +2196,72 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
     }
 
+    private static void LinkFluxCDKustomizationTracking(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
+    {
+        foreach (var resource in resources)
+        {
+            var labels = resource.Resource?.Metadata?.Labels;
+            if (labels == null)
+            {
+                continue;
+            }
+
+            if (!labels.TryGetValue("kustomize.toolkit.fluxcd.io/name", out var name))
+            {
+                continue;
+            }
+
+            if (!labels.TryGetValue("kustomize.toolkit.fluxcd.io/namespace", out var namespaceProperty))
+            {
+                continue;
+            }
+
+            var kustomization = resources.FirstOrDefault(r =>
+                r.Resource?.Metadata?.Name == name &&
+                r.Resource?.Metadata?.NamespaceProperty == namespaceProperty &&
+                r.Resource?.ApiVersion == "kustomize.toolkit.fluxcd.io/v1" &&
+                r.Resource?.Kind == "Kustomization");
+
+            if (kustomization != null && !ReferenceEquals(kustomization, resource))
+            {
+                graph.Edges.Add(new Edge(kustomization, resource));
+            }
+        }
+    }
+
+    private static void LinkFluxCDHelmReleaseTracking(ObservableCollection<ResourceNodeViewModel> resources, Graph graph)
+    {
+        foreach (var resource in resources)
+        {
+            var labels = resource.Resource?.Metadata?.Labels;
+            if (labels == null)
+            {
+                continue;
+            }
+
+            if (!labels.TryGetValue("helm.toolkit.fluxcd.io/name", out var name))
+            {
+                continue;
+            }
+
+            if (!labels.TryGetValue("helm.toolkit.fluxcd.io/namespace", out var namespaceProperty))
+            {
+                continue;
+            }
+
+            var helmRelease = resources.FirstOrDefault(r =>
+                r.Resource?.Metadata?.Name == name &&
+                r.Resource?.Metadata?.NamespaceProperty == namespaceProperty &&
+                r.Resource?.ApiVersion == "helm.toolkit.fluxcd.io/v2" &&
+                r.Resource?.Kind == "HelmRelease");
+
+            if (helmRelease != null && !ReferenceEquals(helmRelease, resource))
+            {
+                graph.Edges.Add(new Edge(helmRelease, resource));
+            }
+        }
+    }
+
     #endregion
 
     public void Dispose()
@@ -2055,6 +2299,9 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         [ObservableProperty]
         public partial string IconPath { get; set; }
 
+        [ObservableProperty]
+        public partial bool IsRoot { get; set; }
+
         public ResourceNodeViewModel(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
@@ -2084,6 +2331,3 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         }
     }
 }
-
-
-

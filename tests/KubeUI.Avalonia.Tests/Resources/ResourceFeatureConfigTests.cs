@@ -125,6 +125,27 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public void deployment_config_exposes_visualize_menu_item()
+    {
+        var config = ResolveConfig<V1DeploymentConfig>();
+        var deployment = new V1Deployment
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "api",
+                NamespaceProperty = "default",
+            }
+        };
+
+        MenuItemViewModel visualizeItem = config.GetDefaultMenuItems(new[] { deployment }).Single(item => item.Header == KubeUI.Avalonia.Assets.Resources.Shared_Visualize);
+
+        visualizeItem.Command.ShouldNotBeNull();
+        visualizeItem.CommandParameter.ShouldBeAssignableTo<IList>();
+        visualizeItem.Command!.CanExecute(visualizeItem.CommandParameter).ShouldBeTrue();
+        visualizeItem.FluentIcon.ShouldBe(FluentIcons.Common.Icon.DataUsage);
+    }
+
+    [AvaloniaFact]
     public void service_config_uses_service_properties_view()
     {
         var config = ResolveConfig<V1ServiceConfig>();
@@ -327,6 +348,20 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
         var commandParameter = startItem.CommandParameter.ShouldBeAssignableTo<IList>();
 
         command.CanExecute(commandParameter).ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public void deployment_config_visualize_requires_single_selection()
+    {
+        var config = ResolveConfig<V1DeploymentConfig>();
+        var first = new V1Deployment { Metadata = new V1ObjectMeta { Name = "api", NamespaceProperty = "default" } };
+        var second = new V1Deployment { Metadata = new V1ObjectMeta { Name = "worker", NamespaceProperty = "default" } };
+
+        MenuItemViewModel visualizeItem = config.GetDefaultMenuItems(new[] { first, second }).Single(item => item.Header == KubeUI.Avalonia.Assets.Resources.Shared_Visualize);
+
+        visualizeItem.Command.ShouldNotBeNull();
+        visualizeItem.CommandParameter.ShouldBeAssignableTo<IList>();
+        visualizeItem.Command!.CanExecute(visualizeItem.CommandParameter).ShouldBeFalse();
     }
 
     [AvaloniaFact]

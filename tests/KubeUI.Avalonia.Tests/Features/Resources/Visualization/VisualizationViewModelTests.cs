@@ -184,6 +184,257 @@ public class VisualizationViewModelTests : AvaloniaTestBase
         vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1Secret>();
     }
 
+    [AvaloniaFact]
+    public async Task LinkFluxCDKustomization()
+    {
+        var cluster = await CreateClusterAsync();
+
+        var namespaceResource = new V1Namespace
+        {
+            Metadata = new()
+            {
+                Name = "flux-system"
+            }
+        };
+
+        await cluster.AddOrUpdateResource(namespaceResource);
+        cluster.SelectedNamespaces.Add(namespaceResource);
+
+        await cluster.AddOrUpdateResource(new FluxKustomization
+        {
+            Metadata = new()
+            {
+                Name = "app",
+                NamespaceProperty = "flux-system"
+            }
+        });
+
+        await cluster.AddOrUpdateResource(new V1ConfigMap
+        {
+            Metadata = new()
+            {
+                Name = "app-config",
+                NamespaceProperty = "flux-system",
+                Labels = new Dictionary<string, string>
+                {
+                    ["kustomize.toolkit.fluxcd.io/name"] = "app",
+                    ["kustomize.toolkit.fluxcd.io/namespace"] = "flux-system"
+                }
+            }
+        });
+
+        var vm = CreateViewModel();
+        vm.Initialize(cluster);
+
+        vm.Graph.Edges.Count.ShouldBe(1);
+        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<FluxKustomization>();
+        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+    }
+
+    [AvaloniaFact]
+    public async Task LinkFluxCDHelmRelease()
+    {
+        var cluster = await CreateClusterAsync();
+
+        var namespaceResource = new V1Namespace
+        {
+            Metadata = new()
+            {
+                Name = "plex"
+            }
+        };
+
+        await cluster.AddOrUpdateResource(namespaceResource);
+        cluster.SelectedNamespaces.Add(namespaceResource);
+
+        await cluster.AddOrUpdateResource(new FluxHelmRelease
+        {
+            Metadata = new()
+            {
+                Name = "plex",
+                NamespaceProperty = "plex"
+            }
+        });
+
+        await cluster.AddOrUpdateResource(new V1ConfigMap
+        {
+            Metadata = new()
+            {
+                Name = "plex-config",
+                NamespaceProperty = "plex",
+                Labels = new Dictionary<string, string>
+                {
+                    ["helm.toolkit.fluxcd.io/name"] = "plex",
+                    ["helm.toolkit.fluxcd.io/namespace"] = "plex"
+                }
+            }
+        });
+
+        var vm = CreateViewModel();
+        vm.Initialize(cluster);
+
+        vm.Graph.Edges.Count.ShouldBe(1);
+        vm.Graph.Edges.First().Tail.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<FluxHelmRelease>();
+        vm.Graph.Edges.First().Head.ShouldBeOfType<ResourceNodeViewModel>().Resource.ShouldBeOfType<V1ConfigMap>();
+    }
+
+    [AvaloniaFact]
+    public async Task Initialize_with_root_resource_filters_to_parents_and_dependents()
+    {
+        var cluster = await CreateClusterAsync();
+
+        var deployment = new V1Deployment
+        {
+            Metadata = new()
+            {
+                Name = "my-app",
+                NamespaceProperty = "default",
+                Uid = "deployment-uid"
+            },
+            Spec = new()
+            {
+                Template = new()
+                {
+                    Spec = new()
+                    {
+                        Containers =
+                        [
+                            new V1Container
+                            {
+                                Name = "app",
+                                Image = "busybox",
+                            }
+                        ]
+                    }
+                }
+            }
+        };
+
+        await cluster.AddOrUpdateResource(deployment);
+
+        var replicaSet = new V1ReplicaSet
+        {
+            Metadata = new()
+            {
+                Name = "my-app-7c4f5d8f7b",
+                NamespaceProperty = "default",
+                Uid = "replicaset-uid",
+                OwnerReferences =
+                [
+                    new()
+                    {
+                        Uid = "deployment-uid",
+                        Kind = "Deployment",
+                        ApiVersion = V1Deployment.KubeApiVersion,
+                        Controller = true,
+                    }
+                ],
+            },
+        };
+
+        await cluster.AddOrUpdateResource(replicaSet);
+
+        var pod = new V1Pod
+        {
+            Metadata = new()
+            {
+                Name = "my-app-7c4f5d8f7b-abcde",
+                NamespaceProperty = "default",
+                Uid = "pod-uid",
+                OwnerReferences =
+                [
+                    new()
+                    {
+                        Uid = "replicaset-uid",
+                        Kind = "ReplicaSet",
+                        ApiVersion = V1ReplicaSet.KubeApiVersion,
+                        Controller = true,
+                    }
+                ]
+            },
+            Spec = new()
+            {
+                Containers =
+                [
+                    new V1Container
+                    {
+                        Name = "app",
+                        Image = "busybox",
+                    }
+                ],
+                ServiceAccountName = "workload-sa",
+                Volumes =
+                [
+                    new()
+                    {
+                        Name = "config",
+                        ConfigMap = new()
+                        {
+                            Name = "workload-config"
+                        }
+                    }
+                ]
+            },
+        };
+
+        await cluster.AddOrUpdateResource(pod);
+
+        await cluster.AddOrUpdateResource(new V1ServiceAccount
+        {
+            Metadata = new()
+            {
+                Name = "workload-sa",
+                NamespaceProperty = "default"
+            }
+        });
+
+        await cluster.AddOrUpdateResource(new V1ConfigMap
+        {
+            Metadata = new()
+            {
+                Name = "workload-config",
+                NamespaceProperty = "default"
+            },
+            Data = new Dictionary<string, string>()
+        });
+
+        await cluster.AddOrUpdateResource(new V1ConfigMap
+        {
+            Metadata = new()
+            {
+                Name = "unrelated-config",
+                NamespaceProperty = "default",
+                OwnerReferences =
+                [
+                    new()
+                    {
+                        Uid = "other-owner"
+                    }
+                ]
+            },
+            Data = new Dictionary<string, string>()
+        });
+
+        var vm = CreateViewModel();
+        vm.Initialize(cluster, pod);
+
+        vm.Resources.Count.ShouldBe(5);
+        vm.Resources.Select(x => x.Resource).Any(x => ReferenceEquals(x, deployment)).ShouldBeTrue();
+        vm.Resources.Select(x => x.Resource).Any(x => x is V1ReplicaSet linkedReplicaSet && linkedReplicaSet.Name() == "my-app-7c4f5d8f7b").ShouldBeTrue();
+        vm.Resources.Select(x => x.Resource).Any(x => x is V1Pod linkedPod && linkedPod.Name() == "my-app-7c4f5d8f7b-abcde").ShouldBeTrue();
+        vm.Resources.Select(x => x.Resource).Any(x => x is V1ServiceAccount linkedServiceAccount && linkedServiceAccount.Name() == "workload-sa").ShouldBeTrue();
+        vm.Resources.Select(x => x.Resource).Any(x => x is V1ConfigMap linkedConfigMap && linkedConfigMap.Name() == "workload-config").ShouldBeTrue();
+        vm.Resources.Select(x => x.Resource).Any(x => x is V1ConfigMap configMap && configMap.Name() == "unrelated-config").ShouldBeFalse();
+        vm.Resources.Single(x => ReferenceEquals(x.Resource, pod)).IsRoot.ShouldBeTrue();
+        vm.Resources.Where(x => !ReferenceEquals(x.Resource, pod)).All(x => !x.IsRoot).ShouldBeTrue();
+        vm.Graph.Edges.Count.ShouldBe(4);
+        vm.Graph.Edges.Select(x => x.Tail).OfType<ResourceNodeViewModel>().Any(x => ReferenceEquals(x.Resource, deployment)).ShouldBeTrue();
+        vm.Graph.Edges.Select(x => x.Tail).OfType<ResourceNodeViewModel>().Any(x => x.Resource is V1ReplicaSet linkedReplicaSet && linkedReplicaSet.Name() == "my-app-7c4f5d8f7b").ShouldBeTrue();
+        vm.Graph.Edges.Select(x => x.Tail).OfType<ResourceNodeViewModel>().Any(x => x.Resource is V1Pod linkedPod && linkedPod.Name() == "my-app-7c4f5d8f7b-abcde").ShouldBeTrue();
+        vm.Graph.Edges.Select(x => x.Head).OfType<ResourceNodeViewModel>().Any(x => x.Resource is V1ServiceAccount linkedServiceAccount && linkedServiceAccount.Name() == "workload-sa").ShouldBeTrue();
+        vm.Graph.Edges.Select(x => x.Head).OfType<ResourceNodeViewModel>().Any(x => x.Resource is V1ConfigMap linkedConfigMap && linkedConfigMap.Name() == "workload-config").ShouldBeTrue();
+    }
+
     #region ConfigMap
 
     [AvaloniaFact]
@@ -3155,6 +3406,24 @@ public class VisualizationViewModelTests : AvaloniaTestBase
 
         public V1ObjectMeta Metadata { get; set; } = new();
     }
+
+    [KubernetesEntity(Group = "kustomize.toolkit.fluxcd.io", ApiVersion = "v1", Kind = "Kustomization", PluralName = "kustomizations")]
+    public sealed class FluxKustomization : IKubernetesObject<V1ObjectMeta>
+    {
+        public string ApiVersion { get; set; } = "kustomize.toolkit.fluxcd.io/v1";
+
+        public string Kind { get; set; } = "Kustomization";
+
+        public V1ObjectMeta Metadata { get; set; } = new();
+    }
+
+    [KubernetesEntity(Group = "helm.toolkit.fluxcd.io", ApiVersion = "v2", Kind = "HelmRelease", PluralName = "helmreleases")]
+    public sealed class FluxHelmRelease : IKubernetesObject<V1ObjectMeta>
+    {
+        public string ApiVersion { get; set; } = "helm.toolkit.fluxcd.io/v2";
+
+        public string Kind { get; set; } = "HelmRelease";
+
+        public V1ObjectMeta Metadata { get; set; } = new();
+    }
 }
-
-
