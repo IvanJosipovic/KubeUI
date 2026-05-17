@@ -146,6 +146,14 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public void cronjob_config_authorization_requests_include_start_dependency()
+    {
+        var config = ResolveConfig<V1CronJobConfig>();
+
+        config.AuthorizationRequests().ShouldContain(new AuthorizationRequest(typeof(V1Job), Verb.Create, null));
+    }
+
+    [AvaloniaFact]
     public void node_config_uses_node_properties_view()
     {
         var config = ResolveConfig<V1NodeConfig>();
@@ -296,6 +304,29 @@ public sealed class ResourceFeatureConfigTests : AvaloniaTestBase
         var commandParameter = startItem.CommandParameter.ShouldBeAssignableTo<IList>();
 
         command.CanExecute(commandParameter).ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public async Task cronjob_start_context_menu_allows_namespace_scoped_job_create_permission()
+    {
+        var runtime = new TestCluster();
+        runtime.SetPermission<V1Job>(Verb.Create, false);
+        runtime.SetPermission<V1Job>(Verb.Create, true, "volsync");
+        await runtime.AddOrUpdateResource(new V1Namespace
+        {
+            Metadata = new() { Name = "volsync" },
+        });
+
+        var workspace = runtime.CreateWorkspace();
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+        var config = (V1CronJobConfig)workspace.GetResourceConfig<V1CronJob>();
+        V1CronJob cronJob = CreateCronJob("volsync", "immich-rclone-backup");
+
+        MenuItemViewModel startItem = config.GetCustomMenuItems(new[] { cronJob }).Single(item => item.Header == "Start");
+        var command = startItem.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
+        var commandParameter = startItem.CommandParameter.ShouldBeAssignableTo<IList>();
+
+        command.CanExecute(commandParameter).ShouldBeTrue();
     }
 
     [AvaloniaFact]
