@@ -11,7 +11,7 @@ public sealed partial class V1ConfigMapConfig : ResourceConfigBase<V1ConfigMap>
     {
     }
     public override bool IsNamespaced => true;
-    public override string Category => CategoryString("ResourceConfig_Category_Configuration", "Configuration");
+    public override string Category => Assets.Resources.ResourceConfig_Category_Configuration!;
     public override int Order => 0;
 
     public override IList<IResourceListColumn> Columns()
@@ -21,9 +21,9 @@ public sealed partial class V1ConfigMapConfig : ResourceConfigBase<V1ConfigMap>
             NamespaceColumn(),
             new ResourceListColumn<V1ConfigMap, string>()
             {
-                Name = "Keys",
-                Display = x => x.Data?.Keys.Count > 0 ? x.Data.Keys.Aggregate((a,b) => a + ", " + b) : "",
-                Field = x => x.Data?.Keys.FirstOrDefault() ?? "",
+                Key = "keys",
+                Name = Assets.Resources.V1ConfigMapConfig_Keys!,
+                Field = x => x.Data is { Count: > 0 } data ? string.Join(", ", data.Keys) : "",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             AgeColumn(),
@@ -32,4 +32,3 @@ public sealed partial class V1ConfigMapConfig : ResourceConfigBase<V1ConfigMap>
 
     public override Control[] Properties(V1ConfigMap resource) => [new PropertiesView()];
 }
-

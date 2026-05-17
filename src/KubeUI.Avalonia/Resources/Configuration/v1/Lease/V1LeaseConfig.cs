@@ -11,7 +11,7 @@ public sealed partial class V1LeaseConfig : ResourceConfigBase<V1Lease>
     {
     }
     public override bool IsNamespaced => true;
-    public override string Category => CategoryString("ResourceConfig_Category_Configuration", "Configuration");
+    public override string Category => Assets.Resources.ResourceConfig_Category_Configuration!;
     public override int Order => 8;
 
     public override IList<IResourceListColumn> Columns()
@@ -21,7 +21,8 @@ public sealed partial class V1LeaseConfig : ResourceConfigBase<V1Lease>
             NamespaceColumn(),
             new ResourceListColumn<V1Lease, string>()
             {
-                Name = "Holder",
+                Key = "holder",
+                Name = Assets.Resources.V1LeaseConfig_Holder!,
                 Field = x => x.Spec.HolderIdentity ?? "",
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },

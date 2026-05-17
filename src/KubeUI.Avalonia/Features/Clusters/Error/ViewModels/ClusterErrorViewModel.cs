@@ -5,7 +5,7 @@ public sealed partial class ClusterErrorViewModel : ViewModelBase
 {
     public ClusterErrorViewModel()
     {
-        Title = Assets.Resources.ClusterErrorViewModel_Title;
+        Title = Assets.Resources.ClusterErrorView_Title;
         Id = nameof(ClusterErrorViewModel);
     }
 

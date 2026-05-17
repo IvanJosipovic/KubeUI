@@ -95,7 +95,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         IYamlValidationService yamlValidationService,
         ISettingsService settings)
     {
-        Title = Assets.Resources.ResourceYamlViewModel_Title;
+        Title = Assets.Resources.ResourceYamlView_Title;
         _logger = logger;
         _yamlSerializer = yamlSerializer;
         _yamlValidationService = yamlValidationService;
@@ -188,7 +188,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         {
             var diagnostic = ValidationDiagnostics[0];
             var message = $"{diagnostic.Message} (line {diagnostic.StartLine}, column {diagnostic.StartColumn})";
-            SetActionResult(false, Assets.Resources.ResourceYamlViewer_SaveFailed, message);
+            SetActionResult(false, Assets.Resources.ResourceYamlView_SaveFailed, message);
             return;
         }
 
@@ -197,11 +197,11 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
             byte[] byteArray = Encoding.UTF8.GetBytes(YamlDocument.Text);
             await using MemoryStream stream = new(byteArray);
             await Cluster!.ImportYaml(stream);
-            SetActionResult(true, Assets.Resources.ResourceYamlViewer_SaveSucceeded, Assets.Resources.ResourceYamlViewer_SaveSucceededMessage);
+            SetActionResult(true, Assets.Resources.ResourceYamlView_SaveSucceeded, Assets.Resources.ResourceYamlView_SaveSucceededMessage);
         }
         catch (Exception ex)
         {
-            SetActionResult(false, Assets.Resources.ResourceYamlViewer_SaveFailed, Utilities.GetUserFacingErrorMessage(ex));
+            SetActionResult(false, Assets.Resources.ResourceYamlView_SaveFailed, Utilities.GetUserFacingErrorMessage(ex));
             _logger.LogError(ex, "Error Saving Yaml");
         }
     }
@@ -220,7 +220,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         {
             var diagnostic = ValidationDiagnostics[0];
             var message = $"{diagnostic.Message} (line {diagnostic.StartLine}, column {diagnostic.StartColumn})";
-            SetActionResult(false, Assets.Resources.ResourceYamlViewer_DryRunFailed, message);
+            SetActionResult(false, Assets.Resources.ResourceYamlView_DryRunFailed, message);
             return;
         }
 
@@ -229,11 +229,11 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
             byte[] byteArray = Encoding.UTF8.GetBytes(YamlDocument.Text);
             await using MemoryStream stream = new(byteArray);
             await Cluster!.DryRunYaml(stream);
-            SetActionResult(true, Assets.Resources.ResourceYamlViewer_DryRunSucceeded, Assets.Resources.ResourceYamlViewer_DryRunSucceededMessage);
+            SetActionResult(true, Assets.Resources.ResourceYamlView_DryRunSucceeded, Assets.Resources.ResourceYamlView_DryRunSucceededMessage);
         }
         catch (Exception ex)
         {
-            SetActionResult(false, Assets.Resources.ResourceYamlViewer_DryRunFailed, Utilities.GetUserFacingErrorMessage(ex));
+            SetActionResult(false, Assets.Resources.ResourceYamlView_DryRunFailed, Utilities.GetUserFacingErrorMessage(ex));
             _logger.LogError(ex, "Error Dry Running Yaml");
         }
     }
@@ -388,7 +388,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
             var diagnostic = ValidationDiagnostics[0];
             SetActionResult(
                 false,
-                Assets.Resources.ResourceYamlViewer_ValidationFailed,
+                Assets.Resources.ResourceYamlView_ValidationFailed,
                 $"{diagnostic.Message} (line {diagnostic.StartLine}, column {diagnostic.StartColumn})",
                 fromValidation: true);
             return;

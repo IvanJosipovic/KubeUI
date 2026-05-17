@@ -11,7 +11,7 @@ public sealed partial class V1PersistentVolumeClaimConfig : ResourceConfigBase<V
     {
     }
     public override bool IsNamespaced => true;
-    public override string Category => CategoryString("ResourceConfig_Category_Storage", "Storage");
+    public override string Category => Assets.Resources.ResourceConfig_Category_Storage!;
     public override int Order => 0;
 
     public override IList<IResourceListColumn> Columns()
@@ -21,13 +21,15 @@ public sealed partial class V1PersistentVolumeClaimConfig : ResourceConfigBase<V
             NamespaceColumn(),
             new ResourceListColumn<V1PersistentVolumeClaim, string>()
             {
-                Name = "Storage Class",
+                Key = "storage-class",
+                Name = Assets.Resources.V1PersistentVolumeClaimConfig_Storage_Class!,
                 Field = x => x.Spec.StorageClassName,
                 Width = "*",
             },
             new ResourceListColumn<V1PersistentVolumeClaim, decimal>()
             {
-                Name = "Size",
+                Key = "size",
+                Name = Assets.Resources.V1PersistentVolumeClaimConfig_Size!,
                 Display = x => x.Spec.Resources?.Requests["storage"]?.CanonicalizeString(ResourceQuantity.SuffixFormat.BinarySI) ?? "",
                 Field = x => x.Spec.Resources?.Requests["storage"]?.ToDecimal() ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
@@ -35,7 +37,8 @@ public sealed partial class V1PersistentVolumeClaimConfig : ResourceConfigBase<V
             AgeColumn(),
             new ResourceListColumn<V1PersistentVolumeClaim, string>()
             {
-                Name = "Status",
+                Key = "status",
+                Name = Assets.Resources.V1PersistentVolumeClaimConfig_Status!,
                 Field = x => x.Status.Phase,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },

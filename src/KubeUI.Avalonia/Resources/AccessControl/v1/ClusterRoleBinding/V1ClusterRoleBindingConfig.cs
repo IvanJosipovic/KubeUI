@@ -11,7 +11,7 @@ public sealed partial class V1ClusterRoleBindingConfig : ResourceConfigBase<V1Cl
     {
     }
 
-    public override string Category => CategoryString("ResourceConfig_Category_AccessControl", "Access Control");
+    public override string Category => Assets.Resources.ResourceConfig_Category_AccessControl!;
     public override int Order => 3;
 
     public override IList<IResourceListColumn> Columns()
@@ -20,8 +20,9 @@ public sealed partial class V1ClusterRoleBindingConfig : ResourceConfigBase<V1Cl
             NameColumn(SortDirection.Ascending),
             new ResourceListColumn<V1ClusterRoleBinding, string>()
             {
-                Name = "Bindings",
-                Field = x => x.Subjects == null || x.Subjects.Count == 0 ? "" : x.Subjects.Select(y => y.Name).Aggregate((a, b) => a + ", " + b),
+                Key = "bindings",
+                Name = Assets.Resources.V1ClusterRoleBindingConfig_Bindings!,
+                Field = x => x.Subjects is { Count: > 0 } subjects ? string.Join(", ", subjects.Select(y => y.Name)) : "",
                 Width = "*",
             },
             AgeColumn(),
@@ -30,4 +31,3 @@ public sealed partial class V1ClusterRoleBindingConfig : ResourceConfigBase<V1Cl
 
     public override Control[] Properties(V1ClusterRoleBinding resource) => [new PropertiesView()];
 }
-

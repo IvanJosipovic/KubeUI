@@ -2,6 +2,7 @@
     x:Class="KubeUI.Avalonia.Resources.AccessControl.v1.RoleBinding.Views.PropertiesView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="using:KubeUI.Avalonia.Assets"
     xmlns:c="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -11,8 +12,8 @@
     x:DataType="models:V1RoleBinding"
     mc:Ignorable="d">
     <StackPanel>
-        <c:PropertyItem Key="Role Kind" Value="{Binding RoleRef.Kind}" />
-        <c:PropertyItem Key="Role Name" Value="{Binding RoleRef.Name}" />
-        <c:PropertyItem Key="Subjects" Value="{Binding Subjects.Count}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Role_Kind}" Value="{Binding RoleRef.Kind}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Role_Name}" Value="{Binding RoleRef.Name}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Subjects}" Value="{Binding Subjects.Count}" />
     </StackPanel>
 </UserControl>

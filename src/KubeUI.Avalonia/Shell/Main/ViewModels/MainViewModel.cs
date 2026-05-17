@@ -324,10 +324,10 @@ public sealed partial class MainViewModel : ViewModelBase
             {
                 ContentDialogSettings settings = new()
                 {
-                    Title = Assets.Resources.MainViewModel_CheckForUpdates_Title,
-                    Content = Assets.Resources.MainViewModel_CheckForUpdates_Content + "\n\n" + Markdig.Markdown.ToPlainText(update.TargetFullRelease.NotesMarkdown),
-                    PrimaryButtonText = Assets.Resources.MainViewModel_CheckForUpdates_Primary,
-                    SecondaryButtonText = Assets.Resources.MainViewModel_CheckForUpdates_Secondary,
+                    Title = Assets.Resources.MainView_CheckForUpdates_Title,
+                    Content = Assets.Resources.MainView_CheckForUpdates_Content + "\n\n" + Markdig.Markdown.ToPlainText(update.TargetFullRelease.NotesMarkdown),
+                    PrimaryButtonText = Assets.Resources.MainView_CheckForUpdates_Primary,
+                    SecondaryButtonText = Assets.Resources.MainView_CheckForUpdates_Secondary,
                     DefaultButton = FAContentDialogButton.Secondary
                 };
 
@@ -337,8 +337,8 @@ public sealed partial class MainViewModel : ViewModelBase
                 {
                     ContentDialogSettings updatePrompt = new()
                     {
-                        Title = Assets.Resources.MainViewModel_CheckForUpdates_Updating_Title,
-                        Content = Assets.Resources.MainViewModel_CheckForUpdates_Updating_Content,
+                        Title = Assets.Resources.MainView_CheckForUpdates_Updating_Title,
+                        Content = Assets.Resources.MainView_CheckForUpdates_Updating_Content,
                         IsPrimaryButtonEnabled = false,
                         IsSecondaryButtonEnabled = false
                     };

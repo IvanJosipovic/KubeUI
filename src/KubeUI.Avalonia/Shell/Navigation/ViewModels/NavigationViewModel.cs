@@ -88,7 +88,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         _serviceProvider = serviceProvider;
         _dialogService = dialogService;
         ClusterCatalog = clusterCatalog;
-        Title = Assets.Resources.NavigationViewModel_Title;
+        Title = Assets.Resources.NavigationView_Title;
         Id = nameof(NavigationViewModel);
 
         if (ClusterCatalog.Clusters is INotifyCollectionChanged collection)
@@ -195,7 +195,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         return SelectNavigationLink(CreateNavigationLink(
             clusterNode.Cluster,
             NavigationTargets.ClusterSettings,
-            Assets.Resources.ClusterSettingsViewModel_Title,
+            Assets.Resources.ClusterSettingsView_Title,
             ClusterSettingsOrder));
     }
 
@@ -511,20 +511,20 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private static void AddBaseNavigationItems(ClusterNavigationNode node)
     {
-        node.NavigationItems.Add(CreateNavigationLink(node.Cluster, NavigationTargets.ClusterWorkspace, Assets.Resources.ClusterViewModel_Title, ClusterWorkspaceOrder));
-        node.NavigationItems.Add(CreateNavigationLink(node.Cluster, NavigationTargets.Visualization, Assets.Resources.VisualizationViewModel_Title, VisualizationOrder));
-        node.NavigationItems.Add(CreateNavigationLink(node.Cluster, NavigationTargets.ClusterSettings, Assets.Resources.ClusterSettingsViewModel_Title, ClusterSettingsOrder));
-        node.NavigationItems.Add(CreateNavigationLink(node.Cluster, "load-yaml", Assets.Resources.NavigationViewModel_LoadYaml, LoadYamlOrder));
-        node.NavigationItems.Add(CreateNavigationLink(node.Cluster, "load-folder", Assets.Resources.NavigationViewModel_LoadFolder, LoadFolderOrder));
+        node.NavigationItems.Add(CreateNavigationLink(node.Cluster, NavigationTargets.ClusterWorkspace, Assets.Resources.ClusterView_Title, ClusterWorkspaceOrder));
+        node.NavigationItems.Add(CreateNavigationLink(node.Cluster, NavigationTargets.Visualization, Assets.Resources.VisualizationView_Title, VisualizationOrder));
+        node.NavigationItems.Add(CreateNavigationLink(node.Cluster, NavigationTargets.ClusterSettings, Assets.Resources.ClusterSettingsView_Title, ClusterSettingsOrder));
+        node.NavigationItems.Add(CreateNavigationLink(node.Cluster, "load-yaml", Assets.Resources.NavigationView_LoadYaml, LoadYamlOrder));
+        node.NavigationItems.Add(CreateNavigationLink(node.Cluster, "load-folder", Assets.Resources.NavigationView_LoadFolder, LoadFolderOrder));
     }
 
     private static void EnsureBaseNavigationItems(ClusterNavigationNode node)
     {
-        UpsertNavigationItem(node.NavigationItems, CreateNavigationLink(node.Cluster, NavigationTargets.ClusterWorkspace, Assets.Resources.ClusterViewModel_Title, ClusterWorkspaceOrder));
-        UpsertNavigationItem(node.NavigationItems, CreateNavigationLink(node.Cluster, NavigationTargets.Visualization, Assets.Resources.VisualizationViewModel_Title, VisualizationOrder));
-        UpsertNavigationItem(node.NavigationItems, CreateNavigationLink(node.Cluster, NavigationTargets.ClusterSettings, Assets.Resources.ClusterSettingsViewModel_Title, ClusterSettingsOrder));
-        UpsertNavigationItem(node.NavigationItems, CreateNavigationLink(node.Cluster, "load-yaml", Assets.Resources.NavigationViewModel_LoadYaml, LoadYamlOrder));
-        UpsertNavigationItem(node.NavigationItems, CreateNavigationLink(node.Cluster, "load-folder", Assets.Resources.NavigationViewModel_LoadFolder, LoadFolderOrder));
+        UpsertNavigationItem(node.NavigationItems, CreateNavigationLink(node.Cluster, NavigationTargets.ClusterWorkspace, Assets.Resources.ClusterView_Title, ClusterWorkspaceOrder));
+        UpsertNavigationItem(node.NavigationItems, CreateNavigationLink(node.Cluster, NavigationTargets.Visualization, Assets.Resources.VisualizationView_Title, VisualizationOrder));
+        UpsertNavigationItem(node.NavigationItems, CreateNavigationLink(node.Cluster, NavigationTargets.ClusterSettings, Assets.Resources.ClusterSettingsView_Title, ClusterSettingsOrder));
+        UpsertNavigationItem(node.NavigationItems, CreateNavigationLink(node.Cluster, "load-yaml", Assets.Resources.NavigationView_LoadYaml, LoadYamlOrder));
+        UpsertNavigationItem(node.NavigationItems, CreateNavigationLink(node.Cluster, "load-folder", Assets.Resources.NavigationView_LoadFolder, LoadFolderOrder));
     }
 
     private bool CanShowPortForwarders(ClusterWorkspaceViewModel cluster)
@@ -607,7 +607,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             }
         }
 
-        UpsertNavigationItem(networkCategory.NavigationItems, CreateNavigationLink(cluster, NavigationTargets.PortForwarders, Assets.Resources.PortForwarderListViewModel_Title, PortForwardersOrder));
+        UpsertNavigationItem(networkCategory.NavigationItems, CreateNavigationLink(cluster, NavigationTargets.PortForwarders, Assets.Resources.PortForwarderListView_Title, PortForwardersOrder));
     }
 
     private static int ResolveCategoryOrder(string categoryName, int defaultOrder)
@@ -1062,12 +1062,6 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private static void UpdateNavigationItem(NavigationItem current, NavigationItem desired)
     {
-        var replaceResourceCount = current is ResourceNavigationLink countCurrent
-            && desired is ResourceNavigationLink countDesired
-            && (countCurrent.Count == null
-                || !ReferenceEquals(countCurrent.Cluster, countDesired.Cluster)
-                || countCurrent.ControlType != countDesired.ControlType);
-
         current.Id = desired.Id;
         current.Name = desired.Name;
         current.Order = desired.Order;
@@ -1084,11 +1078,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
         if (current is ResourceNavigationLink currentResourceLink && desired is ResourceNavigationLink desiredResourceLink)
         {
-            if (replaceResourceCount)
-            {
-                currentResourceLink.Count = desiredResourceLink.Count;
-            }
-
+            currentResourceLink.Count = desiredResourceLink.Count;
             currentResourceLink.OpenCommand = desiredResourceLink.OpenCommand;
             currentResourceLink.OpenInNewTabCommand = desiredResourceLink.OpenInNewTabCommand;
         }
@@ -1345,7 +1335,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         {
             var files = await TopLevelAccessor.GetRequired().StorageProvider.OpenFilePickerAsync(new()
             {
-                Title = Assets.Resources.NavigationViewModel_LoadYaml,
+                Title = Assets.Resources.NavigationView_LoadYaml,
                 AllowMultiple = true,
                 FileTypeFilter = [new("Yaml") { Patterns = ["*.yaml", ".yml"] }]
             });
@@ -1367,7 +1357,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         {
             var folders = await TopLevelAccessor.GetRequired().StorageProvider.OpenFolderPickerAsync(new()
             {
-                Title = Assets.Resources.NavigationViewModel_LoadFolder,
+                Title = Assets.Resources.NavigationView_LoadFolder,
                 AllowMultiple = false
             });
 

@@ -21,7 +21,7 @@ public sealed partial class ImportAksClusterViewModel : ViewModelBase
         _clusterCatalog = clusterCatalog;
         _logger = logger;
 
-        Title = Assets.Resources.ImportAksClusterViewModel_Title;
+        Title = Assets.Resources.ImportAksClusterView_Title;
         Id = nameof(ImportAksClusterViewModel);
 
         _ = RefreshAuthenticationAsync();

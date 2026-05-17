@@ -4,6 +4,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>preview</LangVersion>
+    <DebugType>embedded</DebugType>
     <AssemblyName>KubeUI.Kubernetes</AssemblyName>
   </PropertyGroup>
 
@@ -30,11 +31,11 @@
     <PackageReference Include="Humanizer.Core" Version="3.0.10" />
     <PackageReference Include="KubernetesClient" Version="19.0.2" />
     <PackageReference Include="KubernetesClient.Informer" Version="1.0.0" />
-    <PackageReference Include="KubernetesCRDModelGen" Version="1.5.2" />
+    <PackageReference Include="KubernetesCRDModelGen" Version="1.6.2" />
     <PackageReference Include="Mapster" Version="7.4.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.7" />
-    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.5.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.6.0" />
     <PackageReference Include="Swordfish.NET.CollectionsV3" Version="3.3.16" />
-    <PackageReference Include="YamlDotNet.System.Text.Json" Version="1.7.1" />
+    <PackageReference Include="YamlDotNet.System.Text.Json" Version="1.8.0" />
   </ItemGroup>
 </Project>

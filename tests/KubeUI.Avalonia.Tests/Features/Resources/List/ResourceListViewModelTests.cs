@@ -915,7 +915,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         var dateWindow = CreateWindow(content: dateView);
         dateWindow.Show();
 
-        var dateColumn = dateVm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Last Seen", StringComparison.Ordinal));
+        var dateColumn = dateVm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), KubeUI.Avalonia.Assets.Resources.V1EventConfig_Last_Seen, StringComparison.Ordinal));
         var dateFlyout = dateColumn.FilterFlyout.ShouldBeOfType<Flyout>();
         dateFlyout.ShowAt(dateView);
         Dispatcher.UIThread.RunJobs();
@@ -963,7 +963,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         window.Show();
 
         var countColumn = vm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Count", StringComparison.Ordinal));
-        var lastSeenColumn = vm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Last Seen", StringComparison.Ordinal));
+        var lastSeenColumn = vm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), KubeUI.Avalonia.Assets.Resources.V1EventConfig_Last_Seen, StringComparison.Ordinal));
 
         FilteringDescriptor GetDescriptorForColumn(DataGridColumnDefinition column)
             => vm.FilteringModel.Descriptors.First(descriptor =>
@@ -1125,7 +1125,7 @@ public class ResourceListViewModelTests : AvaloniaTestBase
         Dispatcher.UIThread.RunJobs();
         countVm.View.Count.ShouldBe(2);
 
-        var lastSeenColumn = countVm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), "Last Seen", StringComparison.Ordinal));
+        var lastSeenColumn = countVm.ColumnDefinitions.First(column => string.Equals(column.Header?.ToString(), KubeUI.Avalonia.Assets.Resources.V1EventConfig_Last_Seen, StringComparison.Ordinal));
         var hours = GetDateRelativeUnit(countVm, 1);
         filterService.ApplyDateFilter(countVm.FilteringModel, lastSeenColumn, lastSeenColumn.ValueType, GetDateOperator(FilteringOperator.GreaterThan), 1d, hours);
         Dispatcher.UIThread.RunJobs();

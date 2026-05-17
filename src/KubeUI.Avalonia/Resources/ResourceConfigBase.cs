@@ -1,5 +1,3 @@
-using System.Globalization;
-using System.Text;
 using System.Text.Json;
 using Avalonia.Controls.Notifications;
 using Avalonia.Styling;
@@ -50,11 +48,6 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     public virtual string Name => Kind.Kind.Humanize(LetterCasing.Title).Pluralize();
 
     public virtual string? Category { get; } = null;
-
-    protected static string CategoryString(string resourceKey, string fallback)
-    {
-        return Assets.Resources.ResourceManager.GetString(resourceKey, CultureInfo.CurrentUICulture) ?? fallback;
-    }
 
     public virtual bool ShowNewResource { get; } = true;
 
@@ -124,7 +117,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         return new ResourceListColumn<T, string>()
         {
             Key = "name",
-            Name = "Name",
+            Name = Assets.Resources.ResourceListView_Name!,
             Field = x => x.Metadata.Name,
             Width = "2*",
             Sort = sort,
@@ -136,7 +129,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         return new ResourceListColumn<T, string>()
         {
             Key = "namespace",
-            Name = "Namespace",
+            Name = Assets.Resources.ResourceListView_Namespace!,
             Field = x => x.Metadata.NamespaceProperty,
             Width = "*",
         };
@@ -147,7 +140,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         return new ResourceListColumn<T, DateTime?>()
         {
             Key = "age",
-            Name = "Age",
+            Name = Assets.Resources.ResourceListView_Age!,
             CustomControl = typeof(AgeCell),
             Field = x => x.Metadata.CreationTimestamp,
             Width = "80"
@@ -291,10 +284,10 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     {
         ContentDialogSettings settings = new()
         {
-            Title = Assets.Resources.ResourceListViewModel_Delete_Title,
-            Content = string.Format(Assets.Resources.ResourceListViewModel_Delete_Content, items.Count),
-            PrimaryButtonText = Assets.Resources.ResourceListViewModel_Delete_Primary,
-            SecondaryButtonText = Assets.Resources.ResourceListViewModel_Delete_Secondary,
+            Title = Assets.Resources.ResourceListView_Delete_Title,
+            Content = string.Format(Assets.Resources.ResourceListView_Delete_Content, items.Count),
+            PrimaryButtonText = Assets.Resources.ResourceListView_Delete_Primary,
+            SecondaryButtonText = Assets.Resources.ResourceListView_Delete_Secondary,
             DefaultButton = FAContentDialogButton.Secondary
         };
 
@@ -381,10 +374,10 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     {
         ContentDialogSettings settings = new()
         {
-            Title = Assets.Resources.ResourceListViewModel_Restart_Title,
-            Content = string.Format(Assets.Resources.ResourceListViewModel_Restart_Content, items.Count),
-            PrimaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Primary,
-            SecondaryButtonText = Assets.Resources.ResourceListViewModel_Restart_Secondary,
+            Title = Assets.Resources.ResourceListView_Restart_Title,
+            Content = string.Format(Assets.Resources.ResourceListView_Restart_Content, items.Count),
+            PrimaryButtonText = Assets.Resources.ResourceListView_Restart_Primary,
+            SecondaryButtonText = Assets.Resources.ResourceListView_Restart_Secondary,
             DefaultButton = FAContentDialogButton.Secondary
         };
 
@@ -461,22 +454,8 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
     private const string NullableValueMissingMessage = "Nullable object must have a value.";
     private Func<T, TValue>? _fieldAccessor;
     private IDataGridColumnValueAccessor? _valueAccessor;
-    private string? _key;
 
-    public string Key
-    {
-        get
-        {
-            if (_key != null)
-            {
-                return _key;
-            }
-
-            _key = NormalizeKey(Name);
-            return _key;
-        }
-        set => _key = value;
-    }
+    public required string Key { get; set; }
 
     public required string Name { get; set; }
 

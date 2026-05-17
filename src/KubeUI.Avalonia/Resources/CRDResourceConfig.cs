@@ -250,6 +250,7 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : clas
     {
         return new ResourceListColumn<T, TValue>()
         {
+            Key = CreateColumnKey(name),
             Name = name,
             Display = display,
             Field = expression.Compile(),
@@ -260,10 +261,16 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : clas
     {
         return new ResourceListColumn<T, TValue>()
         {
+            Key = CreateColumnKey(name),
             Name = name,
             Display = display,
             Field = field,
         };
+    }
+
+    private static string CreateColumnKey(string name)
+    {
+        return Regex.Replace(name.Trim().ToLowerInvariant(), @"\W+", "-").Trim('-');
     }
 
     private static string GetEnumMemberName<TEnum>(TEnum enumValue) where TEnum : Enum
@@ -280,4 +287,3 @@ public partial class CRDResourceConfig<T> : ResourceConfigBase<T> where T : clas
         return enumValue.ToString();
     }
 }
-

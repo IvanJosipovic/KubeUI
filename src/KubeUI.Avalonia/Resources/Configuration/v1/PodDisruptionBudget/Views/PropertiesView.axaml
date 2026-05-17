@@ -2,6 +2,7 @@
     x:Class="KubeUI.Avalonia.Resources.Configuration.v1.PodDisruptionBudget.Views.PropertiesView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="using:KubeUI.Avalonia.Assets"
     xmlns:c="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -11,12 +12,12 @@
     x:DataType="models:V1PodDisruptionBudget"
     mc:Ignorable="d">
     <StackPanel>
-        <c:PropertyItem Key="Min Available" Value="{Binding Spec.MinAvailable}" />
-        <c:PropertyItem Key="Max Unavailable" Value="{Binding Spec.MaxUnavailable}" />
-        <c:PropertyItem Key="Selector Labels" Value="{Binding Spec.Selector.MatchLabels.Count}" />
-        <c:PropertyItem Key="Disruptions Allowed" Value="{Binding Status.DisruptionsAllowed}" />
-        <c:PropertyItem Key="Current Healthy" Value="{Binding Status.CurrentHealthy}" />
-        <c:PropertyItem Key="Desired Healthy" Value="{Binding Status.DesiredHealthy}" />
-        <c:PropertyItem Key="Expected Pods" Value="{Binding Status.ExpectedPods}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.PodDisruptionBudgetPropertiesView_Min_Available}" Value="{Binding Spec.MinAvailable}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.PodDisruptionBudgetPropertiesView_Max_Unavailable}" Value="{Binding Spec.MaxUnavailable}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Selector_Labels}" Value="{Binding Spec.Selector.MatchLabels.Count}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.PodDisruptionBudgetPropertiesView_Disruptions_Allowed}" Value="{Binding Status.DisruptionsAllowed}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.PodDisruptionBudgetPropertiesView_Current_Healthy}" Value="{Binding Status.CurrentHealthy}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.PodDisruptionBudgetPropertiesView_Desired_Healthy}" Value="{Binding Status.DesiredHealthy}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.PodDisruptionBudgetPropertiesView_Expected_Pods}" Value="{Binding Status.ExpectedPods}" />
     </StackPanel>
 </UserControl>

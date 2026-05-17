@@ -10,7 +10,7 @@ public sealed partial class V1PriorityClassConfig : ResourceConfigBase<V1Priorit
         : base(serviceProvider)
     {
     }
-    public override string Category => CategoryString("ResourceConfig_Category_Configuration", "Configuration");
+    public override string Category => Assets.Resources.ResourceConfig_Category_Configuration!;
     public override int Order => 6;
 
     public override IList<IResourceListColumn> Columns()
@@ -19,13 +19,15 @@ public sealed partial class V1PriorityClassConfig : ResourceConfigBase<V1Priorit
             NameColumn(SortDirection.Ascending),
             new ResourceListColumn<V1PriorityClass, int>()
             {
-                Name = "Value",
+                Key = "value",
+                Name = Assets.Resources.V1PriorityClassConfig_Value!,
                 Field = x => x.Value,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             new ResourceListColumn<V1PriorityClass, bool?>()
             {
-                Name = "Global Default",
+                Key = "global-default",
+                Name = Assets.Resources.V1PriorityClassConfig_Global_Default!,
                 Field = x => x.GlobalDefault ?? false,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },

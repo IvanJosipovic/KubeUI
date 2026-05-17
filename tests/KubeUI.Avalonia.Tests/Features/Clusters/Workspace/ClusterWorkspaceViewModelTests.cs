@@ -156,6 +156,45 @@ public class ClusterWorkspaceViewModelTests : AvaloniaTestBase
     }
 
     [AvaloniaFact]
+    public async Task event_resource_seeding_uses_default_wait_for_ready_behavior()
+    {
+        var runtime = new TestClusterRuntime();
+        var countingRuntime = new CountingClusterRuntime(runtime)
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+
+        var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspaceViewModel>(
+            TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized."),
+            countingRuntime);
+        _disposables.Add(workspace);
+
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+
+        countingRuntime.EventSeedCalls.ShouldBe(1);
+        (countingRuntime.EventSeedWaitForReady == false).ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task event_resource_seeding_does_not_use_wait_for_ready()
+    {
+        var runtime = new TestClusterRuntime();
+        var countingRuntime = new CountingClusterRuntime(runtime)
+        {
+            Connected = true,
+            Status = ClusterStatus.Connected,
+        };
+
+        var workspace = CreateWorkspace(countingRuntime);
+
+        await workspace.EnsureWorkspaceStateInitializedAsync();
+
+        countingRuntime.EventSeedCalls.ShouldBe(1);
+        (countingRuntime.EventSeedWaitForReady == false).ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
     public async Task initializing_workspace_seeds_custom_resource_definitions_when_allowed()
     {
         var runtime = new TestCluster
@@ -487,6 +526,16 @@ public class ClusterWorkspaceViewModelTests : AvaloniaTestBase
         return workspace;
     }
 
+    private ClusterWorkspaceViewModel CreateWorkspace(IClusterRuntime runtime)
+    {
+        var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspaceViewModel>(
+            TestApp.CurrentServices ?? throw new InvalidOperationException("Test services are not initialized."),
+            runtime);
+
+        _disposables.Add(workspace);
+        return workspace;
+    }
+
     private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs = 10000)
     {
         var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
@@ -588,6 +637,7 @@ internal sealed class CountingClusterRuntime : IClusterRuntime, INotifyPropertyC
     }
 
     public int EventSeedCalls { get; private set; }
+    public bool EventSeedWaitForReady { get; private set; }
 
     public event PropertyChangedEventHandler? PropertyChanged;
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange
@@ -654,9 +704,10 @@ internal sealed class CountingClusterRuntime : IClusterRuntime, INotifyPropertyC
 
     public Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        if (typeof(T) == typeof(Corev1Event))
+        if (typeof(T) == typeof(global::k8s.Models.Corev1Event))
         {
             EventSeedCalls++;
+            EventSeedWaitForReady = waitForReady;
         }
 
         return _inner.SeedResource<T>(waitForReady);

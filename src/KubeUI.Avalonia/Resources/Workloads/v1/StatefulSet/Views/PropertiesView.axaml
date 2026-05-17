@@ -1,7 +1,8 @@
-﻿<UserControl
+<UserControl
     x:Class="KubeUI.Avalonia.Resources.Workloads.v1.StatefulSet.Views.PropertiesView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:assets="using:KubeUI.Avalonia.Assets"
     xmlns:c="using:KubeUI.Avalonia.Features.Resources.Properties.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -11,25 +12,25 @@
     x:DataType="models:V1StatefulSet"
     mc:Ignorable="d">
     <StackPanel>
-        <c:PropertyItem Key="Replicas" Value="{Binding Spec.Replicas}" />
-        <c:PropertyItem Key="Ready Replicas" Value="{Binding Status.ReadyReplicas}" />
-        <c:PropertyItem Key="Current Replicas" Value="{Binding Status.CurrentReplicas}" />
-        <c:PropertyItem Key="Updated Replicas" Value="{Binding Status.UpdatedReplicas}" />
-        <c:PropertyItem Key="Available Replicas" Value="{Binding Status.AvailableReplicas}" />
-        <c:PropertyItem Key="Service Name" Value="{Binding Spec.ServiceName}" />
-        <c:ExpandableSection Header="Status">
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Replicas}" Value="{Binding Spec.Replicas}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Ready_Replicas}" Value="{Binding Status.ReadyReplicas}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Current_Replicas}" Value="{Binding Status.CurrentReplicas}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Updated_Replicas}" Value="{Binding Status.UpdatedReplicas}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.Shared_Available_Replicas}" Value="{Binding Status.AvailableReplicas}" />
+        <c:PropertyItem Key="{x:Static assets:Resources.StatefulSetPropertiesView_Service_Name}" Value="{Binding Spec.ServiceName}" />
+        <c:ExpandableSection Header="{x:Static assets:Resources.Shared_Status}">
             <StackPanel>
-                <c:PropertyItem Key="Current Revision" Value="{Binding Status.CurrentRevision}" />
-                <c:PropertyItem Key="Update Revision" Value="{Binding Status.UpdateRevision}" />
-                <c:PropertyItem Key="Conditions" Value="{Binding Status.Conditions.Count}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.StatefulSetPropertiesView_Current_Revision}" Value="{Binding Status.CurrentRevision}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.StatefulSetPropertiesView_Update_Revision}" Value="{Binding Status.UpdateRevision}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.Shared_Conditions}" Value="{Binding Status.Conditions.Count}" />
             </StackPanel>
         </c:ExpandableSection>
-        <c:ExpandableSection Header="Configuration">
+        <c:ExpandableSection Header="{x:Static assets:Resources.Shared_Configuration}">
             <StackPanel>
-                <c:PropertyItem Key="Pod Management Policy" Value="{Binding Spec.PodManagementPolicy}" />
-                <c:PropertyItem Key="Update Strategy" Value="{Binding Spec.UpdateStrategy.Type}" />
-                <c:PropertyItem Key="Revision History Limit" Value="{Binding Spec.RevisionHistoryLimit}" />
-                <c:PropertyItem Key="Min Ready Seconds" Value="{Binding Spec.MinReadySeconds}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.StatefulSetPropertiesView_Pod_Management_Policy}" Value="{Binding Spec.PodManagementPolicy}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.StatefulSetPropertiesView_Update_Strategy}" Value="{Binding Spec.UpdateStrategy.Type}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.Shared_Revision_History_Limit}" Value="{Binding Spec.RevisionHistoryLimit}" />
+                <c:PropertyItem Key="{x:Static assets:Resources.Shared_Min_Ready_Seconds}" Value="{Binding Spec.MinReadySeconds}" />
             </StackPanel>
         </c:ExpandableSection>
     </StackPanel>

@@ -10,7 +10,7 @@ public sealed partial class V1MutatingWebhookConfig : ResourceConfigBase<V1Mutat
         : base(serviceProvider)
     {
     }
-    public override string Category => CategoryString("ResourceConfig_Category_Configuration", "Configuration");
+    public override string Category => Assets.Resources.ResourceConfig_Category_Configuration!;
     public override int Order => 9;
 
     public override IList<IResourceListColumn> Columns()
@@ -19,7 +19,8 @@ public sealed partial class V1MutatingWebhookConfig : ResourceConfigBase<V1Mutat
             NameColumn(SortDirection.Ascending),
             new ResourceListColumn<V1MutatingWebhookConfiguration, int>()
             {
-                Name = "Webhooks",
+                Key = "webhooks",
+                Name = Assets.Resources.V1MutatingWebhookConfig_Webhooks!,
                 Field = x => x.Webhooks?.Count ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
