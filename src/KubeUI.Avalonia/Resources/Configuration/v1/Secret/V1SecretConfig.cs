@@ -24,16 +24,14 @@ public sealed partial class V1SecretConfig : ResourceConfigBase<k8s.Models.V1Sec
             {
                 Key = "labels",
                 Name = Assets.Resources.V1SecretConfig_Labels!,
-                Display = x => x.Metadata?.Labels != null ? x.Metadata.Labels.Keys.Aggregate((a,b) => a + ", " + b) : "",
-                Field = x => x.Metadata?.Labels?.Keys.FirstOrDefault() ?? "",
+                Field = x => x.Metadata?.Labels is { Count: > 0 } labels ? string.Join(", ", labels.Keys) : "",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<k8s.Models.V1Secret, string>()
             {
                 Key = "keys",
                 Name = Assets.Resources.V1SecretConfig_Keys!,
-                Display = x => x.Data != null ? x.Data.Keys.Aggregate((a,b) => a + ", " + b) : "",
-                Field = x => x.Data?.Keys.FirstOrDefault() ?? "",
+                Field = x => x.Data is { Count: > 0 } data ? string.Join(", ", data.Keys) : "",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<k8s.Models.V1Secret, string>()
@@ -49,7 +47,6 @@ public sealed partial class V1SecretConfig : ResourceConfigBase<k8s.Models.V1Sec
 
     public override Control[] Properties(k8s.Models.V1Secret resource) => [new PropertiesView()];
 }
-
 
 
 

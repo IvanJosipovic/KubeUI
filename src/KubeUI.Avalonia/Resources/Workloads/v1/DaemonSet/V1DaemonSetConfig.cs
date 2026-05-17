@@ -36,7 +36,7 @@ public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>
             {
                 Key = "node-selector",
                 Name = Assets.Resources.V1DaemonSetConfig_Node_Selector!,
-                Field = x => x.Spec.Selector.MatchLabels.Select(z => z.Key + "=" + z.Value).Aggregate((x,y) => x + ", " + y),
+                Field = x => x.Spec?.Selector?.MatchLabels is { Count: > 0 } matchLabels ? string.Join(", ", matchLabels.Select(x => x.Key + "=" + x.Value)) : "",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             AgeColumn(),
@@ -58,5 +58,4 @@ public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>
 
     public override Control[] Properties(V1DaemonSet resource) => [new PropertiesView()];
 }
-
 

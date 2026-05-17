@@ -22,7 +22,7 @@ public sealed partial class V1ClusterRoleBindingConfig : ResourceConfigBase<V1Cl
             {
                 Key = "bindings",
                 Name = Assets.Resources.V1ClusterRoleBindingConfig_Bindings!,
-                Field = x => x.Subjects == null || x.Subjects.Count == 0 ? "" : x.Subjects.Select(y => y.Name).Aggregate((a, b) => a + ", " + b),
+                Field = x => x.Subjects is { Count: > 0 } subjects ? string.Join(", ", subjects.Select(y => y.Name)) : "",
                 Width = "*",
             },
             AgeColumn(),
@@ -31,4 +31,3 @@ public sealed partial class V1ClusterRoleBindingConfig : ResourceConfigBase<V1Cl
 
     public override Control[] Properties(V1ClusterRoleBinding resource) => [new PropertiesView()];
 }
-

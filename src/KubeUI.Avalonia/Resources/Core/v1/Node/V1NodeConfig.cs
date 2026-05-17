@@ -60,7 +60,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
             {
                 Key = "taints",
                 Name = Assets.Resources.V1NodeConfig_Taints!,
-                Field = x => x?.Spec?.Taints?.Select(x => $"{x.Key}={x.Effect}").Aggregate((x,y) => $"{x}, {y}") ?? "",
+                Field = x => x?.Spec?.Taints is { Count: > 0 } taints ? string.Join(", ", taints.Select(x => $"{x.Key}={x.Effect}")) : "",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<V1Node, string>()
@@ -276,5 +276,4 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
 
     public override Control[] Properties(V1Node resource) => [new PropertiesView()];
 }
-
 

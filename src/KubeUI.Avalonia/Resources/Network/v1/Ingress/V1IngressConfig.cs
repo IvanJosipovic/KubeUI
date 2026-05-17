@@ -23,16 +23,14 @@ public sealed partial class V1IngressConfig : ResourceConfigBase<V1Ingress>
             {
                 Key = "load-balancers",
                 Name = Assets.Resources.V1IngressConfig_Load_Balancers!,
-                Display = x => x.Status.LoadBalancer.Ingress.Select(x => x.Ip).Aggregate((a,b) => a + ", " + b),
-                Field = x => x.Status.LoadBalancer.Ingress.Count > 0 ? x.Status.LoadBalancer.Ingress[0].Ip : "",
+                Field = x => x.Status?.LoadBalancer?.Ingress is { Count: > 0 } ingress ? string.Join(", ", ingress.Select(x => x.Ip ?? x.Hostname).Where(x => !string.IsNullOrEmpty(x))) : "",
                 Width = "*",
             },
             new ResourceListColumn<V1Ingress, string>()
             {
                 Key = "rules",
                 Name = Assets.Resources.V1IngressConfig_Rules!,
-                Display = x => x.Spec.Rules.Select(z => $"http://{z.Host}{z.Http.Paths[0].Path}").Aggregate((a,b) => a + ", " + b),
-                Field = x => x.Spec.Rules.Count > 0 ? x.Spec.Rules[0].Host : "",
+                Field = x => x.Spec?.Rules is { Count: > 0 } rules ? string.Join(", ", rules.Select(x => x.Http?.Paths is { Count: > 0 } paths ? $"http://{x.Host}{paths[0].Path}" : $"http://{x.Host}")) : "",
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             AgeColumn(),
@@ -41,4 +39,3 @@ public sealed partial class V1IngressConfig : ResourceConfigBase<V1Ingress>
 
     public override Control[] Properties(V1Ingress resource) => [new PropertiesView()];
 }
-

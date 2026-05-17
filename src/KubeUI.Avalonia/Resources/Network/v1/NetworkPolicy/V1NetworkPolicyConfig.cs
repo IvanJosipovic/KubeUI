@@ -23,8 +23,7 @@ public sealed partial class V1NetworkPolicyConfig : ResourceConfigBase<V1Network
             {
                 Key = "policy-types",
                 Name = Assets.Resources.V1NetworkPolicyConfig_Policy_Types!,
-                Display = x => x.Spec.PolicyTypes.Aggregate((a,b) => a + ", " + b),
-                Field = x => x.Spec.PolicyTypes.Count > 0 ? x.Spec.PolicyTypes[0] : "",
+                Field = x => x.Spec?.PolicyTypes is { Count: > 0 } policyTypes ? string.Join(", ", policyTypes) : "",
                 Width = "*",
             },
             AgeColumn(),

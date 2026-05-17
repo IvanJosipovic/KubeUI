@@ -23,8 +23,7 @@ public sealed partial class V1ConfigMapConfig : ResourceConfigBase<V1ConfigMap>
             {
                 Key = "keys",
                 Name = Assets.Resources.V1ConfigMapConfig_Keys!,
-                Display = x => x.Data?.Keys.Count > 0 ? x.Data.Keys.Aggregate((a,b) => a + ", " + b) : "",
-                Field = x => x.Data?.Keys.FirstOrDefault() ?? "",
+                Field = x => x.Data is { Count: > 0 } data ? string.Join(", ", data.Keys) : "",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             AgeColumn(),
@@ -33,4 +32,3 @@ public sealed partial class V1ConfigMapConfig : ResourceConfigBase<V1ConfigMap>
 
     public override Control[] Properties(V1ConfigMap resource) => [new PropertiesView()];
 }
-

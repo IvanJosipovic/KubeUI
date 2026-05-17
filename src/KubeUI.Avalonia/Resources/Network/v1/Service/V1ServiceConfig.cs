@@ -51,8 +51,8 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
             {
                 Key = "ports",
                 Name = Assets.Resources.V1ServiceConfig_Ports!,
-                Display = x => x.Spec?.Ports?.Select((a) => $"{a.Port}{(string.IsNullOrEmpty(a.Name) ? "" : ":" + a.Name)}/{a.Protocol}").Aggregate((a,b) => a + ", " + b) ?? "",
-                Field = x => x.Spec.Ports?.FirstOrDefault()?.Port ?? 0,
+                Display = x => x.Spec?.Ports is { Count: > 0 } ports ? string.Join(", ", ports.Select(x => $"{x.Port}{(string.IsNullOrEmpty(x.Name) ? "" : ":" + x.Name)}/{x.Protocol}")) : "",
+                Field = x => x.Spec?.Ports?.FirstOrDefault()?.Port ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             AgeColumn(),
@@ -126,4 +126,3 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
 
     public override Control[] Properties(V1Service resource) => [new PropertiesView()];
 }
-

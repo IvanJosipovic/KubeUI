@@ -24,7 +24,7 @@ public sealed partial class V1RoleBindingConfig : ResourceConfigBase<V1RoleBindi
             {
                 Key = "bindings",
                 Name = Assets.Resources.V1RoleBindingConfig_Bindings!,
-                Field = x => x.Subjects.Select(y => y.Name).Aggregate((a,b) => a + ", " + b),
+                Field = x => x.Subjects is { Count: > 0 } subjects ? string.Join(", ", subjects.Select(y => y.Name)) : "",
                 Width = "*",
             },
             AgeColumn(),
@@ -33,4 +33,3 @@ public sealed partial class V1RoleBindingConfig : ResourceConfigBase<V1RoleBindi
 
     public override Control[] Properties(V1RoleBinding resource) => [new PropertiesView()];
 }
-
