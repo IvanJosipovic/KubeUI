@@ -49,11 +49,6 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public virtual string? Category { get; } = null;
 
-    protected static string CategoryString(string resourceKey, string fallback)
-    {
-        return ResourceStrings.GetString(resourceKey) ?? fallback;
-    }
-
     public virtual bool ShowNewResource { get; } = true;
 
     public virtual bool IsNamespaced { get; private set; }
@@ -544,5 +539,4 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
         }
     }
 }
-
 

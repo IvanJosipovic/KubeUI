@@ -11,7 +11,7 @@ public sealed partial class V2HorizontalPodAutoscalerConfig : ResourceConfigBase
     {
     }
     public override bool IsNamespaced => true;
-    public override string Category => CategoryString("ResourceConfig_Category_Configuration", "Configuration");
+    public override string Category => Assets.Resources.ResourceConfig_Category_Configuration!;
     public override int Order => 4;
 
     public override IList<IResourceListColumn> Columns()

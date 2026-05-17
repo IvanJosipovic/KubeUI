@@ -10,7 +10,7 @@ public sealed partial class V1PriorityClassConfig : ResourceConfigBase<V1Priorit
         : base(serviceProvider)
     {
     }
-    public override string Category => CategoryString("ResourceConfig_Category_Configuration", "Configuration");
+    public override string Category => Assets.Resources.ResourceConfig_Category_Configuration!;
     public override int Order => 6;
 
     public override IList<IResourceListColumn> Columns()

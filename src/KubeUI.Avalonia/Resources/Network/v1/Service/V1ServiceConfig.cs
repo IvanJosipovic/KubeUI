@@ -25,7 +25,7 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
     {
     }
     public override bool IsNamespaced => true;
-    public override string Category => CategoryString("ResourceConfig_Category_Network", "Network");
+    public override string Category => Assets.Resources.ResourceConfig_Category_Network!;
     public override int Order => 0;
 
     public override IList<IResourceListColumn> Columns()

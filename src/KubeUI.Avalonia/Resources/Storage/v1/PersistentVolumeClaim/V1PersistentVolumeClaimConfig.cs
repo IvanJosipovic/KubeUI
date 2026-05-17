@@ -11,7 +11,7 @@ public sealed partial class V1PersistentVolumeClaimConfig : ResourceConfigBase<V
     {
     }
     public override bool IsNamespaced => true;
-    public override string Category => CategoryString("ResourceConfig_Category_Storage", "Storage");
+    public override string Category => Assets.Resources.ResourceConfig_Category_Storage!;
     public override int Order => 0;
 
     public override IList<IResourceListColumn> Columns()

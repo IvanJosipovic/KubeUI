@@ -16,7 +16,7 @@ public sealed partial class V1StatefulSetConfig : ResourceConfigBase<V1StatefulS
     {
     }
     public override bool IsNamespaced => true;
-    public override string Category => CategoryString("ResourceConfig_Category_Workloads", "Workloads");
+    public override string Category => Assets.Resources.ResourceConfig_Category_Workloads!;
 
     public override int Order => 3;
 

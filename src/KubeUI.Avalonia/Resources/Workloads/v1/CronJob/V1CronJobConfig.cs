@@ -24,7 +24,7 @@ public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
     {
     }
     public override bool IsNamespaced => true;
-    public override string Category => CategoryString("ResourceConfig_Category_Workloads", "Workloads");
+    public override string Category => Assets.Resources.ResourceConfig_Category_Workloads!;
     public override int Order => 6;
 
     public override IList<IResourceListColumn> Columns()

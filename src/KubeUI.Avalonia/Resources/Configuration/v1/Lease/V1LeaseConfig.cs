@@ -11,7 +11,7 @@ public sealed partial class V1LeaseConfig : ResourceConfigBase<V1Lease>
     {
     }
     public override bool IsNamespaced => true;
-    public override string Category => CategoryString("ResourceConfig_Category_Configuration", "Configuration");
+    public override string Category => Assets.Resources.ResourceConfig_Category_Configuration!;
     public override int Order => 8;
 
     public override IList<IResourceListColumn> Columns()

@@ -10,7 +10,7 @@ public sealed partial class V1IngressClassConfig : ResourceConfigBase<V1IngressC
         : base(serviceProvider)
     {
     }
-    public override string Category => CategoryString("ResourceConfig_Category_Network", "Network");
+    public override string Category => Assets.Resources.ResourceConfig_Category_Network!;
     public override int Order => 4;
 
     public override IList<IResourceListColumn> Columns()

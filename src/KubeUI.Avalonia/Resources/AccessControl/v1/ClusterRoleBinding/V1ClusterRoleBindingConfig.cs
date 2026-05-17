@@ -11,7 +11,7 @@ public sealed partial class V1ClusterRoleBindingConfig : ResourceConfigBase<V1Cl
     {
     }
 
-    public override string Category => CategoryString("ResourceConfig_Category_AccessControl", "Access Control");
+    public override string Category => Assets.Resources.ResourceConfig_Category_AccessControl!;
     public override int Order => 3;
 
     public override IList<IResourceListColumn> Columns()

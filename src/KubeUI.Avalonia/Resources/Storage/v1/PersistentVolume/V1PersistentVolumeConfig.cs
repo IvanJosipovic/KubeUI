@@ -10,7 +10,7 @@ public sealed partial class V1PersistentVolumeConfig : ResourceConfigBase<V1Pers
         : base(serviceProvider)
     {
     }
-    public override string Category => CategoryString("ResourceConfig_Category_Storage", "Storage");
+    public override string Category => Assets.Resources.ResourceConfig_Category_Storage!;
     public override int Order => 1;
 
     public override IList<IResourceListColumn> Columns()

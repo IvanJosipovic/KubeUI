@@ -12,7 +12,7 @@ public sealed partial class V1RoleBindingConfig : ResourceConfigBase<V1RoleBindi
     }
 
     public override bool IsNamespaced => true;
-    public override string Category => CategoryString("ResourceConfig_Category_AccessControl", "Access Control");
+    public override string Category => Assets.Resources.ResourceConfig_Category_AccessControl!;
     public override int Order => 4;
 
     public override IList<IResourceListColumn> Columns()

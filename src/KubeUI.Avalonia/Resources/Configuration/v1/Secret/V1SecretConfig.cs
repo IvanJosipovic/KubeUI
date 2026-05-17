@@ -12,7 +12,7 @@ public sealed partial class V1SecretConfig : ResourceConfigBase<k8s.Models.V1Sec
     {
     }
     public override bool IsNamespaced => true;
-    public override string Category => CategoryString("ResourceConfig_Category_Configuration", "Configuration");
+    public override string Category => Assets.Resources.ResourceConfig_Category_Configuration!;
     public override int Order => 1;
 
     public override IList<IResourceListColumn> Columns()
