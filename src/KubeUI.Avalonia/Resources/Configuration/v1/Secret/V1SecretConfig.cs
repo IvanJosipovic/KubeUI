@@ -22,21 +22,24 @@ public sealed partial class V1SecretConfig : ResourceConfigBase<k8s.Models.V1Sec
             NamespaceColumn(),
             new ResourceListColumn<k8s.Models.V1Secret, string>()
             {
-                Name = "Labels",
+                Key = "labels",
+                Name = Assets.Resources.V1SecretConfig_Labels!,
                 Display = x => x.Metadata?.Labels != null ? x.Metadata.Labels.Keys.Aggregate((a,b) => a + ", " + b) : "",
                 Field = x => x.Metadata?.Labels?.Keys.FirstOrDefault() ?? "",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<k8s.Models.V1Secret, string>()
             {
-                Name = "Keys",
+                Key = "keys",
+                Name = Assets.Resources.V1SecretConfig_Keys!,
                 Display = x => x.Data != null ? x.Data.Keys.Aggregate((a,b) => a + ", " + b) : "",
                 Field = x => x.Data?.Keys.FirstOrDefault() ?? "",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<k8s.Models.V1Secret, string>()
             {
-                Name = "Type",
+                Key = "type",
+                Name = Assets.Resources.V1SecretConfig_Type!,
                 Field = x => x.Type,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },

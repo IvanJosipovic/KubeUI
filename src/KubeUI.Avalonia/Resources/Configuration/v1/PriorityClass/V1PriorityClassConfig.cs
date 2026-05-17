@@ -19,13 +19,15 @@ public sealed partial class V1PriorityClassConfig : ResourceConfigBase<V1Priorit
             NameColumn(SortDirection.Ascending),
             new ResourceListColumn<V1PriorityClass, int>()
             {
-                Name = "Value",
+                Key = "value",
+                Name = Assets.Resources.V1PriorityClassConfig_Value!,
                 Field = x => x.Value,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             new ResourceListColumn<V1PriorityClass, bool?>()
             {
-                Name = "Global_Default",
+                Key = "global-default",
+                Name = Assets.Resources.V1PriorityClassConfig_Global_Default!,
                 Field = x => x.GlobalDefault ?? false,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },

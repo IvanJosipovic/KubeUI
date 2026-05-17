@@ -20,7 +20,8 @@ public sealed partial class V1ClusterRoleBindingConfig : ResourceConfigBase<V1Cl
             NameColumn(SortDirection.Ascending),
             new ResourceListColumn<V1ClusterRoleBinding, string>()
             {
-                Name = "Bindings",
+                Key = "bindings",
+                Name = Assets.Resources.V1ClusterRoleBindingConfig_Bindings!,
                 Field = x => x.Subjects == null || x.Subjects.Count == 0 ? "" : x.Subjects.Select(y => y.Name).Aggregate((a, b) => a + ", " + b),
                 Width = "*",
             },

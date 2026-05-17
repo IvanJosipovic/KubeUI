@@ -19,25 +19,29 @@ public sealed partial class V1IngressClassConfig : ResourceConfigBase<V1IngressC
             NameColumn(SortDirection.Ascending),
             new ResourceListColumn<V1IngressClass, string>()
             {
-                Name = "Controller",
+                Key = "controller",
+                Name = Assets.Resources.V1IngressClassConfig_Controller!,
                 Field = x => x.Spec.Controller,
                 Width = "*",
             },
             new ResourceListColumn<V1IngressClass, string>()
             {
-                Name = "API Group",
+                Key = "api-group",
+                Name = Assets.Resources.V1IngressClassConfig_API_Group!,
                 Field = x => x.Spec?.Parameters?.ApiGroup ?? "",
                 Width = "*",
             },
             new ResourceListColumn<V1IngressClass, string>()
             {
-                Name = "Scope",
+                Key = "scope",
+                Name = Assets.Resources.V1IngressClassConfig_Scope!,
                 Field = x => x.Spec.Parameters?.Scope ?? "",
                 Width = "*",
             },
             new ResourceListColumn<V1IngressClass, string>()
             {
-                Name = "Kind",
+                Key = "kind",
+                Name = Assets.Resources.V1IngressClassConfig_Kind!,
                 Field = x => x.Spec.Parameters?.Kind ?? "",
                 Width = "*",
             },

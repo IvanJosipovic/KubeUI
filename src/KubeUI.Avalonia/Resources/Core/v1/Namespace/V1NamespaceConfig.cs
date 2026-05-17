@@ -18,13 +18,15 @@ public sealed partial class V1NamespaceConfig : ResourceConfigBase<V1Namespace>
             NameColumn(SortDirection.Ascending),
             new ResourceListColumn<V1Namespace, string>()
             {
-                Name = "Labels",
+                Key = "labels",
+                Name = Assets.Resources.V1NamespaceConfig_Labels!,
                 Field = x => x.Metadata.Labels?.Select(x => x.Key + "=" + x.Value).Aggregate((x,y) => x + ", " + y) ?? "",
                 Width = "2*"
             },
             new ResourceListColumn<V1Namespace, string>()
             {
-                Name = "Status",
+                Key = "status",
+                Name = Assets.Resources.V1NamespaceConfig_Status!,
                 Field = x => x.Status?.Phase ?? "",
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },

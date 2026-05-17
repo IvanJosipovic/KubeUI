@@ -39,7 +39,8 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 NameColumn(SortDirection.Ascending),
                 new ResourceListColumn<V1Pod, int>()
                 {
-                    Name = "Containers",
+                    Key = "containers",
+                    Name = Assets.Resources.V1PodConfig_Containers!,
                     CustomControl = typeof(PodContainerCell),
                     Field = x => x.Spec.Containers.Count + ((x.Spec.InitContainers?.Count) ?? 0),
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
@@ -47,32 +48,37 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
                 NamespaceColumn(),
                 new ResourceListColumn<V1Pod, int>()
                 {
-                    Name = "Restarts",
+                    Key = "restarts",
+                    Name = Assets.Resources.V1PodConfig_Restarts!,
                     Field = x => x.Status.ContainerStatuses?.Sum(x => x.RestartCount) ?? 0,
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListColumn<V1Pod, string>()
                 {
-                    Name = "Controlled By",
+                    Key = "controlled-by",
+                    Name = Assets.Resources.V1PodConfig_Controlled_By!,
                     Field = x => x.Metadata.OwnerReferences?.FirstOrDefault()?.Name ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListColumn<V1Pod, string>()
                 {
-                    Name = "Node",
+                    Key = "node",
+                    Name = Assets.Resources.V1PodConfig_Node!,
                     Field = x => x.Spec.NodeName ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
                 },
                 new ResourceListColumn<V1Pod, string>()
                 {
-                    Name = "QoS",
+                    Key = "qos",
+                    Name = Assets.Resources.V1PodConfig_QoS!,
                     Field = x => x.Status.QosClass ?? "",
                     Width = nameof(DataGridLengthUnitType.SizeToCells)
                 },
                 AgeColumn(),
                 new ResourceListColumn<V1Pod, string>()
                 {
-                    Name = "Status",
+                    Key = "status",
+                    Name = Assets.Resources.V1PodConfig_Status!,
                     Field = x => x.Status?.Conditions?.FirstOrDefault(x => x.Type == "Ready")?.Status == "True" ? "Running" : x.Status?.Conditions?.FirstOrDefault(x => x.Type == "Ready")?.Reason ?? "Unknown",
                     CustomControl = typeof(PodStatusCell),
                     Width = nameof(DataGridLengthUnitType.SizeToHeader)
@@ -83,14 +89,16 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
         {
             cols.Insert(3, new ResourceListColumn<V1Pod, decimal>()
             {
-                Name = "CPU",
+                Key = "cpu",
+                Name = Assets.Resources.V1PodConfig_CPU!,
                 CustomControl = typeof(PodMetricCPUCell),
                 Field = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
                 Width = "80"
             });
             cols.Insert(4, new ResourceListColumn<V1Pod, decimal>()
             {
-                Name = "Memory",
+                Key = "memory",
+                Name = Assets.Resources.V1PodConfig_Memory!,
                 CustomControl = typeof(PodMetricMemoryCell),
                 Field = x => Cluster.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
                 Width = "80"

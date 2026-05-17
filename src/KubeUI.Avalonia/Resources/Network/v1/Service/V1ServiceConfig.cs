@@ -35,19 +35,22 @@ public sealed partial class V1ServiceConfig : ResourceConfigBase<V1Service>
             NamespaceColumn(),
             new ResourceListColumn<V1Service, string>()
             {
-                Name = "Type",
+                Key = "type",
+                Name = Assets.Resources.V1ServiceConfig_Type!,
                 Field = x => x.Spec.Type,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             new ResourceListColumn<V1Service, string>()
             {
-                Name = "Cluster_IP",
+                Key = "cluster-ip",
+                Name = Assets.Resources.V1ServiceConfig_Cluster_IP!,
                 Field = x => x.Spec.ClusterIP,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             new ResourceListColumn<V1Service, int>()
             {
-                Name = "Ports",
+                Key = "ports",
+                Name = Assets.Resources.V1ServiceConfig_Ports!,
                 Display = x => x.Spec?.Ports?.Select((a) => $"{a.Port}{(string.IsNullOrEmpty(a.Name) ? "" : ":" + a.Name)}/{a.Protocol}").Aggregate((a,b) => a + ", " + b) ?? "",
                 Field = x => x.Spec.Ports?.FirstOrDefault()?.Port ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)

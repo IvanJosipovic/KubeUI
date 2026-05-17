@@ -1,4 +1,3 @@
-using System.Text;
 using System.Text.Json;
 using Avalonia.Controls.Notifications;
 using Avalonia.Styling;
@@ -123,7 +122,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         return new ResourceListColumn<T, string>()
         {
             Key = "name",
-            Name = "Name",
+            Name = Assets.Resources.ResourceListView_Name!,
             Field = x => x.Metadata.Name,
             Width = "2*",
             Sort = sort,
@@ -135,7 +134,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         return new ResourceListColumn<T, string>()
         {
             Key = "namespace",
-            Name = "Namespace",
+            Name = Assets.Resources.ResourceListView_Namespace!,
             Field = x => x.Metadata.NamespaceProperty,
             Width = "*",
         };
@@ -146,7 +145,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         return new ResourceListColumn<T, DateTime?>()
         {
             Key = "age",
-            Name = "Age",
+            Name = Assets.Resources.ResourceListView_Age!,
             CustomControl = typeof(AgeCell),
             Field = x => x.Metadata.CreationTimestamp,
             Width = "80"
@@ -460,22 +459,8 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
     private const string NullableValueMissingMessage = "Nullable object must have a value.";
     private Func<T, TValue>? _fieldAccessor;
     private IDataGridColumnValueAccessor? _valueAccessor;
-    private string? _key;
 
-    public string Key
-    {
-        get
-        {
-            if (_key != null)
-            {
-                return _key;
-            }
-
-            _key = NormalizeKey(Name);
-            return _key;
-        }
-        set => _key = value;
-    }
+    public required string Key { get; set; }
 
     public required string Name { get; set; }
 
@@ -524,36 +509,6 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
         {
             return null;
         }
-    }
-
-    private static string NormalizeKey(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return string.Empty;
-        }
-
-        var builder = new StringBuilder(value.Length);
-        var pendingDash = false;
-
-        foreach (var ch in value)
-        {
-            if (char.IsLetterOrDigit(ch))
-            {
-                if (pendingDash && builder.Length > 0)
-                {
-                    builder.Append('-');
-                }
-
-                builder.Append(char.ToLowerInvariant(ch));
-                pendingDash = false;
-                continue;
-            }
-
-            pendingDash = true;
-        }
-
-        return builder.ToString().Trim('-');
     }
 
     private sealed class LambdaColumnValueAccessor : IDataGridColumnValueAccessor

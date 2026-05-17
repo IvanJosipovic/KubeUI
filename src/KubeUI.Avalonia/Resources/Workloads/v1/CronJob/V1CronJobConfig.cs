@@ -34,25 +34,29 @@ public sealed partial class V1CronJobConfig : ResourceConfigBase<V1CronJob>
             NamespaceColumn(),
             new ResourceListColumn<V1CronJob, string>()
             {
-                Name = "Schedule",
+                Key = "schedule",
+                Name = Assets.Resources.V1CronJobConfig_Schedule!,
                 Field = x => x.Spec.Schedule,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<V1CronJob, bool>()
             {
-                Name = "Suspend",
+                Key = "suspend",
+                Name = Assets.Resources.V1CronJobConfig_Suspend!,
                 Field = x => x.Spec.Suspend ?? false,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<V1CronJob, int>()
             {
-                Name = "Active",
+                Key = "active",
+                Name = Assets.Resources.V1CronJobConfig_Active!,
                 Field = x => x.Status?.Active?.Count ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<V1CronJob, DateTime?>()
             {
-                Name = "Last Schedule",
+                Key = "last-schedule",
+                Name = Assets.Resources.V1CronJobConfig_Last_Schedule!,
                 Display = x => x.Status?.LastScheduleTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
                 Field = x => x.Status.LastScheduleTime,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)

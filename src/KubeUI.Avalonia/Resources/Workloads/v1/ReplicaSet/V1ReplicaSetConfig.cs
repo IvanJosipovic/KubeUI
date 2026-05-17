@@ -27,19 +27,22 @@ public sealed partial class V1ReplicaSetConfig : ResourceConfigBase<V1ReplicaSet
             NamespaceColumn(),
             new ResourceListColumn<V1ReplicaSet, int>()
             {
-                Name = "Desired",
+                Key = "desired",
+                Name = Assets.Resources.V1ReplicaSetConfig_Desired!,
                 Field = x => x.Spec.Replicas ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<V1ReplicaSet, int>()
             {
-                Name = "Current",
+                Key = "current",
+                Name = Assets.Resources.V1ReplicaSetConfig_Current!,
                 Field = x => x.Status.AvailableReplicas ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<V1ReplicaSet, int>()
             {
-                Name = "Ready",
+                Key = "ready",
+                Name = Assets.Resources.V1ReplicaSetConfig_Ready!,
                 Field = x => x.Status.ReadyReplicas ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },

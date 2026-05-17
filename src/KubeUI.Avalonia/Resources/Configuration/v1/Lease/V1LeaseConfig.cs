@@ -21,7 +21,8 @@ public sealed partial class V1LeaseConfig : ResourceConfigBase<V1Lease>
             NamespaceColumn(),
             new ResourceListColumn<V1Lease, string>()
             {
-                Name = "Holder",
+                Key = "holder",
+                Name = Assets.Resources.V1LeaseConfig_Holder!,
                 Field = x => x.Spec.HolderIdentity ?? "",
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },

@@ -20,7 +20,8 @@ public sealed partial class V1ValidatingWebhookConfigurationConfig : ResourceCon
             NameColumn(SortDirection.Ascending),
             new ResourceListColumn<V1ValidatingWebhookConfiguration, int>()
             {
-                Name = "Webhooks",
+                Key = "webhooks",
+                Name = Assets.Resources.V1ValidatingWebhookConfigurationConfig_Webhooks!,
                 Field = x => x.Webhooks.Count,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },

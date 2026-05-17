@@ -19,27 +19,31 @@ public sealed partial class V1PersistentVolumeConfig : ResourceConfigBase<V1Pers
             NameColumn(SortDirection.Ascending),
             new ResourceListColumn<V1PersistentVolume, string>()
             {
-                Name = "Storage_Class",
+                Key = "storage-class",
+                Name = Assets.Resources.V1PersistentVolumeConfig_Storage_Class!,
                 Field = x => x.Spec.StorageClassName,
                 Width = "*",
             },
             new ResourceListColumn<V1PersistentVolume, decimal>()
             {
-                Name = "Size",
+                Key = "size",
+                Name = Assets.Resources.V1PersistentVolumeConfig_Size!,
                 Display = x => x.Spec.Capacity["storage"]?.CanonicalizeString(ResourceQuantity.SuffixFormat.BinarySI) ?? "",
                 Field = x => x.Spec.Capacity["storage"]?.ToDecimal() ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },
             new ResourceListColumn<V1PersistentVolume, string>()
             {
-                Name = "Claim",
+                Key = "claim",
+                Name = Assets.Resources.V1PersistentVolumeConfig_Claim!,
                 Field = x => x.Spec.ClaimRef.Name,
                 Width = "*",
             },
             AgeColumn(),
             new ResourceListColumn<V1PersistentVolume, string>()
             {
-                Name = "Status",
+                Key = "status",
+                Name = Assets.Resources.V1PersistentVolumeConfig_Status!,
                 Field = x => x.Status.Phase,
                 Width = nameof(DataGridLengthUnitType.SizeToCells)
             },

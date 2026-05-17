@@ -68,6 +68,7 @@ public class V1CustomResourceDefinitionConfigTests : AvaloniaTestBase
     {
         var column = new ResourceListColumn<NullableValueResource, int>
         {
+            Key = "value",
             Name = "Value",
             Field = resource => resource.Value!.Value,
         };

@@ -22,7 +22,8 @@ public sealed partial class V1RoleBindingConfig : ResourceConfigBase<V1RoleBindi
             NamespaceColumn(),
             new ResourceListColumn<V1RoleBinding, string>()
             {
-                Name = "Bindings",
+                Key = "bindings",
+                Name = Assets.Resources.V1RoleBindingConfig_Bindings!,
                 Field = x => x.Subjects.Select(y => y.Name).Aggregate((a,b) => a + ", " + b),
                 Width = "*",
             },

@@ -19,7 +19,8 @@ public sealed partial class V1MutatingWebhookConfig : ResourceConfigBase<V1Mutat
             NameColumn(SortDirection.Ascending),
             new ResourceListColumn<V1MutatingWebhookConfiguration, int>()
             {
-                Name = "Webhooks",
+                Key = "webhooks",
+                Name = Assets.Resources.V1MutatingWebhookConfig_Webhooks!,
                 Field = x => x.Webhooks?.Count ?? 0,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },

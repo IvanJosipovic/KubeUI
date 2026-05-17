@@ -27,13 +27,15 @@ public sealed partial class V1DaemonSetConfig : ResourceConfigBase<V1DaemonSet>
             NamespaceColumn(),
             new ResourceListColumn<V1DaemonSet, int>()
             {
-                Name = "Pods",
+                Key = "pods",
+                Name = Assets.Resources.V1DaemonSetConfig_Pods!,
                 Field = x => x.Status.NumberReady,
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
             new ResourceListColumn<V1DaemonSet, string>()
             {
-                Name = "Node Selector",
+                Key = "node-selector",
+                Name = Assets.Resources.V1DaemonSetConfig_Node_Selector!,
                 Field = x => x.Spec.Selector.MatchLabels.Select(z => z.Key + "=" + z.Value).Aggregate((x,y) => x + ", " + y),
                 Width = nameof(DataGridLengthUnitType.SizeToHeader)
             },
